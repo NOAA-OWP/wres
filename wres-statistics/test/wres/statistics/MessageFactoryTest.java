@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -46,6 +47,7 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -133,11 +135,16 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfOneStatisticsMessageWithThreeScoresAndOneDiagram() throws IOException
+    public void testCreationOfOneStatisticsMessageWithThreeScoresAndOneDiagram()
+            throws IOException, InterruptedException
     {
         // Create a statistics message
-        Statistics statisticsOut =
-                MessageFactory.parse( this.scores, this.diagrams, this.ensemblePairs );
+        StatisticsForProject statistics =
+                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+                                                  .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                                  .build();
+
+        Statistics statisticsOut = MessageFactory.parse( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -162,11 +169,16 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfTwoStatisticsMessagesEachWithThreeScoresAndOneDiagram() throws IOException
+    public void testCreationOfTwoStatisticsMessagesEachWithThreeScoresAndOneDiagram()
+            throws IOException, InterruptedException
     {
-        // Create two statistics messages with the same payload
-        Statistics firstOut =
-                MessageFactory.parse( this.scores, this.diagrams, this.ensemblePairs );
+        // Create a statistics message
+        StatisticsForProject statistics =
+                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+                                                  .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                                  .build();
+
+        Statistics firstOut = MessageFactory.parse( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -195,14 +207,16 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testCreationOfOneStatisticsMessageWithTwoBoxPlots() throws IOException
+    public void testCreationOfOneStatisticsMessageWithTwoBoxPlots() throws IOException, InterruptedException
     {
         // Create a statistics message
-        Statistics statisticsOut =
-                MessageFactory.parse( List.of(),
-                                      List.of(),
-                                      this.boxplots,
-                                      this.ensemblePairs );
+        StatisticsForProject statistics =
+                new StatisticsForProject.Builder().addBoxPlotStatisticsPerPair( CompletableFuture.completedFuture( this.boxplots ) )
+                                                  .build();
+
+        // Create a statistics message
+        Statistics statisticsOut = MessageFactory.parse( statistics,
+                                                         this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
 
@@ -231,7 +245,7 @@ public class MessageFactoryTest
         EvaluationEvent warning = ScaleValidationEvent.of( EventType.WARN, "This is a warning event." );
         EvaluationEvent error = ScaleValidationEvent.of( EventType.ERROR, "This is an error event." );
         EvaluationEvent info = ScaleValidationEvent.of( EventType.INFO, "This is an info event." );
-        
+
         // Create a message
         EvaluationStatus statusOut =
                 MessageFactory.parse( ELEVENTH_TIME,

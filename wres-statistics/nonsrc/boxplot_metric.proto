@@ -12,7 +12,6 @@ option java_multiple_files = true;
 
 message BoxplotMetric
 {
-
     // Metric name.
     MetricName name = 1;    
 

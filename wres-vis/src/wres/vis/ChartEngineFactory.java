@@ -132,7 +132,7 @@ public abstract class ChartEngineFactory
         metricOutputGroupToDefaultChartTypeMap.put( StatisticType.BOXPLOT_PER_POOL, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DURATION_SCORE, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.MULTIVECTOR, ChartType.LEAD_THRESHOLD );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DIAGRAM, ChartType.LEAD_THRESHOLD );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticType.PAIRED, ChartType.UNIQUE );
     }
 

@@ -294,7 +294,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Validate the outputs
         //Compare the errors against the benchmark
         List<PairedStatistic<Instant, Duration>> actual =
-                processor.getCachedMetricOutput().getPairedStatistics();
+                processor.getCachedMetricOutput().getInstantDurationPairStatistics();
 
         //Build the expected output
         List<Pair<Instant, Duration>> expectedFirst = new ArrayList<>();
@@ -381,7 +381,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Validate the outputs
         //Compare the errors against the benchmark
         List<PairedStatistic<Instant, Duration>> actual =
-                processor.getCachedMetricOutput().getPairedStatistics();
+                processor.getCachedMetricOutput().getInstantDurationPairStatistics();
 
         //Build the expected output
         List<Pair<Instant, Duration>> expectedFirst = new ArrayList<>();

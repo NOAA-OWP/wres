@@ -166,7 +166,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( futures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( futures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( futures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
         assertTrue( futures.getOutputTypes().contains( StatisticType.PAIRED ) );
 
         // Check with none present
@@ -174,7 +174,7 @@ public final class MetricFuturesByTimeTest
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
 
@@ -230,7 +230,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
 
@@ -255,7 +255,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.MULTIVECTOR ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
     }
 

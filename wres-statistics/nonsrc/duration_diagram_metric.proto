@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "metric_name.proto";
+import "google/protobuf/duration.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "DurationDiagramMetricProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates a duration diagram metric, which contains pairs 
+of instants and durations.*/
+message DurationDiagramMetric
+{
+    // Metric name
+    MetricName name = 1;    
+
+    // The optimum duration value
+    google.protobuf.Duration optimum = 2; 
+
+    // The minimum duration value
+    google.protobuf.Duration minimum = 3;
+        
+    // The maximum duration value
+    google.protobuf.Duration maximum = 4;
+}

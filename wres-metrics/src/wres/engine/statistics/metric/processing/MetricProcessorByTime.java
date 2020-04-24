@@ -119,9 +119,9 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
             this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.DOUBLE_SCORE );
         }
 
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
         {
-            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.MULTIVECTOR );
+            this.processSingleValuedPairsByThreshold( singleValued, futures, StatisticType.DIAGRAM );
         }
 
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ) )
@@ -324,7 +324,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                                                                              ignoreTheseMetrics ) );
                 break;
 
-            case MULTIVECTOR:
+            case DIAGRAM:
                 futures.addMultiVectorOutput( this.processSingleValuedPairs( input,
                                                                              this.singleValuedMultiVector,
                                                                              ignoreTheseMetrics ) );

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "duration_diagram_metric.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "DurationDiagramStatisticProto";
+option java_multiple_files = true;
+
+/* A message that encapsulates a duration diagram statistic, which contains a 
+sequence of durations, each one referenced to an instant. */
+message DurationDiagramStatistic
+{
+    /* This could be promoted to an Evaluation; however, there is one 
+    DiagramMetric per DiagramStatistic while the atomic collection is a pool, so 
+    there is no efficiency to be gained and some context to be lost.*/
+    DurationDiagramMetric metric = 1;
+
+    // The pairs of instants and durations
+    repeated PairOfInstantAndDuration statistics = 2;
+
+    // A duration diagram component
+    message PairOfInstantAndDuration 
+    {
+        google.protobuf.Timestamp time = 1;
+        google.protobuf.Duration duration = 2;
+    }
+}

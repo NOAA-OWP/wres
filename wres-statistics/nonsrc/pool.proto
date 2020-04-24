@@ -24,4 +24,7 @@ message Pool
 
     // The paired values that form the pool
     Pairs pairs = 3;
+    
+    // The pairs for the baseline source, where applicable
+    Pairs baseline_pairs = 4;
 }

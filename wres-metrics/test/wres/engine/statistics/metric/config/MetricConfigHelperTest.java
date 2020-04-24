@@ -548,7 +548,7 @@ public final class MetricConfigHelperTest
 
         // No output and no output groups of the specified type
         assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfig,
-                                                                        StatisticType.MULTIVECTOR ) );
+                                                                        StatisticType.DIAGRAM ) );
 
     }
 
@@ -579,7 +579,7 @@ public final class MetricConfigHelperTest
                                    null );
 
         Set<StatisticType> expected = new HashSet<>();
-        expected.add( StatisticType.MULTIVECTOR );
+        expected.add( StatisticType.DIAGRAM );
         expected.add( StatisticType.PAIRED );
         expected.add( StatisticType.DOUBLE_SCORE );
         expected.add( StatisticType.BOXPLOT_PER_POOL );

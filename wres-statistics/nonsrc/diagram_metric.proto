@@ -13,7 +13,6 @@ diagram */
 
 message DiagramMetric
 {
-
     /* Metric name. For example, if the diagram is the reliability diagram, 
     which includes a sharpness plot, then the metric name is the reliability 
     diagram and the metric has three DiagramMetricComponent, one for the 

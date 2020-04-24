@@ -16,7 +16,9 @@ import java.util.concurrent.Future;
 import wres.datamodel.MetricConstants.StatisticType;
 
 /**
- * <p>An immutable store of {@link Statistic} associated with a verification project.</p>
+ * <p>An immutable store of {@link Statistic} associated with a verification project. This is the top-level
+ * container of statistics within an evaluation, but does not require any particular shape of statistics
+ * such as one pool or all pools.</p>
  * 
  * <p>Retrieve the statistics using the instance methods for particular {@link StatisticType}. If no statistics
  * exist, the instance methods return null. The store is built with {@link Future} of the {@link Statistic} and the 
@@ -32,19 +34,19 @@ public class StatisticsForProject
      * Thread safe map for {@link DoubleScoreStatistic}.
      */
 
-    private final List<Future<List<DoubleScoreStatistic>>> doubleScore = new ArrayList<>();
+    private final List<Future<List<DoubleScoreStatistic>>> doubleScores = new ArrayList<>();
 
     /**
      * Thread safe map for {@link DurationScoreStatistic}.
      */
 
-    private final List<Future<List<DurationScoreStatistic>>> durationScore = new ArrayList<>();
+    private final List<Future<List<DurationScoreStatistic>>> durationScores = new ArrayList<>();
 
     /**
      * Thread safe map for {@link DiagramStatistic}.
      */
 
-    private final List<Future<List<DiagramStatistic>>> multiVector = new ArrayList<>();
+    private final List<Future<List<DiagramStatistic>>> diagrams = new ArrayList<>();
 
     /**
      * Thread safe map for {@link BoxPlotStatistics} for each pair within a pool.
@@ -66,9 +68,9 @@ public class StatisticsForProject
 
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link DoubleScoreStatistic}.
      * 
-     * @return the scalar output or null
+     * @return the double score output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
@@ -76,13 +78,13 @@ public class StatisticsForProject
     public List<DoubleScoreStatistic> getDoubleScoreStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.DOUBLE_SCORE, this.doubleScore );
+        return this.unwrap( StatisticType.DOUBLE_SCORE, this.doubleScores );
     }
 
     /**
-     * Returns a {@link List} of {@link DurationScoreStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link DurationScoreStatistic}.
      * 
-     * @return the scalar output or null
+     * @return the duration score output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
@@ -90,28 +92,27 @@ public class StatisticsForProject
     public List<DurationScoreStatistic> getDurationScoreStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.DURATION_SCORE, this.durationScore );
+        return this.unwrap( StatisticType.DURATION_SCORE, this.durationScores );
     }
 
     /**
-     * Returns a {@link List} of {@link DiagramStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link DiagramStatistic}.
      * 
-     * @return the multi-vector output or null
+     * @return the diagram output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<DiagramStatistic> getMultiVectorStatistics()
+    public List<DiagramStatistic> getDiagramStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.MULTIVECTOR, this.multiVector );
+        return this.unwrap( StatisticType.DIAGRAM, this.diagrams );
     }
 
     /**
-     * Returns a {@link List} of {@link BoxPlotStatistics} per pair or null if no 
-     * output exists.
+     * Returns a {@link List} of {@link BoxPlotStatistics} per pair.
      * 
-     * @return the box plot output or null
+     * @return the box plot output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
@@ -122,10 +123,9 @@ public class StatisticsForProject
     }
 
     /**
-     * Returns a {@link List} of {@link BoxPlotStatistics} for each pool or null if no 
-     * output exists.
+     * Returns a {@link List} of {@link BoxPlotStatistics} for each pool.
      * 
-     * @return the box plot output or null
+     * @return the box plot output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
@@ -136,14 +136,14 @@ public class StatisticsForProject
     }
 
     /**
-     * Returns a {@link List} of {@link PairedStatistic} or null if no output exists.
+     * Returns a {@link List} of {@link PairedStatistic}.
      * 
-     * @return the matrix output or null
+     * @return the paired output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<PairedStatistic<Instant, Duration>> getPairedStatistics()
+    public List<PairedStatistic<Instant, Duration>> getInstantDurationPairStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.PAIRED, this.paired );
@@ -161,11 +161,11 @@ public class StatisticsForProject
         switch ( outGroup )
         {
             case DOUBLE_SCORE:
-                return !this.doubleScore.isEmpty();
+                return !this.doubleScores.isEmpty();
             case DURATION_SCORE:
-                return !this.durationScore.isEmpty();
-            case MULTIVECTOR:
-                return !this.multiVector.isEmpty();
+                return !this.durationScores.isEmpty();
+            case DIAGRAM:
+                return !this.diagrams.isEmpty();
             case BOXPLOT_PER_PAIR:
                 return !this.boxplotPerPair.isEmpty();
             case BOXPLOT_PER_POOL:
@@ -197,9 +197,9 @@ public class StatisticsForProject
             returnMe.add( StatisticType.DURATION_SCORE );
         }
 
-        if ( this.hasStatistic( StatisticType.MULTIVECTOR ) )
+        if ( this.hasStatistic( StatisticType.DIAGRAM ) )
         {
-            returnMe.add( StatisticType.MULTIVECTOR );
+            returnMe.add( StatisticType.DIAGRAM );
         }
 
         if ( this.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
@@ -224,7 +224,7 @@ public class StatisticsForProject
      * Builder.
      */
 
-    public static class StatisticsForProjectBuilder
+    public static class Builder
     {
 
         /**
@@ -245,7 +245,7 @@ public class StatisticsForProject
          * Thread safe map for {@link DiagramStatistic}.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DiagramStatistic>>> multiVectorInternal =
+        private final ConcurrentLinkedQueue<Future<List<DiagramStatistic>>> diagramsInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -277,7 +277,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public StatisticsForProjectBuilder
+        public Builder
                 addDoubleScoreStatistics( Future<List<DoubleScoreStatistic>> result )
         {
             doubleScoreInternal.add( result );
@@ -293,7 +293,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public StatisticsForProjectBuilder
+        public Builder
                 addDurationScoreStatistics( Future<List<DurationScoreStatistic>> result )
         {
             durationScoreInternal.add( result );
@@ -309,10 +309,10 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public StatisticsForProjectBuilder
-                addMultiVectorStatistics( Future<List<DiagramStatistic>> result )
+        public Builder
+                addDiagramStatistics( Future<List<DiagramStatistic>> result )
         {
-            multiVectorInternal.add( result );
+            diagramsInternal.add( result );
 
             return this;
         }
@@ -325,7 +325,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public StatisticsForProjectBuilder
+        public Builder
                 addBoxPlotStatisticsPerPair( Future<List<BoxPlotStatistics>> result )
         {
             boxplotPerPairInternal.add( result );
@@ -341,7 +341,7 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public StatisticsForProjectBuilder
+        public Builder
                 addBoxPlotStatisticsPerPool( Future<List<BoxPlotStatistics>> result )
         {
             boxplotPerPoolInternal.add( result );
@@ -357,8 +357,8 @@ public class StatisticsForProject
          * @return the builder
          */
 
-        public StatisticsForProjectBuilder
-                addPairedStatistics( Future<List<PairedStatistic<Instant, Duration>>> result )
+        public Builder
+                addInstantDurationPairStatistics( Future<List<PairedStatistic<Instant, Duration>>> result )
         {
             pairedInternal.add( result );
 
@@ -374,7 +374,7 @@ public class StatisticsForProject
          * @throws NullPointerException if the input is null
          */
 
-        public StatisticsForProjectBuilder addStatistics( StatisticsForProject project ) throws InterruptedException
+        public Builder addStatistics( StatisticsForProject project ) throws InterruptedException
         {
             Objects.requireNonNull( project );
 
@@ -388,9 +388,9 @@ public class StatisticsForProject
                 this.addDurationScoreStatistics( CompletableFuture.completedFuture( project.getDurationScoreStatistics() ) );
             }
 
-            if ( project.hasStatistic( StatisticType.MULTIVECTOR ) )
+            if ( project.hasStatistic( StatisticType.DIAGRAM ) )
             {
-                this.addMultiVectorStatistics( CompletableFuture.completedFuture( project.getMultiVectorStatistics() ) );
+                this.addDiagramStatistics( CompletableFuture.completedFuture( project.getDiagramStatistics() ) );
             }
 
             if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
@@ -405,7 +405,7 @@ public class StatisticsForProject
 
             if ( project.hasStatistic( StatisticType.PAIRED ) )
             {
-                this.addPairedStatistics( CompletableFuture.completedFuture( project.getPairedStatistics() ) );
+                this.addInstantDurationPairStatistics( CompletableFuture.completedFuture( project.getInstantDurationPairStatistics() ) );
             }
 
             return this;
@@ -430,11 +430,11 @@ public class StatisticsForProject
      * @param builder the builder
      */
 
-    private StatisticsForProject( StatisticsForProjectBuilder builder )
+    private StatisticsForProject( Builder builder )
     {
-        doubleScore.addAll( builder.doubleScoreInternal );
-        durationScore.addAll( builder.durationScoreInternal );
-        multiVector.addAll( builder.multiVectorInternal );
+        doubleScores.addAll( builder.doubleScoreInternal );
+        durationScores.addAll( builder.durationScoreInternal );
+        diagrams.addAll( builder.diagramsInternal );
         boxplotPerPair.addAll( builder.boxplotPerPairInternal );
         boxplotPerPool.addAll( builder.boxplotPerPoolInternal );
         paired.addAll( builder.pairedInternal );
@@ -447,7 +447,7 @@ public class StatisticsForProject
      * @param <T> the type of statistic
      * @param statsGroup the {@link StatisticType} for error logging
      * @param wrapped the list of values wrapped in {@link Future}
-     * @return the unwrapped map or null if the input is empty
+     * @return the unwrapped map
      * @throws InterruptedException if the retrieval is interrupted
      * @throws StatisticException if the result could not be produced
      */
@@ -458,7 +458,7 @@ public class StatisticsForProject
     {
         if ( wrapped.isEmpty() )
         {
-            return null;
+            Collections.emptyList();
         }
 
         List<T> returnMe = new ArrayList<>();

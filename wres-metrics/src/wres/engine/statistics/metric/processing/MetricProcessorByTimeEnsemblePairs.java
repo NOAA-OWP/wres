@@ -209,12 +209,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             this.discreteProbabilityScore = null;
         }
         //Discrete probability input, multi-vector output
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ) )
         {
             this.discreteProbabilityMultiVector =
                     MetricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
                                                                               this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
-                                                                                               StatisticType.MULTIVECTOR ) );
+                                                                                               StatisticType.DIAGRAM ) );
 
             LOGGER.debug( "Created the discrete probability diagrams for processing. {}",
                           this.discreteProbabilityMultiVector );
@@ -238,11 +238,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
 
         //Ensemble input, multi-vector output
-        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ) )
         {
             this.ensembleMultiVector = MetricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
                                                                                       this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                                       StatisticType.MULTIVECTOR ) );
+                                                                                                       StatisticType.DIAGRAM ) );
 
             LOGGER.debug( "Created the ensemble diagrams for processing. {}", this.ensembleMultiVector );
         }
@@ -410,9 +410,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             processEnsemblePairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
-        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.MULTIVECTOR ) )
+        if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticType.MULTIVECTOR );
+            processEnsemblePairsByThreshold( input, futures, StatisticType.DIAGRAM );
         }
         if ( hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ) )
         {
@@ -514,7 +514,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                                      ensembleScore,
                                                                      ignoreTheseMetrics ) );
         }
-        else if ( outGroup == StatisticType.MULTIVECTOR )
+        else if ( outGroup == StatisticType.DIAGRAM )
         {
             futures.addMultiVectorOutput( this.processEnsemblePairs( input,
                                                                      ensembleMultiVector,
@@ -544,9 +544,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             this.processDiscreteProbabilityPairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ) )
         {
-            this.processDiscreteProbabilityPairsByThreshold( input, futures, StatisticType.MULTIVECTOR );
+            this.processDiscreteProbabilityPairsByThreshold( input, futures, StatisticType.DIAGRAM );
         }
     }
 
@@ -649,7 +649,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                                            discreteProbabilityScore,
                                                                            ignoreTheseMetrics ) );
         }
-        else if ( outGroup == StatisticType.MULTIVECTOR )
+        else if ( outGroup == StatisticType.DIAGRAM )
         {
             futures.addMultiVectorOutput( processDiscreteProbabilityPairs( input,
                                                                            discreteProbabilityMultiVector,

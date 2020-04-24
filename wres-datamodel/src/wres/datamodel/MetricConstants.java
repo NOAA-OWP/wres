@@ -201,19 +201,19 @@ public enum MetricConstants
      * Quantile-quantile diagram.
      */
 
-    QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.MULTIVECTOR ),
+    QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ),
 
     /**
      * Identifier for the Rank Histogram.
      */
 
-    RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticType.MULTIVECTOR ),
+    RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ),
 
     /**
      * Identifier for the Relative Operating Characteristic.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ),
+    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ),
 
     /**
      * Identifier for the Relative Operating Characteristic Score.
@@ -226,7 +226,7 @@ public enum MetricConstants
      * Identifier for the Reliability Diagram.
      */
 
-    RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.MULTIVECTOR ),
+    RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ),
 
     /**
      * Identifier for a Root Mean Square Error.
@@ -848,7 +848,7 @@ public enum MetricConstants
          * Metrics that produce a {@link DiagramStatistic}.
          */
 
-        MULTIVECTOR,
+        DIAGRAM,
 
         /**
          * Metrics that produce a {@link BoxPlotStatistic} for each pair within a pool.
