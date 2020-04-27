@@ -27,7 +27,6 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -46,6 +45,14 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.DurationScoreMetric;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.DurationScoreComponentName;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
@@ -95,28 +102,20 @@ public class MessageFactory
 
         SampleMetadata metadata = SampleMetadata.of();
 
-        // Add the scores
+        // Add the double scores
         if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
             List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores = project.getDoubleScoreStatistics();
-
-            for ( DoubleScoreStatistic nextScore : doubleScores )
-            {
-                statistics.addScores( MessageFactory.parse( nextScore ) );
-                metadata = nextScore.getMetadata().getSampleMetadata();
-            }
+            doubleScores.forEach( next -> statistics.addScores( MessageFactory.parse( next ) ) );
+            metadata = doubleScores.get( 0 ).getMetadata().getSampleMetadata();
         }
 
         // Add the diagrams
         if ( project.hasStatistic( StatisticType.DIAGRAM ) )
         {
             List<wres.datamodel.statistics.DiagramStatistic> diagrams = project.getDiagramStatistics();
-
-            for ( wres.datamodel.statistics.DiagramStatistic nextDiagram : diagrams )
-            {
-                statistics.addDiagrams( MessageFactory.parse( nextDiagram ) );
-                metadata = nextDiagram.getMetadata().getSampleMetadata();
-            }
+            diagrams.forEach( next -> statistics.addDiagrams( MessageFactory.parse( next ) ) );
+            metadata = diagrams.get( 0 ).getMetadata().getSampleMetadata();
         }
 
         // Add the boxplots
@@ -126,12 +125,26 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxPlotStatistics> boxplots =
                     new ArrayList<>( project.getBoxPlotStatisticsPerPair() );
             boxplots.addAll( project.getBoxPlotStatisticsPerPool() );
+            boxplots.forEach( next -> statistics.addBoxplots( MessageFactory.parse( next ) ) );
+            metadata = boxplots.get( 0 ).getMetadata().getSampleMetadata();
+        }
 
-            for ( wres.datamodel.statistics.BoxPlotStatistics nextBoxplot : boxplots )
-            {
-                statistics.addBoxplots( MessageFactory.parse( nextBoxplot ) );
-                metadata = nextBoxplot.getMetadata().getSampleMetadata();
-            }
+        // Add the duration scores
+        if ( project.hasStatistic( StatisticType.DURATION_SCORE ) )
+        {
+            List<wres.datamodel.statistics.DurationScoreStatistic> durationScores =
+                    project.getDurationScoreStatistics();
+            durationScores.forEach( next -> statistics.addDurationScores( MessageFactory.parse( next ) ) );
+            metadata = durationScores.get( 0 ).getMetadata().getSampleMetadata();
+        }
+
+        // Add the duration diagrams with instant/duration pairs
+        if ( project.hasStatistic( StatisticType.PAIRED ) )
+        {
+            List<wres.datamodel.statistics.PairedStatistic<Instant, java.time.Duration>> durationDiagrams =
+                    project.getInstantDurationPairStatistics();
+            durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
+            metadata = durationDiagrams.get( 0 ).getMetadata().getSampleMetadata();
         }
 
         Pool.Builder sample = Pool.newBuilder();
@@ -504,16 +517,16 @@ public class MessageFactory
 
             ScoreComponentName scoreName = ScoreComponentName.valueOf( name );
 
-            double minimum = metricName.getMinimum();
-            double maximum = metricName.getMaximum();
-            double optimum = metricName.getOptimum();
+            Double minimum = (Double) metricName.getMinimum();
+            Double maximum = (Double) metricName.getMaximum();
+            Double optimum = (Double) metricName.getOptimum();
 
             // Set the limits for the component where available
             if ( next.hasLimits() )
             {
-                minimum = next.getMinimum();
-                maximum = next.getMaximum();
-                optimum = next.getOptimum();
+                minimum = (Double) next.getMinimum();
+                maximum = (Double) next.getMaximum();
+                optimum = (Double) next.getOptimum();
             }
 
             ScoreMetricComponent metricComponent = ScoreMetricComponent.newBuilder()
@@ -529,6 +542,58 @@ public class MessageFactory
                     ScoreStatisticComponent.newBuilder()
                                            .setName( scoreName )
                                            .setValue( statistic.getComponent( next ).getData() );
+
+            scoreBuilder.addStatistics( scoreComponentBuilder );
+        }
+
+        // Set the metric
+        metricBuilder.setName( MetricName.valueOf( metricName.name() ) );
+        scoreBuilder.setMetric( metricBuilder );
+
+        return scoreBuilder.build();
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.DurationScoreStatistic} from a 
+     * {@link wres.datamodel.statistics.DurationScoreStatistic}.
+     * 
+     * @param statistic the statistic from which to create a message
+     * @return the message
+     */
+
+    public static DurationScoreStatistic parse( wres.datamodel.statistics.DurationScoreStatistic statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        DurationScoreMetric.Builder metricBuilder = DurationScoreMetric.newBuilder();
+        DurationScoreStatistic.Builder scoreBuilder = DurationScoreStatistic.newBuilder();
+
+        MetricConstants metricName = statistic.getMetadata().getMetricID();
+
+        // Set the metric components and score values
+        // and then propagate to the payload here
+        for ( MetricConstants next : statistic.getComponents() )
+        {
+            String name = next.name();
+            DurationScoreComponentName scoreName = DurationScoreComponentName.valueOf( name );
+
+            DurationScoreMetricComponent.Builder metricComponent = DurationScoreMetricComponent.newBuilder()
+                                                                                               .setName( scoreName );
+
+            MessageFactory.addLimitsToTimingStatistic( metricComponent, next );
+
+            metricBuilder.addComponents( metricComponent );
+
+            java.time.Duration score = statistic.getComponent( next ).getData();
+            Duration protoScore = Duration.newBuilder()
+                                          .setSeconds( score.getSeconds() )
+                                          .setNanos( score.getNano() )
+                                          .build();
+
+            DurationScoreStatisticComponent.Builder scoreComponentBuilder =
+                    DurationScoreStatisticComponent.newBuilder()
+                                                   .setName( scoreName )
+                                                   .setValue( protoScore );
 
             scoreBuilder.addStatistics( scoreComponentBuilder );
         }
@@ -593,6 +658,88 @@ public class MessageFactory
     }
 
     /**
+     * Creates a {@link wres.statistics.generated.DurationDiagramStatistic} from a 
+     * {@link wres.datamodel.statistics.PairedStatistic} composed of timing 
+     * errors.
+     * 
+     * @param statistic the statistic from which to create a message
+     * @return the message
+     */
+
+    public static DurationDiagramStatistic
+            parse( wres.datamodel.statistics.PairedStatistic<Instant, java.time.Duration> statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        DurationDiagramMetric.Builder metricBuilder = DurationDiagramMetric.newBuilder();
+        MetricConstants name = statistic.getMetadata().getMetricID();
+        metricBuilder.setName( MetricName.valueOf( name.name() ) );
+
+        // Set the limits for the diagram where available
+        if ( name.hasLimits() )
+        {
+            java.time.Duration minimum = (java.time.Duration) name.getMinimum();
+            java.time.Duration maximum = (java.time.Duration) name.getMaximum();
+            java.time.Duration optimum = (java.time.Duration) name.getOptimum();
+
+            if ( Objects.nonNull( minimum ) )
+            {
+                Duration minimimProto = Duration.newBuilder()
+                                                .setSeconds( minimum.getSeconds() )
+                                                .setNanos( minimum.getNano() )
+                                                .build();
+                metricBuilder.setMinimum( minimimProto );
+            }
+
+            if ( Objects.nonNull( maximum ) )
+            {
+                Duration maximumProto = Duration.newBuilder()
+                                                .setSeconds( maximum.getSeconds() )
+                                                .setNanos( maximum.getNano() )
+                                                .build();
+                metricBuilder.setMaximum( maximumProto );
+            }
+
+            if ( Objects.nonNull( maximum ) )
+            {
+                Duration optimumProto = Duration.newBuilder()
+                                                .setSeconds( optimum.getSeconds() )
+                                                .setNanos( optimum.getNano() )
+                                                .build();
+                metricBuilder.setOptimum( optimumProto );
+            }
+        }
+
+        DurationDiagramStatistic.Builder diagramBuilder = DurationDiagramStatistic.newBuilder();
+
+        // Set the diagram components and values
+        for ( Pair<Instant, java.time.Duration> nextPair : statistic.getData() )
+        {
+            Instant nextInstant = nextPair.getLeft();
+            java.time.Duration nextDuration = nextPair.getRight();
+
+            Timestamp stamp = Timestamp.newBuilder()
+                                       .setSeconds( nextInstant.getEpochSecond() )
+                                       .setNanos( nextInstant.getNano() )
+                                       .build();
+
+            Duration duration = Duration.newBuilder()
+                                        .setSeconds( nextDuration.getSeconds() )
+                                        .setNanos( nextDuration.getNano() )
+                                        .build();
+
+            PairOfInstantAndDuration.Builder builder = PairOfInstantAndDuration.newBuilder();
+            builder.setTime( stamp ).setDuration( duration );
+            diagramBuilder.addStatistics( builder );
+        }
+
+        // Set the metric
+        diagramBuilder.setMetric( metricBuilder );
+
+        return diagramBuilder.build();
+    }
+
+    /**
      * Creates a {@link wres.statistics.generated.DiagramStatistic} from a 
      * {@link wres.datamodel.statistics.BoxPlotStatistics}.
      * 
@@ -626,9 +773,9 @@ public class MessageFactory
 
             metricBuilder.setName( MetricName.valueOf( metricName.name() ) )
                          .setUnits( meta.getSampleMetadata().getMeasurementUnit().toString() )
-                         .setMinimum( metricName.getMinimum() )
-                         .setMaximum( metricName.getMaximum() )
-                         .setOptimum( metricName.getOptimum() );
+                         .setMinimum( (Double) metricName.getMinimum() )
+                         .setMaximum( (Double) metricName.getMaximum() )
+                         .setOptimum( (Double) metricName.getOptimum() );
 
             // Set the individual boxes
             for ( BoxPlotStatistic next : statistic.getData() )
@@ -732,6 +879,64 @@ public class MessageFactory
         }
 
         return builder.build();
+    }
+
+    /**
+     * Adds the boundaries to timing error statistics. 
+     * 
+     * TODO: add these boundaries directly to the {@link MetricConstants}, which will require a separate enumeration for the 
+     * {@link MetricGroup#UNIVARIATE_STATISTIC} that apply to timing errors.
+     * 
+     * @param builder the builder
+     * @param name the metric name whose boundaries are required
+     * @throws NullPointerException if either input is null
+     */
+
+    private static void addLimitsToTimingStatistic( DurationScoreMetricComponent.Builder builder, MetricConstants name )
+    {
+        Objects.requireNonNull( builder );
+        Objects.requireNonNull( name );
+
+        Duration minimum = Duration.newBuilder()
+                                   .setSeconds( wres.datamodel.time.TimeWindow.DURATION_MIN.getSeconds() )
+                                   .setNanos( wres.datamodel.time.TimeWindow.DURATION_MIN.getNano() )
+                                   .build();
+
+        Duration maximum = Duration.newBuilder()
+                                   .setSeconds( wres.datamodel.time.TimeWindow.DURATION_MAX.getSeconds() )
+                                   .setNanos( wres.datamodel.time.TimeWindow.DURATION_MAX.getNano() )
+                                   .build();
+
+        Duration zero = Duration.newBuilder()
+                                .setSeconds( java.time.Duration.ZERO.getSeconds() )
+                                .setNanos( java.time.Duration.ZERO.getNano() )
+                                .build();
+
+        switch ( name )
+        {
+            case MEAN:
+                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
+                break;
+            case MEDIAN:
+                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
+                break;
+            case MINIMUM:
+                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
+                break;
+            case MAXIMUM:
+                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
+                break;
+            case STANDARD_DEVIATION:
+                builder.setMinimum( zero ).setMaximum( maximum ).setOptimum( zero );
+                break;
+            case MEAN_ABSOLUTE:
+                builder.setMinimum( zero ).setMaximum( maximum ).setOptimum( zero );
+                break;
+            default:
+                throw new IllegalArgumentException( "Unrecognized univariate statistic for serializing timing errors to "
+                                                    + "protobuf." );
+        }
+
     }
 
     /**

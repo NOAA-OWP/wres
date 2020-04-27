@@ -7,6 +7,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import java.time.Duration;
+
+import wres.datamodel.time.TimeWindow;
+
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
@@ -28,20 +32,20 @@ public enum MetricConstants
      */
 
     BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for a Brier Score.
      */
 
-    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, 0, 1, 0 ),
+    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 0.0 ),
 
     /**
      * Identifier for a Brier Skill Score.
      */
 
-    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1,
-            1 ),
+    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1.0,
+            1.0 ),
 
     /**
      * Identifier for a box plot of errors by observed value.
@@ -49,7 +53,7 @@ public enum MetricConstants
 
     BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR,
             Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for a box plot of errors by forecast value.
@@ -57,14 +61,14 @@ public enum MetricConstants
 
     BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR,
             Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for a box plot of errors.
      */
 
     BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for a box plot of errors as a percentage of the left value.
@@ -72,27 +76,27 @@ public enum MetricConstants
 
     BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL,
             Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for coefficient of determination.
      */
 
-    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0, 1, 1 ),
+    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, 0,
-            Double.POSITIVE_INFINITY, 0 ),
+    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, 0.0,
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Skill Score
      */
 
     CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE,
-            Double.NEGATIVE_INFINITY, 1, 1 ),
+            Double.NEGATIVE_INFINITY, 1.0, 1.0 ),
 
     /**
      * Identifier for a Contingency Table.
@@ -106,37 +110,38 @@ public enum MetricConstants
      * Identifier for Pearson's product-moment correlation coefficient.
      */
 
-    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, -1, 1, 1 ),
+    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, -1.0, 1.0, 1.0 ),
 
     /**
      * Identifier for a Threat Score.
      */
 
-    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0, 1, 1 ),
+    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
 
     /**
      * Identifier for an Equitable Threat Score.
      */
 
-    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, -1 / 3, 1, 1 ),
+    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, -1.0 / 3.0, 1.0, 1.0 ),
 
     /**
      * Identifier for a Frequency Bias.
      */
 
-    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0, Double.POSITIVE_INFINITY, 1 ),
+    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0, Double.POSITIVE_INFINITY, 1.0 ),
 
     /**
      * Identifier for an Index of Agreement.
      */
 
-    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0, 1, 1 ),
+    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
 
     /**
      * Identifier for the Kling-Gupta Efficiency index.
      */
 
-    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1, 1 ),
+    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1.0,
+            1.0 ),
 
     /**
      * Identifier for a Mean Absolute Error.
@@ -163,39 +168,40 @@ public enum MetricConstants
      */
 
     MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY,
-            1, 1 ),
+            1.0, 1.0 ),
 
     /**
      * Identifier for a Mean Square Error Skill Score, normalized.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0, 1, 1 ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, 1.0,
+            1.0 ),
 
     /**
      * Identifier for a Median Error.
      */
 
     MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for a Peirce Skill Score.
      */
 
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE, -1, 1, 1 ),
+            StatisticType.DOUBLE_SCORE, -1.0, 1.0, 1.0 ),
 
     /**
      * Identifier for a Probability Of Detection.
      */
 
-    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0, 1, 1 ),
+    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
 
     /**
      * Identifier for a Probability Of False Detection.
      */
 
-    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0, 1, 0 ),
+    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 0.0 ),
 
     /**
      * Quantile-quantile diagram.
@@ -219,8 +225,9 @@ public enum MetricConstants
      * Identifier for the Relative Operating Characteristic Score.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, -1, 1,
-            1 ),
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, -1.0,
+            1.0,
+            1.0 ),
 
     /**
      * Identifier for the Reliability Diagram.
@@ -232,15 +239,16 @@ public enum MetricConstants
      * Identifier for a Root Mean Square Error.
      */
 
-    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0, Double.POSITIVE_INFINITY, 0 ),
+    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, Double.POSITIVE_INFINITY,
+            0.0 ),
 
     /**
      * Identifier for a Root Mean Square Error normalized by the standard deviation of
      * the left values.
      */
 
-    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0,
-            Double.POSITIVE_INFINITY, 0 ),
+    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0,
+            Double.POSITIVE_INFINITY, 0.0 ),
 
     /**
      * Identifier for the sample size.
@@ -254,40 +262,45 @@ public enum MetricConstants
      * Identifier for a Sum of Square Error.
      */
 
-    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0, Double.POSITIVE_INFINITY, 0 ),
+    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, Double.POSITIVE_INFINITY,
+            0.0 ),
 
     /**
      * Identifier for the Volumetric Efficiency.
      */
 
-    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1, 1 ),
+    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1.0,
+            1.0 ),
 
     /**
      * Identifier for the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED, TimeWindow.DURATION_MIN,
+            TimeWindow.DURATION_MAX, Duration.ZERO ),
 
     /**
      * Identifier for a statistic derived from the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
+    TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            TimeWindow.DURATION_MIN, TimeWindow.DURATION_MAX,
+            Duration.ZERO ),
 
     /**
      * Identifier for the Time-to-Peak Relative Error.
      */
 
     TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED,
-            Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0 ),
+            TimeWindow.DURATION_MIN, TimeWindow.DURATION_MAX,
+            Duration.ZERO ),
 
     /**
      * Identifier for a statistic derived from the Time-to-Peak Relative Error.
      */
 
-    TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
+    TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+            TimeWindow.DURATION_MIN, TimeWindow.DURATION_MAX, Duration.ZERO ),
 
     /**
      * Mean statistic.
@@ -448,22 +461,22 @@ public enum MetricConstants
     private final MetricGroup[] metricGroup;
 
     /**
-     * The minimum value of the metric.
+     * The minimum value of the metric in metric-appropriate units.
      */
 
-    private final double minimum;
+    private final Object minimum;
 
     /**
-     * The maximum value of the metric.
+     * The maximum value of the metric in metric-appropriate units.
      */
 
-    private final double maximum;
+    private final Object maximum;
 
     /**
-     * The optimum value of the metric.
+     * The optimum value of the metric in metric-appropriate units.
      */
 
-    private final double optimum;
+    private final Object optimum;
 
     /**
      * Default constructor
@@ -474,9 +487,9 @@ public enum MetricConstants
         this.inGroup = null;
         this.outGroup = null;
         this.metricGroup = null;
-        this.minimum = Double.NaN;
-        this.maximum = Double.NaN;
-        this.optimum = Double.NaN;
+        this.minimum = null;
+        this.maximum = null;
+        this.optimum = null;
     }
 
     /**
@@ -488,7 +501,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, Double.NaN, Double.NaN, Double.NaN, (MetricGroup[]) null );
+        this( new SampleDataGroup[] { inGroup }, outGroup, null, null, null, (MetricGroup[]) null );
     }
 
     /**
@@ -503,9 +516,9 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup,
                              StatisticType outGroup,
-                             double minimum,
-                             double maximum,
-                             double optimum )
+                             Object minimum,
+                             Object maximum,
+                             Object optimum )
     {
         this( new SampleDataGroup[] { inGroup }, outGroup, minimum, maximum, optimum, (MetricGroup[]) null );
     }
@@ -520,7 +533,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, Double.NaN, Double.NaN, Double.NaN, metricGroup );
+        this( new SampleDataGroup[] { inGroup }, outGroup, null, null, null, metricGroup );
     }
 
     /**
@@ -535,7 +548,7 @@ public enum MetricConstants
                              StatisticType outGroup,
                              MetricGroup... metricGroup )
     {
-        this( inGroups, outGroup, Double.NaN, Double.NaN, Double.NaN, metricGroup );
+        this( inGroups, outGroup, null, null, null, metricGroup );
     }
 
     /**
@@ -551,9 +564,9 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup[] inGroups,
                              StatisticType outGroup,
-                             double minimum,
-                             double maximum,
-                             double optimum,
+                             Object minimum,
+                             Object maximum,
+                             Object optimum,
                              MetricGroup... metricGroup )
     {
         this.inGroup = inGroups;
@@ -575,9 +588,9 @@ public enum MetricConstants
         this.metricGroup = decGroup;
         this.inGroup = null;
         this.outGroup = null;
-        this.minimum = Double.NaN;
-        this.maximum = Double.NaN;
-        this.optimum = Double.NaN;
+        this.minimum = null;
+        this.maximum = null;
+        this.optimum = null;
     }
 
     /**
@@ -721,7 +734,7 @@ public enum MetricConstants
      * @return the minimum value of the metric.
      */
 
-    public double getMinimum()
+    public Object getMinimum()
     {
         return this.minimum;
     }
@@ -730,7 +743,7 @@ public enum MetricConstants
      * @return the maximum value of the metric.
      */
 
-    public double getMaximum()
+    public Object getMaximum()
     {
         return this.maximum;
     }
@@ -739,7 +752,7 @@ public enum MetricConstants
      * @return the optimum value of the metric.
      */
 
-    public double getOptimum()
+    public Object getOptimum()
     {
         return this.optimum;
     }
@@ -752,8 +765,8 @@ public enum MetricConstants
 
     public boolean hasLimits()
     {
-        return ! ( Double.isNaN( this.getMaximum() ) && Double.isNaN( this.getMinimum() )
-                   && Double.isNaN( this.getOptimum() ) );
+        return ! ( Objects.isNull( this.getMaximum() ) && Objects.isNull( this.getMinimum() )
+                   && Objects.isNull( this.getOptimum() ) );
     }
 
     /**

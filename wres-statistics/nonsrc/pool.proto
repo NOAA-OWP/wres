@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "evaluation.proto";
 import "geometry.proto";
 import "time_window.proto";
 import "pairs.proto";

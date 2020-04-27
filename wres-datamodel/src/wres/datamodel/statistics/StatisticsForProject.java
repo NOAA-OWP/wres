@@ -458,7 +458,7 @@ public class StatisticsForProject
     {
         if ( wrapped.isEmpty() )
         {
-            Collections.emptyList();
+            return Collections.emptyList();
         }
 
         List<T> returnMe = new ArrayList<>();

@@ -6,6 +6,8 @@ import "pool.proto";
 import "score_statistic.proto";
 import "diagram_statistic.proto";
 import "boxplot_statistic.proto";
+import "duration_score_statistic.proto";
+import "duration_diagram_statistic.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "StatisticsProto";
@@ -28,4 +30,10 @@ message Statistics
 
     // Zero or more boxplot statistics
     repeated BoxplotStatistic boxplots = 4;
+
+    // Zero or more duration score statistics
+    repeated DurationScoreStatistic duration_scores = 5;
+
+    // Zero or more duration diagram statistics
+    repeated DurationDiagramStatistic duration_diagrams = 6;
 }
