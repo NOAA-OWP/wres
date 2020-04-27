@@ -46,15 +46,19 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeWindow;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
@@ -68,6 +72,9 @@ import wres.statistics.generated.Statistics;
 public class MessageFactoryTest
 {
 
+    private static final String ESP = "ESP";
+    private static final String HEFS = "HEFS";
+    private static final String SQIN = "SQIN";
     private static final Instant TWELFTH_TIME = Instant.parse( "2551-03-20T12:00:00Z" );
     private static final Instant ELEVENTH_TIME = Instant.parse( "2551-03-20T01:00:00Z" );
     private static final Instant TENTH_TIME = Instant.parse( "2551-03-19T12:00:00Z" );
@@ -86,7 +93,7 @@ public class MessageFactoryTest
 
     private static final String VARIABLE_NAME = "Streamflow";
     private static final String FEATURE_NAME = "DRRC2";
-    private static final String UNIT = "CMS";
+    private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
 
     private static final wres.datamodel.time.TimeWindow TIME_WINDOW = wres.datamodel.time.TimeWindow.of( NINTH_TIME,
                                                                                                          TENTH_TIME,
@@ -100,6 +107,18 @@ public class MessageFactoryTest
      */
 
     private List<DoubleScoreStatistic> scores = null;
+
+    /**
+     * Duration scores to serialize.
+     */
+
+    private List<DurationScoreStatistic> durationScores = null;
+
+    /**
+     * Duration scores to serialize.
+     */
+
+    private List<PairedStatistic<Instant, Duration>> durationDiagrams = null;
 
     /**
      * Diagrams to serialize.
@@ -129,7 +148,9 @@ public class MessageFactoryTest
     public void runBeforeEachTest()
     {
         this.scores = this.getScoreStatisticsForOnePool();
+        this.durationScores = this.getDurationScoreStatisticsForOnePool();
         this.diagrams = this.getReliabilityDiagramForOnePool();
+        this.durationDiagrams = this.getDurationDiagramStatisticsForOnePool();
         this.boxplots = this.getBoxPlotsForOnePool();
         this.ensemblePairs = this.getPoolOfEnsemblePairs();
     }
@@ -240,6 +261,70 @@ public class MessageFactoryTest
     }
 
     @Test
+    public void testCreationOfOneStatisticsMessageWithSeveralDurationScores() throws IOException, InterruptedException
+    {
+        // Create a statistics message
+        StatisticsForProject statistics =
+                new StatisticsForProject.Builder().addDurationScoreStatistics( CompletableFuture.completedFuture( this.durationScores ) )
+                                                  .build();
+
+        // Create a statistics message
+        Statistics statisticsOut = MessageFactory.parse( statistics );
+
+        Path path = this.outputDirectory.resolve( "duration_score_statistics.pb3" );
+
+        try ( OutputStream stream =
+                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+        {
+            statisticsOut.writeTo( stream );
+        }
+
+        Statistics statisticsIn = null;
+        try ( InputStream stream =
+                Files.newInputStream( path ) )
+        {
+            statisticsIn = Statistics.parseFrom( stream );
+        }
+
+        assertEquals( statisticsOut, statisticsIn );
+
+        // Delete if succeeded
+        Files.deleteIfExists( path );
+    }
+
+    @Test
+    public void testCreationOfOneStatisticsMessageWithOneDurationDiagram() throws IOException, InterruptedException
+    {
+        // Create a statistics message
+        StatisticsForProject statistics =
+                new StatisticsForProject.Builder().addInstantDurationPairStatistics( CompletableFuture.completedFuture( this.durationDiagrams ) )
+                                                  .build();
+
+        // Create a statistics message
+        Statistics statisticsOut = MessageFactory.parse( statistics );
+
+        Path path = this.outputDirectory.resolve( "duration_diagrams_statistics.pb3" );
+
+        try ( OutputStream stream =
+                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+        {
+            statisticsOut.writeTo( stream );
+        }
+
+        Statistics statisticsIn = null;
+        try ( InputStream stream =
+                Files.newInputStream( path ) )
+        {
+            statisticsIn = Statistics.parseFrom( stream );
+        }
+
+        assertEquals( statisticsOut, statisticsIn );
+
+        // Delete if succeeded
+        Files.deleteIfExists( path );
+    }
+
+    @Test
     public void testCreationOfOneEvaluationStatusMessage() throws IOException
     {
         EvaluationEvent warning = ScaleValidationEvent.of( EventType.WARN, "This is a warning event." );
@@ -294,9 +379,9 @@ public class MessageFactoryTest
         Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( CMS )
                                                              .setTimeScale( timeScale )
                                                              .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
@@ -353,9 +438,9 @@ public class MessageFactoryTest
         Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( CMS )
                                                              .setTimeScale( timeScale )
                                                              .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
@@ -401,9 +486,9 @@ public class MessageFactoryTest
         Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( CMS )
                                                              .setTimeScale( timeScale )
                                                              .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
@@ -509,6 +594,84 @@ public class MessageFactoryTest
         return b.build();
     }
 
+    private List<DurationScoreStatistic> getDurationScoreStatisticsForOnePool()
+    {
+        TimeWindow timeOne =
+                TimeWindow.of( FIRST_TIME,
+                               FIFTH_TIME,
+                               FIRST_TIME,
+                               SEVENTH_TIME,
+                               Duration.ofHours( 1 ),
+                               Duration.ofHours( 18 ) );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
+        Location location = Location.of( "DOLC2" );
+
+        DatasetIdentifier datasetIdentifier =
+                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+
+        StatisticMetadata fakeMetadata =
+                StatisticMetadata.of( SampleMetadata.of( CMS,
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                      null );
+
+        Map<MetricConstants, Duration> fakeOutputs = new EnumMap<>( MetricConstants.class );
+        fakeOutputs.put( MetricConstants.MEAN, Duration.ofHours( 1 ) );
+        fakeOutputs.put( MetricConstants.MEDIAN, Duration.ofHours( 2 ) );
+        fakeOutputs.put( MetricConstants.MAXIMUM, Duration.ofHours( 3 ) );
+
+        return Collections.singletonList( DurationScoreStatistic.of( fakeOutputs, fakeMetadata ) );
+    }
+
+    private List<PairedStatistic<Instant, Duration>> getDurationDiagramStatisticsForOnePool()
+    {
+        TimeWindow timeOne =
+                TimeWindow.of( FIRST_TIME,
+                               FIFTH_TIME,
+                               FIRST_TIME,
+                               SEVENTH_TIME,
+                               Duration.ofHours( 1 ),
+                               Duration.ofHours( 18 ) );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
+        Location location = Location.of( "DOLC2" );
+
+        DatasetIdentifier datasetIdentifier =
+                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+
+        StatisticMetadata fakeMetadata =
+                StatisticMetadata.of( SampleMetadata.of( CMS,
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.TIME_TO_PEAK_ERROR,
+                                      null );
+
+        List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
+        fakeOutputs.add( Pair.of( FIRST_TIME, Duration.ofHours( -2 ) ) );
+        fakeOutputs.add( Pair.of( SECOND_TIME, Duration.ofHours( -1 ) ) );
+        fakeOutputs.add( Pair.of( THIRD_TIME, Duration.ofHours( 0 ) ) );
+        fakeOutputs.add( Pair.of( FOURTH_TIME, Duration.ofHours( 1 ) ) );
+        fakeOutputs.add( Pair.of( FIFTH_TIME, Duration.ofHours( 2 ) ) );
+
+        return Collections.singletonList( PairedStatistic.of( fakeOutputs, fakeMetadata ) );
+    }
+
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0, Instant t1 )
     {
         Map<ReferenceTimeType, Instant> times = new TreeMap<>();
@@ -519,7 +682,7 @@ public class MessageFactoryTest
                                       TimeScale.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
-                                      UNIT );
+                                      CMS.getUnit() );
     }
 
 }
