@@ -520,6 +520,13 @@ project(':wres-statistics')
        	    from zipTree( zipFile )
             into buildDir
         }
+        else if ( isEl7Linux() )
+        {
+            // Special case, RHEL7/CentOS7 uses old glibc, use checked-in flatc.
+            // Remove this when RHEL7/CentOS7 is retired, below should work.
+            from "${project.projectDir}/bin/flatc"
+            into "${buildDir}/bin"
+        }
         else if( isLinux() )
         {
             String packedSource = "${buildDir}/flatbuffers-compiler-" + compilerVersion + "-distribution-linux.tar.gz" 
@@ -613,6 +620,12 @@ boolean isWindows()
 boolean isLinux()
 {
     return System.properties['os.name'].toLowerCase().contains( 'linux' );
+}
+
+// RHEL7 or CentOS7 GNU/Linux?
+boolean isEl7Linux()
+{
+    return System.properties['os.name'].toLowerCase().contains( 'linux' ) && System.properties['os.version'].toLowerCase().contains( 'el7' );
 }
 
 // Mac OS?
