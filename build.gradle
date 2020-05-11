@@ -498,6 +498,14 @@ project(':wres-statistics')
                        .start()
                        .waitFor();
             }
+            
+            // Confirm that the sources were generated
+            List<String> generated = new FileNameFinder().getFileNames("${project.projectDir}/src/main/java/wres/statistics/generated/flatbuffers","*.java");
+
+            if( generated.isEmpty() )
+            {
+                throw new GradleException( "Failed to generate the java sources from the flatbuffer schema files." );
+            }           
         }
     }
     
