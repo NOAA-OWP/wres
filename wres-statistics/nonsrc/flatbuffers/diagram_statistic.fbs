@@ -1,0 +1,22 @@
+// Generated from diagram_statistic.proto
+
+include "diagram_metric.fbs";
+include "metric_name.fbs";
+include "threshold.fbs";
+
+namespace wres.statistics.generated.flatbuffers;
+
+table DiagramStatistic {
+  metric:wres.statistics.generated.flatbuffers.DiagramMetric;
+  event_threshold:wres.statistics.generated.flatbuffers.Threshold;
+  decision_threshold:wres.statistics.generated.flatbuffers.Threshold;
+  statistics:[wres.statistics.generated.flatbuffers.DiagramStatistic_.DiagramStatisticComponent];
+}
+
+namespace wres.statistics.generated.flatbuffers.DiagramStatistic_;
+
+table DiagramStatisticComponent {
+  name:wres.statistics.generated.flatbuffers.DiagramMetric_.DiagramMetricComponent_.DiagramComponentName;
+  values:[double];
+}
+

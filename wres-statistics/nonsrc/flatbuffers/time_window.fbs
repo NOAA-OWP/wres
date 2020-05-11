@@ -1,0 +1,18 @@
+// Generated from time_window.proto
+
+include "duration.fbs";
+include "timestamp.fbs";
+include "reference_time.fbs";
+
+namespace wres.statistics.generated.flatbuffers;
+
+table TimeWindow {
+  earliest_reference_time:wres.statistics.generated.flatbuffers.Timestamp;
+  latest_reference_time:wres.statistics.generated.flatbuffers.Timestamp;
+  earliest_valid_time:wres.statistics.generated.flatbuffers.Timestamp;
+  latest_valid_time:wres.statistics.generated.flatbuffers.Timestamp;
+  earliest_lead_duration:wres.statistics.generated.flatbuffers.Duration;
+  latest_lead_duration:wres.statistics.generated.flatbuffers.Duration;
+  reference_time_type:[wres.statistics.generated.flatbuffers.ReferenceTime_.ReferenceTimeType];
+}
+

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +25,10 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
@@ -71,7 +76,6 @@ import wres.statistics.generated.Statistics;
 
 public class MessageFactoryTest
 {
-
     private static final String ESP = "ESP";
     private static final String HEFS = "HEFS";
     private static final String SQIN = "SQIN";
@@ -359,6 +363,43 @@ public class MessageFactoryTest
         Files.deleteIfExists( path );
     }
 
+    @Test
+    public void testFlatbufferBuildingVersusProtobuf() throws InvalidProtocolBufferException
+    {
+        // Create a general-purpose builder
+        FlatBufferBuilder builder = new FlatBufferBuilder();
+
+        // Pass the general purpose builder to a class-specific helper that populates the builder
+        // with seconds and nanoseconds and returns the offset or position within the overall structure
+        int offset = wres.statistics.generated.flatbuffers.Timestamp.createTimestamp( builder, 123, 456 );
+
+        // Finish building at the last offset
+        builder.finish( offset );
+
+        // Serialize a byte array from the finished time-stamp
+        byte[] flatBytes = builder.sizedByteArray();
+        ByteBuffer flatBytesBuffer = ByteBuffer.wrap( flatBytes );
+
+        // De-serialize the time-stamp from a byte buffer
+        wres.statistics.generated.flatbuffers.Timestamp flatStamp =
+                wres.statistics.generated.flatbuffers.Timestamp.getRootAsTimestamp( flatBytesBuffer );
+
+        // Build a proto time-stamp
+        Timestamp protoStamp = Timestamp.newBuilder()
+                                        .setSeconds( 123 )
+                                        .setNanos( 456 )
+                                        .build();
+
+        // Serialize to a byte array
+        byte[] protoBytes = protoStamp.toByteArray();
+        
+        //De-serialize from the byte array
+        Timestamp protoStampFromBytes = Timestamp.parseFrom( protoBytes );
+
+        assertEquals( flatStamp.seconds(), protoStampFromBytes.getSeconds() );
+        assertEquals( flatStamp.nanos(), protoStampFromBytes.getNanos() );
+    }
+    
     /**
      * Returns a {@link List} containing several {@link DoubleScoreStatistic} for one pool.
      * 
@@ -683,6 +724,6 @@ public class MessageFactoryTest
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       CMS.getUnit() );
-    }
-
+    }    
+    
 }

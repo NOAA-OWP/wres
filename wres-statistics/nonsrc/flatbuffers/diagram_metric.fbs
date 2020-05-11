@@ -1,0 +1,34 @@
+// Generated from diagram_metric.proto
+
+include "metric_name.fbs";
+
+namespace wres.statistics.generated.flatbuffers.DiagramMetric_.DiagramMetricComponent_;
+
+enum DiagramComponentName : int {
+  UNKNOWN = 0,
+  PROBABILITY_OF_FALSE_DETECTION = 1,
+  PROBABILITY_OF_DETECTION = 2,
+  RANK_ORDER = 3,
+  FORECAST_PROBABILITY = 4,
+  OBSERVED_RELATIVE_FREQUENCY = 5,
+  OBSERVED_QUANTILES = 6,
+  PREDICTED_QUANTILES = 7,
+  SAMPLE_SIZE = 8,
+}
+
+namespace wres.statistics.generated.flatbuffers;
+
+table DiagramMetric {
+  name:wres.statistics.generated.flatbuffers.MetricName;
+  components:[wres.statistics.generated.flatbuffers.DiagramMetric_.DiagramMetricComponent];
+}
+
+namespace wres.statistics.generated.flatbuffers.DiagramMetric_;
+
+table DiagramMetricComponent {
+  name:wres.statistics.generated.flatbuffers.DiagramMetric_.DiagramMetricComponent_.DiagramComponentName;
+  units:string;
+  minimum:double;
+  maximum:double;
+}
+

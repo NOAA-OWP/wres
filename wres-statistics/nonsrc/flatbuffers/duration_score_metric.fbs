@@ -1,0 +1,33 @@
+// Generated from duration_score_metric.proto
+
+include "duration.fbs";
+include "metric_name.fbs";
+
+namespace wres.statistics.generated.flatbuffers.DurationScoreMetric_.DurationScoreMetricComponent_;
+
+enum DurationScoreComponentName : int {
+  UNKNOWN = 0,
+  MEAN = 1,
+  MEDIAN = 2,
+  MINIMUM = 3,
+  MAXIMUM = 4,
+  STANDARD_DEVIATION = 5,
+  MEAN_ABSOLUTE = 6,
+}
+
+namespace wres.statistics.generated.flatbuffers;
+
+table DurationScoreMetric {
+  name:wres.statistics.generated.flatbuffers.MetricName;
+  components:[wres.statistics.generated.flatbuffers.DurationScoreMetric_.DurationScoreMetricComponent];
+}
+
+namespace wres.statistics.generated.flatbuffers.DurationScoreMetric_;
+
+table DurationScoreMetricComponent {
+  name:wres.statistics.generated.flatbuffers.DurationScoreMetric_.DurationScoreMetricComponent_.DurationScoreComponentName;
+  optimum:wres.statistics.generated.flatbuffers.Duration;
+  minimum:wres.statistics.generated.flatbuffers.Duration;
+  maximum:wres.statistics.generated.flatbuffers.Duration;
+}
+

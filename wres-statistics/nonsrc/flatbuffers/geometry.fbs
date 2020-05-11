@@ -1,0 +1,10 @@
+// Generated from geometry.proto
+
+namespace wres.statistics.generated.flatbuffers;
+
+table Geometry {
+  latitude:double;
+  longitude:double;
+  name:string;
+}
+

@@ -1,0 +1,11 @@
+// Generated from season.proto
+
+namespace wres.statistics.generated.flatbuffers;
+
+table Season {
+  start_month:int;
+  start_day:int;
+  end_month:int;
+  end_day:int;
+}
+

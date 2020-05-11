@@ -1,0 +1,22 @@
+// Generated from score_statistic.proto
+
+include "metric_name.fbs";
+include "score_metric.fbs";
+include "threshold.fbs";
+
+namespace wres.statistics.generated.flatbuffers;
+
+table ScoreStatistic {
+  metric:wres.statistics.generated.flatbuffers.ScoreMetric;
+  event_threshold:wres.statistics.generated.flatbuffers.Threshold;
+  decision_threshold:wres.statistics.generated.flatbuffers.Threshold;
+  statistics:[wres.statistics.generated.flatbuffers.ScoreStatistic_.ScoreStatisticComponent];
+}
+
+namespace wres.statistics.generated.flatbuffers.ScoreStatistic_;
+
+table ScoreStatisticComponent {
+  name:wres.statistics.generated.flatbuffers.ScoreMetric_.ScoreMetricComponent_.ScoreComponentName;
+  value:double;
+}
+

@@ -1,0 +1,25 @@
+// Generated from boxplot_metric.proto
+
+include "metric_name.fbs";
+
+namespace wres.statistics.generated.flatbuffers.BoxplotMetric_;
+
+enum LinkedValueType : int {
+  UNKNOWN = 0,
+  OBSERVED_VALUE = 1,
+  FORECAST_VALUE = 2,
+  ENSEMBLE_MEAN = 3,
+}
+
+namespace wres.statistics.generated.flatbuffers;
+
+table BoxplotMetric {
+  name:wres.statistics.generated.flatbuffers.MetricName;
+  quantiles:[double];
+  linked_value_type:wres.statistics.generated.flatbuffers.BoxplotMetric_.LinkedValueType;
+  units:string;
+  optimum:double;
+  minimum:double;
+  maximum:double;
+}
+
