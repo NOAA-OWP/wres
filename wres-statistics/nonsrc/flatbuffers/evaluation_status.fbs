@@ -1,0 +1,39 @@
+// Generated from evaluation_status.proto
+
+include "timestamp.fbs";
+
+namespace wres.statistics.generated.flatbuffers.EvaluationStatus_;
+
+enum CompletionStatus : int {
+  UNKNOWN = 0,
+  ONGOING = 1,
+  COMPLETE_REPORTED_SUCCESS = 2,
+  COMPLETE_REPORTED_FAILURE = 3,
+}
+
+namespace wres.statistics.generated.flatbuffers.EvaluationStatus_.EvaluationStatusEvent_;
+
+enum StatusMessageType : int {
+  UNDEFINED = 0,
+  ERROR = 1,
+  WARN = 2,
+  INFO = 3,
+  DEBUG = 4,
+}
+
+namespace wres.statistics.generated.flatbuffers;
+
+table EvaluationStatus {
+  evaluation_start_time:wres.statistics.generated.flatbuffers.Timestamp;
+  evaluation_end_time:wres.statistics.generated.flatbuffers.Timestamp;
+  completion_status:wres.statistics.generated.flatbuffers.EvaluationStatus_.CompletionStatus;
+  status_events:[wres.statistics.generated.flatbuffers.EvaluationStatus_.EvaluationStatusEvent];
+}
+
+namespace wres.statistics.generated.flatbuffers.EvaluationStatus_;
+
+table EvaluationStatusEvent {
+  event_type:wres.statistics.generated.flatbuffers.EvaluationStatus_.EvaluationStatusEvent_.StatusMessageType;
+  event_message:string;
+}
+

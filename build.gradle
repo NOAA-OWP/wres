@@ -50,6 +50,9 @@ plugins
 
     // To discover library versions with known vulnerabilities
     id 'org.owasp.dependencycheck' version '5.3.2'
+    
+    // Task to assist in downloading artifacts
+    id "de.undercouch.download" version "4.0.4"
 }
 
 repositories
@@ -448,12 +451,119 @@ project(':wres-statistics')
             }
         }
     }
-
+    
     javadoc
     {
         // Protobuf does not appear to generate javadoc, so neither will we.
         excludes = ['**/generated/*.java']
     }
+
+    // Version of the flatbuffer compiler to use
+    String compilerVersion = '1.12.0.1'
+
+    // Create N java sources from N flatbuffer (fbs) sources
+    task createJavaSourcesFromFlatbuffers( dependsOn: 'prepareFlatbufferCompiler' ) {
+                
+        doFirst
+        {
+            // Delete any existing sources generated from fbs only
+            File generatedPath = new File("${project.projectDir}/src/main/java/wres/statistics/generated/flatbuffers"); 
+            generatedPath.deleteDir();
+        }
+        doLast
+        {
+            // Compile each fbs source into a java source
+            String sources = "${project.projectDir}/nonsrc/flatbuffers";
+            File baseDir = new File(sources);
+            List<File> files = baseDir.listFiles();
+            // The compiler, which was downloaded and unpacked to ${buildDir}/bin 
+            String flatcPath = "${buildDir}/bin/flatc";
+            String generatedPathString = "${project.projectDir}/src/main/java";
+            
+            // Iterate the fbs sources
+            files.each { File nextSourcePath ->
+                String sourceString = nextSourcePath.toString();
+                // Create java sources and wait until this process is complete, redirecting output
+                ProcessBuilder builder = new ProcessBuilder( flatcPath, '-o', generatedPathString, sourceString, '--java' );
+                builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                       .start()
+                       .waitFor();
+            }
+        }
+    }
+    
+    // Prepares the flatbuffer compiler by downloading and unzipping, as needed
+    task prepareFlatbufferCompiler( type: Copy, dependsOn: 'downloadFlatbufferCompiler' ) {
+    
+        if( isWindows() )
+        {
+            String packedSource = "${buildDir}/flatbuffers-compiler-" + compilerVersion + "-distribution-windows.zip" 
+       	    File zipFile = file( packedSource )
+       	    from zipTree( zipFile )
+            into buildDir
+        }
+        else if( isLinux() )
+        {
+            String packedSource = "${buildDir}/flatbuffers-compiler-" + compilerVersion + "-distribution-linux.tar.gz" 
+            from tarTree( resources.gzip( packedSource ) )
+            into buildDir
+        }
+        else if( isMac() )
+        {
+            String packedSource = "${buildDir}/flatbuffers-compiler-" + compilerVersion + "-distribution-osx.tar.gz" 
+            from tarTree( resources.gzip( packedSource ) )
+            into buildDir
+        }
+        else
+        {
+            String name = System.properties[ 'os.name' ];
+            throw new GradleException( "Unrecognized operating system '" + name + "'." );
+        }
+    }
+    
+    // Download the appropriate executable for the OS, if required
+    task downloadFlatbufferCompiler( type: Download ) {
+
+        if ( isWindows() ) {
+            String url = "https://repo1.maven.org/maven2/com/github/davidmoten/flatbuffers-compiler/" + 
+                          compilerVersion + 
+                          "/flatbuffers-compiler-" + 
+                          compilerVersion + 
+                          "-distribution-windows.zip"
+            src url
+        }
+        else if( isLinux() )
+        {
+            String url = "https://repo1.maven.org/maven2/com/github/davidmoten/flatbuffers-compiler/" + 
+                          compilerVersion + 
+                          "/flatbuffers-compiler-" + 
+                          compilerVersion + 
+                          "-distribution-linux.tar.gz"
+            src url
+        } 
+        else if( isMac() )
+        {
+            String url = "https://repo1.maven.org/maven2/com/github/davidmoten/flatbuffers-compiler/" + 
+                          compilerVersion + 
+                          "/flatbuffers-compiler-" + 
+                          compilerVersion + 
+                          "-distribution-osx.tar.gz"
+            src url
+        }
+        else
+        {
+            String name = System.properties[ 'os.name' ];
+            throw new GradleException( "Unrecognized operating system '" + name + "'." );
+        }
+       
+        // TODO: download checksum, compute local checksum, assert equivalence
+        
+        dest buildDir
+        overwrite false
+    }
+    
+    // Create generated java sources before compiling java classes
+    compileJava.dependsOn createJavaSourcesFromFlatbuffers
 
     dependencies
     {
@@ -461,12 +571,36 @@ project(':wres-statistics')
         compile 'com.google.protobuf:protobuf-java:3.11.4'
         compile project(':wres-datamodel')
         compile project(':wres-config')
+        
+        // Flatbuffers
+        compile group: 'com.google.flatbuffers', name: 'flatbuffers-java', version: '1.12.0'
 
         testCompile group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.0.0-beta-1'
         testCompile 'junit:junit:4.13'
         testCompile project(':wres-datamodel')
         testCompile project(':wres-config')
+
+        // Flatbuffers for testing
+        testCompile  group: 'com.google.flatbuffers', name: 'flatbuffers-java', version: '1.12.0'
     }
+}
+
+// Windows OS?
+boolean isWindows()
+{
+    return System.properties['os.name'].toLowerCase().contains( 'windows' );
+}
+
+// Linux OS?
+boolean isLinux()
+{
+    return System.properties['os.name'].toLowerCase().contains( 'linux' );
+}
+
+// Mac OS?
+boolean isMac()
+{
+    return System.properties['os.name'].toLowerCase().contains( 'mac' );
 }
 
 project(':wres-vis')

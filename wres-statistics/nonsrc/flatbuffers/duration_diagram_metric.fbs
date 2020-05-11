@@ -1,0 +1,14 @@
+// Generated from duration_diagram_metric.proto
+
+include "duration.fbs";
+include "metric_name.fbs";
+
+namespace wres.statistics.generated.flatbuffers;
+
+table DurationDiagramMetric {
+  name:wres.statistics.generated.flatbuffers.MetricName;
+  optimum:wres.statistics.generated.flatbuffers.Duration;
+  minimum:wres.statistics.generated.flatbuffers.Duration;
+  maximum:wres.statistics.generated.flatbuffers.Duration;
+}
+

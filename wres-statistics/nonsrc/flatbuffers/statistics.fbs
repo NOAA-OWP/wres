@@ -1,0 +1,33 @@
+// Generated from statistics.proto
+
+include "boxplot_metric.fbs";
+include "boxplot_statistic.fbs";
+include "diagram_metric.fbs";
+include "diagram_statistic.fbs";
+include "duration_diagram_metric.fbs";
+include "duration_diagram_statistic.fbs";
+include "duration_score_metric.fbs";
+include "duration_score_statistic.fbs";
+include "geometry.fbs";
+include "duration.fbs";
+include "timestamp.fbs";
+include "metric_name.fbs";
+include "pairs.fbs";
+include "pool.fbs";
+include "reference_time.fbs";
+include "score_metric.fbs";
+include "score_statistic.fbs";
+include "threshold.fbs";
+include "time_window.fbs";
+
+namespace wres.statistics.generated.flatbuffers;
+
+table Statistics {
+  pool:wres.statistics.generated.flatbuffers.Pool;
+  scores:[wres.statistics.generated.flatbuffers.ScoreStatistic];
+  diagrams:[wres.statistics.generated.flatbuffers.DiagramStatistic];
+  boxplots:[wres.statistics.generated.flatbuffers.BoxplotStatistic];
+  duration_scores:[wres.statistics.generated.flatbuffers.DurationScoreStatistic];
+  duration_diagrams:[wres.statistics.generated.flatbuffers.DurationDiagramStatistic];
+}
+

@@ -1,0 +1,19 @@
+// Generated from boxplot_statistic.proto
+
+include "boxplot_metric.fbs";
+include "metric_name.fbs";
+
+namespace wres.statistics.generated.flatbuffers;
+
+table BoxplotStatistic {
+  metric:wres.statistics.generated.flatbuffers.BoxplotMetric;
+  statistics:[wres.statistics.generated.flatbuffers.BoxplotStatistic_.Box];
+}
+
+namespace wres.statistics.generated.flatbuffers.BoxplotStatistic_;
+
+table Box {
+  linked_value:double;
+  quantiles:[double];
+}
+
