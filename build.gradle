@@ -492,20 +492,21 @@ project(':wres-statistics')
             // Iterate the fbs sources
             files.each { File nextSourcePath ->
                 String sourceString = nextSourcePath.toString();
-                // Create java sources and wait until this process is complete, redirecting output
-                ProcessBuilder builder = new ProcessBuilder( flatcPath, '-o', generatedPathString, sourceString, '--java' );
-                builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
-                       .start()
-                       .waitFor();
-            }
-            
-            // Confirm that the sources were generated
-            List<String> generated = new FileNameFinder().getFileNames("${project.projectDir}/src/main/java/wres/statistics/generated/flatbuffers","*.java");
 
-            if( generated.isEmpty() )
-            {
-                throw new GradleException( "Failed to generate the java sources from the flatbuffer schema files." );
-            }           
+                // Create java sources and wait until this process is complete, redirecting output
+                ProcessBuilder builder = new ProcessBuilder( flatcPath, '-o', generatedPathString, sourceString, '--java' );              
+                int exitCode = builder.redirectErrorStream(true)
+                                      .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                                      .start()
+                                      .waitFor();
+                                      
+                if( exitCode !=0 )
+                {
+                    String commandString = flatcPath + ' -o ' + generatedPathString + ' ' + sourceString + ' --java';
+                
+                    throw new GradleException( "Received a non-zero exit code while executing: " + commandString );
+                }
+            }      
         }
     }
     
