@@ -469,6 +469,15 @@ project(':wres-statistics')
             // Delete any existing sources generated from fbs only
             File generatedPath = new File("${project.projectDir}/src/main/java/wres/statistics/generated/flatbuffers"); 
             generatedPath.deleteDir();
+            
+            // Confirm that the flatc compiler was downloaded and unpacked
+            List<String> files = new FileNameFinder().getFileNames("${buildDir}/bin","flatc*");
+
+            if( files.isEmpty() )
+            {
+                throw new GradleException( "Could not locate the flatbuffer compiler at the expected path: " 
+                                             + "${buildDir}/bin" );
+            }
         }
         doLast
         {
