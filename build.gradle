@@ -520,11 +520,18 @@ project(':wres-statistics')
        	    from zipTree( zipFile )
             into buildDir
         }
+        else if ( isEl6Linux() )
+        {
+            // Special case, RHEL6/CentOS6 uses old glibc, use checked-in flatc.
+            // Remove this when RHEL6/CentOS6 is retired, isLinux() should work.
+            from "${project.projectDir}/bin/el6/flatc"
+            into "${buildDir}/bin"
+        }
         else if ( isEl7Linux() )
         {
             // Special case, RHEL7/CentOS7 uses old glibc, use checked-in flatc.
             // Remove this when RHEL7/CentOS7 is retired, below should work.
-            from "${project.projectDir}/bin/flatc"
+            from "${project.projectDir}/bin/el7/flatc"
             into "${buildDir}/bin"
         }
         else if( isLinux() )
@@ -622,10 +629,44 @@ boolean isLinux()
     return System.properties['os.name'].toLowerCase().contains( 'linux' );
 }
 
+// Return /etc/system-release file as a string if readable, else empty string.
+String readElInfo()
+{
+    def elInfoPath = Paths.get( '/etc/system-release' );
+    def elInfoReadable = Files.isReadable( elInfoPath );
+
+    if ( elInfoReadable )
+    {
+        return Files.readString( elInfoPath );
+    }
+
+    return '';
+}
+
+// RHEL6 or CentOS6 GNU/Linux?
+boolean isEl6Linux()
+{
+    if ( System.properties['os.name'].toLowerCase()
+                                     .contains( 'linux' ) )
+    {
+        return readElInfo().toLowerCase()
+                           .contains( 'release 6' );
+    }
+
+    return false;
+}
+
 // RHEL7 or CentOS7 GNU/Linux?
 boolean isEl7Linux()
 {
-    return System.properties['os.name'].toLowerCase().contains( 'linux' ) && System.properties['os.version'].toLowerCase().contains( 'el7' );
+    if ( System.properties['os.name'].toLowerCase()
+                                     .contains( 'linux' ) )
+    {
+        return readElInfo().toLowerCase()
+	                   .contains( 'release 7' );
+    }
+
+    return false;
 }
 
 // Mac OS?
