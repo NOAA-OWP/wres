@@ -50,9 +50,9 @@ public class ReaderFactory {
 			case DATACARD:
                 source = new DatacardSource( systemSettings,
                                              database,
-                                             dataSourcesCache,
                                              featuresCache,
                                              variablesCache,
+                                             ensemblesCache,
                                              measurementUnitsCache,
                                              projectConfig,
                                              dataSource,

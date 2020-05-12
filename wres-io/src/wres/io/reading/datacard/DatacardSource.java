@@ -5,74 +5,64 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
+import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
-import wres.io.reading.SourceCompleter;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.Strings;
 
-/**
- * @author Qing Zhu
- *
- */
 public class DatacardSource extends BasicSource
 {
-	private static final Double[] IGNORABLE_VALUES = {-998.0, -999.0, -9999.0};
+    private static final Set<Double> IGNORABLE_VALUES = Set.of( -998.0, -999.0, -9999.0 );
 
 	private final SystemSettings systemSettings;
 	private final Database database;
-	private final DataSources dataSourcesCache;
 	private final Features featuresCache;
 	private final Variables variablesCache;
+    private final Ensembles ensemblesCache;
 	private final MeasurementUnits measurementUnitsCache;
 	private final DatabaseLockManager lockManager;
-    private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
 
-    private String currentLocationId;
-
-    private boolean inChargeOfIngest;
 
 	/**
 	 * @param systemSettings The system settings to use.
 	 * @param database The database to use.
-	 * @param dataSourcesCache The data sources cache to use.
 	 * @param featuresCache The features cache to use.
 	 * @param variablesCache The variables cache to use.
+	 * @param ensemblesCache The ensembles cache to use.
 	 * @param measurementUnitsCache The measurement units cache to use.
      * @param projectConfig the ProjectConfig causing ingest
      * @param dataSource the data source information
@@ -80,9 +70,9 @@ public class DatacardSource extends BasicSource
 	 */
     public DatacardSource( SystemSettings systemSettings,
 						   Database database,
-						   DataSources dataSourcesCache,
 						   Features featuresCache,
 						   Variables variablesCache,
+                           Ensembles ensemblesCache,
 						   MeasurementUnits measurementUnitsCache,
 						   ProjectConfig projectConfig,
                            DataSource dataSource,
@@ -91,8 +81,8 @@ public class DatacardSource extends BasicSource
         super( projectConfig, dataSource );
         this.systemSettings = systemSettings;
 		this.database = database;
-		this.dataSourcesCache = dataSourcesCache;
 		this.featuresCache = featuresCache;
+        this.ensemblesCache = ensemblesCache;
 		this.variablesCache = variablesCache;
 		this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
@@ -106,11 +96,6 @@ public class DatacardSource extends BasicSource
 	private Database getDatabase()
 	{
 		return this.database;
-	}
-
-	private DataSources getDataSourcesCache()
-	{
-		return this.dataSourcesCache;
 	}
 
 	private Features getFeaturesCache()
@@ -128,19 +113,29 @@ public class DatacardSource extends BasicSource
 		return this.measurementUnitsCache;
 	}
 
-	private void setMeasurementUnitStr(String str)
+    private Ensembles getEnsemblesCache()
     {
-        this.measurementUnitStr = str;
-    }
-    
-    private String getMeasurementUnitStr()
-    {
-        return this.measurementUnitStr;
+        return this.ensemblesCache;
     }
 
-    private void setTimeInterval(String interval)
+    private DatabaseLockManager getLockManager()
     {
-        this.timeInterval = Integer.parseInt(interval.trim());
+        return this.lockManager;
+    }
+
+    private Duration getTimeStep()
+    {
+        return this.timeStep;
+    }
+
+    /**
+     * @param interval A string containing integer hours.
+     */
+    private void setTimeStep( String interval )
+    {
+        String stripped = interval.strip();
+        int hours = Integer.parseInt( stripped );
+        this.timeStep = Duration.ofHours( hours );
     }
 
     private int getFirstMonth()
@@ -182,56 +177,20 @@ public class DatacardSource extends BasicSource
 	@Override
     protected List<IngestResult> saveObservation() throws IOException
     {
-        int id;
-
-        try
-        {
-            // This sets inChargeOfIngest (there may be a better way to do it).
-            id = this.getSourceID();
-        }
-        catch ( SQLException se )
-        {
-            throw new IngestException( "While retrieving source ID:", se );
-        }
-
-        Database database = this.getDatabase();
-        SourceCompletedDetails completedDetails =
-				new SourceCompletedDetails( database, this.currentSourceID );
-
-        if ( !this.inChargeOfIngest )
-        {
-            boolean wasCompleted;
-
-            try
-            {
-                wasCompleted = completedDetails.wasCompleted();
-            }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Failed to check if source "
-                                           + this.getFilename()
-                                           + " was completed using id "
-                                           + this.currentSourceID + ".", se );
-            }
-
-            // Yield to another ingester task, say it was already started.
-            return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                    this.getDataSource(),
-                                                    id,
-                                                    true,
-                                                    !wasCompleted );
-        }
-
 		Path path = Paths.get(getFilename());
-			
+        String variableName = null;
+        String unit = null;
+        String featureName = null;
+        SortedMap<Instant,Double> values = new TreeMap<>();
+        int lineNumber = 1;
+
 		//Datacard reader.
 		try (BufferedReader reader = Files.newBufferedReader(path))
 		{
 			String line;
-			int lineNumber = 1;
 			int obsValColWidth = 0;
 			int lastColIdx;
-			
+
 			//Skip comment lines.  It is assumed that comments only exist at the beginning of the file, which
 			//I believe is consistent with format requirements.
 		    while ((line = reader.readLine()) != null && line.startsWith("$"))
@@ -244,35 +203,45 @@ public class DatacardSource extends BasicSource
             //Process the first non-comment line if found, which is one of two header lines.
             if (line != null)
             {
+                // Variable name
+                variableName = line.substring( 14, 18 )
+                                   .strip();
                 //Store measurement unit, which is to be processed later.
-                setMeasurementUnitStr(line.substring( 24, 28 ).trim());
-                
+                unit = line.substring( 24, 28 )
+                           .strip();
+
                 //Process time interval.
-                setTimeInterval(line.substring(29, 31));
+                setTimeStep( line.substring( 29, 31) );
                 if ( line.length() > 45 )
                 {
                     //Location id.  Currently using only the first five chars, trimmed.  Trimming is dangerous.
-                    String locationId = line.substring( 34, 45 );
-                    String lid = locationId.substring( 0, 5 )
-                                           .trim();
-                    setCurrentLocationId( lid );
+                    String locationId = line.substring( 34, 45 )
+                                            .strip();
+                    featureName = locationId.substring( 0, 5 )
+                                            .strip();
+
+                    if ( !locationId.equalsIgnoreCase( featureName ) )
+                    {
+                        LOGGER.warn( "Treating location name '{}' as '{}'.",
+                                     locationId, featureName );
+                    }
 
                     //Check for conflict between found location id and ids specified in configuration.
                     if ( getSpecifiedLocationID() != null
                          && !getSpecifiedLocationID().isEmpty()
-                         && !lid.isEmpty()
-                         && !getSpecifiedLocationID().equalsIgnoreCase( lid ) )
+                         && !featureName.isEmpty()
+                         && !getSpecifiedLocationID().equalsIgnoreCase( featureName ) )
                     {
-                        String message = "Location identifier " + lid + " found"
-                                         + " in the file "
-                                         + this.getAbsoluteFilename()
+                        String message = "Location name '" + featureName
+                                         + "' found in "
+                                         + this.getFilename()
                                          + " does not match what was specified"
-                                         + " in the configuration "
+                                         + " in the configuration: "
                                          + getSpecifiedLocationID()
                                          + ". Please remove the attribute with "
                                          + getSpecifiedLocationID()
-                                         + " from the config or change it to "
-                                         + lid + ".";
+                                         + " from the config or change it to '"
+                                         + featureName + "'.";
                         throw new ProjectConfigException( getDataSourceConfig(),
                                                           message );
                     }
@@ -281,16 +250,16 @@ public class DatacardSource extends BasicSource
                 if ( getSpecifiedLocationID() != null
                      && !getSpecifiedLocationID().isEmpty() )
                 {
-                    setCurrentLocationId( getSpecifiedLocationID() );
+                    featureName = getSpecifiedLocationID();
                 }
-                else if ( getCurrentLocationId() == null
-                          || getCurrentLocationId().isEmpty() )
+                else if ( featureName == null
+                          || featureName.isEmpty() )
                 {
-                    String message = "Could not find location ID in file "
-                                     + this.getAbsoluteFilename()
-									 + " nor was it specified in the project "
-									 + "configuration. Please specify the lid "
-									 + "in the source.";
+                    String message = "Could not find feature name in "
+                                     + this.getFilename()
+                                     + " nor was it specified in the project "
+                                     + "configuration. Please specify the "
+                                     + "feature name in the source config.";
                     throw new ProjectConfigException( getDataSourceConfig(),
 													  message );
                 }
@@ -357,10 +326,9 @@ public class DatacardSource extends BasicSource
                                  + "zoneOffset for this data file.";
                 throw new ProjectConfigException( source, message );
             }
-            OffsetDateTime offsetDateTime = localDateTime.atOffset( offset );
-            LocalDateTime utcDateTime =
-                    offsetDateTime.withOffsetSameInstant( ZoneOffset.UTC )
-                                  .toLocalDateTime();
+
+            Instant validDatetime = localDateTime.atOffset( offset )
+                                                 .toInstant();
 
 			//Process the data lines one at a time.
 			while ((line = reader.readLine()) != null)
@@ -397,7 +365,7 @@ public class DatacardSource extends BasicSource
 
                             if (this.valueIsIgnorable( actualValue ) || this.valueIsMissing( actualValue ))
                             {
-                                actualValue = null;
+                                actualValue = MissingValues.DOUBLE;
                             }
                         }
                         catch ( NumberFormatException nfe )
@@ -411,20 +379,9 @@ public class DatacardSource extends BasicSource
                             throw new InvalidInputDataException( message, nfe );
                         }
 
-                        utcDateTime = utcDateTime.plusHours( timeInterval );
+                        validDatetime = validDatetime.plus( this.getTimeStep() );
 
-                        Pair<CountDownLatch,CountDownLatch> synchronizer =
-                                IngestedValues.observed( actualValue )
-                                              .at( utcDateTime )
-                                              .measuredIn( this.getMeasurementID() )
-                                              // Default is missing time scale: see #59536
-                                              .scaleOf( null )
-                                              .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
-                                              .inSource( this.getSourceID() )
-                                              .forVariableAndFeatureID( this.getVariableFeatureID() )
-                                              .add( this.getSystemSettings(),
-													this.getDatabase() );
-                        this.latches.add( synchronizer );
+                        values.put( validDatetime, actualValue );
                     }
                     else
 					{
@@ -434,119 +391,44 @@ public class DatacardSource extends BasicSource
 				} //end of loop for one value line 
 			} //end of loop for all value lines
 		}
-        catch ( SQLException e )
+
+        if ( LOGGER.isInfoEnabled() )
         {
-            throw new IngestException( "Metadata used to save Datacard data could not be loaded.", e );
+            LOGGER.info( "Parsed timeseries from '{}'", this.getFilename() );
         }
 
-		LOGGER.debug("Finished Parsing '{}'", this.getFilename());
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
+                Map.of( LATEST_OBSERVATION, values.lastKey() ),
+                TimeScale.of(),
+                variableName,
+                featureName,
+                unit );
+        TimeSeries<Double> timeSeries = transform( metadata,
+                                                   values,
+                                                   lineNumber );
+        TimeSeriesIngester ingester =
+                TimeSeriesIngester.of( this.getSystemSettings(),
+                                       this.getDatabase(),
+                                       this.getFeaturesCache(),
+                                       this.getVariablesCache(),
+                                       this.getEnsemblesCache(),
+                                       this.getMeasurementUnitsCache(),
+                                       this.getProjectConfig(),
+                                       this.getDataSource(),
+                                       this.getLockManager(),
+                                       timeSeries,
+                                       TimeSeriesIngester.GEO_ID_TYPE.LID );
+        List<IngestResult> results = ingester.call();
 
-        try
+        if ( LOGGER.isInfoEnabled() )
         {
-            SourceCompleter sourceCompleter = new SourceCompleter( database,
-																   this.currentSourceID,
-                                                                   this.lockManager );
-            sourceCompleter.complete( this.latches );
-        }
-        catch ( IngestException e )
-        {
-            throw new IngestException( "Failed to mark source "
-                                       + this.getFilename()
-                                       + " as completed using id "
-                                       + this.currentSourceID + ".", e );
+            LOGGER.info( "Ingested {} timeseries from '{}'",
+                         results.size(), this.getFilename() );
         }
 
-        return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSource(),
-                                                id,
-                                                false,
-                                                false );
-	}
+        return results;
+    }
 
-    private Integer getMeasurementID() throws SQLException
-	{
-		if(currentMeasurementUnitID == null)
-		{
-			MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
-			currentMeasurementUnitID = measurementUnits.getMeasurementUnitID(getMeasurementUnitStr());
-		}
-		
-		return currentMeasurementUnitID ;
-	}
-
-	/**
-	 * @return The ID of the variable currently being measured
-     * @throws SQLException when unable to retrieve an ID from the database
-     */
-    private int getVariableID() throws SQLException
-    {
-		if (currentVariableID == null)
-		{
-			Variables variables = this.getVariablesCache();
-			this.currentVariableID = variables.getVariableID(this.getSpecifiedVariableName());
-		}
-		
-		return this.currentVariableID;
-	}
-	
-	/**
-	 * @return A valid ID for the source of this PIXML file from the database
-     * @throws SQLException when an ID could not be retrieved from the database
-     * @throws IOException when unable to get file attributes OR compute a hash
-	 */
-    private int getSourceID() throws IOException, SQLException
-	{
-		if (currentSourceID == null)
-		{
-			if (this.creationDateTime == null)
-			{
-				this.creationDateTime = getFileCreationDateTime();
-			}
-
-			// TODO: Modify the cache to do this work
-            SourceDetails.SourceKey sourceKey =
-                    new SourceDetails.SourceKey( this.getFilename(),
-                                                 this.creationDateTime,
-                                                 null,
-                                                 this.getHash() );
-
-			DataSources dataSources = this.getDataSourcesCache();
-            boolean wasInCache = dataSources.isCached( sourceKey );
-            boolean wasThisReaderTheOneThatInserted = false;
-            SourceDetails sourceDetails;
-
-
-            if ( !wasInCache )
-            {
-                // We *might* be the one in charge of doing this source ingest.
-                sourceDetails = new SourceDetails( sourceKey );
-                Database database = this.getDatabase();
-                sourceDetails.save( database );
-                if ( sourceDetails.performedInsert() )
-                {
-                    // Now we have the definitive answer from the database.
-                    wasThisReaderTheOneThatInserted = true;
-
-                    // We should mark that the ingest is ongoing. #50933
-                    this.lockManager.lockSource( sourceDetails.getId() );
-
-                    // Now that ball is in our court we should put in cache
-                    dataSources.put( sourceDetails );
-                    // // Older, implicit way:
-                    // DataSources.hasSource( this.getHash() );
-                }
-            }
-
-            // Mark whether this reader is the one to perform ingest or yield.
-            inChargeOfIngest = wasThisReaderTheOneThatInserted;
-
-            // Regardless of whether we were the ones or not, get it from cache
-            currentSourceID = dataSources.getActiveSourceID( this.getHash() );
-		}
-
-		return currentSourceID;
-	}
-	
 	/**
 	 * Return the number of columns of allocated for an observation value. In general, it is smaller than 
 	 * the number of columns actually used by an observation value
@@ -572,47 +454,6 @@ public class DatacardSource extends BasicSource
 				
 		return width;
 	}
-	
-	/**
-	 * Returns a string of YYYY-MM-DD HH:MM:SS based the time stamp of file creation
-	 * @return file creation date time
-	 */
-	private String getFileCreationDateTime() throws IOException
-	{
-		Path                path            = Paths.get(getFilename());
-		BasicFileAttributes fileAttr        = Files.readAttributes(path, BasicFileAttributes.class);
-		FileTime            creationTime    = fileAttr.creationTime();
-			
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-		long fileTimeInSeconds = creationTime.to(TimeUnit.SECONDS);
-		LocalDateTime fileDateTime = LocalDateTime.ofEpochSecond( fileTimeInSeconds,
-		                                                          0,
-		                                                          ZoneOffset.UTC );
-		
-		String fileDateTimeStr = fileDateTime.format(formatter);
-				
-		if(!fileDateTimeStr.matches(DATE_TIME_FORMAT))
-		{
-			String errMsg = "Faied to parse file creation date/time" + creationTime.toString();
-			
-			LOGGER.error(errMsg);
-			throw new IOException(errMsg);
-		}
-		
-		return fileDateTimeStr;
-	}
-
-    private Integer getVariableFeatureID() throws SQLException
-	{
-		if(VariableFeatureID  == null)
-		{
-			Features features = this.getFeaturesCache();
-            VariableFeatureID = features.getVariableFeatureIDByLID( this.getCurrentLocationId(),
-																	getVariableID() );
-		}
-		
-		return VariableFeatureID  ;
-	}
 
 	@Override
 	protected Logger getLogger()
@@ -622,64 +463,58 @@ public class DatacardSource extends BasicSource
 
 	private boolean valueIsIgnorable(final double value)
     {
-        return wres.util.Collections.exists( DatacardSource.IGNORABLE_VALUES,
-											 ignorable -> Precision.equals( value, ignorable, EPSILON ));
+        return DatacardSource.IGNORABLE_VALUES.contains( value );
     }
 
     private boolean valueIsMissing(final double value)
     {
         return this.getSpecifiedMissingValue() != null &&
-               Precision.equals( Double.parseDouble( this.getSpecifiedMissingValue()), value, EPSILON );
+               Precision.equals( Double.parseDouble( this.getSpecifiedMissingValue()), value );
     }
 
-    private String getCurrentLocationId()
-    {
-        return this.currentLocationId;
-    }
-
-    private void setCurrentLocationId( String currentLocationId )
-    {
-        this.currentLocationId = currentLocationId;
-    }
-
-	private static final String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
 
 	private int firstMonth = 0;
 	private int firstYear = 0;
 	private int valuesPerRecord = 0;
 
 	private static final int FIRST_OBS_VALUE_START_POS = 20;
+    private Duration timeStep = Duration.ZERO;
 
-	/**
-	 * The ID for the variable that is currently being parsed
-	 */
-	private Integer currentVariableID = null;
-	
-	/**
-	 * The ID for the unit of measurement for the variable that is currently being parsed
-	 */
-	private Integer currentMeasurementUnitID = null;
-
-
-    private int timeInterval = 0;
-	/**
-	 * The ID for the current source file
-	 */
-	private Integer currentSourceID = null;
-   
-	/**
-	/* The date/time that the source was created
-	*/
-	private String creationDateTime = null;
-
-	private Integer VariableFeatureID = null;
-	
-	/**
-	 * Stores the measurement unit found in the datacard header, first line, characters 25:28.
-	 */
-	private String measurementUnitStr;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardSource.class);
 
-}
 
+    /**
+     * Transform a single trace into a TimeSeries of doubles.
+     * @param metadata The metadata of the timeseries.
+     * @param trace The raw data to build a TimeSeries.
+     * @param lineNumber The approximate location in the source.
+     * @return The complete TimeSeries
+     */
+
+    private TimeSeries<Double> transform( TimeSeriesMetadata metadata,
+                                          SortedMap<Instant,Double> trace,
+                                          int lineNumber )
+    {
+        if ( trace.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot transform fewer than "
+                                                + "one values into timeseries "
+                                                + "with metadata "
+                                                + metadata
+                                                + " from line number "
+                                                + lineNumber );
+        }
+
+        TimeSeries.TimeSeriesBuilder<Double> builder = new TimeSeries.TimeSeriesBuilder<>();
+        builder.setMetadata( metadata );
+
+        for ( Map.Entry<Instant,Double> events : trace.entrySet() )
+        {
+            Event<Double> event = Event.of( events.getKey(), events.getValue() );
+            builder.addEvent( event );
+        }
+
+        return builder.build();
+    }
+}
