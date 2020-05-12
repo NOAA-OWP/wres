@@ -28,6 +28,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
@@ -90,6 +91,7 @@ public class DataCardSourceTest
 	@Mock Database mockDatabase;
     @Mock Features mockFeaturesCache;
     @Mock Variables mockVariablesCache;
+    @Mock Ensembles mockEnsemblesCache;
     @Mock MeasurementUnits mockMeasurementUnitsCache;
 	@Mock DataSources mockDataSources;
     @Mock Connection mockConnection;
@@ -193,9 +195,9 @@ public class DataCardSourceTest
         // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
         source = new DatacardSource( this.mockSystemSettings,
                                      this.mockDatabase,
-                                     this.mockDataSources,
                                      this.mockFeaturesCache,
                                      this.mockVariablesCache,
+                                     this.mockEnsemblesCache,
                                      this.mockMeasurementUnitsCache,
                                      projectConfig,
                                      dataSource,
