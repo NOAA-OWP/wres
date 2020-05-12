@@ -1,49 +1,71 @@
 package wres.io.reading.fews;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
+import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.ProjectConfig;
+import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScale;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
+import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
-import wres.io.data.details.TimeSeries;
-import wres.io.reading.SourceCompleter;
+import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
-import wres.io.reading.IngestedValues;
+import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
+import wres.io.reading.PreIngestException;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -56,18 +78,14 @@ import wres.util.Strings;
  * Loads a PIXML file, iterates through it, and saves all data to the database, whether it is
  * forecast or observation data
  */
-public final class PIXMLReader extends XMLReader
+public final class PIXMLReader extends XMLReader implements Closeable
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
 
-    /**
-     * Epsilon value used to test floating point equivalency
-     */
-    private static final double EPSILON = 0.0000001;
 
-    private static final DateTimeFormatter FORMATTER
-            = DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss", Locale.US )
-                               .withZone( ZoneId.of( "UTC" ) );
+    /** A placeholder reference datetime for timeseries without one. */
+    private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
+    private static final String DEFAULT_ENSEMBLE_NAME = "default";
 
     private final SystemSettings systemSettings;
     private final Database database;
@@ -76,20 +94,24 @@ public final class PIXMLReader extends XMLReader
     private final Variables variablesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
-    private DataSourceConfig.Source sourceConfig;
+    private final ProjectConfig projectConfig;
+    private final DataSource dataSource;
+    private final String hash;
     private final DatabaseLockManager lockManager;
-    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
 
+    private final ThreadPoolExecutor ingestSaverExecutor;
+    private final BlockingQueue<Future<List<IngestResult>>> ingests;
+    private final CountDownLatch startGettingIngestResults;
+    private final List<IngestResult> ingested;
 
-    // Start by assuming we must ingest
-    private boolean inChargeOfIngest = true;
-    private boolean ingestFullyCompleted = false;
+    private TimeSeriesMetadata currentTimeSeriesMetadata = null;
+    private String currentTraceName = null;
+    private SortedMap<String, SortedMap<Instant,Double>> traceValues = new TreeMap<>();
+    private int highestLineNumber = 0;
+
 
 	/**
 	 * Constructor for a reader that may be for forecasts or observations
-	 * @param filename The path to the file to read
-	 * @param hash the hash code for the source
-	 * @param lockManager The lock manager to use.
      * @throws IOException when an attempt to get the file from classpath fails.
 	 */
     PIXMLReader( SystemSettings systemSettings,
@@ -99,12 +121,13 @@ public final class PIXMLReader extends XMLReader
                  Variables variablesCache,
                  Ensembles ensemblesCache,
                  MeasurementUnits measurementUnitsCache,
-                 URI filename,
+                 ProjectConfig projectConfig,
+                 DataSource dataSource,
                  String hash,
                  DatabaseLockManager lockManager )
             throws IOException
 	{
-		super(filename);
+		super( dataSource.getUri() );
 		this.systemSettings = systemSettings;
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
@@ -112,8 +135,30 @@ public final class PIXMLReader extends XMLReader
         this.variablesCache = variablesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
+        this.projectConfig = projectConfig;
+        this.dataSource = dataSource;
 		this.hash = hash;
         this.lockManager = lockManager;
+
+        // See comments in wres.io.reading.WebSource for info on below approach.
+        ThreadFactory pixmlIngest = new BasicThreadFactory.Builder()
+                .namingPattern( "PI-XML Ingest" )
+                .build();
+
+        // Usually there is only going to be one timeseries per pixml file. But
+        // in case there are more, allow one to be parsed while others ingest.
+        int concurrentCount = 2;
+        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
+        this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
+                                                           concurrentCount,
+                                                           systemSettings.poolObjectLifespan(),
+                                                           TimeUnit.MILLISECONDS,
+                                                           webClientQueue,
+                                                           pixmlIngest );
+        this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
+        this.ingests = new ArrayBlockingQueue<>( concurrentCount );
+        this.startGettingIngestResults = new CountDownLatch( concurrentCount );
+        this.ingested = new ArrayList<>();
 	}
 
     public PIXMLReader( SystemSettings systemSettings,
@@ -123,13 +168,14 @@ public final class PIXMLReader extends XMLReader
                         Variables variablesCache,
                         Ensembles ensemblesCache,
                         MeasurementUnits measurementUnitsCache,
-                        URI filename,
+                        ProjectConfig projectConfig,
+                        DataSource dataSource,
                         InputStream inputStream,
                         String hash,
                         DatabaseLockManager lockManager )
             throws IOException
 	{
-		super(filename, inputStream);
+		super( dataSource.getUri(), inputStream );
 		this.systemSettings = systemSettings;
         this.database = database;
         this.dataSourcesCache = dataSourcesCache;
@@ -137,8 +183,29 @@ public final class PIXMLReader extends XMLReader
         this.variablesCache = variablesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
+        this.projectConfig = projectConfig;
+        this.dataSource = dataSource;
 		this.hash = hash;
         this.lockManager = lockManager;
+
+        // See comments in wres.io.reading.WebSource for info on below approach.
+        ThreadFactory pixmlIngest = new BasicThreadFactory.Builder()
+                .namingPattern( "PI-XML Ingest" )
+                .build();
+
+        // There can be one PIXMLReader per zipped PIXML file, use small amount.
+        int concurrentCount = 3;
+        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
+        this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
+                                                           concurrentCount,
+                                                           systemSettings.poolObjectLifespan(),
+                                                           TimeUnit.MILLISECONDS,
+                                                           webClientQueue,
+                                                           pixmlIngest );
+        this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
+        this.ingests = new ArrayBlockingQueue<>( concurrentCount );
+        this.startGettingIngestResults = new CountDownLatch( concurrentCount );
+        this.ingested = new ArrayList<>();
 	}
 
 	private SystemSettings getSystemSettings()
@@ -176,26 +243,53 @@ public final class PIXMLReader extends XMLReader
         return this.measurementUnitsCache;
     }
 
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
+    }
+
+    private DataSource getDataSource()
+    {
+        return this.dataSource;
+    }
+
 	@Override
 	protected void parseElement( XMLStreamReader reader )
 			throws IOException
 	{
-        // Must determine if in charge of ingest
-        // TODO: actually evaluate inChargeOfIngest before checking it
-        // Why is inChargeOfIngest even involved? If this isn't in charge of the
-        // ingest, there's been a problem upstream
-        if ( !inChargeOfIngest )
-        {
-            LOGGER.debug( "This PIXMLReader yields for source {}", hash );
-            // How to close without going through all elements?
-            return;
-        }
-
 		if (reader.isStartElement())
 		{
             String localName = reader.getLocalName();
 
-            if ( localName.equalsIgnoreCase( "timeZone" ) )
+            if ( localName.equalsIgnoreCase( "timeSeries" ) )
+            {
+                LOGGER.debug( "Read first element 'timeSeries' of {}",
+                              this.getFilename() );
+
+                if ( !this.traceValues.isEmpty() )
+                {
+                    LOGGER.debug( "Ingesting due to non-empty tracevalues" );
+                    TimeSeries<?> timeSeries =
+                            buildTimeSeries( this.currentTimeSeriesMetadata,
+                                             this.traceValues,
+                                             this.currentTraceName,
+                                             reader.getLocation()
+                                                   .getLineNumber() );
+                    this.ingest( timeSeries );
+
+                    // Reset the temporary data structures for timeseries
+                    this.currentTimeSeriesMetadata = null;
+                    this.traceValues = new TreeMap<>();
+                    this.currentTraceName = null;
+                }
+
+            }
+            else if ( localName.equalsIgnoreCase( "timeZone" ) )
             {
                 try
                 {
@@ -230,6 +324,9 @@ public final class PIXMLReader extends XMLReader
                 }
 			}
 		}
+
+        this.highestLineNumber = reader.getLocation()
+                                       .getLineNumber();
 	}
 
     @Override
@@ -312,7 +409,6 @@ public final class PIXMLReader extends XMLReader
 			reader.next();
 		}
 
-		this.currentTimeSeries = null;
 
 		String localName;
 
@@ -344,11 +440,11 @@ public final class PIXMLReader extends XMLReader
 	 * Removes information about a measurement from an "event" tag. If a sufficient number of events have been
 	 * parsed, they are sent to the database to be saved.
 	 * @param reader The reader containing the current event tag
-     * @throws SQLException when unable to get a series id or unable to save
      * @throws ProjectConfigException when a forecast is missing a forecast date
+     * @throws PreIngestException When data is improperly formatted.
 	 */
+
 	private void parseEvent(XMLStreamReader reader)
-            throws SQLException, IngestException
     {
 		String value = null;
 		String localName;
@@ -377,98 +473,40 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 
-		if (!Strings.hasValue( value ))
+		if ( Objects.isNull( value ) || value.isBlank() )
         {
             LOGGER.debug( "The event at {} {} in '{}' didn't have a value to save.",
-                          String.valueOf(dateText),
-                          String.valueOf( timeText ),
-                          this.getFilename());
+                          dateText, timeText, this.getFilename() );
             return;
         }
         else if (localDate == null || localTime == null)
         {
-            throw new IngestException("An event for " + this.currentLID + " at "
-                                      + this.creationDate + " " + this.startDate
-                                      + " in " + this.getFilename() + " didn't have "
-                                      + "information about when the value was valid. "
-                                      + "The source is not properly formed and parsing "
-                                      + "cannot continue.");
+            throw new PreIngestException( "An event for " + this.currentTimeSeriesMetadata
+                                          + " in " + this.getFilename() + " didn't have "
+                                          + "information about when the value was valid. "
+                                          + "The source is not properly formed and parsing "
+                                          + "cannot continue.");
         }
 
         LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
-        if (this.getIsForecast())
+        Instant fullDateTime = OffsetDateTime.of( dateTime, this.zoneOffset )
+                                             .toInstant();
+        SortedMap<Instant,Double> values = this.traceValues.get( this.currentTraceName );
+
+        if ( Objects.isNull( values ) )
         {
-            if ( this.getForecastDate() == null )
-            {
-                String message = "No forecast date found for forecast data."
-                                 + " Might this really be observation data?"
-                                 + " Please check the <type> under both "
-                                 + "<left> and <right> sources.";
-                throw new ProjectConfigException( this.getDataSourceConfig(),
-                                                  message );
-            }
-            Duration leadTime = Duration.between( this.getForecastDate(),
-                                                  dateTime );
-            int leadTimeInHours = (int) leadTime.toMinutes();
-
-            Integer timeseriesID = this.getTimeSeriesID();
-
-            if ( this.inChargeOfIngest  )
-            {
-                Pair<CountDownLatch,CountDownLatch> synchronizer =
-                        IngestedValues.addTimeSeriesValue( this.getSystemSettings(),
-                                                           this.getDatabase(),
-                                                           timeseriesID,
-                                                           leadTimeInHours,
-                                                           this.getValueToSave( value )
-                );
-                this.latches.add( synchronizer );
-            }
-            else
-            {
-                LOGGER.trace( "This PIXMLReader yields for source {}", hash );
-            }
+            LOGGER.debug( "Creating new values because trace '{}' not found.",
+                          this.currentTraceName );
+            values = new TreeMap<>();
+            this.traceValues.put( this.currentTraceName, values );
         }
-        else
-        {
-            if (value.trim().equalsIgnoreCase( "nan" ))
-            {
-                LOGGER.trace( "NaN encountered." );
-            }
 
-            if ( this.inChargeOfIngest )
-            {
-                OffsetDateTime offsetDateTime =
-                        OffsetDateTime.of( dateTime, this.getZoneOffset() )
-                                      .withOffsetSameInstant( ZoneOffset.UTC );
-
-                Pair<CountDownLatch, CountDownLatch> observationSynchronizer =
-                        this.addObservedEvent( offsetDateTime,
-                                               this.getValueToSave( value ) );
-                this.latches.add( observationSynchronizer );
-            }
-        }
+        double numericValue = this.getValueToSave( value );
+        LOGGER.trace( "About to save event at {} with value {} into values {}",
+                      fullDateTime, numericValue, values );
+        values.put( fullDateTime, numericValue );
 	}
 
-	/**
-	 * Adds measurement information to the current insert script in the form of observation data
-	 * @param observedTime The time when the measurement was taken
-	 * @param observedValue The value retrieved from the XML
-	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
-	 */
-    private Pair<CountDownLatch,CountDownLatch> addObservedEvent(OffsetDateTime observedTime, Double observedValue)
-            throws SQLException, IngestException
-    {
-        return IngestedValues.observed( observedValue )
-                             .at(observedTime)
-                             .forVariableAndFeatureID( this.getVariableFeatureID() )
-                             .measuredIn( this.getMeasurementID() )
-                             .inSource( this.getSourceID() )
-                             .scaleOf( this.scalePeriod )
-                             .scaledBy( this.scaleFunction )
-                             .add( this.getSystemSettings(),
-                                   this.getDatabase() );
-    }
 
 
 	/**
@@ -487,17 +525,21 @@ public final class PIXMLReader extends XMLReader
 		{
 			reader.next();
 		}
-		String localName;
-		creationDate = null;
-		creationTime = null;
-		this.scalePeriod = null;
-		this.scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
-		this.timeStep = null;
-        this.startDate = null;
-        this.endDate = null;
-        this.forecastDate = null;
 
-		//	Scrape all pertinent information from the header
+        String localName;
+		Duration scalePeriod = null;
+		TimeScale.TimeScaleFunction scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
+		Duration timeStep = null;
+        LocalDateTime forecastDate = null;
+        String locationName = null;
+        String variableName = null;
+        String unitName = null;
+        String traceName = DEFAULT_ENSEMBLE_NAME;
+        String ensembleMemberId = null;
+        String ensembleMemberIndex = null;
+        Double missingValue = null;
+
+        //	Scrape all pertinent information from the header
 		while (reader.hasNext())
 		{
 			
@@ -510,92 +552,46 @@ public final class PIXMLReader extends XMLReader
 			{
 				localName = reader.getLocalName();
 
-				if ( this.getIsForecast() )
-				{
-					parseForecastHeaderElements( reader, localName );
-				}
-
 				if (localName.equalsIgnoreCase("locationId"))
 				{
 				    // TODO: Set the LID on a FeatureDetails object; don't just store the LID
 					//	If we are at the tag for the location id, save it to the location metadata
-					this.currentLID = XMLHelper.getXMLText( reader);
-					this.currentVariableFeatureID = null;
-					this.currentTimeSeriesID = null;
-					this.currentTimeSeries = null;
+					locationName = XMLHelper.getXMLText( reader);
 
-					if (currentLID.length() > 5)
+					if ( locationName.length() > 5 )
 					{
-					    String shortendID = currentLID.substring(0, 5);
+					    String shortendID = locationName.substring(0, 5);
 					    Features features = this.getFeaturesCache();
 
 					    if ( features.lidExists( shortendID ) )
 						{
-							this.currentLID = shortendID;
+							locationName = shortendID;
 						}
 					}
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
-				    MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
-					currentMeasurementUnitID = measurementUnits.getMeasurementUnitID(XMLHelper.getXMLText(reader));
+					unitName = XMLHelper.getXMLText( reader );
 				}
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
 					// If we are at the tag for the missing value definition, record it
 					missingValue = Double.parseDouble( XMLHelper.getXMLText( reader ) );
 				}
-				else if (localName.equalsIgnoreCase("startDate"))
-                {
-                    this.startDate = PIXMLReader.parseDateTime( reader );
-				}
-                else if (localName.equalsIgnoreCase("endDate"))
-                {
-                    this.endDate = PIXMLReader.parseDateTime( reader );
-                }
-				else if (XMLHelper.tagIs(reader, "creationDate")) {
-					creationDate = XMLHelper.getXMLText(reader);
-				}
-				else if (XMLHelper.tagIs(reader, "creationTime")) {
-					creationTime = XMLHelper.getXMLText(reader);
-				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
-					currentVariableName = XMLHelper.getXMLText(reader);
-					Variables variables = this.getVariablesCache();
-					currentVariableID = variables.getVariableID(currentVariableName);
+					variableName = XMLHelper.getXMLText( reader );
 				}
 				else if ( localName.equalsIgnoreCase("forecastDate") )
 				{
-                    this.forecastDate = PIXMLReader.parseDateTime( reader );
-
-                    if ( !this.isForecast )
-					{
-                        // End date should have been parsed already.
-                        // Special case information in #64534.
-                        if ( this.endDate != null
-                             && ( this.forecastDate.isEqual( this.endDate )
-                                  || this.forecastDate.isAfter( this.endDate ) ) )
-                        {
-                            LOGGER.debug( "Special case: <forecastDate> is {}",
-                                          "present, but >= <endDate>." );
-                        }
-                        else
-                        {
-                            throw new IngestException( "The data at '"
-                                                       + this.getFilename() +
-                                                       "' cannot be ingested as"
-                                                       + " an observation since"
-                                                       + " it is a forecast." );
-                        }
-                    }
+                    forecastDate = PIXMLReader.parseDateTime( reader );
                 }
 				else if ( localName.equalsIgnoreCase( "type" ))
                 {
                     // See #59438
 				    if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "instantaneous" ))
                     {
-                        this.scalePeriod = Duration.ofMinutes( 1 );
+                        scalePeriod = Duration.ofMinutes( 1 );
                     }
                 }
                 else if ( localName.equalsIgnoreCase( "timeStep" ))
@@ -603,66 +599,96 @@ public final class PIXMLReader extends XMLReader
                     String unit = XMLHelper.getAttributeValue( reader, "unit" ) + "s";
                     unit = unit.toUpperCase();
 
-                    Integer amount = Integer.parseInt( XMLHelper.getAttributeValue( reader, "multiplier" ) );
-
-                    this.timeStep = Duration.of( amount, ChronoUnit.valueOf( unit ) );
+                    int amount = Integer.parseInt( XMLHelper.getAttributeValue( reader, "multiplier" ) );
+                    timeStep = Duration.of( amount, ChronoUnit.valueOf( unit ) );
                 }
-
+                else if ( localName.equalsIgnoreCase( "ensembleMemberId" ) )
+                {
+                    ensembleMemberId = XMLHelper.getXMLText( reader );
+                }
+                else if ( localName.equalsIgnoreCase("ensembleMemberIndex") )
+                {
+                    ensembleMemberIndex = XMLHelper.getXMLText( reader );
+                }
 			}
+
 			reader.next();
 		}
-		
+
+        if ( Objects.nonNull( ensembleMemberId )
+             && Objects.nonNull( ensembleMemberIndex ) )
+        {
+            throw new PreIngestException(
+                    "Invalid data in PI-XML source '"  + this.getFilename()
+                    + "' near line " + this.highestLineNumber
+                    + ": a trace may have either an ensembleMemberId OR an "
+                    + "ensembleMemberIndex but not both. Found ensembleMemberId"
+                    + " '" + ensembleMemberId + "' and ensembleMemberIndex of '"
+                    + ensembleMemberIndex + "'. For more details see "
+                    + "http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
+        }
+
+        if ( Objects.nonNull( ensembleMemberId ) )
+        {
+            traceName = ensembleMemberId;
+        }
+        else if ( Objects.nonNull( ensembleMemberIndex ) )
+        {
+            traceName = ensembleMemberIndex;
+        }
+
 		// See #59438
 		// For accumulative data, the scalePeriod has not been set, and this is equal
 		// to the timeStep
-		if( Objects.isNull( this.scalePeriod ) )
+		if( Objects.isNull( scalePeriod ) )
 		{
-		    this.scalePeriod = this.timeStep;
+		    scalePeriod = timeStep;
 		}
-	}
 
+		TimeScale scale = TimeScale.of( scalePeriod, scaleFunction );
 
-    /**
-     * Helper to read forecast-specific tags out of the header.
-     * @param reader an xml reader positioned inside the header of PI-XML
-     * @param localName the name of the tag the reader is currently on
-     */
+        Map<ReferenceTimeType,Instant> basisDatetimes = new HashMap<>( 1 );
 
-    private void parseForecastHeaderElements( XMLStreamReader reader,
-                                              String localName )
-            throws XMLStreamException
-    {
-        if ( localName.equalsIgnoreCase("ensembleId") ||
-			 localName.equalsIgnoreCase( "ensembleMemberId" ) )
+        if ( Objects.nonNull( forecastDate ) )
         {
-            currentTimeSeriesID = null;
-            currentEnsembleID = null;
-            //    If we are at the tag for the name of the ensemble, save it to the ensemble
-            currentEnsembleName = XMLHelper.getXMLText(reader);
+            Instant t0 = OffsetDateTime.of( forecastDate, this.getZoneOffset() )
+                                       .toInstant();
+            basisDatetimes.put( ReferenceTimeType.T0, t0 );
         }
-        else if ( localName.equalsIgnoreCase("qualifierId") )
+        else
         {
-            currentTimeSeriesID = null;
-            currentEnsembleID = null;
-
-            //    If we are at the tag for the ensemble qualifier, save it to the ensemble
-            //current_ensemble.qualifierID = tag_value(reader);
-            currentQualifierID = XMLHelper.getXMLText(reader);
+            basisDatetimes.put( UNKNOWN, PLACEHOLDER_REFERENCE_DATETIME );
         }
-        else if ( localName.equalsIgnoreCase("ensembleMemberIndex") )
+
+        TimeSeriesMetadata justParsed = TimeSeriesMetadata.of( basisDatetimes,
+                                                               scale,
+                                                               variableName,
+                                                               locationName,
+                                                               unitName );
+
+        // If we encounter a new header, that means a previous timeseries trace
+        // was actually a full trace and needs ingest.
+        if ( !justParsed.equals( this.currentTimeSeriesMetadata )
+             && !this.traceValues.isEmpty() )
         {
-            currentTimeSeriesID = null;
-            currentEnsembleID = null;
-
-            //    If we are at the tag for the ensemble member, save it to the ensemble
-            String member = XMLHelper.getXMLText( reader );
-
-            if (Strings.hasValue( member ))
-            {
-                currentEnsembleMemberID = Integer.parseInt( member );
-            }
+            LOGGER.debug( "Saving a trace as a standalone timeseries because {} not equal to {}",
+                          justParsed, this.currentTimeSeriesMetadata );
+            TimeSeries<?> timeSeries =
+                    buildTimeSeries( this.currentTimeSeriesMetadata,
+                                     this.traceValues,
+                                     this.currentTraceName,
+                                     this.highestLineNumber );
+            this.ingest( timeSeries );
+            this.traceValues = new TreeMap<>();
         }
+
+        this.missingValue = missingValue;
+        this.currentTraceName = traceName;
+
+        // Create new trace for each header in PI-XML data.
+        this.currentTimeSeriesMetadata = justParsed;
     }
+
 
 
 	/**
@@ -703,174 +729,6 @@ public final class PIXMLReader extends XMLReader
 
         return LocalDateTime.of( date, time );
 	}
-	
-	/**
-	 * @return The ID of the current ensemble
-	 * @throws SQLException Thrown if the ensemble ID could not be retrieved from the cache
-	 */
-	private int getEnsembleID() throws SQLException {
-		if (currentEnsembleID == null) {
-		    Ensembles ensembles = this.getEnsemblesCache();
-			currentEnsembleID = ensembles.getEnsembleID(currentEnsembleName,
-														currentEnsembleMemberID,
-														currentQualifierID);
-		}
-		return currentEnsembleID;
-	}
-	
-	/**
-	 * @return The ID of the unit of measurement that the current variable is being measured in
-	 */
-	private int getMeasurementID() {
-		return this.currentMeasurementUnitID;
-	}
-	
-	/**
-	 * @return The ID of the position for the variable being parsed
-	 * @throws SQLException Thrown if the ID of the position could not be loaded from the cache
-	 */
-	private int getVariableFeatureID() throws SQLException
-	{
-		if (currentVariableFeatureID == null)
-		{
-            Features features = this.getFeaturesCache();
-
-		    // TODO: This needs to rely on a FeatureDetails object, not an LID
-            //       If we store additional information, new values become easier
-            //       to use
-			currentVariableFeatureID = features.getVariableFeatureIDByLID( currentLID,
-                                                                           getVariableID());
-		}
-		return currentVariableFeatureID;
-	}
-	
-	/**
-	 * @return The ID of the ensemble for the forecast that is tied to a specific variable
-	 * @throws SQLException Thrown if intermediary values could not be loaded from their own caches or if interaction
-	 * with the database failed.
-	 */
-	private int getTimeSeriesID()
-			throws SQLException
-	{
-		if (currentTimeSeriesID == null)
-		{
-			this.getCurrentTimeSeries().setEnsembleID(getEnsembleID());
-            this.getCurrentTimeSeries().setMeasurementUnitID(getMeasurementID());
-            this.getCurrentTimeSeries().setVariableFeatureID(getVariableFeatureID());
-            currentTimeSeriesID = this.getCurrentTimeSeries().getTimeSeriesID();
-		}
-		return currentTimeSeriesID;
-	}
-
-	private TimeSeries getCurrentTimeSeries()
-			throws SQLException
-	{
-        if (this.currentTimeSeries == null)
-        {
-            OffsetDateTime forecastFullDateTime
-                    = OffsetDateTime.of( this.getForecastDate(),
-                                         this.getZoneOffset() );
-            Database database = this.getDatabase();
-            this.currentTimeSeries =
-                    new TimeSeries( database,
-                                    this.getSourceID(),
-                                    forecastFullDateTime.format( FORMATTER ) );
-
-            // Set the time scale information
-            if( this.scalePeriod != null && this.scaleFunction != null )
-            {
-                this.currentTimeSeries.setTimeScale( TimeScale.of( this.scalePeriod, this.scaleFunction ) );
-            }
-
-            LOGGER.trace( "Created time series {} in reader of {} because currentTimeSeries was null.",
-                          this.currentTimeSeries,
-                          this.hash);
-        }
-        return this.currentTimeSeries;
-    }
-	
-	/**
-	 * @return The ID of the variable currently being measured
-	 * @throws SQLException Thrown if interaction with the database failed.
-	 */
-	private int getVariableID() throws SQLException
-    {
-		if (currentVariableID == null)
-		{
-		    Variables variables = this.getVariablesCache();
-			this.currentVariableID = variables.getVariableID(currentVariableName);
-		}
-		return this.currentVariableID;
-	}
-	
-	/**
-	 * @return A valid ID for the source of this PIXML file from the database
-	 * @throws SQLException Thrown if an ID could not be retrieved from the database
-	 */
-	private int getSourceID()
-			throws SQLException
-	{
-		if (currentSourceID == null)
-		{
-			String output_time;
-			if (this.creationDate != null) {
-				output_time = this.creationDate;
-				if (this.creationTime != null) {
-					output_time += " " + this.creationTime;
-				}
-			}
-			else {
-				OffsetDateTime actualStartDate =
-						OffsetDateTime.of( this.getStartDate(),
-										   this.getZoneOffset() );
-                output_time = actualStartDate.format( FORMATTER );
-			}
-
-			// TODO: Modify the cache to perform this work
-            // In order to interrogate the Cache, we need the key, not the
-            // actual SourceDetails class itself.
-
-            SourceDetails.SourceKey sourceKey =
-                    new SourceDetails.SourceKey( this.getFilename(),
-                                                 output_time,
-                                                 null,
-                                                 this.getHash() );
-
-            // Ask the cache "do you have this source?"
-            DataSources dataSources = this.getDataSourcesCache();
-            boolean wasInCache = dataSources.isCached( sourceKey );
-            boolean wasThisReaderTheOneThatInserted = false;
-            SourceDetails sourceDetails;
-
-            if ( !wasInCache )
-            {
-                // We *might* be the one in charge of doing this source ingest.
-                sourceDetails = new SourceDetails( sourceKey );
-                Database database = this.getDatabase();
-                sourceDetails.save( database );
-                if ( sourceDetails.performedInsert() )
-                {
-                    // Now we have the definitive answer from the database.
-                    wasThisReaderTheOneThatInserted = true;
-
-                    // We should mark that the ingest is ongoing. #50933
-                    this.lockManager.lockSource( sourceDetails.getId() );
-
-                    // Now that ball is in our court we should put in cache
-                    dataSources.put( sourceDetails );
-                    // // Older, implicit way:
-                    // DataSources.hasSource( this.getHash() );
-                }
-            }
-
-            // Regardless of whether we were the ones or not, get it from cache
-            currentSourceID = dataSources.getActiveSourceID( this.getHash() );
-
-			// Mark whether this reader is the one to perform ingest or yield.
-            inChargeOfIngest = wasThisReaderTheOneThatInserted;
-		}
-		return currentSourceID;
-	}
 
     /**
      * @return The value specifying a value that is missing from the data set
@@ -881,11 +739,13 @@ public final class PIXMLReader extends XMLReader
      */
     protected Double getSpecifiedMissingValue()
     {
-        if (missingValue == null && dataSourceConfig != null)
+        if (missingValue == null && this.getDataSourceConfig() != null)
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
-            if (source != null && Strings.hasValue( source.getMissingValue() ))
+            if ( Objects.nonNull( source )
+                 && Objects.nonNull( source.getMissingValue() )
+                 && !source.getMissingValue().isBlank() )
             {
                 missingValue = Double.parseDouble(source.getMissingValue());
             }
@@ -894,43 +754,37 @@ public final class PIXMLReader extends XMLReader
         return missingValue;
     }
 
-    private boolean getIsForecast()
-	{
-		if (this.isForecast == null)
-		{
-			this.isForecast = ConfigHelper.isForecast( this.getDataSourceConfig() );
-		}
-		return this.isForecast;
-	}
 
     /**
      * Conditions the passed in value and transforms it into a form suitable to
      * save into the database.
      * <p>
      *     If the passed in value is found to be equal to the specified missing
-     *     value, it is set to 'null'
+     *     value, it is set to WRES' Missing Value
      * </p>
      * @param value The original value
      * @return The conditioned value that is safe to save to the database.
      */
-    private Double getValueToSave(String value)
+    private double getValueToSave( String value )
     {
-        if (!Strings.hasValue( value ))
+        if ( Objects.isNull( value ) || value.isBlank() )
         {
-            return null;
+            return MissingValues.DOUBLE;
         }
 
-        value = value.trim();
-        Double val = null;
+        value = value.strip();
+        double val = MissingValues.DOUBLE;
 
         if (Strings.hasValue(value) &&
 			!value.equalsIgnoreCase( "null" ) &&
             this.getSpecifiedMissingValue() != null)
         {
             val = Double.parseDouble( value );
-            if ( val.equals( this.getSpecifiedMissingValue() ) || Precision.equals(val, this.getSpecifiedMissingValue(), EPSILON))
+
+            if ( val == this.getSpecifiedMissingValue()
+                 || Precision.equals( val, this.getSpecifiedMissingValue() ) )
             {
-                val = null;
+                return MissingValues.DOUBLE;
             }
         }
 
@@ -939,79 +793,353 @@ public final class PIXMLReader extends XMLReader
 
 
     /**
-     * Mark this source as having been completely parsed and ingested
-     * successfully so that any other task (in- or out-of-process) can know
-     * that it was done.
-     * @throws IngestException when marking complete fails
+     * After parsing, do remainder of ingest.
+     * @throws IngestException When finishing ingest fails
      */
 
     @Override
     protected void completeParsing() throws IngestException
     {
-        URI uri = this.getFilename();
-        Database database = this.getDatabase();
-
-        if ( this.inChargeOfIngest )
+        if ( !this.traceValues.isEmpty() )
         {
-            LOGGER.debug( "Because this task is in charge of ingest, mark source complete for {}.",
-                          this );
-            SourceCompleter sourceCompleter = new SourceCompleter( database,
-                                                                   this.currentSourceID,
-                                                                   this.lockManager );
-            // Unsafe publication?
-            sourceCompleter.complete( this.latches );
-            this.ingestFullyCompleted = true;
+            LOGGER.debug( "Finished parsing, saving timeseries" );
+            TimeSeries<?> timeSeries =
+                    buildTimeSeries( this.currentTimeSeriesMetadata,
+                                     this.traceValues,
+                                     this.currentTraceName,
+                                     this.highestLineNumber );
+            this.ingest( timeSeries );
+        }
+
+        this.completeIngest();
+    }
+
+    @Override
+    public void close()
+    {
+        // shut down executors
+        this.shutdownNow();
+    }
+
+
+    /**
+     * Build a timeseries out of temporary data structures.
+     *
+     * When there is a placeholder reference datetime, replace it with the
+     * latest valid datetime found as "latest observation." This means there was
+     * no reference datetime found in the XML, but until the WRES db schema is
+     * ready to store any kind of timeseries with 0, 1, or N reference datetimes
+     * we are required to specify something here.
+     *
+     * @param lastTimeSeriesMetadata The metadata for most-recently-parsed data.
+     * @param ensembleValues The most-recently-parsed data in sorted map form.
+     * @param lastEnsembleName The most-recently-parsed ensemble name.
+     * @param lineNumber The most-recently-parsed line number in the csv source.
+     * @return A TimeSeries either of Double or Ensemble, ready for ingest.
+     * @throws PreIngestException When something goes wrong.
+     */
+    private TimeSeries<?> buildTimeSeries( TimeSeriesMetadata lastTimeSeriesMetadata,
+                                           SortedMap<String,SortedMap<Instant,Double>> ensembleValues,
+                                           String lastEnsembleName,
+                                           int lineNumber )
+    {
+        LOGGER.debug( "buildTimeSeries called with {}, {}, {}, {}",
+                      lastTimeSeriesMetadata,
+                      ensembleValues,
+                      lastEnsembleName,
+                      lineNumber );
+        TimeSeries<?> timeSeries;
+        TimeSeriesMetadata metadata;
+        Collection<Instant> referenceDatetimes =
+                lastTimeSeriesMetadata.getReferenceTimes()
+                                      .values();
+
+        // When there are no reference datetimes, use latest value
+        // by valid datetime. (Eventually we should remove the
+        // restriction of requiring a reference datetime when db is
+        // ready for it to be relaxed)
+        if ( referenceDatetimes.size() == 1
+             && referenceDatetimes.contains( PLACEHOLDER_REFERENCE_DATETIME ) )
+        {
+            LOGGER.debug( "Found placeholder reference datetime in {}",
+                          lastTimeSeriesMetadata);
+            Instant latestDatetime = ensembleValues.get( lastEnsembleName )
+                                                   .lastKey();
+            metadata = TimeSeriesMetadata.of( Map.of( LATEST_OBSERVATION, latestDatetime ),
+                                              lastTimeSeriesMetadata.getTimeScale(),
+                                              lastTimeSeriesMetadata.getVariableName(),
+                                              lastTimeSeriesMetadata.getFeatureName(),
+                                              lastTimeSeriesMetadata.getUnit() );
         }
         else
         {
-            LOGGER.debug( "This task is not in charge of ingest, do not mark source complete for {}, check to see that it *was* marked complete.",
-                          this );
+            LOGGER.debug( "Found NO placeholder reference datetime in {}",
+                          lastTimeSeriesMetadata);
+            metadata = lastTimeSeriesMetadata;
+        }
 
+        // Check if this is actually an ensemble or single trace
+        if ( ensembleValues.size() == 1
+             && ensembleValues.firstKey()
+                              .equals( DEFAULT_ENSEMBLE_NAME ) )
+        {
+            timeSeries = this.transform( metadata,
+                                         ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
+                                         lineNumber );
+        }
+        else
+        {
+            timeSeries = this.transformEnsemble( metadata,
+                                                 ensembleValues,
+                                                 lineNumber );
+        }
+
+        LOGGER.debug( "transformed into {}", timeSeries );
+        return timeSeries;
+    }
+
+    /**
+     * Transform a single trace into a TimeSeries of doubles.
+     * @param metadata The metadata of the timeseries.
+     * @param trace The raw data to build a TimeSeries.
+     * @param lineNumber The approximate location in the source.
+     * @return The complete TimeSeries
+     */
+
+    private TimeSeries<Double> transform( TimeSeriesMetadata metadata,
+                                          SortedMap<Instant,Double> trace,
+                                          int lineNumber )
+    {
+        if ( trace.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot transform fewer than "
+                                                + "one values into timeseries "
+                                                + "with metadata "
+                                                + metadata
+                                                + " from line number "
+                                                + lineNumber );
+        }
+
+        TimeSeries.TimeSeriesBuilder<Double> builder = new TimeSeries.TimeSeriesBuilder<>();
+        builder.setMetadata( metadata );
+
+        for ( Map.Entry<Instant,Double> events : trace.entrySet() )
+        {
+            Event<Double> event = Event.of( events.getKey(), events.getValue() );
+            builder.addEvent( event );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Transform a map of traces into a TimeSeries of ensembles (flip it) but
+     * also validate the density and valid datetimes of the ensemble prior.
+     * @param metadata The metadata of the timeseries.
+     * @param traces The raw data to build a TimeSeries.
+     * @param lineNumber The approximate location in the source.
+     * @return The complete TimeSeries
+     * @throws IllegalArgumentException When fewer than two traces given.
+     * @throws PreIngestException When ragged (non-dense) data given.
+     */
+
+    private TimeSeries<Ensemble> transformEnsemble( TimeSeriesMetadata metadata,
+                                                    SortedMap<String,SortedMap<Instant,Double>> traces,
+                                                    int lineNumber )
+    {
+        int traceCount = traces.size();
+
+        if ( traceCount < 2 )
+        {
+            LOGGER.debug( "Found 'ensemble' data with fewer than two traces: {}",
+                          traces );
+        }
+
+        Map<Instant,double[]> reshapedValues = null;
+        Map.Entry<String,SortedMap<Instant,Double>> previousTrace = null;
+        int i = 0;
+
+        for ( Map.Entry<String,SortedMap<Instant,Double>> trace : traces.entrySet() )
+        {
+            SortedSet<Instant> theseInstants = new TreeSet<>( trace.getValue()
+                                                                   .keySet() );
+
+            if ( Objects.nonNull( previousTrace ) )
+            {
+                SortedSet<Instant> previousInstants = new TreeSet<>( previousTrace.getValue()
+                                                                                  .keySet() );
+                if ( !theseInstants.equals( previousInstants ) )
+                {
+                    throw new PreIngestException( "Cannot build ensemble from "
+                                                  + this.getDataSource()
+                                                        .getUri()
+                                                  + " with data at or before "
+                                                  + "line number "
+                                                  + lineNumber
+                                                  + " because the trace named "
+                                                  + trace.getKey()
+                                                  + " had these valid datetimes"
+                                                  + ": " + theseInstants
+                                                  + " but previous trace named "
+                                                  + previousTrace.getKey()
+                                                  + " had different ones: "
+                                                  + previousInstants
+                                                  + " which is not allowed. All"
+                                                  + " traces must be dense and "
+                                                  + "match valid datetimes." );
+                }
+            }
+
+            if ( Objects.isNull( reshapedValues ) )
+            {
+                reshapedValues = new HashMap<>( theseInstants.size() );
+            }
+
+            for ( Map.Entry<Instant,Double> event : trace.getValue()
+                                                         .entrySet() )
+            {
+                Instant validDateTime = event.getKey();
+
+                if ( !reshapedValues.containsKey( validDateTime ) )
+                {
+                    reshapedValues.put( validDateTime, new double[traceCount] );
+                }
+
+                double[] values = reshapedValues.get( validDateTime );
+                values[i] = event.getValue();
+            }
+
+            previousTrace = trace;
+            i++;
+        }
+
+        wres.datamodel.time.TimeSeries.TimeSeriesBuilder<Ensemble> builder =
+                new wres.datamodel.time.TimeSeries.TimeSeriesBuilder<>();
+
+        // Because the iteration is over a sorted map, assuming same order here.
+        SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );
+        String[] traceNames = new String[traceNamesSorted.size()];
+        traceNamesSorted.toArray( traceNames );
+
+        builder.setMetadata( metadata );
+
+        for ( Map.Entry<Instant,double[]> events : reshapedValues.entrySet() )
+        {
+            Ensemble ensembleSlice = Ensemble.of( events.getValue(), traceNames );
+            Event<Ensemble> ensembleEvent = Event.of( events.getKey(), ensembleSlice );
+            builder.addEvent( ensembleEvent );
+        }
+
+        return builder.build();
+    }
+
+
+
+    /**
+     * Create an ingester for the given timeseries and begin ingest, add the
+     * future to this.ingests as a side-effect.
+     * @param timeSeries The timeSeries to ingest.
+     * @throws IngestException When anything goes wrong related to ingest.
+     */
+
+    private void ingest( wres.datamodel.time.TimeSeries<?> timeSeries )
+            throws IngestException
+    {
+        TimeSeriesIngester timeSeriesIngester =
+                this.createTimeSeriesIngester( this.getSystemSettings(),
+                                               this.getDatabase(),
+                                               this.getFeaturesCache(),
+                                               this.getVariablesCache(),
+                                               this.getEnsemblesCache(),
+                                               this.getMeasurementUnitsCache(),
+                                               this.getProjectConfig(),
+                                               this.getDataSource(),
+                                               this.getLockManager(),
+                                               timeSeries );
+
+        Future<List<IngestResult>> futureIngestResult =
+                this.ingestSaverExecutor.submit(
+                        timeSeriesIngester );
+        this.ingests.add( futureIngestResult );
+        this.startGettingIngestResults.countDown();
+
+        // See WebSource for comments on this approach.
+        if ( this.startGettingIngestResults.getCount() <= 0 )
+        {
             try
             {
-                SourceCompletedDetails completedDetails =
-                        new SourceCompletedDetails( database,
-                                                    this.currentSourceID );
-                this.ingestFullyCompleted = completedDetails.wasCompleted();
+                Future<List<IngestResult>> future =
+                        this.ingests.take();
+                List<IngestResult> ingestResults = future.get();
+                this.ingested.addAll( ingestResults );
             }
-            catch ( SQLException se )
+            catch ( InterruptedException ie )
             {
-                throw new IngestException( "Failed to check if source " + uri
-                                           + " was completed using id "
-                                           + this.currentSourceID + ".", se );
+                LOGGER.warn( "Interrupted while getting ingest results for PI-XML source "
+                             + this.getDataSource() );
+                Thread.currentThread().interrupt();
             }
-
-            if ( this.ingestFullyCompleted )
+            catch ( ExecutionException ee )
             {
-                LOGGER.debug( "source_id {} completed successfully by another task {}",
-                              this.currentSourceID, this );
-            }
-            else
-            {
-                LOGGER.debug( "source_id {} was NOT completed successfully by another task {}",
-                             this.currentSourceID, this );
+                String message = "While getting ingest results for PI-XML source "
+                                 + this.getDataSource();
+                throw new IngestException( message, ee );
             }
         }
     }
 
-    public boolean inChargeOfIngest()
+    private void completeIngest() throws IngestException
     {
-        return this.inChargeOfIngest;
+        try
+        {
+            // Finish getting the remainder of ingest results.
+            for ( Future<List<IngestResult>> future : this.ingests )
+            {
+                List<IngestResult> ingestResults = future.get();
+                ingested.addAll( ingestResults );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while ingesting CSV data from "
+                         + this.getDataSource(), ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            throw new IngestException( "Failed to ingest NWM data from "
+                                       + this.getDataSource(), ee );
+        }
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "Parsed and ingested {} timeseries from {}",
+                         ingested.size(),
+                         this.getDataSource()
+                             .getUri() );
+        }
     }
 
-    public boolean ingestFullyCompleted()
+
+    /**
+     * Shuts down executors.
+     */
+    private void shutdownNow()
     {
-        return this.ingestFullyCompleted;
+        List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
+
+        if ( !abandoned.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Abandoned {} ingest tasks for PI-XML source {}",
+                         abandoned.size(), this.getDataSource() );
+        }
     }
 
-    private LocalDateTime getStartDate()
-	{
-		return this.startDate;
-	}
 
-    private LocalDateTime getForecastDate()
+
+    public List<IngestResult> getIngestResults()
     {
-		return this.forecastDate;
+        return Collections.unmodifiableList( this.ingested );
     }
 
     private ZoneOffset getZoneOffset()
@@ -1025,140 +1153,56 @@ public final class PIXMLReader extends XMLReader
     private ZoneOffset zoneOffset = null;
 
 	/**
-	 * The date for when the source was created
-	 */
-	private String creationDate = null;
-	
-	/**
-	 * The time on the date that the source was created
-	 */
-	private String creationTime = null;
-
-	/**
-     * The date and time of the first value forecasted, as reported by header
-     * of most recently parsed time series.
-     */
-    private LocalDateTime startDate = null;
-
-    /**
-     * The date and time of the last value forecasted, as reported by header
-     * of most recently parsed time series.
-     */
-    private LocalDateTime endDate = null;
-
-    /**
-     * The date and time that forecasting began
-     */
-    private LocalDateTime forecastDate = null;
-	
-	/**
-	 * Indicates whether or not the data is for forecasts. Default is True
-	 */
-	private Boolean isForecast;
-
-	/**
-	 * Basic details about the current ensemble for a current forecast
-	 */
-	private TimeSeries currentTimeSeries = null;
-	
-	/**
 	 * The value which indicates a null or invalid value from the source
 	 */
 	private Double missingValue = null;
-	
-	/**
-	 * The ID for the unit of measurement for the variable that is currently being parsed
-	 */
-	private Integer currentMeasurementUnitID = null;
-	
-	/**
-	 * The ID for the variable that is currently being parsed
-	 */
-	private Integer currentVariableID = null;
-	
-	/**
-	 * The ID for the Ensemble that is currently being parsed
-	 */
-	private Integer currentEnsembleID;
-	
-	/**
-	 * The ID for the Ensemble for the forecast that is currently being parsed
-	 */
-	private Integer currentTimeSeriesID = null;
-	
-	/**
-	 * The ID for the position for the variable that is currently being parsed
-	 */
-	private Integer currentVariableFeatureID = null;
 
-	/**
-	 * The ID for the current source file
-	 */
-	private Integer currentSourceID = null;
-	
-	/**
-	 * The qualifier for the current ensemble
-	 */
-	private String currentQualifierID = null;
-	
-	/**
-	 * The LID for the feature that the forecast/observation is for
-	 */
-	private String currentLID = null;
-	
-	/**
-	 * The name of the ensemble currently being parsed
-	 */
-	private String currentEnsembleName = null;
-	
-	/**
-	 * The member ID of the current ensemble
-	 */
-	private Integer currentEnsembleMemberID = null;
-	
-	/**
-	 * The name of the variable whose values are currently being parsed 
-	 */
-	private String currentVariableName = null;
-
-	private Duration timeStep;
-	private Duration scalePeriod;
-	private TimeScale.TimeScaleFunction scaleFunction;
-
-    /**
-     * The hash code for the source file
-     */
-	private final String hash;
 
     private String getHash()
     {
         return this.hash;
     }
 
-    public void setDataSourceConfig(DataSourceConfig dataSourceConfig)
-	{
-		this.dataSourceConfig = dataSourceConfig;
-	}
-
 	private DataSourceConfig getDataSourceConfig()
 	{
-		return this.dataSourceConfig;
+		return this.dataSource.getContext();
 	}
 
-    public void setSourceConfig( DataSourceConfig.Source sourceConfig )
-    {
-        this.sourceConfig = sourceConfig;
-    }
 
     private DataSourceConfig.Source getSourceConfig()
     {
-        return this.sourceConfig;
+        return this.dataSource.getSource();
     }
 
-    private DataSourceConfig dataSourceConfig;
 
-    public Integer getLastSourceId()
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @return a TimeSeriesIngester
+     */
+
+    TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
+                                                 Database database,
+                                                 Features featuresCache,
+                                                 Variables variablesCache,
+                                                 Ensembles ensemblesCache,
+                                                 MeasurementUnits measurementUnitsCache,
+                                                 ProjectConfig projectConfig,
+                                                 DataSource dataSource,
+                                                 DatabaseLockManager lockManager,
+                                                 wres.datamodel.time.TimeSeries<?> timeSeries )
     {
-        return this.currentSourceID;
+        return TimeSeriesIngester.of( systemSettings,
+                                      database,
+                                      featuresCache,
+                                      variablesCache,
+                                      ensemblesCache,
+                                      measurementUnitsCache,
+                                      projectConfig,
+                                      dataSource,
+                                      lockManager,
+                                      timeSeries,
+                                      TimeSeriesIngester.GEO_ID_TYPE.LID );
     }
 }

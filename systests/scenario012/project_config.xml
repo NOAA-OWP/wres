@@ -12,7 +12,7 @@
             <type>ensemble forecasts</type>
             <source format="PI-XML">data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
-            <ensemble name="HEFSENSPOST" member_id="2009" qualifier="SIM1" />
+            <ensemble name="2009" />
         </right>
     </inputs>
 

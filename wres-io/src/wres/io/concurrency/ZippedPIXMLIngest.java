@@ -134,25 +134,23 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 
             if ( !dataSources.hasSource(hash))
             {
-                try (InputStream input = new ByteArrayInputStream(this.content))
+                try ( InputStream input = new ByteArrayInputStream(this.content);
+                      PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
+                                                            this.getDatabase(),
+                                                            this.getDataSourcesCache(),
+                                                            this.getFeaturesCache(),
+                                                            this.getVariablesCache(),
+                                                            this.getEnsemblesCache(),
+                                                            this.getMeasurementUnitsCache(),
+                                                            this.projectConfig,
+                                                            this.dataSource,
+                                                            input,
+                                                            hash,
+                                                            this.lockManager );
+                    )
                 {
-                    PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
-                                                          this.getDatabase(),
-                                                          this.getDataSourcesCache(),
-                                                          this.getFeaturesCache(),
-                                                          this.getVariablesCache(),
-                                                          this.getEnsemblesCache(),
-                                                          this.getMeasurementUnitsCache(),
-                                                          uri,
-                                                          input,
-                                                          hash,
-                                                          this.lockManager );
-                    reader.setDataSourceConfig( this.dataSource.getContext() );
-                    reader.setSourceConfig( this.dataSource.getSource() );
                     reader.parse();
-                    id = reader.getLastSourceId();
-                    anotherTaskInChargeOfIngest = !reader.inChargeOfIngest();
-                    ingestFullyCompleted = reader.ingestFullyCompleted();
+                    return reader.getIngestResults();
                 }
             }
             else
