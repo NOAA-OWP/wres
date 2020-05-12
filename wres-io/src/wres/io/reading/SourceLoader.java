@@ -426,6 +426,12 @@ public class SourceLoader
         if ( Objects.nonNull( source.getTimeSeries() ) )
         {
             GEO_ID_TYPE geoIdType = null;
+            String lowerCaseUri = source.getUri()
+                                        .toString()
+                                        .toLowerCase()
+                                        .strip();
+            Format format = source.getSource()
+                                  .getFormat();
 
             // Use the interface to discover GEO_ID_TYPE.
             if ( Objects.nonNull( source.getSource()
@@ -449,22 +455,43 @@ public class SourceLoader
                     geoIdType = GEO_ID_TYPE.COMID;
                 }
             }
-            else if ( source.getUri()
-                            .toString()
-                            .toLowerCase()
-                            .contains( "usgs.gov" ) )
+            else if ( lowerCaseUri.contains( "usgs.gov" ) )
             {
                 LOGGER.warn( "Deprecated USGS source found, please declare interface short-hand in {}.",
                              source );
                 geoIdType = GEO_ID_TYPE.GAGE_ID;
             }
-            else if ( source.getUri()
-                            .toString()
-                            .toLowerCase()
-                            .contains( "ahps" ) )
+            else if ( lowerCaseUri.contains( "ahps" ) )
             {
                 LOGGER.warn( "Deprecated AHPS source found, please declare interface short-hand in {}.",
                              source );
+                geoIdType = GEO_ID_TYPE.LID;
+            }
+            else if ( lowerCaseUri.endsWith( ".csv" ) )
+            {
+                geoIdType = GEO_ID_TYPE.LID;
+            }
+            else if ( lowerCaseUri.endsWith( ".datacard" ) )
+            {
+                geoIdType = GEO_ID_TYPE.LID;
+            }
+            else if ( lowerCaseUri.endsWith( ".xml" ) )
+            {
+                geoIdType = GEO_ID_TYPE.LID;
+            }
+            else if ( Objects.nonNull( format )
+                      && format.equals( Format.CSV ) )
+            {
+                geoIdType = GEO_ID_TYPE.LID;
+            }
+            else if ( Objects.nonNull( format )
+                      && format.equals( Format.DATACARD ) )
+            {
+                geoIdType = GEO_ID_TYPE.LID;
+            }
+            else if ( Objects.nonNull( format )
+                      && format.equals( Format.PI_XML ) )
+            {
                 geoIdType = GEO_ID_TYPE.LID;
             }
             else

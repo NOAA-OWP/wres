@@ -341,7 +341,8 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                     .entrySet() )
             {
                 LOGGER.debug( "TimeSeries trace: {}", trace );
-                Object ensembleName = trace.getKey();
+                String ensembleName = trace.getKey()
+                                           .toString();
                 int ensembleId = this.insertOrGetEnsembleId( ensemblesCache,
                                                              ensembleName );
                 int timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
@@ -383,23 +384,16 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
      * @throws IngestException When any query involved fails.
      */
     private int insertOrGetEnsembleId( Ensembles ensemblesCache,
-                                       Object ensembleName )
+                                       String ensembleName )
             throws IngestException
     {
         int id;
 
-        Integer ensembleNumber = null;
-
-        if ( ensembleName instanceof Integer )
-        {
-            ensembleNumber = (Integer) ensembleName;
-        }
-
         try
         {
-            id = ensemblesCache.getEnsembleID( ensembleName.toString(),
-                                               ensembleNumber,
-                                               ensembleName.toString() );
+            id = ensemblesCache.getEnsembleID( ensembleName,
+                                               null,
+                                               null );
         }
         catch ( SQLException se )
         {

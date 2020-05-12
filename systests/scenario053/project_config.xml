@@ -3,12 +3,12 @@
     <inputs>
         <left label="">
             <type>simulations</type>
-            <source format="csv">smalldata/DRRC2_QINE_FAKE_HEADLESS.csv</source>
+            <source format="csv">smalldata/DRRC2_QINE_FAKE.csv</source>
             <variable>QINE</variable>
         </left>
         <right label="">
             <type>single valued forecasts</type>
-            <source format="csv">smalldata/DRRC2_SQIN_FAKE_HEADLESS.csv</source>
+            <source format="csv">smalldata/DRRC2_SQIN_FAKE.csv</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

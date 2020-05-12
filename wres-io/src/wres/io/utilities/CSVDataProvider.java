@@ -16,7 +16,6 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -24,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
@@ -701,52 +699,8 @@ class CSVDataProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject( columnName  );
-
-        if (value == null)
-        {
-            return null;
-        }
-
-        String actualValue = (String)value;
-        String stringRepresentation = null;
-
-        Instant result;
-
-        if ( Strings.isNaturalNumber(actualValue))
-        {
-            result = Instant.ofEpochSecond( Long.parseLong( actualValue ) );
-        }
-        else if (Strings.isFloatingPoint( actualValue ))
-        {
-            Double epochSeconds = Double.parseDouble( actualValue );
-            result = Instant.ofEpochSecond( epochSeconds.longValue() );
-        }
-        else
-        {
-            try
-            {
-                stringRepresentation = value.toString();
-                stringRepresentation = stringRepresentation.replace( " ", "T" );
-
-                if ( !stringRepresentation.endsWith( "Z" ) )
-                {
-                    stringRepresentation += "Z";
-                }
-
-                result = Instant.parse( stringRepresentation );
-            }
-            catch (DateTimeParseException e)
-            {
-                throw new IllegalStateException( "Neither '" + actualValue +
-                                                 "' nor '" + stringRepresentation +
-                                                 "' could be converted into an instant. If it really "
-                                                 + "was supposed to be a date and time, ensure that it "
-                                                 + "is in the format '1970-01-01T00:00:00Z'." );
-            }
-        }
-
-        return result;
+        CharSequence value = (CharSequence) this.getObject( columnName );
+        return Instant.parse( value );
     }
 
     public Duration getDuration(String columnName)
