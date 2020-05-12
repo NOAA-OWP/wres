@@ -1,43 +1,58 @@
 package wres.io.reading.commaseparated;
 
 import java.io.IOException;
-import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.datamodel.time.ReferenceTimeType.LATEST_OBSERVATION;
+import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
+
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ConfigHelper;
-import wres.io.data.caching.DataSources;
+import wres.datamodel.Ensemble;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
+import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
-import wres.io.data.details.TimeSeries;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.IngestedValues;
-import wres.io.reading.SourceCompleter;
+import wres.io.reading.PreIngestException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.LRUContainer;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 public class CSVSource extends BasicSource
 {
@@ -45,31 +60,32 @@ public class CSVSource extends BasicSource
 
     // It's probably worth making this configurable
     private static final String DELIMITER = ",";
+    private static final String REFERENCE_DATETIME_COLUMN = "start_date";
 
-    private static final int TIME_SERIES_LIMIT = 60;
+    private static final String DEFAULT_ENSEMBLE_NAME = "default";
+
+    /** A placeholder reference datetime for timeseries without one. */
+    private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final DataSources dataSourcesCache;
     private final Features featuresCache;
     private final Variables variablesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final DatabaseLockManager lockManager;
-    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
     private final Set<String> unconfiguredVariableNames = new HashSet<>( 1 );
-    private SourceDetails sourceDetails;
 
-    /**
-     * A container holding referenced TimeSeries entries
-     */
-    private LRUContainer<TimeSeries> encounteredTimeSeries;
+    private final ThreadPoolExecutor ingestSaverExecutor;
+    private final BlockingQueue<Future<List<IngestResult>>> ingests;
+    private final CountDownLatch startGettingIngestResults;
+    private final List<IngestResult> ingested;
+
 
     /**
      * Constructor that sets the filename
      * @param systemSettings The system settings to use.
      * @param database The database to use.
-     * @param dataSourcesCache The data sources cache to use.
      * @param featuresCache The features cache to use.
      * @param variablesCache The variables cache to use.
      * @param ensemblesCache The ensembles cache to use.
@@ -80,7 +96,6 @@ public class CSVSource extends BasicSource
      */
     public CSVSource( SystemSettings systemSettings,
                       Database database,
-                      DataSources dataSourcesCache,
                       Features featuresCache,
                       Variables variablesCache,
                       Ensembles ensemblesCache,
@@ -92,12 +107,30 @@ public class CSVSource extends BasicSource
         super( projectConfig, dataSource );
         this.systemSettings = systemSettings;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
         this.variablesCache = variablesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.lockManager = lockManager;
+
+        // See comments in wres.io.reading.WebSource for info on below approach.
+        ThreadFactory csvIngest = new BasicThreadFactory.Builder()
+                .namingPattern( "CSV Ingest" )
+                .build();
+
+        int concurrentCount = systemSettings.getConnectionPool()
+                                            .getMaximumPoolSize();
+        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
+        this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
+                                                           concurrentCount,
+                                                           systemSettings.poolObjectLifespan(),
+                                                           TimeUnit.MILLISECONDS,
+                                                           webClientQueue,
+                                                           csvIngest );
+        this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
+        this.ingests = new ArrayBlockingQueue<>( concurrentCount );
+        this.startGettingIngestResults = new CountDownLatch( concurrentCount );
+        this.ingested = new ArrayList<>();
     }
 
     private SystemSettings getSystemSettings()
@@ -108,11 +141,6 @@ public class CSVSource extends BasicSource
     private Database getDatabase()
     {
         return this.database;
-    }
-
-    private DataSources getDataSourcesCache()
-    {
-        return this.dataSourcesCache;
     }
 
     private Features getFeaturesCache()
@@ -135,150 +163,41 @@ public class CSVSource extends BasicSource
         return this.measurementUnitsCache;
     }
 
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
+    }
+
     @Override
     protected List<IngestResult> saveObservation() throws IOException
     {
         try
         {
-            this.sourceDetails = this.getSourceDetailsAndCacheThemIfAbsent();
+            return this.saveTimeSeries();
         }
-        catch ( SQLException e )
+        finally
         {
-            throw new IOException( "Metadata about the file at '" + this.getFilename() + "' could not be created.", e );
+            this.shutdownNow();
         }
-
-        Database database = this.getDatabase();
-        boolean sourceCompleted;
-
-        if (sourceDetails.performedInsert())
-        {
-            try
-            {
-                lockManager.lockSource( sourceDetails.getId() );
-            }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Unable to lock to ingest source id "
-                                           + sourceDetails.getId() + " named "
-                                           + this.getFilename(), se );
-            }
-
-            DataProvider data;
-
-            if (this.getSourceConfig().isHasHeader())
-            {
-                data = DataProvider.fromCSV( this.getFilename(), DELIMITER );
-            }
-            else
-            {
-                data = DataProvider.fromCSV(
-                        this.getFilename(),
-                        DELIMITER,
-                        "value_date",
-                        "variable_name",
-                        "location",
-                        "measurement_unit",
-                        "value"
-                );
-            }
-
-            this.parseObservations( data );
-            SourceCompleter sourceCompleter = new SourceCompleter( this.getDatabase(),
-                                                                   sourceDetails.getId(),
-                                                                   this.lockManager );
-            sourceCompleter.complete( this.latches );
-            sourceCompleted = true;
-        }
-        else
-        {
-            sourceCompleted = this.wasCompleted( database,
-                                                 this.sourceDetails );
-        }
-
-        if ( !this.unconfiguredVariableNames.isEmpty() )
-        {
-            LOGGER.warn( "The following variable names were encountered in observation csv data source from {} that were not configured in the project: {}",
-                         this.getFilename(),
-                         this.unconfiguredVariableNames );
-        }
-
-        return IngestResult.singleItemListFrom(
-                this.getProjectConfig(),
-                this.getDataSource(),
-                this.sourceDetails.getId(),
-                !sourceDetails.performedInsert(),
-                !sourceCompleted
-        );
     }
 
     @Override
     protected List<IngestResult> saveForecast() throws IOException
     {
-        if (encounteredTimeSeries == null)
-        {
-            encounteredTimeSeries = new LRUContainer<>( TIME_SERIES_LIMIT );
-        }
-
         try
         {
-            this.sourceDetails = this.getSourceDetailsAndCacheThemIfAbsent();
+            return this.saveTimeSeries();
         }
-        catch ( SQLException e )
+        finally
         {
-            throw new IOException( "Metadata about the file at '" + this.getFilename() + "' could not be created.", e );
+            this.shutdownNow();
         }
+    }
 
-        Database database = this.getDatabase();
-        boolean sourceCompleted;
-
-        if (sourceDetails.performedInsert())
-        {
-            try
-            {
-                lockManager.lockSource( sourceDetails.getId() );
-            }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Unable to lock to ingest source id "
-                                           + sourceDetails.getId() + " named "
-                                           + this.getFilename(), se );
-            }
-
-            DataProvider data;
-
-            if (this.getSourceConfig().isHasHeader())
-            {
-                data = DataProvider.fromCSV( this.getFilename(), DELIMITER );
-            }
-            else
-            {
-                data = DataProvider.fromCSV(
-                        this.getFilename(),
-                        DELIMITER,
-                        "start_date",
-                        "value_date",
-                        "variable_name",
-                        "location",
-                        "measurement_unit",
-                        "value",
-                        "ensemble_name",
-                        "qualifier_id",
-                        "ensemblemember_id"
-                );
-            }
-
-            parseTimeSeries( data );
-            SourceCompleter sourceCompleter = new SourceCompleter( this.getDatabase(),
-                                                                   sourceDetails.getId(),
-                                                                   this.lockManager );
-            sourceCompleter.complete( this.latches );
-            sourceCompleted = true;
-        }
-        else
-        {
-            sourceCompleted = this.wasCompleted( database,
-                                                 this.sourceDetails );
-        }
+    List<IngestResult> saveTimeSeries() throws IOException
+    {
+        DataProvider data =  DataProvider.fromCSV( this.getFilename(), DELIMITER );
+        parseTimeSeries( data );
 
         if ( !this.unconfiguredVariableNames.isEmpty() )
         {
@@ -287,54 +206,351 @@ public class CSVSource extends BasicSource
                          this.unconfiguredVariableNames );
         }
 
-        return IngestResult.singleItemListFrom(
-                this.getProjectConfig(),
-                this.getDataSource(),
-                this.sourceDetails.getId(),
-                !sourceDetails.performedInsert(),
-                !sourceCompleted
-        );
+        return Collections.unmodifiableList( this.ingested );
     }
 
     private void parseTimeSeries(final DataProvider data) throws IOException
     {
-        TimeSeries currentTimeSeries;
+        TimeSeriesMetadata currentTimeSeriesMetadata;
+        TimeSeriesMetadata lastTimeSeriesMetadata = null;
+        String lastEnsembleName = null;
+        SortedMap<String,SortedMap<Instant,Double>> ensembleValues = new TreeMap<>();
 
         while (data.next())
         {
-            try
+            this.validateDataProvider( data );
+
+            // Reference datetime is optional, many sources do not have any.
+            Instant referenceDatetime = null;
+
+            if ( data.hasColumn( REFERENCE_DATETIME_COLUMN ) )
             {
-                this.validateDataProvider( data );
-
-                Instant start = data.getInstant( "start_date" );
-                Instant valueDate = data.getInstant( "value_date" );
-                Double value = data.getDouble( "value" );
-                int ensembleId = this.getEnsembleId( data );
-                int lead = (int) TimeHelper.durationToLongUnits( Duration.between( start, valueDate ),
-                                                                 TimeHelper.LEAD_RESOLUTION );
-
-                currentTimeSeries = formTimeSeries( data, ensembleId);
-
-                Pair<CountDownLatch,CountDownLatch> synchronizer =
-                        IngestedValues.addTimeSeriesValue( this.getSystemSettings(),
-                                                           this.getDatabase(),
-                                                           currentTimeSeries.getTimeSeriesID(),
-                                                           lead,
-                                                           value );
-                this.latches.add( synchronizer );
+                referenceDatetime = data.getInstant( REFERENCE_DATETIME_COLUMN );
             }
-            catch (SQLException e)
+            else
             {
-                throw new IOException( "Metadata needed to save time series values could not be loaded.", e );
+                // TimeSeriesMetadata (currently) requires a reference datetime,
+                // so mark it with a placeholder. Later after getting all the
+                // observations or simulation values, replace it with the latest
+                // datetime on the valid-datetime-line.
+                referenceDatetime = PLACEHOLDER_REFERENCE_DATETIME;
             }
+
+            String variableName = data.getString( "variable_name" );
+            String locationName = data.getString( "location" );
+            String unitName = data.getString( "measurement_unit" );
+            currentTimeSeriesMetadata =
+                    TimeSeriesMetadata.of( Map.of( UNKNOWN, referenceDatetime ),
+                                           null,
+                                           variableName,
+                                           locationName,
+                                           unitName );
+            String ensembleName = this.getEnsembleName( data );
+            Instant valueDate = data.getInstant( "value_date" );
+            Double value = data.getDouble( "value" );
+
+            if ( !currentTimeSeriesMetadata.equals( lastTimeSeriesMetadata ) )
+            {
+                // New timeseries needed, but first initiate ingest of previous.
+                if ( Objects.nonNull( lastTimeSeriesMetadata ) )
+                {
+                    TimeSeries<?> timeSeries = this.buildTimeSeries( lastTimeSeriesMetadata,
+                                                                     ensembleValues,
+                                                                     lastEnsembleName,
+                                                                     data.getRowIndex() + 1 );
+                    this.ingest( timeSeries );
+                }
+
+                // New timeseries.
+                ensembleValues = new TreeMap<>();
+            }
+            else
+            {
+                LOGGER.debug( "Current {} equals previous {}",
+                             currentTimeSeriesMetadata, lastTimeSeriesMetadata );
+            }
+
+            if ( !ensembleName.equals( lastEnsembleName ) )
+            {
+                // Validate this ensemble trace hasn't already started
+                if ( Objects.nonNull( ensembleValues.get( ensembleName ) ) )
+                {
+                    LOGGER.debug( "Ignoring issue with wonky data order, e.g. interleaving trace data..." );
+                    /*
+                    throw new PreIngestException( "While reading "
+                                                  + this.getDataSource()
+                                                        .getUri()
+                                                  + " around line "
+                                                  + data.getRowIndex()
+                                                  + " could not create new "
+                                                  + "ensemble trace "
+                                                  + ensembleName
+                                                  + " because it already "
+                                                  + "was in the series." );
+                     */
+                }
+                else
+                {
+                    // Add new ensemble trace.
+                    ensembleValues.put( ensembleName, new TreeMap<>() );
+                    LOGGER.debug( "Added ensembleName {}", ensembleName );
+                }
+            }
+
+            // Get the currently-building trace
+            SortedMap<Instant,Double> trace = ensembleValues.get( ensembleName );
+
+            // If the trace is non-existent, create it and save it.
+            if ( Objects.isNull( trace ) )
+            {
+                trace = new TreeMap<>();
+                ensembleValues.put( ensembleName, trace );
+            }
+
+            // Save the data into ensembleValues using the trace stored there.
+            trace.put( valueDate, value );
+
+            lastTimeSeriesMetadata = currentTimeSeriesMetadata;
+            lastEnsembleName = ensembleName;
         }
+
+        if ( Objects.nonNull( lastTimeSeriesMetadata) )
+        {
+            // After reading all data, save the last timeseries.
+            TimeSeries<?> timeSeries =
+                    this.buildTimeSeries( lastTimeSeriesMetadata,
+                                          ensembleValues,
+                                          lastEnsembleName,
+                                          data.getRowIndex() + 1 );
+            this.ingest( timeSeries );
+        }
+        else if ( LOGGER.isWarnEnabled() )
+        {
+                LOGGER.warn( "Did not find data to build a timeseries in {}, so data may not have been ingested from this source.",
+                             this.getDataSource()
+                                 .getUri() );
+        }
+
+        this.completeIngest();
     }
 
-    private int getEnsembleId(final DataProvider data) throws SQLException
+
+    /**
+     * Build a timeseries out of temporary data structures.
+     *
+     * When there is a placeholder reference datetime, replace it with the
+     * latest valid datetime found as "latest observation." This means there was
+     * no reference datetime found in the CSV, but until the WRES db schema is
+     * ready to store any kind of timeseries with 0, 1, or N reference datetimes
+     * we are required to specify something here.
+     *
+     * @param lastTimeSeriesMetadata The metadata for most-recently-parsed data.
+     * @param ensembleValues The most-recently-parsed data in sorted map form.
+     * @param lastEnsembleName The most-recently-parsed ensemble name.
+     * @param lineNumber The most-recently-parsed line number in the csv source.
+     * @return A TimeSeries either of Double or Ensemble, ready for ingest.
+     * @throws PreIngestException When something goes wrong.
+     */
+    private TimeSeries<?> buildTimeSeries( TimeSeriesMetadata lastTimeSeriesMetadata,
+                                           SortedMap<String,SortedMap<Instant,Double>> ensembleValues,
+                                           String lastEnsembleName,
+                                           int lineNumber )
     {
-        String ensembleName = "default";
-        String qualifierID = null;
-        Integer ensembleMemberID = null;
+        LOGGER.debug( "buildTimeSeries called with {}, {}, {}, {}",
+                      lastTimeSeriesMetadata,
+                      ensembleValues,
+                      lastEnsembleName,
+                      lineNumber );
+        TimeSeries<?> timeSeries;
+        TimeSeriesMetadata metadata;
+        Collection<Instant> referenceDatetimes =
+                lastTimeSeriesMetadata.getReferenceTimes()
+                                      .values();
+
+        // When there are no reference datetimes, use latest value
+        // by valid datetime. (Eventually we should remove the
+        // restriction of requiring a reference datetime when db is
+        // ready for it to be relaxed)
+        if ( referenceDatetimes.size() == 1
+             && referenceDatetimes.contains( PLACEHOLDER_REFERENCE_DATETIME ) )
+        {
+            LOGGER.debug( "Found placeholder reference datetime in {}",
+                          lastTimeSeriesMetadata);
+            Instant latestDatetime = ensembleValues.get( lastEnsembleName )
+                                                   .lastKey();
+            metadata = TimeSeriesMetadata.of( Map.of( LATEST_OBSERVATION, latestDatetime ),
+                                              lastTimeSeriesMetadata.getTimeScale(),
+                                              lastTimeSeriesMetadata.getVariableName(),
+                                              lastTimeSeriesMetadata.getFeatureName(),
+                                              lastTimeSeriesMetadata.getUnit() );
+        }
+        else
+        {
+            LOGGER.debug( "Found NO placeholder reference datetime in {}",
+                          lastTimeSeriesMetadata);
+            metadata = lastTimeSeriesMetadata;
+        }
+
+        // Check if this is actually an ensemble or single trace
+        if ( ensembleValues.size() == 1
+             && ensembleValues.firstKey()
+                              .equals( DEFAULT_ENSEMBLE_NAME ) )
+        {
+            timeSeries = this.transform( metadata,
+                                         ensembleValues.get( DEFAULT_ENSEMBLE_NAME ),
+                                         lineNumber );
+        }
+        else
+        {
+            timeSeries = this.transformEnsemble( metadata,
+                                                 ensembleValues,
+                                                 lineNumber );
+        }
+
+        LOGGER.debug( "transformed into {}", timeSeries );
+        return timeSeries;
+    }
+
+    /**
+     * Transform a single trace into a TimeSeries of doubles.
+     * @param metadata The metadata of the timeseries.
+     * @param trace The raw data to build a TimeSeries.
+     * @param lineNumber The approximate location in the source.
+     * @return The complete TimeSeries
+     */
+
+    private TimeSeries<Double> transform( TimeSeriesMetadata metadata,
+                                          SortedMap<Instant,Double> trace,
+                                          int lineNumber )
+    {
+        if ( trace.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot transform fewer than "
+                                                + "one values into timeseries "
+                                                + "with metadata "
+                                                + metadata
+                                                + " from line number "
+                                                + lineNumber );
+        }
+
+        TimeSeries.TimeSeriesBuilder<Double> builder = new TimeSeries.TimeSeriesBuilder<>();
+        builder.setMetadata( metadata );
+
+        for ( Map.Entry<Instant,Double> events : trace.entrySet() )
+        {
+            Event<Double> event = Event.of( events.getKey(), events.getValue() );
+            builder.addEvent( event );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Transform a map of traces into a TimeSeries of ensembles (flip it) but
+     * also validate the density and valid datetimes of the ensemble prior.
+     * @param metadata The metadata of the timeseries.
+     * @param traces The raw data to build a TimeSeries.
+     * @param lineNumber The approximate location in the source.
+     * @return The complete TimeSeries
+     * @throws IllegalArgumentException When fewer than two traces given.
+     * @throws PreIngestException When ragged (non-dense) data given.
+     */
+
+    private TimeSeries<Ensemble> transformEnsemble( TimeSeriesMetadata metadata,
+                                                    SortedMap<String,SortedMap<Instant,Double>> traces,
+                                                    int lineNumber )
+    {
+        int traceCount = traces.size();
+
+        if ( traceCount < 2 )
+        {
+            throw new IllegalArgumentException( "Cannot transform fewer than "
+                                                + "two traces into ensemble: "
+                                                + traces );
+        }
+
+        Map<Instant,double[]> reshapedValues = null;
+        Map.Entry<String,SortedMap<Instant,Double>> previousTrace = null;
+        int i = 0;
+
+        for ( Map.Entry<String,SortedMap<Instant,Double>> trace : traces.entrySet() )
+        {
+            SortedSet<Instant> theseInstants = new TreeSet<>( trace.getValue()
+                                                                   .keySet() );
+
+            if ( Objects.nonNull( previousTrace ) )
+            {
+                SortedSet<Instant> previousInstants = new TreeSet<>( previousTrace.getValue()
+                                                                                  .keySet() );
+                if ( !theseInstants.equals( previousInstants ) )
+                {
+                    throw new PreIngestException( "Cannot build ensemble from "
+                                                  + this.getDataSource()
+                                                        .getUri()
+                                                  + " with data at or before "
+                                                  + "line number "
+                                                  + lineNumber
+                                                  + " because the trace named "
+                                                  + trace.getKey()
+                                                  + " had these valid datetimes"
+                                                  + ": " + theseInstants
+                                                  + " but previous trace named "
+                                                  + previousTrace.getKey()
+                                                  + " had different ones: "
+                                                  + previousInstants
+                                                  + " which is not allowed. All"
+                                                  + " traces must be dense and "
+                                                  + "match valid datetimes." );
+                }
+            }
+
+            if ( Objects.isNull( reshapedValues ) )
+            {
+                reshapedValues = new HashMap<>( theseInstants.size() );
+            }
+
+            for ( Map.Entry<Instant,Double> event : trace.getValue()
+                                                         .entrySet() )
+            {
+                Instant validDateTime = event.getKey();
+
+                if ( !reshapedValues.containsKey( validDateTime ) )
+                {
+                    reshapedValues.put( validDateTime, new double[traceCount] );
+                }
+
+                double[] values = reshapedValues.get( validDateTime );
+                values[i] = event.getValue();
+            }
+
+            previousTrace = trace;
+            i++;
+        }
+
+        wres.datamodel.time.TimeSeries.TimeSeriesBuilder<Ensemble> builder =
+                new wres.datamodel.time.TimeSeries.TimeSeriesBuilder<>();
+
+        // Because the iteration is over a sorted map, assuming same order here.
+        SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );
+        String[] traceNames = new String[traceNamesSorted.size()];
+        traceNamesSorted.toArray( traceNames );
+
+        builder.setMetadata( metadata );
+
+        for ( Map.Entry<Instant,double[]> events : reshapedValues.entrySet() )
+        {
+            Ensemble ensembleSlice = Ensemble.of( events.getValue(), traceNames );
+            Event<Ensemble> ensembleEvent = Event.of( events.getKey(), ensembleSlice );
+            builder.addEvent( ensembleEvent );
+        }
+
+        return builder.build();
+    }
+
+
+    private String getEnsembleName( final DataProvider data )
+    {
+        String ensembleName = DEFAULT_ENSEMBLE_NAME;
 
         if (data.hasColumn("ensemble_name"))
         {
@@ -343,72 +559,17 @@ public class CSVSource extends BasicSource
 
         if (data.hasColumn("qualifier_id"))
         {
-            qualifierID = data.getString("qualifier_id");
+            ensembleName += ":" + data.getString("qualifier_id");
         }
 
         if (data.hasColumn("ensemblemember_id"))
         {
-            ensembleMemberID = data.getInt("ensemblemember_id");
+            ensembleName += ":" + data.getInt("ensemblemember_id");
         }
 
-        Ensembles ensembles = this.getEnsemblesCache();
-        return ensembles.getEnsembleID(ensembleName, ensembleMemberID, qualifierID);
+        return ensembleName;
     }
 
-    private void parseObservations(final DataProvider data) throws IOException
-    {
-        while (data.next())
-        {
-            this.validateDataProvider( data );
-
-            Instant valueDate = data.getInstant( "value_date" );
-            Double value = data.getDouble( "value" );
-
-            String variable = data.getString( "variable_name" );
-            String location = data.getString( "location" );
-            String measurementUnit = data.getString( "measurement_unit" );
-            Integer measurementUnitId;
-            MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
-
-            try
-            {
-                measurementUnitId = measurementUnits.getMeasurementUnitID( measurementUnit );
-            }
-            catch ( SQLException e )
-            {
-                throw new IOException( "Could not determine the ID for the measurement unit '" +
-                                       measurementUnit + "'", e );
-            }
-
-            Integer variableFeatureId;
-            Features features = this.getFeaturesCache();
-            Variables variables = this.getVariablesCache();
-
-            try
-            {
-                variableFeatureId = features.getVariableFeatureIDByLID(
-                        location,
-                        variables.getVariableID(variable)
-                );
-            }
-            catch ( SQLException e )
-            {
-                throw new IOException( "Could not determine the metadata about where '" +
-                                       location + "' and the variable '" + variable +
-                                       "' intersect that are needed to save observations from " +
-                                       this.getFilename(), e );
-            }
-
-            Pair<CountDownLatch,CountDownLatch> synchronizer =
-                    IngestedValues.observed( value )
-                                  .at(valueDate)
-                                  .measuredIn( measurementUnitId )
-                                  .forVariableAndFeatureID( variableFeatureId )
-                                  .inSource( this.sourceDetails.getId() )
-                                  .add( this.systemSettings, this.database );
-            this.latches.add( synchronizer );
-        }
-    }
 
     private void validateDataProvider(final DataProvider dataProvider) throws IngestException
     {
@@ -426,31 +587,40 @@ public class CSVSource extends BasicSource
         );
         boolean valid = true;
         boolean hasColumn;
-        if ( ConfigHelper.isForecast( this.getDataSourceConfig() ))
-        {
-            hasColumn = dataProvider.hasColumn( "start_date" );
 
-            if (!hasColumn)
+        hasColumn = dataProvider.hasColumn( REFERENCE_DATETIME_COLUMN );
+
+        if ( hasColumn )
+        {
+            if ( !Strings.hasValue( dataProvider.getString(
+                REFERENCE_DATETIME_COLUMN ) ) )
             {
-                valid = false;
-                errorJoiner.add( "The provided csv is missing a 'start_date' column." );
-            }
-            else if (!Strings.hasValue( dataProvider.getString( "start_date" )))
-            {
-                errorJoiner.add("The provided csv is missing valid 'start_date' data.");
+                errorJoiner.add( "The provided csv is missing valid '"
+                                 + REFERENCE_DATETIME_COLUMN
+                                 + "' data." );
                 valid = false;
             }
             else
             {
                 try
                 {
-                    dataProvider.getInstant( "start_date" );
+                    dataProvider.getInstant( REFERENCE_DATETIME_COLUMN );
                 }
                 catch ( DateTimeParseException | ClassCastException e )
                 {
-                    errorJoiner.add("The provided csv has invalid data within the 'start_date' column.");
+                    errorJoiner.add(
+                            "The provided csv has invalid data within the '"
+                            + REFERENCE_DATETIME_COLUMN
+                            + "' column." );
                 }
             }
+        }
+        else if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "No '{}' column in '{}', assuming this means it has no forecast data.",
+                         REFERENCE_DATETIME_COLUMN,
+                         this.getDataSource()
+                             .getUri() );
         }
 
         hasColumn = dataProvider.hasColumn( "value_date" );
@@ -549,130 +719,104 @@ public class CSVSource extends BasicSource
         }
     }
 
-    private TimeSeries formTimeSeries(final DataProvider data, final int ensembleId) throws SQLException
-    {
-        final String variable = data.getString( "variable_name" );
-        final String location = data.getString( "location" );
-        final String measurementUnit = data.getString( "measurement_unit" );
-        final String startDate = data.getInstant( "start_date" ).toString();
-
-        Features features = this.getFeaturesCache();
-        Variables variables = this.getVariablesCache();
-
-        final Integer variableFeatureId = features.getVariableFeatureIDByLID(
-                location,
-                variables.getVariableID(variable)
-        );
-
-        TimeSeries timeSeries = this.encounteredTimeSeries.get(
-                series -> series.getEnsembleId() == ensembleId &&
-                          series.getInitializationDate().equals( startDate ) &&
-                          series.getVariableFeatureID().equals( variableFeatureId )
-        );
-
-        if (timeSeries != null)
-        {
-            return timeSeries;
-        }
-
-        timeSeries = new TimeSeries(
-                database,
-                this.sourceDetails.getId(),
-                startDate
-        );
-
-        timeSeries.setEnsembleID(ensembleId);
-
-        MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
-        timeSeries.setMeasurementUnitID(
-                measurementUnits.getMeasurementUnitID(measurementUnit)
-        );
-
-        timeSeries.setVariableFeatureID( variableFeatureId );
-        
-        // Time scale information is missing by default        
-        //timeSeries.setScalePeriod( 1 );
-
-        this.encounteredTimeSeries.add(timeSeries);
-
-        return timeSeries;
-    }
 
     /**
-     * Attempts to return the source details and adds them to the centralized application cache if they are absent.
-     * 
-     * @return the source details
-     * @throws SQLException if the source details could not be created
+     * Create an ingester for the given timeseries and begin ingest, add the
+     * future to this.ingests as a side-effect.
+     * @param timeSeries The timeSeries to ingest.
+     * @throws IngestException When anything goes wrong related to ingest.
      */
 
-    private SourceDetails getSourceDetailsAndCacheThemIfAbsent() throws SQLException
-    {
-        // See: #72718 
-        // Create a source key to check
-        Instant sourceTime = Instant.now();
-        SourceDetails.SourceKey sourceKey = new SourceDetails.SourceKey( this.getFilename(),
-                                                                         sourceTime.toString(),
-                                                                         null,
-                                                                         this.getHash() );
-        Database database = this.getDatabase();
-        DataSources dataSources = this.getDataSourcesCache();
-
-        // Is it in the application cache?
-        boolean isInCache = dataSources.isCached( sourceKey );
-
-        SourceDetails returnMe = null;
-
-        // No, not in the cache, so create and add to the application cache
-        if ( !isInCache )
-        {
-            returnMe = new SourceDetails( sourceKey );
-
-            // Attempt to save the source details to the database
-            returnMe.save( database );
-
-            // If we saved, then we should update the application cache
-            if ( returnMe.performedInsert() )
-            {
-                LOGGER.trace( "Could not find CSV source '{}' in the cache. Adding...", returnMe );
-
-                // Cache
-                dataSources.put( returnMe );
-
-                LOGGER.trace( "Added CSV source '{}' to the cache.", returnMe );
-            }
-        }
-        // Yes, it's in the application cache, so return from there
-        else
-        {
-            returnMe = dataSources.get( this.getFilename(), sourceTime.toString(), null, this.getHash() );
-        }
-
-        return returnMe;
-    }
-    
-    /**
-     * Discover whether the source was completely ingested
-     * @param sourceDetails the source to query
-     * @throws IngestException when discovery fails due to SQLException
-     * @return true if the source has been marked as completed, false otherwise
-     */
-
-    private boolean wasCompleted( Database database,
-                                  SourceDetails sourceDetails )
+    private void ingest( wres.datamodel.time.TimeSeries<?> timeSeries )
             throws IngestException
     {
-        SourceCompletedDetails completed = new SourceCompletedDetails( database,
-                                                                       sourceDetails );
+        TimeSeriesIngester timeSeriesIngester =
+                this.createTimeSeriesIngester( this.getSystemSettings(),
+                                               this.getDatabase(),
+                                               this.getFeaturesCache(),
+                                               this.getVariablesCache(),
+                                               this.getEnsemblesCache(),
+                                               this.getMeasurementUnitsCache(),
+                                               this.getProjectConfig(),
+                                               this.getDataSource(),
+                                               this.getLockManager(),
+                                               timeSeries );
 
+        Future<List<IngestResult>> futureIngestResult =
+                this.ingestSaverExecutor.submit(
+                        timeSeriesIngester );
+        this.ingests.add( futureIngestResult );
+        this.startGettingIngestResults.countDown();
+
+        // See WebSource for comments on this approach.
+        if ( this.startGettingIngestResults.getCount() <= 0 )
+        {
+            try
+            {
+                Future<List<IngestResult>> future =
+                        this.ingests.take();
+                List<IngestResult> ingestResults = future.get();
+                this.ingested.addAll( ingestResults );
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting ingest results for CSV source "
+                             + this.getDataSource() );
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                String message = "While getting ingest results for CSV source "
+                                 + this.getDataSource();
+                throw new IngestException( message, ee );
+            }
+        }
+    }
+
+    private void completeIngest() throws IngestException
+    {
         try
         {
-            return completed.wasCompleted();
+            // Finish getting the remainder of ingest results.
+            for ( Future<List<IngestResult>> future : this.ingests )
+            {
+                List<IngestResult> ingestResults = future.get();
+                ingested.addAll( ingestResults );
+            }
         }
-        catch ( SQLException se )
+        catch ( InterruptedException ie )
         {
-            throw new IngestException( "Failed discover whether source "
-                                       + sourceDetails + " was completed.",
-                                       se );
+            LOGGER.warn( "Interrupted while ingesting CSV data from "
+                         + this.getDataSource(), ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            throw new IngestException( "Failed to ingest NWM data from "
+                                       + this.getDataSource(), ee );
+        }
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "Parsed and ingested {} timeseries from {}",
+                         ingested.size(),
+                         this.getDataSource()
+                             .getUri() );
+        }
+    }
+
+
+    /**
+     * Shuts down executors.
+     */
+    private void shutdownNow()
+    {
+        List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
+
+        if ( !abandoned.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Abandoned {} ingest tasks for CSV source {}",
+                         abandoned.size(), this.getDataSource() );
         }
     }
 
@@ -680,5 +824,36 @@ public class CSVSource extends BasicSource
     protected Logger getLogger()
     {
         return CSVSource.LOGGER;
+    }
+
+
+    /**
+     * This method facilitates testing, Pattern 1 at
+     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * @return a TimeSeriesIngester
+     */
+
+    TimeSeriesIngester createTimeSeriesIngester( SystemSettings systemSettings,
+                                                 Database database,
+                                                 Features featuresCache,
+                                                 Variables variablesCache,
+                                                 Ensembles ensemblesCache,
+                                                 MeasurementUnits measurementUnitsCache,
+                                                 ProjectConfig projectConfig,
+                                                 DataSource dataSource,
+                                                 DatabaseLockManager lockManager,
+                                                 wres.datamodel.time.TimeSeries<?> timeSeries )
+    {
+        return TimeSeriesIngester.of( systemSettings,
+                                      database,
+                                      featuresCache,
+                                      variablesCache,
+                                      ensemblesCache,
+                                      measurementUnitsCache,
+                                      projectConfig,
+                                      dataSource,
+                                      lockManager,
+                                      timeSeries,
+                                      TimeSeriesIngester.GEO_ID_TYPE.LID );
     }
 }

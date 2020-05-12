@@ -105,7 +105,6 @@ public class ReaderFactory {
             case CSV:
                 source = new CSVSource( systemSettings,
                                         database,
-                                        dataSourcesCache,
                                         featuresCache,
                                         variablesCache,
                                         ensemblesCache,
