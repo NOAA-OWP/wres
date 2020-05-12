@@ -13,3 +13,5 @@ So until a switch to RHEL8 or other non-ancient OS, this is needed.
 
 Conversely, if there are no systems using CentOS7 anymore, this is
 no longer needed and can be deleted.
+
+The same is true for RHEL6/CentOS6.
