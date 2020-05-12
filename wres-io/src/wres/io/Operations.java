@@ -588,6 +588,11 @@ public final class Operations {
         List<IngestResult> safeToShareResults =
                 Collections.unmodifiableList( composedResults );
 
+        if ( safeToShareResults.isEmpty() )
+        {
+            throw new IngestException( "No data were ingested." );
+        }
+
         try
         {
             result = Projects.getProjectFromIngest( systemSettings,
