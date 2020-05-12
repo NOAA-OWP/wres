@@ -45,7 +45,6 @@ import ucar.nc2.Variable;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
-import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -580,6 +579,25 @@ class NWMTimeSeries implements Closeable
     }
 
 
+    private static DataType getAttributeType( Variable ncVariable,
+                                              String attributeName )
+    {
+        List<Attribute> variableAttributes = ncVariable.getAttributes();
+
+        for ( Attribute attribute : variableAttributes )
+        {
+            if ( attribute.getShortName()
+                          .toLowerCase()
+                          .equals( attributeName.toLowerCase() ) )
+            {
+                return attribute.getDataType();
+            }
+        }
+
+        throw new IllegalStateException( "No '" + attributeName
+                                         + "' attribute found for variable '"
+                                         + ncVariable + " in netCDF data." );
+    }
 
     /**
      * @param ncVariable The NWM variable.
@@ -611,9 +629,9 @@ class NWMTimeSeries implements Closeable
     /**
      * @param ncVariable The NWM variable.
      * @param attributeName The attribute associated with the variable.
-     * @return The String representation of the value of attribute of variable.
+     * @return The double representation of the value of attribute of variable.
      * @throws IllegalArgumentException When the attribute does not exist.
-     * @throws IllegalArgumentException When the type is not float or double.
+     * @throws CastMayCauseBadConversionException When the type is not double.
      */
 
     private static double readAttributeAsDouble( Variable ncVariable,
@@ -629,24 +647,60 @@ class NWMTimeSeries implements Closeable
             {
                 DataType type = attribute.getDataType();
 
-                if ( type.equals( DataType.FLOAT ) )
+                if ( type.equals( DataType.DOUBLE ) )
                 {
-                    LOGGER.trace( "Promoting float to double for {}", attribute );
-                    return attribute.getNumericValue()
-                                    .doubleValue();
-                }
-                else if ( type.equals( DataType.DOUBLE ) )
-                {
-                    // No loss of precision when promoting float to double.
                     return attribute.getNumericValue()
                                     .doubleValue();
                 }
                 else
                 {
-                    throw new IllegalArgumentException( "Unable to convert attribute '"
-                                                        + attributeName
-                                                        + "' to double because it is type "
-                                                        + type );
+                    throw new CastMayCauseBadConversionException(
+                            "Unable to convert attribute '"
+                            + attributeName
+                            + "' to double because it is type "
+                            + type );
+                }
+            }
+        }
+
+        throw new IllegalArgumentException( "No '" + attributeName
+                                            + "' attribute found for variable '"
+                                            + ncVariable + " in netCDF data." );
+    }
+
+    /**
+     * @param ncVariable The NWM variable.
+     * @param attributeName The attribute associated with the variable.
+     * @return The float representation of the value of attribute of variable.
+     * @throws IllegalArgumentException When the attribute does not exist.
+     * @throws CastMayCauseBadConversionException When the type is not float.
+     */
+
+    private static float readAttributeAsFloat( Variable ncVariable,
+                                               String attributeName )
+    {
+        List<Attribute> variableAttributes = ncVariable.getAttributes();
+
+        for ( Attribute attribute : variableAttributes )
+        {
+            if ( attribute.getShortName()
+                          .toLowerCase()
+                          .equals( attributeName.toLowerCase() ) )
+            {
+                DataType type = attribute.getDataType();
+
+                if ( type.equals( DataType.FLOAT ) )
+                {
+                    return attribute.getNumericValue()
+                                    .floatValue();
+                }
+                else
+                {
+                    throw new CastMayCauseBadConversionException(
+                            "Unable to convert attribute '"
+                            + attributeName
+                            + "' to float because it is type "
+                            + type );
                 }
             }
         }
@@ -662,7 +716,7 @@ class NWMTimeSeries implements Closeable
      * @param attributeName The attribute associated with the variable.
      * @return The String representation of the value of attribute of variable.
      * @throws IllegalArgumentException When the attribute does not exist.
-     * @throws IllegalArgumentException When the type cast would cause loss.
+     * @throws CastMayCauseBadConversionException When the type cast would cause loss.
      */
 
     private static int readAttributeAsInt( Variable ncVariable,
@@ -691,10 +745,11 @@ class NWMTimeSeries implements Closeable
                 }
                 else
                 {
-                    throw new IllegalArgumentException( "Unable to convert attribute '"
-                                                        + attributeName
-                                                        + "' to integer because it is type "
-                                                        + type );
+                    throw new CastMayCauseBadConversionException(
+                            "Unable to convert attribute '"
+                            + attributeName
+                            + "' to integer because it is type "
+                            + type );
                 }
             }
         }
@@ -789,6 +844,9 @@ class NWMTimeSeries implements Closeable
         // Create each TimeSeries
         for ( Map.Entry<Integer,SortedSet<Event<Double>>> series : events.entrySet() )
         {
+            // TODO: use the reference datetime from actual data, not args.
+            // The datetimes seem to be synchronized but this is not true for
+            // analyses.
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
                                                                  null,
                                                                  variableName,
@@ -825,19 +883,71 @@ class NWMTimeSeries implements Closeable
 
     private static VariableAttributes readVariableAttributes( Variable variable )
     {
+        final String MISSING_VALUE_NAME = "missing_value";
+        final String FILL_VALUE_NAME = "_FillValue";
+        final String SCALE_FACTOR_NAME = "scale_factor";
+        final String OFFSET_NAME = "add_offset";
 
         int missingValue = readAttributeAsInt( variable,
-                                               "missing_value" );
+                                               MISSING_VALUE_NAME );
         int fillValue = readAttributeAsInt( variable,
-                                            "_FillValue");
-        double multiplier = readAttributeAsDouble( variable,
-                                                   "scale_factor" );
-        double offsetToAdd = readAttributeAsDouble( variable,
-                                                    "add_offset" );
+                                            FILL_VALUE_NAME );
+        boolean has32BitPacking;
+        float multiplier32 = Float.NaN;
+        float offsetToAdd32 = Float.NaN;
+        double multiplier64 = Double.NaN;
+        double offsetToAdd64 = Double.NaN;
+
+        DataType multiplierType = getAttributeType( variable,
+                                                    SCALE_FACTOR_NAME );
+        DataType offsetType = getAttributeType( variable,
+                                                OFFSET_NAME );
+
+        if ( !multiplierType.equals( offsetType ) )
+        {
+            throw new UnsupportedOperationException( "The variable "
+                                                     + variable
+                                                     + " has inconsistent types"
+                                                     + " for attributes '"
+                                                     + SCALE_FACTOR_NAME
+                                                     + "' and '"
+                                                     + OFFSET_NAME + "': '"
+                                                     + multiplierType.toString()
+                                                     + "' and '"
+                                                     + offsetType.toString()
+                                                     + "' respectively. The CF "
+                                                     + "conventions on packing "
+                                                     + "disallow this." );
+        }
+
+        if ( multiplierType.equals( DataType.FLOAT ) )
+        {
+            has32BitPacking = true;
+            multiplier32 = readAttributeAsFloat( variable, SCALE_FACTOR_NAME );
+            offsetToAdd32 = readAttributeAsFloat( variable, OFFSET_NAME );
+        }
+        else if ( multiplierType.equals( DataType.DOUBLE ) )
+        {
+            has32BitPacking = false;
+            multiplier64 = readAttributeAsDouble( variable, SCALE_FACTOR_NAME );
+            offsetToAdd64 = readAttributeAsDouble( variable, OFFSET_NAME );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Only 32-bit (float) and"
+                                                     + "64-bit (double) "
+                                                     + "floating point packing "
+                                                     + "is supported in this "
+                                                     + "version of WRES." );
+        }
+
         return new VariableAttributes( missingValue,
                                        fillValue,
-                                       multiplier,
-                                       offsetToAdd );
+                                       has32BitPacking,
+                                       multiplier32,
+                                       offsetToAdd32,
+                                       multiplier64,
+                                       offsetToAdd64 );
     }
 
 
@@ -951,8 +1061,14 @@ class NWMTimeSeries implements Closeable
      */
     private static double unpack( int rawValue, VariableAttributes attributes )
     {
-        return rawValue * attributes.getMultiplier()
-               + attributes.getOffsetToAdd();
+        if ( attributes.has32BitPacking() )
+        {
+            return rawValue * attributes.getMultiplier32()
+                   + attributes.getOffsetToAdd32();
+        }
+
+        return rawValue * attributes.getMultiplier64()
+               + attributes.getOffsetToAdd64();
     }
 
 
@@ -1055,18 +1171,29 @@ class NWMTimeSeries implements Closeable
     {
         private final int missingValue;
         private final int fillValue;
-        private final double multiplier;
-        private final double offsetToAdd;
+
+        /** True means use float multiplier and offset, false means double */
+        private final boolean has32BitPacking;
+        private final float multiplier32;
+        private final float offsetToAdd32;
+        private final double multiplier64;
+        private final double offsetToAdd64;
 
         VariableAttributes( int missingValue,
                             int fillValue,
-                            double multiplier,
-                            double offsetToAdd )
+                            boolean has32BitPacking,
+                            float multiplier32,
+                            float offsetToAdd32,
+                            double multiplier64,
+                            double offsetToAdd64 )
         {
             this.missingValue = missingValue;
             this.fillValue = fillValue;
-            this.multiplier = multiplier;
-            this.offsetToAdd = offsetToAdd;
+            this.has32BitPacking = has32BitPacking;
+            this.multiplier32 = multiplier32;
+            this.offsetToAdd32 = offsetToAdd32;
+            this.multiplier64 = multiplier64;
+            this.offsetToAdd64 = offsetToAdd64;
         }
 
         int getMissingValue()
@@ -1079,14 +1206,49 @@ class NWMTimeSeries implements Closeable
             return this.fillValue;
         }
 
-        double getMultiplier()
+        boolean has32BitPacking()
         {
-            return this.multiplier;
+            return this.has32BitPacking;
         }
 
-        double getOffsetToAdd()
+        float getMultiplier32()
         {
-            return this.offsetToAdd;
+            if ( !this.has32BitPacking )
+            {
+                throw new IllegalStateException( "This instance has 64-bit packing, use getMultiplier64()" );
+            }
+
+            return this.multiplier32;
+        }
+
+        float getOffsetToAdd32()
+        {
+            if ( !this.has32BitPacking )
+            {
+                throw new IllegalStateException( "This instance has 64-bit packing, use getOffsetToAdd64()" );
+            }
+
+            return this.offsetToAdd32;
+        }
+
+        double getMultiplier64()
+        {
+            if ( this.has32BitPacking )
+            {
+                throw new IllegalStateException( "This instance has 32-bit packing, use getMultiplier32()" );
+            }
+
+            return this.multiplier64;
+        }
+
+        double getOffsetToAdd64()
+        {
+            if ( this.has32BitPacking )
+            {
+                throw new IllegalStateException( "This instance has 32-bit packing, use getOffsetToAdd32()" );
+            }
+
+            return this.offsetToAdd64;
         }
     }
 
