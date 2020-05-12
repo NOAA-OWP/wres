@@ -1,24 +1,19 @@
 package wres.io.reading.fews;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -114,73 +109,22 @@ public class FEWSSource extends BasicSource
     @Override
     public List<IngestResult> save() throws IOException
     {
-        boolean anotherTaskInChargeOfIngest;
-        boolean ingestFullyCompleted;
-        int id;
-        DataSources dataSources = this.getDataSourcesCache();
-
-        try
+        try ( PIXMLReader sourceReader = new PIXMLReader( this.getSystemSettings(),
+                                                          this.getDatabase(),
+                                                          this.getDataSourcesCache(),
+                                                          this.getFeaturesCache(),
+                                                          this.getVariablesCache(),
+                                                          this.getEnsemblesCache(),
+                                                          this.getMeasurementUnitsCache(),
+                                                          this.getProjectConfig(),
+                                                          this.dataSource,
+                                                          this.getHash(),
+                                                          this.getLockManager() )
+        )
         {
-            // This is an awkward inference: "cache presence means I ingest."
-            // See #50933-420
-            if ( !dataSources.hasSource( this.getHash() ) )
-            {
-                PIXMLReader sourceReader = new PIXMLReader( this.getSystemSettings(),
-                                                            this.getDatabase(),
-                                                            this.getDataSourcesCache(),
-                                                            this.getFeaturesCache(),
-                                                            this.getVariablesCache(),
-                                                            this.getEnsemblesCache(),
-                                                            this.getMeasurementUnitsCache(),
-                                                            this.getFilename(),
-                                                            this.getHash(),
-                                                            this.getLockManager() );
-                sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
-                sourceReader.setSourceConfig( this.getSourceConfig() );
-                sourceReader.parse();
-                id = sourceReader.getLastSourceId();
-                anotherTaskInChargeOfIngest = !sourceReader.inChargeOfIngest();
-                ingestFullyCompleted = sourceReader.ingestFullyCompleted();
-            }
-            else
-            {
-                anotherTaskInChargeOfIngest = true;
-                SourceDetails sourceDetails = dataSources.getExistingSource( this.getHash() );
-                id = sourceDetails.getId();
-                Database database = this.getDatabase();
-                SourceCompletedDetails completedDetails =
-                        new SourceCompletedDetails( database,
-                                                    sourceDetails );
-                ingestFullyCompleted = completedDetails.wasCompleted();
-            }
+            sourceReader.parse();
+            return sourceReader.getIngestResults();
         }
-        catch ( SQLException se )
-        {
-            String message = "While saving the";
-
-            if (ConfigHelper.isForecast( this.getDataSourceConfig() ))
-            {
-                message += " forecast ";
-            }
-            else
-            {
-                message += " observation ";
-            }
-
-            message += "from source '" +
-                       this.getAbsoluteFilename() +
-                       "', encountered an issue.";
-
-            throw new IngestException( message, se );
-        }
-
-        LOGGER.debug("Finished Parsing '{}'", this.getFilename());
-
-        return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSource(),
-                                                id,
-                                                anotherTaskInChargeOfIngest,
-                                                !ingestFullyCompleted );
     }
 
     private DatabaseLockManager getLockManager()
