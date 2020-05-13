@@ -118,8 +118,7 @@ public class CSVSource extends BasicSource
                 .namingPattern( "CSV Ingest" )
                 .build();
 
-        int concurrentCount = systemSettings.getConnectionPool()
-                                            .getMaximumPoolSize();
+        int concurrentCount = 3;
         BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
         this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
                                                            concurrentCount,
