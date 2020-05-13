@@ -1,0 +1,49 @@
+{
+    "name": "Embedded Broker",
+    "modelVersion": "7.0",
+    "authenticationproviders":
+    [
+        {
+            "name": "externalAuthProvider",
+            "type": "Anonymous",
+            "Use the full DN as the Username": "false"
+        }
+    ],
+    "ports":
+    [
+        {
+            "name": "wres-statistics-AMQP",
+            "port": "5672",
+            "protocols":
+            [
+                "AMQP_0_9_1"
+            ],
+            "authenticationProvider": "externalAuthProvider",
+            "needClientAuth": "false",
+            "virtualhostaliases":
+            [
+                {
+                    "name": "nameAlias",
+                    "type": "nameAlias"
+                },
+                {
+                    "name": "defaultAlias",
+                    "type": "defaultAlias"
+                },
+                {
+                    "name": "hostnameAlias",
+                    "type": "hostnameAlias"
+                }
+            ]
+        }
+    ],
+    "virtualhostnodes":
+    [
+        {
+            "name": "wres-statistics",
+            "type": "Memory",
+            "defaultVirtualHostNode": "true",
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{}}] }"
+        }
+    ]
+}

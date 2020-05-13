@@ -1,10 +1,12 @@
 package wres.statistics;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,10 +19,23 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.jms.BytesMessage;
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageListener;
+import javax.jms.Session;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -392,14 +407,107 @@ public class MessageFactoryTest
 
         // Serialize to a byte array
         byte[] protoBytes = protoStamp.toByteArray();
-        
+
         //De-serialize from the byte array
         Timestamp protoStampFromBytes = Timestamp.parseFrom( protoBytes );
 
         assertEquals( flatStamp.seconds(), protoStampFromBytes.getSeconds() );
         assertEquals( flatStamp.nanos(), protoStampFromBytes.getNanos() );
     }
-    
+
+    @Test
+    public void testSendAndReceiveOneStatisticsMessage() throws Exception
+    {
+        // Create and start the broker, clean up on completion
+        try ( EmbeddedBroker embeddedBroker = new EmbeddedBroker(); )
+        {
+            embeddedBroker.start();
+
+            // Load the jndi.properties, which will be used to create a connection for a consumer
+            Properties properties = new Properties();
+            URL config = MessageFactoryTest.class.getClassLoader().getResource( "jndi.properties" );
+            try ( InputStream stream = config.openStream() )
+            {
+                properties.load( stream );
+            }
+
+            // Create a connection factory for the message consumer (producer is abstracted by StatisticsMessager)
+            Context context = new InitialContext( properties );
+            // Some casting, hey ho
+            ConnectionFactory factory = (ConnectionFactory) context.lookup( "statisticsFactory" );
+            Destination topic = (Destination) context.lookup( "statisticsTopic" );
+
+            // Post a message and then consume it using asynchronous pub-sub style messaging
+            try ( StatisticsMessager messager = StatisticsMessager.of(); // Producer
+                  Connection connection = factory.createConnection(); // Consumer connection
+                  Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE ); // Consumer session
+                  MessageConsumer messageConsumer = session.createConsumer( topic ); ) // Consumer
+            {
+                // Start the consumer connection 
+                connection.start();
+
+                // Create a statistics message
+                StatisticsForProject statistics =
+                        new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+                                                          .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                                          .build();
+
+                Statistics sent = MessageFactory.parse( statistics, this.ensemblePairs );
+
+                // Publish a message to the statistics topic with an arbitrary identifier and correlation identifier
+                // The message identifier must begin with "ID:"
+                messager.publish( sent, "ID:1234567", "89101112" );
+
+                // Flag that indicates a message was consumed. This is an artifact of the unit test because the consumer 
+                // lives in a short-running process. We give it a finite amount of time to listen. If that wasn't 
+                // enough, something went wrong and the test fails
+                AtomicBoolean consumed = new AtomicBoolean( false );
+
+                // Listen for messages, async
+                MessageListener listener = message -> {
+                    
+                    BytesMessage receivedBytes = (BytesMessage) message;
+
+                    try
+                    {
+
+                        // Create the byte array to hold the message
+                        int messageLength = (int) receivedBytes.getBodyLength();
+
+                        byte[] messageContainer = new byte[messageLength];
+
+                        receivedBytes.readBytes( messageContainer );
+
+                        Statistics received = Statistics.parseFrom( messageContainer );
+                        
+                        // Received message equals sent message
+                        assertEquals( received, sent );
+
+                        // Notify that the message was consumed
+                        consumed.set( true );                       
+                    }
+                    catch ( JMSException | InvalidProtocolBufferException e )
+                    {
+                        throw new StatisticsMessageException( "While attempting to listen for statistics messages.",
+                                                              e );
+                    }
+                };
+
+                // Subscribe the listener to the consumer
+                messageConsumer.setMessageListener( listener );
+                
+                // Sleep to ensure the consumer has time to listen and consume
+                // Normally, the listener would be listening within a long-running server process
+                Thread.sleep( 2000L );
+                
+                if( !consumed.get() )
+                {
+                    fail( "Failed to consume an expected statistics message within the allocated period of 2000ms." );
+                }
+            }
+        }
+    }
+
     /**
      * Returns a {@link List} containing several {@link DoubleScoreStatistic} for one pool.
      * 
@@ -724,6 +832,6 @@ public class MessageFactoryTest
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       CMS.getUnit() );
-    }    
-    
+    }
+
 }
