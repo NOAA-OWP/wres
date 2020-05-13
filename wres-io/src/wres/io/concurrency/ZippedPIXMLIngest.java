@@ -1,15 +1,9 @@
 package wres.io.concurrency;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -21,10 +15,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
-import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
@@ -118,91 +109,26 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     @Override
     public List<IngestResult> execute() throws IOException
     {
-        List<IngestResult> result = new ArrayList<>( 1 );
-        boolean anotherTaskInChargeOfIngest;
-        boolean ingestFullyCompleted;
-        int id;
-
         String hash = Strings.getMD5Checksum( content );
 
-        // This is a fake uri during first ingest attempt as the bytes are in M.
-        URI uri = this.dataSource.getUri();
-
-        try
+        try ( InputStream input = new ByteArrayInputStream( this.content );
+              PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
+                                                    this.getDatabase(),
+                                                    this.getDataSourcesCache(),
+                                                    this.getFeaturesCache(),
+                                                    this.getVariablesCache(),
+                                                    this.getEnsemblesCache(),
+                                                    this.getMeasurementUnitsCache(),
+                                                    this.projectConfig,
+                                                    this.dataSource,
+                                                    input,
+                                                    hash,
+                                                    this.lockManager )
+        )
         {
-            DataSources dataSources = this.getDataSourcesCache();
-
-            if ( !dataSources.hasSource(hash))
-            {
-                try ( InputStream input = new ByteArrayInputStream(this.content);
-                      PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
-                                                            this.getDatabase(),
-                                                            this.getDataSourcesCache(),
-                                                            this.getFeaturesCache(),
-                                                            this.getVariablesCache(),
-                                                            this.getEnsemblesCache(),
-                                                            this.getMeasurementUnitsCache(),
-                                                            this.projectConfig,
-                                                            this.dataSource,
-                                                            input,
-                                                            hash,
-                                                            this.lockManager );
-                    )
-                {
-                    reader.parse();
-                    return reader.getIngestResults();
-                }
-            }
-            else
-            {
-                anotherTaskInChargeOfIngest = true;
-                SourceDetails
-                        sourceDetails = this.dataSourcesCache.getExistingSource( hash );
-                id = sourceDetails.getId();
-                SourceCompletedDetails completedDetails =
-                        new SourceCompletedDetails( this.database, sourceDetails );
-                ingestFullyCompleted = completedDetails.wasCompleted();
-            }
-
-            // In the situation where another task has not fully completed
-            // ingest of this (inside-zip) source, when we retry this source,
-            // it will not be found because the contents will be lost.
-            // We could modify DataSource to optionally have a byte[] or we can
-            // save it as a temp file here, to be removed after successfully
-            // confirming ingest.
-            if ( anotherTaskInChargeOfIngest && !ingestFullyCompleted )
-            {
-                // If we don't save with extension .xml, the retry will think it
-                // is invalid.
-                File tempFile = File.createTempFile( TEMP_FILE_PREFIX, ".xml" );
-
-                try ( FileOutputStream stream = new FileOutputStream( tempFile ) )
-                {
-                    stream.write( content );
-                    uri = tempFile.toURI();
-                }
-            }
-
-            // If uri changed, it needs to be reported in the results in case
-            // of retry.
-            DataSource resultingDataSource = DataSource.of( this.dataSource.getSource(),
-                                                            this.dataSource.getContext(),
-                                                            this.dataSource.getLinks(),
-                                                            uri );
-
-            IngestResult ingestResult = IngestResult.from( this.projectConfig,
-                                                           resultingDataSource,
-                                                           id,
-                                                           anotherTaskInChargeOfIngest,
-                                                           !ingestFullyCompleted );
-            result.add( ingestResult );
+            reader.parse();
+            return reader.getIngestResults();
         }
-        catch ( SQLException se )
-        {
-            throw new IngestException( "Failed to ingest", se );
-        }
-
-        return Collections.unmodifiableList( result );
     }
 
     @Override
