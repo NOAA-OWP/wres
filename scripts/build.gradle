@@ -1,0 +1,40 @@
+plugins
+{
+    // for ability to use git ids for versioning jar files:
+    id 'org.ajoberstar.grgit' version '4.0.2'
+}
+
+apply plugin: 'distribution'
+
+// Each module does not need a version update unless code in it has changed.
+def gitCommit = grgit.log(paths: ['scripts'], maxCommits:1).find()
+def gitCommitId = gitCommit.id
+def gitCommitDate = gitCommit.getDate()
+
+def gitIsClean = grgit.status().isClean()
+
+version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+if (!gitIsClean)
+{
+    version = version + '-dev'
+}
+
+distributions
+{
+    main
+    {
+        contents
+        {
+            from('.')
+            {
+                include 'cacerts/*.pem'
+                include 'discover_cluster_entrypoint.sh'
+                include 'pg_dump_wres.sh'
+                include 'pg_restore_wres.sh'
+                include 'redmine_66113/wres_http_migrate_dbs.sh'
+                include 'redmine_66829/wres_http_clean_database.sh'
+                exclude 'scenario*/output'
+            }
+        }
+    }
+}
