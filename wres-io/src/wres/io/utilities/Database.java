@@ -402,7 +402,7 @@ public class Database {
             CopyManager manager = pgConnection.getCopyAPI();
 
 			// The format of the copy statement needs to be of the format
-            // "COPY wres.Observation FROM STDIN WITH DELIMITER '|'"
+            // "COPY wres.TimeSeriesValue_xxxx FROM STDIN WITH DELIMITER '|'"
 			String copy_definition = "COPY " + table_definition + " FROM STDIN WITH DELIMITER ";
 
 			// Make sure that the delimiter starts with a single quote
@@ -488,7 +488,6 @@ public class Database {
         );
 
         // TODO: We should probably just analyze/optional vacuum everything in the WRES schema rather than picking and choosing
-        sql.add(optionalVacuum + "ANALYZE wres.Observation;");
         sql.add(optionalVacuum + "ANALYZE wres.TimeSeries;");
         sql.add(optionalVacuum + "ANALYZE wres.ProjectSource;");
         sql.add(optionalVacuum + "ANALYZE wres.Source;");
@@ -809,7 +808,6 @@ public class Database {
         }
 
 		builder.append("TRUNCATE wres.TimeSeriesValue CASCADE;").append(NEWLINE);
-		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.TimeSeries RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);

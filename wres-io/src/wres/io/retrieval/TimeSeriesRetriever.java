@@ -134,7 +134,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * valid time, depending on context. See {@link #timeColumnIsAReferenceTime()}.
      */
 
-    protected String timeColumn;
+    private String timeColumn;
 
     /**
      * The lead duration column name, including the table alias (e.g., TSV.lead).
@@ -381,14 +381,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Where available adds the clauses to the input script associated with {@link #getProjectId()}, 
-     * {@link #getVariableFeatureId()} and {@ #getLeftOrRightOrBaseline()}.
+     * {@link #getVariableFeatureId()} and {@link #getLeftOrRightOrBaseline()}.
      * 
      * @param script the script to augment
-     * @param tsTable True if using the wres.TimeSeries table, false if wres.Observations
      * @param tabsIn the number of tabs in for the outermost clause
      */
 
-    void addProjectVariableAndMemberConstraints( ScriptBuilder script, int tabsIn, boolean tsTable )
+    void addProjectVariableAndMemberConstraints( ScriptBuilder script, int tabsIn )
     {
         // project_id
         if ( Objects.nonNull( this.getProjectId() ) )
@@ -398,22 +397,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // variablefeature_id
         if ( Objects.nonNull( this.getVariableFeatureId() ) )
         {
-            if ( tsTable )
-            {
-                this.addWhereOrAndClause( script,
-                                          tabsIn,
-                                          "TS.variablefeature_id = '",
-                                          this.getVariableFeatureId(),
-                                          "'" );
-            }
-            else
-            {
-                this.addWhereOrAndClause( script,
-                                          tabsIn,
-                                          "O.variablefeature_id = '",
-                                          this.getVariableFeatureId(),
-                                          "'" );
-            }
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      "TS.variablefeature_id = '",
+                                      this.getVariableFeatureId(),
+                                      "'" );
         }
         // member
         if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )

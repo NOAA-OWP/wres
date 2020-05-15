@@ -77,7 +77,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
             SingleValuedForecastRetriever.getScriptForGetAllIdentifiers();
 
     /**
-     * Start of script for {@link #getAll()}.
+     * Start of script
      */
 
     private static final String GET_ALL_TIME_SERIES_SCRIPT =
@@ -156,7 +156,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_IDENTIFIERS_SCRIPT );
 
         // Add basic constraints
-        this.addProjectVariableAndMemberConstraints( scripter, 0, true );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
         String script = scripter.toString();
 
@@ -207,7 +207,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints at zero tabs
-        this.addProjectVariableAndMemberConstraints( scripter, 0, true );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
         // Time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
@@ -254,7 +254,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints at zero tabs
-        this.addProjectVariableAndMemberConstraints( scripter, 0, true );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
         
         // Add time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );
@@ -388,8 +388,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Construct.
-     * 
-     * @param timeWindow the time window
+     *
      * @throws NullPointerException if any required input is null
      */
 

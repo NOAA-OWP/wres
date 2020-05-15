@@ -176,7 +176,7 @@ $list_objects_command \
 && $restore_data_only_table_command -t timeseriesvalue_lead_130 -t timeseriesvalue_lead_131 -t timeseriesvalue_lead_132 -t timeseriesvalue_lead_133 -t timeseriesvalue_lead_134 -t timeseriesvalue_lead_135 -t timeseriesvalue_lead_136 -t timeseriesvalue_lead_137 -t timeseriesvalue_lead_138 -t timeseriesvalue_lead_139 $dump_file \
 && $restore_data_only_table_command -t timeseriesvalue_lead_140 -t timeseriesvalue_lead_141 -t timeseriesvalue_lead_142 -t timeseriesvalue_lead_143 -t timeseriesvalue_lead_144 -t timeseriesvalue_lead_145 -t timeseriesvalue_lead_146 -t timeseriesvalue_lead_147 -t timeseriesvalue_lead_148 -t timeseriesvalue_lead_149 -t timeseriesvalue_lead_150 -t timeseriesvalue_lead_above_150 $dump_file \
 && $restore_data_only_table_command -t timeseriesvalue_lead_negative_1 -t timeseriesvalue_lead_negative_2 -t timeseriesvalue_lead_negative_3 -t timeseriesvalue_lead_negative_4 -t timeseriesvalue_lead_negative_5 -t timeseriesvalue_lead_negative_6 -t timeseriesvalue_lead_negative_7 -t timeseriesvalue_lead_negative_8 -t timeseriesvalue_lead_negative_9 -t timeseriesvalue_lead_negative_10 -t timeseriesvalue_lead_below_negative_10 $dump_file \
-&& $restore_data_only_table_command -t observation -t sourcecompleted -t forecasts -t project $dump_file \
+&& $restore_data_only_table_command -t sourcecompleted -t forecasts -t project $dump_file \
 && $restore_data_only_table_command -t projectsource -t project_project_id_seq -t executionlog -t projectexecutions $dump_file \
 && $restore_data_only_table_command -t executionlog_log_id_seq $dump_file \
 && $restore_post_data_only_command $dump_file \

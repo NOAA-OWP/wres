@@ -191,7 +191,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         ScriptBuilder scripter = new ScriptBuilder( GET_ALL_TIME_SERIES_SCRIPT );
 
         // Add basic constraints at zero tabs
-        this.addProjectVariableAndMemberConstraints( scripter, 0, true );
+        this.addProjectVariableAndMemberConstraints( scripter, 0 );
 
         // Add time window constraint at zero tabs
         this.addTimeWindowClause( scripter, 0 );

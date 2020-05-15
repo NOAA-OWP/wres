@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Remove wres.Observation table if it exists."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Observation" schemaName="wres" />
+        </preConditions>
+        <comment>
+            Remove wres.Observation table, data now in wres.TimeSeriesValue.
+        </comment>
+        <dropTable tableName="Observation" schemaName="wres"
+		   cascadeConstraints="true" />
+    </changeSet>
+    <changeSet id="Remove orphaned wres.Source rows after obs table removed."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+	    <not>
+                <tableExists tableName="Observation" schemaName="wres" />
+	    </not>
+	    <tableExists tableName="Source" schemaName="wres" />
+	    <tableExists tableName="TimeSeries" schemaName="wres" />
+	    <columnExists tableName="TimeSeries" schemaName="wres"
+			  columnName="source_id" />
+        </preConditions>
+        <comment>
+            Only sources that exist in wres.TimeSeries should remain.
+        </comment>
+        <delete tableName="Source" schemaName="wres">
+	    <where>source_id not in ( select source_id from wres.TimeSeries )</where>
+	</delete>
+    </changeSet>
+    <changeSet id="Remove wres.Project rows after obs table removed."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+	    <not>
+                <tableExists tableName="Observation" schemaName="wres" />
+	    </not>
+	    <tableExists tableName="Source" schemaName="wres" />
+	    <tableExists tableName="TimeSeries" schemaName="wres" />
+	    <columnExists tableName="TimeSeries" schemaName="wres"
+			  columnName="source_id" />
+	    <tableExists tableName="Project" schemaName="wres" />
+	    <tableExists tableName="ProjectSource" schemaName="wres" />
+        </preConditions>
+        <comment>
+            Remove data from wres.Project (and wres.ProjectSource).
+        </comment>
+        <delete tableName="Project" schemaName="wres" />
+    </changeSet>
+</databaseChangeLog>
