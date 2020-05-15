@@ -352,7 +352,6 @@ public class SingleValuedRetrieverFactoryTest
         this.testDatabase.createVariableTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
         this.testDatabase.createVariableFeatureTable( liquibaseDatabase );
-        this.testDatabase.createObservationTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
@@ -709,22 +708,61 @@ public class SingleValuedRetrieverFactoryTest
 
         assertNotNull( measurementUnitId );
 
+        EnsembleDetails ensemble = new EnsembleDetails();
+        ensemble.setEnsembleName( "ENS" );
+        ensemble.setEnsembleMemberIndex( 123 );
+        ensemble.save( this.wresDatabase );
+        Integer ensembleId = ensemble.getId();
+
+        assertNotNull( ensembleId );
+
+        Instant latestObsDatetime = Instant.parse( "2023-04-01T10:00:00Z" );
+        TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
+
+        String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
+                                  + "ensemble_id,"
+                                  + "measurementunit_id,"
+                                  + "initialization_date,"
+                                  + "scale_period,"
+                                  + "scale_function,"
+                                  + "source_id ) "
+                                  + "VALUES (?,"
+                                  + "?,"
+                                  + "?,"
+                                  + "(?)::timestamp without time zone,"
+                                  + "?,"
+                                  + "?,"
+                                  + "? )";
+
+        DataScripter seriesOneScript = new DataScripter( this.wresDatabase,
+                                                         timeSeriesInsert );
+
+        int rowAdded = seriesOneScript.execute( this.variableFeatureId,
+                                                ensembleId,
+                                                measurementUnitId,
+                                                latestObsDatetime.toString(),
+                                                timeScale.getPeriod().toMinutesPart(),
+                                                timeScale.getFunction().name(),
+                                                sourceId );
+
+        // One row added
+        assertEquals( 1, rowAdded );
+
+        assertNotNull( seriesOneScript.getInsertedIds() );
+        assertEquals( 1, seriesOneScript.getInsertedIds().size() );
+
+        Integer firstSeriesId = seriesOneScript.getInsertedIds().get( 0 ).intValue();
+
         // Add some observations
-        // There is no wres abstraction to help with this      
-        int scalePeriod = 1;
-        String scaleFunction = TimeScaleFunction.UNKNOWN.name();
+        // There is no wres abstraction to help with this
 
         Instant seriesStart = Instant.parse( T2023_04_01T00_00_00Z );
         Duration seriesIncrement = Duration.ofHours( 1 );
         double valueStart = 23.0;
         double valueIncrement = 7.0;
 
-        // Insert template
         String observationInsert =
-                "INSERT INTO wres.Observation"
-                                   + "(variablefeature_id, observation_time, observed_value, measurementunit_id, "
-                                   + "source_id, scale_period, scale_function) "
-                                   + "VALUES ({0},''{1}'',{2},{3},{4},{5},''{6}'')";
+                "INSERT INTO wres.TimeSeriesValue (timeseries_id, lead, series_value) VALUES ({0},{1},{2})";
 
         // Insert 10 observed events into the db
         Instant observationTime = seriesStart;
@@ -737,13 +775,11 @@ public class SingleValuedRetrieverFactoryTest
 
             // Insert
             String insert = MessageFormat.format( observationInsert,
-                                                  this.variableFeatureId,
-                                                  observationTime.toString(),
-                                                  observedValue,
-                                                  measurementUnitId,
-                                                  sourceId,
-                                                  scalePeriod,
-                                                  scaleFunction );
+                                                  firstSeriesId,
+                                                  Duration.between( latestObsDatetime,
+                                                                    observationTime )
+                                                          .toMinutes(),
+                                                  observedValue );
 
             DataScripter observedScript = new DataScripter( this.wresDatabase,
                                                             insert );

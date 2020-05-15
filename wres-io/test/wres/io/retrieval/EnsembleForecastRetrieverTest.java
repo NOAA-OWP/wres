@@ -353,7 +353,6 @@ public class EnsembleForecastRetrieverTest
         this.testDatabase.createVariableTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
         this.testDatabase.createVariableFeatureTable( liquibaseDatabase );
-        this.testDatabase.createObservationTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );

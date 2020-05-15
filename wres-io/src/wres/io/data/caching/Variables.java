@@ -73,8 +73,8 @@ public class Variables extends Cache<VariableDetails, String>
      * @return A list of all of the names of variables in forecasts that may be evaluated for the project
      * @throws SQLException Thrown if an error was encountered while communicating with the database
      */
-    public List<String> getAvailableForecastVariables(final Integer projectID,
-                                                      final String projectMember)
+    public List<String> getAvailableVariables( final Integer projectID,
+                                               final String projectMember )
             throws SQLException
     {
         String member = projectMember;
@@ -119,56 +119,6 @@ public class Variables extends Cache<VariableDetails, String>
         return script.interpret( resultSet -> resultSet.getString("variable_name") );
     }
 
-    /**
-     * Retrieves the names of all variables that may be addressed as observations for the project
-     * @param projectID The id of the project we're interested in
-     * @param projectMember The data source member for the data (generally 'left' or 'baseline')
-     * @return A list of all of the names of variables in observations that may be evaluated for the project
-     * @throws SQLException Thrown if an error was encountered while communicating with the database
-     */
-    public List<String> getAvailableObservationVariables(
-            final Integer projectID,
-            final String projectMember)
-            throws SQLException
-    {
-        String member = projectMember;
-
-        if (!member.startsWith( "'" ))
-        {
-            member = "'" + member;
-        }
-
-        if (!member.endsWith( "'" ))
-        {
-            member += "'";
-        }
-
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
-
-        script.addLine("SELECT variable_name");
-        script.addLine("FROM wres.Variable V");
-        script.addLine("WHERE EXISTS (");
-        script.addTab().addLine("SELECT 1");
-        script.addTab().addLine("FROM wres.VariableFeature VF");
-        script.addTab().addLine("WHERE VF.variable_id = V.variable_id");
-        script.addTab(  2  ).addLine("AND EXISTS (");
-        script.addTab(   3   ).addLine("SELECT 1");
-        script.addTab(   3   ).addLine("FROM wres.Observation O");
-        script.addTab(   3   ).addLine("WHERE O.variablefeature_id = VF.variablefeature_id");
-        script.addTab(    4    ).addLine("AND EXISTS (");
-        script.addTab(     5     ).addLine("SELECT 1");
-        script.addTab(     5     ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(     5     ).addLine("WHERE PS.project_id = ", projectID);
-        script.addTab(      6      ).addLine("AND PS.member = ", member);
-        script.addTab(      6      ).addLine("AND PS.source_id = O.source_id");
-        script.addTab(    4    ).addLine(")");
-        script.addTab(  2  ).addLine(")");
-        script.add(");");
-
-        return script.interpret( resultSet -> resultSet.getString("variable_name") );
-    }
-
 	/**
 	 * Checks to see if there are any forecasted values for a named variable
 	 * tied to the project
@@ -178,9 +128,9 @@ public class Variables extends Cache<VariableDetails, String>
 	 * @return Whether or not there is any forecast data for the variable within the project
 	 * @throws SQLException Thrown if a database operation fails
 	 */
-    public boolean isForecastValid( final Integer projectID,
-                                    final String projectMember,
-                                    final Integer variableID )
+    public boolean isValid( final Integer projectID,
+                            final String projectMember,
+                            final Integer variableID )
             throws SQLException
 	{
 		String member = projectMember;
@@ -229,55 +179,6 @@ public class Variables extends Cache<VariableDetails, String>
 		return script.retrieve( "exists" );
 	}
 
-	/**
-	 * Checks to see if there are any observed values for a named variable tied
-	 * to the project based on its project member
-	 * @param projectID The ID of the project to check
-	 * @param projectMember The evaluation member of the project ("left", "right", or "baseline")
-	 * @param variableID The ID of the variable
-	 * @return Whether or not there is any observed data for the variable within the project
-	 * @throws SQLException Thrown if a database operation fails
-	 */
-    public boolean isObservationValid( final Integer projectID,
-                                       final String projectMember,
-                                       final Integer variableID )
-			throws SQLException
-	{
-		String member = projectMember;
-
-		if (!member.startsWith( "'" ))
-		{
-			member = "'" + member;
-		}
-
-		if (!member.endsWith( "'" ))
-		{
-			member += "'";
-		}
-
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
-
-		script.addLine("SELECT EXISTS (");
-		script.addTab().addLine("SELECT 1");
-		script.addTab().addLine("FROM wres.Observation O");
-		script.addTab().addLine("WHERE EXISTS (");
-		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-		script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectID);
-		script.addTab(   3   ).addLine("AND PS.member = ", member);
-		script.addTab(   3   ).addLine("AND PS.source_id = O.source_id");
-		script.addTab().addLine(") AND EXISTS (");
-		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.VariableFeature VF");
-		script.addTab(  2  ).addLine("WHERE VF.variable_id = ", variableID);
-		script.addTab(   3   ).addLine("AND VF.variablefeature_id = O.variablefeature_id");
-		script.addTab().addLine(")");
-		script.add(");");
-
-		return script.retrieve( "exists" );
-	}
-	
 	/**
 	 * Returns the ID of a variable from the cache
 	 * @param variableName The short name of the variable

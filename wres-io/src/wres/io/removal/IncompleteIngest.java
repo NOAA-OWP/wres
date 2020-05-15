@@ -92,10 +92,6 @@ public class IncompleteIngest
         }
 
         int sourceId = source.getId();
-        DataScripter observationsScript = new DataScripter( database );
-        observationsScript.addLine( "DELETE FROM wres.Observation" );
-        observationsScript.addLine( "WHERE source_id = ?" );
-        observationsScript.addArgument( sourceId );
 
         // Simple, but slow when the partitions are not by timeseries_id:
         DataScripter timeSeriesValueScript = new DataScripter( database );
@@ -126,12 +122,10 @@ public class IncompleteIngest
         try
         {
             lockManager.lockSource( sourceId );
-            int observationsRemoved = observationsScript.execute();
             int timeSeriesValuesRemoved = timeSeriesValueScript.execute();
             int timeSeriesRemoved = timeSeriesScript.execute();
             int sourcesRemoved = sourceScript.execute();
-            LOGGER.debug( "Removed {} obs, {} fc, {} ts, {} s.",
-                          observationsRemoved,
+            LOGGER.debug( "Removed {} fc, {} ts, {} s.",
                           timeSeriesValuesRemoved,
                           timeSeriesRemoved,
                           sourcesRemoved );
@@ -294,20 +288,6 @@ public class IncompleteIngest
 
                 LOGGER.debug( "Started task to remove orphaned values in {}...", partition);
             }
-
-            DataScripter removeObservations = new DataScripter( database );
-            removeObservations.setHighPriority( false );
-            removeObservations.addLine( "DELETE FROM wres.Observation O" );
-            removeObservations.addLine( "WHERE NOT EXISTS (" );
-            removeObservations.addTab().addLine( "SELECT 1" );
-            removeObservations.addTab().addLine( "FROM wres.ProjectSource PS" );
-            removeObservations.addTab().addLine( "WHERE PS.source_id = O.source_id" );
-            removeObservations.add( ");" );
-
-            Future observationsRemoval = removeObservations.issue();
-            removalQueue.add( observationsRemoval );
-
-            LOGGER.debug( "Started task to remove orphaned observations...");
 
             try
             {

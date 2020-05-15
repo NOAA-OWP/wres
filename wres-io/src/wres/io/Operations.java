@@ -85,11 +85,8 @@ public final class Operations {
         boolean isVector;
         Variables variables = project.getVariablesCache();
         Executor executor = project.getExecutor();
-        Future<Boolean> leftObservationValid = null;
         Future<Boolean> leftTimeSeriesValid= null;
-        Future<Boolean> rightObservationValid = null;
         Future<Boolean> rightTimeSeriesValid = null;
-        Future<Boolean> baselineObservationValid = null;
         Future<Boolean> baselineTimeSeriesValid = null;
 
         try
@@ -106,30 +103,19 @@ public final class Operations {
         if ( isVector )
         {
             leftTimeSeriesValid = executor.submit(
-                    () -> variables.isForecastValid( project.getId(),
-                                                     Project.LEFT_MEMBER,
-                                                     project.getLeftVariableID()
+                    () -> variables.isValid( project.getId(),
+                                             Project.LEFT_MEMBER,
+                                             project.getLeftVariableID()
                     )
             );
-            leftObservationValid = executor.submit(
-                    () -> variables.isObservationValid( project.getId(),
-                                                        Project.LEFT_MEMBER,
-                                                        project.getLeftVariableID()
-                    ) );
         }
 
         if ( isVector )
         {
             rightTimeSeriesValid = executor.submit(
-                    () -> variables.isForecastValid( project.getId(),
-                                                     Project.RIGHT_MEMBER,
-                                                     project.getRightVariableID()
-                    )
-            );
-            rightObservationValid = executor.submit(
-                    () -> variables.isObservationValid( project.getId(),
-                                                        Project.RIGHT_MEMBER,
-                                                        project.getRightVariableID()
+                    () -> variables.isValid( project.getId(),
+                                             Project.RIGHT_MEMBER,
+                                             project.getRightVariableID()
                     )
             );
         }
@@ -137,15 +123,9 @@ public final class Operations {
         if ( isVector && project.getBaseline() != null )
         {
             baselineTimeSeriesValid = executor.submit(
-                    () -> variables.isForecastValid( project.getId(),
-                                                     Project.BASELINE_MEMBER,
-                                                     project.getBaselineVariableID()
-                    )
-            );
-            baselineObservationValid = executor.submit(
-                    () -> variables.isObservationValid( project.getId(),
-                                                        Project.BASELINE_MEMBER,
-                                                        project.getBaselineVariableID()
+                    () -> variables.isValid( project.getId(),
+                                             Project.BASELINE_MEMBER,
+                                             project.getBaselineVariableID()
                     )
             );
         }
@@ -171,21 +151,14 @@ public final class Operations {
         // TODO: Split logic out into separate functions
         try
         {
-            boolean leftIsValid = leftTimeSeriesValid.get()
-                                  || leftObservationValid.get();
+            boolean leftIsValid = leftTimeSeriesValid.get();
 
             if (!leftIsValid)
             {
-                List<String> availableVariables = variables.getAvailableObservationVariables(
+                List<String> availableVariables = variables.getAvailableVariables(
                         project.getId(),
                         Project.LEFT_MEMBER
                 );
-                List<String> moreVariables = variables.getAvailableForecastVariables(
-                        project.getId(),
-                        Project.LEFT_MEMBER
-                );
-
-                availableVariables.addAll( moreVariables );
 
                 StringBuilder message = new StringBuilder(  );
                 message.append( "There is no '")
@@ -235,20 +208,14 @@ public final class Operations {
 
         try
         {
-            boolean rightIsValid = rightObservationValid.get()
-                                   || rightTimeSeriesValid.get();
+            boolean rightIsValid = rightTimeSeriesValid.get();
 
             if (!rightIsValid)
             {
-                List<String> availableVariables = variables.getAvailableForecastVariables(
+                List<String> availableVariables = variables.getAvailableVariables(
                         project.getId(),
                         Project.RIGHT_MEMBER
                 );
-                List<String> moreVariables = variables.getAvailableObservationVariables(
-                        project.getId(),
-                        Project.RIGHT_MEMBER
-                );
-                availableVariables.addAll( moreVariables );
 
                 String message = "There is no '"
                                  + project.getRightVariableName()
@@ -295,7 +262,7 @@ public final class Operations {
 
         // If baselineValid is null, then we have no baseline variable to
         // evaluate; it is safe to exit.
-        if ( baselineObservationValid == null )
+        if ( baselineTimeSeriesValid == null )
         {
             LOGGER.info("Preliminary metadata loading is complete.");
             return;
@@ -303,20 +270,14 @@ public final class Operations {
 
         try
         {
-            boolean baselineIsValid = baselineObservationValid.get()
-                                      || baselineTimeSeriesValid.get();
+            boolean baselineIsValid = baselineTimeSeriesValid.get();
 
             if (!baselineIsValid)
             {
-                List<String> availableVariables = variables.getAvailableForecastVariables(
+                List<String> availableVariables = variables.getAvailableVariables(
                         project.getId(),
                         Project.BASELINE_MEMBER
                 );
-                List<String> moreVariables = variables.getAvailableObservationVariables(
-                        project.getId(),
-                        Project.BASELINE_MEMBER
-                );
-                availableVariables.addAll( moreVariables );
                 String message = "There is no '"
                                  + project.getBaseline().getVariable().getValue()
                                  + "' data available for the baseline "

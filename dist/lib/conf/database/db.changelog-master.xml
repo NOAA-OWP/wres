@@ -16,7 +16,6 @@
     <include file="wres.variablefeature_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.ensemble_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v4.xml" relativeToChangelogFile="true" />
-    <include file="wres.observation_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.unitconversion_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.timeseriesvalue_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.gridprojection_v1.xml" relativeToChangelogFile="true" />
@@ -40,13 +39,11 @@
     <include file="fix_null_conversions.xml" relativeToChangelogFile="true" />
     <include file="set_default_unitconversion_values.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_add_grid_projection.xml" relativeToChangelogFile="true" />
-    <include file="wres.observation_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.executionlog_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.indexqueue_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.Source_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.projectsource_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.Source_v4.xml" relativeToChangelogFile="true" />
-    <include file="wres.observation_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.SourceCompleted_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.SourceCompleted_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.SourceCompleted_v3.xml" relativeToChangelogFile="true" />
@@ -60,4 +57,5 @@
     <include file="wres.project_v2.xml" relativeToChangelogFile="true" />
     <include file="update_lsno2_and_hdga4_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v5.xml" relativeToChangelogFile="true" />
+    <include file="wres.Observation_v5.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
