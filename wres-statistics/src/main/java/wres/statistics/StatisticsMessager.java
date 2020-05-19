@@ -42,6 +42,18 @@ public class StatisticsMessager implements Closeable
     private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsMessager.class );
 
     /**
+     * Default destination name.
+     */
+
+    private static final String DEFAULT_DESTINATION = "statisticsTopic";
+
+    /**
+     * Default factory name.
+     */
+
+    private static final String DEFAULT_FACTORY = "statisticsFactory";
+
+    /**
      * A connection to the broker.
      */
 
@@ -57,7 +69,7 @@ public class StatisticsMessager implements Closeable
      * A topic to which messages should be posted.
      */
 
-    private final Destination topic;
+    private final Destination destination;
 
     /**
      * The delivery mode.
@@ -90,9 +102,11 @@ public class StatisticsMessager implements Closeable
     public static StatisticsMessager of()
             throws IOException, NamingException, JMSException
     {
-        return new StatisticsMessager( DeliveryMode.NON_PERSISTENT,
-                                       Message.DEFAULT_PRIORITY,
-                                       Message.DEFAULT_TIME_TO_LIVE );
+        return StatisticsMessager.of( DeliveryMode.NON_PERSISTENT,
+                                      Message.DEFAULT_PRIORITY,
+                                      Message.DEFAULT_TIME_TO_LIVE,
+                                      StatisticsMessager.DEFAULT_DESTINATION,
+                                      StatisticsMessager.DEFAULT_FACTORY );
     }
 
     /**
@@ -101,19 +115,24 @@ public class StatisticsMessager implements Closeable
      * @param deliveryMode the delivery mode
      * @param messagePriority the message priority
      * @param messageTimeToLive the message time to live
+     * @param destinationName the name of the queue or topic destination
+     * @param factoryName the name of the factory from which to create broker instances
      * @throws IOException if the broker properties could not be read from file
      * @throws NamingException if a naming exception is encountered
      * @throws JMSException if the JMS provider fails to create the connection due to some internal error
      * @throws JMSSecurityException if client authentication fails
+     * @throws NullPointerException if the destinationName of factoryName is null
      * @return an instance
      */
 
     public static StatisticsMessager of( int deliveryMode,
                                          int messagePriority,
-                                         long messageTimeToLive )
+                                         long messageTimeToLive,
+                                         String destinationName,
+                                         String factoryName )
             throws IOException, NamingException, JMSException
     {
-        return new StatisticsMessager( deliveryMode, messagePriority, messageTimeToLive );
+        return new StatisticsMessager( deliveryMode, messagePriority, messageTimeToLive, destinationName, factoryName );
     }
 
     /**
@@ -132,17 +151,33 @@ public class StatisticsMessager implements Closeable
         Objects.requireNonNull( messageId );
         Objects.requireNonNull( correlationId );
 
+        this.publish( statistics.toByteArray(), messageId, correlationId );
+    }
+
+    /**
+     * Publishes a message to a statistics destination.
+     * 
+     * @param messageBytes the message bytes to publish
+     * @param messageId the message identifier
+     * @param correlationId an identifier to correlate statistics messages to an evaluation
+     * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
+     * @throws NullPointerException if any input is null
+     */
+
+    public void publish( byte[] messageBytes, String messageId, String correlationId ) throws JMSException
+    {
+        Objects.requireNonNull( messageBytes );
+        Objects.requireNonNull( messageId );
+        Objects.requireNonNull( correlationId );
+
         // Post to the statistics topic
-        try ( MessageProducer messageProducer = this.session.createProducer( this.topic ); )
+        try ( MessageProducer messageProducer = this.session.createProducer( this.destination ); )
         {
             BytesMessage message = this.session.createBytesMessage();
 
             // Set the message identifiers
             message.setJMSMessageID( messageId );
             message.setJMSCorrelationID( correlationId );
-
-            // Write the bytes to the bytes message stream
-            byte[] messageBytes = statistics.toByteArray();
             message.writeBytes( messageBytes );
 
             // Send the message
@@ -211,17 +246,25 @@ public class StatisticsMessager implements Closeable
      * @param deliveryMode the delivery mode
      * @param messagePriority the message priority
      * @param messageTimeToLive the message time to live
+     * @param destinationName the name of the queue or topic destination
+     * @param factoryName the name of the factory from which to create broker instances
      * @throws IOException if the broker properties could not be read from file
      * @throws NamingException if a naming exception is encountered
      * @throws JMSException if the JMS provider fails to create the connection due to some internal error
      * @throws JMSSecurityException if client authentication fails
+     * @throws NullPointerException if the destinationName or factoryName is null
      */
 
     private StatisticsMessager( int deliveryMode,
                                 int messagePriority,
-                                long messageTimeToLive )
+                                long messageTimeToLive,
+                                String destinationName,
+                                String factoryName )
             throws IOException, NamingException, JMSException
     {
+        Objects.requireNonNull( destinationName );
+        Objects.requireNonNull( factoryName );
+
         // Might need to expose some of this
         Properties properties = new Properties();
 
@@ -233,8 +276,8 @@ public class StatisticsMessager implements Closeable
         }
 
         Context context = new InitialContext( properties );
-        ConnectionFactory factory = (ConnectionFactory) context.lookup( "statisticsFactory" );
-        this.topic = (Destination) context.lookup( "statisticsTopic" );
+        ConnectionFactory factory = (ConnectionFactory) context.lookup( factoryName );
+        this.destination = (Destination) context.lookup( destinationName );
 
         this.connection = factory.createConnection();
 

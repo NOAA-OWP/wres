@@ -24,7 +24,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -84,12 +85,12 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
 
 /**
- * Tests the {@link MessageFactory}.
+ * Tests the {@link ProtobufMessageFactory}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class MessageFactoryTest
+public class ProtobufMessageFactoryTest
 {
     private static final String ESP = "ESP";
     private static final String HEFS = "HEFS";
@@ -184,7 +185,7 @@ public class MessageFactoryTest
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
-        Statistics statisticsOut = MessageFactory.parse( statistics, this.ensemblePairs );
+        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -218,7 +219,7 @@ public class MessageFactoryTest
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
-        Statistics firstOut = MessageFactory.parse( statistics, this.ensemblePairs );
+        Statistics firstOut = ProtobufMessageFactory.parse( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -255,7 +256,7 @@ public class MessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = MessageFactory.parse( statistics,
+        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics,
                                                          this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
@@ -288,7 +289,7 @@ public class MessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = MessageFactory.parse( statistics );
+        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics );
 
         Path path = this.outputDirectory.resolve( "duration_score_statistics.pb3" );
 
@@ -320,7 +321,7 @@ public class MessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = MessageFactory.parse( statistics );
+        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics );
 
         Path path = this.outputDirectory.resolve( "duration_diagrams_statistics.pb3" );
 
@@ -352,7 +353,7 @@ public class MessageFactoryTest
 
         // Create a message
         EvaluationStatus statusOut =
-                MessageFactory.parse( ELEVENTH_TIME,
+                ProtobufMessageFactory.parse( ELEVENTH_TIME,
                                       TWELFTH_TIME,
                                       CompletionStatus.COMPLETE_REPORTED_SUCCESS,
                                       List.of( warning, error, info ) );
@@ -425,7 +426,7 @@ public class MessageFactoryTest
 
             // Load the jndi.properties, which will be used to create a connection for a consumer
             Properties properties = new Properties();
-            URL config = MessageFactoryTest.class.getClassLoader().getResource( "jndi.properties" );
+            URL config = ProtobufMessageFactoryTest.class.getClassLoader().getResource( "jndi.properties" );
             try ( InputStream stream = config.openStream() )
             {
                 properties.load( stream );
@@ -443,34 +444,25 @@ public class MessageFactoryTest
                   Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE ); // Consumer session
                   MessageConsumer messageConsumer = session.createConsumer( topic ); ) // Consumer
             {
-                // Start the consumer connection 
-                connection.start();
-
                 // Create a statistics message
                 StatisticsForProject statistics =
                         new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
                                                           .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                           .build();
 
-                Statistics sent = MessageFactory.parse( statistics, this.ensemblePairs );
-
-                // Publish a message to the statistics topic with an arbitrary identifier and correlation identifier
-                // The message identifier must begin with "ID:"
-                messager.publish( sent, "ID:1234567", "89101112" );
-
-                // Flag that indicates a message was consumed. This is an artifact of the unit test because the consumer 
-                // lives in a short-running process. We give it a finite amount of time to listen. If that wasn't 
-                // enough, something went wrong and the test fails
-                AtomicBoolean consumed = new AtomicBoolean( false );
-
+                Statistics sent = ProtobufMessageFactory.parse( statistics, this.ensemblePairs );
+                
+                // Latch to identify when consumption is complete
+                CountDownLatch consumerCount = new CountDownLatch( 1 );
+                
                 // Listen for messages, async
                 MessageListener listener = message -> {
-                    
+
                     BytesMessage receivedBytes = (BytesMessage) message;
 
                     try
                     {
-
+                        
                         // Create the byte array to hold the message
                         int messageLength = (int) receivedBytes.getBodyLength();
 
@@ -482,9 +474,8 @@ public class MessageFactoryTest
                         
                         // Received message equals sent message
                         assertEquals( received, sent );
-
-                        // Notify that the message was consumed
-                        consumed.set( true );                       
+                        
+                        consumerCount.countDown();
                     }
                     catch ( JMSException | InvalidProtocolBufferException e )
                     {
@@ -492,21 +483,27 @@ public class MessageFactoryTest
                                                               e );
                     }
                 };
+                
+                // Start the consumer connection 
+                connection.start();               
 
                 // Subscribe the listener to the consumer
                 messageConsumer.setMessageListener( listener );
+
+                // Publish a message to the statistics topic with an arbitrary identifier and correlation identifier
+                // The message identifier must begin with "ID:"
+                messager.publish( sent, "ID:1234567", "89101112" );
                 
-                // Sleep to ensure the consumer has time to listen and consume
-                // Normally, the listener would be listening within a long-running server process
-                Thread.sleep( 2000L );
-                
-                if( !consumed.get() )
+                // Await the sooner of all messages read and a timeout
+                boolean done = consumerCount.await( 2000L, TimeUnit.MILLISECONDS );
+
+                if ( !done )
                 {
-                    fail( "Failed to consume an expected statistics message within the allocated period of 2000ms." );
+                    fail( "Failed to consume an expected statistics message within the timeout period of 2000ms." );
                 }
             }
         }
-    }
+    }    
 
     /**
      * Returns a {@link List} containing several {@link DoubleScoreStatistic} for one pool.
@@ -562,6 +559,11 @@ public class MessageFactoryTest
         fakeOutputs.add( DoubleScoreStatistic.of( 2.0, fakeMetadataB ) );
         fakeOutputs.add( DoubleScoreStatistic.of( 3.0, fakeMetadataC ) );
 
+        for(int i = 0; i < 97; i++ )
+        {
+            fakeOutputs.add( DoubleScoreStatistic.of( 4.0, fakeMetadataC ) );
+        }        
+        
         return Collections.unmodifiableList( fakeOutputs );
     }
 
@@ -610,8 +612,15 @@ public class MessageFactoryTest
                          VectorOfDoubles.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) );
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
 
+        List<DiagramStatistic> diagrams = new ArrayList<>();
+        
+        for( int i = 0; i < 20; i ++ )
+        {
+            diagrams.add( DiagramStatistic.of( fakeOutputs, fakeMetadata ) );
+        }
+        
         // Fake output wrapper.
-        return Collections.singletonList( DiagramStatistic.of( fakeOutputs, fakeMetadata ) );
+        return Collections.unmodifiableList( diagrams );
     }
 
     /**
@@ -739,6 +748,13 @@ public class MessageFactoryTest
                                                                           values );
 
         b.addTimeSeries( timeSeriesTwo );
+        
+        
+        for(int i = 0; i < 500; i++ )
+        {
+            b.addTimeSeries( timeSeriesTwo );
+        }
+
 
         return b.build();
     }

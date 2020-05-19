@@ -75,12 +75,12 @@ import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ValueFilter;
 
 /**
- * Creates messages from internal representations.
+ * Creates statistics messages in protobuf format from internal representations.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class MessageFactory
+public class ProtobufMessageFactory
 {
 
     /**
@@ -106,7 +106,7 @@ public class MessageFactory
         if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
             List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores = project.getDoubleScoreStatistics();
-            doubleScores.forEach( next -> statistics.addScores( MessageFactory.parse( next ) ) );
+            doubleScores.forEach( next -> statistics.addScores( ProtobufMessageFactory.parse( next ) ) );
             metadata = doubleScores.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -114,7 +114,7 @@ public class MessageFactory
         if ( project.hasStatistic( StatisticType.DIAGRAM ) )
         {
             List<wres.datamodel.statistics.DiagramStatistic> diagrams = project.getDiagramStatistics();
-            diagrams.forEach( next -> statistics.addDiagrams( MessageFactory.parse( next ) ) );
+            diagrams.forEach( next -> statistics.addDiagrams( ProtobufMessageFactory.parse( next ) ) );
             metadata = diagrams.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -125,7 +125,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxPlotStatistics> boxplots =
                     new ArrayList<>( project.getBoxPlotStatisticsPerPair() );
             boxplots.addAll( project.getBoxPlotStatisticsPerPool() );
-            boxplots.forEach( next -> statistics.addBoxplots( MessageFactory.parse( next ) ) );
+            boxplots.forEach( next -> statistics.addBoxplots( ProtobufMessageFactory.parse( next ) ) );
             metadata = boxplots.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -134,7 +134,7 @@ public class MessageFactory
         {
             List<wres.datamodel.statistics.DurationScoreStatistic> durationScores =
                     project.getDurationScoreStatistics();
-            durationScores.forEach( next -> statistics.addDurationScores( MessageFactory.parse( next ) ) );
+            durationScores.forEach( next -> statistics.addDurationScores( ProtobufMessageFactory.parse( next ) ) );
             metadata = durationScores.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -143,7 +143,7 @@ public class MessageFactory
         {
             List<wres.datamodel.statistics.PairedStatistic<Instant, java.time.Duration>> durationDiagrams =
                     project.getInstantDurationPairStatistics();
-            durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
+            durationDiagrams.forEach( next -> statistics.addDurationDiagrams( ProtobufMessageFactory.parse( next ) ) );
             metadata = durationDiagrams.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -151,14 +151,14 @@ public class MessageFactory
 
         if ( metadata.hasTimeWindow() )
         {
-            TimeWindow timeWindow = MessageFactory.parse( metadata.getTimeWindow() );
+            TimeWindow timeWindow = ProtobufMessageFactory.parse( metadata.getTimeWindow() );
             sample.setTimeWindow( timeWindow );
         }
 
         if ( metadata.hasIdentifier() && metadata.getIdentifier().hasGeospatialID() )
         {
             Location location = metadata.getIdentifier().getGeospatialID();
-            Geometry geometry = MessageFactory.parse( location );
+            Geometry geometry = ProtobufMessageFactory.parse( location );
             sample.addGeometries( geometry );
         }
 
@@ -183,7 +183,7 @@ public class MessageFactory
                                     PoolOfPairs<Double, Ensemble> pairs )
             throws InterruptedException
     {
-        Statistics prototype = MessageFactory.parse( project );
+        Statistics prototype = ProtobufMessageFactory.parse( project );
 
         Statistics.Builder statistics = Statistics.newBuilder( prototype );
 
@@ -191,7 +191,7 @@ public class MessageFactory
         {
             Pool prototypeSample = statistics.getPool();
             Pool.Builder sampleBuilder = Pool.newBuilder( prototypeSample );
-            sampleBuilder.setPairs( MessageFactory.parseEnsemblePairs( pairs ) );
+            sampleBuilder.setPairs( ProtobufMessageFactory.parseEnsemblePairs( pairs ) );
             statistics.setPool( sampleBuilder );
         }
 
@@ -224,7 +224,7 @@ public class MessageFactory
 
         if ( metadata.hasTimeScale() )
         {
-            evaluationPlus.setTimeScale( MessageFactory.parse( metadata.getTimeScale() ) );
+            evaluationPlus.setTimeScale( ProtobufMessageFactory.parse( metadata.getTimeScale() ) );
         }
 
         if ( metadata.hasIdentifier() )
@@ -251,12 +251,12 @@ public class MessageFactory
             ProjectConfig project = metadata.getProjectConfig();
             if ( Objects.nonNull( project.getPair().getSeason() ) )
             {
-                evaluationPlus.setSeason( MessageFactory.parse( project.getPair().getSeason() ) );
+                evaluationPlus.setSeason( ProtobufMessageFactory.parse( project.getPair().getSeason() ) );
             }
 
             if ( Objects.nonNull( project.getPair().getValues() ) )
             {
-                evaluationPlus.setValueFilter( MessageFactory.parse( project.getPair().getValues() ) );
+                evaluationPlus.setValueFilter( ProtobufMessageFactory.parse( project.getPair().getValues() ) );
             }
 
         }
@@ -493,11 +493,11 @@ public class MessageFactory
         if ( metadata.hasThresholds() )
         {
             OneOrTwoThresholds thresholds = metadata.getThresholds();
-            Threshold evenThreshold = MessageFactory.parse( thresholds.first() );
+            Threshold evenThreshold = ProtobufMessageFactory.parse( thresholds.first() );
             scoreBuilder.setEventThreshold( evenThreshold );
             if ( thresholds.hasTwo() )
             {
-                Threshold decisionThreshold = MessageFactory.parse( thresholds.second() );
+                Threshold decisionThreshold = ProtobufMessageFactory.parse( thresholds.second() );
                 scoreBuilder.setDecisionThreshold( decisionThreshold );
             }
         }
@@ -580,7 +580,7 @@ public class MessageFactory
             DurationScoreMetricComponent.Builder metricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                                .setName( scoreName );
 
-            MessageFactory.addLimitsToTimingStatistic( metricComponent, next );
+            ProtobufMessageFactory.addLimitsToTimingStatistic( metricComponent, next );
 
             metricBuilder.addComponents( metricComponent );
 
@@ -624,11 +624,11 @@ public class MessageFactory
         if ( metadata.hasThresholds() )
         {
             OneOrTwoThresholds thresholds = metadata.getThresholds();
-            Threshold evenThreshold = MessageFactory.parse( thresholds.first() );
+            Threshold evenThreshold = ProtobufMessageFactory.parse( thresholds.first() );
             diagramBuilder.setEventThreshold( evenThreshold );
             if ( thresholds.hasTwo() )
             {
-                Threshold decisionThreshold = MessageFactory.parse( thresholds.second() );
+                Threshold decisionThreshold = ProtobufMessageFactory.parse( thresholds.second() );
                 diagramBuilder.setDecisionThreshold( decisionThreshold );
             }
         }
@@ -823,11 +823,10 @@ public class MessageFactory
     }
 
     /**
-     * Returns a {@link Evaluation} from the closest approximation at present, namely a {@link SampleMetadata}. 
-     * See #61388.
+     * Returns a {@link Pairs} from a {@link PoolOfPairs}.
      * 
      * @param metadata the metadata
-     * @return an evaluation message
+     * @return a pairs message
      */
 
     private static Pairs parseEnsemblePairs( PoolOfPairs<Double, Ensemble> pairs )
@@ -943,7 +942,7 @@ public class MessageFactory
      * Do not construct.
      */
 
-    private MessageFactory()
+    private ProtobufMessageFactory()
     {
     }
 
