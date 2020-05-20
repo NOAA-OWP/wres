@@ -1,8 +1,8 @@
-FROM centos:7.7.1908
+FROM centos:7.8.2003
 
 RUN yum install -y \
-    java-11-openjdk-headless-11.0.6.10-1.el7_7 \
-    unzip-6.0-20.el7 \
+    java-11-openjdk-headless-11.0.7.10-4.el7_8 \
+    unzip-6.0-21.el7 \
     which-2.20-7.el7 \
     fontconfig-2.13.0-4.3.el7 \
     dejavu-fonts-common-2.33-6.el7 \
@@ -11,33 +11,17 @@ RUN yum install -y \
     dejavu-serif-fonts-2.33-6.el7 \
     # Use ss to view socket states. See #69947
     iproute-4.11.0-25.el7_7.2 \
-    # The following aren't direct dependencies of WRES, are updates post-7.7.1908
-    binutils-2.27-41.base.el7_7.3 \
-    ca-certificates-2019.2.32-76.el7_7 \
-    curl-7.29.0-54.el7_7.2 \
-    device-mapper-event-1.02.158-2.el7_7.2 \
-    device-mapper-libs-1.02.158-2.el7_7.2 \
-    hostname-3.13-3.el7_7.1 \
-    kmod-20-25.el7_7.1 \
-    kmod-libs-20-25.el7_7.1 \
-    krb5-libs-1.15.1-37.el7_7.2 \
-    libblkid-2.23.2-61.el7_7.1 \
-    libcurl-7.29.0-54.el7_7.2 \
-    libmount-2.23.2-61.el7_7.1 \
-    libsmartcols-2.23.2-61.el7_7.1 \
-    libuuid-2.23.2-61.el7_7.1 \
-    nss-3.44.0-7.el7_7 \
-    nss-softokn-3.44.0-8.el7_7 \
-    nss-softokn-freebl-3.44.0-8.el7_7 \
-    nss-sysinit-3.44.0-7.el7_7 \
-    nss-tools-3.44.0-7.el7_7 \
-    nss-util-3.44.0-4.el7_7 \
-    procps-ng-3.3.10-26.el7_7.1 \
-    sqlite-3.7.17-8.el7_7.1 \
-    systemd-219-67.el7_7.4 \
-    systemd-libs-219-67.el7_7.4 \
-    tzdata-2019c-1.el7 \
-    util-linux-2.23.2-61.el7_7.1 \
+    # The following aren't direct dependencies of WRES, are updates post-7.8.2003
+    bind-license-9.11.4-16.P2.el7_8.3 \
+    binutils-2.27-43.base.el7_8.1 \
+    device-mapper-1.02.164-7.el7_8.2 \
+    device-mapper-libs-1.02.164-7.el7_8.2 \
+    systemd-219-73.el7_8.6 \
+    systemd-libs-219-73.el7_8.6 \
+    tzdata-2020a-1.el7 \
+    yum-plugin-fastestmirror-1.1.31-54.el7_8 \
+    yum-plugin-ovl-1.1.31-54.el7_8 \
+    yum-utils-1.1.31-54.el7_8 \
     && yum clean all
 
 # For examples of the following for alpine or debian, see git history.
