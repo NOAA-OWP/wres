@@ -607,6 +607,9 @@ project(':wres-statistics')
         // Flatbuffers
         compile group: 'com.google.flatbuffers', name: 'flatbuffers-java', version: '1.12.0'
 
+        // Cap'n proto
+        compile group: 'org.capnproto', name: 'runtime', version: '0.1.5'
+
         // JMS API
         compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
