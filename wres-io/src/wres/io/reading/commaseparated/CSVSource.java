@@ -614,13 +614,6 @@ public class CSVSource extends BasicSource
                 }
             }
         }
-        else if ( LOGGER.isInfoEnabled() )
-        {
-            LOGGER.info( "No '{}' column in '{}', assuming this means it has no forecast data.",
-                         REFERENCE_DATETIME_COLUMN,
-                         this.getDataSource()
-                             .getUri() );
-        }
 
         hasColumn = dataProvider.hasColumn( "value_date" );
 
