@@ -5,8 +5,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,7 +51,7 @@ public class DatabaseLockManager
     private static final Logger LOGGER =
             LoggerFactory.getLogger( DatabaseLockManager.class );
 
-    private static final Duration REFRESH_FREQUENCY = Duration.ofSeconds( 5 );
+    private static final Duration REFRESH_FREQUENCY = Duration.ofSeconds( 1 );
 
     /**
      * The prefix for a non-source lock signifying either non-destructive
@@ -63,6 +66,13 @@ public class DatabaseLockManager
      * exclusively.
      */
     public static final Integer SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME = 1;
+
+    /**
+     * SQLState codes to treat like connection errors that can be recovered.
+     * As of 2020-05-25 these are postgres-specific.
+     */
+    private static final Set<String> RECOVERABLE_SQLSTATES =
+            Set.of( "08000", "08003", "08006", "57P01" );
 
     /**
      * Ingest data, copy/insert data into existing tables but no delete, only
@@ -118,10 +128,12 @@ public class DatabaseLockManager
 
         this.connectionMonitorService = Executors.newScheduledThreadPool( 1, monitorServiceNaming );
         Runnable recurringTask = new RefreshConnectionsTask( this );
-        this.connectionMonitorService.scheduleAtFixedRate( recurringTask,
-                                                           REFRESH_FREQUENCY.getSeconds(),
-                                                           REFRESH_FREQUENCY.getSeconds(),
-                                                           TimeUnit.SECONDS );
+
+        // Use fixed delay instead of rate now that task can sleep per source.
+        this.connectionMonitorService.scheduleWithFixedDelay( recurringTask,
+                                                              REFRESH_FREQUENCY.getSeconds(),
+                                                              REFRESH_FREQUENCY.getSeconds(),
+                                                              TimeUnit.SECONDS );
 
         LOGGER.debug( "Finished construction of lock manager {}.", this );
     }
@@ -245,7 +257,8 @@ public class DatabaseLockManager
             throw new IllegalStateException( "Already had a source lock on " + lockName );
         }
 
-        boolean firstLockSucceeded;
+        boolean firstLockSucceeded = false;
+        boolean firstLockHadConnectionClosed = false;
         this.lockOne.lock();
 
         try
@@ -255,12 +268,27 @@ public class DatabaseLockManager
                                                          lockName,
                                                          true );
         }
+        catch ( SQLException se )
+        {
+            if ( RECOVERABLE_SQLSTATES.contains( se.getSQLState() ) )
+            {
+                LOGGER.warn( "Lost first connection, should recover soon: {}",
+                             se.getMessage() );
+                firstLockHadConnectionClosed = true;
+            }
+            else
+            {
+                LOGGER.warn( "Unrecoverable SQLState on connection one: {}",
+                             se.getSQLState() );
+                throw se;
+            }
+        }
         finally
         {
             this.lockOne.unlock();
         }
 
-        if ( !firstLockSucceeded )
+        if ( !firstLockSucceeded && !firstLockHadConnectionClosed )
         {
             this.sourceLockNames.remove( lockName );
             throw new DatabaseLockFailed( INGEST_SOURCE_PREFIX,
@@ -268,7 +296,7 @@ public class DatabaseLockManager
                                           LOCK_EXCLUSIVE );
         }
 
-        boolean secondLockSucceeded;
+        boolean secondLockSucceeded = true;
         this.lockTwo.lock();
 
         try
@@ -277,6 +305,21 @@ public class DatabaseLockManager
                                                           INGEST_SOURCE_PREFIX,
                                                           -lockName,
                                                           true );
+        }
+        catch ( SQLException se )
+        {
+            if ( !firstLockHadConnectionClosed
+                 && RECOVERABLE_SQLSTATES.contains( se.getSQLState() ) )
+            {
+                LOGGER.warn( "Lost second connection, should recover soon: {}",
+                             se.getMessage() );
+            }
+            else
+            {
+                LOGGER.warn( "Unrecoverable SQLState on connection two: {}",
+                             se.getSQLState() );
+                throw se;
+            }
         }
         finally
         {
@@ -304,7 +347,7 @@ public class DatabaseLockManager
      * MAX_VALUE or was not previously locked
      * @throws DatabaseLockFailed when db reports lock release failed
      * @throws IllegalStateException when unlock was called twice simultaneously
-     * @throws SQLException when database communication fails
+     * @throws SQLException when database communication fails on both attempts.
      */
     public void unlockSource( Integer lockName ) throws SQLException
     {
@@ -321,7 +364,9 @@ public class DatabaseLockManager
                                                 + lockName);
         }
 
-        boolean firstUnlockSucceeded;
+        boolean firstUnlockSucceeded = false;
+        boolean firstUnlockHadConnectionClosed = false;
+
         this.lockOne.lock();
 
         try
@@ -331,19 +376,37 @@ public class DatabaseLockManager
                                                            lockName,
                                                            true );
         }
+        catch ( SQLException se )
+        {
+            if ( RECOVERABLE_SQLSTATES.contains( se.getSQLState() ) )
+            {
+                LOGGER.warn( "Lost first connection, should recover soon: {}",
+                             se.getMessage() );
+                firstUnlockHadConnectionClosed = true;
+            }
+            else
+            {
+                LOGGER.warn( "Unrecoverable SQLState on first connection: {}",
+                             se.getSQLState() );
+                throw se;
+            }
+        }
         finally
         {
             this.lockOne.unlock();
         }
 
-        if ( !firstUnlockSucceeded )
+        if ( !firstUnlockSucceeded && !firstUnlockHadConnectionClosed )
         {
             throw new DatabaseLockFailed( INGEST_SOURCE_PREFIX,
                                           lockName,
                                           UNLOCK_EXCLUSIVE );
         }
 
-        boolean secondUnlockSucceeded;
+        // If we default to true, will remain true after losing second
+        // connection meaning that we will definitely throw an exception when
+        // both connections were lost but not when only one was lost.
+        boolean secondUnlockSucceeded = true;
         this.lockTwo.lock();
 
         try
@@ -352,6 +415,23 @@ public class DatabaseLockManager
                                                             INGEST_SOURCE_PREFIX,
                                                             -lockName,
                                                             true );
+        }
+        catch ( SQLException se )
+        {
+            if ( !firstUnlockHadConnectionClosed
+                 && RECOVERABLE_SQLSTATES.contains( se.getSQLState() ) )
+            {
+                LOGGER.warn( "Lost second connection, should recover soon: {}",
+                             se.getMessage() );
+            }
+            else
+            {
+                // Note the if !firstUnlockHadConnectionClosed above, this means
+                // that when firstUnlockHadConnectionClosed, we will throw here.
+                LOGGER.warn( "Unrecoverable SQLState on second connection: {}",
+                             se.getSQLState() );
+                throw se;
+            }
         }
         finally
         {
@@ -722,10 +802,14 @@ public class DatabaseLockManager
      * Yields when any other Thread holds a lock, returns without doing the work
      * @throws IllegalStateException when a new connection cannot be established
      * @throws SQLException when a semantic lock cannot be translated to db lock
+     * @throws DatabaseLockFailed when repeated attempts to acquire a lock fail.
+     * @throws InterruptedException when interrupted waiting to retry a lock.
      */
 
-    private void testAndRefresh() throws SQLException
+    private void testAndRefresh() throws SQLException, InterruptedException
     {
+        final int RETRY_COUNT = 5;
+        final int RETRY_MILLIS = 5;
         LOGGER.trace( "Began refreshing connections {} {}", this, Thread.currentThread() );
         boolean isOneWorking;
         boolean isTwoWorking;
@@ -746,11 +830,22 @@ public class DatabaseLockManager
                     // Because we lost the connection, we lost our locks, restore them.
                     for ( Integer semanticLock : this.exclusiveLockNames )
                     {
-                        boolean success =
-                                this.acquireSingleLock( this.connectionOne,
-                                                        PREFIX,
-                                                        semanticLock,
-                                                        true );
+                        boolean success = false;
+
+                        for ( int i = 0; i <= RETRY_COUNT && !success; i++ )
+                        {
+                            success = this.acquireSingleLock( this.connectionOne,
+                                                              PREFIX,
+                                                              semanticLock,
+                                                              true );
+                            if ( !success && i != RETRY_COUNT )
+                            {
+                                LOGGER.warn( "Re-attempting to acquire exclusive lock {} on connection 1 in {}ms.",
+                                             semanticLock, RETRY_MILLIS );
+                                Thread.sleep( RETRY_MILLIS );
+                            }
+                        }
+
                         if ( !success )
                         {
                             throw new DatabaseLockFailed( PREFIX,
@@ -761,11 +856,21 @@ public class DatabaseLockManager
 
                     for ( Integer semanticLock : this.sharedLockNames )
                     {
-                        boolean success =
-                                this.acquireSingleLock( this.connectionOne,
-                                                        PREFIX,
-                                                        semanticLock,
-                                                        false );
+                        boolean success = false;
+
+                        for ( int i = 0; i <= RETRY_COUNT && !success; i++ )
+                        {
+                            success = this.acquireSingleLock( this.connectionOne,
+                                                              PREFIX,
+                                                              semanticLock,
+                                                              false );
+                            if ( !success && i != RETRY_COUNT )
+                            {
+                                LOGGER.warn( "Re-attempting to acquire shared lock {} on connection 1 in {}ms.",
+                                             semanticLock, RETRY_MILLIS );
+                                Thread.sleep( RETRY_MILLIS );
+                            }
+                        }
                         if ( !success )
                         {
                             throw new DatabaseLockFailed( PREFIX,
@@ -776,11 +881,22 @@ public class DatabaseLockManager
 
                     for ( Integer semanticLock : this.sourceLockNames )
                     {
-                        boolean success =
-                                this.acquireSingleLock( this.connectionOne,
-                                                        INGEST_SOURCE_PREFIX,
-                                                        semanticLock,
-                                                        true );
+                        boolean success = false;
+
+                        for ( int i = 0; i <= RETRY_COUNT && !success; i++ )
+                        {
+                            success = this.acquireSingleLock( this.connectionOne,
+                                                              INGEST_SOURCE_PREFIX,
+                                                              semanticLock,
+                                                              true );
+                            if ( !success && i != RETRY_COUNT )
+                            {
+                                LOGGER.warn( "Re-attempting to acquire source lock {} on connection 1 in {}ms.",
+                                             semanticLock, RETRY_MILLIS );
+                                Thread.sleep( RETRY_MILLIS );
+                            }
+                        }
+
                         if ( !success )
                         {
                             throw new DatabaseLockFailed( INGEST_SOURCE_PREFIX,
@@ -818,11 +934,21 @@ public class DatabaseLockManager
                     // Because we lost the connection, we lost our locks, restore them.
                     for ( Integer semanticLock : this.exclusiveLockNames )
                     {
-                        boolean success =
-                                this.acquireSingleLock( this.connectionOne,
-                                                        PREFIX,
-                                                        -semanticLock,
-                                                        true );
+                        boolean success = false;
+
+                        for ( int i = 0; i <= RETRY_COUNT && !success; i++ )
+                        {
+                            success = this.acquireSingleLock( this.connectionTwo,
+                                                              PREFIX,
+                                                              -semanticLock,
+                                                              true );
+                            if ( !success && i != RETRY_COUNT )
+                            {
+                                LOGGER.warn( "Re-attempting to acquire exclusive lock {} on connection 2 in {}ms.",
+                                             semanticLock, RETRY_MILLIS );
+                                Thread.sleep( RETRY_MILLIS );
+                            }
+                        }
                         if ( !success )
                         {
                             throw new DatabaseLockFailed( PREFIX,
@@ -833,11 +959,21 @@ public class DatabaseLockManager
 
                     for ( Integer semanticLock : this.sharedLockNames )
                     {
-                        boolean success =
-                                this.acquireSingleLock( this.connectionOne,
-                                                        PREFIX,
-                                                        -semanticLock,
-                                                        false );
+                        boolean success = false;
+
+                        for ( int i = 0; i <= RETRY_COUNT && !success; i++ )
+                        {
+                            success = this.acquireSingleLock( this.connectionTwo,
+                                                              PREFIX,
+                                                              -semanticLock,
+                                                              false );
+                            if ( !success && i != RETRY_COUNT )
+                            {
+                                LOGGER.warn( "Re-attempting to acquire shared lock {} on connection 2 in {}ms.",
+                                             semanticLock, RETRY_MILLIS );
+                                Thread.sleep( RETRY_MILLIS );
+                            }
+                        }
                         if ( !success )
                         {
                             throw new DatabaseLockFailed( PREFIX,
@@ -848,11 +984,21 @@ public class DatabaseLockManager
 
                     for ( Integer semanticLock : this.sourceLockNames )
                     {
-                        boolean success =
-                                this.acquireSingleLock( this.connectionTwo,
-                                                        INGEST_SOURCE_PREFIX,
-                                                        -semanticLock,
-                                                        true );
+                        boolean success = false;
+
+                        for ( int i = 0; i <= RETRY_COUNT && !success; i++ )
+                        {
+                            success = this.acquireSingleLock( this.connectionTwo,
+                                                              INGEST_SOURCE_PREFIX,
+                                                              -semanticLock,
+                                                              true );
+                            if ( !success && i != RETRY_COUNT )
+                            {
+                                LOGGER.warn( "Re-attempting to acquire source lock {} on connection 2 in {}ms.",
+                                             semanticLock, RETRY_MILLIS );
+                                Thread.sleep( RETRY_MILLIS );
+                            }
+                        }
                         if ( !success )
                         {
                             throw new DatabaseLockFailed( INGEST_SOURCE_PREFIX,
@@ -910,6 +1056,15 @@ public class DatabaseLockManager
             {
                 LOGGER.warn( "Had trouble managing connections.", se );
             }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while managing connections.", ie );
+                Thread.currentThread().interrupt();
+            }
+            catch ( RuntimeException re )
+            {
+                LOGGER.warn( "Exception while managing connections: ", re );
+            }
         }
     }
 
@@ -950,6 +1105,35 @@ public class DatabaseLockManager
                          connection,
                          se );
             return false;
+        }
+
+        // In some situations when isValid returns false, the connection may
+        // still be open, because isValid returned false only due to timeout
+        // instead of due to the connection really being invalid. Test out the
+        // connection in this case, logging a message both before and after
+        // an invalid query containing a timestamp. The two WARN messages
+        // sandwiching this query should have millisecond-precision timestamps
+        // and the error log message on the database side (when connection is
+        // up) should also have a millisecond-precision timestamp.
+        if ( !isValid && isOpen )
+        {
+            LOGGER.warn( "Connection {} isOpen but isValid returned false.{}{}",
+                         connection,
+                         " About to send a query that will fail, to cause the ",
+                         "error log on database-side to print time of query." );
+            String query = "It is now " + Instant.now()
+                                                 .atOffset( ZoneOffset.UTC )
+                                                 .toString();
+            try ( Statement statement = connection.createStatement();
+                  ResultSet resultSet = statement.executeQuery( query ) )
+            {
+                resultSet.next();
+            }
+            catch ( SQLException se )
+            {
+                LOGGER.warn( "Finished attempting this invalid query: {}",
+                             query, se );
+            }
         }
 
         return isValid && isOpen;
