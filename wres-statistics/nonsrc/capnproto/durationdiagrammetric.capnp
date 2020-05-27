@@ -1,6 +1,6 @@
 @0xd054c94c3f3f8f82;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using MetricName = import "metricname.capnp".MetricName;
 using Duration = import "duration.capnp".Duration;
 

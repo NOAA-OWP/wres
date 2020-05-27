@@ -1,6 +1,6 @@
 @0xc75b37e1da91ca8e;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using ScoreMetric = import "scoremetric.capnp".ScoreMetric;
 using Threshold = import "threshold.capnp".Threshold;
 

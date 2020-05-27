@@ -1,6 +1,6 @@
 @0xcb9de1056dcaea8d;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 $Java.package("wres.statistics.generated.capnp");
 $Java.outerClassname("SeasonOuter");
 

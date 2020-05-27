@@ -1,6 +1,6 @@
 @0xd2f80f3d29b056cf;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 $Java.package("wres.statistics.generated.capnp");
 $Java.outerClassname("ValueFilterOuter");
 

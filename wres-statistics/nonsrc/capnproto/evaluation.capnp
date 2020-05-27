@@ -1,6 +1,6 @@
 @0xee1fd294213e42d6;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using TimeScale = import "timescale.capnp".TimeScale;
 using ValueFilter = import "valuefilter.capnp".ValueFilter;
 using Season = import "season.capnp".Season;

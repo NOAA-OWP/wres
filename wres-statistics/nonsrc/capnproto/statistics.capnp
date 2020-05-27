@@ -1,6 +1,6 @@
 @0xf4e64c48a6995a66;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using Pool = import "pool.capnp".Pool;
 using ScoreStatistic = import "scorestatistic.capnp".ScoreStatistic;
 using DiagramStatistic = import "diagramstatistic.capnp".DiagramStatistic;

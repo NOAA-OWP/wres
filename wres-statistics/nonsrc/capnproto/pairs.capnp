@@ -1,6 +1,6 @@
 @0xb2bd5351cc1bf901;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using Timestamp = import "timestamp.capnp".Timestamp;
 using ReferenceTime = import "referencetime.capnp".ReferenceTime;
 

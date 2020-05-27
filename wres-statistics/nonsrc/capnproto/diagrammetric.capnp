@@ -1,6 +1,6 @@
 @0x8fb97cd77ecbe959;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using MetricName = import "metricname.capnp".MetricName;
 $Java.package("wres.statistics.generated.capnp");
 $Java.outerClassname("DiagramMetricOuter");

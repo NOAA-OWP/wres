@@ -1,6 +1,6 @@
 @0x98c6fa0d8d375d15;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using Geometry = import "geometry.capnp".Geometry;
 using TimeWindow = import "timewindow.capnp".TimeWindow;
 using Pairs = import "pairs.capnp".Pairs;

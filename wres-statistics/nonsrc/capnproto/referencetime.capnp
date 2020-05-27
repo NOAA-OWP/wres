@@ -1,6 +1,6 @@
 @0xfb5c45dfe583334e;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using Timestamp = import "timestamp.capnp".Timestamp;
 $Java.package("wres.statistics.generated.capnp");
 $Java.outerClassname("ReferenceTimeOuter");

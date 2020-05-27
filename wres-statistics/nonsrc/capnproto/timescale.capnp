@@ -1,6 +1,6 @@
 @0xb3404e3a49c9d54a;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using Duration = import "duration.capnp".Duration;
 $Java.package("wres.statistics.generated.capnp");
 $Java.outerClassname("TimeScaleOuter");

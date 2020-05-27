@@ -1,6 +1,6 @@
 @0xd3e700ffbe8e3709;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using Timestamp = import "timestamp.capnp".Timestamp;
 $Java.package("wres.statistics.generated.capnp");
 $Java.outerClassname("EvaluationStatusOuter");

@@ -1,6 +1,6 @@
 @0xb09a8f76db2c7eaf;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using MetricName = import "metricname.capnp".MetricName;
 using DiagramMetric = import "diagrammetric.capnp".DiagramMetric;
 using Threshold = import "threshold.capnp".Threshold;
