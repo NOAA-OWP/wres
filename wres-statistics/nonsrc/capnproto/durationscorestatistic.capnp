@@ -1,6 +1,6 @@
 @0xd997ba1f5198dca5;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using Duration = import "duration.capnp".Duration;
 using DurationScoreMetric = import "durationscoremetric.capnp".DurationScoreMetric;
 

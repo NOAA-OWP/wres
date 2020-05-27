@@ -1,6 +1,6 @@
 @0xbe439be9137a2001;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using MetricName = import "metricname.capnp".MetricName;
 using BoxplotMetric = import "boxplotmetric.capnp".BoxplotMetric;
 $Java.package("wres.statistics.generated.capnp");

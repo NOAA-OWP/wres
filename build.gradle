@@ -495,8 +495,8 @@ project(':wres-statistics')
 
                 // Create java sources and wait until this process is complete, redirecting output
                 ProcessBuilder builder = new ProcessBuilder( flatcPath, '-o', generatedPathString, sourceString, '--java' );              
-                int exitCode = builder.redirectErrorStream(true)
-                                      .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                int exitCode = builder.redirectErrorStream( true )
+                                      .redirectOutput( ProcessBuilder.Redirect.INHERIT )
                                       .start()
                                       .waitFor();
                                       
@@ -596,6 +596,188 @@ project(':wres-statistics')
     
     // Create generated java sources before compiling java classes
     compileJava.dependsOn createJavaSourcesFromFlatbuffers
+
+    // Create N java sources from N cap'n proto (capnp) sources
+    task createJavaSourcesFromCapnproto( dependsOn: ['prepareCapnprotoCompiler', 'prepareCapnprotoCompilerPlugin'] ) {
+        
+        doFirst
+        {
+            // Delete any existing sources generated from fbs only
+            File generatedPath = new File("${project.projectDir}/src/main/java/wres/statistics/generated/capnp"); 
+            generatedPath.deleteDir();
+            // Create afresh
+            generatedPath.mkdirs();
+            
+            // Confirm that the cap'n proto compiler was downloaded and unpacked
+            List<String> files = new FileNameFinder().getFileNames("${buildDir}/bin","capnp*");
+
+            if( files.isEmpty() )
+            {
+                throw new GradleException( "Could not find the Cap'n proto executables in ${buildDir}/bin." );
+            }
+        }
+        
+        doLast
+        {
+            // Compile each capnp source into a java source
+            String sources = "${project.projectDir}/nonsrc/capnproto";
+            File baseDir = new File( sources );
+            List<File> files = baseDir.listFiles();
+            // The compiler, which was downloaded and unpacked to ${buildDir}/bin 
+            String capnPath = "${buildDir}/bin/capnp";
+            // The compiler plugin for java
+            String capnJavaPath = "${buildDir}/bin/capnpc-java";
+            String generatedPathString = "${project.projectDir}/src/main/java/wres/statistics/generated/capnp";
+            
+            // Iterate the capnp sources
+            files.each { File nextSourcePath ->
+                String sourceString = nextSourcePath.toString();
+                
+                // Process all files except the java plugin file
+                if( ! nextSourcePath.getName().equals( "java.capnp" ) )
+                {
+                    // Create java sources and wait until this process is complete, redirecting output
+                    ProcessBuilder builder = new ProcessBuilder( capnPath, 'compile', '-o', capnJavaPath + ":" + 
+                                                                 generatedPathString, '--src-prefix', sources, 
+                                                                 sourceString );              
+                    int exitCode = builder.redirectErrorStream( true )
+                                          // Redirects to a log file
+                                          //.redirectOutput( ProcessBuilder.Redirect.to( new File( project.buildDir, "capnp.log" ) ) )
+                                          .redirectOutput( ProcessBuilder.Redirect.INHERIT )
+                                          .start()
+                                          .waitFor();
+                                                      
+                    if( exitCode !=0 )
+                    {
+                        String commandString = capnPath + ' compile -o' + capnJavaPath + ':' + generatedPathString + 
+                                               ' --src-prefix ' + sources + ' ' + sourceString;
+                
+                        throw new GradleException( "Received a non-zero exit code while executing: " + commandString );
+                    }
+                }
+            }      
+        }
+    }
+
+    // Prepares the Cap'n proto compiler by downloading and unzipping, as needed
+    task prepareCapnprotoCompiler( type: Copy, dependsOn: 'downloadCapnprotoCompiler' ) {
+    
+        if( isWindows() )
+        {        
+            String packedSource = "${buildDir}/capnproto-c++-win32-0.8.0.zip" 
+            File zipFile = file( packedSource )
+            from zipTree( zipFile )
+            into "${buildDir}/bin"
+            include "capnproto-tools-win32-0.8.0/**"
+            includeEmptyDirs = false
+            eachFile { fcd ->
+                fcd.relativePath = new RelativePath( true, fcd.relativePath.segments.drop( 1 ) )
+            }
+        }
+        else if ( isEl6Linux() )
+        {
+        }
+        else if ( isEl7Linux() )
+        {
+        }
+        else if( isLinux() )
+        {
+        }
+        else if( isMac() )
+        {
+        }
+        else
+        {
+            String name = System.properties[ 'os.name' ];
+            throw new GradleException( "Unrecognized operating system '" + name + "'." );
+        }
+    }    
+    
+    // Prepares the Cap'n proto compiler by downloading and unzipping, as needed
+    task prepareCapnprotoCompilerPlugin( type: Copy, dependsOn: 'downloadCapnprotoCompilerPlugin' ) {
+    
+        if( isWindows() )
+        {        
+            String packedSourcePlugin = "${buildDir}/capnpc-java.exe.zip" 
+            File zipFilePlugin = file( packedSourcePlugin )
+            from zipTree( zipFilePlugin )
+            into "${buildDir}/bin"
+        }
+        else if ( isEl6Linux() )
+        {
+        }
+        else if ( isEl7Linux() )
+        {
+        }
+        else if( isLinux() )
+        {
+        }
+        else if( isMac() )
+        {
+        }
+        else
+        {
+            String name = System.properties[ 'os.name' ];
+            throw new GradleException( "Unrecognized operating system '" + name + "'." );
+        }
+    }     
+
+    // Download the appropriate Cap'n proto java plugin executable for the OS, if required
+    task downloadCapnprotoCompilerPlugin( type: Download ) {
+
+        if ( isWindows() ) {
+            String url = "https://dwrensha.ws/capnproto/capnpc-java.exe.zip"
+            src url
+        }
+        else if( isLinux() )
+        {
+        } 
+        else if( isMac() )
+        {
+        }
+        else
+        {
+            String name = System.properties[ 'os.name' ];
+            throw new GradleException( "Unrecognized operating system '" + name + "'." );
+        }
+       
+        // TODO: download checksum, compute local checksum, assert equivalence
+        
+        dest buildDir
+        overwrite false
+    }
+    
+    // Download the appropriate Cap'n proto executable for the OS, if required
+    task downloadCapnprotoCompiler( type: Download ) {
+
+        if ( isWindows() ) {
+            String url = "https://capnproto.org/capnproto-c++-win32-0.8.0.zip"
+            src url
+        }
+        else if( isLinux() )
+        {
+        } 
+        else if( isMac() )
+        {
+        }
+        else
+        {
+            String name = System.properties[ 'os.name' ];
+            throw new GradleException( "Unrecognized operating system '" + name + "'." );
+        }
+       
+        // TODO: download checksum, compute local checksum, assert equivalence
+        
+        dest buildDir
+        overwrite false
+    }    
+    
+    // TODO: REMOVE OR EDIT THIS GUARD as non-windows platforms work - when all work, remove
+    if( isWindows() )
+    {
+        // Create generated java sources before compiling java classes
+        compileJava.dependsOn createJavaSourcesFromCapnproto
+    }
 
     dependencies
     {

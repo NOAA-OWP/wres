@@ -1,6 +1,6 @@
 @0xbd1b8237e33a7a7a;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using MetricName = import "metricname.capnp".MetricName;
 using Duration = import "duration.capnp".Duration;
 $Java.package("wres.statistics.generated.capnp");

@@ -1,6 +1,6 @@
 @0xb2997f6fcc49e9ec;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 using DurationDiagramMetric = import "durationdiagrammetric.capnp".DurationDiagramMetric;
 using Duration = import "duration.capnp".Duration;
 using Timestamp = import "timestamp.capnp".Timestamp;

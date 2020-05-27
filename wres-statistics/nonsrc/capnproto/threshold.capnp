@@ -1,6 +1,6 @@
 @0xcf6d98cdf57c90b7;
 
-using Java = import "capnpJava/java.capnp";
+using Java = import "java.capnp";
 $Java.package("wres.statistics.generated.capnp");
 $Java.outerClassname("ThresholdOuter");
 
