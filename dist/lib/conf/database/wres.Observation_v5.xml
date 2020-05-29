@@ -14,7 +14,7 @@
         <dropTable tableName="Observation" schemaName="wres"
 		   cascadeConstraints="true" />
     </changeSet>
-    <changeSet id="Remove orphaned wres.Source rows after obs table removed."
+    <changeSet id="Remove orphaned wres.Source rows after obs table removed (v2)"
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
 	    <not>
@@ -28,9 +28,14 @@
         <comment>
             Only sources that exist in wres.TimeSeries should remain.
         </comment>
-        <delete tableName="Source" schemaName="wres">
-	    <where>source_id not in ( select source_id from wres.TimeSeries )</where>
-	</delete>
+        <sql>
+	    delete from wres.Source s
+	    where not exists
+            (
+                select 1 from wres.TimeSeries ts
+                where s.source_id = ts.source_id
+            );
+	</sql>
     </changeSet>
     <changeSet id="Remove wres.Project rows after obs table removed."
                author="Jesse Bickel">
