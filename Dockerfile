@@ -12,7 +12,7 @@ RUN yum install -y \
     # Use ss to view socket states. See #69947
     iproute-4.11.0-25.el7_7.2 \
     # The following aren't direct dependencies of WRES, are updates post-7.8.2003
-    bind-license-9.11.4-16.P2.el7_8.3 \
+    bind-license-9.11.4-16.P2.el7_8.6 \
     binutils-2.27-43.base.el7_8.1 \
     device-mapper-1.02.164-7.el7_8.2 \
     device-mapper-libs-1.02.164-7.el7_8.2 \
