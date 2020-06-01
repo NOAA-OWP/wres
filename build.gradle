@@ -37,7 +37,7 @@ plugins
     //id 'org.uulib.gradle.markdown' version '0.0.1'
 
     // To generate de/serialization classes for message bodies
-    id 'com.google.protobuf' version '0.8.10'
+    id 'com.google.protobuf' version '0.8.12'
 
     // To create trusted certificate files (.jks aka cacerts) from dir of .pem
     // (Not working: not friendly to our directory structure nor submodules)
@@ -1218,19 +1218,24 @@ task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [su
 {
     description = 'Generates an all-subproject aggregate code coverage report.'
 
-    additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
-    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs,
-                              sourceSets.main.allSource.srcDirs)
-    classDirectories = files(subprojects.sourceSets.main.output,
-                             sourceSets.main.output)
-    executionData = files(subprojects.jacocoTestReport.executionData,
-                          jacocoTestReport.executionData)
+    additionalSourceDirs.setFrom files( subprojects.sourceSets.main.allSource.srcDirs )
+    sourceDirectories.setFrom files( subprojects.sourceSets.main.allSource.srcDirs,
+                                       sourceSets.main.allSource.srcDirs )
+    classDirectories.setFrom files( subprojects.sourceSets.main.output,
+                                      sourceSets.main.output )
+
+    executionData.setFrom files( subprojects.findAll
+                                 {
+                                     it.jacocoTestReport.executionData.first().exists()
+                                 }.jacocoTestReport.executionData,
+                                 jacocoTestReport.executionData )
 
     doFirst
     {
-        executionData = files(executionData.findAll { it.exists() })
+        executionData.setFrom files(executionData.findAll { it.exists() })
     }
 }
+
 
 /**
  * Task to compile markdown to html
