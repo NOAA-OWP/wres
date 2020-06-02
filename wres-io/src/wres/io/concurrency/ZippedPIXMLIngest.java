@@ -21,7 +21,6 @@ import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.Strings;
 
 /**
  * Created by ctubbs on 7/19/17.
@@ -109,23 +108,18 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     @Override
     public List<IngestResult> execute() throws IOException
     {
-        String hash = Strings.getMD5Checksum( content );
-
-        try ( InputStream input = new ByteArrayInputStream( this.content );
-              PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
-                                                    this.getDatabase(),
-                                                    this.getDataSourcesCache(),
-                                                    this.getFeaturesCache(),
-                                                    this.getVariablesCache(),
-                                                    this.getEnsemblesCache(),
-                                                    this.getMeasurementUnitsCache(),
-                                                    this.projectConfig,
-                                                    this.dataSource,
-                                                    input,
-                                                    hash,
-                                                    this.lockManager )
-        )
+        try ( InputStream input = new ByteArrayInputStream( this.content ) )
         {
+            PIXMLReader reader = new PIXMLReader( this.getSystemSettings(),
+                                                  this.getDatabase(),
+                                                  this.getFeaturesCache(),
+                                                  this.getVariablesCache(),
+                                                  this.getEnsemblesCache(),
+                                                  this.getMeasurementUnitsCache(),
+                                                  this.projectConfig,
+                                                  this.dataSource,
+                                                  input,
+                                                  this.lockManager );
             reader.parse();
             return reader.getIngestResults();
         }

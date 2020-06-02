@@ -109,22 +109,17 @@ public class FEWSSource extends BasicSource
     @Override
     public List<IngestResult> save() throws IOException
     {
-        try ( PIXMLReader sourceReader = new PIXMLReader( this.getSystemSettings(),
-                                                          this.getDatabase(),
-                                                          this.getDataSourcesCache(),
-                                                          this.getFeaturesCache(),
-                                                          this.getVariablesCache(),
-                                                          this.getEnsemblesCache(),
-                                                          this.getMeasurementUnitsCache(),
-                                                          this.getProjectConfig(),
-                                                          this.dataSource,
-                                                          this.getHash(),
-                                                          this.getLockManager() )
-        )
-        {
-            sourceReader.parse();
-            return sourceReader.getIngestResults();
-        }
+        PIXMLReader sourceReader = new PIXMLReader( this.getSystemSettings(),
+                                                    this.getDatabase(),
+                                                    this.getFeaturesCache(),
+                                                    this.getVariablesCache(),
+                                                    this.getEnsemblesCache(),
+                                                    this.getMeasurementUnitsCache(),
+                                                    this.getProjectConfig(),
+                                                    this.dataSource,
+                                                    this.getLockManager() );
+        sourceReader.parse();
+        return sourceReader.getIngestResults();
     }
 
     private DatabaseLockManager getLockManager()

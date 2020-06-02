@@ -274,11 +274,9 @@ public class WaterMLBasicSource extends BasicSource
             byte[] rawForecast = IOUtils.toByteArray( data );
             Response response = OBJECT_MAPPER.readValue( rawForecast,
                                                          Response.class );
-            String hash = this.identifyUsgsData( response );
             WaterMLSource waterMLSource =
                     new WaterMLSource( this.dataSource,
-                                       response,
-                                       hash );
+                                       response );
             List<TimeSeries<Double>> transformed = waterMLSource.call();
             List<IngestResult> ingestResults = new ArrayList<>( transformed.size() );
 

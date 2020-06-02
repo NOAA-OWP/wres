@@ -1,6 +1,5 @@
 package wres.io.reading.fews;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
@@ -24,19 +23,10 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +46,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -78,10 +67,9 @@ import wres.util.Strings;
  * Loads a PIXML file, iterates through it, and saves all data to the database, whether it is
  * forecast or observation data
  */
-public final class PIXMLReader extends XMLReader implements Closeable
+public final class PIXMLReader extends XMLReader
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
-
 
     /** A placeholder reference datetime for timeseries without one. */
     private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
@@ -89,19 +77,14 @@ public final class PIXMLReader extends XMLReader implements Closeable
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final DataSources dataSourcesCache;
     private final Features featuresCache;
     private final Variables variablesCache;
     private final Ensembles ensemblesCache;
     private final MeasurementUnits measurementUnitsCache;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
-    private final String hash;
     private final DatabaseLockManager lockManager;
 
-    private final ThreadPoolExecutor ingestSaverExecutor;
-    private final BlockingQueue<Future<List<IngestResult>>> ingests;
-    private final CountDownLatch startGettingIngestResults;
     private final List<IngestResult> ingested;
 
     private TimeSeriesMetadata currentTimeSeriesMetadata = null;
@@ -116,54 +99,30 @@ public final class PIXMLReader extends XMLReader implements Closeable
 	 */
     PIXMLReader( SystemSettings systemSettings,
                  Database database,
-                 DataSources dataSourcesCache,
                  Features featuresCache,
                  Variables variablesCache,
                  Ensembles ensemblesCache,
                  MeasurementUnits measurementUnitsCache,
                  ProjectConfig projectConfig,
                  DataSource dataSource,
-                 String hash,
                  DatabaseLockManager lockManager )
             throws IOException
 	{
 		super( dataSource.getUri() );
 		this.systemSettings = systemSettings;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
         this.variablesCache = variablesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
-		this.hash = hash;
         this.lockManager = lockManager;
-
-        // See comments in wres.io.reading.WebSource for info on below approach.
-        ThreadFactory pixmlIngest = new BasicThreadFactory.Builder()
-                .namingPattern( "PI-XML Ingest" )
-                .build();
-
-        // Usually there is only going to be one timeseries per pixml file. But
-        // in case there are more, allow one to be parsed while others ingest.
-        int concurrentCount = 2;
-        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
-        this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
-                                                           concurrentCount,
-                                                           systemSettings.poolObjectLifespan(),
-                                                           TimeUnit.MILLISECONDS,
-                                                           webClientQueue,
-                                                           pixmlIngest );
-        this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
-        this.ingests = new ArrayBlockingQueue<>( concurrentCount );
-        this.startGettingIngestResults = new CountDownLatch( concurrentCount );
         this.ingested = new ArrayList<>();
 	}
 
     public PIXMLReader( SystemSettings systemSettings,
                         Database database,
-                        DataSources dataSourcesCache,
                         Features featuresCache,
                         Variables variablesCache,
                         Ensembles ensemblesCache,
@@ -171,40 +130,19 @@ public final class PIXMLReader extends XMLReader implements Closeable
                         ProjectConfig projectConfig,
                         DataSource dataSource,
                         InputStream inputStream,
-                        String hash,
                         DatabaseLockManager lockManager )
             throws IOException
 	{
 		super( dataSource.getUri(), inputStream );
 		this.systemSettings = systemSettings;
         this.database = database;
-        this.dataSourcesCache = dataSourcesCache;
         this.featuresCache = featuresCache;
         this.variablesCache = variablesCache;
         this.ensemblesCache = ensemblesCache;
         this.measurementUnitsCache = measurementUnitsCache;
         this.projectConfig = projectConfig;
         this.dataSource = dataSource;
-		this.hash = hash;
         this.lockManager = lockManager;
-
-        // See comments in wres.io.reading.WebSource for info on below approach.
-        ThreadFactory pixmlIngest = new BasicThreadFactory.Builder()
-                .namingPattern( "PI-XML Ingest" )
-                .build();
-
-        // There can be one PIXMLReader per zipped PIXML file, use small amount.
-        int concurrentCount = 3;
-        BlockingQueue<Runnable> webClientQueue = new ArrayBlockingQueue<>( concurrentCount );
-        this.ingestSaverExecutor = new ThreadPoolExecutor( concurrentCount,
-                                                           concurrentCount,
-                                                           systemSettings.poolObjectLifespan(),
-                                                           TimeUnit.MILLISECONDS,
-                                                           webClientQueue,
-                                                           pixmlIngest );
-        this.ingestSaverExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
-        this.ingests = new ArrayBlockingQueue<>( concurrentCount );
-        this.startGettingIngestResults = new CountDownLatch( concurrentCount );
         this.ingested = new ArrayList<>();
 	}
 
@@ -216,11 +154,6 @@ public final class PIXMLReader extends XMLReader implements Closeable
     private Database getDatabase()
     {
         return this.database;
-    }
-
-    private DataSources getDataSourcesCache()
-    {
-        return this.dataSourcesCache;
     }
 
     private Features getFeaturesCache()
@@ -814,13 +747,6 @@ public final class PIXMLReader extends XMLReader implements Closeable
         this.completeIngest();
     }
 
-    @Override
-    public void close()
-    {
-        // shut down executors
-        this.shutdownNow();
-    }
-
 
     /**
      * Build a timeseries out of temporary data structures.
@@ -1036,8 +962,7 @@ public final class PIXMLReader extends XMLReader implements Closeable
 
 
     /**
-     * Create an ingester for the given timeseries and begin ingest, add the
-     * future to this.ingests as a side-effect.
+     * Create an ingester for the given timeseries and ingest in current Thread.
      * @param timeSeries The timeSeries to ingest.
      * @throws IngestException When anything goes wrong related to ingest.
      */
@@ -1056,82 +981,26 @@ public final class PIXMLReader extends XMLReader implements Closeable
                                                this.getDataSource(),
                                                this.getLockManager(),
                                                timeSeries );
-
-        Future<List<IngestResult>> futureIngestResult =
-                this.ingestSaverExecutor.submit(
-                        timeSeriesIngester );
-        this.ingests.add( futureIngestResult );
-        this.startGettingIngestResults.countDown();
-
-        // See WebSource for comments on this approach.
-        if ( this.startGettingIngestResults.getCount() <= 0 )
+        try
         {
-            try
-            {
-                Future<List<IngestResult>> future =
-                        this.ingests.take();
-                List<IngestResult> ingestResults = future.get();
-                this.ingested.addAll( ingestResults );
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while getting ingest results for PI-XML source "
-                             + this.getDataSource() );
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException ee )
-            {
-                String message = "While getting ingest results for PI-XML source "
-                                 + this.getDataSource();
-                throw new IngestException( message, ee );
-            }
+            List<IngestResult> ingestResults = timeSeriesIngester.call();
+            this.ingested.addAll( ingestResults );
+        }
+        catch ( IOException ioe )
+        {
+            throw new IngestException( "Failed to ingest data from "
+                                       + this.getFilename() + ":", ioe );
         }
     }
 
-    private void completeIngest() throws IngestException
+    private void completeIngest()
     {
-        try
-        {
-            // Finish getting the remainder of ingest results.
-            for ( Future<List<IngestResult>> future : this.ingests )
-            {
-                List<IngestResult> ingestResults = future.get();
-                ingested.addAll( ingestResults );
-            }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while ingesting CSV data from "
-                         + this.getDataSource(), ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException ee )
-        {
-            throw new IngestException( "Failed to ingest NWM data from "
-                                       + this.getDataSource(), ee );
-        }
-
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "Parsed and ingested {} timeseries from {}",
                          ingested.size(),
                          this.getDataSource()
                              .getUri() );
-        }
-    }
-
-
-    /**
-     * Shuts down executors.
-     */
-    private void shutdownNow()
-    {
-        List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
-
-        if ( !abandoned.isEmpty() && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( "Abandoned {} ingest tasks for PI-XML source {}",
-                         abandoned.size(), this.getDataSource() );
         }
     }
 
@@ -1156,12 +1025,6 @@ public final class PIXMLReader extends XMLReader implements Closeable
 	 * The value which indicates a null or invalid value from the source
 	 */
 	private Double missingValue = null;
-
-
-    private String getHash()
-    {
-        return this.hash;
-    }
 
 	private DataSourceConfig getDataSourceConfig()
 	{
