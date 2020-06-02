@@ -653,8 +653,9 @@ final class DatabaseSettings
                             this.setAttemptToMigrate( value );
                             break;
                         default:
-                            LOGGER.error( "Tag of type: '{}' is not valid for database configuration.",
-                                          tagName );
+                            LOGGER.warn( "Database configuration option '{}'{}",
+                                         tagName,
+                                         " was skipped because it's not used." );
                     }
                 }
             }

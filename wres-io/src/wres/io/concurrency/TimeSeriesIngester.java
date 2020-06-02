@@ -252,8 +252,6 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                            + source.getId(), se );
             }
 
-            SystemSettings systemSettings = this.getSystemSettings();
-
             // Ready to ingest, source row was inserted and is (advisory) locked.
             this.insertEverything( this.getSystemSettings(),
                                    this.getDatabase(),
