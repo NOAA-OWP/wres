@@ -160,8 +160,8 @@ public class SystemSettings extends XMLReader
                         //Do nothing, but make sure no debug message implying it is skipped is output.
                         break;
                     default:
-                        LOGGER.debug( "The tag '{}' was skipped because it's "
-                                      + "not used in configuration.", tagName );
+                        LOGGER.warn( "The configuration option '{}' was {}",
+                                     tagName, "skipped because it's not used." );
                 }
 			}
 		}
