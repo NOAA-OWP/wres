@@ -31,6 +31,7 @@ import wres.util.Strings;
 public abstract class XMLReader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( XMLReader.class );
+    private static final XMLInputFactory DEFAULT_FACTORY = XMLInputFactory.newFactory();
 
     private final URI filename;
     private final InputStream inputStream;
@@ -62,7 +63,7 @@ public abstract class XMLReader
         Objects.requireNonNull( fileName );
 
         this.filename = fileName;
-        this.factory = XMLInputFactory.newFactory();
+        this.factory = DEFAULT_FACTORY;
 
         InputStream possibleInputStream = inputStream;
 
