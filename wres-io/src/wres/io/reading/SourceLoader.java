@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.helpers.AttributesImpl;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
@@ -49,7 +48,6 @@ import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
-import wres.util.Strings;
 
 import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE;
 
@@ -290,7 +288,7 @@ public class SourceLoader
      * 
      * TODO: create links for a non-file source when it appears in more than 
      * one context, i.e. {@link LeftOrRightOrBaseline}. 
-     * See {@link #ingestData(DataSource, ProjectConfig, DatabaseLockManager)}
+     * See {@link #ingestFile(DataSource, ProjectConfig, DatabaseLockManager)}
      * for how this is done with a file source.
      * 
      * See #67774
@@ -394,7 +392,7 @@ public class SourceLoader
      * @param source the source to ingest
      * @param projectConfig the project configuration causing the ingest
      * @param lockManager the lock manager to use
-     * @param hash the hash of the source data
+     * @param hash the hash of the source data, null if unknown.
      * @return a list of future lists of ingest results, possibly empty
      */
 
@@ -407,17 +405,17 @@ public class SourceLoader
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( lockManager );
 
-        if ( hash == null || hash.isBlank() )
+        if ( Objects.nonNull( hash ) )
         {
-            throw new IllegalArgumentException( "This ingestData must be called "
-                                                + "only when the hash is "
-                                                + "already known, the hash "
-                                                + "must be non-null and not "
-                                                + "blank." );
+            LOGGER.debug( "ingestData() with hash known in advance: {}, {}",
+                          source, hash );
+        }
+        else
+        {
+            LOGGER.debug( "ingestData() with no hash known in advance: {}",
+                          source );
         }
 
-        LOGGER.debug( "ingestData() with hash known in advance: {}, {}",
-                      source, hash );
         List<Future<List<IngestResult>>> tasks = new ArrayList<>();
         Future<List<IngestResult>> task;
 
@@ -514,7 +512,7 @@ public class SourceLoader
                                            geoIdType );
             task = executor.submit( ingester );
         }
-        else
+        else if ( Objects.nonNull( hash ) )
         {
             IngestSaver ingestSaver =
                     IngestSaver.createTask()
@@ -528,6 +526,25 @@ public class SourceLoader
                                .withProject( projectConfig )
                                .withDataSource( source )
                                .withHash( hash )
+                               .withProgressMonitoring()
+                               .withLockManager( lockManager )
+                               .build();
+            task = executor.submit( ingestSaver );
+        }
+        else
+        {
+            IngestSaver ingestSaver =
+                    IngestSaver.createTask()
+                               .withSystemSettings( this.getSystemSettings() )
+                               .withDatabase( this.getDatabase() )
+                               .withDataSourcesCache( this.getDataSourcesCache() )
+                               .withFeaturesCache( this.getFeaturesCache() )
+                               .withVariablesCache( this.getVariablesCache() )
+                               .withEnsemblesCache( this.getEnsemblesCache() )
+                               .withMeasurementUnitsCache( this.getMeasurementUnitsCache() )
+                               .withProject( projectConfig )
+                               .withDataSource( source )
+                               .withoutHash()
                                .withProgressMonitoring()
                                .withLockManager( lockManager )
                                .build();
@@ -597,7 +614,7 @@ public class SourceLoader
                         this.ingestData( source,
                                          projectConfig,
                                          lockManager,
-                                         checkIngest.getHash() );
+                                         null );
                 tasks.addAll( futureList );
         }
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
@@ -619,7 +636,7 @@ public class SourceLoader
                     this.ingestData( source,
                                      projectConfig,
                                      lockManager,
-                                     hash );
+                                     null );
             tasks.addAll( futureList );
         }
         else if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
@@ -663,7 +680,7 @@ public class SourceLoader
      * @param filePath The path of the file to evaluate
      * @param source The configuration indicating that the given file might
      *               need to be ingested
-     * @return Whether or not data within the file should be ingested (and hash)
+     * @return Whether or not data within the file should be ingested
      * @throws PreIngestException when hashing or id lookup cause some exception
      */
     private FileEvaluation shouldIngest( final URI filePath,
@@ -709,7 +726,10 @@ public class SourceLoader
                 }
                 else
                 {
-                    hash = Strings.getMD5Checksum( filePath );
+                    // As of 2020-06-02, readers all use TimeSeriesIngester
+                    // which hashes the TimeSeries instances individually rather
+                    // than files, no need to hash the file at all here now.
+                    hash = null;
                 }
 
                 sourceStatus = querySourceStatus( hash, lockManager );
@@ -757,17 +777,21 @@ public class SourceLoader
         Integer dataSourceKey = null;
         DataSources dataSourcesCache = this.getDataSourcesCache();
 
-        try
+        if ( Objects.nonNull( hash ) )
         {
-            dataSourceKey = dataSourcesCache.getActiveSourceID( hash );
-        }
-        catch ( SQLException se )
-        {
-            throw new PreIngestException( "While determining if source '"
-                                          + filePath + "' should be ingested, "
-                                          + "failed to translate natural key '"
-                                          + hash + "' to surrogate key.",
-                                          se );
+            try
+            {
+                dataSourceKey = dataSourcesCache.getActiveSourceID( hash );
+            }
+            catch ( SQLException se )
+            {
+                throw new PreIngestException( "While determining if source '"
+                                              + filePath
+                                              + "' should be ingested, "
+                                              + "failed to translate natural key '"
+                                              + hash + "' to surrogate key.",
+                                              se );
+            }
         }
 
         if ( Objects.isNull( dataSourceKey ) )
@@ -1250,7 +1274,7 @@ public class SourceLoader
 
     /**
      * Returns the likely status of a given source hash based on state in db.
-     * @param hash The natural identifier of the source.
+     * @param hash The natural identifier of the source, null if not known yet.
      * @param lockManager The lock manager to use to query status.
      * @return the source status
      * @throws PreIngestException When communication with the database fails.
@@ -1261,6 +1285,14 @@ public class SourceLoader
         boolean anotherTaskStartedIngest = false;
         boolean ingestMarkedComplete = false;
         boolean ingestInProgress = false;
+
+        if ( Objects.isNull( hash ) )
+        {
+            // When the hash is null, report it as not started, etc.
+            // As of 2020-06-02, TimeSeriesIngester will investigate status,
+            // so do not bother checking here for files.
+            return SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING;
+        }
 
         try
         {

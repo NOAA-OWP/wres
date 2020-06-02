@@ -38,32 +38,21 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
 
     private final Response waterML;
     private final DataSource dataSource;
-    private final String hashOfSuperSet;
 
     /**
      * Create a WaterMLSource, call transformWaterML to transform to TimeSeries.
      *
-     * More consideration required for how to best use hashOfSuperSet to avoid
-     * repeated ingest of the same data. It may or may not make sense to have it
-     * here at this level combined with a fully deserialized waterML object,
-     * because by the time deserialization has happened, the opportunity for
-     * performance improvement is over. In any case, leaving here because it
-     * is still available from the caller as of 2020-01-27.
      * @param dataSource The data source information
      * @param waterML The deserialized waterML object
-     * @param hash The identifier of the waterML object, superset of timeseries
      */
 
     public WaterMLSource( DataSource dataSource,
-                          Response waterML,
-                          String hash )
+                          Response waterML )
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( waterML );
-        Objects.requireNonNull( hash );
         this.dataSource = dataSource;
         this.waterML = waterML;
-        this.hashOfSuperSet = hash;
     }
 
     @Override
