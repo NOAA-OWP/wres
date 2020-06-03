@@ -700,7 +700,7 @@ public class ProtobufMessageFactory
                 metricBuilder.setMaximum( maximumProto );
             }
 
-            if ( Objects.nonNull( maximum ) )
+            if ( Objects.nonNull( optimum ) )
             {
                 Duration optimumProto = Duration.newBuilder()
                                                 .setSeconds( optimum.getSeconds() )

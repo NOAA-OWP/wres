@@ -17,7 +17,7 @@ struct DiagramMetric
     # forecast probability, one for the observed relative frequency and one for 
     # the sample size or sharpness.
 
-    components @1 :DiagramMetricComponent;
+    components @1 :List(DiagramMetricComponent);
     # The metric components.
 
     struct DiagramMetricComponent

@@ -21,7 +21,7 @@ struct DiagramStatistic
     decisionThreshold @2 :Threshold;
     # Threshold used to convert a probability into a dichotomous outcome.
     
-    statistics @3 :DiagramStatisticComponent;
+    statistics @3 :List(DiagramStatisticComponent);
     # The diagram component values.
 
     struct DiagramStatisticComponent 

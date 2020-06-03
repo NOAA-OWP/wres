@@ -41,10 +41,7 @@ import javax.naming.InitialContext;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Timestamp;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
@@ -380,43 +377,6 @@ public class ProtobufMessageFactoryTest
     }
 
     @Test
-    public void testFlatbufferBuildingVersusProtobuf() throws InvalidProtocolBufferException
-    {
-        // Create a general-purpose builder
-        FlatBufferBuilder builder = new FlatBufferBuilder();
-
-        // Pass the general purpose builder to a class-specific helper that populates the builder
-        // with seconds and nanoseconds and returns the offset or position within the overall structure
-        int offset = wres.statistics.generated.flatbuffers.Timestamp.createTimestamp( builder, 123, 456 );
-
-        // Finish building at the last offset
-        builder.finish( offset );
-
-        // Serialize a byte array from the finished time-stamp
-        byte[] flatBytes = builder.sizedByteArray();
-        ByteBuffer flatBytesBuffer = ByteBuffer.wrap( flatBytes );
-
-        // De-serialize the time-stamp from a byte buffer
-        wres.statistics.generated.flatbuffers.Timestamp flatStamp =
-                wres.statistics.generated.flatbuffers.Timestamp.getRootAsTimestamp( flatBytesBuffer );
-
-        // Build a proto time-stamp
-        Timestamp protoStamp = Timestamp.newBuilder()
-                                        .setSeconds( 123 )
-                                        .setNanos( 456 )
-                                        .build();
-
-        // Serialize to a byte array
-        byte[] protoBytes = protoStamp.toByteArray();
-
-        //De-serialize from the byte array
-        Timestamp protoStampFromBytes = Timestamp.parseFrom( protoBytes );
-
-        assertEquals( flatStamp.seconds(), protoStampFromBytes.getSeconds() );
-        assertEquals( flatStamp.nanos(), protoStampFromBytes.getNanos() );
-    }
-
-    @Test
     public void testSendAndReceiveOneStatisticsMessage() throws Exception
     {
         // Create and start the broker, clean up on completion
@@ -439,7 +399,7 @@ public class ProtobufMessageFactoryTest
             Destination topic = (Destination) context.lookup( "statisticsTopic" );
 
             // Post a message and then consume it using asynchronous pub-sub style messaging
-            try ( StatisticsMessager messager = StatisticsMessager.of(); // Producer
+            try ( MessagerPublisher messager = MessagerPublisher.of(); // Producer
                   Connection connection = factory.createConnection(); // Consumer connection
                   Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE ); // Consumer session
                   MessageConsumer messageConsumer = session.createConsumer( topic ); ) // Consumer
@@ -492,7 +452,7 @@ public class ProtobufMessageFactoryTest
 
                 // Publish a message to the statistics topic with an arbitrary identifier and correlation identifier
                 // The message identifier must begin with "ID:"
-                messager.publish( sent, "ID:1234567", "89101112" );
+                messager.publish( ByteBuffer.wrap( sent.toByteArray() ), "ID:1234567", "89101112" );
                 
                 // Await the sooner of all messages read and a timeout
                 boolean done = consumerCount.await( 2000L, TimeUnit.MILLISECONDS );
@@ -504,7 +464,7 @@ public class ProtobufMessageFactoryTest
             }
         }
     }    
-
+    
     /**
      * Returns a {@link List} containing several {@link DoubleScoreStatistic} for one pool.
      * 
@@ -559,11 +519,6 @@ public class ProtobufMessageFactoryTest
         fakeOutputs.add( DoubleScoreStatistic.of( 2.0, fakeMetadataB ) );
         fakeOutputs.add( DoubleScoreStatistic.of( 3.0, fakeMetadataC ) );
 
-        for(int i = 0; i < 97; i++ )
-        {
-            fakeOutputs.add( DoubleScoreStatistic.of( 4.0, fakeMetadataC ) );
-        }        
-        
         return Collections.unmodifiableList( fakeOutputs );
     }
 
@@ -612,15 +567,8 @@ public class ProtobufMessageFactoryTest
                          VectorOfDoubles.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) );
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
 
-        List<DiagramStatistic> diagrams = new ArrayList<>();
-        
-        for( int i = 0; i < 20; i ++ )
-        {
-            diagrams.add( DiagramStatistic.of( fakeOutputs, fakeMetadata ) );
-        }
-        
         // Fake output wrapper.
-        return Collections.unmodifiableList( diagrams );
+        return Collections.unmodifiableList( List.of( DiagramStatistic.of( fakeOutputs, fakeMetadata ) ) );
     }
 
     /**
@@ -748,13 +696,6 @@ public class ProtobufMessageFactoryTest
                                                                           values );
 
         b.addTimeSeries( timeSeriesTwo );
-        
-        
-        for(int i = 0; i < 500; i++ )
-        {
-            b.addTimeSeries( timeSeriesTwo );
-        }
-
 
         return b.build();
     }
