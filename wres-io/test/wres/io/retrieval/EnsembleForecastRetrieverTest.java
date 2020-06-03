@@ -453,28 +453,28 @@ public class EnsembleForecastRetrieverTest
 
         // Add first member
         EnsembleDetails members = new EnsembleDetails();
-        String ensembleName = "ENS";
-        int firstMemberLabel = 123;
-        members.setEnsembleName( ensembleName );
-        members.setEnsembleMemberIndex( firstMemberLabel );
+        //String ensembleName = "ENS";
+        String firstMemberLabel = "123";
+        members.setEnsembleName( firstMemberLabel );
+        //members.setEnsembleMemberIndex( firstMemberLabel );
         members.save( this.wresDatabase );
         this.firstMemberId = members.getId();
 
         assertNotNull( this.firstMemberId );
 
         // Add second member
-        int secondMemberLabel = 567;
-        members.setEnsembleName( ensembleName );
-        members.setEnsembleMemberIndex( secondMemberLabel );
+        String secondMemberLabel = "567";
+        members.setEnsembleName( secondMemberLabel );
+        //members.setEnsembleMemberIndex( secondMemberLabel );
         members.save( this.wresDatabase );
         this.secondMemberId = members.getId();
 
         assertNotNull( this.secondMemberId );
 
         // Add third member
-        int thirdMemberLabel = 456;
-        members.setEnsembleName( ensembleName );
-        members.setEnsembleMemberIndex( thirdMemberLabel );
+        String thirdMemberLabel = "456";
+        members.setEnsembleName( thirdMemberLabel );
+        //members.setEnsembleMemberIndex( thirdMemberLabel );
         members.save( this.wresDatabase );
         this.thirdMemberId = members.getId();
 
