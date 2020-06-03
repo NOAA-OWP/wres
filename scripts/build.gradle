@@ -32,7 +32,7 @@ distributions
                 include 'pg_dump_wres.sh'
                 include 'pg_restore_wres.sh'
                 include 'redmine_66113/wres_http_migrate_dbs.sh'
-                include 'redmine_66829/wres_http_clean_database.sh'
+                include 'redmine_66829/wres_http_cleandatabase.sh'
                 exclude 'scenario*/output'
             }
         }
