@@ -38,7 +38,7 @@
         },
        {
             "name" : "HTTP",
-            "port" : "${qpid.http_port}",
+            "port" : "8081",
             "protocols" : [ "HTTP" ],            
             "authenticationProvider" : "externalAuthProvider",
             "needClientAuth": "false"
