@@ -375,7 +375,7 @@ public class ProtobufMessageFactoryTest
         // Delete if succeeded
         Files.deleteIfExists( path );
     }
-
+    
     @Test
     public void testSendAndReceiveOneStatisticsMessage() throws Exception
     {
@@ -392,7 +392,7 @@ public class ProtobufMessageFactoryTest
                 properties.load( stream );
             }
 
-            // Create a connection factory for the message consumer (producer is abstracted by StatisticsMessager)
+            // Create a connection factory for the message consumer (producer is abstracted by MessagerPublisher)
             Context context = new InitialContext( properties );
             // Some casting, hey ho
             ConnectionFactory factory = (ConnectionFactory) context.lookup( "statisticsFactory" );

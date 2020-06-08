@@ -577,7 +577,7 @@ public final class ThresholdTest
         assertTrue( threshold.getValues().second().equals( 0.5 ) );
         assertTrue( threshold.getProbabilities().first().equals( 0.0 ) );
         assertTrue( threshold.getProbabilities().second().equals( 0.7 ) );
-        assertTrue( threshold.getCondition() == Operator.BETWEEN );
+        assertTrue( threshold.getOperator() == Operator.BETWEEN );
         assertTrue( threshold.getLabel().equals( THRESHOLD_LABEL ) );
     }
 

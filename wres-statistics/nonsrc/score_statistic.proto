@@ -9,32 +9,34 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "ScoreStatisticProto";
 option java_multiple_files = true;
 
-
-/* A message that encapsulates a score statistic, which is the product of 
-applying a score metric to a pool of pairs. */
-
 message ScoreStatistic
 {
-    /* This could be promoted to an Evaluation; however, there is one 
-    ScoreMetric per ScoreStatistic while the atomic collection is a pool, so 
-    there is no efficiency to be gained and some context to be lost.*/
+    /*A message that encapsulates a score statistic, which is the product of 
+    applying a score metric to a pool of pairs.*/
+
     ScoreMetric metric = 1;
+    // The score metric.
 
     Threshold event_threshold = 2;
+    // The threshold associated with an event.
+    
     Threshold decision_threshold = 3;
+    /*The threshold associated with a decision, such as the forecast probability 
+    of flooding at which to issue a flood warning. This is used to transform 
+    probabilistic data to dichitomous data to which dichotomous statistics may
+    be applied.*/
 
-    /* The score components. This could be abstracted with repeated doubles and 
-    an implicit ordering based on the ordering in ScoreMetric instead */
     repeated ScoreStatisticComponent statistics = 4;
-
-    // A diagram component
+    // The score components.
+    
     message ScoreStatisticComponent
     {
-        // Metric component name
+        // A score component.
+    
         ScoreMetric.ScoreMetricComponent.ScoreComponentName name = 1;
-
-        // Component value
+        // Metric component name.
+        
         double value = 2;
+        // Score component value.        
     }
-
 }
