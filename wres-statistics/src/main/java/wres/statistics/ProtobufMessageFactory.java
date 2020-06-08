@@ -68,7 +68,7 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pairs;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
-import wres.statistics.generated.Threshold.ThresholdType;
+import wres.statistics.generated.Threshold.ThresholdOperator;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.TimeWindow;
@@ -443,7 +443,7 @@ public class ProtobufMessageFactory
         Objects.requireNonNull( threshold );
 
         Threshold.Builder builder = Threshold.newBuilder()
-                                             .setType( ThresholdType.valueOf( threshold.getCondition().name() ) )
+                                             .setType( ThresholdOperator.valueOf( threshold.getOperator().name() ) )
                                              .setLeftThresholdValue( threshold.getValues().first() );
 
         if ( threshold.hasProbabilities() )

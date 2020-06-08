@@ -9,32 +9,31 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "DiagramStatisticProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a diagram statistic, such as the binned 
-statistics associated with a reliability diagram. */
-
 message DiagramStatistic
 {
-    /* This could be promoted to an Evaluation; however, there is one 
-    DiagramMetric per DiagramStatistic while the atomic collection is a pool, so 
-    there is no efficiency to be gained and some context to be lost.*/
+    /*A message that encapsulates a diagram statistic, such as the binned 
+    statistics associated with a reliability diagram. */
+
     DiagramMetric metric = 1;
+    // The metric.
 
-    // Threshold used to define a partition of pairs or categorical event
     Threshold event_threshold = 2;
-    
-    // Threshold used to convert a probability into a dichotomous outcome
+    // Threshold used to define a partition of pairs or categorical event.
+        
     Threshold decision_threshold = 3;
-
-    // The diagram component values.
+    // Threshold used to convert a probability into a dichotomous outcome.
+    
     repeated DiagramStatisticComponent statistics = 4;
-
-    // A diagram component
+    // The diagram component values.
+    
     message DiagramStatisticComponent 
     {
-        // Metric component name
+        // A diagram component.
+    
         DiagramMetric.DiagramMetricComponent.DiagramComponentName name = 1;
-
-        // Values
+        // Metric component name.
+        
         repeated double values = 2;
+        // The component values.
     }
 }

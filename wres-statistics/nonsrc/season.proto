@@ -6,11 +6,13 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "SeasonProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a season, which is represented by a start 
-monthday and an end monthday, both inclusive. */
 message Season
 {
-    int32 start_month = 1;
+    /*A message that encapsulates a season, which is represented by a start 
+    monthday and an end monthday, both inclusive. There is no 4-bit or 8-bit 
+    unsigned int in protobuf, but int32 uses varint encoding.*/
+
+    int32 start_month = 1;    
     int32 start_day = 2;
     int32 end_month = 3;
     int32 end_day = 4;

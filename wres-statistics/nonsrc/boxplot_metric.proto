@@ -8,39 +8,40 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "BoxplotMetricProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a box plot metric. */
-
 message BoxplotMetric
 {
-    // Metric name.
+    // A message that encapsulates a box plot metric.
+
     MetricName name = 1;    
-
-    // The quantiles at which the whiskers are defined
+    // Metric name.
+    
     repeated double quantiles = 2;
-
-    // The type of value linked to each box
+    // The quantiles at which the whiskers are defined.
+    
     enum LinkedValueType
     {
+        //The type of value linked to each box.
+        
         UNKNOWN = 0;
         OBSERVED_VALUE = 1;
         FORECAST_VALUE = 2;
         ENSEMBLE_MEAN = 3;
     }
 
-    /* The type of value linked to each box. For example,
-    when plotting boxes by observed value, this is 
-    LinkedValueType.OBSERVED_VALUE */
     LinkedValueType linked_value_type = 3;
+    /*The type of value linked to each box. For example,
+    when plotting boxes by observed value, this is 
+    LinkedValueType.OBSERVED_VALUE.*/
 
-    // Units of the quantiles
     string units = 4;
-
-    // Optimum value
+    // Units of the quantiles.
+    
     double optimum = 5; 
-
-    // The lower bound of the quantiles
+    // Optimum value.
+    
     double minimum = 6;
-        
-    // The upper bound of the quantiles
+    // The lower bound of the quantiles.
+
     double maximum = 7;
+    // The upper bound of the quantiles.
 }

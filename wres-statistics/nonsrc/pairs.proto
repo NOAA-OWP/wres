@@ -9,26 +9,39 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "PairsProto";
 option java_multiple_files = true;
 
-/* A message that encapsulated pairs, which must be continuous numerical 
-(single-valued or ensemble). The time-series composition of the paired values is 
-respected by the message. */
 message Pairs
 {
-    // Zero or more time-series of pairs
-    repeated TimeSeriesOfPairs time_series = 1;
+    /*A message that encapsulated pairs, which must be continuous numerical 
+    (single-valued or ensemble). The time-series composition of the paired values is 
+    respected by the message.*/
 
+    repeated TimeSeriesOfPairs time_series = 1;
+    // Zero or more time-series of pairs.
+    
     message TimeSeriesOfPairs
     {
+        // A time-series of paired values.
+        
         repeated ReferenceTime reference_times = 1;
+        // Zero or more reference times.
+        
         repeated Pair pairs = 2;
+        // One or more pairs.
     }
 
-    // A single pair
     message Pair 
     {
+        /*A single pair composed of one or more left values and one or more 
+        right values.*/
+    
         google.protobuf.Timestamp valid_time = 1;
+        // The valid time of the pair.
+        
         repeated double left = 3;
+        // One or more left values.
+        
         repeated double right = 4;
+        // One or more right values.
     }
 
 }

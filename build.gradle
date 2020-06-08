@@ -661,6 +661,9 @@ project(':wres-statistics')
         // QPID embedded (aka in-memory) broker support
         testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.8'
 
+        // https://mvnrepository.com/artifact/org.apache.qpid/qpid-broker-plugins-management-http
+        testCompile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.0'
+
         // QPID JMS client for AMQP 0.X (not 1.0)
         testCompile group: 'org.apache.qpid', name: 'qpid-client', version: '6.3.4'
     }
