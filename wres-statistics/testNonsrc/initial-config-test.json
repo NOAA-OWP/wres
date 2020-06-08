@@ -13,7 +13,7 @@
     [
         {
             "name": "wres-statistics-AMQP",
-            "port": "5672",
+            "port": "${qpid.amqp_port}",
             "protocols":
             [
                 "AMQP_0_9_1"
@@ -38,9 +38,10 @@
         },
        {
             "name" : "HTTP",
-            "port" : "8080",
+            "port" : "${qpid.http_port}",
+            "protocols" : [ "HTTP" ],            
             "authenticationProvider" : "externalAuthProvider",
-            "protocols" : [ "HTTP" ]
+            "needClientAuth": "false"
        }
     ],
     "virtualhostnodes":
