@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets ;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -272,6 +273,15 @@ public class WaterMLBasicSource extends BasicSource
         try
         {
             byte[] rawForecast = IOUtils.toByteArray( data );
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Response body for {}: {}",
+                              location,
+                              new String( rawForecast,
+                                          StandardCharsets.UTF_8 ) );
+            }
+
             Response response = OBJECT_MAPPER.readValue( rawForecast,
                                                          Response.class );
             WaterMLSource waterMLSource =
