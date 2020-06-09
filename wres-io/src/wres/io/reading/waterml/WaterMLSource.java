@@ -23,6 +23,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
+import wres.io.reading.PreIngestException;
 import wres.io.reading.waterml.timeseries.Method;
 import wres.io.reading.waterml.timeseries.SiteCode;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
@@ -204,6 +205,9 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
                 }
             }
 
+            LOGGER.trace( "Jackson parsed these for site {} variable {}: {}",
+                          usgsSiteCode, variableName, valueSet );
+
             for ( TimeSeriesValue value : valueSet.getValue() )
             {
                 double readValue = value.getValue();
@@ -233,10 +237,23 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
                                                                  variableName,
                                                                  usgsSiteCode,
                                                                  unitCode );
-            wres.datamodel.time.TimeSeries<Double> timeSeries =
-                    wres.datamodel.time.TimeSeries.of( metadata,
-                                                       rawTimeSeries );
-            timeSerieses.add( timeSeries );
+
+            LOGGER.trace( "TimeSeries parsed for {}: {}", metadata, rawTimeSeries );
+
+            try
+            {
+                wres.datamodel.time.TimeSeries<Double> timeSeries =
+                        wres.datamodel.time.TimeSeries.of( metadata,
+                                                           rawTimeSeries );
+                timeSerieses.add( timeSeries );
+            }
+            catch ( IllegalArgumentException iae )
+            {
+                throw new PreIngestException( "While creating timeseries for site "
+                                              + usgsSiteCode + " from URI "
+                                              + this.dataSource.getUri()
+                                              + ": ", iae );
+            }
         }
 
         return Collections.unmodifiableList( timeSerieses );
