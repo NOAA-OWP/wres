@@ -35,10 +35,10 @@ import org.slf4j.LoggerFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class MessagerPublisher implements Closeable
+public class MessagePublisher implements Closeable
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( MessagerPublisher.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
 
     /**
      * Default destination name.
@@ -98,14 +98,14 @@ public class MessagerPublisher implements Closeable
      * @return an instance
      */
 
-    public static MessagerPublisher of()
+    public static MessagePublisher of()
             throws IOException, NamingException, JMSException
     {
-        return MessagerPublisher.of( DeliveryMode.NON_PERSISTENT,
-                                     Message.DEFAULT_PRIORITY,
-                                     Message.DEFAULT_TIME_TO_LIVE,
-                                     MessagerPublisher.DEFAULT_DESTINATION,
-                                     MessagerPublisher.DEFAULT_FACTORY );
+        return MessagePublisher.of( DeliveryMode.NON_PERSISTENT,
+                                    Message.DEFAULT_PRIORITY,
+                                    Message.DEFAULT_TIME_TO_LIVE,
+                                    MessagePublisher.DEFAULT_DESTINATION,
+                                    MessagePublisher.DEFAULT_FACTORY );
     }
 
     /**
@@ -124,14 +124,14 @@ public class MessagerPublisher implements Closeable
      * @return an instance
      */
 
-    public static MessagerPublisher of( int deliveryMode,
-                                        int messagePriority,
-                                        long messageTimeToLive,
-                                        String destinationName,
-                                        String factoryName )
+    public static MessagePublisher of( int deliveryMode,
+                                       int messagePriority,
+                                       long messageTimeToLive,
+                                       String destinationName,
+                                       String factoryName )
             throws IOException, NamingException, JMSException
     {
-        return new MessagerPublisher( deliveryMode, messagePriority, messageTimeToLive, destinationName, factoryName );
+        return new MessagePublisher( deliveryMode, messagePriority, messageTimeToLive, destinationName, factoryName );
     }
 
     /**
@@ -158,7 +158,7 @@ public class MessagerPublisher implements Closeable
             // Set the message identifiers
             message.setJMSMessageID( messageId );
             message.setJMSCorrelationID( correlationId );
-            
+
             // At least until we can write from a buffer directly
             // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
             message.writeBytes( messageBytes.array() );
@@ -239,11 +239,11 @@ public class MessagerPublisher implements Closeable
      * @throws NullPointerException if the destinationName or factoryName is null
      */
 
-    private MessagerPublisher( int deliveryMode,
-                               int messagePriority,
-                               long messageTimeToLive,
-                               String destinationName,
-                               String factoryName )
+    private MessagePublisher( int deliveryMode,
+                              int messagePriority,
+                              long messageTimeToLive,
+                              String destinationName,
+                              String factoryName )
             throws IOException, NamingException, JMSException
     {
         Objects.requireNonNull( destinationName );
@@ -253,7 +253,7 @@ public class MessagerPublisher implements Closeable
         Properties properties = new Properties();
 
         // Load the jndi.properties        
-        URL config = MessagerPublisher.class.getClassLoader().getResource( "jndi.properties" );
+        URL config = MessagePublisher.class.getClassLoader().getResource( "jndi.properties" );
         try ( InputStream stream = config.openStream() )
         {
             properties.load( stream );

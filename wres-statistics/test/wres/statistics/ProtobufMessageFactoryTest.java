@@ -399,7 +399,7 @@ public class ProtobufMessageFactoryTest
             Destination topic = (Destination) context.lookup( "statisticsTopic" );
 
             // Post a message and then consume it using asynchronous pub-sub style messaging
-            try ( MessagerPublisher messager = MessagerPublisher.of(); // Producer
+            try ( MessagePublisher messager = MessagePublisher.of(); // Producer
                   Connection connection = factory.createConnection(); // Consumer connection
                   Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE ); // Consumer session
                   MessageConsumer messageConsumer = session.createConsumer( topic ); ) // Consumer
