@@ -1,3 +1,3 @@
-include 'wres-util', 'wres-system', 'wres-datamodel', 'wres-io', 'wres-metrics', 'wres-statistics', 'wres-vis', 'wres-config', 'wres-grid', 'wres-worker', 'wres-tasker', 'wres-messages', 'wres-eventsbroker'
+include 'wres-util', 'wres-system', 'wres-datamodel', 'wres-io', 'wres-metrics', 'wres-statistics', 'wres-vis', 'wres-config', 'wres-grid', 'wres-worker', 'wres-tasker', 'wres-messages', 'wres-eventsbroker', 'wres-events'
 rootProject.name = 'wres'
 
