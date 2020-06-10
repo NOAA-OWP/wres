@@ -47,9 +47,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     /**
      * Default jndi properties file on the classpath.
      */
-    
+
     private static final String DEFAULT_PROPERTIES = "jndi.properties";
-    
+
     /**
      * Instance of an embedded broker managed by this factory instance, created as needed. There should be one instance 
      * of a {@link BrokerConnectionFactory} with an embedded broker instance per application instance.
@@ -58,7 +58,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     private final EmbeddedBroker broker;
 
     /**
-     * Context from which connections may be requested.
+     * Context that maps JMS objects to names.
      */
 
     private final Context context;
@@ -89,6 +89,19 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
+     * Returns a brokered destination for a given name.
+     * 
+     * @param name the name of the destination
+     * @return the destination
+     * @throws NamingException if the destination could not be found in this context
+     */
+
+    public Destination getDestination( String name ) throws NamingException
+    {
+        return (Destination) this.context.lookup( name );
+    }
+
+    /**
      * Returns a destination from the present context.
      * 
      * @param name the destination name
@@ -96,14 +109,14 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @throws NamingException if the destination does not exist
      * @throws NullPointerException if the name is null
      */
-    
+
     public Destination get( String name ) throws NamingException
     {
         Objects.requireNonNull( name );
-        
+
         return (Destination) this.context.lookup( name );
     }
-    
+
     @Override
     public void close() throws IOException
     {
@@ -119,12 +132,12 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * 
      * @return true if this factory is managing an embedded broker
      */
-    
+
     public boolean hasEmbeddedBroker()
     {
         return Objects.nonNull( this.broker );
     }
-    
+
     /**
      * Constructs a new instances and creates an embedded broker as necessary.
      * 
@@ -207,6 +220,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                     factory = (ConnectionFactory) this.context.lookup( factoryName );
 
                     // If retries are configured, then expect retries here, even if the connection ultimately fails
+                    LOGGER.debug( "Probing to establish whether an active broker is accepting connections at {}. This "
+                                  + "may fail!",
+                                  value );
+
                     try ( Connection connection = factory.createConnection() )
                     {
                         LOGGER.info( "Discovered an active AMQP broker at {}", value );
