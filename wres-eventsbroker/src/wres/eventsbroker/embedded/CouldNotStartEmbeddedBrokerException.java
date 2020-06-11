@@ -1,4 +1,4 @@
-package wres.eventsbroker;
+package wres.eventsbroker.embedded;
 
 /**
  * A runtime exception indicating a failure to start an embedded broker.

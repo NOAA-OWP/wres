@@ -1,7 +1,8 @@
-package wres.eventsbroker;
+package wres.eventsbroker.embedded;
 
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+
 import org.apache.qpid.client.AMQConnection;
 
 /**
