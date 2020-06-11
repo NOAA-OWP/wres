@@ -20,6 +20,10 @@ import javax.naming.NamingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.eventsbroker.embedded.CouldNotLoadBrokerConfigurationException;
+import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
+import wres.eventsbroker.embedded.EmbeddedBroker;
+
 /**
  * <p>Manages connections to an AMQP broker. The broker configuration is contained in a jndi properties file on the 
  * classpath. If the configuration contains the loopback address (localhost, 127.0.0.1), then the factory creates an 
@@ -89,19 +93,6 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
-     * Returns a brokered destination for a given name.
-     * 
-     * @param name the name of the destination
-     * @return the destination
-     * @throws NamingException if the destination could not be found in this context
-     */
-
-    public Destination getDestination( String name ) throws NamingException
-    {
-        return (Destination) this.context.lookup( name );
-    }
-
-    /**
      * Returns a destination from the present context.
      * 
      * @param name the destination name
@@ -110,7 +101,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @throws NullPointerException if the name is null
      */
 
-    public Destination get( String name ) throws NamingException
+    public Destination getDestination( String name ) throws NamingException
     {
         Objects.requireNonNull( name );
 
@@ -233,6 +224,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                         LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
                                      + "instead.",
                                      value );
+                        
                         returnMe = EmbeddedBroker.of();
                     }
                 }

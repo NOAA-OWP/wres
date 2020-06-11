@@ -1,4 +1,4 @@
-package wres.eventsbroker;
+package wres.eventsbroker.embedded;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * https://mail-archives.apache.org/mod_mbox/qpid-users/201806.mbox/browser
  */
 
-class EmbeddedBroker implements Closeable
+public class EmbeddedBroker implements Closeable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( EmbeddedBroker.class );
 
@@ -48,7 +48,7 @@ class EmbeddedBroker implements Closeable
      * @return a broker instance with default options.
      */
 
-    static EmbeddedBroker of()
+    public static EmbeddedBroker of()
     {
         URL initialConfig = EmbeddedBroker.class.getClassLoader()
                                                 .getResource( INITIAL_CONFIGURATION );
@@ -79,7 +79,7 @@ class EmbeddedBroker implements Closeable
     public void start()
     {
         LOGGER.debug( "Starting embedded broker with launch options {}.", this.launchOptions );
-        
+
         try
         {
             this.systemLauncher.startup( this.launchOptions );
@@ -92,7 +92,7 @@ class EmbeddedBroker implements Closeable
                                                             + "'.",
                                                             e );
         }
-        
+
         LOGGER.debug( "Finished starting embedded broker with launch options {}.", this.launchOptions );
     }
 
@@ -100,10 +100,10 @@ class EmbeddedBroker implements Closeable
     public void close() throws IOException
     {
         LOGGER.debug( "Closing embedded broker." );
-        
+
         this.shutdown();
-        
-        LOGGER.debug( "Embedded broker closed." );        
+
+        LOGGER.debug( "Embedded broker closed." );
     }
 
     /**
