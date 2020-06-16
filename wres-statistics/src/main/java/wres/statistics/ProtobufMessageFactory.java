@@ -798,6 +798,8 @@ public class ProtobufMessageFactory
      * Creates a {@link wres.statistics.generated.Geometry} from a 
      * {@link wres.datamodel.sampledata.Location}.
      * 
+     * TODO: map across the new FeatureTuple when it arrives and then delete this comment.
+     * 
      * @param location the location from which to create a message
      * @return the message
      */
@@ -813,11 +815,7 @@ public class ProtobufMessageFactory
             builder.setName( location.getLocationName() );
         }
 
-        if ( location.hasCoordinates() )
-        {
-            builder.setLatitude( location.getLatitude() );
-            builder.setLongitude( location.getLongitude() );
-        }
+        // Add the wkt, srid, description and right/baseline names, as available
 
         return builder.build();
     }

@@ -8,16 +8,15 @@ option java_multiple_files = true;
 
 message Geometry
 {
-    /*Elementary representation of a geometry with geographic points expressed 
-    as latitude/longitude pairs on the World Geodetic System 1984 (WGS84) 
-    reference ellipsoid. */
+    /*Elementary representation of a geometry with a spatial reference 
+     identifier (srid) and well-known text (wkt) string.*/
 
-    double latitude = 1;
-    // WGS84 latitude.
-    
-    double longitude= 2;
-    // WGS84 longitude.
-    
+    string wkt = 1;
+    // Geometry string.
+
+    int32 srid = 2;
+    // Coordinate system.
+
     string name = 3;
     /*User-friendly name for all sides of a pairing or the left side only if 
     other sides are defined. (e.g. DRRC2).*/
@@ -29,4 +28,7 @@ message Geometry
     string baseline_name = 5;
     /*The name of the geometry used on the baseline side of a pairing when 
     different geometries have been correlated or cross-walked.*/
+
+    string description = 6;
+    // User-friendly description of the geometry.
 }
