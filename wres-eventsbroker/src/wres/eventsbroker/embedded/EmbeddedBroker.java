@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
  * Based on https://cwiki.apache.org/confluence/display/qpid/How+to+embed+Qpid+Broker-J
  * which came from a link found at
  * https://mail-archives.apache.org/mod_mbox/qpid-users/201806.mbox/browser
+ * Configuration of dead letter queues based on: 
+ * <p><a href = "https://qpid.apache.org/releases/qpid-broker-j-8.0.0/book/Java-Broker-Runtime-Handling-Undeliverable-Messages.html">Undeliverable messages</a>
  */
 
 public class EmbeddedBroker implements Closeable
