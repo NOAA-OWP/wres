@@ -3,6 +3,7 @@ package wres.io.reading;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -396,6 +397,15 @@ public class WebClient
         }
 
         if ( t instanceof EOFException )
+        {
+            return true;
+        }
+
+        if ( t instanceof InterruptedIOException
+             && Objects.nonNull( t.getMessage() )
+             && t.getMessage()
+                 .toLowerCase()
+                 .contains( "timeout" ) )
         {
             return true;
         }
