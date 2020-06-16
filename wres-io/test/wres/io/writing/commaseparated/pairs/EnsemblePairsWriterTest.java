@@ -109,7 +109,7 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
+                                   DatasetIdentifier.of( FeatureKey.of( "PLUM" ), "RIFLE" ) );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -129,7 +129,7 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
+                                   DatasetIdentifier.of( FeatureKey.of( "ORANGE" ), "PISTOL" ) );
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
@@ -149,7 +149,7 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
+                                   DatasetIdentifier.of( FeatureKey.of( "BANANA" ), "GRENADE" ) );
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
@@ -178,7 +178,7 @@ public final class EnsemblePairsWriterTest
             // Set the measurement units and time scale
             SampleMetadata meta =
                     new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
+                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "PINEAPPLE" ),
                                                                                      "MORTARS" ) )
                                                .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )
@@ -238,7 +238,7 @@ public final class EnsemblePairsWriterTest
             // Set the measurement units and time scale
             SampleMetadata meta =
                     new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
+                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "PINEAPPLE" ),
                                                                                      "MORTARS" ) )
                                                .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )

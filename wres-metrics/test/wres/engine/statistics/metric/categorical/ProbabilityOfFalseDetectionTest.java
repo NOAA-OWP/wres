@@ -55,7 +55,7 @@ public final class ProbabilityOfFalseDetectionTest
     {
         pofd = ProbabilityOfFalseDetection.of();
         meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                        DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                               "SQIN",
                                                                               "HEFS" ) ),
                                      365,

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.config.generated.Feature;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeWindow;
 
@@ -26,7 +26,7 @@ class GridDataRequest implements Request
      * The features to read.
      */
 
-    private final List<Feature> features;
+    private final List<FeatureKey> features;
 
     /**
      * The variable name.
@@ -65,7 +65,7 @@ class GridDataRequest implements Request
      */
 
     static GridDataRequest of( List<String> paths,
-                               List<Feature> features,
+                               List<FeatureKey> features,
                                String variableName,
                                TimeWindow timeWindow,
                                boolean isForecast,
@@ -86,7 +86,7 @@ class GridDataRequest implements Request
      */
 
     private GridDataRequest( List<String> paths,
-                             List<Feature> features,
+                             List<FeatureKey> features,
                              String variableName,
                              TimeWindow timeWindow,
                              boolean isForecast,
@@ -124,7 +124,7 @@ class GridDataRequest implements Request
     }
 
     @Override
-    public List<Feature> getFeatures()
+    public List<FeatureKey> getFeatures()
     {
         return this.features; // Rendered immutable on construction
     }

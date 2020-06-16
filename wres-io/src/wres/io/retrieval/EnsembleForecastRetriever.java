@@ -49,7 +49,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             "Built retriever {} for the retrieval of ensemble forecasts using script:{}{}";
 
     /**
-     * Start of script for {@link #getAll()}.
+     * Start of script for {@link #getAllIdentifiers()}.
      */
 
     private static final String GET_ALL_TIME_SERIES_SCRIPT =
@@ -204,13 +204,6 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         String groupBySource = ", TS.source_id";
 
-        // Group by source? 
-        // TODO: please remove me when ingest is time-series-shaped.
-        if ( this.hasMultipleSourcesPerSeries() )
-        {
-            groupBySource = "";
-        }
-
         // Add GROUP BY clause
         scripter.addLine( "GROUP BY TS.initialization_date, "
                           + "TSV.lead, "
@@ -356,9 +349,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     /**
      * Construct.
-     * 
-     * @param timeWindow the time window
-     * @throws NullPointerException if any required input is null
+     ** @throws NullPointerException if any required input is null
      */
 
     private EnsembleForecastRetriever( Builder builder )

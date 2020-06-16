@@ -2,7 +2,6 @@ package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.net.URI;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,8 +27,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE;
-
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
@@ -38,7 +35,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
@@ -350,31 +346,26 @@ public class NWMReader implements Callable<List<IngestResult>>
     private List<IngestResult> ingest() throws IngestException
     {
         List<IngestResult> ingestResults = new ArrayList<>();
-        Set<FeatureDetails> features;
         Features featuresCache = this.getFeaturesCache();
-
-        // Calling getAllDetails limits reading to only hardcoded wres.features.
-        try
-        {
-            features = featuresCache.getAllDetails( this.getProjectConfig() );
-        }
-        catch ( SQLException se )
-        {
-            throw new IngestException( "Failed to get features/locations.", se );
-        }
+        Set<String> features = featuresCache.getFeatureNamesForSource( this.getProjectConfig(),
+                                                                       this.getDataSource()
+                                                                           .getContext() );
 
         // A list of featureIds that will be sorted in NWM id order to be used
         // to create blocks of sequential NWM ids.
         List<Integer> featureNwmIds = new ArrayList<>( features.size() );
 
-        for ( FeatureDetails feature : features )
+        for ( String feature : features )
         {
-            Integer id = feature.getComid();
-
-            // Skip features without a comid.
-            if ( !Objects.isNull( id ) )
+            try
             {
+                Integer id = Integer.parseUnsignedInt( feature );
                 featureNwmIds.add( id );
+            }
+            catch ( NumberFormatException nfe )
+            {
+                LOGGER.warn( "Skipping non-integer NWM feature ID {} due to {}",
+                             feature, nfe.getMessage() );
             }
         }
 
@@ -552,8 +543,7 @@ public class NWMReader implements Callable<List<IngestResult>>
                                                            this.getProjectConfig(),
                                                            innerDataSource,
                                                            this.getLockManager(),
-                                                           entry.getValue(),
-                                                           GEO_ID_TYPE.COMID );
+                                                           entry.getValue() );
                             Future<List<IngestResult>> future =
                                     this.getExecutor().submit( ingester );
                             this.ingests.add( future );

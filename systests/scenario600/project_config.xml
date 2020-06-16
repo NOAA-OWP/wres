@@ -13,8 +13,10 @@
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
-        <unit>CMS</unit>
-        <feature locationId="DRRC2" />
+      <unit>CMS</unit>
+      <!--
+        <feature left="18384141" right="18384141" />
+-->
         <leadHours minimum="0" maximum="18" />
         <analysisDurations lessThanOrEqualTo="0"/>
         <dates earliest="2017-08-07T23:59:59Z" latest="2017-08-09T17:00:00Z" />

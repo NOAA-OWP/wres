@@ -13,16 +13,17 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
 import wres.io.retrieval.SingleValuedGriddedRetriever.Builder;
@@ -58,6 +59,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
 
     private final Database database;
+    private final Features featuresCache;
 
     /**
      * The project.
@@ -111,7 +113,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * A feature for retrieval.
      */
 
-    private final Feature feature;
+    private final FeatureTuple feature;
 
     /**
      * A string that describes the feature.
@@ -124,10 +126,16 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         return this.database;
     }
 
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
     /**
      * Returns an instance.
      *
      * @param database The database to use.
+     * @param featuresCache The features cache to use.
      * @param project the project
      * @param feature a feature to evaluate
      * @param unitMapper the unit mapper
@@ -136,11 +144,13 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      */
 
     public static SingleValuedRetrieverFactory of( Database database,
+                                                   Features featuresCache,
                                                    Project project,
-                                                   Feature feature,
+                                                   FeatureTuple feature,
                                                    UnitMapper unitMapper )
     {
         return new SingleValuedRetrieverFactory( database,
+                                                 featuresCache,
                                                  project,
                                                  feature,
                                                  unitMapper );
@@ -212,17 +222,25 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             if ( this.getProject().usesGriddedData( dataSourceConfig ) )
             {
                 builder = this.getGriddedRetrieverBuilder( dataSourceConfig.getType() )
-                              .setVariableName( dataSourceConfig.getVariable().getValue() )
                               .setFeatures( List.of( this.feature ) )
                               .setIsForecast( isConfiguredAsForecast );
             }
             else
             {
-                Integer variableFeatureId =
-                        this.getProject().getVariableFeatureId( variableName,
-                                                           this.feature );
-                builder = this.getRetrieverBuilder( dataSourceConfig.getType() )
-                              .setVariableFeatureId( variableFeatureId );
+                builder = this.getRetrieverBuilder( dataSourceConfig.getType() );
+
+                if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
+                {
+                    builder.setFeature( this.feature.getLeft() );
+                }
+                else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.RIGHT ) )
+                {
+                    builder.setFeature( this.feature.getRight() );
+                }
+                if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.BASELINE ) )
+                {
+                    builder.setFeature( this.feature.getBaseline() );
+                }
             }
         }
         catch ( SQLException e )
@@ -240,7 +258,9 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         }
 
         builder.setDatabase( this.getDatabase() )
+               .setFeaturesCache( this.getFeaturesCache() )
                .setProjectId( this.getProject().getId() )
+               .setVariableName( variableName )
                .setLeftOrRightOrBaseline( leftOrRightOrBaseline )
                .setDeclaredExistingTimeScale( declaredExistingTimeScale )
                .setDesiredTimeScale( this.desiredTimeScale )
@@ -274,21 +294,24 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      */
 
     private SingleValuedRetrieverFactory( Database database,
+                                          Features featuresCache,
                                           Project project,
-                                          Feature feature,
+                                          FeatureTuple feature,
                                           UnitMapper unitMapper )
     {
         Objects.requireNonNull( database );
+        Objects.requireNonNull( featuresCache );
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( feature );
 
         this.database = database;
+        this.featuresCache = featuresCache;
         this.project = project;
         this.feature = feature;
         this.unitMapper = unitMapper;
 
-        this.featureString = ConfigHelper.getFeatureDescription( feature );
+        this.featureString = feature.toString();
 
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();

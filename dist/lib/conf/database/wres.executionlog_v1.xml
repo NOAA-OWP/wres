@@ -12,14 +12,16 @@
         </preConditions>
         <renameColumn tableName="ExecutionLog" oldColumnName="system_settings" newColumnName="system_version" />
     </changeSet>
-    <changeSet id="ExecutionLog v1.1" author="Christopher Tubbs">
+    <changeSet id="ExecutionLog v1.2" author="Christopher Tubbs, Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <not>
-                <tableExists tableName="ExecutionLog" schemaName="public" />
+                <tableExists tableName="ExecutionLog" schemaName="wres" />
             </not>
         </preConditions>
-        <createTable tableName="ExecutionLog" schemaName="public">
-           <column name="log_id" type="int"/>
+        <createTable tableName="ExecutionLog" schemaName="wres">
+            <column name="log_id" type="integer" autoIncrement="true">
+                <constraints primaryKey="true" />
+            </column>
             <column name="arguments" type="varchar" remarks="Arguments passed into the application upon execution">
                 <constraints nullable="false"/>
             </column>
@@ -35,45 +37,24 @@
             <column name="error" type="varchar" remarks="Information about a failed execution" />
             <column name="input_code" type="varchar" remarks="The input code of a project that was executed" />
         </createTable>
-        <addAutoIncrement schemaName="public" tableName="ExecutionLog" columnName="log_id" />
-        <sql>
-            ALTER TABLE public.ExecutionLog OWNER TO wres;
-        </sql>
         <comment>
-            The public.ExecutionLog table has been created.
+            The wres.ExecutionLog table has been created.
         </comment>
     </changeSet>
-    <changeSet id="ExecutionLog - Move to wres schema v1.1" author="Christopher Tubbs">
+    <changeSet id="ExecutionLog - Remove ProjectExecutions view from public schema"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <viewExists viewName="ProjectExecutions" schemaName="public" />
+        </preConditions>
+        <dropView viewName="ProjectExecutions" schemaName="public" />
+    </changeSet>
+    <changeSet id="ExecutionLog - Move to wres schema v1.2" author="Christopher Tubbs, Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <and>
                 <tableExists tableName="ExecutionLog" schemaName="public" />
-                <not>
-                    <tableExists tableName="ExecutionLog" schemaName="wres" />
-                </not>
+                <tableExists tableName="ExecutionLog" schemaName="wres" />
             </and>
         </preConditions>
-        <dropView viewName="ProjectExecutions" schemaName="public" />
-        <createTable tableName="ExecutionLog" schemaName="wres">
-            <column name="log_id" type="integer" />
-            <column name="arguments" type="varchar" remarks="Arguments passed into the application upon execution">
-                <constraints nullable="false"/>
-            </column>
-            <column name="system_version" type="varchar" remarks="The version of the application">
-                <constraints nullable="false" />
-            </column>
-            <column name="project" type="varchar" remarks="The project configuration used" />
-            <column name="username" type="varchar" remarks="The name of the user who ran the application" />
-            <column name="address" type="varchar" remarks="The address of the user on the network" />
-            <column name="start_time" type="timestamp without time zone" remarks="The time at which the execution started" />
-            <column name="run_time" type="interval" remarks="The total runtime of the application" />
-            <column name="failed" type="boolean" defaultValueBoolean="false" remarks="Whether or not the application failed" />
-            <column name="error" type="varchar" remarks="Information about a failed execution" />
-            <column name="input_code" type="varchar" remarks="The input code of a project that was executed" />
-        </createTable>
-        <addAutoIncrement schemaName="wres" tableName="ExecutionLog" columnName="log_id" />
-        <sql>
-            ALTER TABLE wres.ExecutionLog OWNER TO wres;
-        </sql>
         <sql>
             INSERT INTO wres.ExecutionLog (
                 arguments,
@@ -99,26 +80,38 @@
                 input_code
             FROM public.ExecutionLog;
         </sql>
+    </changeSet>
+    <changeSet id="ExecutionLog - Remove table from public schema"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ExecutionLog" schemaName="public" />
+        </preConditions>
         <dropTable tableName="ExecutionLog" schemaName="public" />
+    </changeSet>
+    <changeSet id="ExecutionLog - Add view to wres schema"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ExecutionLog" schemaName="wres" />
+            <not>
+                <viewExists viewName="ProjectExecutions" schemaName="wres" />
+            </not>
+        </preConditions>
         <createView viewName="ProjectExecutions" schemaName="wres" replaceIfExists="true">
             SELECT CASE
-                WHEN failed = true THEN
-                    'FAILED'
-                ELSE
-                    'SUCCEEDED'
-                END AS status,
-                substring(executionlog.project, '(?&lt;=&lt;project (label=".+" )?name=")[^"]+'::text) AS project_name,
-                arguments,
-                start_time,
-                run_time,
-                error,
-                log_id
+            WHEN failed = true THEN
+            'FAILED'
+            ELSE
+            'SUCCEEDED'
+            END AS status,
+            substring(executionlog.project, '(?&lt;=&lt;project (label=".+" )?name=")[^"]+'::text) AS project_name,
+            arguments,
+            start_time,
+            run_time,
+            error,
+            log_id
             FROM wres.ExecutionLog
             WHERE arguments LIKE 'execute%'
             ORDER BY start_time;
         </createView>
-        <sql>
-            ALTER TABLE wres.ProjectExecutions OWNER TO wres;
-        </sql>
     </changeSet>
 </databaseChangeLog>

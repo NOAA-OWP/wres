@@ -49,7 +49,7 @@ public class StatisticMetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Location locationBase = Location.of( DRRC3 );
+        Location locationBase = FeatureKey.of( DRRC3 );
         SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
                                                  DatasetIdentifier.of( locationBase,
                                                                        "SQIN",
@@ -112,7 +112,7 @@ public class StatisticMetadataTest
                                                         MetricConstants.NONE );
         assertFalse( first.equals( sixth ) );
         // Unequal input dimensions
-        Location seventhLocation = Location.of( DRRC3 );
+        Location seventhLocation = FeatureKey.of( DRRC3 );
         final TimeWindow timeWindow = firstWindow;
         StatisticMetadata seventh =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
@@ -139,7 +139,7 @@ public class StatisticMetadataTest
     @Test
     public void testMinimumEquals()
     {
-        Location locationBase = Location.of( DRRC3 );
+        Location locationBase = FeatureKey.of( DRRC3 );
         SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
                                                  DatasetIdentifier.of( locationBase,
                                                                        "SQIN",
@@ -189,7 +189,7 @@ public class StatisticMetadataTest
                                                         MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                         MetricConstants.NONE );
         assertFalse( fourth.minimumEquals( fifth ) );
-        Location secondLocation = Location.of( DRRC3 );
+        Location secondLocation = FeatureKey.of( DRRC3 );
         SampleMetadata baseSecond = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                        DatasetIdentifier.of( secondLocation,
                                                                              "SQIN",
@@ -220,7 +220,7 @@ public class StatisticMetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Location baseLocation = Location.of( DRRC3 );
+        Location baseLocation = FeatureKey.of( DRRC3 );
         SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
                                                  DatasetIdentifier.of( baseLocation,
                                                                        "SQIN",
@@ -278,7 +278,7 @@ public class StatisticMetadataTest
                                                         MetricConstants.NONE );
         assertFalse( first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
-        Location seventhLocation = Location.of( DRRC3 );
+        Location seventhLocation = FeatureKey.of( DRRC3 );
         final TimeWindow timeWindow = firstWindow;
         StatisticMetadata seventh =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )

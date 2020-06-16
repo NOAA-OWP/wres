@@ -25,8 +25,8 @@ import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MissingValues;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -44,6 +44,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleRetrieverFactory;
 import wres.io.retrieval.RetrieverFactory;
@@ -83,6 +84,7 @@ public class PoolFactory
      * Create pools for single-valued data from a prescribed {@link Project} and {@link Feature}.
      * 
      * @param database The database to use.
+     * @param featuresCache The features cache/orm to use.
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
@@ -93,8 +95,9 @@ public class PoolFactory
      */
 
     public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Database database,
+                                                                                    Features featuresCache,
                                                                                     Project project,
-                                                                                    Feature feature,
+                                                                                    FeatureTuple feature,
                                                                                     UnitMapper unitMapper )
     {
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
@@ -108,13 +111,11 @@ public class PoolFactory
         DataSourceConfig baselineConfig = inputsConfig.getBaseline();
         PoolFactory.validateRequestedPoolsAgainstDeclaration( inputsConfig, false );
 
-        String featureString = ConfigHelper.getFeatureDescription( feature );
-
         int projectId = project.getId();
 
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,
-                      featureString );
+                      feature );
 
         // Get a unit mapper for the declared measurement units
         String desiredMeasurementUnit = pairConfig.getUnit();
@@ -124,6 +125,7 @@ public class PoolFactory
 
         // Create a feature-shaped retriever factory to support retrieval for this project
         RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( database,
+                                                                                             featuresCache,
                                                                                              project,
                                                                                              feature,
                                                                                              unitMapper );
@@ -165,7 +167,7 @@ public class PoolFactory
             LOGGER.debug( "While genenerating pools for project '{}' and feature '{}', discovered a baseline data "
                           + "source.",
                           projectId,
-                          featureString );
+                          feature );
 
             String baselineVariableId = ConfigHelper.getVariableIdFromProjectConfig( inputsConfig, true );
             String baselineScenarioId = inputsConfig.getBaseline().getLabel();
@@ -214,6 +216,7 @@ public class PoolFactory
      * Create pools for ensemble data from a prescribed {@link Project} and {@link Feature}.
      * 
      * @param database The database to use.
+     * @param featuresCache The features cache to use.
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
@@ -224,8 +227,9 @@ public class PoolFactory
      */
 
     public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Database database,
+                                                                                  Features featuresCache,
                                                                                   Project project,
-                                                                                  Feature feature,
+                                                                                  FeatureTuple feature,
                                                                                   UnitMapper unitMapper )
     {
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
@@ -238,13 +242,11 @@ public class PoolFactory
         Inputs inputsConfig = projectConfig.getInputs();
         PoolFactory.validateRequestedPoolsAgainstDeclaration( inputsConfig, true );
 
-        String featureString = ConfigHelper.getFeatureDescription( feature );
-
         int projectId = project.getId();
 
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,
-                      featureString );
+                      feature );
 
         // Get a unit mapper for the declared measurement units
         String desiredMeasurementUnit = pairConfig.getUnit();
@@ -254,6 +256,7 @@ public class PoolFactory
 
         // Create a feature-shaped retriever factory to support retrieval for this project
         RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( database,
+                                                                                           featuresCache,
                                                                                            project,
                                                                                            feature,
                                                                                            unitMapper );
@@ -296,7 +299,7 @@ public class PoolFactory
             LOGGER.debug( "While genenerating pools for project '{}' and feature '{}', discovered a baseline data "
                           + "source.",
                           projectId,
-                          featureString );
+                          feature );
 
             String baselineVariableId = ConfigHelper.getVariableIdFromProjectConfig( inputsConfig, true );
             String baselineScenarioId = inputsConfig.getBaseline().getLabel();
@@ -365,29 +368,14 @@ public class PoolFactory
      */
 
     private static SampleMetadata createMetadata( ProjectConfig projectConfig,
-                                                  Feature feature,
+                                                  FeatureTuple feature,
                                                   String variableId,
                                                   String scenarioId,
                                                   String measurementUnitString,
                                                   TimeScale desiredTimeScale,
                                                   LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        Float longitude = null;
-        Float latitude = null;
-
-        if ( Objects.nonNull( feature.getCoordinate() ) )
-        {
-            longitude = feature.getCoordinate().getLongitude();
-            latitude = feature.getCoordinate().getLatitude();
-        }
-
-        Location location = Location.of( feature.getComid(),
-                                         feature.getLocationId(),
-                                         longitude,
-                                         latitude,
-                                         feature.getGageId() );
-
-        DatasetIdentifier identifier = DatasetIdentifier.of( location,
+        DatasetIdentifier identifier = DatasetIdentifier.of( feature,
                                                              variableId,
                                                              scenarioId,
                                                              null,
@@ -504,9 +492,8 @@ public class PoolFactory
      * produce right-ish data.
      * 
      * @param baselineConfig the baseline declaration
-     * @param builder the pool builder
      * @param source the data source for the generated baseline
-     * @param a mapper to map from left-ish data to right-ish data for baselines that consume and produce the 
+     * @param mapper a mapper to map from left-ish data to right-ish data for baselines that consume and produce the
      *            same types of data (e.g., persistence). Not required otherwise.
      * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
      * @param baselineMeta the baseline metadata to assist with logging

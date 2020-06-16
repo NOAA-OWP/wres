@@ -22,10 +22,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -34,7 +34,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
@@ -81,14 +80,6 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private static final Logger LOGGER =
             LoggerFactory.getLogger( TimeSeriesIngester.class );
 
-    public enum GEO_ID_TYPE
-    {
-        LID,
-        GAGE_ID,
-        COMID,
-        HUC
-    }
-
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
@@ -98,12 +89,8 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
-    private final String locationName;
-    private final String variableName;
-    private final String measurementUnit;
     private final TimeSeries<?> timeSeries;
     private final Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
-    private final GEO_ID_TYPE locationType;
 
     public static TimeSeriesIngester of( SystemSettings systemSettings,
                                          Database database,
@@ -114,20 +101,18 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                          ProjectConfig projectConfig,
                                          DataSource dataSource,
                                          DatabaseLockManager databaseLockManager,
-                                         TimeSeries<?> timeSeries,
-                                         GEO_ID_TYPE locationType )
+                                         TimeSeries<?> timeSeries )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( timeSeries.getMetadata() );
         Objects.requireNonNull( timeSeries.getMetadata()
-                                          .getFeatureName() );
+                                          .getFeature() );
         Objects.requireNonNull( timeSeries.getMetadata()
                                           .getVariableName() );
         Objects.requireNonNull( timeSeries.getMetadata()
                                           .getUnit() );
-        Objects.requireNonNull( locationType );
         Objects.requireNonNull( ensemblesCache );
         Objects.requireNonNull( featuresCache );
         Objects.requireNonNull( variablesCache );
@@ -142,15 +127,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                        projectConfig,
                                        dataSource,
                                        databaseLockManager,
-                                       timeSeries,
-                                       timeSeries.getMetadata()
-                                                 .getFeatureName(),
-                                       locationType,
-                                       timeSeries.getMetadata()
-                                                 .getVariableName(),
-                                       timeSeries.getMetadata()
-                                                 .getUnit()
-        );
+                                       timeSeries );
     }
 
     private TimeSeriesIngester( SystemSettings systemSettings,
@@ -162,11 +139,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                 ProjectConfig projectConfig,
                                 DataSource dataSource,
                                 DatabaseLockManager lockManager,
-                                TimeSeries<?> timeSeries,
-                                String locationName,
-                                GEO_ID_TYPE locationType,
-                                String variableName,
-                                String measurementUnit )
+                                TimeSeries<?> timeSeries )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
@@ -178,10 +151,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( lockManager );
         Objects.requireNonNull( timeSeries );
-        Objects.requireNonNull( locationName );
-        Objects.requireNonNull( locationType );
-        Objects.requireNonNull( variableName );
-        Objects.requireNonNull( measurementUnit );
+        Objects.requireNonNull( timeSeries.getMetadata() );
 
         this.systemSettings = systemSettings;
         this.database = database;
@@ -193,10 +163,6 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         this.dataSource = dataSource;
         this.lockManager = lockManager;
         this.timeSeries = timeSeries;
-        this.locationName = locationName;
-        this.locationType = locationType;
-        this.variableName = variableName;
-        this.measurementUnit = measurementUnit;
     }
 
 
@@ -206,10 +172,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         URI location = this.getLocation();
 
         Instant now = Instant.now();
-        byte[] rawHash = this.identifyTimeSeries( this.getTimeSeries(),
-                                                  this.getLocationName()
-                                                  + this.getVariableName()
-                                                  + this.getMeasurementUnit() );
+        byte[] rawHash = this.identifyTimeSeries( this.getTimeSeries(), "" );
         String hash = Hex.encodeHexString( rawHash, false );
 
         SourceDetails.SourceKey sourceKey =
@@ -257,8 +220,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                    this.getDatabase(),
                                    this.getEnsemblesCache(),
                                    this.getTimeSeries(),
-                                   source.getId(),
-                                   this.getMeasurementUnit() );
+                                   source.getId() );
 
             // Mark complete
             SourceCompleter completer = createSourceCompleter( source.getId(),
@@ -316,8 +278,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                    Database database,
                                    Ensembles ensemblesCache,
                                    TimeSeries<?> timeSeries,
-                                   int sourceId,
-                                   String measurementUnit )
+                                   int sourceId )
             throws IOException
     {
         SortedSet<? extends Event<?>> events = timeSeries.getEvents();
@@ -341,14 +302,14 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                 LOGGER.debug( "TimeSeries trace: {}", trace );
                 String ensembleName = trace.getKey()
                                            .toString();
+
                 int ensembleId = this.insertOrGetEnsembleId( ensemblesCache,
                                                              ensembleName );
                 int timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
                         database,
                         (TimeSeries<Ensemble>) timeSeries,
                         ensembleId,
-                        sourceId,
-                        measurementUnit );
+                        sourceId );
                 this.insertEnsembleTrace( systemSettings,
                                           database,
                                           (TimeSeries<Ensemble>) timeSeries,
@@ -361,8 +322,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             int timeSeriesId = this.insertTimeSeriesRow( database,
                                                          ensemblesCache,
                                                          (TimeSeries<Double>) timeSeries,
-                                                         sourceId,
-                                                         measurementUnit );
+                                                         sourceId );
             this.insertTimeSeriesValuesRows( systemSettings,
                                              database,
                                              timeSeriesId,
@@ -469,19 +429,26 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private int insertTimeSeriesRow( Database database,
                                      Ensembles ensemblesCache,
                                      TimeSeries<Double> timeSeries,
-                                     int sourceId,
-                                     String measurementUnit )
+                                     int sourceId )
             throws IngestException
     {
 
         wres.io.data.details.TimeSeries databaseTimeSeries;
+        String measurementUnit = timeSeries.getMetadata()
+                                           .getUnit();
+        String variableName = timeSeries.getMetadata()
+                                        .getVariableName();
+        FeatureKey featureKey = timeSeries.getMetadata()
+                                          .getFeature();
         try
         {
             databaseTimeSeries = this.getDbTimeSeries( database,
                                                        ensemblesCache,
                                                        timeSeries,
+                                                       measurementUnit,
                                                        sourceId,
-                                                       measurementUnit );
+                                                       variableName,
+                                                       featureKey );
             // The following indirectly calls save:
             return databaseTimeSeries.getTimeSeriesID();
         }
@@ -498,19 +465,28 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private int insertTimeSeriesRowForEnsembleTrace( Database database,
                                                      TimeSeries<Ensemble> timeSeries,
                                                      int ensembleId,
-                                                     int sourceId,
-                                                     String measurementUnit )
+                                                     int sourceId )
             throws IngestException
     {
 
         wres.io.data.details.TimeSeries databaseTimeSeries;
+
+        String measurementUnit = timeSeries.getMetadata()
+                                           .getUnit();
+        String variableName = timeSeries.getMetadata()
+                                        .getVariableName();
+        FeatureKey feature = timeSeries.getMetadata()
+                                       .getFeature();
+
         try
         {
             databaseTimeSeries = this.getDbTimeSeriesForEnsembleTrace( database,
                                                                        timeSeries,
                                                                        ensembleId,
+                                                                       measurementUnit,
                                                                        sourceId,
-                                                                       measurementUnit );
+                                                                       variableName,
+                                                                       feature );
             // The following indirectly calls save:
             return databaseTimeSeries.getTimeSeriesID();
         }
@@ -529,21 +505,21 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             Database database,
             TimeSeries<Ensemble> ensembleTimeSeries,
             int ensembleId,
+            String measurementUnit,
             int sourceId,
-            String measurementUnit )
+            String variableName,
+            FeatureKey feature )
             throws SQLException
     {
         Instant referenceDatetime = this.getReferenceDatetime( ensembleTimeSeries );
         wres.io.data.details.TimeSeries databaseTimeSeries =
                 new wres.io.data.details.TimeSeries( database,
+                                                     ensembleId,
+                                                     this.getMeasurementUnitId( measurementUnit ),
+                                                     referenceDatetime,
                                                      sourceId,
-                                                     referenceDatetime.toString() );
-        databaseTimeSeries.setEnsembleID( ensembleId );
-        int measurementUnitId = this.getMeasurementUnitId( measurementUnit );
-        databaseTimeSeries.setMeasurementUnitID( measurementUnitId );
-        int variableFeatureId = this.getVariableFeatureId( this.getLocationName(),
-                                                           this.getVariableName() );
-        databaseTimeSeries.setVariableFeatureID( variableFeatureId );
+                                                     variableName,
+                                                     this.getFeatureId( feature ) );
         databaseTimeSeries.setTimeScale( ensembleTimeSeries.getTimeScale() );
         return databaseTimeSeries;
     }
@@ -551,21 +527,21 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private wres.io.data.details.TimeSeries getDbTimeSeries( Database database,
                                                              Ensembles ensemblesCache,
                                                              TimeSeries<Double> timeSeries,
+                                                             String measurementUnit,
                                                              int sourceId,
-                                                             String measurementUnit )
+                                                             String variableName,
+                                                             FeatureKey feature )
             throws SQLException
     {
         Instant referenceDatetime = this.getReferenceDatetime( timeSeries );
         wres.io.data.details.TimeSeries databaseTimeSeries =
                 new wres.io.data.details.TimeSeries( database,
+                                                     ensemblesCache.getDefaultEnsembleID(),
+                                                     this.getMeasurementUnitId( measurementUnit ),
+                                                     referenceDatetime,
                                                      sourceId,
-                                                     referenceDatetime.toString() );
-        databaseTimeSeries.setEnsembleID( ensemblesCache.getDefaultEnsembleID() );
-        int measurementUnitId = this.getMeasurementUnitId( measurementUnit );
-        databaseTimeSeries.setMeasurementUnitID( measurementUnitId );
-        int variableFeatureId = this.getVariableFeatureId( this.getLocationName(),
-                                                           this.getVariableName() );
-        databaseTimeSeries.setVariableFeatureID( variableFeatureId );
+                                                     variableName,
+                                                     this.getFeatureId( feature ) );
         databaseTimeSeries.setTimeScale( timeSeries.getTimeScale() );
         return databaseTimeSeries;
     }
@@ -599,6 +575,13 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         return measurementUnitsCache.getMeasurementUnitID( measurementUnit );
     }
 
+
+    private int getFeatureId( FeatureKey featureKey ) throws SQLException
+    {
+        Features featuresCache = this.getFeaturesCache();
+        return featuresCache.getFeatureID( featureKey );
+    }
+
     private byte[] identifyTimeSeries( TimeSeries<?> timeSeries,
                                        String additionalIdentifiers )
     {
@@ -629,88 +612,6 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         return hash;
     }
 
-
-    private int getVariableFeatureId( String featureName, String variableName )
-            throws SQLException
-    {
-        Feature feature;
-
-        if ( this.locationType.equals( GEO_ID_TYPE.LID ) )
-        {
-            feature = new Feature( null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   featureName,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
-        }
-        else if ( this.locationType.equals( GEO_ID_TYPE.GAGE_ID ) )
-        {
-            feature = new Feature( null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   featureName,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
-        }
-        else if ( this.locationType.equals( GEO_ID_TYPE.COMID ) )
-        {
-            feature = new Feature( null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   Long.parseLong( featureName ),
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
-        }
-        else if ( this.locationType.equals( GEO_ID_TYPE.HUC ) )
-        {
-            feature = new Feature( null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   null,
-                                   featureName,
-                                   null,
-                                   null,
-                                   null,
-                                   null );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Unable to find a geo id of type "
-                                                     + this.locationType );
-        }
-
-        Features features = this.getFeaturesCache();
-        FeatureDetails details = features.getDetails( feature );
-        Variables variables = this.getVariablesCache();
-        int variableId = variables.getVariableID( variableName );
-        return features.getVariableFeatureByFeature( details, variableId );
-    }
 
     /**
      * This method facilitates testing, Pattern 1 at
@@ -790,20 +691,5 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private URI getLocation()
     {
         return this.dataSource.getUri();
-    }
-
-    private String getMeasurementUnit()
-    {
-        return this.measurementUnit;
-    }
-
-    private String getLocationName()
-    {
-        return this.locationName;
-    }
-
-    private String getVariableName()
-    {
-        return this.variableName;
     }
 }

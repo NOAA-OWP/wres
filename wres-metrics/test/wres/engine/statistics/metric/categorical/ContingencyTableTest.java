@@ -56,7 +56,7 @@ public final class ContingencyTableTest
         //Metadata for the output
         final StatisticMetadata meta =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                         DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                                "SQIN",
                                                                                "HEFS" ) ),
                                       input.getRawData().size(),

@@ -35,7 +35,7 @@ public class Chart2DTestInput extends TestCase
         }
 
         final SampleMetadata meta = SampleMetadata.of(MeasurementUnit.of("CMS"),
-                                                 DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
+                                                 DatasetIdentifier.of(FeatureKey.of("DRRC2"), "SQIN", "HEFS"));
         
         final SampleData<Pair<Double,Double>> pairs = SampleDataBasic.of(values, meta);
 

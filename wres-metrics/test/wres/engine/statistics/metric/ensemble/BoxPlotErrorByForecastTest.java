@@ -78,7 +78,7 @@ public final class BoxPlotErrorByForecastTest
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow1 = window;
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                               .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
                                                                .build();
@@ -87,7 +87,7 @@ public final class BoxPlotErrorByForecastTest
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
                                                                                                        "MAP" ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),
@@ -132,7 +132,7 @@ public final class BoxPlotErrorByForecastTest
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow1 = window;
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                               .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
                                                                .build();
@@ -141,7 +141,7 @@ public final class BoxPlotErrorByForecastTest
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
                                                                                                        "MAP" ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),

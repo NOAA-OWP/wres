@@ -186,18 +186,8 @@ public class WrdsNwmReaderTest
                                                                 config,
                                                                 null );
 
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             "HDGA4",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( Integer.toString( NWM_FEATURE_ID ),
+                                             Integer.toString( NWM_FEATURE_ID ),
                                              null );
 
         List<Feature> features = new ArrayList<>( 1 );
@@ -254,12 +244,6 @@ public class WrdsNwmReaderTest
                                           any( DatabaseLockManager.class ),
                                           any( TimeSeries.class ) );
 
-
-        // Fake the database-dependent WRES feature name getter
-        Mockito.doReturn( "HDGA4" )
-               .when( reader )
-               .getWresFeatureNameFromNwmFeatureId( this.mockFeaturesCache,
-                                                    NWM_FEATURE_ID );
 
         // Exercise the reader by executing call method.
         // This is the actual test. Everything up to this point is setup.
@@ -380,18 +364,8 @@ public class WrdsNwmReaderTest
                                                                 config,
                                                                 null );
 
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             "HDGA4",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( Integer.toString( NWM_FEATURE_ID ),
+                                             Integer.toString( NWM_FEATURE_ID ),
                                              null );
 
         List<Feature> features = new ArrayList<>( 1 );
@@ -448,12 +422,6 @@ public class WrdsNwmReaderTest
                                           any( DatabaseLockManager.class ),
                                           any( TimeSeries.class ) );
 
-
-        // Fake the database-dependent WRES feature name getter
-        Mockito.doReturn( "HDGA4" )
-               .when( reader )
-               .getWresFeatureNameFromNwmFeatureId( this.mockFeaturesCache,
-                                                    NWM_FEATURE_ID );
 
 
         // Exercise the reader by executing call method.

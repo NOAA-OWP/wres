@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import wres.datamodel.MissingValues;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -24,6 +26,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.PreIngestException;
+import wres.io.reading.waterml.timeseries.GeographicLocation;
 import wres.io.reading.waterml.timeseries.Method;
 import wres.io.reading.waterml.timeseries.SiteCode;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
@@ -124,7 +127,7 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
              || series.getSourceInfo().getSiteCode() == null
              || series.getSourceInfo().getSiteCode().length < 1 )
         {
-            LOGGER.debug( "No unit code found for timeseries {} in source {}",
+            LOGGER.debug( "No site code found for timeseries {} in source {}",
                           series, this );
             return Collections.emptyList();
         }
@@ -156,9 +159,11 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
             return Collections.emptyList();
         }
 
+        String usgsSiteCode = usgsSiteCodesFound.get( 0 );
+        FeatureKey featureKey = translateGeographicFeature( usgsSiteCode,
+                                                            series );
         List<wres.datamodel.time.TimeSeries<Double>> timeSerieses =
                 new ArrayList<>();
-        String usgsSiteCode = usgsSiteCodesFound.get( 0 );
         TimeScale period = null;
 
         // Assume that USGS "IV" service implies "instantaneous" values, which
@@ -235,7 +240,7 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( referenceTimes,
                                                                  period,
                                                                  variableName,
-                                                                 usgsSiteCode,
+                                                                 featureKey,
                                                                  unitCode );
 
             LOGGER.trace( "TimeSeries parsed for {}: {}", metadata, rawTimeSeries );
@@ -257,5 +262,76 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
         }
 
         return Collections.unmodifiableList( timeSerieses );
+    }
+
+
+    /**
+     * Translate the USGS format of geographic feature into WRES format.
+     * @param usgsSiteCode The site code already found and validated.
+     * @param series The series to get geographic feature data from.
+     * @return a WRES feature
+     */
+
+    private FeatureKey translateGeographicFeature( String usgsSiteCode,
+                                                   wres.io.reading.waterml.timeseries.TimeSeries series )
+    {
+        String siteDescription = null;
+        Integer siteSrid = null;
+        String siteWkt = null;
+        GeographicLocation geographicLocation = null;
+
+        if ( Objects.nonNull( series.getSourceInfo()
+                                    .getGeoLocation() ) )
+        {
+            siteDescription = series.getSourceInfo()
+                                    .getSiteName();
+
+            geographicLocation = series.getSourceInfo()
+                                       .getGeoLocation()
+                                       .getGeogLocation();
+        }
+
+        if ( Objects.nonNull( geographicLocation ) )
+        {
+            if ( Objects.nonNull( geographicLocation.getSrs() ) )
+            {
+                String rawSrs = geographicLocation.getSrs()
+                                                  .strip();
+
+                if ( rawSrs.startsWith( "EPSG:" ) )
+                {
+                    String srid = rawSrs.substring( 5 );
+
+                    try
+                    {
+                        siteSrid = Integer.valueOf( srid );
+                    }
+                    catch ( NumberFormatException nfe )
+                    {
+                        LOGGER.warn( "Unable to extract SRID from SRS {} in timeseries for site code {} at url {}",
+                                     rawSrs,
+                                     usgsSiteCode,
+                                     this.dataSource.getUri() );
+                    }
+                }
+            }
+
+            if ( Objects.nonNull( geographicLocation.getLatitude() )
+                 && Objects.nonNull( geographicLocation.getLongitude() ) )
+            {
+                StringJoiner point = new StringJoiner( " " );
+                point.add( "POINT (" );
+
+                // WKT is x,y aka lon,lat
+                point.add( geographicLocation.getLongitude()
+                                             .toString() );
+                point.add( geographicLocation.getLatitude()
+                                             .toString() );
+                point.add( ")" );
+                siteWkt = point.toString();
+            }
+        }
+
+        return new FeatureKey( usgsSiteCode, siteDescription, siteSrid, siteWkt );
     }
 }

@@ -13,12 +13,10 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -28,18 +26,14 @@ import org.slf4j.LoggerFactory;
 
 import static java.time.ZoneOffset.UTC;
 
-import wres.config.FeaturePlus;
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ZippedPIXMLIngest;
-import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.project.Projects;
 import wres.io.removal.IncompleteIngest;
@@ -105,7 +99,7 @@ public final class Operations {
             leftTimeSeriesValid = executor.submit(
                     () -> variables.isValid( project.getId(),
                                              Project.LEFT_MEMBER,
-                                             project.getLeftVariableID()
+                                             project.getLeftVariableName()
                     )
             );
         }
@@ -115,7 +109,7 @@ public final class Operations {
             rightTimeSeriesValid = executor.submit(
                     () -> variables.isValid( project.getId(),
                                              Project.RIGHT_MEMBER,
-                                             project.getRightVariableID()
+                                             project.getRightVariableName()
                     )
             );
         }
@@ -125,7 +119,7 @@ public final class Operations {
             baselineTimeSeriesValid = executor.submit(
                     () -> variables.isValid( project.getId(),
                                              Project.BASELINE_MEMBER,
-                                             project.getBaselineVariableID()
+                                             project.getBaselineVariableName()
                     )
             );
         }
@@ -802,38 +796,6 @@ public final class Operations {
                          e );
         }
     }
-
-    /**
-     * Creates a set of {@link wres.config.FeaturePlus Features} to
-     * evaluate statistics for
-     * @param project The object that holds details on what a project
-     *                       should do
-     * @return A set of {@link wres.config.FeaturePlus Features}
-     * @throws SQLException Thrown if information about the features could not
-     * be retrieved from the database
-     * @throws NoDataException if there are no features to process
-     */
-    public static Set<FeaturePlus> decomposeFeatures( Project project )
-            throws SQLException
-    {
-        Set<FeaturePlus> atomicFeatures = new TreeSet<>( Comparator.comparing(
-                ConfigHelper::getFeatureDescription ) );
-
-        for (FeatureDetails details : project.getFeatures())
-        {
-            Feature resolvedFeature = details.toFeature();
-            atomicFeatures.add( FeaturePlus.of ( resolvedFeature ) );
-        }
-
-        // Nothing to process, which is exceptional behavior
-        if( atomicFeatures.isEmpty() )
-        {
-            throw new NoDataException( "There were no features to process." );
-        }
-
-        return Collections.unmodifiableSet( atomicFeatures );
-    }
-
 
     /**
      * Given a set of ingest results, answer the question "should we analyze?"

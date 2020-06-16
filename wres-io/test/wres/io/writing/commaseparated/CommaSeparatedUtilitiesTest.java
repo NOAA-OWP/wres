@@ -90,7 +90,7 @@ public class CommaSeparatedUtilitiesTest
     public void testGetFeatureNameFromMetadataWithNamedLocation()
     {
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "fooBasin" ), "barVariable" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( FeatureKey.of( "fooBasin" ), "barVariable" );
 
         SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )
@@ -104,22 +104,6 @@ public class CommaSeparatedUtilitiesTest
 
     }
 
-    @Test
-    public void testGetFeatureNameFromMetadataWithGeographicLocation()
-    {
-
-        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( 43.23F, 23.41F ), "barVariable" );
-
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setIdentifier( identifier )
-                                                             .build();
-
-        String actual =
-                CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
-
-        assertEquals( "43.23 23.41", actual.toString() );
-
-    }
 
     @Test
     public void testGetFeatureNameFromMetadataWithNullLocation()

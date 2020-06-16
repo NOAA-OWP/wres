@@ -36,7 +36,7 @@ public final class BoxPlotStatisticsTest
     @Before
     public void runBeforeEachClass()
     {
-        Location l2 = Location.of( "A" );
+        Location l2 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                         DatasetIdentifier.of( l2,
                                                                                               "B",
@@ -65,7 +65,7 @@ public final class BoxPlotStatisticsTest
     {
 
         //Build datasets
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",
@@ -74,7 +74,7 @@ public final class BoxPlotStatisticsTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                            MetricConstants.MAIN );
-        final Location l2 = Location.of( "A" );
+        final Location l2 = FeatureKey.of( "A" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l2,
                                                                                                     "B",
@@ -83,7 +83,7 @@ public final class BoxPlotStatisticsTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                            MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
+        final Location l3 = FeatureKey.of( "B" );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l3,
                                                                                                     "B",
@@ -198,7 +198,7 @@ public final class BoxPlotStatisticsTest
         assertThat( basic.hashCode(), is( basic.hashCode() ) );
 
         // Consistent with equals
-        Location l2 = Location.of( "A" );
+        Location l2 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                         DatasetIdentifier.of( l2,
                                                                                               "B",
@@ -236,7 +236,7 @@ public final class BoxPlotStatisticsTest
     public void testGetMetadata()
     {
 
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",

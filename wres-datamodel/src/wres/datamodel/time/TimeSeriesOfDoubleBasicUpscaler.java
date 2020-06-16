@@ -293,7 +293,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( templateMetadata.getReferenceTimes(),
                                                              desiredTimeScale,
                                                              templateMetadata.getVariableName(),
-                                                             templateMetadata.getFeatureName(),
+                                                             templateMetadata.getFeature(),
                                                              templateMetadata.getUnit() );
         builder.setMetadata( metadata );
 

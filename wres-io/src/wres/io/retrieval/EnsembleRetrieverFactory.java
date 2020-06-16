@@ -12,17 +12,18 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleForecastRetriever.Builder;
 import wres.io.utilities.Database;
@@ -56,6 +57,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     private static final String AND_TIME_WINDOW_MESSAGE = " and time window ";
 
     private final Database database;
+    private final Features featuresCache;
 
     /**
      * The project.
@@ -100,17 +102,11 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     private final UnitMapper unitMapper;
 
     /**
-     * A feature for retrieval.
+     * A feature tuple for retrieval.
      */
 
-    private final Feature feature;
+    private final FeatureTuple feature;
 
-    /**
-     * A string that describes the feature.
-     */
-
-    private final String featureString;
-    
     /**
      * A single-valued retriever factory for the left-ish data.
      */
@@ -122,10 +118,16 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         return this.database;
     }
 
+    private Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
     /**
      * Returns an instance.
      *
      * @param database The database to use.
+     * @param featuresCache The features cache to use.
      * @param project the project
      * @param feature a feature to evaluate
      * @param unitMapper the unit mapper
@@ -133,9 +135,13 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @throws NullPointerException if any input is null
      */
 
-    public static EnsembleRetrieverFactory of( Database database, Project project, Feature feature, UnitMapper unitMapper )
+    public static EnsembleRetrieverFactory of( Database database,
+                                               Features featuresCache,
+                                               Project project,
+                                               FeatureTuple feature,
+                                               UnitMapper unitMapper )
     {
-        return new EnsembleRetrieverFactory( database, project, feature, unitMapper );
+        return new EnsembleRetrieverFactory( database, featuresCache, project, feature, unitMapper );
     }
 
     @Override
@@ -155,16 +161,10 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     {
         LOGGER.debug( "Creating a right retriever for project '{}', feature '{}' and time window {}.",
                       this.project.getId(),
-                      this.featureString,
+                      this.feature.getRight(),
                       timeWindow );
         try
         {
-            int rightVariableFeatureId = project.getRightVariableFeatureId( this.feature );
-
-            // Many sources per time-series?
-            boolean hasMultipleSourcesPerSeries =
-                    ConfigHelper.hasSourceFormatWithMultipleSourcesPerSeries( this.rightConfig );
-
             // Obtain any ensemble member constraints
             Set<Integer> ensembleIdsToInclude =
                     this.project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, true );
@@ -174,10 +174,11 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
             return this.getRightRetrieverBuilder( this.rightConfig.getType() )
                        .setEnsembleIdsToInclude( ensembleIdsToInclude )
                        .setEnsembleIdsToExclude( ensembleIdsToExclude )
-                       .setHasMultipleSourcesPerSeries( hasMultipleSourcesPerSeries )
                        .setDatabase( this.getDatabase()  )
+                       .setFeaturesCache( this.getFeaturesCache() )
                        .setProjectId( this.project.getId() )
-                       .setVariableFeatureId( rightVariableFeatureId )
+                       .setFeature( this.feature.getRight() )
+                       .setVariableName( this.project.getRightVariableName() )
                        .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
                        .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
                        .setDesiredTimeScale( this.desiredTimeScale )
@@ -192,7 +193,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
             throw new DataAccessException( "While creating a retriever of right data for project "
                                            + this.project.getId()
                                            + FEATURE_MESSAGE
-                                           + this.featureString
+                                           + this.feature.getRight().toString()
                                            + AND_TIME_WINDOW_MESSAGE
                                            + timeWindow
                                            + ":",
@@ -209,17 +210,10 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         {
             LOGGER.debug( "Creating a baseline retriever for project '{}', feature '{}' and time window {}.",
                           this.project.getId(),
-                          this.featureString,
+                          this.feature.getBaseline(),
                           timeWindow );
             try
             {
-
-                int baselineVariableFeatureId = project.getBaselineVariableFeatureId( this.feature );
-
-                // Many sources per time-series?
-                boolean hasMultipleSourcesPerSeries =
-                        ConfigHelper.hasSourceFormatWithMultipleSourcesPerSeries( this.baselineConfig );
-
                 // Obtain any ensemble member constraints
                 Set<Integer> ensembleIdsToInclude =
                         this.project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, true );
@@ -229,10 +223,11 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                 baseline = this.getRightRetrieverBuilder( this.baselineConfig.getType() )
                                .setEnsembleIdsToInclude( ensembleIdsToInclude )
                                .setEnsembleIdsToExclude( ensembleIdsToExclude )
-                               .setHasMultipleSourcesPerSeries( hasMultipleSourcesPerSeries )
                                .setDatabase( this.getDatabase() )
+                               .setFeaturesCache( this.getFeaturesCache() )
                                .setProjectId( this.project.getId() )
-                               .setVariableFeatureId( baselineVariableFeatureId )
+                               .setFeature( this.feature.getBaseline() )
+                               .setVariableName( this.project.getBaselineVariableName() )
                                .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
                                .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
                                .setDesiredTimeScale( this.desiredTimeScale )
@@ -247,7 +242,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                 throw new DataAccessException( "While creating a retriever of right data for project "
                                                + this.project.getId()
                                                + FEATURE_MESSAGE
-                                               + this.featureString
+                                               + this.feature.getRight().toString()
                                                + AND_TIME_WINDOW_MESSAGE
                                                + timeWindow
                                                + ":",
@@ -280,21 +275,22 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      */
 
     private EnsembleRetrieverFactory( Database database,
+                                      Features featuresCache,
                                       Project project,
-                                      Feature feature,
+                                      FeatureTuple feature,
                                       UnitMapper unitMapper )
     {
         Objects.requireNonNull( database );
+        Objects.requireNonNull( featuresCache );
         Objects.requireNonNull( project );
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( feature );
 
         this.database = database;
+        this.featuresCache = featuresCache;
         this.project = project;
         this.feature = feature;
         this.unitMapper = unitMapper;
-
-        this.featureString = ConfigHelper.getFeatureDescription( feature );
 
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -310,7 +306,11 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
         
         // Create a factory for the left-ish data
-        this.leftFactory = SingleValuedRetrieverFactory.of( database, project, feature, unitMapper );
+        this.leftFactory = SingleValuedRetrieverFactory.of( database,
+                                                            featuresCache,
+                                                            project,
+                                                            feature,
+                                                            unitMapper );
     }
 
     /**

@@ -18,7 +18,7 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
-        <feature locationId="LGNN5" />
+        <feature left="LGNN5" right="LGNN5" />
         <leadHours minimum="42" maximum="42" />
         <issuedDates earliest="1985-01-01T00:00:00Z" latest="1985-03-01T00:00:00Z"/>
 

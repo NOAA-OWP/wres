@@ -3,7 +3,7 @@ package wres.grid.client;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import wres.config.FeaturePlus;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -16,7 +16,7 @@ public interface Response<T>
      * 
      * @return a stream of time-series per feature
      */
-    Map<FeaturePlus, Stream<TimeSeries<T>>> getTimeSeries();
+    Map<FeatureKey, Stream<TimeSeries<T>>> getTimeSeries();
 
     /**
      * The measurement units

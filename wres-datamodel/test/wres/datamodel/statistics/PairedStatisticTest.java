@@ -36,7 +36,7 @@ public final class PairedStatisticTest
      * Location for testing.
      */
 
-    private final Location l1 = Location.of( "A" );
+    private final Location l1 = FeatureKey.of( "A" );
 
     /**
      * Metadata for testing.
@@ -58,7 +58,7 @@ public final class PairedStatisticTest
     @Test
     public void testEquals()
     {
-        final Location l2 = Location.of( "A" );
+        final Location l2 = FeatureKey.of( "A" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l2,
                                                                                                     "B",
@@ -67,7 +67,7 @@ public final class PairedStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                            MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
+        final Location l3 = FeatureKey.of( "B" );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l3,
                                                                                                     "B",
@@ -128,7 +128,7 @@ public final class PairedStatisticTest
     public void testGetMetadata()
     {
 
-        final Location l2 = Location.of( "B" );
+        final Location l2 = FeatureKey.of( "B" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l2,
                                                                                                     "B",
@@ -152,7 +152,7 @@ public final class PairedStatisticTest
     public void testHashCode()
     {
 
-        final Location l2 = Location.of( "A" );
+        final Location l2 = FeatureKey.of( "A" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l2,
                                                                                                     "B",
@@ -161,7 +161,7 @@ public final class PairedStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                            MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
+        final Location l3 = FeatureKey.of( "B" );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l3,
                                                                                                     "B",

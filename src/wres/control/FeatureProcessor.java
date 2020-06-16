@@ -16,13 +16,13 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.FeaturePlus;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.ExecutorServices;
 import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -33,6 +33,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Features;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
@@ -41,11 +42,9 @@ import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 
 /**
- * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeaturePlus}.
+ * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeatureTuple}.
  * 
  * @author james.brown@hydrosolved.com
- * @param the type of left data in the paired data
- * @param the type of right data in the paired data
  */
 
 class FeatureProcessor implements Supplier<FeatureProcessingResult>
@@ -61,7 +60,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * The feature.
      */
 
-    private final FeaturePlus feature;
+    private final FeatureTuple feature;
 
     /**
      * The project.
@@ -111,14 +110,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @throws NullPointerException if any required input is null
      */
 
-    FeatureProcessor( FeaturePlus feature,
+    FeatureProcessor( FeatureTuple feature,
                       ResolvedProject resolvedProject,
                       Project project,
                       UnitMapper unitMapper,
                       ExecutorServices executors,
                       SharedWriters sharedWriters )
     {
-
         Objects.requireNonNull( feature );
         Objects.requireNonNull( resolvedProject );
         Objects.requireNonNull( unitMapper );
@@ -133,23 +131,18 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.sharedWriters = sharedWriters;
 
         // Error message
-        String featureDescription = ConfigHelper.getFeatureDescription( this.feature );
-        errorMessage = "While processing feature " + featureDescription;
+        errorMessage = "While processing feature " + feature;
     }
 
     @Override
     public FeatureProcessingResult get()
     {
         // Report
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Started feature '{}'",
-                          ConfigHelper.getFeatureDescription( this.feature.getFeature() ) );
-        }
+        LOGGER.debug( "Started feature '{}'", this.feature );
 
         final ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
         final ThresholdsByMetric thresholds =
-                this.resolvedProject.getThresholdForFeature( this.feature );
+                this.resolvedProject.getThresholdForFeature( this.feature.getRight() );
 
         // TODO: do NOT rely on the declared type. Instead, determine it, post-ingest,
         // from the ResolvedProject. See #57301.
@@ -165,8 +158,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 List<Supplier<PoolOfPairs<Double, Ensemble>>> pools =
                         PoolFactory.getEnsemblePools( this.project.getDatabase(),
+                                                      this.project.getFeaturesCache(),
                                                       this.project,
-                                                      this.feature.getFeature(),
+                                                      this.feature,
                                                       this.unitMapper );
 
                 // Stand-up the pair writers
@@ -200,8 +194,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 List<Supplier<PoolOfPairs<Double, Double>>> pools =
                         PoolFactory.getSingleValuedPools( this.project.getDatabase(),
+                                                          this.project.getFeaturesCache(),
                                                           this.project,
-                                                          this.feature.getFeature(),
+                                                          this.feature,
                                                           this.unitMapper );
 
                 // Stand-up the pair writers
@@ -359,7 +354,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         Set<Path> allPaths = Collections.unmodifiableSet( paths );
 
-        return new FeatureProcessingResult( this.feature.getFeature(),
+        return new FeatureProcessingResult( this.feature,
                                             allPaths,
                                             !typesProduced.isEmpty() );
     }

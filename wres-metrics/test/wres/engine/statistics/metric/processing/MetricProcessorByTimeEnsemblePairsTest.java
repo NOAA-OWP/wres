@@ -612,7 +612,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                          Duration.ofHours( 24 ) );
 
         SampleMetadata expectedSampleMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                               DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                                      "SQIN",
                                                                                      "HEFS" ),
                                                                expectedWindow,
