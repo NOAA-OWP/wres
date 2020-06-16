@@ -65,7 +65,7 @@ public final class TimeToPeakErrorTest
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
                                                                                                        "Streamflow" ) )
                                                                  .setTimeWindow( timeWindow )
                                                                  .build(),

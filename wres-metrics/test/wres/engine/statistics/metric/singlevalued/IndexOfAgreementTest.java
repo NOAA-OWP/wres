@@ -64,7 +64,7 @@ public final class IndexOfAgreementTest
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "103.1" ),
                                                                                                        "QME",
                                                                                                        "NVE" ) )
                                                                  .setTimeWindow( window )

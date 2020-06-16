@@ -416,7 +416,7 @@ public class PoolSupplierTest
 
         // Basic metadata
         this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                           DatasetIdentifier.of( Location.of( "FAKE2" ), "STREAMFLOW" ) );
+                                           DatasetIdentifier.of( FeatureKey.of( "FAKE2" ), "STREAMFLOW" ) );
 
         // Upscaler
         this.upscaler = TimeSeriesOfDoubleBasicUpscaler.of();

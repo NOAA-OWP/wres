@@ -65,7 +65,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         //Metadata for the output
         final StatisticMetadata m1 =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "Tampere" ),
+                                                         DatasetIdentifier.of( FeatureKey.of( "Tampere" ),
                                                                                "MAP",
                                                                                "FMI" ) ),
                                       input.getRawData().size(),

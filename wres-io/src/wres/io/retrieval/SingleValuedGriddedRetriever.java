@@ -14,7 +14,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.Feature;
+import wres.datamodel.FeatureTuple;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.TimeSeries;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
@@ -62,21 +63,21 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                                                       + "currently possible.";
 
     /**
-     * Start of script for {@link #getAll()}.
+     * Start of script for {@link #getAllIdentifiers()}.
      */
 
     private static final String GET_START_OF_SCRIPT =
             SingleValuedGriddedRetriever.getStartOfScriptForGetAllTimeSeries();
 
     /**
-     * End of script for {@link #getAll()}.
+     * End of script for {@link #getAllIdentifiers()}.
      */
 
     private static final String GET_END_OF_SCRIPT =
             SingleValuedGriddedRetriever.getEndOfScriptForGetAllTimeSeries();
 
     /**
-     * Complete script for {@link #getAll()}.
+     * Complete script for {@link #getAllIdentifiers()}.
      */
 
     private final String script;
@@ -91,7 +92,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
      * The features.
      */
 
-    private final List<Feature> features;
+    private final List<FeatureTuple> features;
 
     /**
      * Is <code>true</code> to retrieve a forecast type, <code>false</code> for a non-forecast type. 
@@ -122,7 +123,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
          * The features.
          */
 
-        private List<Feature> features;
+        private List<FeatureTuple> features;
 
         /**
          * The variable name.
@@ -156,7 +157,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
          * @return the builder
          */
 
-        Builder setFeatures( List<Feature> features )
+        Builder setFeatures( List<FeatureTuple> features )
         {
             this.features = features;
             return this;
@@ -282,9 +283,15 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                 paths.add( provider.getString( "path" ) );
             }
 
+            List<FeatureKey> featureKeys = this.getFeatures()
+                                               .stream()
+                                               .map( FeatureTuple::getRight )
+                                               .filter( Objects::isNull )
+                                               .collect( Collectors.toList() );
+
             // Build the request object
             return Fetcher.prepareRequest( paths,
-                                           this.getFeatures(),
+                                           featureKeys,
                                            this.getVariableName(),
                                            this.getTimeWindow(),
                                            this.isForecast(),
@@ -331,23 +338,12 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Returns the variable name.
-     * 
-     * @return the variable name
-     */
-
-    private String getVariableName()
-    {
-        return this.variableName;
-    }
-
-    /**
      * Returns the features.
-     * 
+     *
      * @return the features
      */
 
-    private List<Feature> getFeatures()
+    private List<FeatureTuple> getFeatures()
     {
         return this.features;
     }
@@ -392,8 +388,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Construct.
-     * 
-     * @param timeWindow the time window
+     *
      * @throws NullPointerException if any required input is null
      */
 

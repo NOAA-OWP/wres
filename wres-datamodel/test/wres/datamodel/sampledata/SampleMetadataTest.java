@@ -23,6 +23,7 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.scale.TimeScale;
@@ -60,25 +61,25 @@ public class SampleMetadataTest
     @Test
     public void unionOf()
     {
-        Location l1 = Location.of( DRRC2 );
+        Location l1 = FeatureKey.of( DRRC2 );
         SampleMetadata m1 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                        .setIdentifier( DatasetIdentifier.of( l1, SQIN, HEFS ) )
                                                        .setTimeWindow( TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                                                       Instant.parse( "1985-12-31T23:59:59Z" ) ) )
                                                        .build();
-        Location l2 = Location.of( DRRC2 );
+        Location l2 = FeatureKey.of( DRRC2 );
         SampleMetadata m2 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                        .setIdentifier( DatasetIdentifier.of( l2, SQIN, HEFS ) )
                                                        .setTimeWindow( TimeWindow.of( Instant.parse( SECOND_TIME ),
                                                                                       Instant.parse( "1986-12-31T23:59:59Z" ) ) )
                                                        .build();
-        Location l3 = Location.of( DRRC2 );
+        Location l3 = FeatureKey.of( DRRC2 );
         SampleMetadata m3 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                        .setIdentifier( DatasetIdentifier.of( l3, SQIN, HEFS ) )
                                                        .setTimeWindow( TimeWindow.of( Instant.parse( "1987-01-01T00:00:00Z" ),
                                                                                       Instant.parse( "1988-01-01T00:00:00Z" ) ) )
                                                        .build();
-        Location benchmarkLocation = Location.of( DRRC2 );
+        Location benchmarkLocation = FeatureKey.of( DRRC2 );
         SampleMetadata benchmark = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                               .setIdentifier( DatasetIdentifier.of( benchmarkLocation,
                                                                                                     SQIN,
@@ -143,9 +144,9 @@ public class SampleMetadataTest
         exception.expectMessage( "Only the time window and thresholds can differ when finding the union of metadata." );
 
         SampleMetadata failOne = SampleMetadata.of( MeasurementUnit.of(),
-                                                    DatasetIdentifier.of( Location.of( DRRC3 ), SQIN, HEFS ) );
+                                                    DatasetIdentifier.of( FeatureKey.of( DRRC3 ), SQIN, HEFS ) );
         SampleMetadata failTwo =
-                SampleMetadata.of( MeasurementUnit.of(), DatasetIdentifier.of( Location.of( "A" ), "B" ) );
+                SampleMetadata.of( MeasurementUnit.of(), DatasetIdentifier.of( FeatureKey.of( "A" ), "B" ) );
 
         SampleMetadata.unionOf( Arrays.asList( failOne, failTwo ) );
     }
@@ -161,7 +162,7 @@ public class SampleMetadataTest
 
         assertNotNull( SampleMetadata.of( MeasurementUnit.of() ) );
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "A" ), "B" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( FeatureKey.of( "A" ), "B" );
 
         assertNotNull( SampleMetadata.of( MeasurementUnit.of(), identifier ) );
 
@@ -204,33 +205,33 @@ public class SampleMetadataTest
     public void testEquals()
     {
         assertEquals( SampleMetadata.of(), SampleMetadata.of() );
-        Location l1 = Location.of( DRRC2 );
+        Location l1 = FeatureKey.of( DRRC2 );
         SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l1, SQIN, HEFS ) );
         // Reflexive
         assertEquals( m1, m1 );
-        Location l2 = Location.of( DRRC2 );
+        Location l2 = FeatureKey.of( DRRC2 );
         SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l2, SQIN, HEFS ) );
         // Symmetric
         assertEquals( m1, m2 );
         assertEquals( m2, m1 );
-        Location l3 = Location.of( DRRC2 );
+        Location l3 = FeatureKey.of( DRRC2 );
         SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                DatasetIdentifier.of( l3, SQIN, HEFS ) );
-        Location l4 = Location.of( DRRC2 );
+        Location l4 = FeatureKey.of( DRRC2 );
         SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                DatasetIdentifier.of( l4, SQIN, HEFS ) );
         assertEquals( m3, m4 );
         assertNotEquals( m1, m3 );
         // Transitive
-        Location l4t = Location.of( DRRC2 );
+        Location l4t = FeatureKey.of( DRRC2 );
         SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                 DatasetIdentifier.of( l4t, SQIN, HEFS ) );
         assertEquals( m4, m4t );
         assertEquals( m3, m4t );
         // Unequal
-        Location l5 = Location.of( DRRC3 );
+        Location l5 = FeatureKey.of( DRRC3 );
         SampleMetadata m5 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                DatasetIdentifier.of( l5, SQIN, HEFS ) );
         assertNotEquals( m4, m5 );
@@ -247,13 +248,13 @@ public class SampleMetadataTest
                                                 Instant.parse( SECOND_TIME ) );
         TimeWindow secondWindow = TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ) );
-        Location l6 = Location.of( DRRC3 );
+        Location l6 = FeatureKey.of( DRRC3 );
         final TimeWindow timeWindow2 = firstWindow;
         SampleMetadata m6 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                        .setIdentifier( DatasetIdentifier.of( l6, SQIN, HEFS ) )
                                                        .setTimeWindow( timeWindow2 )
                                                        .build();
-        Location l7 = Location.of( DRRC3 );
+        Location l7 = FeatureKey.of( DRRC3 );
         final TimeWindow timeWindow3 = secondWindow;
         SampleMetadata m7 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                        .setIdentifier( DatasetIdentifier.of( l7, SQIN, HEFS ) )
@@ -267,7 +268,7 @@ public class SampleMetadataTest
                                                 Instant.parse( SECOND_TIME ),
                                                 Instant.parse( FIRST_TIME ),
                                                 Instant.parse( SECOND_TIME ) );
-        Location l8 = Location.of( DRRC3 );
+        Location l8 = FeatureKey.of( DRRC3 );
         final TimeWindow timeWindow4 = thirdWindow;
         SampleMetadata m8 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                        .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
@@ -471,22 +472,22 @@ public class SampleMetadataTest
     {
         // Equal
         assertEquals( SampleMetadata.of().hashCode(), SampleMetadata.of().hashCode() );
-        Location l1 = Location.of( DRRC2 );
+        Location l1 = FeatureKey.of( DRRC2 );
         SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l1, SQIN, HEFS ) );
         assertEquals( m1.hashCode(), m1.hashCode() );
-        Location l2 = Location.of( DRRC2 );
+        Location l2 = FeatureKey.of( DRRC2 );
         SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l2, SQIN, HEFS ) );
         assertEquals( m1.hashCode(), m2.hashCode() );
-        Location l3 = Location.of( DRRC2 );
+        Location l3 = FeatureKey.of( DRRC2 );
         SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                DatasetIdentifier.of( l3, SQIN, HEFS ) );
-        Location l4 = Location.of( DRRC2 );
+        Location l4 = FeatureKey.of( DRRC2 );
         SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                DatasetIdentifier.of( l4, SQIN, HEFS ) );
         assertEquals( m3.hashCode(), m4.hashCode() );
-        Location l4t = Location.of( DRRC2 );
+        Location l4t = FeatureKey.of( DRRC2 );
         SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                 DatasetIdentifier.of( l4t, SQIN, HEFS ) );
         assertEquals( m4.hashCode(), m4t.hashCode() );
@@ -503,13 +504,13 @@ public class SampleMetadataTest
                                                 Instant.parse( SECOND_TIME ) );
         TimeWindow secondWindow = TimeWindow.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ) );
-        Location l6 = Location.of( DRRC3 );
+        Location l6 = FeatureKey.of( DRRC3 );
         final TimeWindow timeWindow2 = firstWindow;
         SampleMetadata m6 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                        .setIdentifier( DatasetIdentifier.of( l6, SQIN, HEFS ) )
                                                        .setTimeWindow( timeWindow2 )
                                                        .build();
-        Location l7 = Location.of( DRRC3 );
+        Location l7 = FeatureKey.of( DRRC3 );
         final TimeWindow timeWindow3 = secondWindow;
         SampleMetadata m7 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                        .setIdentifier( DatasetIdentifier.of( l7, SQIN, HEFS ) )
@@ -522,7 +523,7 @@ public class SampleMetadataTest
                                                 Instant.parse( SECOND_TIME ),
                                                 Instant.parse( FIRST_TIME ),
                                                 Instant.parse( SECOND_TIME ) );
-        Location l8 = Location.of( DRRC3 );
+        Location l8 = FeatureKey.of( DRRC3 );
 
         // Add a threshold
         OneOrTwoThresholds thresholds =
@@ -623,7 +624,7 @@ public class SampleMetadataTest
                       SampleMetadata.of().toString() );
 
         // Most complex case
-        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "A" ), "B" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( FeatureKey.of( "A" ), "B" );
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                              Operator.EQUAL,

@@ -6,7 +6,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.Statistic;
 
@@ -21,7 +20,7 @@ public class DatasetIdentifier
     /**
      * Geospatial identifier.
      */
-    final Location geospatialId;
+    final FeatureTuple geospatialId;
 
     /**
      * variable identifier.
@@ -56,7 +55,7 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
      */
 
-    public static DatasetIdentifier of( Location geospatialId,
+    public static DatasetIdentifier of( FeatureTuple geospatialId,
                                         String variableId,
                                         String scenarioId,
                                         String baselineScenarioId,
@@ -76,7 +75,7 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
      */
 
-    public static DatasetIdentifier of( Location geospatialId,
+    public static DatasetIdentifier of( FeatureTuple geospatialId,
                                         String variableId,
                                         String scenarioId,
                                         String baselineScenarioId )
@@ -110,7 +109,7 @@ public class DatasetIdentifier
      * @return a dataset identifier
      */
 
-    public static DatasetIdentifier of( final Location geospatialID,
+    public static DatasetIdentifier of( final FeatureTuple geospatialID,
                                         final String variableID,
                                         final String scenarioID )
     {
@@ -125,18 +124,18 @@ public class DatasetIdentifier
      * @return a dataset identifier
      */
 
-    public static DatasetIdentifier of( final Location geospatialID, final String variableID )
+    public static DatasetIdentifier of( final FeatureTuple geospatialID, final String variableID )
     {
         return DatasetIdentifier.of( geospatialID, variableID, null, null );
     }
 
     /**
-     * Optional geospatial identifier for the metric data.
+     * Optional geospatial identifiers for the metric data.
      * 
-     * @return the geospatial identifier associated with the metric data or null
+     * @return the geospatial identifiers associated with the metric data or null
      */
 
-    public Location getGeospatialID()
+    public FeatureTuple getGeospatialID()
     {
         return this.geospatialId;
     }
@@ -302,7 +301,7 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
      */
 
-    private DatasetIdentifier( Location geospatialID,
+    private DatasetIdentifier( FeatureTuple geospatialID,
                                String variableID,
                                String scenarioID,
                                String baselineScenarioID,

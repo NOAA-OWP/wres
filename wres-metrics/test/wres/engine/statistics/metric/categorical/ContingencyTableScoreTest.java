@@ -136,7 +136,7 @@ public final class ContingencyTableScoreTest
         //Metadata for the output
         final StatisticMetadata m1 =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                         DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                                "SQIN",
                                                                                "HEFS" ) ),
                                       input.getRawData().size(),
@@ -182,7 +182,7 @@ public final class ContingencyTableScoreTest
 
         final StatisticMetadata expected =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                         DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                                "SQIN",
                                                                                "HEFS" ) ),
                                       input.getRawData().size(),

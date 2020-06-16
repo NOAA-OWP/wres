@@ -3,7 +3,7 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
                    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Create table wres.TimeSeries for most database systems."
+    <changeSet id="Create table wres.TimeSeries for most database systems v2."
                author="Christopher Tubbs, James Brown, Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -11,15 +11,12 @@
             </not>
         </preConditions>
         <createTable tableName="TimeSeries" schemaName="wres">
-            <column name="timeseries_id" type="int" autoIncrement="true">
+            <column name="timeseries_id" type="integer" autoIncrement="true"
+                    remarks="The synthetic key of the trace represented by this row.">
                 <constraints primaryKey="true" primaryKeyName="timeseries_pk"/>
             </column>
-            <column name="variablefeature_id" type="int"
-                    remarks="The ID of the coupling between the Time Series' variable and location" >
-                <constraints nullable="false" />
-            </column>
-            <column name="ensemble_id" type="int"
-                    remarks="The ID of a time series' grouping identification" >
+            <column name="ensemble_id" type="integer"
+                    remarks="The ID of the trace metadata." >
                 <constraints nullable="false" />
             </column>
             <column name="measurementunit_id" type="smallint"
@@ -27,10 +24,10 @@
                 <constraints nullable="false" />
             </column>
             <column name="initialization_date" type="timestamp without time zone"
-                    remarks="The date and time from which the time series' values are projected from." >
+                    remarks="A basis datetime for this trace used to derive valid datetimes when combined with lead." >
                 <constraints nullable="false" />
             </column>
-            <column name="scale_period" type="int"
+            <column name="scale_period" type="integer"
                     remarks="The period of the temporal scale of the value in minutes. Instantaneous = 1.">
             </column>
             <column name="scale_function" type="varchar"
@@ -38,44 +35,21 @@
                     defaultValue="UNKNOWN">
                 <constraints nullable="false" />
             </column>
-            <column name="source_id" type="int">
+            <column name="source_id" type="integer">
+                <constraints nullable="false" />
+            </column>
+            <column name="variable_name" type="varchar"
+                    remarks="The name of the variable according to the dataset.">
+                <constraints nullable="false" />
+            </column>
+            <column name="feature_id" type="integer"
+                    remarks="The ID of the geographic feature associated with this trace.">
                 <constraints nullable="false" />
             </column>
         </createTable>
-        <addForeignKeyConstraint baseColumnNames="variablefeature_id"
-                                 baseTableName="TimeSeries"
-                                 baseTableSchemaName="wres"
-                                 constraintName="timeseries_variablefeature_fk"
-                                 referencedColumnNames="variablefeature_id"
-                                 referencedTableName="VariableFeature"
-                                 referencedTableSchemaName="wres"
-                                 onDelete="CASCADE" />
-        <addForeignKeyConstraint baseColumnNames="measurementunit_id"
-                                 baseTableName="TimeSeries"
-                                 baseTableSchemaName="wres"
-                                 constraintName="timeseries_measurementunit_fk"
-                                 referencedColumnNames="measurementunit_id"
-                                 referencedTableName="MeasurementUnit"
-                                 referencedTableSchemaName="wres"
-                                 onDelete="CASCADE" />
-        <addForeignKeyConstraint baseColumnNames="source_id"
-                                 baseTableName="TimeSeries"
-                                 baseTableSchemaName="wres"
-                                 constraintName="timeseries_source_fk"
-                                 referencedColumnNames="source_id"
-                                 referencedTableName="Source"
-                                 referencedTableSchemaName="wres"
-                                 onDelete="CASCADE" />
-        <createIndex tableName="TimeSeries" schemaName="wres" indexName="timeseries_variablefeature_ix">
-            <column name="variablefeature_id" />
-        </createIndex>
-        <createIndex tableName="TimeSeries"
-                     schemaName="wres"
-                     indexName="timeseries_source_index">
-            <column name="source_id" />
-        </createIndex>
         <comment>
             The wres.TimeSeries table has been added to the database.
         </comment>
     </changeSet>
+    <!-- Foreign key and index creation is in wres.TimeSeries_v7.xml -->
 </databaseChangeLog>

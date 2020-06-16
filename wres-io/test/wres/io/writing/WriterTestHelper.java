@@ -148,7 +148,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataOne =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -227,7 +227,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -295,7 +295,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -349,7 +349,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -391,7 +391,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataA =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -455,7 +455,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -498,7 +498,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataA =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),

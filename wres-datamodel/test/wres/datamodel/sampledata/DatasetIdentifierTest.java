@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
 
 /**
  * Tests the {@link DatasetIdentifier}.
@@ -27,12 +28,12 @@ public class DatasetIdentifierTest
     public void testEquals()
     {
         // Reflexive
-        Location l1 = Location.of( DRRC2 );
+        Location l1 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m1 = DatasetIdentifier.of( l1, "SQIN", "HEFS" );
 
         assertEquals( m1, m1 );
 
-        Location l2 = Location.of( DRRC2 );
+        Location l2 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m2 = DatasetIdentifier.of( l2, "SQIN", "HEFS" );
 
         // Symmetric
@@ -40,7 +41,7 @@ public class DatasetIdentifierTest
         assertEquals( m2, m1 );
 
         // Transitive
-        Location l3 = Location.of( DRRC2 );
+        Location l3 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m3 = DatasetIdentifier.of( l3, "SQIN", "HEFS" );
 
         assertEquals( m2, m3 );
@@ -53,18 +54,18 @@ public class DatasetIdentifierTest
         }
 
         // Equal with some identifiers missing
-        Location lp1 = Location.of( DRRC2 );
+        Location lp1 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p1 = DatasetIdentifier.of( lp1, "SQIN", null );
 
-        Location lp2 = Location.of( DRRC2 );
+        Location lp2 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p2 = DatasetIdentifier.of( lp2, "SQIN", null );
 
         assertEquals( p1, p2 );
 
-        Location lp3 = Location.of( DRRC2 );
+        Location lp3 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p3 = DatasetIdentifier.of( lp3, null, null );
 
-        Location lp4 = Location.of( DRRC2 );
+        Location lp4 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p4 = DatasetIdentifier.of( lp4, null, null );
 
         assertEquals( p3, p4 );
@@ -75,11 +76,11 @@ public class DatasetIdentifierTest
         assertEquals( p5, p6 );
 
         // Equal with scenario identifier for baseline
-        Location lb1 = Location.of( DRRC2 );
+        Location lb1 = FeatureKey.of( DRRC2 );
         final Location geospatialID = lb1;
         DatasetIdentifier b1 = DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" );
 
-        Location lb2 = Location.of( DRRC2 );
+        Location lb2 = FeatureKey.of( DRRC2 );
         final Location geospatialID1 = lb2;
         DatasetIdentifier b2 = DatasetIdentifier.of( geospatialID1, "SQIN", "HEFS", "ESP" );
 
@@ -94,13 +95,13 @@ public class DatasetIdentifierTest
         assertEquals( r3, r4 );
 
         // Unequal
-        Location l4 = Location.of( "DRRC3" );
+        Location l4 = FeatureKey.of( "DRRC3" );
         DatasetIdentifier m4 = DatasetIdentifier.of( l4, "SQIN", "HEFS" );
 
-        Location l5 = Location.of( DRRC2 );
+        Location l5 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m5 = DatasetIdentifier.of( l5, "SQIN2", "HEFS" );
 
-        Location l6 = Location.of( DRRC2 );
+        Location l6 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m6 = DatasetIdentifier.of( l6, "SQIN", "HEFS4" );
 
         assertNotEquals( m1, m4 );
@@ -108,15 +109,15 @@ public class DatasetIdentifierTest
         assertNotEquals( m1, m6 );
 
         // Unequal with some identifiers missing
-        Location lp7 = Location.of( DRRC2 );
+        Location lp7 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p7 = DatasetIdentifier.of( lp7, "SQIN", null );
 
-        Location lp8 = Location.of( DRRC2 );
+        Location lp8 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p8 = DatasetIdentifier.of( lp8, "SQIN", "HEFS" );
 
         assertNotEquals( p7, p8 );
 
-        Location lp9 = Location.of( DRRC2 );
+        Location lp9 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p9 = DatasetIdentifier.of( lp9, null, null );
 
         DatasetIdentifier p10 = DatasetIdentifier.of( null, "VAR", null );
@@ -124,20 +125,20 @@ public class DatasetIdentifierTest
         assertNotEquals( p9, p10 );
 
         DatasetIdentifier p11 = DatasetIdentifier.of( null, "SQIN", null );
-        DatasetIdentifier p12 = DatasetIdentifier.of( Location.of( "AB" ), null, null );
+        DatasetIdentifier p12 = DatasetIdentifier.of( FeatureKey.of( "AB" ), null, null );
 
         assertNotEquals( p11, p12 );
 
         // Unequal scenario identifiers for baseline
-        Location lb3 = Location.of( DRRC2 );
+        Location lb3 = FeatureKey.of( DRRC2 );
         final Location geospatialID2 = lb3;
         DatasetIdentifier b3 = DatasetIdentifier.of( geospatialID2, "SQIN", "HEFS", "ESP" );
 
-        Location lb4 = Location.of( DRRC2 );
+        Location lb4 = FeatureKey.of( DRRC2 );
         final Location geospatialID3 = lb4;
         DatasetIdentifier b4 = DatasetIdentifier.of( geospatialID3, "SQIN", "HEFS", "ESP2" );
 
-        Location lb5 = Location.of( DRRC2 );
+        Location lb5 = FeatureKey.of( DRRC2 );
         final Location geospatialID4 = lb5;
         DatasetIdentifier b5 = DatasetIdentifier.of( geospatialID4, "SQIN", "HEFS", null );
 
@@ -166,12 +167,12 @@ public class DatasetIdentifierTest
     public void testHashCode()
     {
         // Equal
-        Location l1 = Location.of( DRRC2 );
+        Location l1 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m1 = DatasetIdentifier.of( l1, "SQIN", "HEFS" );
         assertEquals( m1.hashCode(), m1.hashCode() );
-        Location l2 = Location.of( DRRC2 );
+        Location l2 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m2 = DatasetIdentifier.of( l2, "SQIN", "HEFS" );
-        Location l3 = Location.of( DRRC2 );
+        Location l3 = FeatureKey.of( DRRC2 );
         DatasetIdentifier m3 = DatasetIdentifier.of( l3, "SQIN", "HEFS" );
         assertEquals( m1.hashCode(), m2.hashCode() );
         assertEquals( m2.hashCode(), m3.hashCode() );
@@ -184,14 +185,14 @@ public class DatasetIdentifierTest
         }
 
         // Equal with some identifiers missing
-        Location lp1 = Location.of( DRRC2 );
+        Location lp1 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p1 = DatasetIdentifier.of( lp1, "SQIN", null );
-        Location lp2 = Location.of( DRRC2 );
+        Location lp2 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p2 = DatasetIdentifier.of( lp2, "SQIN", null );
         assertEquals( p1.hashCode(), p2.hashCode() );
-        Location lp3 = Location.of( DRRC2 );
+        Location lp3 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p3 = DatasetIdentifier.of( lp3, null, null );
-        Location lp4 = Location.of( DRRC2 );
+        Location lp4 = FeatureKey.of( DRRC2 );
         DatasetIdentifier p4 = DatasetIdentifier.of( lp4, null, null );
         assertEquals( p3.hashCode(), p4.hashCode() );
         DatasetIdentifier p5 = DatasetIdentifier.of( null, "SQIN", null );
@@ -199,10 +200,10 @@ public class DatasetIdentifierTest
         assertEquals( p5.hashCode(), p6.hashCode() );
 
         // Equal with scenario identifier for baseline
-        Location lb1 = Location.of( DRRC2 );
+        Location lb1 = FeatureKey.of( DRRC2 );
         final Location geospatialID = lb1;
         DatasetIdentifier b1 = DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" );
-        Location lb2 = Location.of( DRRC2 );
+        Location lb2 = FeatureKey.of( DRRC2 );
         final Location geospatialID1 = lb2;
         DatasetIdentifier b2 = DatasetIdentifier.of( geospatialID1, "SQIN", "HEFS", "ESP" );
         assertEquals( b1.hashCode(), b2.hashCode() );

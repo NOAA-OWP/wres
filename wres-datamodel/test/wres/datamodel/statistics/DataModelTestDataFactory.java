@@ -74,7 +74,7 @@ public final class DataModelTestDataFactory
 
             //Source metadata
             final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                             DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                                    "SQIN",
                                                                                    "HEFS",
                                                                                    "ESP" ) );
@@ -143,7 +143,7 @@ public final class DataModelTestDataFactory
 
         //Fake metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                         DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                                "SQIN",
                                                                                "HEFS",
                                                                                "ESP" ) );
@@ -248,7 +248,7 @@ public final class DataModelTestDataFactory
 
             //Fake metadata
             final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CFS" ),
-                                                             DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                             DatasetIdentifier.of( FeatureKey.of( "NPTP1" ),
                                                                                    "SQIN",
                                                                                    "HEFS",
                                                                                    "ESP" ) );

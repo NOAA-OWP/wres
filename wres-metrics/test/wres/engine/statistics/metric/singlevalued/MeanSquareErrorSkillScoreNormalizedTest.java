@@ -57,7 +57,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                              DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
                                                                                                     "SQIN",
                                                                                                     "HEFS",
                                                                                                     "ESP" ) ),
@@ -86,7 +86,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "103.1" ),
                                                                                                        "QME",
                                                                                                        "NVE" ) )
                                                                  .setTimeWindow( timeWindow )

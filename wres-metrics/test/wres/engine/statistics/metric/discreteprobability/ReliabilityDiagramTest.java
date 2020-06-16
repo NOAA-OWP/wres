@@ -66,7 +66,7 @@ public final class ReliabilityDiagramTest
         //Metadata for the output
         final StatisticMetadata m1 =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "Tampere" ),
+                                                         DatasetIdentifier.of( FeatureKey.of( "Tampere" ),
                                                                                "MAP",
                                                                                "FMI" ) ),
                                       input.getRawData().size(),
@@ -151,7 +151,7 @@ public final class ReliabilityDiagramTest
         data.add( Pair.of( Probability.ZERO, Probability.of(  0.0 ) ) );
 
         DatasetIdentifier identifier =
-                DatasetIdentifier.of( Location.of( "FAKE" ), "MAP", "FK" );
+                DatasetIdentifier.of( FeatureKey.of( "FAKE" ), "MAP", "FK" );
 
         SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( data, SampleMetadata.of( MeasurementUnit.of(),

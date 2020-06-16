@@ -37,7 +37,7 @@ public final class DiagramStatisticTest
     @Test
     public void testEquals()
     {
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",
@@ -46,7 +46,7 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        final Location l2 = Location.of( "A" );
+        final Location l2 = FeatureKey.of( "A" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l2,
                                                                                                     "B",
@@ -55,7 +55,7 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
+        final Location l3 = FeatureKey.of( "B" );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l3,
                                                                                                     "B",
@@ -95,7 +95,7 @@ public final class DiagramStatisticTest
     @Test
     public void testGetMetadata()
     {
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",
@@ -104,7 +104,7 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        final Location l2 = Location.of( "B" );
+        final Location l2 = FeatureKey.of( "B" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l2,
                                                                                                     "B",
@@ -128,7 +128,7 @@ public final class DiagramStatisticTest
     @Test
     public void testHashCode()
     {
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",
@@ -137,7 +137,7 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        final Location l2 = Location.of( "A" );
+        final Location l2 = FeatureKey.of( "A" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l2,
                                                                                                     "B",
@@ -146,7 +146,7 @@ public final class DiagramStatisticTest
                                                            MeasurementUnit.of(),
                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                            MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
+        final Location l3 = FeatureKey.of( "B" );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l3,
                                                                                                     "B",
@@ -179,7 +179,7 @@ public final class DiagramStatisticTest
     @Test
     public void testAccessors()
     {
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",
@@ -205,7 +205,7 @@ public final class DiagramStatisticTest
     @Test
     public void testExceptionOnNullData()
     {
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",
@@ -245,7 +245,7 @@ public final class DiagramStatisticTest
     @Test
     public void testExceptionOnEnptyData()
     {
-        final Location l1 = Location.of( "A" );
+        final Location l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( l1,
                                                                                                     "B",

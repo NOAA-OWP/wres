@@ -263,7 +263,7 @@ public final class MetricTestDataFactory
 
     public static Location getLocation( final String locationId )
     {
-        return Location.of( locationId );
+        return FeatureKey.of( locationId );
     }
 
     /**

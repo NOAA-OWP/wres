@@ -25,8 +25,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE.GAGE_ID;
-
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.TimeSeriesIngester;
@@ -45,7 +43,6 @@ import wres.io.reading.WebClient;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.Strings;
 
 /**
  * Adapter from BasicSource to WaterMLSource (to fit pattern in ReaderFactory).
@@ -301,8 +298,7 @@ public class WaterMLBasicSource extends BasicSource
                                                                      this.getProjectConfig(),
                                                                      this.getDataSource(),
                                                                      this.getLockManager(),
-                                                                     timeSeries,
-                                                                     GAGE_ID );
+                                                                     timeSeries );
                 List<IngestResult> result = ingester.call();
                 ingestResults.addAll( result );
             }
@@ -363,21 +359,6 @@ public class WaterMLBasicSource extends BasicSource
         return new FileInputStream( forecastFile );
     }
 
-
-
-    String identifyUsgsData( Response response )
-    {
-        try
-        {
-            return Strings.getMD5Checksum( response );
-        }
-        catch ( IOException ioe )
-        {
-            throw new PreIngestException( "Unable to identify WaterML data from "
-                                          + this.getDataSource().getUri(),
-                                          ioe );
-        }
-    }
 
     /**
      * This method facilitates testing, Pattern 1 at

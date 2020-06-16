@@ -83,12 +83,6 @@ public class Validation
             + "source for forecasts (see source near line {} and column {}";
 
 
-    private static final String FEATURE_ALIAS_ALREADY_USED =
-            " The lid or alias {} was already used as an lid or alias earlier. "
-            + "Any and all aliases for an lid must be specified in one stanza, "
-            + "e.g. <feature lid=\"{}\"><alias>{}ONE</alias><alias>{}TWO"
-            + "</alias></feature>.";
-
     private Validation()
     {
         // prevent construction.
@@ -693,10 +687,6 @@ public class Validation
             result = false;
         }
 
-        result = Validation.areFeatureAliasesValid( projectConfigPlus,
-                                                    pairConfig )
-                 && result;
-
         result = Validation.areDatesValid( projectConfigPlus,
                                            pairConfig.getDates() )
                  && result;
@@ -719,39 +709,6 @@ public class Validation
 
         result = Validation.areTimeWindowsValid( projectConfigPlus, pairConfig )
                  && result;
-
-        return result;
-    }
-
-    private static boolean areFeatureAliasesValid( ProjectConfigPlus projectConfigPlus,
-                                                   PairConfig pairConfig )
-    {
-        Objects.requireNonNull( projectConfigPlus, NON_NULL );
-        Objects.requireNonNull( pairConfig, NON_NULL );
-
-        boolean result = true;
-
-        if ( pairConfig.getFeature() != null )
-        {
-            SortedSet<String> alreadyUsed = new ConcurrentSkipListSet<>();
-            for ( Feature f : pairConfig.getFeature() )
-            {
-                result = Validation.isFeatureAliasValid( projectConfigPlus,
-                                                         f,
-                                                         alreadyUsed )
-                         && result;
-
-                if ( f.getName() != null )
-                {
-                    alreadyUsed.add( f.getName() );
-                }
-
-                if ( f.getAlias() != null )
-                {
-                    alreadyUsed.addAll( f.getAlias() );
-                }
-            }
-        }
 
         return result;
     }
@@ -947,135 +904,6 @@ public class Validation
 
         return isValid;
     }    
-
-    /**
-     * Validates a given feature's aliases from a projectconfig.
-     *
-     * Expects caller to create a set of names already existing. If the name of
-     * featureAliasConfig is present in that list, consider it invalid.
-     *
-     * @param projectConfigPlus the project config
-     * @param featureConfig the feature with aliases to validate
-     * @param stuffAlreadyUsed set of strings already-used as names or aliases
-     * @return true when valid
-     * @throws NullPointerException when any argument is null
-     */
-
-    private static boolean isFeatureAliasValid( ProjectConfigPlus projectConfigPlus,
-                                                Feature featureConfig,
-                                                SortedSet<String> stuffAlreadyUsed )
-    {
-        Objects.requireNonNull( projectConfigPlus, NON_NULL );
-        Objects.requireNonNull( featureConfig, NON_NULL );
-        Objects.requireNonNull( stuffAlreadyUsed, NON_NULL );
-
-        boolean result = true;
-
-
-        List<String> aliases = featureConfig.getAlias();
-
-        // There aren't any aliases to validate, therefore valid
-        if ( aliases == null || aliases.isEmpty() )
-        {
-            return result;
-        }
-
-        String name = featureConfig.getLocationId();
-
-        if ( Strings.hasValue(name) && name.length() > 0 )
-        {
-            if ( stuffAlreadyUsed.contains( name ) )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + FEATURE_ALIAS_ALREADY_USED,
-                                 projectConfigPlus.getOrigin(),
-                                 featureConfig.sourceLocation().getLineNumber(),
-                                 featureConfig.sourceLocation().getColumnNumber(),
-                                 name, name, name, name );
-                }
-
-                result = false;
-            }
-        }
-        else
-        {
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The lid represents the name of a location "
-                             + " within the actual data. It cannot be missing. "
-                             + "Please use the lid found in data, e.g. <name>"
-                             + "DRRC2</name>.",
-                             projectConfigPlus.getOrigin(),
-                             featureConfig.sourceLocation().getLineNumber(),
-                             featureConfig.sourceLocation().getColumnNumber() );
-            }
-
-            result = false;
-        }
-
-        result = Validation.areFeatureAliasesStringsValid( projectConfigPlus,
-                                                           featureConfig,
-                                                           aliases,
-                                                           stuffAlreadyUsed )
-                 && result;
-
-        return result;
-    }
-
-
-    private static boolean areFeatureAliasesStringsValid( ProjectConfigPlus projectConfigPlus,
-                                                          Feature featureConfig,
-                                                          List<String> aliases,
-                                                          SortedSet<String> stuffAlreadyUsed )
-    {
-        Objects.requireNonNull( projectConfigPlus );
-        Objects.requireNonNull( featureConfig );
-        Objects.requireNonNull( aliases );
-        Objects.requireNonNull( stuffAlreadyUsed );
-
-        boolean result = true;
-
-        String name = featureConfig.getLocationId();
-
-        for ( String alias : aliases )
-        {
-            if ( stuffAlreadyUsed.contains( alias ) )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + FEATURE_ALIAS_ALREADY_USED,
-                                 projectConfigPlus.getOrigin(),
-                                 featureConfig.sourceLocation().getLineNumber(),
-                                 featureConfig.sourceLocation().getColumnNumber(),
-                                 alias, name, name, name );
-                }
-
-                result = false;
-            }
-
-            if ( alias.length() <= 0 )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " At least one non-empty <alias> must be "
-                                 + "specified in each <featureAlias>. (Feature "
-                                 + "aliases as a whole are optional.)",
-                                 projectConfigPlus.getOrigin(),
-                                 featureConfig.sourceLocation().getLineNumber(),
-                                 featureConfig.sourceLocation().getColumnNumber() );
-                }
-
-                result = false;
-            }
-        }
-
-        return result;
-    }
 
     /**
      * Returns true when seasonal verification config is valid, false otherwise

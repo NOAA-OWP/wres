@@ -18,7 +18,7 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>MM</unit>
-        <feature locationId="LGNN5" />
+        <feature left="LGNN5" right="LGNN5" />
         <leadHours minimum="6" maximum="48" />
         <values minimum="1.00" default_minimum="0.0"/>
         <leadTimesPoolingWindow>

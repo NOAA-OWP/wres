@@ -21,10 +21,10 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <!--<feature rfc="ABRFC" />-->
-        <feature locationId="DRRC2" />
+        <feature left="09165000" right="18384141" />
 
         <!-- This location has no data -->
-        <feature locationId="ALRA1" />
+        <feature left="02420000" right="21687086" />
         <leadHours minimum="3" maximum="9" />
         <dates earliest="2018-08-26T00:00:00Z" latest="2018-09-04T00:00:00Z" />
         <issuedDates earliest="2018-08-27T05:59:59Z" latest="2018-08-28T06:00:00Z" />

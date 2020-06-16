@@ -17,7 +17,7 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
-        <feature locationId="DOSC1" />
+        <feature left="DOSC1" right="DOSC1" />
     </pair>
 
     <metrics>

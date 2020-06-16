@@ -168,7 +168,7 @@ public class PNGBoxPlotWriterTest
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( PNGBoxPlotWriterTest.LOCATION_ID ), "SQIN" );
+                DatasetIdentifier.of( FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ), "SQIN" );
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( "CMS" );
         StatisticMetadata fakeMetadata =

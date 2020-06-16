@@ -18,7 +18,7 @@
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="FAKE1" />
+        <feature left="FAKE1" right="FAKE1" />
         <leadHours minimum="1" maximum="6" />
         <leadTimesPoolingWindow>
             <period>0</period>

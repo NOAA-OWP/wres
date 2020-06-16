@@ -42,7 +42,7 @@ public final class BoxPlotStatisticTest
     public void beforeEachTest()
     {
         //Build a statistic
-        final Location locA = Location.of( "A" );
+        final Location locA = FeatureKey.of( "A" );
         final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( locA,
                                                                                                     "B",
@@ -66,7 +66,7 @@ public final class BoxPlotStatisticTest
     public void testEquals()
     {
 
-        final Location locA = Location.of( "A" );
+        final Location locA = FeatureKey.of( "A" );
         final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( locA,
                                                                                                     "B",
@@ -157,7 +157,7 @@ public final class BoxPlotStatisticTest
         assertEquals( bpa.hashCode(), bpa.hashCode() );
 
         // Consistent with equals
-        final Location locA = Location.of( "A" );
+        final Location locA = FeatureKey.of( "A" );
         final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                               DatasetIdentifier.of( locA,
                                                                                                     "B",

@@ -25,6 +25,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -397,11 +398,12 @@ public class DatacardSource extends BasicSource
             LOGGER.info( "Parsed timeseries from '{}'", this.getFilename() );
         }
 
+        FeatureKey location = new FeatureKey( featureName, null, null, null );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
                 Map.of( LATEST_OBSERVATION, values.lastKey() ),
                 TimeScale.of(),
                 variableName,
-                featureName,
+                location,
                 unit );
         TimeSeries<Double> timeSeries = transform( metadata,
                                                    values,
@@ -416,8 +418,7 @@ public class DatacardSource extends BasicSource
                                        this.getProjectConfig(),
                                        this.getDataSource(),
                                        this.getLockManager(),
-                                       timeSeries,
-                                       TimeSeriesIngester.GEO_ID_TYPE.LID );
+                                       timeSeries );
         List<IngestResult> results = ingester.call();
 
         if ( LOGGER.isInfoEnabled() )
