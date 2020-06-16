@@ -6,7 +6,6 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,9 +26,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
+import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
+import javax.jms.MessageProducer;
 import javax.jms.Session;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -71,7 +73,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindow;
-import wres.events.MessagePublisher;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -375,13 +376,13 @@ public class ProtobufMessageFactoryTest
     @Test
     public void testSendAndReceiveOneStatisticsMessage() throws Exception
     {
-        String topic = "statisticsTopic";
+        String topic = "statistics";
 
         // Post a message and then consume it using asynchronous pub-sub style messaging
         try ( BrokerConnectionFactory factory = BrokerConnectionFactory.of();
-              MessagePublisher messager = MessagePublisher.of( factory.get(), factory.getDestination( topic ) ); // Producer
               Connection connection = factory.get().createConnection(); // Consumer connection
               Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE ); // Consumer session
+              MessageProducer messageProducer = session.createProducer( factory.getDestination( topic ) );  // Producer              
               MessageConsumer messageConsumer = session.createConsumer( factory.getDestination( topic ) ); ) // Consumer
         {
             // Create a statistics message
@@ -432,7 +433,21 @@ public class ProtobufMessageFactoryTest
 
             // Publish a message to the statistics topic with an arbitrary identifier and correlation identifier
             // The message identifier must begin with "ID:"
-            messager.publish( ByteBuffer.wrap( sent.toByteArray() ), "ID:1234567", "89101112" );
+            BytesMessage message = session.createBytesMessage();
+
+            // Set the message identifiers
+            message.setJMSMessageID( "ID:1234567" );
+            message.setJMSCorrelationID( "89101112" );
+
+            // At least until we can write from a buffer directly
+            // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
+            message.writeBytes( sent.toByteArray() );
+
+            // Send the message
+            messageProducer.send( message,
+                                  DeliveryMode.NON_PERSISTENT,
+                                  Message.DEFAULT_PRIORITY,
+                                  Message.DEFAULT_TIME_TO_LIVE );
 
             // Await the sooner of all messages read and a timeout
             boolean done = consumerCount.await( 2000L, TimeUnit.MILLISECONDS );

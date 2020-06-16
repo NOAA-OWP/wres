@@ -50,7 +50,12 @@
             "name": "wres-statistics",
             "type": "Memory",
             "defaultVirtualHostNode": "true",
-            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{}}] }"
+            "context": 
+            { 
+                "queue.defaultAlternateBinding": "{\"destination\": \"$${this:name}_DLQ\"} }",
+                "queue.maximumDeliveryAttempts": "2"
+            },
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"5\"}}] }"
         }
     ],
     "plugins" : [ {

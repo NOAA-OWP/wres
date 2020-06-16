@@ -58,9 +58,9 @@ public class BrokerConnectionFactoryTest
         try ( BrokerConnectionFactory factory = BrokerConnectionFactory.of(); )
         {
 
-            Topic evaluationTopic = (Topic) factory.getDestination( "evaluationTopic" );
-            Topic evaluationStatusTopic = (Topic) factory.getDestination( "evaluationStatusTopic" );
-            Topic statisticsTopic = (Topic) factory.getDestination( "statisticsTopic" );
+            Topic evaluationTopic = (Topic) factory.getDestination( "evaluation" );
+            Topic evaluationStatusTopic = (Topic) factory.getDestination( "status" );
+            Topic statisticsTopic = (Topic) factory.getDestination( "statistics" );
 
             String evaluationId = "1234567";
             

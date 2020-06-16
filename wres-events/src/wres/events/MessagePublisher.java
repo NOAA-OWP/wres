@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class MessagePublisher implements Closeable
+class MessagePublisher implements Closeable
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
@@ -47,10 +47,16 @@ public class MessagePublisher implements Closeable
     private final Session session;
 
     /**
-     * A topic to which messages should be posted.
+     * A destination to which messages should be posted.
      */
 
     private final Destination destination;
+
+    /**
+     * A message producer.
+     */
+
+    private final MessageProducer producer;
 
     /**
      * The delivery mode.
@@ -71,6 +77,12 @@ public class MessagePublisher implements Closeable
     private final long messageTimeToLive;
 
     /**
+     * Number of messages published so far to this publisher.
+     */
+
+    private int messageCount = 0;
+
+    /**
      * Creates an instance with default settings.
      * 
      * @param connectionFactory the source of connections to a broker
@@ -81,8 +93,8 @@ public class MessagePublisher implements Closeable
      * @return an instance
      */
 
-    public static MessagePublisher of( ConnectionFactory connectionFactory,
-                                       Destination destination )
+    static MessagePublisher of( ConnectionFactory connectionFactory,
+                                Destination destination )
             throws JMSException
     {
         return MessagePublisher.of( connectionFactory,
@@ -106,11 +118,11 @@ public class MessagePublisher implements Closeable
      * @return an instance
      */
 
-    public static MessagePublisher of( ConnectionFactory connectionFactory,
-                                       Destination destination,
-                                       int deliveryMode,
-                                       int messagePriority,
-                                       long messageTimeToLive )
+    static MessagePublisher of( ConnectionFactory connectionFactory,
+                                Destination destination,
+                                int deliveryMode,
+                                int messagePriority,
+                                long messageTimeToLive )
             throws JMSException
     {
         return new MessagePublisher( connectionFactory, destination, deliveryMode, messagePriority, messageTimeToLive );
@@ -126,49 +138,47 @@ public class MessagePublisher implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    public void publish( ByteBuffer messageBytes, String messageId, String correlationId ) throws JMSException
+    void publish( ByteBuffer messageBytes, String messageId, String correlationId ) throws JMSException
     {
         Objects.requireNonNull( messageBytes );
         Objects.requireNonNull( messageId );
         Objects.requireNonNull( correlationId );
 
         // Post
-        try ( MessageProducer messageProducer = this.session.createProducer( this.destination ); )
+        BytesMessage message = this.session.createBytesMessage();
+
+        // Set the message identifiers
+        message.setJMSMessageID( messageId );
+        message.setJMSCorrelationID( correlationId );
+
+        // At least until we can write from a buffer directly
+        // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
+        message.writeBytes( messageBytes.array() );
+
+        // Send the message
+        this.producer.send( message,
+                            this.deliveryMode,
+                            this.messagePriority,
+                            this.messageTimeToLive );
+
+        // Log the message
+        if ( LOGGER.isDebugEnabled() )
         {
-            BytesMessage message = this.session.createBytesMessage();
-
-            // Set the message identifiers
-            message.setJMSMessageID( messageId );
-            message.setJMSCorrelationID( correlationId );
-
-            // At least until we can write from a buffer directly
-            // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
-            message.writeBytes( messageBytes.array() );
-
-            // Send the message
-            messageProducer.send( message,
-                                  this.deliveryMode,
-                                  this.messagePriority,
-                                  this.messageTimeToLive );
-
-            // Log the message
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "From messager {}, sent a message of {} bytes with messageId {} and correlationId {} to "
-                              + "destination {}.",
-                              this,
-                              messageBytes.limit(),
-                              messageId,
-                              correlationId,
-                              this.destination );
-            }
+            LOGGER.debug( "From publisher {}, sent a message of {} bytes with message identifier {} and correlation"
+                          + "identifier {} to destination {}.",
+                          this,
+                          messageBytes.limit(),
+                          messageId,
+                          correlationId,
+                          this.destination );
         }
+
+        this.messageCount++;
     }
 
     @Override
     public void close() throws IOException
     {
-
         LOGGER.debug( "Closing the statistics messager, {}.", this );
 
         try
@@ -188,6 +198,24 @@ public class MessagePublisher implements Closeable
         {
             throw new IOException( "Encountered an error while attempting to close a broker session.", e );
         }
+
+        try
+        {
+            this.producer.close();
+        }
+        catch ( JMSException e )
+        {
+            throw new IOException( "Encountered an error while attempting to close a broker message producer.", e );
+        }
+    }
+
+    /**
+     * @return the number of messages published so far.
+     */
+
+    int getMessageCount()
+    {
+        return this.messageCount;
     }
 
     /**
@@ -235,16 +263,19 @@ public class MessagePublisher implements Closeable
         // Register a listener for exceptions
         this.connection.setExceptionListener( new EvaluationEventExceptionListener() );
 
-        // Qpid broker requires this two-arg method sig to create a session, despite the advice to use a different one.
-        // Auto-ack the messages
-        this.session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE );
+        // Client acknowledges messages processed
+        this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 
         this.messagePriority = messagePriority;
         this.messageTimeToLive = messageTimeToLive;
         this.deliveryMode = deliveryMode;
 
+        this.producer = this.session.createProducer( this.destination );
+
+        this.connection.start();
+
         LOGGER.debug( "Created a messager publisher, {}, which is ready to receive messages to publish. "
-                      + "The messager is configured with the following properties.",
+                      + "The messager publisher is configured with the following properties.",
                       this );
     }
 

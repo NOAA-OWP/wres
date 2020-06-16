@@ -16,7 +16,18 @@ public class EvaluationEventException extends RuntimeException
     private static final long serialVersionUID = 2265382485793031701L;
 
     /**
-     * Builds an exception with the specified message.
+     * Constructs a {@link EvaluationEventException} with the specified message.
+     * 
+     * @param message the message.
+     */
+
+    public EvaluationEventException( final String message )
+    {
+        super( message );
+    }
+    
+    /**
+     * Builds a {@link EvaluationEventException} with the specified message.
      * 
      * @param message the message.
      * @param cause the cause of the exception
