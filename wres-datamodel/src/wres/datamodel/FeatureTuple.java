@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Vector features correlated either as declared or by a service call. Contains
@@ -100,7 +101,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "left", left )
                 .append( "right", right )
                 .append( "baseline", baseline )

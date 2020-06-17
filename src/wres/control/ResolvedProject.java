@@ -14,7 +14,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
@@ -36,14 +35,14 @@ class ResolvedProject
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeatureTuple> decomposedFeatures;
     private final String projectIdentifier;
-    private final Map<FeatureKey, ThresholdsByMetric>
+    private final Map<FeatureTuple, ThresholdsByMetric>
             externalThresholds;
     private final Path outputDirectory;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeatureTuple> decomposedFeatures,
                              String projectIdentifier,
-                             Map<FeatureKey, ThresholdsByMetric> thresholds,
+                             Map<FeatureTuple, ThresholdsByMetric> thresholds,
                              Path outputDirectory )
     {
         this.projectConfigPlus = projectConfigPlus;
@@ -56,7 +55,7 @@ class ResolvedProject
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
                                Set<FeatureTuple> decomposedFeatures,
                                String projectIdentifier,
-                               Map<FeatureKey, ThresholdsByMetric> thresholds,
+                               Map<FeatureTuple, ThresholdsByMetric> thresholds,
                                Path outputDirectory )
     {
         return new ResolvedProject( projectConfigPlus,
@@ -138,12 +137,12 @@ class ResolvedProject
                    .getGraphicsStrings();
     }
 
-    private Map<FeatureKey, ThresholdsByMetric> getExternalThresholds()
+    private Map<FeatureTuple, ThresholdsByMetric> getExternalThresholds()
     {
         return this.externalThresholds;
     }
 
-    ThresholdsByMetric getThresholdForFeature( FeatureKey featurePlus )
+    ThresholdsByMetric getThresholdForFeature( FeatureTuple featurePlus )
     {
         return this.getExternalThresholds().get( featurePlus );
     }

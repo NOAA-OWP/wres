@@ -224,7 +224,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         SystemSettings localSettings = this.getSystemSettings();
         // External thresholds, if any
-        Map<FeatureKey, ThresholdsByMetric> externalThresholds =
+        Map<String,ThresholdsByMetric> externalThresholds =
                 ConfigHelper.readExternalThresholdsFromProjectConfig( localSettings,
                                                                       projectConfig,
                                                                       unitMapper );

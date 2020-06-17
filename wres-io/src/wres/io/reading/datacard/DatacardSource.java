@@ -182,6 +182,7 @@ public class DatacardSource extends BasicSource
         String variableName = null;
         String unit = null;
         String featureName = null;
+        String featureDescription = null;
         SortedMap<Instant,Double> values = new TreeMap<>();
         int lineNumber = 1;
 
@@ -215,54 +216,29 @@ public class DatacardSource extends BasicSource
                 setTimeStep( line.substring( 29, 31) );
                 if ( line.length() > 45 )
                 {
-                    //Location id.  Currently using only the first five chars, trimmed.  Trimming is dangerous.
-                    String locationId = line.substring( 34, 45 )
-                                            .strip();
-                    featureName = locationId.substring( 0, 5 )
-                                            .strip();
-
-                    if ( !locationId.equalsIgnoreCase( featureName ) )
-                    {
-                        LOGGER.warn( "Treating location name '{}' as '{}'.",
-                                     locationId, featureName );
-                    }
-
-                    //Check for conflict between found location id and ids specified in configuration.
-                    if ( getSpecifiedLocationID() != null
-                         && !getSpecifiedLocationID().isEmpty()
-                         && !featureName.isEmpty()
-                         && !getSpecifiedLocationID().equalsIgnoreCase( featureName ) )
-                    {
-                        String message = "Location name '" + featureName
-                                         + "' found in "
-                                         + this.getFilename()
-                                         + " does not match what was specified"
-                                         + " in the configuration: "
-                                         + getSpecifiedLocationID()
-                                         + ". Please remove the attribute with "
-                                         + getSpecifiedLocationID()
-                                         + " from the config or change it to '"
-                                         + featureName + "'.";
-                        throw new ProjectConfigException( getDataSourceConfig(),
-                                                          message );
-                    }
+                    // Location id. As of 5.0, use location name verbatim.
+                    featureName = line.substring( 34, 45 )
+                                      .strip();
                 }
 
-                if ( getSpecifiedLocationID() != null
-                     && !getSpecifiedLocationID().isEmpty() )
+                if ( line.length() > 50 )
                 {
-                    featureName = getSpecifiedLocationID();
-                }
-                else if ( featureName == null
-                          || featureName.isEmpty() )
-                {
-                    String message = "Could not find feature name in "
-                                     + this.getFilename()
-                                     + " nor was it specified in the project "
-                                     + "configuration. Please specify the "
-                                     + "feature name in the source config.";
-                    throw new ProjectConfigException( getDataSourceConfig(),
-													  message );
+                    // Location description.
+                    String description;
+
+                    if ( line.length() <= 70 )
+                    {
+                        description = line.substring( 51 );
+                    }
+                    else
+                    {
+                        description = line.substring( 51, 70 );
+                    }
+
+                    if ( !description.isBlank() )
+                    {
+                        featureDescription = description.strip();
+                    }
                 }
             }
             else
@@ -398,7 +374,7 @@ public class DatacardSource extends BasicSource
             LOGGER.info( "Parsed timeseries from '{}'", this.getFilename() );
         }
 
-        FeatureKey location = new FeatureKey( featureName, null, null, null );
+        FeatureKey location = new FeatureKey( featureName, featureDescription, null, null );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
                 Map.of( LATEST_OBSERVATION, values.lastKey() ),
                 TimeScale.of(),

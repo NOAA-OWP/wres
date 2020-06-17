@@ -261,16 +261,6 @@
                                 </xs:annotation>
                             </xs:attribute>
 
-                            <xs:attribute name="locationId" type="xs:string" default="">
-                                <xs:annotation>
-                                    <xs:documentation>CHECK THIS... Specify the locationId
-                                        attribute in order to force the data read from the source to
-                                        be for a specific location or feature. This may be useful if
-                                        the "left" data uses a different location id than the "right"
-                                        or "baseline" data.
-                                    </xs:documentation>
-                                </xs:annotation>
-                            </xs:attribute>
 
                             <xs:attribute name="zoneOffset" type="xs:string">
                                 <xs:annotation>
@@ -306,21 +296,6 @@
                                 </xs:annotation>
                             </xs:attribute>
 
-                            <xs:attribute name="has_header" type="xs:boolean" default="false">
-                                <xs:annotation>
-                                    <xs:documentation>For processing of CSV files, if true then the
-                                        first row of the CSV file will be treated as the row of column
-                                        headers and ignored when reading.
-                                    </xs:documentation>
-                                </xs:annotation>
-                            </xs:attribute>
-
-                            <xs:attribute name="bucket" type="xs:string">
-                                <xs:annotation>
-                                    <xs:documentation>NEED TO FILL THIS IN!
-                                    </xs:documentation>
-                                </xs:annotation>
-                            </xs:attribute>
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>

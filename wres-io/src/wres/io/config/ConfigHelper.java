@@ -153,6 +153,11 @@ public class ConfigHelper
     /**
      * Creates a hash for the indicated project configuration based on its
      * specifications and the data it has ingested
+     *
+     * TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
+     * baseline separately, treat each as a dataset. Link dataset to project.
+     *
+     * TODO: store less collision-prone value, e.g. 128bit hash instead of int.
      * @param projectConfig The configuration for the project
      * @param leftHashesIngested A collection of the hashes for the left sided
      *                           source data
@@ -244,7 +249,9 @@ public class ConfigHelper
         for ( Feature feature : projectConfig.getPair()
                                              .getFeature() )
         {
-            hashBuilder.append( feature );
+            hashBuilder.append( feature.getLeft() );
+            hashBuilder.append( feature.getRight() );
+            hashBuilder.append( feature.getBaseline() );
         }
 
         return hashBuilder.toString().hashCode();
@@ -954,14 +961,14 @@ public class ConfigHelper
      * @throws MetricConfigException if the metric configuration is invalid
      */
 
-    public static Map<FeatureKey, ThresholdsByMetric>
+    public static Map<String, ThresholdsByMetric>
             readExternalThresholdsFromProjectConfig( SystemSettings systemSettings,
                                                      ProjectConfig projectConfig,
                                                      UnitMapper unitMapper )
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
-        Map<FeatureKey, ThresholdsByMetric> returnMe = new HashMap<>();
+        Map<String, ThresholdsByMetric> returnMe = new HashMap<>();
 
         // Obtain and read thresholds
         List<MetricsConfig> metrics = projectConfig.getMetrics();
@@ -1060,7 +1067,7 @@ public class ConfigHelper
     private static void
             addExternalThresholdsForOneMetricConfigGroup( SystemSettings systemSettings,
                                                           ProjectConfig projectConfig,
-                                                          Map<FeatureKey, ThresholdsByMetric> mutate,
+                                                          Map<String, ThresholdsByMetric> mutate,
                                                           MetricsConfig group,
                                                           ThresholdsConfig thresholdsConfig,
                                                           MeasurementUnit units,
@@ -1077,11 +1084,11 @@ public class ConfigHelper
         Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( group, projectConfig );
 
         // Obtain the thresholds
-        Map<FeatureKey, ThresholdsByMetric> thresholdsByFeature =
+        Map<String, ThresholdsByMetric> thresholdsByFeature =
                 ConfigHelper.readOneExternalThresholdFromProjectConfig( systemSettings, thresholdsConfig, metrics, units, unitMapper );
 
         // Iterate the thresholds
-        for ( Entry<FeatureKey, ThresholdsByMetric> nextEntry : thresholdsByFeature.entrySet() )
+        for ( Entry<String, ThresholdsByMetric> nextEntry : thresholdsByFeature.entrySet() )
         {
             // Feature exists in the uber map: mutate it
             if ( mutate.containsKey( nextEntry.getKey() ) )
@@ -1106,12 +1113,12 @@ public class ConfigHelper
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units
      * @param unitMapper a measurement unit mapper
-     * @return a map of thresholds by feature
+     * @return a map of thresholds by feature name
      * @throws MetricConfigException if the threshold could not be read
      * @throws NullPointerException if the threshold configuration is null or the metrics are null
      */
 
-    private static Map<FeatureKey, ThresholdsByMetric>
+    private static Map<String, ThresholdsByMetric>
             readOneExternalThresholdFromProjectConfig( SystemSettings systemSettings,
                                                        ThresholdsConfig threshold,
                                                        Set<MetricConstants> metrics,
@@ -1123,7 +1130,7 @@ public class ConfigHelper
 
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
 
-        Map<FeatureKey, ThresholdsByMetric> returnMe = new TreeMap<>();
+        Map<String, ThresholdsByMetric> returnMe = new TreeMap<>();
         
         // Threshold type: default to probability
         ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
@@ -1134,14 +1141,14 @@ public class ConfigHelper
 
         try
         {
-            Map<FeatureKey, Set<Threshold>> read =
+            Map<String, Set<Threshold>> read =
                     ThresholdReader.readThresholds( systemSettings,
                                                     threshold,
                                                     units,
                                                     unitMapper );
 
             // Add the thresholds for each feature
-            for ( Entry<FeatureKey, Set<Threshold>> nextEntry : read.entrySet() )
+            for ( Entry<String, Set<Threshold>> nextEntry : read.entrySet() )
             {
                 ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
                 Map<MetricConstants, Set<Threshold>> thresholds = new EnumMap<>( MetricConstants.class );

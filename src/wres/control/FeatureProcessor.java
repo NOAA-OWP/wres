@@ -142,7 +142,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         final ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
         final ThresholdsByMetric thresholds =
-                this.resolvedProject.getThresholdForFeature( this.feature.getRight() );
+                this.resolvedProject.getThresholdForFeature( this.feature );
 
         // TODO: do NOT rely on the declared type. Instead, determine it, post-ingest,
         // from the ResolvedProject. See #57301.

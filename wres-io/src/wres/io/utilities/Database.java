@@ -814,6 +814,7 @@ public class Database {
 		builder.append("INSERT INTO wres.Ensemble(ensemble_name) VALUES ('default');");
 		builder.append("TRUNCATE wres.Project RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ProjectSource RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append( "TRUNCATE wres.Feature RESTART IDENTITY CASCADE;" ).append( NEWLINE );
 
 		try
         {
