@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -71,16 +71,10 @@ class MessageSubscriber implements Closeable
     private final MessagePublisher statusEvents;
 
     /**
-     * The expected number of messages.
-     */
-
-    private final int expectedMessageCount;
-
-    /**
      * A countdown latch to count down consumption from an expected number of messages across N consumers.
      */
 
-    private final CountDownLatch latch;
+    private final Phaser phaser;
 
     /**
      * The message on which consumption failed, null if no failure.
@@ -93,9 +87,10 @@ class MessageSubscriber implements Closeable
      * 
      * @return the consumption status
      */
-    CountDownLatch getStatus()
+    
+    Phaser getStatus()
     {
-        return this.latch;
+        return this.phaser;
     }
 
     /**
@@ -109,6 +104,18 @@ class MessageSubscriber implements Closeable
         return this.failure;
     }
 
+    /**
+     * Used to advance, by one, the expected number of messages to consume for each consumer attached to this 
+     * subscriber. This provides a hint to the application to wait before closing subscriber resources.
+     * 
+     * See {@link #getStatus()} for the current status.
+     */
+    
+    void advanceCountToAwaitOnClose()
+    {
+        this.phaser.bulkRegister( this.consumers.size() ); // Register one phase for each consumer    
+    }
+    
     /**
      * Builds an evaluation.
      * 
@@ -152,12 +159,6 @@ class MessageSubscriber implements Closeable
          */
 
         private String evaluationId;
-
-        /**
-         * Expected number of messages.
-         */
-
-        private int expectedMessageCount = 0;
 
         /**
          * Sets the connection factory.
@@ -242,20 +243,6 @@ class MessageSubscriber implements Closeable
         Builder<T> setEvaluationId( String evaluationId )
         {
             this.evaluationId = evaluationId;
-
-            return this;
-        }
-
-        /**
-         * Sets the expected message count.
-         * 
-         * @param expectedMessageCount the expected message count
-         * @return this builder
-         */
-
-        Builder<T> setExpectedMessageCount( int expectedMessageCount )
-        {
-            this.expectedMessageCount = expectedMessageCount;
 
             return this;
         }
@@ -393,7 +380,7 @@ class MessageSubscriber implements Closeable
             }
 
             // Count down, whether success or failure
-            this.latch.countDown();
+            this.phaser.arriveAndDeregister();
         };
 
         // Only consume messages for the current evaluation based on JMSCorrelationID
@@ -490,7 +477,6 @@ class MessageSubscriber implements Closeable
         // Set then validate
         this.destination = builder.destination;
         this.statusEvents = builder.statusEvents;
-        this.expectedMessageCount = builder.expectedMessageCount;
 
         ConnectionFactory localFactory = builder.connectionFactory;
         String evaluationId = builder.evaluationId;
@@ -505,16 +491,12 @@ class MessageSubscriber implements Closeable
         Objects.requireNonNull( subscribers );
 
         this.connection = localFactory.createConnection();
-
-        // Add the latch for recording consumption
-        this.latch = new CountDownLatch( this.expectedMessageCount * subscribers.size() );
-
+        
         // Register a listener for exceptions
         this.connection.setExceptionListener( new EvaluationEventExceptionListener() );
 
-        // Qpid broker requires this two-arg method sig to create a session, despite the advice to use a different one.
-        // Auto-ack the messages
-        this.session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE );
+        // Client acknowledges
+        this.session = connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 
         // Add subscriptions
         this.consumers = this.subscribeAll( subscribers, mapper, evaluationId );
@@ -522,16 +504,10 @@ class MessageSubscriber implements Closeable
         // Start the connection
         this.connection.start();
 
-        String add = "";
-        if ( this.expectedMessageCount > 0 )
-        {
-            add = ". The subscriber expects to receive " + expectedMessageCount + "messages.";
-        }
-
-        LOGGER.debug( "Created a messager subscriber, {}, which is ready to receive subscriptions. "
-                      + "The message subscriber is configured with the following properties.{}",
-                      this,
-                      add );
+        // Hint awaiting before resources are closed
+        this.phaser = new Phaser();
+        
+        LOGGER.debug( "Created messager subscriber {}, which is ready to receive subscriptions.", this );
     }
 
 }
