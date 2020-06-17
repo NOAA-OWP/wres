@@ -25,7 +25,7 @@
                 <unit>seconds</unit>
             </existingTimeScale>
         </left>
-        
+
         <!-- Forecasts are provided as PI-timeseries XML files contained beneath a directory.
              The directory is navigated recursively with every file found processed.  An
              additional option not shown here is the pattern, which will allow for only files 
@@ -57,7 +57,7 @@
         <unit>CMS</unit>
         
         <!-- The location id associated with the evaluation; in this case a handbook5 id. -->
-        <feature locationId="GLOO2" />
+        <feature left="GLOO2X" right="GLOO2" baseline="GLOO2X" />
         
         <!-- The evaluation is restricted to the first 48 hours. -->
         <leadHours minimum="0" maximum="48" />

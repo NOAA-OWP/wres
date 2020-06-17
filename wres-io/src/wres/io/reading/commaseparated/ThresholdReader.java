@@ -55,7 +55,7 @@ public class ThresholdReader
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units
      * @param unitMapper a measurement unit mapper
-     * @return a map of thresholds by feature
+     * @return a map of thresholds by feature name
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
      * @throws IllegalArgumentException if one or more features failed with expected problems, such as 
@@ -63,7 +63,7 @@ public class ThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds). 
      */
 
-    public static Map<FeatureKey, Set<Threshold>>
+    public static Map<String, Set<Threshold>>
     readThresholds( SystemSettings systemSettings,
                     ThresholdsConfig threshold,
                     MeasurementUnit units,
@@ -153,7 +153,7 @@ public class ThresholdReader
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units 
      * @param unitMapper a measurement unit mapper
-     * @return a map of thresholds by feature
+     * @return a map of thresholds by feature name
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
      * @throws IllegalArgumentException if one or more features failed with expected problems, such as 
@@ -161,14 +161,14 @@ public class ThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds). 
      */
 
-    private static Map<FeatureKey, Set<Threshold>> readThresholds( Path commaSeparated,
-                                                                                  ThresholdDataTypes dataTypes,
-                                                                                  Double missingValue,
-                                                                                  MeasurementUnit units,
-                                                                                  UnitMapper unitMapper )
+    private static Map<String, Set<Threshold>> readThresholds( Path commaSeparated,
+                                                               ThresholdDataTypes dataTypes,
+                                                               Double missingValue,
+                                                               MeasurementUnit units,
+                                                               UnitMapper unitMapper )
             throws IOException
     {
-        Map<FeatureKey, Set<Threshold>> returnMe = new TreeMap<>();
+        Map<String, Set<Threshold>> returnMe = new TreeMap<>();
 
         // Rather than drip-feeding failures, collect all expected failure types, which
         // are IllegalArgumentException and NumberFormatException and propagate at the end.
@@ -220,14 +220,11 @@ public class ThresholdReader
 
                 String[] featureThresholds = nextLine.split( "\\s*(,)\\s*" );
 
-                String locationId = featureThresholds[0];
-
-                FeatureKey
-                        nextFeature = ThresholdReader.getFeature( locationId, dataTypes.getFeatureType() );
+                String featureName = featureThresholds[0];
 
                 try
                 {
-                    returnMe.put( nextFeature,
+                    returnMe.put( featureName,
                                   ThresholdReader.getAllThresholdsForOneFeature( dataTypes,
                                                                                  labels,
                                                                                  featureThresholds,
@@ -237,19 +234,19 @@ public class ThresholdReader
                 // Catch expected exceptions and propagate finally to avoid drip-feeding
                 catch ( LabelInconsistencyException e )
                 {
-                    featuresThatFailedWithLabelInconsistency.add( locationId );
+                    featuresThatFailedWithLabelInconsistency.add( featureName );
                 }
                 catch ( AllThresholdsMissingException e )
                 {
-                    featuresThatFailedWithAllThresholdsMissing.add( locationId );
+                    featuresThatFailedWithAllThresholdsMissing.add( featureName );
                 }
                 catch ( NumberFormatException e )
                 {
-                    featuresThatFailedWithNonNumericInput.add( locationId );
+                    featuresThatFailedWithNonNumericInput.add( featureName );
                 }
                 catch ( IllegalArgumentException e )
                 {
-                    featuresThatFailedWithOtherWrongInput.add( locationId );
+                    featuresThatFailedWithOtherWrongInput.add( featureName );
                 }
 
                 // Move to next line
@@ -269,19 +266,6 @@ public class ThresholdReader
                                                          featuresThatFailedWithOtherWrongInput );
 
         return returnMe;
-    }
-
-    /**
-     * Returns a feature from the input.
-     * 
-     * @param name the feature name
-     * @param type the type of feature name
-     * @return a feature
-     */
-
-    private static FeatureKey getFeature( String name, FeatureType type )
-    {
-        return new FeatureKey( name, null, null, null );
     }
 
     /**

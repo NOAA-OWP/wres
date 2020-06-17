@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Represents a geographic feature. Db contents matches what is here.
@@ -166,7 +167,7 @@ public class FeatureKey implements Comparable<FeatureKey>
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "name", name )
                 .append( "description", description )
                 .append( "srid", srid )
