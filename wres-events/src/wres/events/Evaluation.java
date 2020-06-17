@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -168,14 +168,14 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( broker );
         Objects.requireNonNull( consumerGroup );
-        
+
         Builder builder = new Builder();
         builder.setBroker( broker )
                .setEvaluation( evaluation );
         consumerGroup.getEvaluationStatusConsumers().forEach( builder::addEvaluationStatusSubscriber );
         consumerGroup.getEvaluationConsumers().forEach( builder::addEvaluationSubscriber );
         consumerGroup.getStatisticsConsumers().forEach( builder::addStatisticsSubscriber );
-        
+
         return builder.build();
     }
 
@@ -190,7 +190,11 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( status );
 
         ByteBuffer body = ByteBuffer.wrap( status.toByteArray() );
+        
 
+        // Provide a hint to the application to await consumption on closing an evaluation
+        this.evaluationStatusSubscribers.advanceCountToAwaitOnClose();
+        
         this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE );
     }
 
@@ -205,6 +209,10 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( statistics );
 
         ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
+        
+
+        // Provide a hint to the application to await consumption on closing an evaluation
+        this.statisticsSubscribers.advanceCountToAwaitOnClose();
 
         this.internalPublish( body, this.statisticsPublisher, Evaluation.STATISTICS_QUEUE );
 
@@ -219,7 +227,7 @@ public class Evaluation implements Closeable
                                                                                           .setEventType( StatusMessageType.INFO )
                                                                                           .setEventMessage( message ) )
                                                    .build();
-
+        
         this.publish( ongoing );
     }
 
@@ -234,21 +242,22 @@ public class Evaluation implements Closeable
     {
         LOGGER.debug( "Closing evaluation {} gracefully.", this.getEvaluationId() );
 
-        // Close gracefully, once statistics consumption has completed
-        CountDownLatch status = this.statisticsSubscribers.getStatus();
+        // Close gracefully, once consumption has completed
+        Phaser statisticsPhaser = this.statisticsSubscribers.getStatus();
+        Phaser statusPhaser = this.evaluationStatusSubscribers.getStatus();
+        Phaser evaluationPhaser = this.evaluationSubscribers.getStatus();
 
-        // Wait for enqueued statistics messages in the absence of failure
-        try
-        {
-            status.await();
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
+        LOGGER.debug( "While closing evaluation {}, found {} evaluation messages, {} statistics messages and {} "
+                      + "evaluation status messages awaiting consumption...",
+                      this.getEvaluationId(),
+                      evaluationPhaser.getRegisteredParties(),
+                      statisticsPhaser.getRegisteredParties(),
+                      statusPhaser.getRegisteredParties() );
 
-            throw new IOException( "Interrupted while awaiting statistics consumption for evaluation "
-                                   + this.getEvaluationId() );
-        }
+        // Wait for enqueued messages in the absence of failure. Wait for status messages later, as there is
+        // one more to publish on success
+        statisticsPhaser.awaitAdvance( 0 );
+        evaluationPhaser.awaitAdvance( 0 );
 
         Instant now = Instant.now();
         long seconds = now.getEpochSecond();
@@ -299,11 +308,10 @@ public class Evaluation implements Closeable
                                                    .build();
 
         this.publish( ongoing );
-
-        LOGGER.debug( "While closing evaluation {}, found {} statistics messages awaiting consumption.",
-                      this.getEvaluationId(),
-                      status.getCount() );
-
+        
+        // Await consumption of the final status message
+        statusPhaser.awaitAdvance( 0 );
+        
         this.evaluationPublisher.close();
         this.evaluationSubscribers.close();
         this.evaluationStatusPublisher.close();
@@ -517,7 +525,6 @@ public class Evaluation implements Closeable
             this.statisticsSubscribers =
                     new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
                                                                .setDestination( statistics )
-                                                               .setExpectedMessageCount( expectedStatisticsMessageCount )
                                                                .addEvaluationStatusPublisher( this.evaluationStatusPublisher )
                                                                .addSubscribers( statisticsSubs )
                                                                .setMapper( this.getStatisticsMapper() )
@@ -629,7 +636,7 @@ public class Evaluation implements Closeable
 
         // Published below, so increment by 1 here 
         String messageId = "ID:" + this.getEvaluationId() + "-m" + ( publisher.getMessageCount() + 1 );
-
+        
         try
         {
             publisher.publish( body, messageId, this.getEvaluationId() );
@@ -662,6 +669,9 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( evaluation );
 
         ByteBuffer body = ByteBuffer.wrap( evaluation.toByteArray() );
+        
+        // Provide a hint to the application to await consumption on closing an evaluation
+        this.evaluationSubscribers.advanceCountToAwaitOnClose();
 
         this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE );
     }

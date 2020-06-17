@@ -153,7 +153,7 @@ public class EvaluationTest
         assertEquals( 12, actualStatuses.size() );
         assertEquals( 7, otherActualStatuses.size() );
     }
-
+    
     @Test
     public void publishAndConsumeOneEvaluationsWithTwoStatusConsumers()
             throws IOException, NamingException, JMSException, InterruptedException
