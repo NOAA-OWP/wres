@@ -197,7 +197,6 @@ public class ConfigHelper
         }
 
         hashBuilder.append(left.getVariable().getValue());
-        hashBuilder.append(left.getVariable().getUnit());
 
         hashBuilder.append(right.getType().value());
 
@@ -218,7 +217,6 @@ public class ConfigHelper
         }
 
         hashBuilder.append(right.getVariable().getValue());
-        hashBuilder.append(right.getVariable().getUnit());
 
         if (baseline != null)
         {
@@ -243,7 +241,6 @@ public class ConfigHelper
             }
 
             hashBuilder.append(baseline.getVariable().getValue());
-            hashBuilder.append(baseline.getVariable().getUnit());
         }
 
         for ( Feature feature : projectConfig.getPair()

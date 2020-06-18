@@ -273,7 +273,7 @@
                                 </xs:annotation>
                             </xs:attribute>
 
-                            <!-- missingValue may have multiple comma delimited values like "-999, 
+                            <!-- missingValue may have multiple comma delimited values like "-999,
                                 -996" -->
                             <xs:attribute name="missingValue" type="xs:string" default="-999.0">
                                 <xs:annotation>
@@ -303,17 +303,14 @@
             <xs:element name="variable">
                 <xs:complexType>
                     <xs:annotation>
-                        <xs:documentation>Specifies the variable to read, either assigning
-                            a variable id to the data read (where one is not specified in the
-                            source) or restricting the evaluation to one of the variables
-                            specified by the source. The unit may also be specified to
-                            indicate the measuring unit of the variable data if necessary.
+                        <xs:documentation>Declares the variable to be evaluated
+                            within the declared dataset. The variable name is
+                            also known as a physical element code.
                         </xs:documentation>
                     </xs:annotation>
                     <xs:simpleContent>
                         <xs:extension base="xs:string">
                             <xs:attribute name="label" type="xs:string" />
-                            <xs:attribute name="unit" type="xs:string" />
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>
