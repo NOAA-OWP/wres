@@ -18,7 +18,7 @@
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="FAKE2" />
+        <feature left="FAKE2" right="FAKE2" />
         <leadHours minimum="0" maximum="33" />   
         <desiredTimeScale>
             <function>mean</function>
