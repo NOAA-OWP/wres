@@ -68,6 +68,11 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     @Override
     public int compareTo( FeatureTuple o )
     {
+        if ( this.equals( o ) )
+        {
+            return 0;
+        }
+
         int leftComparison = this.getLeft()
                                  .compareTo( o.getLeft() );
 
@@ -95,7 +100,8 @@ public class FeatureTuple implements Comparable<FeatureTuple>
             return 1;
         }
 
-        return -1;
+        throw new IllegalStateException( "Could not find the difference between FeatureTuple "
+                                         + this + " and FeatureTuple " + o );
     }
 
     @Override

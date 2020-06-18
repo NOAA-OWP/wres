@@ -161,7 +161,8 @@ public class FeatureKey implements Comparable<FeatureKey>
             return -1;
         }
 
-        return -1;
+        throw new IllegalStateException( "Could not find the difference between FeatureKey "
+                                         + this + " and FeatureKey " + o );
     }
 
     @Override
