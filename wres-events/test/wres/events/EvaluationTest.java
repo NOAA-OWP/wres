@@ -10,7 +10,9 @@ import java.util.function.Consumer;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import wres.eventsbroker.BrokerConnectionFactory;
@@ -51,6 +53,17 @@ public class EvaluationTest
 
     private List<Statistics> anotherStatistics;
 
+    /**
+     * Connection factory.
+     */
+
+    private static BrokerConnectionFactory connections = null;
+
+    @BeforeClass
+    public static void runBeforeAllTests()
+    {
+        EvaluationTest.connections = BrokerConnectionFactory.of();
+    }
 
     @Before
     public void runBeforeEachTest()
@@ -124,20 +137,21 @@ public class EvaluationTest
                                            .build();
 
         // Create and start a broker and open an evaluation, closing on completion
-        try ( BrokerConnectionFactory connections = BrokerConnectionFactory.of();
-              Evaluation evaluationOne = Evaluation.open( this.oneEvaluation, connections, consumerGroup );
-              Evaluation evaluationTwo = Evaluation.open( this.anotherEvaluation, connections, otherConsumerGroup ) )
+        try ( Evaluation evaluationOne =
+                Evaluation.open( this.oneEvaluation, EvaluationTest.connections, consumerGroup );
+              Evaluation evaluationTwo =
+                      Evaluation.open( this.anotherEvaluation, EvaluationTest.connections, otherConsumerGroup ) )
         {
             // First evaluation
             for ( Statistics next : this.oneStatistics )
             {
-                evaluationOne.publish( next );
+                evaluationOne.publish( next, null );
             }
 
             // Second evaluation
             for ( Statistics next : this.anotherStatistics )
             {
-                evaluationTwo.publish( next );
+                evaluationTwo.publish( next, null );
             }
         }
 
@@ -153,7 +167,7 @@ public class EvaluationTest
         assertEquals( 12, actualStatuses.size() );
         assertEquals( 7, otherActualStatuses.size() );
     }
-    
+
     @Test
     public void publishAndConsumeOneEvaluationsWithTwoStatusConsumers()
             throws IOException, NamingException, JMSException, InterruptedException
@@ -178,13 +192,13 @@ public class EvaluationTest
                                            .build();
 
         // Create and start a broker and open an evaluation, closing on completion
-        try ( BrokerConnectionFactory connections = BrokerConnectionFactory.of();
-              Evaluation evaluationOne = Evaluation.open( this.oneEvaluation, connections, consumerGroup ); )
+        try ( Evaluation evaluationOne =
+                Evaluation.open( this.oneEvaluation, EvaluationTest.connections, consumerGroup ); )
         {
             // First evaluation
             for ( Statistics next : this.oneStatistics )
             {
-                evaluationOne.publish( next );
+                evaluationOne.publish( next, null );
             }
         }
 
@@ -198,4 +212,10 @@ public class EvaluationTest
         assertEquals( 24, actualStatuses.size() );
     }
 
+    @AfterClass   
+    public static void runAfterAllTests() throws IOException
+    {
+        EvaluationTest.connections.close();
+    }
+    
 }

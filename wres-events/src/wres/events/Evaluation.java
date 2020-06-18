@@ -195,26 +195,26 @@ public class Evaluation implements Closeable
         // Provide a hint to the application to await consumption on closing an evaluation
         this.evaluationStatusSubscribers.advanceCountToAwaitOnClose();
         
-        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE );
+        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, null );
     }
 
     /**
      * Publish an {@link wres.statistics.generated.Statistics} message for the current evaluation.
      * 
      * @param statistics the statistics message
+     * @param groupId an optional group identifier to group statistics for consumption
      */
 
-    public void publish( Statistics statistics )
+    public void publish( Statistics statistics, String groupId )
     {
         Objects.requireNonNull( statistics );
 
         ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
         
-
         // Provide a hint to the application to await consumption on closing an evaluation
         this.statisticsSubscribers.advanceCountToAwaitOnClose();
 
-        this.internalPublish( body, this.statisticsPublisher, Evaluation.STATISTICS_QUEUE );
+        this.internalPublish( body, this.statisticsPublisher, Evaluation.STATISTICS_QUEUE, groupId );
 
         // Update the status
         String message = "Published a new statistics message for evaluation " + this.getEvaluationId()
@@ -503,7 +503,6 @@ public class Evaluation implements Closeable
             this.evaluationStatusSubscribers =
                     new MessageSubscriber.Builder<EvaluationStatus>().setConnectionFactory( factory )
                                                                      .setDestination( status )
-                                                                     .addEvaluationStatusPublisher( this.evaluationStatusPublisher )
                                                                      .addSubscribers( statusSubs )
                                                                      .setMapper( this.getStatusMapper() )
                                                                      .setEvaluationId( this.getEvaluationId() )
@@ -514,7 +513,6 @@ public class Evaluation implements Closeable
             this.evaluationSubscribers =
                     new MessageSubscriber.Builder<wres.statistics.generated.Evaluation>().setConnectionFactory( factory )
                                                                                          .setDestination( evaluation )
-                                                                                         .addEvaluationStatusPublisher( this.evaluationStatusPublisher )
                                                                                          .addSubscribers( evaluationSubs )
                                                                                          .setMapper( this.getEvaluationMapper() )
                                                                                          .setEvaluationId( this.getEvaluationId() )
@@ -525,7 +523,6 @@ public class Evaluation implements Closeable
             this.statisticsSubscribers =
                     new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
                                                                .setDestination( statistics )
-                                                               .addEvaluationStatusPublisher( this.evaluationStatusPublisher )
                                                                .addSubscribers( statisticsSubs )
                                                                .setMapper( this.getStatisticsMapper() )
                                                                .setEvaluationId( this.getEvaluationId() )
@@ -629,9 +626,10 @@ public class Evaluation implements Closeable
      * @param body the message body
      * @param publisher the publisher
      * @param queue the queue name on the amq.topic
+     * @param groupId the optional message group identifier
      */
 
-    private void internalPublish( ByteBuffer body, MessagePublisher publisher, String queue )
+    private void internalPublish( ByteBuffer body, MessagePublisher publisher, String queue, String groupId )
     {
 
         // Published below, so increment by 1 here 
@@ -639,7 +637,7 @@ public class Evaluation implements Closeable
         
         try
         {
-            publisher.publish( body, messageId, this.getEvaluationId() );
+            publisher.publish( body, messageId, this.getEvaluationId(), groupId );
 
             LOGGER.info( "Published a message with identifier {} and correlation identifier {} for evaluation {} to "
                          + "amq.topic/{}.",
@@ -673,7 +671,7 @@ public class Evaluation implements Closeable
         // Provide a hint to the application to await consumption on closing an evaluation
         this.evaluationSubscribers.advanceCountToAwaitOnClose();
 
-        this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE );
+        this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null );
     }
 
     /**
