@@ -65,12 +65,6 @@ class MessageSubscriber implements Closeable
     private final List<MessageConsumer> consumers;
 
     /**
-     * A status queue for publishing status messages about consumption.
-     */
-
-    private final MessagePublisher statusEvents;
-
-    /**
      * A countdown latch to count down consumption from an expected number of messages across N consumers.
      */
 
@@ -137,12 +131,6 @@ class MessageSubscriber implements Closeable
         private Destination destination;
 
         /**
-         * A publisher to which status events about consumption should be published.
-         */
-
-        private MessagePublisher statusEvents;
-
-        /**
          * List of subscriptions to evaluation events.
          */
 
@@ -184,20 +172,6 @@ class MessageSubscriber implements Closeable
         Builder<T> setDestination( Destination destination )
         {
             this.destination = destination;
-
-            return this;
-        }
-
-        /**
-         * Adds a publisher for recording evaluation status events.
-         * 
-         * @param statusEvents the publisher
-         * @return this builder 
-         */
-
-        Builder<T> addEvaluationStatusPublisher( MessagePublisher statusEvents )
-        {
-            this.statusEvents = statusEvents;
 
             return this;
         }
@@ -476,15 +450,12 @@ class MessageSubscriber implements Closeable
     {
         // Set then validate
         this.destination = builder.destination;
-        this.statusEvents = builder.statusEvents;
-
         ConnectionFactory localFactory = builder.connectionFactory;
         String evaluationId = builder.evaluationId;
         Function<ByteBuffer, T> mapper = builder.mapper;
         List<Consumer<T>> subscribers = builder.subscribers;
 
         Objects.requireNonNull( this.destination );
-        Objects.requireNonNull( this.statusEvents );
         Objects.requireNonNull( localFactory );
         Objects.requireNonNull( evaluationId );
         Objects.requireNonNull( mapper );
@@ -507,7 +478,7 @@ class MessageSubscriber implements Closeable
         // Hint awaiting before resources are closed
         this.phaser = new Phaser();
         
-        LOGGER.debug( "Created messager subscriber {}, which is ready to receive subscriptions.", this );
+        LOGGER.debug( "Created message subscriber {}, which is ready to receive subscriptions.", this );
     }
 
 }

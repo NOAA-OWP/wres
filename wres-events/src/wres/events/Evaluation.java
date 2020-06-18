@@ -210,7 +210,6 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
         
-
         // Provide a hint to the application to await consumption on closing an evaluation
         this.statisticsSubscribers.advanceCountToAwaitOnClose();
 
@@ -503,7 +502,6 @@ public class Evaluation implements Closeable
             this.evaluationStatusSubscribers =
                     new MessageSubscriber.Builder<EvaluationStatus>().setConnectionFactory( factory )
                                                                      .setDestination( status )
-                                                                     .addEvaluationStatusPublisher( this.evaluationStatusPublisher )
                                                                      .addSubscribers( statusSubs )
                                                                      .setMapper( this.getStatusMapper() )
                                                                      .setEvaluationId( this.getEvaluationId() )
@@ -514,7 +512,6 @@ public class Evaluation implements Closeable
             this.evaluationSubscribers =
                     new MessageSubscriber.Builder<wres.statistics.generated.Evaluation>().setConnectionFactory( factory )
                                                                                          .setDestination( evaluation )
-                                                                                         .addEvaluationStatusPublisher( this.evaluationStatusPublisher )
                                                                                          .addSubscribers( evaluationSubs )
                                                                                          .setMapper( this.getEvaluationMapper() )
                                                                                          .setEvaluationId( this.getEvaluationId() )
@@ -525,7 +522,6 @@ public class Evaluation implements Closeable
             this.statisticsSubscribers =
                     new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
                                                                .setDestination( statistics )
-                                                               .addEvaluationStatusPublisher( this.evaluationStatusPublisher )
                                                                .addSubscribers( statisticsSubs )
                                                                .setMapper( this.getStatisticsMapper() )
                                                                .setEvaluationId( this.getEvaluationId() )
