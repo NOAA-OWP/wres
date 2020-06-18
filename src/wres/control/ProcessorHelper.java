@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
@@ -39,7 +38,6 @@ import wres.config.generated.FeatureType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
@@ -422,14 +420,12 @@ class ProcessorHelper
                       + "thresholds are available.",
                       featuresToEvaluate.size(),
                       externalThresholds.size() );
-        
         Map<FeatureTuple, ThresholdsByMetric> filteredFeatures = new TreeMap<>();
 
         // Get the thresholds indexed by canonical feature name only
         Map<String, ThresholdsByMetric> externalThresholdsByKey =
                 ProcessorHelper.getThresholdsByCanonicalFeatureName( externalThresholds );
 
-        LOGGER.debug( "Thresholds by feature: {}", externalThresholdsByKey );
 
         // Iterate the features to evaluate, filtering any for which external thresholds are not available
         Set<FeatureTuple> missingThresholds = new HashSet<>();
