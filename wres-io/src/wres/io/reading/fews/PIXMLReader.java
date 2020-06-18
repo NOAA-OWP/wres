@@ -77,6 +77,13 @@ public final class PIXMLReader extends XMLReader
     private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
     private static final String DEFAULT_ENSEMBLE_NAME = "default";
 
+    /**
+     * http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd
+     *
+     * See "missVal" documentation: "Defaults to NaN if left empty"
+     */
+    private static final double PIXML_DEFAULT_MISSING_VALUE = Double.NaN;
+
     private final SystemSettings systemSettings;
     private final Database database;
     private final Features featuresCache;
@@ -447,12 +454,10 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Interprets the information within PIXML "header" tags
 	 * @param reader The XML reader, positioned at a "header" tag
-	 * @throws SQLException Thrown if the XML could not be read or interpreted properly
 	 */
 
     private void parseHeader( XMLStreamReader reader )
 			throws XMLStreamException,
-			SQLException,
 			IngestException
     {
 		//	If the current tag is the header tag itself, move on to the next tag
@@ -472,7 +477,7 @@ public final class PIXMLReader extends XMLReader
         String traceName = DEFAULT_ENSEMBLE_NAME;
         String ensembleMemberId = null;
         String ensembleMemberIndex = null;
-        Double missingValue = null;
+        double missingValue = PIXML_DEFAULT_MISSING_VALUE;
         String locationDescription = null;
         Double latitude = null;
         Double longitude = null;
@@ -723,14 +728,12 @@ public final class PIXMLReader extends XMLReader
 
     /**
      * @return The value specifying a value that is missing from the data set
-     * originating from the data source configuration. While parsing the data,
-     * if this value is encountered, it indicates that the value should be
-     * ignored as it represents invalid data. This should be ignored in data
-     * sources that define their own missing value.
+     * originating from the data source configuration.
      */
-    protected Double getSpecifiedMissingValue()
+    protected double getSpecifiedMissingValue()
     {
-        if (missingValue == null && this.getDataSourceConfig() != null)
+        if ( missingValue == PIXML_DEFAULT_MISSING_VALUE
+             && this.getDataSourceConfig() != null)
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
@@ -767,8 +770,7 @@ public final class PIXMLReader extends XMLReader
         double val = MissingValues.DOUBLE;
 
         if (Strings.hasValue(value) &&
-			!value.equalsIgnoreCase( "null" ) &&
-            this.getSpecifiedMissingValue() != null)
+            !value.equalsIgnoreCase( "null" ) )
         {
             val = Double.parseDouble( value );
 
@@ -1080,9 +1082,10 @@ public final class PIXMLReader extends XMLReader
     private ZoneOffset zoneOffset = null;
 
 	/**
-	 * The value which indicates a null or invalid value from the source
-	 */
-	private Double missingValue = null;
+	 * The value which indicates a null or invalid value from the source.
+     * PI-XML xsd says NaN is missing value if unspecified.
+     */
+    private double missingValue = PIXML_DEFAULT_MISSING_VALUE;
 
 	private DataSourceConfig getDataSourceConfig()
 	{
