@@ -42,7 +42,7 @@ public class MessageSubscriberTest
     }
 
     @Test
-    public void consumeOneMessage()
+    public void consumeOneMessageFilteredByEvaluationAndGroup()
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Create and start a broker and open an evaluation, closing on completion
@@ -61,16 +61,18 @@ public class MessageSubscriberTest
                                                               .setDestination( destination )
                                                               .setMapper( mapper )
                                                               .setEvaluationId( "someEvaluationId" )
+                                                              .setGroupId( "someGroupId" )
                                                               .addSubscribers( List.of( consumer ) )
                                                               .build() )
         {
             // Signal one message
             subscriber.advanceCountToAwaitOnClose();
 
-            // Must set the evaluation identifier because messages are filtered by this
+            // Must set the evaluation and group identifiers because messages are filtered by these
             publisher.publish( sent,
                                "ID:someId",
-                               "someEvaluationId" );
+                               "someEvaluationId",
+                               "someGroupId" );
 
             // Wait
             Phaser phase = subscriber.getStatus();

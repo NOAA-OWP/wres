@@ -145,13 +145,13 @@ public class EvaluationTest
             // First evaluation
             for ( Statistics next : this.oneStatistics )
             {
-                evaluationOne.publish( next );
+                evaluationOne.publish( next, null );
             }
 
             // Second evaluation
             for ( Statistics next : this.anotherStatistics )
             {
-                evaluationTwo.publish( next );
+                evaluationTwo.publish( next, null );
             }
         }
 
@@ -198,7 +198,7 @@ public class EvaluationTest
             // First evaluation
             for ( Statistics next : this.oneStatistics )
             {
-                evaluationOne.publish( next );
+                evaluationOne.publish( next, null );
             }
         }
 

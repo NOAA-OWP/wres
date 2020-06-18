@@ -133,12 +133,13 @@ class MessagePublisher implements Closeable
      * 
      * @param messageBytes the message bytes to publish
      * @param messageId the message identifier
+     * @param groupId an optional group identifier
      * @param correlationId an identifier to correlate statistics messages to an evaluation
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
      */
 
-    void publish( ByteBuffer messageBytes, String messageId, String correlationId ) throws JMSException
+    void publish( ByteBuffer messageBytes, String messageId, String correlationId, String groupId ) throws JMSException
     {
         Objects.requireNonNull( messageBytes );
         Objects.requireNonNull( messageId );
@@ -146,11 +147,16 @@ class MessagePublisher implements Closeable
 
         // Post
         BytesMessage message = this.session.createBytesMessage();
-
+        
         // Set the message identifiers
         message.setJMSMessageID( messageId );
         message.setJMSCorrelationID( correlationId );
 
+        if( Objects.nonNull( groupId ) )
+        {
+            message.setStringProperty( "JMSXGroupID", groupId );
+        }
+        
         // At least until we can write from a buffer directly
         // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
         message.writeBytes( messageBytes.array() );
