@@ -65,12 +65,6 @@ class MessageSubscriber implements Closeable
     private final List<MessageConsumer> consumers;
 
     /**
-     * A status queue for publishing status messages about consumption.
-     */
-
-    private final MessagePublisher statusEvents;
-
-    /**
      * A countdown latch to count down consumption from an expected number of messages across N consumers.
      */
 
@@ -87,7 +81,7 @@ class MessageSubscriber implements Closeable
      * 
      * @return the consumption status
      */
-    
+
     Phaser getStatus()
     {
         return this.phaser;
@@ -110,12 +104,12 @@ class MessageSubscriber implements Closeable
      * 
      * See {@link #getStatus()} for the current status.
      */
-    
+
     void advanceCountToAwaitOnClose()
     {
         this.phaser.bulkRegister( this.consumers.size() ); // Register one phase for each consumer    
     }
-    
+
     /**
      * Builds an evaluation.
      * 
@@ -137,12 +131,6 @@ class MessageSubscriber implements Closeable
         private Destination destination;
 
         /**
-         * A publisher to which status events about consumption should be published.
-         */
-
-        private MessagePublisher statusEvents;
-
-        /**
          * List of subscriptions to evaluation events.
          */
 
@@ -159,6 +147,12 @@ class MessageSubscriber implements Closeable
          */
 
         private String evaluationId;
+        
+        /**
+         * A group identifier.
+         */
+
+        private String groupId;
 
         /**
          * Sets the connection factory.
@@ -184,20 +178,6 @@ class MessageSubscriber implements Closeable
         Builder<T> setDestination( Destination destination )
         {
             this.destination = destination;
-
-            return this;
-        }
-
-        /**
-         * Adds a publisher for recording evaluation status events.
-         * 
-         * @param statusEvents the publisher
-         * @return this builder 
-         */
-
-        Builder<T> addEvaluationStatusPublisher( MessagePublisher statusEvents )
-        {
-            this.statusEvents = statusEvents;
 
             return this;
         }
@@ -248,6 +228,20 @@ class MessageSubscriber implements Closeable
         }
 
         /**
+         * Sets a group identifier on which to filter grouped messages by JMSXGroupID.
+         * 
+         * @param groupId a group identifier
+         * @return this builder
+         */
+
+        Builder<T> setGroupId( String groupId )
+        {
+            this.groupId = groupId;
+
+            return this;
+        }
+        
+        /**
          * Builds an evaluation.
          * 
          * @return an evaluation
@@ -267,6 +261,7 @@ class MessageSubscriber implements Closeable
      * @param subscribers the consumers
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
+     * @param groupId an optional group identifier to filter messages
      * @return a list of subscriptions
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
@@ -275,7 +270,8 @@ class MessageSubscriber implements Closeable
 
     private <T> List<MessageConsumer> subscribeAll( List<Consumer<T>> subscribers,
                                                     Function<ByteBuffer, T> mapper,
-                                                    String evaluationId )
+                                                    String evaluationId,
+                                                    String groupId )
             throws JMSException
     {
         Objects.requireNonNull( subscribers );
@@ -290,7 +286,7 @@ class MessageSubscriber implements Closeable
         List<MessageConsumer> returnMe = new ArrayList<>();
         for ( Consumer<T> next : subscribers )
         {
-            MessageConsumer consumer = this.subscribe( next, mapper, evaluationId );
+            MessageConsumer consumer = this.subscribe( next, mapper, evaluationId, groupId );
             returnMe.add( consumer );
         }
 
@@ -304,12 +300,16 @@ class MessageSubscriber implements Closeable
      * @param subscriber the consumer
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
+     * @param groupId an optional group identifier by which to filter messages
      * @return a subscription
      * @throws JMSException if the session fails to create a consumer due to some internal error
      * @throws NullPointerException if any input is null
      */
 
-    private <T> MessageConsumer subscribe( Consumer<T> subscriber, Function<ByteBuffer, T> mapper, String evaluationId )
+    private <T> MessageConsumer subscribe( Consumer<T> subscriber,
+                                           Function<ByteBuffer, T> mapper,
+                                           String evaluationId,
+                                           String groupId )
             throws JMSException
     {
         Objects.requireNonNull( subscriber );
@@ -385,6 +385,11 @@ class MessageSubscriber implements Closeable
 
         // Only consume messages for the current evaluation based on JMSCorrelationID
         String selector = "JMSCorrelationID='" + evaluationId + "'";
+
+        if ( Objects.nonNull( groupId ) )
+        {
+            selector = selector + " AND JMSXGroupID='" + groupId + "'";
+        }
 
         // This resource needs to be kept open until consumption is done
         MessageConsumer consumer = this.getConsumer( selector );
@@ -476,22 +481,20 @@ class MessageSubscriber implements Closeable
     {
         // Set then validate
         this.destination = builder.destination;
-        this.statusEvents = builder.statusEvents;
-
         ConnectionFactory localFactory = builder.connectionFactory;
         String evaluationId = builder.evaluationId;
+        String groupId = builder.groupId;
         Function<ByteBuffer, T> mapper = builder.mapper;
         List<Consumer<T>> subscribers = builder.subscribers;
 
         Objects.requireNonNull( this.destination );
-        Objects.requireNonNull( this.statusEvents );
         Objects.requireNonNull( localFactory );
         Objects.requireNonNull( evaluationId );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
 
         this.connection = localFactory.createConnection();
-        
+
         // Register a listener for exceptions
         this.connection.setExceptionListener( new EvaluationEventExceptionListener() );
 
@@ -499,15 +502,15 @@ class MessageSubscriber implements Closeable
         this.session = connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 
         // Add subscriptions
-        this.consumers = this.subscribeAll( subscribers, mapper, evaluationId );
+        this.consumers = this.subscribeAll( subscribers, mapper, evaluationId, groupId );
 
         // Start the connection
         this.connection.start();
 
         // Hint awaiting before resources are closed
         this.phaser = new Phaser();
-        
-        LOGGER.debug( "Created messager subscriber {}, which is ready to receive subscriptions.", this );
+
+        LOGGER.debug( "Created message subscriber {}, which is ready to receive subscriptions.", this );
     }
 
 }

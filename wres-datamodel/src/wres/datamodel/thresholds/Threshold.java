@@ -446,6 +446,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     public String toStringSafe()
     {
         String safe = toString();
+
         // Replace spaces and special characters: note the order of application matters
         safe = safe.replaceAll( ">=", "GTE" );
         safe = safe.replaceAll( "<=", "LTE" );
@@ -458,6 +459,10 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         safe = safe.replace( "]", "" );
         safe = safe.replace( "(", "" );
         safe = safe.replace( ")", "" );
+        
+        // Any others, replace with empty
+        safe = safe.replaceAll("[^a-zA-Z0-9_.]", "");
+        
         return safe;
     }
 
@@ -474,6 +479,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         {
             return toString().replaceAll( " " + this.getUnits().toString(), "" );
         }
+        
         return toString();
     }
 
