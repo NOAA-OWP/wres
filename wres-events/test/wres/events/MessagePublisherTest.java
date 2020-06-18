@@ -51,10 +51,14 @@ public class MessagePublisherTest
         {
             connection.start();
 
-            publisher.publish( ByteBuffer.wrap( "some bytes".getBytes() ), "ID:someId", "someCorrelationId" );
+            publisher.publish( ByteBuffer.wrap( "some bytes".getBytes() ),
+                               "ID:someId",
+                               "someCorrelationId",
+                               "aGroupId" );
 
             // Blocking wait
             BytesMessage received = (BytesMessage) consumer.receive();
+
             // Create the byte array to hold the message
             int messageLength = (int) received.getBodyLength();
             byte[] messageContainer = new byte[messageLength];
