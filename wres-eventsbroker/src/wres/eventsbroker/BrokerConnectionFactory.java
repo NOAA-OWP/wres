@@ -4,6 +4,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.AbstractMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
@@ -144,20 +146,17 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
         Properties properties = new Properties();
 
-        // Load the jndi.properties        
+        // Load the jndi.properties
         URL config = BrokerConnectionFactory.class.getClassLoader().getResource( jndiProperties );
         try ( InputStream stream = config.openStream() )
         {
             properties.load( stream );
-
-            this.context = new InitialContext( properties );
 
             LOGGER.debug( "Upon reading {}, discovered the following broker connection properties: {}",
                           jndiProperties,
                           properties );
 
             this.broker = this.createEmbeddedBrokerIfRequired( properties );
-            this.connectionFactory = this.createConnectionFactory( properties );
         }
         catch ( IOException | NamingException e )
         {
@@ -167,9 +166,30 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         }
 
         // Start the embedded broker if one exists
+        // This may adjust the properties if the broker is bound to a dynamic port
         if ( Objects.nonNull( this.broker ) )
         {
-            broker.start();
+            this.broker.start();
+
+            Map.Entry<String, String> connection = this.getConnectionProperty( properties );
+
+            // If the port was configured dynamically by the broker, override it here
+            this.updateConnectionStringWithDynamicPortIfConfigured( connection.getKey(),
+                                                                    connection.getValue(),
+                                                                    properties,
+                                                                    this.broker.getBoundPorts() );
+        }
+
+        // Set any variables that depend on the (possibly adjusted) properties
+        try
+        {
+            this.context = new InitialContext( properties );
+            this.connectionFactory = this.createConnectionFactory( properties );
+        }
+        catch ( NamingException e )
+        {
+            throw new CouldNotLoadBrokerConfigurationException( "Encountered an error on instantiating the broker.",
+                                                                e );
         }
     }
 
@@ -189,52 +209,122 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         String factoryName = null;
         ConnectionFactory factory = null;
 
+        Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
+
+        String key = connectionProperty.getKey();
+        factoryName = key.replace( "connectionfactory.", "" );
+        String value = connectionProperty.getValue();
+
+        if ( value.contains( "localhost" ) || value.contains( "127.0.0.1" ) )
+        {
+            LOGGER.debug( "Discovered the connection property {} with value {}, which "
+                          + "indicates that a broker should be listening on localhost.",
+                          key,
+                          value );
+
+            Context localContext = new InitialContext( properties );
+            factory = (ConnectionFactory) localContext.lookup( factoryName );
+
+            // If retries are configured, then expect retries here, even if the connection ultimately fails
+            LOGGER.debug( "Probing to establish whether an active broker is accepting connections at {}. This "
+                          + "may fail!",
+                          value );
+
+            try ( Connection connection = factory.createConnection() )
+            {
+                LOGGER.info( "Discovered an active AMQP broker at {}", value );
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
+                             + "instead.",
+                             value );
+
+                returnMe = EmbeddedBroker.of();
+            }
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns the connection string from the map of properties.
+     * 
+     * @param properties the properties
+     * @return the connection string
+     * @throws CouldNotStartEmbeddedBrokerException if the property could not be found
+     */
+
+    private Map.Entry<String, String> getConnectionProperty( Properties properties )
+    {
+        Map.Entry<String, String> returnMe = null;
+
         for ( Entry<Object, Object> nextEntry : properties.entrySet() )
         {
             Object key = nextEntry.getKey();
 
             if ( Objects.nonNull( key ) && key.toString().contains( "connectionfactory" ) )
             {
-                factoryName = key.toString().replace( "connectionfactory.", "" );
-
                 Object value = nextEntry.getValue();
 
-                if ( Objects.nonNull( value ) && ( value.toString().contains( "localhost" )
-                                                   || value.toString().contains( "127.0.0.1" ) ) )
+                if ( Objects.nonNull( value ) )
                 {
-
-                    LOGGER.debug( "Discovered the connection property {} with value {}, which "
-                                  + "indicates that a broker should be listening on localhost.",
-                                  key,
-                                  value );
-
-                    factory = (ConnectionFactory) this.context.lookup( factoryName );
-
-                    // If retries are configured, then expect retries here, even if the connection ultimately fails
-                    LOGGER.debug( "Probing to establish whether an active broker is accepting connections at {}. This "
-                                  + "may fail!",
-                                  value );
-
-                    try ( Connection connection = factory.createConnection() )
-                    {
-                        LOGGER.info( "Discovered an active AMQP broker at {}", value );
-                    }
-                    catch ( JMSException e )
-                    {
-                        LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
-                                     + "instead.",
-                                     value );
-                        
-                        returnMe = EmbeddedBroker.of();
-                    }
+                    returnMe = new AbstractMap.SimpleEntry<>( key.toString(), value.toString() );
                 }
 
-                // Only need the connection factory property
                 break;
             }
         }
 
+        if ( Objects.isNull( returnMe ) )
+        {
+            throw new CouldNotStartEmbeddedBrokerException( "Could not locate a connection string in the properties "
+                                                            + properties );
+        }
+
         return returnMe;
+    }
+
+    /**
+     * If the connection string contains the reserved TCP port of 0, then update the port inline to the properties 
+     * map with the relevant AMQP port from the list of broker ports for which bindings were found. 
+     * 
+     * @param propertyName
+     * @param propertyValue
+     * @param properties
+     */
+
+    private void updateConnectionStringWithDynamicPortIfConfigured( String propertyName,
+                                                                    String propertyValue,
+                                                                    Properties properties,
+                                                                    Map<String, Integer> ports )
+    {
+        if ( !ports.isEmpty()
+             && ( propertyValue.contains( "localhost:0" ) || propertyValue.contains( "127.0.0.1:0" ) ) )
+        {
+            for ( Map.Entry<String, Integer> next : ports.entrySet() )
+            {
+                if ( next.getKey().contains( "AMQP" ) )
+                {
+                    Integer port = next.getValue();
+
+                    String updated = propertyValue.replace( "localhost:0", "localhost:" + port )
+                                                  .replace( "127.0.0.1:0", "127.0.0.1:" + port );
+
+                    properties.setProperty( propertyName, updated );
+
+                    LOGGER.debug( "The embedded broker was configured with a binding to TCP port 0 for AMQP messages "
+                                  + "but is actually bound to TCP port {}. Updated the configured TCP port to reflect "
+                                  + "the bound port. The configured property is {}={}. The updated property is "
+                                  + "{}={}.",
+                                  port,
+                                  propertyName,
+                                  propertyValue,
+                                  propertyName,
+                                  updated );
+                }
+            }
+        }
     }
 
     /**
