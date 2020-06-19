@@ -40,7 +40,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
-import wres.io.reading.WebClient;
+import wres.io.utilities.WebClient;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -135,148 +135,116 @@ public class WaterMLBasicSource extends BasicSource
         return this.ingest();
     }
 
-    private List<IngestResult> ingest() throws IOException
-    {
-        InputStream data;
-        Instant now = Instant.now();
-        URI location = this.getDataSource()
-                           .getUri();
-
-        if ( location.getScheme()
-                     .equals( "file" ) )
-        {
-            data = this.getFromFile( location );
-        }
-        else if ( location.getScheme()
-                          .toLowerCase()
-                          .startsWith( "http" ) )
-        {
-            Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( location );
-            int httpStatus = response.getLeft();
-            data = response.getRight();
-
-            if ( httpStatus == 404 )
-            {
-                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
-                             httpStatus,
-                             location );
-
-                try
-                {
-                    // Cannot trust the DataSources.get() method to accurately
-                    // report performedInsert(). Use other means here.
-                    SourceDetails.SourceKey sourceKey =
-                            new SourceDetails.SourceKey( location,
-                                                         now.toString(),
-                                                         null,
-                                                         MD5SUM_OF_EMPTY_STRING.toUpperCase() );
-
-                    SourceDetails details = this.createSourceDetails( sourceKey );
-                    Database database = this.getDatabase();
-                    details.save( database );
-                    boolean foundAlready = !details.performedInsert();
-
-                    LOGGER.debug( "Found {}? {}", details, foundAlready );
-
-                    if ( !foundAlready )
-                    {
-                        this.lockManager.lockSource( details.getId() );
-                        SourceCompletedDetails completedDetails =
-                                createSourceCompletedDetails( database, details );
-                        completedDetails.markCompleted();
-                        // A special case here, where we don't use
-                        // source completer because we know there are no data
-                        // rows to be inserted, therefore there will be no
-                        // coordination with the use of synchronizers/latches.
-                        // Therefore, plain lock and unlock here.
-                        this.lockManager.unlockSource( details.getId() );
-
-                        LOGGER.debug( "Empty source id {} marked complete.",
-                                      details.getId() );
-                    }
-
-                    return IngestResult.singleItemListFrom(
-                            this.projectConfig,
-                            this.dataSource,
-                            details.getId(),
-                            foundAlready,
-                            false
-                    );
-                }
-                catch ( SQLException e )
-                {
-                    try
-                    {
-                        if ( Objects.nonNull( data ) )
-                        {
-                            data.close();
-                        }
-                    }
-                    catch ( IOException ioe )
-                    {
-                        LOGGER.warn( "Could not close response body from {}",
-                                     location );
-                    }
-
-                    throw new IngestException( "Source metadata for '"
-                                               + location +
-                                               "' could not be stored in or retrieved from the database.",
-                                               e );
-                }
-                finally
-                {
-                    if ( Objects.nonNull( data) )
-                    {
-                        try
-                        {
-                            data.close();
-                        }
-                        catch ( IOException ioe )
-                        {
-                            LOGGER.warn( "Could not close a data stream from {}",
-                                         location, ioe );
-                        }
-                    }
-                }
-            }
-            else if ( ! (httpStatus >= 200 && httpStatus < 300) )
-            {
-                try
-                {
-                    if ( Objects.nonNull( data ) )
-                    {
-                        data.close();
-                    }
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Could not close response body from {}",
-                                 location );
-                }
-
-                throw new PreIngestException( "Failed to get data from '"
-                                              + location +
-                                              "' due to HTTP status code "
-                                              + httpStatus );
-            }
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Only file and http(s) "
-                                                     + "are supported. Got: "
-                                                     + location );
-        }
-
-        LOGGER.debug( "InputStream about to be read for {}", location );
+    private SourceDetails saveLackOfData(URI location, int httpStatus) throws IOException {
+        LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                httpStatus,
+                location );
 
         try
         {
-            byte[] rawForecast = IOUtils.toByteArray( data );
-            Response response = OBJECT_MAPPER.readValue( rawForecast,
-                                                         Response.class );
-            WaterMLSource waterMLSource =
-                    new WaterMLSource( this.dataSource,
-                                       response );
+            // Cannot trust the DataSources.get() method to accurately
+            // report performedInsert(). Use other means here.
+            SourceDetails.SourceKey sourceKey =
+                    new SourceDetails.SourceKey( location,
+                            Instant.now().toString(),
+                            null,
+                            MD5SUM_OF_EMPTY_STRING.toUpperCase() );
+
+            SourceDetails details = this.createSourceDetails( sourceKey );
+            Database database = this.getDatabase();
+            details.save( database );
+            boolean foundAlready = !details.performedInsert();
+
+            LOGGER.debug( "Found {}? {}", details, foundAlready );
+
+            if ( !foundAlready )
+            {
+                this.lockManager.lockSource( details.getId() );
+                SourceCompletedDetails completedDetails =
+                        createSourceCompletedDetails( database, details );
+                completedDetails.markCompleted();
+                // A special case here, where we don't use
+                // source completer because we know there are no data
+                // rows to be inserted, therefore there will be no
+                // coordination with the use of synchronizers/latches.
+                // Therefore, plain lock and unlock here.
+                this.lockManager.unlockSource( details.getId() );
+
+                LOGGER.debug( "Empty source id {} marked complete.",
+                        details.getId() );
+            }
+
+            return details;
+        }
+        catch ( SQLException e )
+        {
+            throw new IngestException( "Source metadata for '"
+                    + location +
+                    "' could not be stored in or retrieved from the database.",
+                    e );
+        }
+    }
+
+    private Pair<Response, SourceDetails> deserializeInput(URI location) throws IOException {
+        try {
+            if (location.getScheme().equals("file")) {
+                try (InputStream data = this.getFromFile(location)) {
+                    byte[] rawForecast = IOUtils.toByteArray(data);
+                    return Pair.of(OBJECT_MAPPER.readValue(rawForecast, Response.class), null);
+                }
+            } else if (location.getScheme().toLowerCase().startsWith("http")) {
+                try (WebClient.ClientResponse response = WEB_CLIENT.getFromWeb(location)) {
+                    int httpStatus = response.getStatusCode();
+
+                    if (httpStatus == 404) {
+                        return Pair.of(null, this.saveLackOfData(location, httpStatus));
+                    } else if (!(httpStatus >= 200 && httpStatus < 300)) {
+                        throw new PreIngestException("Failed to get data from '"
+                                + location +
+                                "' due to HTTP status code "
+                                + httpStatus);
+                    }
+
+                    byte[] rawForecast = IOUtils.toByteArray(response.getResponse());
+                    return Pair.of(OBJECT_MAPPER.readValue(rawForecast, Response.class), null);
+                }
+            }
+        }
+        catch ( JsonMappingException jme )
+        {
+            throw new PreIngestException( "Failed to parse the response body"
+                    + " from USGS url "
+                    + location,
+                    jme );
+        }
+
+        throw new UnsupportedOperationException("Only file and http(s) "
+                + "are supported. Got: "
+                + location);
+    }
+
+    private List<IngestResult> ingest() throws IOException
+    {
+        URI location = this.getDataSource()
+                           .getUri();
+
+        Pair<Response, SourceDetails> responsePair = this.deserializeInput(location);
+
+        if (responsePair.getLeft() == null) {
+            return IngestResult.singleItemListFrom(
+                    this.projectConfig,
+                    this.dataSource,
+                    responsePair.getRight().getId(),
+                    !responsePair.getRight().performedInsert(),
+                    false
+            );
+        }
+
+        Response response = responsePair.getLeft();
+
+        try
+        {
+            WaterMLSource waterMLSource = new WaterMLSource( this.dataSource, response );
             List<TimeSeries<Double>> transformed = waterMLSource.call();
             List<IngestResult> ingestResults = new ArrayList<>( transformed.size() );
 
@@ -308,35 +276,12 @@ public class WaterMLBasicSource extends BasicSource
 
             return Collections.unmodifiableList( ingestResults );
         }
-        catch ( JsonMappingException jme )
-        {
-            throw new PreIngestException( "Failed to parse the response body"
-                                          + " from USGS url "
-                                          + location,
-                                          jme );
-        }
         catch ( IngestException e )
         {
             throw new IngestException( "Values from USGS url "
                                        + location
                                        + " could not be ingested.",
                                        e );
-        }
-        finally
-        {
-            if ( Objects.nonNull( data) )
-            {
-                try 
-                {   
-                    data.close();
-                    LOGGER.debug( "InputStream closed/ingested for {}", location );
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Could not close a data stream from {}",
-                                 location, ioe );
-                }
-            }
         }
     }
 

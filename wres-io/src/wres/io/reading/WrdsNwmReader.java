@@ -1,7 +1,6 @@
 package wres.io.reading;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -62,6 +61,7 @@ import wres.io.reading.wrds.nwm.NwmForecast;
 import wres.io.reading.wrds.nwm.NwmMember;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
 import wres.io.utilities.Database;
+import wres.io.utilities.WebClient;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
@@ -268,25 +268,18 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         List<IngestResult> ingested = new ArrayList<>();
         NwmRootDocument document;
         URI uri = this.getUri();
-        InputStream dataStream = null;
 
-        try
+        try (WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ))
         {
-            Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( uri );
-            int responseStatus = response.getLeft();
-            dataStream = response.getRight();
-
-            if ( responseStatus >= 400 && responseStatus < 500 )
+            if ( response.getStatusCode() >= 400 && response.getStatusCode() < 500 )
             {
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
-                             responseStatus,
+                             response.getStatusCode(),
                              uri );
                 return Collections.emptyList();
             }
 
-            document = this.getJsonObjectMapper()
-                           .readValue( dataStream,
-                                       NwmRootDocument.class );
+            document = this.getJsonObjectMapper().readValue( response.getResponse(), NwmRootDocument.class );
             LOGGER.debug( "Parsed this document: {}", document );
         }
         catch ( IOException ioe )
@@ -296,26 +289,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                                           + uri,
                                           ioe );
         }
-        finally
-        {
-            if ( Objects.nonNull( dataStream) )
-            {
-                try
-                {
-                    dataStream.close();
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Could not close a data stream from {}",
-                                 uri, ioe );
-                }
-            }
-        }
 
-        String variableName = document.getVariable()
-                                         .get( "name" );
-        String measurementUnit = document.getVariable()
-                                         .get( "unit" );
+        String variableName = document.getVariable().get( "name" );
+        String measurementUnit = document.getVariable().get( "unit" );
         
         // Time scale if available
         TimeScale timeScale = null;

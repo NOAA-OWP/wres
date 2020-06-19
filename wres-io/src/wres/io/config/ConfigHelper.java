@@ -39,40 +39,16 @@ import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.Feature;
-import wres.config.generated.Format;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.SourceTransformationType;
+import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
-import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
-import wres.io.reading.commaseparated.ThresholdReader;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.NoDataException;
-import wres.system.SystemSettings;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -1301,73 +1277,6 @@ public class ConfigHelper
 
         return Paths.get( outputDirectory.toString(), safeName );
     }
-
-    /**
-     * Reads all external sources of thresholds from the input configuration and returns a map containing a set of 
-     * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
-     * returned.
-     *
-     * @param systemSettings The system settings to use.
-     * @param projectConfig the project configuration
-     * @param unitMapper a measurement unit mapper
-     * @return the thresholds associated with each feature obtained from a source in the project configuration
-     * @throws MetricConfigException if the metric configuration is invalid
-     */
-
-    public static Map<FeaturePlus, ThresholdsByMetric>
-            readExternalThresholdsFromProjectConfig( SystemSettings systemSettings,
-                                                     ProjectConfig projectConfig,
-                                                     UnitMapper unitMapper )
-    {
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        Map<FeaturePlus, ThresholdsByMetric> returnMe = new HashMap<>();
-
-        // Obtain and read thresholds
-        List<MetricsConfig> metrics = projectConfig.getMetrics();
-
-        // Obtain any desired units for non-probability thresholds
-        MeasurementUnit desiredUnits = null;
-        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
-        {
-            desiredUnits = MeasurementUnit.of( projectConfig.getPair().getUnit() );
-        }
-
-        for ( MetricsConfig nextGroup : metrics )
-        {
-
-            // Obtain the set of external thresholds to read
-            Set<ThresholdsConfig> external = nextGroup.getThresholds()
-                                                      .stream()
-                                                      .filter( t -> t.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
-                                                      .collect( Collectors.toSet() );
-
-            // Iterate the external sources and read them all into the map
-            for ( ThresholdsConfig next : external )
-            {
-                // Filtered above
-                ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) next.getCommaSeparatedValuesOrSource();
-                
-                MeasurementUnit existingUnits = desiredUnits;
-                if( Objects.nonNull( nextSource.getUnit() ) && !nextSource.getUnit().isBlank() )
-                {
-                    existingUnits = MeasurementUnit.of( nextSource.getUnit() );
-                }
-                
-                // Add or append
-                ConfigHelper.addExternalThresholdsForOneMetricConfigGroup( systemSettings,
-                                                                           projectConfig,
-                                                                           returnMe,
-                                                                           nextGroup,
-                                                                           next,
-                                                                           existingUnits,
-                                                                           unitMapper );
-            }
-
-        }
-
-        return Collections.unmodifiableMap( returnMe );
-    }  
     
     /**
      * Returns <code>true</code> if a generated baseline is required, otherwise <code>false</code>.
@@ -1401,125 +1310,6 @@ public class ConfigHelper
             returnMe = TimeScale.of( pairConfig.getDesiredTimeScale() );
         }
 
-        return returnMe;
-    }
-    
-    /**
-     * Mutates a map of thresholds, adding the thresholds for one metric configuration group.
-     * 
-     * @param projectConfig the project configuration
-     * @param mutate the map of results to mutate
-     * @param group The group of metrics to add the threshold to
-     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
-     *            the evaluation units
-     * @param unitMapper a measurement unit mapper
-     * @throws MetricConfigException if the metric configuration is invalid
-     * @throws NullPointerException if any input is null
-     */
-
-    private static void
-            addExternalThresholdsForOneMetricConfigGroup( SystemSettings systemSettings,
-                                                          ProjectConfig projectConfig,
-                                                          Map<FeaturePlus, ThresholdsByMetric> mutate,
-                                                          MetricsConfig group,
-                                                          ThresholdsConfig thresholdsConfig,
-                                                          MeasurementUnit units,
-                                                          UnitMapper unitMapper )
-    {
-
-        Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
-
-        Objects.requireNonNull( group, "Specify a non-null configuration group." );
-
-        Objects.requireNonNull( group, "Specify non-null threshold configuration." );
-
-        // Obtain the metrics
-        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( group, projectConfig );
-
-        // Obtain the thresholds
-        Map<FeaturePlus, ThresholdsByMetric> thresholdsByFeature =
-                ConfigHelper.readOneExternalThresholdFromProjectConfig( systemSettings, thresholdsConfig, metrics, units, unitMapper );
-
-        // Iterate the thresholds
-        for ( Entry<FeaturePlus, ThresholdsByMetric> nextEntry : thresholdsByFeature.entrySet() )
-        {
-            // Feature exists in the uber map: mutate it
-            if ( mutate.containsKey( nextEntry.getKey() ) )
-            {
-                ThresholdsByMetric union = mutate.get( nextEntry.getKey() ).unionWithThisStore( nextEntry.getValue() );
-                mutate.put( nextEntry.getKey(), union );
-            }
-            // New feature: add a new map
-            else
-            {
-                mutate.put( nextEntry.getKey(), nextEntry.getValue() );
-            }
-        }
-    }
-
-    /**
-     * Reads a {@link ThresholdsConfig} and returns a corresponding {@link Set} of external {@link Threshold}
-     * by {@link FeaturePlus}.
-     * 
-     * @param threshold the threshold configuration
-     * @param metrics the metrics to which the threshold applies
-     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
-     *            the evaluation units
-     * @param unitMapper a measurement unit mapper
-     * @return a map of thresholds by feature
-     * @throws MetricConfigException if the threshold could not be read
-     * @throws NullPointerException if the threshold configuration is null or the metrics are null
-     */
-
-    private static Map<FeaturePlus, ThresholdsByMetric>
-            readOneExternalThresholdFromProjectConfig( SystemSettings systemSettings,
-                                                       ThresholdsConfig threshold,
-                                                       Set<MetricConstants> metrics,
-                                                       MeasurementUnit units, 
-                                                       UnitMapper unitMapper )
-    {
-
-        Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
-
-        Objects.requireNonNull( metrics, "Specify non-null metrics." );
-
-        Map<FeaturePlus, ThresholdsByMetric> returnMe = new TreeMap<>();
-        
-        // Threshold type: default to probability
-        ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
-        if ( Objects.nonNull( threshold.getType() ) )
-        {
-            thresholdType = DataFactory.getThresholdGroup( threshold.getType() );
-        }
-
-        try
-        {
-            Map<FeaturePlus, Set<Threshold>> read = ThresholdReader.readThresholds( systemSettings,
-                                                                                    threshold,
-                                                                                    units,
-                                                                                    unitMapper );
-
-            // Add the thresholds for each feature
-            for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : read.entrySet() )
-            {
-                ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
-                Map<MetricConstants, Set<Threshold>> thresholds = new EnumMap<>( MetricConstants.class );
-
-                // Add the thresholds for each metric in the group
-                metrics.forEach( nextMetric -> thresholds.put( nextMetric, nextEntry.getValue() ) );
-                
-                // Add to builder
-                builder.addThresholds( thresholds, thresholdType );
-
-                // Add to store
-                returnMe.put( nextEntry.getKey(), builder.build() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new MetricConfigException( threshold, "Failed to read the comma separated thresholds.", e );
-        }
-        
         return returnMe;
     }
 

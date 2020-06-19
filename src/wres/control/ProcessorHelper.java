@@ -11,21 +11,12 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.StringJoiner;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -34,16 +25,14 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.DestinationType;
-import wres.config.generated.FeatureType;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
+import wres.config.generated.*;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
+import wres.io.thresholds.ThresholdReader;
 import wres.io.utilities.Database;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
@@ -98,16 +87,6 @@ class ProcessorHelper
         PairConfig pairConfig = projectConfig.getPair();
         String desiredMeasurementUnit = pairConfig.getUnit();
         UnitMapper unitMapper = UnitMapper.of( database, desiredMeasurementUnit );
-        
-        // Read external thresholds from the configuration, per feature
-        // Compare on locationId only. TODO: consider how better to transmit these thresholds
-        // to wres-metrics, given that they are resolved by project configuration that is
-        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
-        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-        Map<FeaturePlus,ThresholdsByMetric> externalThresholds =
-                ConfigHelper.readExternalThresholdsFromProjectConfig( systemSettings,
-                                                                      projectConfig,
-                                                                      unitMapper );
 
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
@@ -134,34 +113,38 @@ class ProcessorHelper
             throw new IOException( "Failed to retrieve the set of features.", e );
         }
 
-        // Reconcile the features requested for evaluation and the features for which thresholds are available
-        // Reconcile means to filter out features for which thresholds are unavailable and to ensure that the 
-        // Full representation of the FeaturePlus is used, as represented by decomposedFeatures above
-        if ( !externalThresholds.isEmpty() )
-        {
-            int thresholdCount = externalThresholds.size();
+        //Add in logic to take the newly selected features into account
 
-            // Set the features with thresholds and matching features to evaluate
-            externalThresholds = ProcessorHelper.reconcileFeaturesAndExternalThresholds( externalThresholds,
-                                                                                         decomposedFeatures );
+        // Read external thresholds from the configuration, per feature
+        // Compare on locationId only. TODO: consider how better to transmit these thresholds
+        // to wres-metrics, given that they are resolved by project configuration that is
+        // passed separately to wres-metrics. Options include moving MetricProcessor* to
+        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
+        ThresholdReader thresholdReader = new ThresholdReader(
+                systemSettings,
+                projectConfig,
+                unitMapper,
+                decomposedFeatures.stream().map(FeaturePlus::getFeature).collect(Collectors.toSet())
+        );
 
-            decomposedFeatures = externalThresholds.keySet();
+        Map<Feature, ThresholdsByMetric> thresholds = thresholdReader.read();
 
-            LOGGER.info( "Discovered {} features to evaluate for which external thresholds were available and {} "
-                         + "features with external thresholds that could not be evaluated (e.g., because there was "
-                         + "no data for these features).",
-                         decomposedFeatures.size(),
-                         thresholdCount - decomposedFeatures.size() );
-        }
+        // Following operations require FeaturePlus objects, not Feature, so make the conversion here
+        decomposedFeatures = thresholdReader.getEvaluatableFeatures()
+                .stream()
+                .map(FeaturePlus::of)
+                .collect(Collectors.toSet());
 
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( project.getInputCode() );
 
-        ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
-                                                              decomposedFeatures,
-                                                              projectIdentifier,
-                                                              externalThresholds,
-                                                              outputDirectory );
+        ResolvedProject resolvedProject = ResolvedProject.of(
+                projectConfigPlus,
+                decomposedFeatures,
+                projectIdentifier,
+                thresholds,
+                outputDirectory
+        );
 
         // Obtain the duration units for outputs: #55441
         String durationUnitsString = projectConfig.getOutputs().getDurationFormat().value().toUpperCase();
@@ -169,16 +152,19 @@ class ProcessorHelper
 
         // Build any writers of incremental formats that are shared across features
         SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
-        if ( ConfigHelper.getIncrementalFormats( projectConfig )
-                         .contains( DestinationType.NETCDF ) )
+        if ( ConfigHelper.getIncrementalFormats( projectConfig ).contains( DestinationType.NETCDF ) )
         {
             // Use the gridded netcdf writer
-            sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( systemSettings,
-                                                                               executor,
-                                                                               projectConfig,
-                                                                               durationUnits,
-                                                                               unitMapper,
-                                                                               outputDirectory ) );
+            sharedWritersBuilder.setNetcdfOutputWriter(
+                    NetcdfOutputWriter.of(
+                            systemSettings,
+                            executor,
+                            projectConfig,
+                            durationUnits,
+                            outputDirectory,
+                            thresholds
+                    )
+            );
         }
 
         SharedSampleDataWriters sharedSampleWriters = null;
@@ -390,7 +376,7 @@ class ProcessorHelper
      * 
      * <p>TODO: superseded by #62205, which aligns the declaration of thresholds and features.
      * 
-     * @param featuresWithThresholds the features with thresholds
+     * @param externalThresholds the features with thresholds
      * @param featuresToEvaluate the features to evaluate
      * @return The map of filtered features to evaluate
      * @throws IllegalArgumentException if some expected thresholds are missing
@@ -465,23 +451,23 @@ class ProcessorHelper
      * entry. Currently limited to {@link FeatureType#NWS_ID} and {@link FeatureType#USGS_ID}. TODO: superseded 
      * by #62205, which aligns the declaration of thresholds and features.
      * 
-     * @param externalThresholds the external thresholds
+     * @param thresholds the external thresholds
      * @return a map of thresholds whose keys are partially matched by canonical name only
      */
 
     private static Map<FeaturePlus, ThresholdsByMetric>
-            getThresholdsByCanonicalFeatureName( Map<FeaturePlus, ThresholdsByMetric> externalThresholds )
+            getThresholdsByCanonicalFeatureName( Map<FeaturePlus, ThresholdsByMetric> thresholds )
     {
-        Map<FeaturePlus, ThresholdsByMetric> externalThresholdsByKey = null;
+        Map<FeaturePlus, ThresholdsByMetric> thresholdsByKey = null;
 
-        Optional<FeaturePlus> example = externalThresholds.keySet().stream().findAny();
+        Optional<FeaturePlus> example = thresholds.keySet().stream().findAny();
         if ( example.isPresent() && Objects.nonNull( example.get().getFeature().getLocationId() ) )
         {
             LOGGER.debug( "Discovered an external source of thresholds by feature. Used the {} to cross-correlate the "
                           + "feature names.",
                           FeatureType.NWS_ID );
 
-            externalThresholdsByKey = new TreeMap<>( FeaturePlus::compareByLocationId );
+            thresholdsByKey = new TreeMap<>( FeaturePlus::compareByLocationId );
         }
         else if ( example.isPresent() && Objects.nonNull( example.get().getFeature().getGageId() ) )
         {
@@ -489,7 +475,7 @@ class ProcessorHelper
                           + "feature names.",
                           FeatureType.USGS_ID );
 
-            externalThresholdsByKey = new TreeMap<>( FeaturePlus::compareByGageId );
+            thresholdsByKey = new TreeMap<>( FeaturePlus::compareByGageId );
         }
         else
         {
@@ -498,9 +484,9 @@ class ProcessorHelper
                                                 + "source." );
         }
 
-        externalThresholdsByKey.putAll( externalThresholds );
+        thresholdsByKey.putAll( thresholds );
 
-        return Collections.unmodifiableMap( externalThresholdsByKey );
+        return Collections.unmodifiableMap( thresholdsByKey );
     }
 
     /**

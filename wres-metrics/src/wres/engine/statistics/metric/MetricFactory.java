@@ -24,6 +24,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
@@ -104,7 +105,7 @@ public final class MetricFactory
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                    null,
+                ThresholdsGenerator.getThresholdsFromConfig(config),
                                                                     ForkJoinPool.commonPool(),
                                                                     ForkJoinPool.commonPool(),
                                                                     mergeSet );
@@ -131,7 +132,7 @@ public final class MetricFactory
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                null,
+                                                                ThresholdsGenerator.getThresholdsFromConfig(config),
                                                                 ForkJoinPool.commonPool(),
                                                                 ForkJoinPool.commonPool(),
                                                                 mergeSet );
@@ -146,7 +147,7 @@ public final class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param thresholds an optional set of external thresholds, may be null
      * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
@@ -155,12 +156,12 @@ public final class MetricFactory
 
     public static MetricProcessor<PoolOfPairs<Double, Double>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final ThresholdsByMetric externalThresholds,
+                                                   final ThresholdsByMetric thresholds,
                                                    final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                    externalThresholds,
+                                                                    thresholds,
                                                                     ForkJoinPool.commonPool(),
                                                                     ForkJoinPool.commonPool(),
                                                                     mergeSet );
@@ -175,7 +176,7 @@ public final class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
+     * @param thresholds an optional set of external thresholds (one per metric), may be null
      * @param mergeSet an optional list of {@link StatisticType} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigException if the metrics are configured incorrectly
@@ -184,12 +185,12 @@ public final class MetricFactory
 
     public static MetricProcessor<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final ThresholdsByMetric externalThresholds,
+                                               final ThresholdsByMetric thresholds,
                                                final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                externalThresholds,
+                                                                thresholds,
                                                                 ForkJoinPool.commonPool(),
                                                                 ForkJoinPool.commonPool(),
                                                                 mergeSet );
@@ -202,7 +203,7 @@ public final class MetricFactory
      * and creates a processor that retains and merges those statistics.
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param thresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -214,7 +215,7 @@ public final class MetricFactory
 
     public static MetricProcessor<PoolOfPairs<Double, Double>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final ThresholdsByMetric externalThresholds,
+                                                   final ThresholdsByMetric thresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor )
                     throws MetricParameterException
@@ -222,7 +223,7 @@ public final class MetricFactory
         Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
 
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                    externalThresholds,
+                                                                    thresholds,
                                                                     thresholdExecutor,
                                                                     metricExecutor,
                                                                     mergeSet );
@@ -234,7 +235,7 @@ public final class MetricFactory
      * and creates a processor that retains and merges those statistics.
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param thresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -246,7 +247,7 @@ public final class MetricFactory
 
     public static MetricProcessor<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final ThresholdsByMetric externalThresholds,
+                                               final ThresholdsByMetric thresholds,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor )
                     throws MetricParameterException
@@ -254,7 +255,7 @@ public final class MetricFactory
         Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
 
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                externalThresholds,
+                                                                thresholds,
                                                                 thresholdExecutor,
                                                                 metricExecutor,
                                                                 mergeSet );
@@ -267,7 +268,7 @@ public final class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param thresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -280,14 +281,14 @@ public final class MetricFactory
 
     public static MetricProcessor<PoolOfPairs<Double, Double>>
             ofMetricProcessorForSingleValuedPairs( final ProjectConfig config,
-                                                   final ThresholdsByMetric externalThresholds,
+                                                   final ThresholdsByMetric thresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return new MetricProcessorByTimeSingleValuedPairs( config,
-                                                           externalThresholds,
+                                                           thresholds,
                                                            thresholdExecutor,
                                                            metricExecutor,
                                                            mergeSet );
@@ -300,7 +301,7 @@ public final class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param thresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -313,14 +314,14 @@ public final class MetricFactory
 
     public static MetricProcessorByTime<PoolOfPairs<Double, Ensemble>>
             ofMetricProcessorForEnsemblePairs( final ProjectConfig config,
-                                               final ThresholdsByMetric externalThresholds,
+                                               final ThresholdsByMetric thresholds,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
                                                final Set<StatisticType> mergeSet )
                     throws MetricParameterException
     {
         return new MetricProcessorByTimeEnsemblePairs( config,
-                                                       externalThresholds,
+                                                       thresholds,
                                                        thresholdExecutor,
                                                        metricExecutor,
                                                        mergeSet );

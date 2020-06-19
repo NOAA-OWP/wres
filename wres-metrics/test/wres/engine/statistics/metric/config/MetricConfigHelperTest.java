@@ -261,8 +261,7 @@ public final class MetricConfigHelperTest
                 new ThresholdsByMetricBuilder().addThresholds( mockExternal, ThresholdGroup.VALUE ).build();
 
         // Compute combined thresholds
-        ThresholdsByMetric actualByMetric = MetricConfigHelper.getThresholdsFromConfig( mockedConfig,
-                                                                                        externalThresholds );
+        ThresholdsByMetric actualByMetric = ThresholdsGenerator.getThresholdsFromConfig(mockedConfig).unionWithThisStore(externalThresholds);
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual = actualByMetric.getOneOrTwoThresholds();
 

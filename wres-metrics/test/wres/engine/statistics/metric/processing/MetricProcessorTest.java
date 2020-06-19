@@ -39,6 +39,7 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -110,7 +111,7 @@ public final class MetricProcessorTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                        null,
+                        ThresholdsGenerator.getThresholdsFromConfig(config),
                                                                         thresholdExecutor,
                                                                         metricExecutor,
                                                                         Collections.singleton( StatisticType.DOUBLE_SCORE ) );

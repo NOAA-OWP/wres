@@ -385,6 +385,7 @@
     <xs:simpleType name="thresholdFormat">
         <xs:restriction base="xs:string">
             <xs:enumeration value="csv" />
+            <xs:enumeration value="wrds" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -487,6 +488,9 @@
                                 <xs:attribute name="unit" type="xs:string" default="" />
                                 <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
                                 <xs:attribute name="featureType" type="featureType" default="nwsId" />
+                                <xs:attribute name="provider" type="xs:string" />
+                                <xs:attribute name="ratingProvider" type="xs:string" />
+                                <xs:attribute name="parameterToMeasure" type="xs:string" />
                             </xs:extension>
                         </xs:simpleContent>
                     </xs:complexType>

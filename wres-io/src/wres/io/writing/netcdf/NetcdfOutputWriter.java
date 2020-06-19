@@ -49,12 +49,7 @@ import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import wres.config.FeaturePlus;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.NetcdfType;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
+import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
@@ -132,7 +127,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
-     * @param unitMapper a measurement unit mapper
+     * @param thresholds Thresholds that will be imposed on input data
      * @return an instance of the writer
      * @throws IOException if the blobs could not be created for any reason
      */
@@ -141,15 +136,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                          Executor executor,
                                          ProjectConfig projectConfig,
                                          ChronoUnit durationUnits,
-                                         UnitMapper unitMapper,
-                                         Path outputDirectory) throws IOException
+                                         Path outputDirectory,
+                                         Map<Feature, ThresholdsByMetric> thresholds
+    ) throws IOException
     {
-        return new NetcdfOutputWriter( systemSettings,
-                                       executor,
-                                       projectConfig,
-                                       durationUnits,
-                                       unitMapper,
-                                       outputDirectory );
+        return new NetcdfOutputWriter(
+                systemSettings,
+                executor,
+                projectConfig,
+                durationUnits,
+                outputDirectory,
+                thresholds
+        );
     }
 
     /**
@@ -167,8 +165,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                 Executor executor,
                                 ProjectConfig projectConfig,
                                 ChronoUnit durationUnits,
-                                UnitMapper unitMapper,
-                                Path outputDirectory ) throws IOException
+                                Path outputDirectory,
+                                Map<Feature, ThresholdsByMetric> thresholds ) throws IOException
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( executor );
@@ -194,14 +192,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         }
 
         // Create the blobs into which statistics will be written and a writer per blob
-        this.pathsWrittenTo = this.createBlobsAndBlobWriters( projectConfig, unitMapper );
+        this.pathsWrittenTo = this.createBlobsAndBlobWriters( projectConfig, thresholds );
         
         Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
-    }
-
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
     }
 
     private Executor getExecutor()
@@ -213,54 +206,25 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * Creates the blobs into which outputs will be written.
      *
      * @param projectConfig The project configuration.
-     * @param unitMapper a measurement unit mapper
+     * @param thresholds Thresholds imposed upon input data
      * @throws IOException if the blobs could not be created for any reason
      * @return the paths written
      */
 
-    private Set<Path> createBlobsAndBlobWriters( ProjectConfig projectConfig, UnitMapper unitMapper ) throws IOException
+    private Set<Path> createBlobsAndBlobWriters(
+            ProjectConfig projectConfig,
+            Map<Feature, ThresholdsByMetric> thresholds
+    ) throws IOException
     {
         // Time windows
         PairConfig pairConfig = projectConfig.getPair();
         Set<TimeWindow> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
-        SystemSettings localSettings = this.getSystemSettings();
-        // External thresholds, if any
-        Map<FeaturePlus, ThresholdsByMetric> externalThresholds =
-                ConfigHelper.readExternalThresholdsFromProjectConfig( localSettings,
-                                                                      projectConfig,
-                                                                      unitMapper );
+        Optional<ThresholdsByMetric> possibleThresholds = thresholds.values().stream().findFirst();
 
-        // Find the feature with the maximum number of thresholds        
-        Comparator<ThresholdsByMetric> byCount = ( ThresholdsByMetric o1, ThresholdsByMetric o2 ) -> {
-            int first = o1.getOneOrTwoThresholds()
-                          .values()
-                          .stream()
-                          .mapToInt( Set::size )
-                          .max()
-                          .orElse( 0 );
-
-            int second = o2.getOneOrTwoThresholds()
-                           .values()
-                           .stream()
-                           .mapToInt( Set::size )
-                           .max()
-                           .orElse( 0 );
-
-            return Integer.compare( first, second );
-        };
-
-        // Internal thresholds, always at least one (all data)
-        ThresholdsByMetric thresholds = ThresholdsGenerator.getThresholdsFromConfig( projectConfig );
-        
-        Optional<ThresholdsByMetric> maximumExternal = externalThresholds.values()
-                                                                         .stream()
-                                                                         .max( byCount );
-        
-        if( maximumExternal.isPresent() )
-        {
-            thresholds = thresholds.unionWithThisStore( maximumExternal.get() );
-        }
+        ThresholdsByMetric thresholdsToLoad = possibleThresholds.orElseGet(
+                () -> ThresholdsGenerator.getThresholdsFromConfig(projectConfig)
+        );
 
         // Units, if declared
         String units = "UNKNOWN";
@@ -277,11 +241,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         }
         
         // Create blobs from components
-        return this.createBlobsAndBlobWriters( projectConfig.getInputs(),
-                                               timeWindows,
-                                               thresholds,
-                                               units,
-                                               desiredTimeScale );
+        return this.createBlobsAndBlobWriters(
+                projectConfig.getInputs(),
+                timeWindows,
+                thresholdsToLoad,
+                units,
+                desiredTimeScale
+        );
     }
     
     /**
@@ -405,12 +371,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     
     /**
      * Creates a collection of {@link MetricVariable} for one time window.
-     * 
+     *
+     * @param inputs The input configurations
      * @param timeWindow the time windows
      * @param thresholds the thresholds
      * @param units the measurement units, if available
      * @param desiredTimeScale the desired time scale, if available
-     * @param optional context for the variable
      * @return the metric variables
      */
 
@@ -453,7 +419,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @param thresholds the thresholds
      * @param units the measurement units, if available
      * @param desiredTimeScale the desired time scale, if available
-     * @param optional context for the variable
+     * @param context optional context for the variable
      * @return the metric variables
      */
 

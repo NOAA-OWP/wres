@@ -53,12 +53,9 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.*;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -129,7 +126,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                                                                     null,
+                        ThresholdsGenerator.getThresholdsFromConfig(config),
                                                                      Executors.newSingleThreadExecutor(),
                                                                      Executors.newSingleThreadExecutor(),
                                                                      null );
@@ -514,6 +511,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( expectedScores, actualScores );
     }
 
+
     @Test
     public void testApplyWithThresholdsFromSource()
             throws IOException, MetricParameterException, InterruptedException
@@ -546,6 +544,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ThresholdsByMetric thresholdsByMetric = builder.build();
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+
+        // Ensure that the entire set of thresholds is assembled to be passed to the processor
+        thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig(config).unionWithThisStore(thresholdsByMetric);
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      thresholdsByMetric,

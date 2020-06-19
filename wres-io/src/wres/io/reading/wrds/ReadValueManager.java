@@ -54,7 +54,7 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
 import wres.io.reading.SourceCompleter;
-import wres.io.reading.WebClient;
+import wres.io.utilities.WebClient;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SSLStuffThatTrustsOneCertificate;
@@ -141,126 +141,107 @@ public class ReadValueManager
         return this.measurementUnitsCache;
     }
 
-    public List<IngestResult> save() throws IOException
-    {
-        InputStream forecastData;
-        Instant now = Instant.now();
+    private SourceDetails saveLackOfData() throws IOException {
         URI location = this.getLocation();
 
-        if ( location.getScheme()
-                     .equals( "file" ) )
-        {
-            forecastData = this.getFromFile( location );
+        try {
+            // Cannot trust the DataSources.get() method to accurately
+            // report performedInsert(). Use other means here.
+            SourceDetails.SourceKey sourceKey =
+                    new SourceDetails.SourceKey(location,
+                            Instant.now().toString(),
+                            null,
+                            MD5SUM_OF_EMPTY_STRING.toUpperCase());
+
+            SourceDetails details = this.createSourceDetails(sourceKey);
+            Database database = this.getDatabase();
+            details.save(database);
+            boolean foundAlready = !details.performedInsert();
+
+            LOGGER.debug("Found {}? {}", details, foundAlready);
+
+            if (!foundAlready) {
+                this.lockManager.lockSource(details.getId());
+                SourceCompletedDetails completedDetails =
+                        createSourceCompletedDetails(database, details);
+                completedDetails.markCompleted();
+                // A special case here, where we don't use
+                // source completer because we know there are no data
+                // rows to be inserted, therefore there will be no
+                // coordination with the use of synchronizers/latches.
+                // Therefore, plain lock and unlock here.
+                this.lockManager.unlockSource(details.getId());
+
+                LOGGER.debug("Empty source id {} marked complete.",
+                        details.getId());
+            }
+
+            return details;
         }
-        else if ( location.getScheme()
-                          .toLowerCase()
-                          .startsWith( "http" ) )
+        catch (SQLException e) {
+            throw new IngestException("Source metadata for '"
+                    + location +
+                    "' could not be stored in or retrieved from the database.",
+                    e);
+        }
+    }
+
+    private Pair<byte[], SourceDetails> getInputBytes() throws IOException {
+        URI location = this.getLocation();
+
+        if ( location.getScheme().equals( "file" ) )
         {
-            Pair<Integer,InputStream> response = WEB_CLIENT.getFromWeb( location );
-            int httpStatus = response.getLeft();
-            forecastData = response.getRight();
-            LOGGER.debug( "Got HTTP response code {} for {}", httpStatus, location );
+            try (InputStream fileContents = this.getFromFile(location)) {
+                return Pair.of(IOUtils.toByteArray(fileContents), null);
+            }
+        }
+        else if ( location.getScheme().toLowerCase().startsWith( "http" ) )
+        {
+            try (WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( location )) {
+                int httpStatus = response.getStatusCode();
+                LOGGER.debug( "Got HTTP response code {} for {}", httpStatus, location );
 
-            if ( httpStatus >= 400 && httpStatus < 500 )
-            {
-                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
-                             httpStatus,
-                             location );
-
-                try
-                {
-                    // Cannot trust the DataSources.get() method to accurately
-                    // report performedInsert(). Use other means here.
-                    SourceDetails.SourceKey sourceKey =
-                            new SourceDetails.SourceKey( location,
-                                                         now.toString(),
-                                                         null,
-                                                         MD5SUM_OF_EMPTY_STRING.toUpperCase() );
-
-                    SourceDetails details = this.createSourceDetails( sourceKey );
-                    Database database = this.getDatabase();
-                    details.save( database );
-                    boolean foundAlready = !details.performedInsert();
-
-                    LOGGER.debug( "Found {}? {}", details, foundAlready );
-
-                    if ( !foundAlready )
-                    {
-                        this.lockManager.lockSource( details.getId() );
-                        SourceCompletedDetails completedDetails =
-                                createSourceCompletedDetails( database, details );
-                        completedDetails.markCompleted();
-                        // A special case here, where we don't use
-                        // source completer because we know there are no data
-                        // rows to be inserted, therefore there will be no
-                        // coordination with the use of synchronizers/latches.
-                        // Therefore, plain lock and unlock here.
-                        this.lockManager.unlockSource( details.getId() );
-
-                        LOGGER.debug( "Empty source id {} marked complete.",
-                                     details.getId() );
-                    }
-
-                    return IngestResult.singleItemListFrom(
-                            this.projectConfig,
-                            this.dataSource,
-                            details.getId(),
-                            foundAlready,
-                            false
-                    );
+                if ( httpStatus >= 400 && httpStatus < 500 ) {
+                    LOGGER.warn("Treating HTTP response code {} as no data found from URI {}",
+                            httpStatus,
+                            location);
+                    return Pair.of(null, this.saveLackOfData());
                 }
-                catch ( SQLException e )
-                {
-                    throw new IngestException( "Source metadata for '"
-                                               + location +
-                                               "' could not be stored in or retrieved from the database.",
-                                               e );
-                }
-                finally
-                {
-                    if ( Objects.nonNull( forecastData) )
-                    {
-                        try
-                        {
-                            forecastData.close();
-                        }
-                        catch ( IOException ioe )
-                        {
-                            LOGGER.warn( "Could not close a data stream from {}",
-                                         location, ioe );
-                        }
-                    }
-                }
+
+                return Pair.of(IOUtils.toByteArray(response.getResponse()), null);
             }
         }
         else
         {
             throw new UnsupportedOperationException( "Only file and http(s) "
-                                                     + "are supported. Got: "
-                                                     + location );
+                    + "are supported. Got: "
+                    + location );
         }
+    }
 
+    public List<IngestResult> save() throws IOException
+    {
+        Instant now = Instant.now();
+        URI location = this.getLocation();
+
+        Pair<byte[], SourceDetails> inputBytes = this.getInputBytes();
+
+        if (inputBytes.getLeft() == null) {
+            return IngestResult.singleItemListFrom(
+                    this.projectConfig,
+                    this.dataSource,
+                    inputBytes.getRight().getId(),
+                    !inputBytes.getRight().performedInsert(),
+                    false
+            );
+        }
 
         // It is conceivable that we could tee/pipe the data to both
         // the md5sum and the parser at the same time, but this involves
         // more complexity and may not be worth it. For now assume that we are
         // not going to exhaust our heap by including the whole forecast
         // here in memory temporarily.
-        byte[] rawForecast = IOUtils.toByteArray( forecastData );
-
-        //Close the forecastData stream.
-        if ( Objects.nonNull( forecastData) )
-        {
-            try
-            {
-                forecastData.close();
-            }
-            catch ( IOException ioe )
-            {
-                LOGGER.warn( "Could not close a data stream from {}",
-                             location, ioe );
-            }
-        }
+        byte[] rawForecast = inputBytes.getLeft();
 
         if ( LOGGER.isTraceEnabled() )
         {

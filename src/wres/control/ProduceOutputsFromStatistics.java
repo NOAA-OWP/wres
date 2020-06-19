@@ -177,18 +177,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     private final ChronoUnit durationUnits;
 
     /**
-     * Unit mapper.
-     */
-
-    private final UnitMapper unitMapper;
-
-    /**
      * Build a product processor.
      * 
      * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @param sharedWriters an optional set of shared writers to consume outputs
-     * @param unitMapper a measurement unit mapper
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
@@ -197,15 +190,13 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                             Executor executor,
                                             ResolvedProject resolvedProject,
                                             BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                            SharedStatisticsWriters sharedWriters,
-                                            UnitMapper unitMapper )
+                                            SharedStatisticsWriters sharedWriters)
     {
         return new ProduceOutputsFromStatistics( systemSettings,
                                                  executor,
                                                  resolvedProject,
                                                  writeWhenTrue,
-                                                 sharedWriters,
-                                                 unitMapper );
+                                                 sharedWriters);
     }
 
     /**
@@ -493,10 +484,8 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @throws IOException if the initial blobs could not be written
      */
 
-    private void buildNetCDFConsumers( SharedStatisticsWriters sharedWriters ) throws IOException
+    private void buildNetCDFConsumers( SharedStatisticsWriters sharedWriters )
     {
-        ProjectConfig projectConfig = this.getProjectConfigPlus().getProjectConfig();
-
         // Build the consumers conditionally
         if ( Objects.nonNull( sharedWriters )
              && sharedWriters.contains( StatisticType.DOUBLE_SCORE, DestinationType.NETCDF ) )
@@ -506,21 +495,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                            sharedWriters );
             this.writersToPaths.add( sharedWriters );
             // Not in charge of closing the sharedwriters, that is out at top.
-        }
-        else if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.NETCDF ) )
-        {
-            LOGGER.debug( "There are netcdf consumers for {}", this );
-            NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( this.getSystemSettings(),
-                                                                           this.getExecutor(),
-                                                                           projectConfig,
-                                                                           this.getDurationUnits(),
-                                                                           this.unitMapper,
-                                                                           this.getResolvedProject()
-                                                                               .getOutputDirectory() );
-            this.doubleScoreConsumers.put( DestinationType.NETCDF,
-                                           netcdfOutputWriter );
-            this.writersToPaths.add( netcdfOutputWriter );
-            this.resourcesToClose.add( netcdfOutputWriter );
         }
         else
         {
@@ -920,10 +894,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
     /**
      * Filters the input statistics for the prescribed destination type relative to the output types that should be 
-     * suppressed for particular statistics. See {@link #getSuppressTheseMetricsForThisDestinationType()}.
+     * suppressed for particular statistics. See `getSuppressTheseMetricsForThisDestinationType()` down below.
      * 
      * @param statistics the statistics to filter
-     * @param the destination type by which to filter
+     * @param destinationType the destination type by which to filter
      * @return a filtered list of statistics, omitting those to be suppressed for the prescribed destination type
      * @throws NullPointerException if any input is null
      */
@@ -982,7 +956,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @param sharedWriters an optional set of shared writers to consume outputs
-     * @param unitMapper a measurement unit mapper
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
@@ -991,8 +964,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                                           Executor executor,
                                           ResolvedProject resolvedProject,
                                           BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                          SharedStatisticsWriters sharedWriters,
-                                          UnitMapper unitMapper )
+                                          SharedStatisticsWriters sharedWriters)
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( executor );
@@ -1007,7 +979,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         this.writersToPaths = new ArrayList<>();
         this.resolvedProject = resolvedProject;
         this.writeWhenTrue = writeWhenTrue;
-        this.unitMapper = unitMapper;
 
         ProjectConfig projectConfig = resolvedProject.getProjectConfig();
         
