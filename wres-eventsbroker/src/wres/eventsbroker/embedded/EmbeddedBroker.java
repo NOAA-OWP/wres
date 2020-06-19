@@ -7,8 +7,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.qpid.server.SystemLauncher;
+import org.apache.qpid.server.SystemLauncherListener;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +42,12 @@ public class EmbeddedBroker implements Closeable
      */
 
     private final SystemLauncher systemLauncher;
+
+    /**
+     * Port listener.
+     */
+
+    private final PortExtractingLauncherListener listener;
 
     /**
      * Launcher options.
@@ -98,6 +109,25 @@ public class EmbeddedBroker implements Closeable
         LOGGER.debug( "Finished starting embedded broker with launch options {}.", this.launchOptions );
     }
 
+    /**
+     * Returns a mapping of TCP ports bound by the embedded broker. Typical ports are for protocols AMQP and HTTP. This
+     * will only return a non-empty mapping after {@link #start()} has been called.
+     * 
+     * @return the port mapping 
+     */
+
+    public Map<String, Integer> getBoundPorts()
+    {
+        Map<String, Integer> ports = this.listener.ports;
+
+        if ( Objects.isNull( ports ) )
+        {
+            return Collections.emptyMap();
+        }
+
+        return ports; // Immutable on construction
+    }
+
     @Override
     public void close() throws IOException
     {
@@ -130,6 +160,78 @@ public class EmbeddedBroker implements Closeable
         Objects.requireNonNull( options );
 
         this.launchOptions = Collections.unmodifiableMap( options );
-        this.systemLauncher = new SystemLauncher();
+
+        this.listener = new PortExtractingLauncherListener();
+
+        this.systemLauncher = new SystemLauncher( listener );
     }
+
+    /**
+     * Listener that extracts port information on broker startup, allowing for dynamic port assignment by the broker to
+     * be respected by the application.
+     * 
+     * Hint provided here: 
+     * 
+     * @author james.brown@hydrosolved.com
+     */
+
+    private static class PortExtractingLauncherListener implements SystemLauncherListener
+    {
+        private SystemConfig<?> systemConfig;
+
+        private Map<String, Integer> ports;
+
+        @Override
+        public void beforeStartup()
+        {
+            // Not needed
+        }
+
+        @Override
+        public void errorOnStartup( final RuntimeException e )
+        {
+            // Not needed
+        }
+
+        @Override
+        public void afterStartup()
+        {
+            if ( this.systemConfig == null )
+            {
+                throw new IllegalStateException( "System config is required" );
+            }
+
+            Broker<?> broker = (Broker<?>) this.systemConfig.getContainer();
+
+            this.ports = broker.getChildren( Port.class )
+                               .stream()
+                               .collect( Collectors.toUnmodifiableMap( Port::getName,
+                                                                       Port::getBoundPort ) );
+        }
+
+        @Override
+        public void onContainerResolve( final SystemConfig<?> systemConfig )
+        {
+            this.systemConfig = systemConfig;
+        }
+
+        @Override
+        public void onContainerClose( final SystemConfig<?> systemConfig )
+        {
+            // Not needed
+        }
+
+        @Override
+        public void onShutdown( final int exitCode )
+        {
+            // Not needed
+        }
+
+        @Override
+        public void exceptionOnShutdown( final Exception e )
+        {
+            // Not needed
+        }
+    }
+
 }
