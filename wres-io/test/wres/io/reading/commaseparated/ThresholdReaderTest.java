@@ -69,8 +69,16 @@ public class ThresholdReaderTest
     {
         String path = "testinput/commaseparated/testProbabilityThresholdsWithLabels.csv";
         URI uri = new URI( path );
-        ThresholdsConfig.Source source =
-                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig.Source source = new ThresholdsConfig.Source(
+                uri,
+                ThresholdFormat.CSV,
+                "CMS",
+                "-999",
+                FeatureType.NWS_ID,
+                null,
+                null,
+                null
+        );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
@@ -145,8 +153,16 @@ public class ThresholdReaderTest
     {
         String path = "testinput/commaseparated/testValueThresholdsWithLabels.csv";
         URI uri = new URI( path );
-        ThresholdsConfig.Source source =
-                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig.Source source = new ThresholdsConfig.Source(
+                uri,
+                ThresholdFormat.CSV,
+                "CMS",
+                "-999",
+                FeatureType.NWS_ID,
+                null,
+                null,
+                null
+        );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
@@ -221,8 +237,16 @@ public class ThresholdReaderTest
     {
         String path = "testinput/commaseparated/testProbabilityThresholdsWithoutLabels.csv";
         URI uri = new URI( path );
-        ThresholdsConfig.Source source =
-                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig.Source source = new ThresholdsConfig.Source(
+                uri,
+                ThresholdFormat.CSV,
+                "CMS",
+                "-999",
+                FeatureType.NWS_ID,
+                null,
+                null,
+                null
+        );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
@@ -290,8 +314,16 @@ public class ThresholdReaderTest
     {
         String path = "testinput/commaseparated/testValueThresholdsWithoutLabels.csv";
         URI uri = new URI( path );
-        ThresholdsConfig.Source source =
-                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig.Source source = new ThresholdsConfig.Source(
+                uri,
+                ThresholdFormat.CSV,
+                "CMS",
+                "-999",
+                FeatureType.NWS_ID,
+                null,
+                null,
+                null
+        );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
@@ -359,8 +391,16 @@ public class ThresholdReaderTest
     {
         String path = "testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv";
         URI uri = new URI( path );
-        ThresholdsConfig.Source source =
-                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig.Source source = new ThresholdsConfig.Source(
+                uri,
+                ThresholdFormat.CSV,
+                "CMS",
+                "-999",
+                FeatureType.NWS_ID,
+                null,
+                null,
+                null
+        );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
@@ -420,8 +460,16 @@ public class ThresholdReaderTest
     {
         String path = "testinput/commaseparated/testProbabilityThresholdsWithLabelsThrowsException.csv";
         URI uri = new URI( path );
-        ThresholdsConfig.Source source =
-                new ThresholdsConfig.Source( uri, ThresholdFormat.CSV, "CMS", "-999", FeatureType.NWS_ID );
+        ThresholdsConfig.Source source = new ThresholdsConfig.Source(
+                uri,
+                ThresholdFormat.CSV,
+                "CMS",
+                "-999",
+                FeatureType.NWS_ID,
+                null,
+                null,
+                null
+        );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,

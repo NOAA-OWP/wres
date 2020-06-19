@@ -27,6 +27,7 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
 import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
@@ -416,7 +417,7 @@ public final class MetricFactoryTest
             throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorForEnsemblePairs( mockEnsemble,
-                                                                        null,
+                ThresholdsGenerator.getThresholdsFromConfig(mockEnsemble),
                                                                         null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 

@@ -11,6 +11,7 @@ import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
@@ -36,27 +37,26 @@ class ResolvedProject
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
-    private final Map<FeaturePlus, ThresholdsByMetric>
-            externalThresholds;
+    private final Map<Feature, ThresholdsByMetric> thresholds;
     private final Path outputDirectory;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeaturePlus> decomposedFeatures,
                              String projectIdentifier,
-                             Map<FeaturePlus, ThresholdsByMetric> thresholds,
+                             Map<Feature, ThresholdsByMetric> thresholds,
                              Path outputDirectory )
     {
         this.projectConfigPlus = projectConfigPlus;
         this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
-        this.externalThresholds = Collections.unmodifiableMap( thresholds );
+        this.thresholds = Collections.unmodifiableMap( thresholds );
         this.outputDirectory = outputDirectory;
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
                                Set<FeaturePlus> decomposedFeatures,
                                String projectIdentifier,
-                               Map<FeaturePlus, ThresholdsByMetric> thresholds,
+                               Map<Feature, ThresholdsByMetric> thresholds,
                                Path outputDirectory )
     {
         return new ResolvedProject( projectConfigPlus,
@@ -138,14 +138,14 @@ class ResolvedProject
                    .getGraphicsStrings();
     }
 
-    private Map<FeaturePlus, ThresholdsByMetric> getExternalThresholds()
+    private Map<Feature, ThresholdsByMetric> getThresholds()
     {
-        return this.externalThresholds;
+        return this.thresholds;
     }
 
-    ThresholdsByMetric getThresholdForFeature( FeaturePlus featurePlus )
+    ThresholdsByMetric getThresholdForFeature( Feature feature )
     {
-        return this.getExternalThresholds().get( featurePlus );
+        return this.getThresholds().get( feature );
     }
     
     /**
@@ -168,8 +168,7 @@ class ResolvedProject
     {
         // Obtain the union of internal and external thresholds
         ThresholdsByMetric thresholds =
-                MetricConfigHelper.getThresholdsFromConfig( this.getProjectConfig(),
-                                                            externalThresholds.values() );
+                MetricConfigHelper.getThresholdsFromConfig( this.thresholds.values() );
         // Filter the thresholds if required
         if( Objects.nonNull( outGroup ) )
         {

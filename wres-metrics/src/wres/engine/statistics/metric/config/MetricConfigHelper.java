@@ -147,47 +147,40 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the projectConfig or dataFactory is null
      */
 
-    public static ThresholdsByMetric getThresholdsFromConfig( ProjectConfig projectConfig,
-                                                              ThresholdsByMetric external )
+    public static ThresholdsByMetric getThresholdsFromConfig( ThresholdsByMetric external )
     {
         if ( Objects.nonNull( external ) )
         {
-            return MetricConfigHelper.getThresholdsFromConfig( projectConfig, Arrays.asList( external ) );
+            return MetricConfigHelper.getThresholdsFromConfig( Arrays.asList( external ) );
         }
 
-        return MetricConfigHelper.getThresholdsFromConfig( projectConfig,
-                                                           (Collection<ThresholdsByMetric>) null );
+        return null;
     }
 
     /**
      * Reads the internally configured thresholds, combines them with any supplied, external, thresholds, and 
      * returns the union of all thresholds.
-     * 
-     * @param projectConfig the project configuration with internally configured thresholds
+     *
      * @param externalThresholds an optional source of external thresholds, may be null
      * @return the union of internal and external thresholds
      * @throws MetricConfigException if the metric configuration is invalid
      * @throws NullPointerException if the projectConfig or dataFactory is null
      */
 
-    public static ThresholdsByMetric getThresholdsFromConfig( ProjectConfig projectConfig,
-                                                              Collection<ThresholdsByMetric> externalThresholds )
+    public static ThresholdsByMetric getThresholdsFromConfig( Collection<ThresholdsByMetric> externalThresholds )
     {
+        ThresholdsByMetric allThresholds = null;
 
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        ThresholdsByMetric returnMe = ThresholdsGenerator.getThresholdsFromConfig( projectConfig );
-
-        // Find the union with any external thresholds
-        if ( Objects.nonNull( externalThresholds ) )
-        {
-            for ( ThresholdsByMetric nextStore : externalThresholds )
-            {
-                returnMe = returnMe.unionWithThisStore( nextStore );
+        for (ThresholdsByMetric thresholds : externalThresholds) {
+            if (allThresholds == null) {
+                allThresholds = thresholds;
+            }
+            else {
+                allThresholds = allThresholds.unionWithThisStore(thresholds);
             }
         }
 
-        return returnMe;
+        return allThresholds;
     }
 
     /**

@@ -405,12 +405,17 @@ public abstract class MetricProcessor<S extends SampleData<?>>
             this.singleValuedBoxPlot = null;
         }
 
-        //Set the thresholds: canonical --> metric-local overrides --> global        
-        this.thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, externalThresholds );
+        //Set the thresholds: canonical --> metric-local overrides --> global
+        if (externalThresholds != null) {
+            this.thresholdsByMetric = externalThresholds;
+        }
+        else {
+            this.thresholdsByMetric = new ThresholdsByMetric.ThresholdsByMetricBuilder().build();
+        }
 
         if ( Objects.nonNull( mergeSet ) )
         {
-            this.mergeSet = Collections.unmodifiableSet( new HashSet<>( mergeSet ) );
+            this.mergeSet = Set.copyOf(mergeSet);
         }
         else
         {

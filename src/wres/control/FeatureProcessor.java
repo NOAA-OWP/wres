@@ -44,8 +44,6 @@ import wres.io.writing.commaseparated.pairs.PairsWriter;
  * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeaturePlus}.
  * 
  * @author james.brown@hydrosolved.com
- * @param the type of left data in the paired data
- * @param the type of right data in the paired data
  */
 
 class FeatureProcessor implements Supplier<FeatureProcessingResult>
@@ -149,7 +147,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         final ProjectConfig projectConfig = this.resolvedProject.getProjectConfig();
         final ThresholdsByMetric thresholds =
-                this.resolvedProject.getThresholdForFeature( this.feature );
+                this.resolvedProject.getThresholdForFeature( this.feature.getFeature() );
 
         // TODO: do NOT rely on the declared type. Instead, determine it, post-ingest,
         // from the ResolvedProject. See #57301.
@@ -287,8 +285,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                                       executor,
                                                                                       this.resolvedProject,
                                                                                       onlyWriteTheseTypes,
-                                                                                      this.sharedWriters.getStatisticsWriters(),
-                                                                                      this.unitMapper );
+                                                                                      this.sharedWriters.getStatisticsWriters() );
                                              outputProcessor.accept( metricOutputs );
                                              outputProcessor.close();
 
@@ -487,8 +484,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                executor,
                                                                this.resolvedProject,
                                                                nowWriteTheseTypes,
-                                                               this.sharedWriters.getStatisticsWriters(),
-                                                               this.unitMapper ) )
+                                                               this.sharedWriters.getStatisticsWriters()) )
                 {
                     // Generate output
                     endOfPipeline.accept( processor.getCachedMetricOutput() );

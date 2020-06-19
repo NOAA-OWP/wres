@@ -628,6 +628,24 @@ public class ThresholdsByMetric
 
         private Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
 
+        public boolean isEmpty() {
+            boolean empty = this.values.values().stream().allMatch(Set::isEmpty);
+
+            if (empty) {
+                empty = this.probabilities.values().stream().allMatch(Set::isEmpty);
+            }
+
+            if (empty) {
+                empty = this.probabilityClassifiers.values().stream().allMatch(Set::isEmpty);
+            }
+
+            if (empty) {
+                empty = this.quantiles.values().stream().allMatch(Set::isEmpty);
+            }
+
+            return empty;
+        }
+
         /**
          * Adds a map of thresholds.
          * 
@@ -687,6 +705,116 @@ public class ThresholdsByMetric
         }
 
         /**
+         * Adds a map of thresholds.
+         *
+         * @throws NullPointerException if any input is null
+         */
+
+        public ThresholdsByMetricBuilder addThreshold(ThresholdGroup group, MetricConstants metric, Threshold threshold)
+        {
+            Objects.requireNonNull( threshold, "Cannot build a store of thresholds with null thresholds." );
+
+            Objects.requireNonNull( group, "Cannot build a store of thresholds with null threshold type." );
+
+            Map<MetricConstants, Set<Threshold>> container;
+
+            // Determine type of container
+            if ( group == ThresholdGroup.PROBABILITY )
+            {
+                container = this.probabilities;
+            }
+            else if ( group == ThresholdGroup.PROBABILITY_CLASSIFIER )
+            {
+                container = this.probabilityClassifiers;
+            }
+            else if ( group == ThresholdGroup.QUANTILE )
+            {
+                container = this.quantiles;
+            }
+            else if ( group == ThresholdGroup.VALUE )
+            {
+                container = this.values;
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unrecognized type of threshold '" + group + "'." );
+            }
+
+            // Append
+            if ( container.containsKey( metric ) )
+            {
+                container.get( metric ).add( threshold );
+            }
+            // Add
+            else
+            {
+                container.put( metric, new HashSet<>(){{add(threshold);}});
+            }
+
+            return this;
+        }
+
+        /**
+         * Adds a map of thresholds.
+         *
+         * @throws NullPointerException if any input is null
+         */
+
+        public ThresholdsByMetricBuilder addThresholds(ThresholdGroup group, MetricConstants metric, Set<Threshold> thresholds)
+        {
+            Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
+
+            Objects.requireNonNull( group, "Cannot build a store of thresholds with null threshold type." );
+
+            Map<MetricConstants, Set<Threshold>> container;
+
+            // Determine type of container
+            if ( group == ThresholdGroup.PROBABILITY )
+            {
+                container = this.probabilities;
+            }
+            else if ( group == ThresholdGroup.PROBABILITY_CLASSIFIER )
+            {
+                container = this.probabilityClassifiers;
+            }
+            else if ( group == ThresholdGroup.QUANTILE )
+            {
+                container = this.quantiles;
+            }
+            else if ( group == ThresholdGroup.VALUE )
+            {
+                container = this.values;
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unrecognized type of threshold '" + group + "'." );
+            }
+
+            // Append
+            if ( container.containsKey( metric ) )
+            {
+                container.get( metric ).addAll(thresholds);
+            }
+            // Add
+            else
+            {
+                container.put( metric, new HashSet<>(){{addAll(thresholds);}});
+            }
+
+            return this;
+        }
+
+        public ThresholdsByMetricBuilder copy() {
+            ThresholdsByMetricBuilder newBuilder = new ThresholdsByMetricBuilder();
+            newBuilder.addThresholds(this.probabilities, ThresholdGroup.PROBABILITY)
+                    .addThresholds(this.values, ThresholdGroup.VALUE)
+                    .addThresholds(this.probabilityClassifiers, ThresholdGroup.PROBABILITY_CLASSIFIER)
+                    .addThresholds(this.quantiles, ThresholdGroup.QUANTILE);
+
+            return newBuilder;
+        }
+
+        /**
          * Builds a {@link ThresholdsByMetric}.
          * 
          * @return the container
@@ -710,23 +838,22 @@ public class ThresholdsByMetric
         // Set immutable stores
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.probabilities.entrySet() )
         {
-            this.probabilities.put( next.getKey(), Collections.unmodifiableSet( new HashSet<>( next.getValue() ) ) );
+            this.probabilities.put( next.getKey(), Set.copyOf(next.getValue()));
         }
 
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.values.entrySet() )
         {
-            this.values.put( next.getKey(), Collections.unmodifiableSet( new HashSet<>( next.getValue() ) ) );
+            this.values.put( next.getKey(), Set.copyOf(next.getValue()));
         }
 
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.probabilityClassifiers.entrySet() )
         {
-            this.probabilityClassifiers.put( next.getKey(),
-                                             Collections.unmodifiableSet( new HashSet<>( next.getValue() ) ) );
+            this.probabilityClassifiers.put( next.getKey(), Set.copyOf(next.getValue()));
         }
 
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.quantiles.entrySet() )
         {
-            this.quantiles.put( next.getKey(), Collections.unmodifiableSet( new HashSet<>( next.getValue() ) ) );
+            this.quantiles.put( next.getKey(), Set.copyOf(next.getValue()));
         }
 
         // Render the stores immutable       

@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.io.utilities;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -9,6 +9,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.HttpTimeoutException;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -19,6 +20,8 @@ import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import okhttp3.HttpUrl;
@@ -28,6 +31,9 @@ import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import wres.io.reading.IngestException;
+import wres.io.reading.PreIngestException;
+import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
  * Allows caller to get an InputStream from a URI with retry with exponential
@@ -101,6 +107,60 @@ public class WebClient
         this( sslGoo, false );
     }
 
+    public static Pair<SSLContext,X509TrustManager> createSSLContext(String trustFileOnClassPath)
+    {
+        try ( InputStream inputStream = WebClient.class
+                .getClassLoader()
+                .getResourceAsStream( trustFileOnClassPath ) )
+        {
+            // Avoid sending null, log a warning instead, use default.
+            if ( inputStream == null )
+            {
+                LOGGER.warn( "Failed to load {} from classpath. Using default SSLContext.",
+                        trustFileOnClassPath );
+
+                X509TrustManager theTrustManager = null;
+                for ( TrustManager manager : TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() )
+                        .getTrustManagers() )
+                {
+                    if ( manager instanceof X509TrustManager )
+                    {
+                        LOGGER.warn( "Failed to load {} from classpath. Using this X509TrustManager: {}",
+                                trustFileOnClassPath, manager );
+                        theTrustManager = (X509TrustManager) manager;
+                    }
+                }
+                if ( Objects.isNull( theTrustManager) )
+                {
+                    throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
+                }
+                return Pair.of( SSLContext.getDefault(), theTrustManager );
+            }
+            SSLStuffThatTrustsOneCertificate sslGoo =
+                    new SSLStuffThatTrustsOneCertificate( inputStream );
+            return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PreIngestException( "Unable to read "
+                    + trustFileOnClassPath
+                    + " from classpath in order to add it"
+                    + " to trusted certificate list for "
+                    + "requests made to WRDS services.",
+                    ioe );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new PreIngestException( "Unable to find "
+                    + trustFileOnClassPath
+                    + " on classpath in order to add it"
+                    + " to trusted certificate list for "
+                    + "requests made to WRDS services "
+                    + "and furthermore could not get the "
+                    + "default SSLContext.", nsae );
+        }
+    }
+
     private OkHttpClient getHttpClient()
     {
         return this.httpClient;
@@ -118,7 +178,7 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public Pair<Integer, InputStream> getFromWeb( URI uri ) throws IOException
+    public ClientResponse getFromWeb( URI uri ) throws IOException
     {
         return this.getFromWeb( uri, DEFAULT_RETRY_STATI );
     }
@@ -135,8 +195,7 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public Pair<Integer, InputStream> getFromWeb( URI uri,
-                                                  List<Integer> retryOn )
+    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn )
             throws IOException
     {
         Objects.requireNonNull( uri );
@@ -204,16 +263,15 @@ public class WebClient
                     LOGGER.debug( "Successfully got InputStream from {} in {}",
                                   uri,
                                   duration );
-                    InputStream decodedStream = WebClient.getDecodedInputStream( httpResponse );
-                    return Pair.of( httpStatus, decodedStream );
+                    return new ClientResponse(httpResponse);
                 }
                 else if ( httpStatus >= 400 && httpStatus < 500 )
                 {
                     LOGGER.debug( "Got empty/not-found data from {} in {}", uri,
                                   duration );
-                    httpResponse.body()
-                                .close();
-                    return Pair.of( httpStatus, InputStream.nullInputStream() );
+
+                    httpResponse.body().close();
+                    return new ClientResponse(httpStatus);
                 }
                 else
                 {
@@ -237,7 +295,7 @@ public class WebClient
         {
             LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
             Thread.currentThread().interrupt();
-            return Pair.of( -1, InputStream.nullInputStream() );
+            return new ClientResponse(-1);
         }
     }
 
@@ -510,5 +568,35 @@ public class WebClient
                + Duration.ofNanos( medianTiming ) + ", "
                + quickestMessage + " and "
                + slowestMessage;
+    }
+
+    public static class ClientResponse implements AutoCloseable {
+        private final int statusCode;
+        private final InputStream response;
+
+        public ClientResponse(Response httpResponse) throws IOException {
+            this.statusCode = httpResponse.code();
+            this.response = WebClient.getDecodedInputStream( httpResponse );
+        }
+
+        public ClientResponse(int statusCode) {
+            this.statusCode = statusCode;
+            this.response = InputStream.nullInputStream();
+        }
+
+        public int getStatusCode() {
+            return this.statusCode;
+        }
+
+        public InputStream getResponse() {
+            return this.response;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (this.response != null) {
+                this.response.close();
+            }
+        }
     }
 }
