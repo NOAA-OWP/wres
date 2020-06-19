@@ -139,8 +139,7 @@ public final class MetricConfigHelper
     /**
      * Reads the internally configured thresholds, combines them with any supplied, external, thresholds, and 
      * returns the union of all thresholds.
-     * 
-     * @param projectConfig the project configuration with internally configured thresholds
+     *
      * @param external an optional source of external thresholds, may be null
      * @return the union of internal and external thresholds
      * @throws MetricConfigException if the metric configuration is invalid
