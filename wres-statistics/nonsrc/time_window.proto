@@ -10,16 +10,28 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "TimeWindowProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates the temporal boundaries of a pool. */
 message TimeWindow
 {
+    // A message that encapsulates the temporal boundaries of a pool.
+    
     google.protobuf.Timestamp earliest_reference_time = 1;
+    // The earliest reference time.
+    
     google.protobuf.Timestamp latest_reference_time = 2;
+    // The latest reference time.
+    
     google.protobuf.Timestamp earliest_valid_time = 3;
+    // The earliest valid time.
+    
     google.protobuf.Timestamp latest_valid_time = 4;
+    // The latest valid time.
+    
     google.protobuf.Duration earliest_lead_duration = 5;
+    // The earliest lead duration.
+    
     google.protobuf.Duration latest_lead_duration = 6;
+    // The latest lead duration.
 
-    // The types of reference times to which the time window applies
     repeated ReferenceTime.ReferenceTimeType reference_time_type = 7;
+    // The types of reference times to which the time window applies.
 }

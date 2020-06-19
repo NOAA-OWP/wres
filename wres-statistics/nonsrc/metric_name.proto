@@ -6,12 +6,14 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "MetricNameProto";
 option java_multiple_files = true;
 
-/* An enumeration of metric names. Would be preferable to alias the
-  wres.config.generated.MetricConfigName, rather than have two generated 
-  enumerations. Also coordinated with the wres.datamodel.MetricConstants, but
-  that is a more complex enumeration with several additional behaviors. */
 enum MetricName
 {
+    /*An enumeration of metric names. Would be preferable to alias the 
+    wres.config.generated.MetricConfigName, rather than have two generated 
+    enumerations. Also coordinated with the wres.datamodel.MetricConstants, 
+    but that is a more complex enumeration with several additional
+    behaviors.*/
+      
     UNDEFINED = 0;
     BIAS_FRACTION = 1;
     BOX_PLOT_OF_ERRORS = 2;

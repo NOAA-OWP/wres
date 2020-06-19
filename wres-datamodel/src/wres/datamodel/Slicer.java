@@ -695,7 +695,7 @@ public final class Slicer
 
             return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),
                                                   threshold.getProbabilities(),
-                                                  threshold.getCondition(),
+                                                  threshold.getOperator(),
                                                   threshold.getDataType(),
                                                   threshold.getLabel(),
                                                   threshold.getUnits() );
@@ -720,7 +720,7 @@ public final class Slicer
 
         return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
                                               threshold.getProbabilities(),
-                                              threshold.getCondition(),
+                                              threshold.getOperator(),
                                               threshold.getDataType(),
                                               threshold.getLabel(),
                                               threshold.getUnits() );

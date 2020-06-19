@@ -638,31 +638,21 @@ project(':wres-statistics')
         compile 'com.google.protobuf:protobuf-java:3.12.2'
         compile project(':wres-datamodel')
         compile project(':wres-config')
-        
+
         // Flatbuffers
         compile group: 'com.google.flatbuffers', name: 'flatbuffers-java', version: '1.12.0'
 
         // Cap'n proto
         compile group: 'org.capnproto', name: 'runtime', version: '0.1.5'
 
-        // JMS API
-        compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
+        // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
+        // https://issues.sonatype.org/browse/MVNCENTRAL-348
+        testCompile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
 
         testCompile 'junit:junit:4.13'
-        
-        // QPID broker
-        testCompile 'org.apache.qpid:qpid-broker-core:7.1.8'
-
-        // QPID broker support for AMQP 0.8 and 0.9.1 (not 1.0)
-        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.1.8'
-
-        // QPID embedded (aka in-memory) broker support
-        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.1.8'
-
-        // QPID JMS client for AMQP 0.X (not 1.0)
-        testCompile group: 'org.apache.qpid', name: 'qpid-client', version: '6.3.4'
+        testCompile project( ':wres-eventsbroker' )
     }
 }
 
@@ -1067,7 +1057,53 @@ project(':wres-tasker')
     }
 }
 
+project(':wres-eventsbroker')
+{
+    dependencies
+    {
+        compile 'org.slf4j:slf4j-api:1.8.0-beta4'
+        runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
 
+        // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
+        // https://issues.sonatype.org/browse/MVNCENTRAL-348
+        compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
+        
+        // QPID broker
+        compile 'org.apache.qpid:qpid-broker-core:8.0.0'
+
+        // QPID broker support for AMQP 0.8 and 0.9.1 (not 1.0)
+        compile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.0'
+
+        // QPID embedded (aka in-memory) broker support
+        compile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.0'
+
+        // https://mvnrepository.com/artifact/org.apache.qpid/qpid-broker-plugins-management-http
+        compile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.0'
+
+        // QPID JMS client for AMQP 0.X (not 1.0). JMS 1.1 support only
+        compile group: 'org.apache.qpid', name: 'qpid-client', version: '6.4.0'
+
+        testCompile 'junit:junit:4.13'
+    }
+}
+
+project(':wres-events')
+{
+    dependencies
+    {
+        compile project( ':wres-eventsbroker' )
+        compile project( ':wres-statistics' )
+        compile 'org.slf4j:slf4j-api:1.8.0-beta4'
+
+        runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
+
+        // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
+        // https://issues.sonatype.org/browse/MVNCENTRAL-348
+        compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
+
+        testCompile 'junit:junit:4.13'
+    }
+}
 
 /* Single report for test coverage, thanks to
 https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5

@@ -1,9 +1,0 @@
-// Generated from value_filter.proto
-
-namespace wres.statistics.generated.flatbuffers;
-
-table ValueFilter {
-  minimum_inclusive_value:double;
-  maximum_inclusive_value:double;
-}
-

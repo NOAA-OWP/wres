@@ -8,24 +8,26 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "BoxplotStatisticProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a box plot statistic. */
-
 message BoxplotStatistic
 {
-    /* This could be promoted to an Evaluation; however, there is one 
+    // A message that encapsulates a box plot statistic.
+
+    BoxplotMetric metric = 1;
+    /*This could be promoted to an Evaluation; however, there is one 
     BoxplotMetric per BoxplotStatistic while the atomic collection is a pool, so 
     there is no efficiency to be gained and some context to be lost.*/
-    BoxplotMetric metric = 1;
-
-    // The boxes
+    
     repeated Box statistics = 2;
-
-    // A box
+    // The boxes.
+    
     message Box 
     {
-	double linked_value = 1;
+	    // A box.
+    
+	    double linked_value = 1;
+	    // The value alongside which the box should be shown.
 
-        // The whiskers
         repeated double quantiles = 2;
+        // The whiskers.
     }
 }

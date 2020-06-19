@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets ;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -206,6 +207,15 @@ public class WaterMLBasicSource extends BasicSource
                     }
 
                     byte[] rawForecast = IOUtils.toByteArray(response.getResponse());
+
+                    if ( LOGGER.isTraceEnabled() )
+                    {
+                        LOGGER.trace( "Response body for {}: {}",
+                                location,
+                                new String( rawForecast,
+                                        StandardCharsets.UTF_8 ) );
+                    }
+
                     return Pair.of(OBJECT_MAPPER.readValue(rawForecast, Response.class), null);
                 }
             }
@@ -245,6 +255,7 @@ public class WaterMLBasicSource extends BasicSource
         try
         {
             WaterMLSource waterMLSource = new WaterMLSource( this.dataSource, response );
+
             List<TimeSeries<Double>> transformed = waterMLSource.call();
             List<IngestResult> ingestResults = new ArrayList<>( transformed.size() );
 
@@ -275,6 +286,13 @@ public class WaterMLBasicSource extends BasicSource
             }
 
             return Collections.unmodifiableList( ingestResults );
+        }
+        catch ( JsonMappingException jme )
+        {
+            throw new PreIngestException( "Failed to parse the response body"
+                                          + " from USGS url "
+                                          + location,
+                                          jme );
         }
         catch ( IngestException e )
         {

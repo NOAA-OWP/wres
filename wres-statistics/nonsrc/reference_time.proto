@@ -8,32 +8,34 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "ReferenceTimeProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a reference time and associated type, such as an
-issued time. */
 message ReferenceTime
 {
-    // Type of forecast reference time
+    /*A message that encapsulates a reference time and associated type, such as 
+    an issued time or a model iniitalization time (T0).*/
+
     enum ReferenceTimeType
     {
-        // An unknown reference time type.        
+        // Type of forecast reference time
+        
         UNKNOWN = 0;
-    
-        /* The time at which a model begins forward integration into a 
-        forecasting horizon, a.k.a. a forecast initialization time. */
+        // An unknown reference time type.        
+        
         T0 = 1;
+        /*The time at which a model begins forward integration into a 
+        forecasting horizon, a.k.a. a forecast initialization time.*/
         
-        /* The start time of an analysis and assimilation period. The model 
-        begins forward integration at this time and continues until the forecast 
-        initialization time or T0. */
         ANALYSIS_START_TIME = 2;
+        /*The start time of an analysis and assimilation period. The model 
+        begins forward integration at this time and continues until the forecast 
+        initialization time or T0.*/
         
-        // The time at which a time-series was published or "issued"
         ISSUED_TIME = 3;
+        // The time at which a time-series was published or "issued".
     }
 
-    // The reference time
     google.protobuf.Timestamp reference_time = 1;
-    
-    // The typeof reference time
+    // The reference time.
+        
     ReferenceTimeType reference_time_type = 2;
+    // The type of reference time.
 }

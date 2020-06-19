@@ -10,20 +10,20 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "PoolProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a pool, which is the atomic collection of pairs 
-and statistics.*/
-
 message Pool
 {
-    // Zero or more geometries that characterize this pool
+    /*A message that encapsulates a pool, which is the atomic collection of 
+    pairs and statistics.*/
+    
     repeated Geometry geometries = 1;
-    
-    // Exactly one time window
+    // Zero or more geometries that characterize this pool.
+        
     TimeWindow time_window = 2;
-
-    // The paired values that form the pool
-    Pairs pairs = 3;
+    // The temporal boundaries of the pool.
     
-    // The pairs for the baseline source, where applicable
+    Pairs pairs = 3;
+    // The paired values that form the pool.
+        
     Pairs baseline_pairs = 4;
+    // The pairs for the baseline source, where applicable.
 }

@@ -6,13 +6,29 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "GeometryProto";
 option java_multiple_files = true;
 
-/* Elementary representation of a geometry, beginning with a named point 
-location. */
 message Geometry
 {
-    // WGS84 lat/long coordinates
-    double latitude = 1;
-    double longitude= 2;
-    // User-friendly name (e.g. DRRC2)
-    string name = 3; 
+    /*Elementary representation of a geometry with a spatial reference 
+     identifier (srid) and well-known text (wkt) string.*/
+
+    string wkt = 1;
+    // Geometry string.
+
+    int32 srid = 2;
+    // Coordinate system.
+
+    string name = 3;
+    /*User-friendly name for all sides of a pairing or the left side only if 
+    other sides are defined. (e.g. DRRC2).*/
+    
+    string right_name = 4;
+    /*The name of the geometry used on the right side of a pairing when 
+    different geometries have been correlated or cross-walked.*/
+    
+    string baseline_name = 5;
+    /*The name of the geometry used on the baseline side of a pairing when 
+    different geometries have been correlated or cross-walked.*/
+
+    string description = 6;
+    // User-friendly description of the geometry.
 }

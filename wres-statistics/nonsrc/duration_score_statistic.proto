@@ -10,30 +10,25 @@ option java_outer_classname = "DurationScoreStatisticProto";
 option java_multiple_files = true;
 
 
-/* A message that encapsulates a score statistic, which is the product of 
-applying a score metric to a pool of pairs. */
-
 message DurationScoreStatistic
 {
-    /* This could be promoted to an Evaluation; however, there is one 
-    DurationScoreMetric per DurationScoreStatistic while the atomic collection 
-    is a pool, so there is no efficiency to be gained and some context to be 
-    lost.*/
+    /*A message that encapsulates a score statistic, which is the product of 
+    applying a score metric to a pool of pairs.*/
+
     DurationScoreMetric metric = 1;
+    // A duration score metric.
 
-    /* The duration score components. This could be abstracted with repeated 
-    durations and an implicit ordering based on the ordering in 
-    DurationScoreMetric instead */
     repeated DurationScoreStatisticComponent statistics = 2;
-
-    // A diagram component
+    /*The duration score components.*/
+    
     message DurationScoreStatisticComponent
     {
-        // Metric component name
+        // A duration score component.
+        
         DurationScoreMetric.DurationScoreMetricComponent.DurationScoreComponentName name = 1;
-
-        // Component value
+        // Metric component name.
+        
         google.protobuf.Duration value = 2;
+        // Component value.
     }
-
 }

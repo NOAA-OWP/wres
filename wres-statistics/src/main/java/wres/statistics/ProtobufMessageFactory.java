@@ -68,7 +68,7 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pairs;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
-import wres.statistics.generated.Threshold.ThresholdType;
+import wres.statistics.generated.Threshold.ThresholdOperator;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.TimeWindow;
@@ -443,7 +443,7 @@ public class ProtobufMessageFactory
         Objects.requireNonNull( threshold );
 
         Threshold.Builder builder = Threshold.newBuilder()
-                                             .setType( ThresholdType.valueOf( threshold.getCondition().name() ) )
+                                             .setType( ThresholdOperator.valueOf( threshold.getOperator().name() ) )
                                              .setLeftThresholdValue( threshold.getValues().first() );
 
         if ( threshold.hasProbabilities() )
@@ -798,6 +798,8 @@ public class ProtobufMessageFactory
      * Creates a {@link wres.statistics.generated.Geometry} from a 
      * {@link wres.datamodel.sampledata.Location}.
      * 
+     * TODO: map across the new FeatureTuple when it arrives and then delete this comment.
+     * 
      * @param location the location from which to create a message
      * @return the message
      */
@@ -813,11 +815,7 @@ public class ProtobufMessageFactory
             builder.setName( location.getLocationName() );
         }
 
-        if ( location.hasCoordinates() )
-        {
-            builder.setLatitude( location.getLatitude() );
-            builder.setLongitude( location.getLongitude() );
-        }
+        // Add the wkt, srid, description and right/baseline names, as available
 
         return builder.build();
     }

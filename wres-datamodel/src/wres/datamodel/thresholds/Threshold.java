@@ -374,12 +374,12 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     }
 
     /**
-     * Returns the logical condition associated with the threshold.
+     * Returns the logical operator associated with the threshold.
      * 
-     * @return the logical condition associated with the threshold
+     * @return the logical operator associated with the threshold
      */
 
-    public Operator getCondition()
+    public Operator getOperator()
     {
         return condition;
     }
@@ -403,7 +403,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public boolean hasBetweenCondition()
     {
-        return this.getCondition().equals( Operator.BETWEEN );
+        return this.getOperator().equals( Operator.BETWEEN );
     }
 
     /**
@@ -446,6 +446,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     public String toStringSafe()
     {
         String safe = toString();
+
         // Replace spaces and special characters: note the order of application matters
         safe = safe.replaceAll( ">=", "GTE" );
         safe = safe.replaceAll( "<=", "LTE" );
@@ -458,6 +459,10 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         safe = safe.replace( "]", "" );
         safe = safe.replace( "(", "" );
         safe = safe.replace( ")", "" );
+        
+        // Any others, replace with empty
+        safe = safe.replaceAll("[^a-zA-Z0-9_.]", "");
+        
         return safe;
     }
 
@@ -474,6 +479,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         {
             return toString().replaceAll( " " + this.getUnits().toString(), "" );
         }
+        
         return toString();
     }
 
@@ -489,7 +495,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         boolean first = this.hasValues() == in.hasValues()
                         && this.hasProbabilities() == in.hasProbabilities();
         boolean second = hasLabel() == in.hasLabel()
-                         && this.getCondition() == in.getCondition()
+                         && this.getOperator() == in.getOperator()
                          && this.getDataType() == in.getDataType()
                          && this.hasUnits() == in.hasUnits();
 
@@ -579,7 +585,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
 
         //Compare condition
-        int returnMe = this.getCondition().compareTo( o.getCondition() );
+        int returnMe = this.getOperator().compareTo( o.getOperator() );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -900,14 +906,14 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
             }
 
             // Cannot have LESS_THAN on the lower bound
-            if ( Math.abs( this.getProbabilities().first() - 0.0 ) < .00000001 && this.getCondition() == Operator.LESS )
+            if ( Math.abs( this.getProbabilities().first() - 0.0 ) < .00000001 && this.getOperator() == Operator.LESS )
             {
                 throw new IllegalArgumentException( "Cannot apply a threshold operator of '<' to the lower bound "
                                                     + "probability of 0.0." );
             }
             // Cannot have GREATER_THAN on the upper bound
             if ( Math.abs( this.getProbabilities().first() - 1.0 ) < .00000001
-                 && this.getCondition() == Operator.GREATER )
+                 && this.getOperator() == Operator.GREATER )
             {
                 throw new IllegalArgumentException( "Cannot apply a threshold operator of '>' to the upper bound "
                                                     + "probability of 1.0." );
