@@ -1,6 +1,9 @@
 package wres.eventsbroker.embedded;
 
 import static org.junit.Assert.assertTrue;
+
+import java.util.Map;
+
 import org.junit.Test;
 
 import org.apache.qpid.client.AMQConnection;
@@ -24,8 +27,13 @@ public class EmbeddedBrokerTest
         {
             embeddedBroker.start();
 
+            // Dynamic port assigned
+            Map<String,Integer> ports = embeddedBroker.getBoundPorts();
+
+            Integer port = ports.get( "wres-statistics-AMQP" );
+            
             try ( AMQConnection connection =
-                    new AMQConnection( "amqp://guest:guest@test/?brokerlist='tcp://localhost:5673'" ); )
+                    new AMQConnection( "amqp://guest:guest@test/?brokerlist='tcp://localhost:" + port + "'" ); )
             {
                 connectionMade = connection.isConnected();
             }
