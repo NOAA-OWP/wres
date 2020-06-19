@@ -1,7 +1,6 @@
 package wres.eventsbroker;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -32,24 +31,6 @@ public class BrokerConnectionFactoryTest
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactoryTest.class );
-
-    @Test
-    public void testCreateTwoFactoryInstancesCreatesOneEmbeddedBroker() throws IOException
-    {
-        // Create and start the broker, clean up on completion
-        try ( BrokerConnectionFactory factoryOne = BrokerConnectionFactory.of(); )
-        {
-            // First factory creates an embedded broker when no other broker is available
-            assertTrue( factoryOne.hasEmbeddedBroker() );
-
-            try ( BrokerConnectionFactory factoryTwo = BrokerConnectionFactory.of() )
-            {
-                // Second factory does not attempt to create a new broker (doing so would produce a connection binding 
-                // error on attempting to connect)
-                assertFalse( factoryTwo.hasEmbeddedBroker() );
-            }
-        }
-    }
 
     @Test
     public void testMessageRouting() throws IOException, NamingException, JMSException, InterruptedException
