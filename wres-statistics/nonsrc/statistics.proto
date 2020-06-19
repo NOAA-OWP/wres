@@ -13,27 +13,28 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "StatisticsProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates an atomic collection of statistics, namely the 
-statistics associated with one pool. An evaluation identifier is required to 
-connect a Statistics message to an Evaluation message. It is assumed that this 
-identifier is packaged with the protocol; it is not provided inband. */
 message Statistics
 {
-    // The pool whose pairs were used to create the statistics here
+    /*A message that encapsulates an atomic collection of statistics, namely the 
+    statistics associated with one pool. An evaluation identifier is required to 
+    connect a Statistics message to an Evaluation message. It is assumed that 
+    this identifier is packaged with the protocol; it is not provided inband.*/
+
     Pool pool = 1;
-
-    // Zero or more score statistics
+    // The pool whose pairs were used to create the statistics here.
+    
     repeated ScoreStatistic scores = 2;
-
-    // Zero or more diagram statistics
+    // Zero or more score statistics.
+    
     repeated DiagramStatistic diagrams = 3;
-
-    // Zero or more boxplot statistics
+    // Zero or more diagram statistics.
+    
     repeated BoxplotStatistic boxplots = 4;
-
-    // Zero or more duration score statistics
+    // Zero or more boxplot statistics.
+    
     repeated DurationScoreStatistic duration_scores = 5;
-
-    // Zero or more duration diagram statistics
+    // Zero or more duration score statistics.
+    
     repeated DurationDiagramStatistic duration_diagrams = 6;
+    // Zero or more duration diagram statistics.
 }

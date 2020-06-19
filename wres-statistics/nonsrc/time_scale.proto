@@ -8,24 +8,26 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "TimeScaleProto";
 option java_multiple_files = true;
 
-/* Message that encapsulates the time-scale at which an evaluation was 
-performed. */
-
 message TimeScale
 {
-    // An enumeration of functions used to distribute the value over the period
+    /*Message that encapsulates the time-scale at which an evaluation was 
+    performed.*/
+
     enum TimeScaleFunction
     {
-           UNKNOWN = 0;
-           MEAN = 1;
-           TOTAL = 2;
-           MAXIMUM = 3;
-           MINIMUM = 4;
+        /*An enumeration of functions used to distribute the value over the 
+        period.*/
+    
+        UNKNOWN = 0;
+        MEAN = 1;
+        TOTAL = 2;
+        MAXIMUM = 3;
+        MINIMUM = 4;
     }
 
-    // The time-scale function
     TimeScaleFunction function = 1;
+    // The time-scale function.
     
-    // Period over which the value is distributed
     google.protobuf.Duration period = 2;
+    // Period over which the value is distributed.
 }

@@ -9,20 +9,25 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "DurationScoreMetricProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a score metric or scoring rule that produces a duration. */
 message DurationScoreMetric
 {
-    // Metric name.
+    /*A message that encapsulates a score metric or scoring rule that produces a 
+    duration.*/
+
     MetricName name = 1;
-
-    // The score components
+    // Metric name.
+    
     repeated DurationScoreMetricComponent components = 2;
-
-    // A score component
+    // The score components.
+    
     message DurationScoreMetricComponent
     {
+        // A score component.
+    
         enum DurationScoreComponentName 
-        {           
+        {
+            // A score component name.
+            
             UNKNOWN = 0; 
             MEAN = 1;
             MEDIAN = 2;
@@ -34,13 +39,14 @@ message DurationScoreMetric
 
         DurationScoreComponentName name = 1;
 
-        // The optimum value of the score (e.g., 0.0 for the mean error in timing)
         google.protobuf.Duration optimum = 2; 
-
-        // The lower bound of the score
-        google.protobuf.Duration minimum = 3;
+        /*The optimum value of the score (e.g., 0.0 for the mean error in 
+        timing.*/
         
-        // The upper bound of the score
+        google.protobuf.Duration minimum = 3;
+        // The lower bound of the score.
+                
         google.protobuf.Duration maximum = 4;
+        // The upper bound of the score.
     }
 }

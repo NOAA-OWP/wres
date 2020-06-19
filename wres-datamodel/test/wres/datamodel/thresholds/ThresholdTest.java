@@ -577,7 +577,7 @@ public final class ThresholdTest
         assertTrue( threshold.getValues().second().equals( 0.5 ) );
         assertTrue( threshold.getProbabilities().first().equals( 0.0 ) );
         assertTrue( threshold.getProbabilities().second().equals( 0.7 ) );
-        assertTrue( threshold.getCondition() == Operator.BETWEEN );
+        assertTrue( threshold.getOperator() == Operator.BETWEEN );
         assertTrue( threshold.getLabel().equals( THRESHOLD_LABEL ) );
     }
 
@@ -708,10 +708,26 @@ public final class ThresholdTest
                                                     .setLabel( THRESHOLD_LABEL )
                                                     .build();
 
-        assertTrue( threshold.toStringSafe().equals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold" ) );
+        assertEquals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold", threshold.toStringSafe() );
 
     }
 
+    /**
+     * See #79746
+     */
+    
+    @Test
+    public void testToStringSafeEliminatesReservedCharactersInUnits()
+    {
+        Threshold threshold = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 23.0 ) )
+                                                    .setCondition( Operator.GREATER )
+                                                    .setDataType( ThresholdDataType.LEFT )
+                                                    .setUnits( MeasurementUnit.of( "ft3/s" ) )
+                                                    .build();
+
+        assertEquals( "GT_23.0_ft3s", threshold.toStringSafe() );
+    }
+    
     /**
      * Tests the {@link Threshold#toStringWithoutUnits()}.
      */

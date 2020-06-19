@@ -8,27 +8,28 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "DiagramMetricProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a diagram metric, such as a reliability 
-diagram */
-
 message DiagramMetric
 {
-    /* Metric name. For example, if the diagram is the reliability diagram, 
+    /*A message that encapsulates a diagram metric, such as a reliability 
+    diagram.*/
+
+    MetricName name = 1;    
+    /*Metric name. For example, if the diagram is the reliability diagram, 
     which includes a sharpness plot, then the metric name is the reliability 
     diagram and the metric has three DiagramMetricComponent, one for the 
     forecast probability, one for the observed relative frequency and one for 
-    the sample size or sharpness. */
-    MetricName name = 1;    
+    the sample size or sharpness.*/
 
-    // The metric components
     repeated DiagramMetricComponent components = 2;
-
-    // A diagram component
+    // The metric components.
+    
     message DiagramMetricComponent
     {
-        // Type of component
+        // A component of a diagram metric.
+    
         enum DiagramComponentName 
         {
+            // Type of component
             UNKNOWN = 0;
             PROBABILITY_OF_FALSE_DETECTION = 1;
             PROBABILITY_OF_DETECTION = 2;
@@ -42,14 +43,15 @@ message DiagramMetric
 
         DiagramComponentName name = 1;               
 
-        // Units of the component
         string units = 2;
-
-        /* Limits of the component, which can help in consumption (e.g., in 
-        setting plot bounds). When undefined, the statistic data dictates the 
-        limits of the range of the diagram */
+        // Units of the component
+        
         double minimum = 3;
+        /*Minimum value of the component, which can help in consumption (e.g., 
+        in setting plot bounds). When undefined, the statistic data dictates 
+        the limits of the range of the diagram.*/
+        
         double maximum = 4;
+        // Maximum value of the component.
     }
-
 }

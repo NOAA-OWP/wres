@@ -6,47 +6,53 @@ option java_package = "wres.statistics.generated";
 option java_outer_classname = "ThresholdProto";
 option java_multiple_files = true;
 
-/* A message that encapsulates a threshold, which may contain one or two values
-with prescribed units and a user-friendly name. */
-
 message Threshold
 {
-    ThresholdType type = 1;
+    /*A message that encapsulates a threshold, which may contain one or two values
+    with prescribed units and a user-friendly name.*/
 
-    // A user-friendly name for a threshold (e.g., MINOR FLOOD)
+    ThresholdOperator type = 1;
+    // The type of threshold operator.
+
     string name = 2;
-
-    // A real-valued left threshold
+    // A user-friendly name for a threshold (e.g., MINOR FLOOD).
+    
     double left_threshold_value = 3;
-    
-    // A real-valued right threshold when the ThresholdType is BETWEEN
+    // A real-valued left threshold.
+        
     double right_threshold_value = 4;
-    
-    // The probability associated with the left threshold
+    // A real-valued right threshold when the ThresholdType is BETWEEN.
+        
+    // The probability associated with the left threshold in [0,1]
     double left_threshold_probability = 5;
     
-    // The probability associated with the right threshold when BETWEEN
     double right_threshold_probability = 6;
+    // The probability associated with the right threshold when BETWEEN in [0,1]
+        
     string threshold_value_units = 7;
+    // The units of the threshold, which may differ from evaluation units.
     
-    enum ThresholdType 
+    enum ThresholdOperator 
     {
-        // Identifier for less than.
+        /*The type of threshold condition, allowing for equality and various 
+        inequalities.*/
+        
         LESS = 0;
-
-        // Identifier for greater than.
+        // Identifier for less than.
+        
         GREATER = 1;
-
-        // Identifier for less than or equal to.
+        // Identifier for greater than.
+        
         LESS_EQUAL = 2;
-
-        // Identifier for greater than or equal to.
+        // Identifier for less than or equal to.
+        
         GREATER_EQUAL = 3;
+        // Identifier for greater than or equal to.
 
-        // Identifier for equality.
         EQUAL = 4;
+        // Identifier for equality.
 
-        // Between condition with left exclusive and right inclusive
         BETWEEN = 5;
+        // Between condition with left exclusive and right inclusive
     }
 }
