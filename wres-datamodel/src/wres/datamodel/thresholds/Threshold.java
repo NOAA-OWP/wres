@@ -31,6 +31,11 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 
 public class Threshold implements Comparable<Threshold>, DoublePredicate
 {
+    public static final Threshold ALL_DATA = Threshold.of(
+            OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+            ThresholdConstants.Operator.GREATER,
+            ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT
+    );
 
     /**
      * The real values or null.

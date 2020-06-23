@@ -893,11 +893,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 {
 
                     // Label associated with event threshold is equal, and any decision threshold is equal
-                    String thresholdWithValuesOne = threshold.first()
-                                                             .getLabel();
-                    String thresholdWithValuesTwo = sampleMetadata.getThresholds()
-                                                                  .first()
-                                                                  .getLabel();
+                    String thresholdWithValuesOne = threshold.first().getLabel();
+                    String thresholdWithValuesTwo = sampleMetadata.getThresholds().first().getLabel();
 
                     // Decision threshold equal?
                     boolean hasSecond = threshold.hasTwo();

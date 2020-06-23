@@ -9,6 +9,7 @@ import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ThresholdReader {
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdReader.class );
@@ -35,20 +36,25 @@ public class ThresholdReader {
                 this.desiredMeasurementUnitConverter,
                 this.builders
         );
+
         InBandThresholdReader inBandReader = new InBandThresholdReader(this.projectConfig, this.builders);
 
         externalReader.read();
         inBandReader.read();
 
+        for (Feature feature : externalReader.getRecognizedFeatures()) {
+            this.registerFeature(feature);
+        }
+
+        this.builders.addAllDataThresholds(projectConfig);
+
         return this.builders.build();
     }
 
     public Set<Feature> getEvaluatableFeatures() {
-        if (this.builders.isEmpty()) {
+        if (this.encounteredFeatures.size() == 0) {
             return this.features;
         }
-
-        Set<Feature> intersectingFeatures = new HashSet<>();
 
         LOGGER.debug( "Attempting to reconcile the {} features to evaluate with the {} features for which external "
                         + "thresholds are available.",
@@ -57,19 +63,10 @@ public class ThresholdReader {
 
 
         // Iterate the features to evaluate, filtering any for which external thresholds are not available
-        Set<Feature> missingThresholds = new HashSet<>();
-
-        for ( Feature feature : this.features )
-        {
-            if ( this.builders.containsFeature(feature) )
-            {
-                intersectingFeatures.add(feature);
-            }
-            else
-            {
-                missingThresholds.add( feature );
-            }
-        }
+        Set<Feature> missingThresholds = this.features
+                .stream()
+                .filter(feature -> !this.encounteredFeatures.contains(feature))
+                .collect(Collectors.toSet());
 
         if ( !missingThresholds.isEmpty() && LOGGER.isWarnEnabled() )
         {
@@ -104,15 +101,40 @@ public class ThresholdReader {
         LOGGER.info( "Discovered {} features to evaluate for which external thresholds were available and {} "
                         + "features with external thresholds that could not be evaluated (e.g., because there was "
                         + "no data for these features).",
-                this.features.size(),
-                this.builders.featureCount() - this.features.size() );
+                this.encounteredFeatures.size(),
+                this.builders.featureCount() - this.encounteredFeatures.size() );
 
-        return Collections.unmodifiableSet(intersectingFeatures);
+        return Collections.unmodifiableSet(this.encounteredFeatures);
+    }
+
+    private void registerFeature(final Feature feature) {
+        for (Feature storedFeature : this.features) {
+            String featureLID = feature.getLocationId();
+            String featureGage = feature.getGageId();
+            CoordinateSelection featureCoordinates = feature.getCoordinate();
+            Long featureComid = feature.getComid();
+
+            String storedFeatureLID = storedFeature.getLocationId();
+            String storedFeatureGage = storedFeature.getGageId();
+            CoordinateSelection storedFeatureCoordinates = storedFeature.getCoordinate();
+            Long storedFeatureComid = storedFeature.getComid();
+
+            boolean lidsMatch = featureLID != null && featureLID.equals(storedFeatureLID);
+            boolean gagesMatch = featureGage != null && featureGage.equals(storedFeatureGage);
+            boolean coordinatesMatch = featureCoordinates != null && featureCoordinates.equals(storedFeatureCoordinates);
+            boolean comidsMatch = featureComid != null && featureComid.equals(storedFeatureComid);
+
+            if (lidsMatch || gagesMatch || coordinatesMatch || comidsMatch) {
+                this.encounteredFeatures.add(storedFeature);
+                break;
+            }
+        }
     }
 
     private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
     private final UnitMapper desiredMeasurementUnitConverter;
     private final Set<Feature> features;
+    private final Set<Feature> encounteredFeatures = new HashSet<>();
     private final ThresholdBuilderCollection builders = new ThresholdBuilderCollection();
 }

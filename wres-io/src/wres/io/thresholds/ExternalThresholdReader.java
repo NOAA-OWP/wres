@@ -14,10 +14,7 @@ import wres.io.thresholds.wrds.WRDSReader;
 import wres.system.SystemSettings;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ExternalThresholdReader {
@@ -38,12 +35,17 @@ public class ExternalThresholdReader {
     public void read() {
         for (MetricsConfig config : this.projectConfig.getMetrics()) {
             for (ThresholdsConfig thresholdsConfig : this.getThresholds(config)) {
-                this.readThreshold(
+                Set<Feature> readFeatures = this.readThreshold(
                         thresholdsConfig,
                         DataFactory.getMetricsFromMetricsConfig(config, this.projectConfig)
                 );
+                this.recognizedFeatures.addAll(readFeatures);
             }
         }
+    }
+
+    public Collection<Feature> getRecognizedFeatures() {
+        return Collections.unmodifiableCollection(this.recognizedFeatures);
     }
 
     private Set<ThresholdsConfig> getThresholds(MetricsConfig metrics) {
@@ -68,11 +70,13 @@ public class ExternalThresholdReader {
      * @throws NullPointerException if the threshold configuration is null or the metrics are null
      */
 
-    private void readThreshold(ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics)
+    private Set<Feature> readThreshold(ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics)
     {
         Objects.requireNonNull( thresholdsConfig, "Specify non-null threshold configuration." );
 
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
+
+        Set<Feature> recognizedFeatures = new HashSet<>();
 
         // Threshold type: default to probability
         final ThresholdConstants.ThresholdGroup thresholdGroup;
@@ -115,6 +119,8 @@ public class ExternalThresholdReader {
             // Add the thresholds for each feature
             for ( Map.Entry<FeaturePlus, Set<Threshold>> thresholds : readThresholds.entrySet() )
             {
+                recognizedFeatures.add(thresholds.getKey().getFeature());
+
                 for(MetricConstants metricName : metrics) {
                     for (Threshold threshold : thresholds.getValue()) {
                         // This employs the FeaturePlus; this will eventually devolve into just a Feature
@@ -127,6 +133,8 @@ public class ExternalThresholdReader {
                     }
                 }
             }
+
+            return recognizedFeatures;
         }
         catch ( IOException e )
         {
@@ -167,6 +175,7 @@ public class ExternalThresholdReader {
     private final ProjectConfig projectConfig;
     private final SystemSettings systemSettings;
     private final Set<Feature> features;
+    private final Set<Feature> recognizedFeatures = new HashSet<>();
     private final UnitMapper desiredMeasurementUnitConverter;
     private final ThresholdBuilderCollection sharedBuilders;
 }
