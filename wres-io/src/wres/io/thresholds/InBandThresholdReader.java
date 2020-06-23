@@ -27,28 +27,6 @@ public class InBandThresholdReader {
                 );
             }
         }
-
-        this.addDefaultThresholds();
-    }
-
-    private void addDefaultThresholds() {
-        Threshold allData = Threshold.of(
-                OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                ThresholdConstants.Operator.GREATER,
-                ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT
-        );
-
-        for (MetricsConfig config: this.projectConfig.getMetrics()) {
-            if (config.getThresholds().isEmpty()) {
-                for (MetricConstants metricName : DataFactory.getMetricsFromMetricsConfig(config, this.projectConfig)) {
-                    this.sharedBuilders.addThresholdToAll(
-                            ThresholdConstants.ThresholdGroup.VALUE,
-                            metricName,
-                            allData
-                    );
-                }
-            }
-        }
     }
 
     private Set<ThresholdsConfig> getThresholds(MetricsConfig metrics) {

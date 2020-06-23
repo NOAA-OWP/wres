@@ -1,9 +1,10 @@
 package wres.io.thresholds;
 
-import wres.config.FeaturePlus;
-import wres.config.generated.Feature;
+import wres.config.generated.*;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
@@ -70,6 +71,25 @@ public class ThresholdBuilderCollection {
         return this.getCorrespondingBuilder(feature) != null;
     }
 
+    public void addAllDataThresholds(final ProjectConfig projectConfig) {
+        for (MetricsConfig config: projectConfig.getMetrics()) {
+            for (MetricConstants metricName : DataFactory.getMetricsFromMetricsConfig(config, projectConfig)) {
+                if (
+                        !(
+                                metricName.isInGroup(MetricConstants.SampleDataGroup.DICHOTOMOUS)
+                                        || metricName.isInGroup(MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY)
+                        )
+                ) {
+                    this.addThresholdToAll(
+                            ThresholdConstants.ThresholdGroup.VALUE,
+                            metricName,
+                            Threshold.ALL_DATA
+                    );
+                }
+            }
+        }
+    }
+
     public boolean isEmpty() {
         synchronized (BUILDER_ACCESS_LOCK) {
             return this.builders.values().stream().allMatch(ThresholdsByMetricBuilder::isEmpty);
@@ -81,14 +101,20 @@ public class ThresholdBuilderCollection {
             for (Feature storedFeature : this.builders.keySet()) {
                 String featureLID = feature.getLocationId();
                 String featureGage = feature.getGageId();
+                CoordinateSelection featureCoordinates = feature.getCoordinate();
+                Long featureComid = feature.getComid();
 
                 String storedFeatureLID = storedFeature.getLocationId();
                 String storedFeatureGage = storedFeature.getGageId();
+                CoordinateSelection storedFeatureCoordinates = storedFeature.getCoordinate();
+                Long storedFeatureComid = storedFeature.getComid();
 
                 boolean lidsMatch = featureLID != null && featureLID.equals(storedFeatureLID);
                 boolean gagesMatch = featureGage != null && featureGage.equals(storedFeatureGage);
+                boolean coordinatesMatch = featureCoordinates != null && featureCoordinates.equals(storedFeatureCoordinates);
+                boolean comidsMatch = featureComid != null && featureComid.equals(storedFeatureComid);
 
-                if (lidsMatch || gagesMatch) {
+                if (lidsMatch || gagesMatch || coordinatesMatch || comidsMatch) {
                     return this.builders.get(storedFeature);
                 }
             }

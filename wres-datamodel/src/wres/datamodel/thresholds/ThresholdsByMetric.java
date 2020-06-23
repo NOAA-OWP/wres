@@ -804,16 +804,6 @@ public class ThresholdsByMetric
             return this;
         }
 
-        public ThresholdsByMetricBuilder copy() {
-            ThresholdsByMetricBuilder newBuilder = new ThresholdsByMetricBuilder();
-            newBuilder.addThresholds(this.probabilities, ThresholdGroup.PROBABILITY)
-                    .addThresholds(this.values, ThresholdGroup.VALUE)
-                    .addThresholds(this.probabilityClassifiers, ThresholdGroup.PROBABILITY_CLASSIFIER)
-                    .addThresholds(this.quantiles, ThresholdGroup.QUANTILE);
-
-            return newBuilder;
-        }
-
         /**
          * Builds a {@link ThresholdsByMetric}.
          * 

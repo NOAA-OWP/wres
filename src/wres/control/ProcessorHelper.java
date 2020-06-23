@@ -124,7 +124,9 @@ class ProcessorHelper
                 systemSettings,
                 projectConfig,
                 unitMapper,
-                decomposedFeatures.stream().map(FeaturePlus::getFeature).collect(Collectors.toSet())
+                decomposedFeatures.stream()
+                        .map(FeaturePlus::getFeature)
+                        .collect(Collectors.toSet())
         );
 
         Map<Feature, ThresholdsByMetric> thresholds = thresholdReader.read();
