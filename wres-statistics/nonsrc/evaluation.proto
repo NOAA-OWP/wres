@@ -21,6 +21,8 @@ message Evaluation
     int32 pool_message_count = 1;
     // Number of pools per evaluation. There is this many pools of statistics
     // at most because some pools may contain no data (hence no statistics)
+    // The expected number of messages is part of an EvaluationStatus event,
+    // because this is only known after the evaluation has started.
         
     int32 metric_message_count = 2;
     // Number of metrics per evaluation. Always positive.

@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jcip.annotations.Immutable;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Evaluation;
@@ -19,10 +20,11 @@ import wres.statistics.generated.Evaluation;
  * @author james.brown@hydrosolved.com
  */
 
-class ConsumerGroup
+@Immutable
+public class Consumers
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( ConsumerGroup.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( Consumers.class );
 
     /**
      * Consumers of evaluation events, which contain descriptions of evaluations to conduct.
@@ -44,6 +46,11 @@ class ConsumerGroup
 
     private final List<Consumer<Statistics>> statisticsConsumers;
 
+    /**
+     * Consumers of groups of evaluation statistics where consumption is triggered by group.
+     */
+
+    private final List<OneGroupConsumer<Statistics>> groupedStatisticsConsumers;
 
     /**
      * @return the evaluation consumers
@@ -70,10 +77,18 @@ class ConsumerGroup
     }
 
     /**
+     * @return the consumers of statistics groups
+     */
+    List<OneGroupConsumer<Statistics>> getGroupedStatisticsConsumers()
+    {
+        return this.groupedStatisticsConsumers; //Immutable on construction
+    }
+
+    /**
      * Builder.
      */
 
-    static class Builder
+    public static class Builder
     {
 
         /**
@@ -95,11 +110,17 @@ class ConsumerGroup
 
         private List<Consumer<Statistics>> statisticsConsumers = new ArrayList<>();
 
+        /**
+         * Consumers of groups of evaluation statistics.
+         */
+
+        private List<OneGroupConsumer<Statistics>> groupedStatisticsConsumers = new ArrayList<>();
 
         /**
          * @param evaluationConsumers the evaluation consumers to set
+         * @return this builder
          */
-        Builder setEvaluationConsumers( List<Consumer<Evaluation>> evaluationConsumers )
+        public Builder setEvaluationConsumers( List<Consumer<Evaluation>> evaluationConsumers )
         {
             this.evaluationConsumers = evaluationConsumers;
             return this;
@@ -107,27 +128,39 @@ class ConsumerGroup
 
         /**
          * @param statusConsumers the status consumers to set
+         * @return this builder
          */
-        Builder setStatusConsumers( List<Consumer<EvaluationStatus>> statusConsumers )
+        public Builder setStatusConsumers( List<Consumer<EvaluationStatus>> statusConsumers )
         {
             this.statusConsumers = statusConsumers;
             return this;
         }
 
         /**
-         * @param statisticsConsumers the statistics consumers to set
+         * @param statisticsConsumers the statistics consumers to set#
+         * @return this builder
          */
-        Builder setStatisticsConsumers( List<Consumer<Statistics>> statisticsConsumers )
+        public Builder setStatisticsConsumers( List<Consumer<Statistics>> statisticsConsumers )
         {
             this.statisticsConsumers = statisticsConsumers;
             return this;
         }
 
+        /**
+         * @param groupedStatisticsConsumers the statistics consumers to set
+         * @return this builder
+         */
+        public Builder setGroupedStatisticsConsumers( List<OneGroupConsumer<Statistics>> groupedStatisticsConsumers )
+        {
+            this.groupedStatisticsConsumers = groupedStatisticsConsumers;
+            return this;
+        }
 
         /**
          * @param evaluationConsumer the evaluation consumer to add
+         * @return this builder
          */
-        Builder addEvaluationConsumer( Consumer<Evaluation> evaluationConsumer )
+        public Builder addEvaluationConsumer( Consumer<Evaluation> evaluationConsumer )
         {
             this.evaluationConsumers.add( evaluationConsumer );
             return this;
@@ -135,8 +168,9 @@ class ConsumerGroup
 
         /**
          * @param statusConsumer the status consumer to add
+         * @return this builder
          */
-        Builder addStatusConsumer( Consumer<EvaluationStatus> statusConsumer )
+        public Builder addStatusConsumer( Consumer<EvaluationStatus> statusConsumer )
         {
             this.statusConsumers.add( statusConsumer );
             return this;
@@ -144,10 +178,21 @@ class ConsumerGroup
 
         /**
          * @param statisticsConsumer the statistics consumer to add
+         * @return this builder
          */
-        Builder addStatisticsConsumer( Consumer<Statistics> statisticsConsumer )
+        public Builder addStatisticsConsumer( Consumer<Statistics> statisticsConsumer )
         {
             this.statisticsConsumers.add( statisticsConsumer );
+            return this;
+        }
+
+        /**
+         * @param statisticsConsumer the statistics consumer to add
+         * @return this builder
+         */
+        public Builder addGroupedStatisticsConsumer( OneGroupConsumer<Statistics> statisticsConsumer )
+        {
+            this.groupedStatisticsConsumers.add( statisticsConsumer );
             return this;
         }
 
@@ -157,9 +202,9 @@ class ConsumerGroup
          * @return a consumer group
          */
 
-        ConsumerGroup build()
+        public Consumers build()
         {
-            return new ConsumerGroup( this );
+            return new Consumers( this );
         }
     }
 
@@ -168,11 +213,12 @@ class ConsumerGroup
      * 
      * @param builder the builder
      */
-    private ConsumerGroup( Builder builder )
+    private Consumers( Builder builder )
     {
         this.evaluationConsumers = Collections.unmodifiableList( builder.evaluationConsumers );
         this.statisticsConsumers = Collections.unmodifiableList( builder.statisticsConsumers );
         this.statusConsumers = Collections.unmodifiableList( builder.statusConsumers );
+        this.groupedStatisticsConsumers = Collections.unmodifiableList( builder.groupedStatisticsConsumers );
 
         Objects.requireNonNull( this.evaluationConsumers );
         Objects.requireNonNull( this.statisticsConsumers );

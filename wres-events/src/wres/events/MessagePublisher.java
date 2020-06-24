@@ -133,6 +133,21 @@ class MessagePublisher implements Closeable
      * 
      * @param messageBytes the message bytes to publish
      * @param messageId the message identifier
+     * @param correlationId an identifier to correlate statistics messages to an evaluation
+     * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
+     * @throws NullPointerException if any input is null
+     */
+
+    void publish( ByteBuffer messageBytes, String messageId, String correlationId ) throws JMSException
+    {
+        this.publish( messageBytes, messageId, correlationId, null );
+    }
+    
+    /**
+     * Publishes a message to a destination.
+     * 
+     * @param messageBytes the message bytes to publish
+     * @param messageId the message identifier
      * @param groupId an optional group identifier
      * @param correlationId an identifier to correlate statistics messages to an evaluation
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
