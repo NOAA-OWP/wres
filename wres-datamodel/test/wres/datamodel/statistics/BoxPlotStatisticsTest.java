@@ -12,10 +12,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 
@@ -36,9 +37,9 @@ public final class BoxPlotStatisticsTest
     @Before
     public void runBeforeEachClass()
     {
-        Location l2 = FeatureKey.of( "A" );
+        FeatureKey l2 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
@@ -65,27 +66,27 @@ public final class BoxPlotStatisticsTest
     {
 
         //Build datasets
-        final Location l1 = FeatureKey.of( "A" );
+        final FeatureKey l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+                                                                              DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
                                                            MeasurementUnit.of(),
                                                            MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                            MetricConstants.MAIN );
-        final Location l2 = FeatureKey.of( "A" );
+        final FeatureKey l2 = FeatureKey.of( "A" );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
+                                                                              DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            12,
                                                            MeasurementUnit.of(),
                                                            MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                            MetricConstants.MAIN );
-        final Location l3 = FeatureKey.of( "B" );
+        final FeatureKey l3 = FeatureKey.of( "B" );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l3,
+                                                                              DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
@@ -198,9 +199,9 @@ public final class BoxPlotStatisticsTest
         assertThat( basic.hashCode(), is( basic.hashCode() ) );
 
         // Consistent with equals
-        Location l2 = FeatureKey.of( "A" );
+        FeatureKey l2 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
@@ -236,9 +237,9 @@ public final class BoxPlotStatisticsTest
     public void testGetMetadata()
     {
 
-        final Location l1 = FeatureKey.of( "A" );
+        final FeatureKey l1 = FeatureKey.of( "A" );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+                                                                              DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,

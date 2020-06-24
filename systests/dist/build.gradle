@@ -90,6 +90,7 @@ test
         furtherSplittedTestJvmProperties[pair[0]] = pair[1]
     }
 
-    println( "Test JVM System Properties: ${furtherSplittedTestJvmProperties}" )
-    systemProperties = furtherSplittedTestJvmProperties
+    systemProperties += [ "user.timezone": "UTC" ]
+    println( "Test JVM System Properties to be applied: ${furtherSplittedTestJvmProperties}" )
+    systemProperties += furtherSplittedTestJvmProperties
 }

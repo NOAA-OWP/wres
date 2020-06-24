@@ -395,7 +395,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // project_id
         if ( Objects.nonNull( this.getProjectId() ) )
         {
-            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = '", this.getProjectId(), "'" );
+            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ", this.getProjectId() );
         }
 
         // variable name
@@ -413,9 +413,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "TS.feature_id = '",
-                                      this.getFeatureId(),
-                                      "'" );
+                                      "TS.feature_id = ",
+                                      this.getFeatureId() );
         }
 
         // member

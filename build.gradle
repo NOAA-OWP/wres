@@ -174,6 +174,7 @@ subprojects
     {
         maxHeapSize = "2180m"
         testLogging.showStandardStreams = true
+        systemProperties += [ 'user.timezone': 'UTC' ]
     }
 
     jar
@@ -263,7 +264,7 @@ project(':wres-system')
     test
     {
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties = [ "mockserver.maxSocketTimeout": 120000 ]
+        systemProperties += [ "mockserver.maxSocketTimeout": 120000 ]
     }
 }
 
@@ -357,7 +358,7 @@ project(':wres-io')
     test
     {
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties = [ "mockserver.maxSocketTimeout": 120000,
+        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
                              "ucar.unidata.io.http.httpBufferSize": 200000 ]
     }

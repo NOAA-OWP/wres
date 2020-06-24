@@ -33,7 +33,7 @@ public class FeatureKey implements Comparable<FeatureKey>
      * @return feature.
      */
 
-    public FeatureKey of( String name )
+    public static FeatureKey of( String name )
     {
         return new FeatureKey ( name, null, null, null );
     }

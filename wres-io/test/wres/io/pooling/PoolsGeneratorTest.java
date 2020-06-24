@@ -16,14 +16,16 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DurationUnit;
-import wres.config.generated.Feature;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
@@ -42,6 +44,7 @@ public class PoolsGeneratorTest
     private static final String STREAMFLOW = "STREAMFLOW";
 
     private @Mock Database wresDatabase;
+    private @Mock Features featuresCache;
     private @Mock UnitMapper unitMapper;
 
     @Before
@@ -86,7 +89,7 @@ public class PoolsGeneratorTest
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
                                                       sourceList,
-                                                      new Variable( "DISCHARGE", null, null ),
+                                                      new Variable( "DISCHARGE", null ),
                                                       null,
                                                       null,
                                                       null,
@@ -96,7 +99,7 @@ public class PoolsGeneratorTest
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                                        sourceList,
-                                                       new Variable( STREAMFLOW, null, null ),
+                                                       new Variable( STREAMFLOW, null ),
                                                        null,
                                                        null,
                                                        null,
@@ -110,28 +113,24 @@ public class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        Feature feature =
-                new Feature( null, null, null, null, null, "FAKE2", null, null, null, null, null, null, null );
+        FeatureKey feature = FeatureKey.of( "FAKE2" );
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345 );
-        Mockito.when( project.getVariableFeatureId( "DISCHARGE", feature ) )
-               .thenReturn( 1 );
-        Mockito.when( project.getVariableFeatureId( STREAMFLOW, feature ) )
-               .thenReturn( 2 );
-        Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( 1 );
-        Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( 2 );
-        Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( 3 );
+        Mockito.when( project.getLeftVariableName() ).thenReturn( "DISCHARGE" );
+        Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
 
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Double>>> actual =
                 PoolFactory.getSingleValuedPools( this.wresDatabase,
+                                                  this.featuresCache,
                                                   project,
-                                                  feature,
+                                                  new FeatureTuple( feature, feature, null ),
                                                   this.unitMapper );
 
         // Assert expected number of suppliers
@@ -176,7 +175,7 @@ public class PoolsGeneratorTest
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
                                                       sourceList,
-                                                      new Variable( "DISCHARGE", null, null ),
+                                                      new Variable( "DISCHARGE", null ),
                                                       null,
                                                       null,
                                                       null,
@@ -186,7 +185,7 @@ public class PoolsGeneratorTest
 
         DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "ensemble forecasts" ),
                                                        sourceList,
-                                                       new Variable( STREAMFLOW, null, null ),
+                                                       new Variable( STREAMFLOW, null ),
                                                        null,
                                                        null,
                                                        null,
@@ -200,28 +199,24 @@ public class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        Feature feature =
-                new Feature( null, null, null, null, null, "FAKE2", null, null, null, null, null, null, null );
+        FeatureKey feature = FeatureKey.of( "FAKE2" );
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( 12345 );
-        Mockito.when( project.getVariableFeatureId( "DISCHARGE", feature ) )
-               .thenReturn( 1 );
-        Mockito.when( project.getVariableFeatureId( STREAMFLOW, feature ) )
-               .thenReturn( 2 );
-        Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( 1 );
-        Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( 2 );
-        Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( 3 );
+        Mockito.when( project.getLeftVariableName() ).thenReturn( "DISCHARGE" );
+        Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
 
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Ensemble>>> actual =
                 PoolFactory.getEnsemblePools( this.wresDatabase,
+                                              this.featuresCache,
                                               project,
-                                              feature,
+                                              new FeatureTuple( feature, feature, null ),
                                               this.unitMapper );
 
         // Assert expected number of suppliers

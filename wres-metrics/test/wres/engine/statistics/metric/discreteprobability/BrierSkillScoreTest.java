@@ -11,11 +11,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -23,6 +21,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -61,11 +60,7 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
-                                                                               "SQIN",
-                                                                               "HEFS",
-                                                                               "ESP") ),
+                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.BRIER_SKILL_SCORE,
@@ -73,7 +68,7 @@ public final class BrierSkillScoreTest
 
         // Check the results       
         final DoubleScoreStatistic actual = brierSkillScore.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.11363636363636376, m1 );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.11363636363636376, m1, )
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -94,10 +89,7 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
-                                                                               "SQIN",
-                                                                               "HEFS" ) ),
+                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.BRIER_SKILL_SCORE,

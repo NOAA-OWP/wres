@@ -78,7 +78,7 @@ public class SingleValuedGriddedRetrieverTest
     /**
      * A feature for testing.
      */
-
+    /* TODO: create and use selection declaration element distinct from feature
     private static final Feature FEATURE = new Feature( null,
                                                         new CoordinateSelection( 1F, 2F, 3F ),
                                                         null,
@@ -92,6 +92,8 @@ public class SingleValuedGriddedRetrieverTest
                                                         null,
                                                         null,
                                                         null );
+
+     */
 
     /**
      * A variable name for testing.
@@ -172,7 +174,8 @@ public class SingleValuedGriddedRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> retriever =
                 new SingleValuedGriddedRetriever.Builder().setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
-                                                          .setFeatures( List.of( SingleValuedGriddedRetrieverTest.FEATURE ) )
+                                                          // TODO: figure this out
+                                                          // .setFeatures( List.of( SingleValuedGriddedRetrieverTest.FEATURE ) )
                                                           .setIsForecast( true )
                                                           .setProjectId( SingleValuedGriddedRetrieverTest.PROJECT_ID )
                                                           .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
@@ -200,7 +203,9 @@ public class SingleValuedGriddedRetrieverTest
                                               "/this/is/just/a/test/source_3.nc",
                                               "/this/is/just/a/test/source_4.nc" );
         Request expected = Fetcher.prepareRequest( expectedPaths,
-                                                   List.of( SingleValuedGriddedRetrieverTest.FEATURE ),
+                                                   // TODO: fiture this out
+                                                   //List.of( SingleValuedGriddedRetrieverTest.FEATURE ),
+                                                   null,
                                                    SingleValuedGriddedRetrieverTest.VARIABLE_NAME,
                                                    timeWindow,
                                                    true,

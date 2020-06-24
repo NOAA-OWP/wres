@@ -2,6 +2,7 @@ package wres.datamodel.time;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -11,6 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.pairs.CrossPairs;
 import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.scale.TimeScale;
@@ -26,7 +28,7 @@ public final class TimeSeriesCrossPairerTest
 {
 
     private static final String KG_H = "kg/h";
-    private static final String GEORGIA = "Georgia";
+    private static final FeatureKey GEORGIA = FeatureKey.of( "Georgia" );
     private static final String CHICKENS = "Chickens";
     private static final Instant ZEROTH = Instant.parse( "2123-12-01T00:00:00Z" );
     private static final Instant FIRST = Instant.parse( "2123-12-01T06:00:00Z" );
@@ -517,17 +519,16 @@ public final class TimeSeriesCrossPairerTest
                                                                .addEvent( second )
                                                                .build();
 
-        PairingException expected = assertThrows( PairingException.class,
+        PairingException exception = assertThrows( PairingException.class,
                                                   () -> this.instance.apply( List.of( firstSeries ),
                                                                              List.of( secondSeries ) ) );
 
-        assertEquals( "While attempting to cross pair time-series TimeSeriesMetadata[timeScale=[INSTANTANEOUS],"
-                      + "referenceTimes={ANALYSIS_START_TIME=2123-12-01T00:00:00Z},variableName=Chickens,"
-                      + "featureName=Georgia,unit=kg/h] against time-series TimeSeriesMetadata[timeScale=[INSTANTANEOUS],"
-                      + "referenceTimes={T0=2123-12-01T00:00:00Z},variableName=Chickens,featureName=Georgia,unit=kg/h] "
-                      + "using their common reference times by type, found no common reference time types, which is "
-                      + "not allowed.",
-                      expected.getMessage() );
+        // TODO, make an exception specific to the situation, assert that
+        // the exception type is thrown, skip attempting to match message text.
+        assertTrue( exception.getMessage()
+                             .startsWith( "While attempting to cross pair time-series" ) );
+        assertTrue( exception.getMessage()
+                             .endsWith( "using their common reference times by type, found no common reference time types, which is not allowed." ) );
     }
 
 }

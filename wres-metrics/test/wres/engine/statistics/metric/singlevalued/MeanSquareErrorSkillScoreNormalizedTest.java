@@ -16,7 +16,6 @@ import org.junit.Test;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -30,7 +29,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
- * Tests the {@link MeanSquareErrorSkillScoreSkillScoreNormalized}.
+ * Tests the {@link MeanSquareErrorSkillScoreNormalized}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -57,7 +56,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
+                                                                              DatasetIdentifier.of( MetricTestDataFactory.getLocation( "DRRC2" ),
                                                                                                     "SQIN",
                                                                                                     "HEFS",
                                                                                                     "ESP" ) ),
@@ -86,7 +85,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "103.1" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "103.1" ),
                                                                                                        "QME",
                                                                                                        "NVE" ) )
                                                                  .setTimeWindow( timeWindow )

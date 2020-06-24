@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -46,7 +47,6 @@ import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
-import wres.io.data.details.VariableDetails;
 import wres.io.project.Project;
 import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
 import wres.io.utilities.DataScripter;
@@ -67,6 +67,8 @@ public class AnalysisRetrieverTest
     private static final Instant T2023_04_01T00_00_00Z = Instant.parse( "2023-04-01T00:00:00Z" );
     private static final Instant T2023_04_01T03_00_00Z = Instant.parse( "2023-04-01T03:00:00Z" );
     private static final Instant T2023_04_01T06_00_00Z = Instant.parse( "2023-04-01T06:00:00Z" );
+    private static final FeatureKey FEATURE = FeatureKey.of( "F" );
+    private static final String VARIABLE_NAME = "Q";
     // Comparator for ordering time-series by reference time
     private final Comparator<TimeSeries<Double>> comparator =
             ( a, b ) -> a.getReferenceTimes()
@@ -160,7 +162,9 @@ public class AnalysisRetrieverTest
                                                // before setDuplicatePolicy.
                                                // Composition over inheritance?
                                                .setDatabase( this.wresDatabase ).setProjectId( PROJECT_ID )
-                                               .setVariableFeatureId( this.variableFeatureId )
+                                               .setFeaturesCache( this.featuresCache )
+                                               .setVariableName( VARIABLE_NAME )
+                                               .setFeature( FEATURE )
                                                .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
@@ -184,8 +188,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
@@ -202,8 +206,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
@@ -220,8 +224,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
@@ -245,8 +249,10 @@ public class AnalysisRetrieverTest
         Retriever<TimeSeries<Double>> analysisRetriever =
                 new AnalysisRetriever.Builder().setLatestAnalysisDuration( Duration.ofHours( 1 ) )
                                                .setDatabase( this.wresDatabase )
+                                               .setFeaturesCache( this.featuresCache )
                                                .setProjectId( PROJECT_ID )
-                                               .setVariableFeatureId( this.variableFeatureId )
+                                               .setVariableName( VARIABLE_NAME )
+                                               .setFeature( FEATURE )
                                                .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
@@ -270,8 +276,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
@@ -286,8 +292,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
@@ -302,8 +308,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
@@ -323,8 +329,10 @@ public class AnalysisRetrieverTest
                 new AnalysisRetriever.Builder().setEarliestAnalysisDuration( Duration.ofHours( 0 ) )
                                                .setLatestAnalysisDuration( Duration.ofHours( 2 ) )
                                                .setDatabase( this.wresDatabase )
+                                               .setFeaturesCache( this.featuresCache )
                                                .setProjectId( PROJECT_ID )
-                                               .setVariableFeatureId( this.variableFeatureId )
+                                               .setVariableName( VARIABLE_NAME )
+                                               .setFeature( FEATURE )
                                                .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
@@ -351,8 +359,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
@@ -367,8 +375,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataTwo )
@@ -383,8 +391,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataThree )
@@ -399,8 +407,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesFour =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataFour )
@@ -415,8 +423,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesFive =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataFive )
@@ -431,8 +439,8 @@ public class AnalysisRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
                                        TimeScale.of(),
-                                       Integer.toString( this.variableFeatureId ),
-                                       Integer.toString( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        CFS );
         TimeSeries<Double> expectedSeriesSix =
                 new TimeSeriesBuilder<Double>().setMetadata( metadataSix )
@@ -473,9 +481,7 @@ public class AnalysisRetrieverTest
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
-        this.testDatabase.createVariableTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
-        this.testDatabase.createVariableFeatureTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
@@ -546,24 +552,10 @@ public class AnalysisRetrieverTest
         assertEquals( 1, rows );
 
         // Add a feature
-        FeatureDetails feature = new FeatureDetails();
-        feature.setLid( "FEAT" );
+        FeatureDetails feature = new FeatureDetails( FEATURE );
         feature.save( this.wresDatabase );
 
         assertNotNull( feature.getId() );
-
-        // Add a variable
-        VariableDetails variable = new VariableDetails();
-        variable.setVariableName( "VAR" );
-        variable.save( this.wresDatabase );
-
-        assertNotNull( variable.getId() );
-
-        // Get (and add) a variablefeature
-        // There is no wres abstraction to help with this, but there is a static helper
-        this.variableFeatureId = this.featuresCache.getVariableFeatureByFeature( feature, variable.getId() );
-
-        assertNotNull( this.variableFeatureId );
 
         // Get the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -594,80 +586,40 @@ public class AnalysisRetrieverTest
 
         TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
-        String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
-                                  + "ensemble_id,"
-                                  + "measurementunit_id,"
-                                  + "initialization_date,"
-                                  + "scale_period,"
-                                  + "scale_function,"
-                                  + "source_id ) "
-                                  + "VALUES (?,"
-                                  + "?,"
-                                  + "?,"
-                                  + "(?)::timestamp without time zone,"
-                                  + "?,"
-                                  + "?,"
-                                  + "? )";
-
-        DataScripter seriesOneScript = new DataScripter( this.wresDatabase,
-                                                         timeSeriesInsert );
-
-        int rowAdded = seriesOneScript.execute( this.variableFeatureId,
-                                                ensembleId,
-                                                measurementUnitId,
-                                                firstReference.toString(),
-                                                timeScale.getPeriod().toMinutesPart(),
-                                                timeScale.getFunction().name(),
-                                                sourceId );
-
-        // One row added
-        assertEquals( 1, rowAdded );
-
-        assertNotNull( seriesOneScript.getInsertedIds() );
-        assertEquals( 1, seriesOneScript.getInsertedIds().size() );
-
-        Integer firstSeriesId = seriesOneScript.getInsertedIds().get( 0 ).intValue();
+        wres.io.data.details.TimeSeries firstTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     measurementUnitId,
+                                                     firstReference,
+                                                     sourceId,
+                                                     VARIABLE_NAME,
+                                                     feature.getId() );
+        firstTraceRow.setTimeScale( timeScale );
+        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
         // Add the second series
-        DataScripter seriesTwoScript = new DataScripter( this.wresDatabase,
-                                                         timeSeriesInsert );
-
-        int rowAddedTwo = seriesTwoScript.execute( this.variableFeatureId,
-                                                   ensembleId,
-                                                   measurementUnitId,
-                                                   secondReference.toString(),
-                                                   timeScale.getPeriod().toMinutesPart(),
-                                                   timeScale.getFunction().name(),
-                                                   sourceId );
-
-        // One row added
-        assertEquals( 1, rowAddedTwo );
-
-        assertNotNull( seriesTwoScript.getInsertedIds() );
-        assertEquals( 1, seriesTwoScript.getInsertedIds().size() );
-
-        Integer secondSeriesId = seriesTwoScript.getInsertedIds().get( 0 ).intValue();
-
+        wres.io.data.details.TimeSeries secondTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     measurementUnitId,
+                                                     secondReference,
+                                                     sourceId,
+                                                     VARIABLE_NAME,
+                                                     feature.getId() );
+        secondTraceRow.setTimeScale( timeScale );
+        int secondTraceRowId = secondTraceRow.getTimeSeriesID();
 
         // Add the third series
-        DataScripter seriesThreeScript = new DataScripter( this.wresDatabase,
-                                                           timeSeriesInsert );
-
-        int rowAddedThree = seriesThreeScript.execute( this.variableFeatureId,
-                                                       ensembleId,
-                                                       measurementUnitId,
-                                                       thirdReference.toString(),
-                                                       timeScale.getPeriod().toMinutesPart(),
-                                                       timeScale.getFunction().name(),
-                                                       sourceId );
-
-        // One row added
-        assertEquals( 1, rowAddedThree );
-
-        assertNotNull( seriesThreeScript.getInsertedIds() );
-        assertEquals( 1, seriesThreeScript.getInsertedIds().size() );
-
-        Integer thirdSeriesId = seriesThreeScript.getInsertedIds().get( 0 ).intValue();
+        wres.io.data.details.TimeSeries thirdTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     measurementUnitId,
+                                                     thirdReference,
+                                                     sourceId,
+                                                     VARIABLE_NAME,
+                                                     feature.getId() );
+        thirdTraceRow.setTimeScale( timeScale );
+        int thirdTraceRowId = thirdTraceRow.getTimeSeriesID();
 
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );
@@ -682,9 +634,9 @@ public class AnalysisRetrieverTest
         // Insert the time-series values into the db
         double analysisValue = valueStart;
         Map<Integer, Instant> series = new TreeMap<>();
-        series.put( firstSeriesId, firstReference );
-        series.put( secondSeriesId, secondReference );
-        series.put( thirdSeriesId, thirdReference );
+        series.put( firstTraceRowId, firstReference );
+        series.put( secondTraceRowId, secondReference );
+        series.put( thirdTraceRowId, thirdReference );
 
         // Iterate and add the series values
         for ( Map.Entry<Integer, Instant> nextSeries : series.entrySet() )

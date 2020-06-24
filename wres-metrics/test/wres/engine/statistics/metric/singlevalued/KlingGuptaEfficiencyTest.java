@@ -17,7 +17,6 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -66,7 +65,7 @@ public final class KlingGuptaEfficiencyTest
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "103.1" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "103.1" ),
                                                                                                        "QME",
                                                                                                        "NVE" ) )
                                                                  .setTimeWindow( timeWindow )

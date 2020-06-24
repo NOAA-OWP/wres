@@ -21,7 +21,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -32,6 +31,7 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindow;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -77,21 +77,23 @@ public final class BoxPlotErrorByObservedTest
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow1 = window;
-        SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                         .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
-                                                                                               "MAP" ) )
-                                                         .setTimeWindow( timeWindow1 )
-                                                         .build();
+        SampleMetadata meta =
+                new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                           .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
+                                                                                 "MAP" ) )
+                                           .setTimeWindow( timeWindow1 )
+                                           .build();
 
         SampleData<Pair<Double,Ensemble>> input = SampleDataBasic.of( values, meta );
         final TimeWindow timeWindow = window;
 
         final StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
-                                                                                                       "MAP" ) )
-                                                                 .setTimeWindow( timeWindow )
-                                                                 .build(),
+                StatisticMetadata.of(
+                        new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                   .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
+                                                                                         "MAP" ) )
+                                                   .setTimeWindow( timeWindow )
+                                                   .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of( MM_DAY ),
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,

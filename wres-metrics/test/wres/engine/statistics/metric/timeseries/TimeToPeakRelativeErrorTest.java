@@ -14,7 +14,6 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -49,7 +48,7 @@ public final class TimeToPeakRelativeErrorTest
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "A" ),
+                                                                 .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                                        "Streamflow" ) )
                                                                  .setTimeWindow( window )
                                                                  .build(),

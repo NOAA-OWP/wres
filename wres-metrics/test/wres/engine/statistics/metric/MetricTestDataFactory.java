@@ -21,9 +21,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -161,7 +162,7 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScale.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FeatureKey.of( FEATURE_NAME ),
                                       UNIT );
     }
 
@@ -170,7 +171,7 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScale.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FeatureKey.of( FEATURE_NAME ),
                                       UNIT );
     }
 
@@ -243,11 +244,11 @@ public final class MetricTestDataFactory
         baseline.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.2, 94.8 ) ) );
 
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                       DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
                                                                              "SQIN",
                                                                              "HEFS" ) );
         final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                       DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
                                                                              "SQIN",
                                                                              "ESP" ) );
 
@@ -261,9 +262,10 @@ public final class MetricTestDataFactory
                       .build();
     }
 
-    public static Location getLocation( final String locationId )
+    public static FeatureTuple getLocation( final String locationId )
     {
-        return FeatureKey.of( locationId );
+        FeatureKey featureKey = new FeatureKey( locationId, null, null, null );
+        return new FeatureTuple( featureKey, featureKey, featureKey );
     }
 
     /**
@@ -285,7 +287,7 @@ public final class MetricTestDataFactory
         }
 
         SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                 DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                 DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
                                                                        "SQIN",
                                                                        "HEFS" ) );
 
@@ -326,7 +328,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 1 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                               .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
@@ -903,10 +905,7 @@ public final class MetricTestDataFactory
             values.add( Pair.of( false, false ) );
         }
 
-        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
+        final SampleMetadata meta = Boilerplate.getSampleMetadata();
         return SampleDataBasic.of( values, meta ); //Construct the pairs
     }
 
@@ -1000,10 +999,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
 
-        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
+        final SampleMetadata meta = Boilerplate.getSampleMetadata();
         return SampleDataBasic.of( values, meta );
     }
 
@@ -1030,14 +1026,8 @@ public final class MetricTestDataFactory
         baseline.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
         baseline.add( Pair.of( Probability.ZERO, Probability.of( 4.0 / 5.0 ) ) );
         baseline.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
-        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
-        final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "ESP" ) );
+        final SampleMetadata main = Boilerplate.getSampleMetadata();
+        final SampleMetadata base = Boilerplate.getSampleMetadata();
         return SampleDataBasic.of( values, main, baseline, base, null );
     }
 
@@ -1406,10 +1396,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
 
-        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( "Tampere" ),
-                                                                             "MAP",
-                                                                             "FMI" ) );
+        final SampleMetadata main = Boilerplate.getSampleMetadata();
         return SampleDataBasic.of( values, main );
     }
 
@@ -1429,10 +1416,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
 
-        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
+        final SampleMetadata meta = Boilerplate.getSampleMetadata();
         return SampleDataBasic.of( values, meta );
     }
 

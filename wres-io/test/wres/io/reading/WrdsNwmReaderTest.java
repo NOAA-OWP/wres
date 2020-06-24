@@ -165,13 +165,10 @@ public class WrdsNwmReaderTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
-                                                                          null,
-                                                                          null,
                                                                           null );
         sourceList.add( confSource );
 
-        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "streamflow", null, null );
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "streamflow", null );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.ANALYSES,
                                                         sourceList,
                                                         configVariable,
@@ -342,14 +339,11 @@ public class WrdsNwmReaderTest
                                              null,
                                              null,
                                              null,
-                                             null,
-                                             null,
-                                             null,
                                              null );
         sourceList.add( confSource );
 
         DataSourceConfig.Variable configVariable =
-                new DataSourceConfig.Variable( "streamflow", null, null );
+                new DataSourceConfig.Variable( "streamflow", null );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.ANALYSES,
                                                         sourceList,
                                                         configVariable,

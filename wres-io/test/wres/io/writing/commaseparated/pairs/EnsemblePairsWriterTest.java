@@ -24,12 +24,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -51,7 +54,7 @@ public final class EnsemblePairsWriterTest
 {
 
     private static final String VARIABLE_NAME = "ARMS";
-    private static final String FEATURE_NAME = "FRUIT";
+    private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
     private static final String UNIT = "SCOOBIES";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
@@ -59,7 +62,7 @@ public final class EnsemblePairsWriterTest
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScale.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -68,7 +71,7 @@ public final class EnsemblePairsWriterTest
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScale.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -91,6 +94,8 @@ public final class EnsemblePairsWriterTest
 
     private static PoolOfPairs<Double, Ensemble> pairsThree = null;
 
+    private Path tempDir = null;
+
     @BeforeClass
     public static void setUpBeforeAllTests()
     {
@@ -109,7 +114,8 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( FeatureKey.of( "PLUM" ), "RIFLE" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PLUM" ), FeatureKey.of( "PLUM" ), null ),
+                                                         "RIFLE" ) );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -129,7 +135,8 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( FeatureKey.of( "ORANGE" ), "PISTOL" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "ORANGE" ), FeatureKey.of( "ORANGE" ), null ),
+                                                         "PISTOL" ) );
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
@@ -149,13 +156,20 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( FeatureKey.of( "BANANA" ), "GRENADE" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "BANANA" ), FeatureKey.of( "BANANA" ), null ),
+                                                         "GRENADE" ) );
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
 
         pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree ).setMetadata( metaThree ).build();
 
+    }
+
+    @Before
+    public void setup() throws IOException
+    {
+        this.tempDir = Files.createTempDirectory( "wres_temp" );
     }
 
     /**
@@ -167,7 +181,7 @@ public final class EnsemblePairsWriterTest
     public void testAcceptWithEmptyPairs() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -178,7 +192,7 @@ public final class EnsemblePairsWriterTest
             // Set the measurement units and time scale
             SampleMetadata meta =
                     new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "PINEAPPLE" ),
+                                               .setIdentifier( DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PINEAPPLE" ), FeatureKey.of( "PINEAPPLE" ), null ),
                                                                                      "MORTARS" ) )
                                                .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )
@@ -212,7 +226,7 @@ public final class EnsemblePairsWriterTest
     public void testAcceptWithNaNPairs() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Formatter
         DecimalFormat formatter = new DecimalFormat();
@@ -238,7 +252,7 @@ public final class EnsemblePairsWriterTest
             // Set the measurement units and time scale
             SampleMetadata meta =
                     new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "PINEAPPLE" ),
+                                               .setIdentifier( DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PINEAPPLE" ), FeatureKey.of( "PINEAPPLE" ), null ),
                                                                                      "MORTARS" ) )
                                                .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )
@@ -286,7 +300,7 @@ public final class EnsemblePairsWriterTest
     public void testAcceptForOneSetOfPairs() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -327,7 +341,7 @@ public final class EnsemblePairsWriterTest
     public void testAcceptForTwoSetsOfPairsWrittenSync() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -374,7 +388,7 @@ public final class EnsemblePairsWriterTest
     public void testAcceptForThreeSetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
@@ -431,7 +445,7 @@ public final class EnsemblePairsWriterTest
     public void testAcceptForManySetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
@@ -473,7 +487,7 @@ public final class EnsemblePairsWriterTest
     public void testSuppliedPath() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -490,4 +504,9 @@ public final class EnsemblePairsWriterTest
         }
     }
 
+    @After
+    public void tearDown() throws IOException
+    {
+        Files.deleteIfExists( this.tempDir );
+    }
 }

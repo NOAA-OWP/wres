@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -47,7 +48,6 @@ import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
-import wres.io.data.details.VariableDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
@@ -63,6 +63,8 @@ public class SingleValuedForecastRetrieverTest
     private static final String T2023_04_01T19_00_00Z = "2023-04-01T19:00:00Z";
     private static final String T2023_04_01T17_00_00Z = "2023-04-01T17:00:00Z";
     private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
+    private static final String VARIABLE_NAME = "V";
+    private static final FeatureKey FEATURE = FeatureKey.of( "F" );
     @Mock private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
     @Mock private Executor mockExecutor;
@@ -76,12 +78,6 @@ public class SingleValuedForecastRetrieverTest
      */
 
     private static final Integer PROJECT_ID = 1;
-
-    /**
-     * A variablefeature_id for testing.
-     */
-
-    private Integer variableFeatureId;
 
     /**
      * A {@link LeftOrRightOrBaseline} for testing.
@@ -146,8 +142,10 @@ public class SingleValuedForecastRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                                                           .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
+                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setFeature( FEATURE )
                                                            .setUnitMapper( this.unitMapper )
                                                            .setLeftOrRightOrBaseline( LRB )
                                                            .build();
@@ -168,8 +166,8 @@ public class SingleValuedForecastRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
                                        TimeScale.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
@@ -189,8 +187,8 @@ public class SingleValuedForecastRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                Instant.parse( T2023_04_01T17_00_00Z ) ),
                                        TimeScale.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
@@ -222,8 +220,10 @@ public class SingleValuedForecastRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                                                           .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
+                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setFeature( FEATURE )
                                                            .setUnitMapper( this.unitMapper )
                                                            .setTimeWindow( timeWindow )
                                                            .setLeftOrRightOrBaseline( LRB )
@@ -245,8 +245,8 @@ public class SingleValuedForecastRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
                                        TimeScale.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Double> builderOne = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesOne =
@@ -262,8 +262,8 @@ public class SingleValuedForecastRetrieverTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                Instant.parse( T2023_04_01T17_00_00Z ) ),
                                        TimeScale.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       VARIABLE_NAME,
+                                       FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Double> builderTwo = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeriesTwo =
@@ -281,10 +281,12 @@ public class SingleValuedForecastRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                                                           .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
-                                                           .setUnitMapper( this.unitMapper )
+                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setFeature( FEATURE )
                                                            .setLeftOrRightOrBaseline( LRB )
+                                                           .setUnitMapper( this.unitMapper )
                                                            .build();
 
         // Get the time-series
@@ -300,8 +302,10 @@ public class SingleValuedForecastRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                                                           .setFeaturesCache( this.featuresCache )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableFeatureId( this.variableFeatureId )
+                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setFeature( FEATURE )
                                                            .setUnitMapper( this.unitMapper )
                                                            .setLeftOrRightOrBaseline( LRB )
                                                            .build();
@@ -341,9 +345,7 @@ public class SingleValuedForecastRetrieverTest
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
-        this.testDatabase.createVariableTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
-        this.testDatabase.createVariableFeatureTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
@@ -414,24 +416,10 @@ public class SingleValuedForecastRetrieverTest
         assertEquals( 1, rows );
 
         // Add a feature
-        FeatureDetails feature = new FeatureDetails();
-        feature.setLid( "FEAT" );
+        FeatureDetails feature = new FeatureDetails( FEATURE );
         feature.save( this.wresDatabase );
 
         assertNotNull( feature.getId() );
-
-        // Add a variable
-        VariableDetails variable = new VariableDetails();
-        variable.setVariableName( "VAR" );
-        variable.save( this.wresDatabase );
-
-        assertNotNull( variable.getId() );
-
-        // Get (and add) a variablefeature
-        // There is no wres abstraction to help with this, but there is a static helper
-        this.variableFeatureId = this.featuresCache.getVariableFeatureByFeature( feature, variable.getId() );
-
-        assertNotNull( this.variableFeatureId );
 
         // Get the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -461,59 +449,28 @@ public class SingleValuedForecastRetrieverTest
 
         TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
-        String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
-                                  + "ensemble_id,"
-                                  + "measurementunit_id,"
-                                  + "initialization_date,"
-                                  + "scale_period,"
-                                  + "scale_function,"
-                                  + "source_id ) "
-                                  + "VALUES (?,"
-                                  + "?,"
-                                  + "?,"
-                                  + "(?)::timestamp without time zone,"
-                                  + "?,"
-                                  + "?,"
-                                  + "? )";
-
-        DataScripter seriesOneScript = new DataScripter( this.wresDatabase,
-                                                         timeSeriesInsert );
-
-        int rowAdded = seriesOneScript.execute( this.variableFeatureId,
-                                                ensembleId,
-                                                measurementUnitId,
-                                                firstReference.toString(),
-                                                timeScale.getPeriod().toMinutesPart(),
-                                                timeScale.getFunction().name(),
-                                                sourceId );
-
-        // One row added
-        assertEquals( 1, rowAdded );
-
-        assertNotNull( seriesOneScript.getInsertedIds() );
-        assertEquals( 1, seriesOneScript.getInsertedIds().size() );
-
-        Integer firstSeriesId = seriesOneScript.getInsertedIds().get( 0 ).intValue();
+        wres.io.data.details.TimeSeries firstTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     measurementUnitId,
+                                                     firstReference,
+                                                     sourceId,
+                                                     VARIABLE_NAME,
+                                                     feature.getId() );
+        firstTraceRow.setTimeScale( timeScale );
+        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
         // Add the second series
-        DataScripter seriesTwoScript = new DataScripter( this.wresDatabase,
-                                                         timeSeriesInsert );
-
-        int rowAddedTwo = seriesTwoScript.execute( this.variableFeatureId,
-                                                   ensembleId,
-                                                   measurementUnitId,
-                                                   secondReference.toString(),
-                                                   timeScale.getPeriod().toMinutesPart(),
-                                                   timeScale.getFunction().name(),
-                                                   sourceId );
-
-        // One row added
-        assertEquals( 1, rowAddedTwo );
-
-        assertNotNull( seriesTwoScript.getInsertedIds() );
-        assertEquals( 1, seriesTwoScript.getInsertedIds().size() );
-
-        Integer secondSeriesId = seriesTwoScript.getInsertedIds().get( 0 ).intValue();
+        wres.io.data.details.TimeSeries secondTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     measurementUnitId,
+                                                     secondReference,
+                                                     sourceId,
+                                                     VARIABLE_NAME,
+                                                     feature.getId() );
+        secondTraceRow.setTimeScale( timeScale );
+        int secondTraceRowId = secondTraceRow.getTimeSeriesID();
 
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );
@@ -528,8 +485,8 @@ public class SingleValuedForecastRetrieverTest
         // Insert the time-series values into the db
         double forecastValue = valueStart;
         Map<Integer, Instant> series = new TreeMap<>();
-        series.put( firstSeriesId, firstReference );
-        series.put( secondSeriesId, secondReference );
+        series.put( firstTraceRowId, firstReference );
+        series.put( secondTraceRowId, secondReference );
 
         // Iterate and add the series values
         for ( Map.Entry<Integer, Instant> nextSeries : series.entrySet() )

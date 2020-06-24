@@ -18,8 +18,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -137,7 +138,7 @@ public class PoolSupplierTest
     private static final Instant T2551_03_17T00_00_00Z = Instant.parse( "2551-03-17T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "STREAMFLOW";
-    private static final String FEATURE_NAME = "FAKE2";
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "DRRC2" );
     private static final String UNIT = "CMS";
 
     private static TimeSeriesMetadata getBoilerplateMetadata()
@@ -416,7 +417,9 @@ public class PoolSupplierTest
 
         // Basic metadata
         this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                           DatasetIdentifier.of( FeatureKey.of( "FAKE2" ), "STREAMFLOW" ) );
+                                           DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "FAKE2" ),
+                                                                                   FeatureKey.of( "FAKE2" ),
+                                                                                   null ), "STREAMFLOW" ) );
 
         // Upscaler
         this.upscaler = TimeSeriesOfDoubleBasicUpscaler.of();

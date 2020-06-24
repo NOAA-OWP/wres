@@ -14,10 +14,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 
@@ -42,9 +43,9 @@ public final class BoxPlotStatisticTest
     public void beforeEachTest()
     {
         //Build a statistic
-        final Location locA = FeatureKey.of( "A" );
+        final FeatureKey locA = FeatureKey.of( "A" );
         final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( locA,
+                                                                              DatasetIdentifier.of( new FeatureTuple( locA, locA, locA ),
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
@@ -66,9 +67,9 @@ public final class BoxPlotStatisticTest
     public void testEquals()
     {
 
-        final Location locA = FeatureKey.of( "A" );
+        final FeatureKey locA = FeatureKey.of( "A" );
         final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( locA,
+                                                                              DatasetIdentifier.of( new FeatureTuple( locA, locA, locA ),
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
@@ -115,7 +116,7 @@ public final class BoxPlotStatisticTest
 
         // Unequal metadata
         final StatisticMetadata mb = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( locA,
+                                                                              DatasetIdentifier.of( new FeatureTuple( locA, locA, locA ),
                                                                                                     "B",
                                                                                                     "E" ) ),
                                                            10,
@@ -157,9 +158,9 @@ public final class BoxPlotStatisticTest
         assertEquals( bpa.hashCode(), bpa.hashCode() );
 
         // Consistent with equals
-        final Location locA = FeatureKey.of( "A" );
+        final FeatureKey locA = FeatureKey.of( "A" );
         final StatisticMetadata ma = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( locA,
+                                                                              DatasetIdentifier.of( new FeatureTuple( locA, locA, locA ),
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,

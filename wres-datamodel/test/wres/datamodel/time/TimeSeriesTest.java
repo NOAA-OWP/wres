@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
@@ -30,7 +31,7 @@ public class TimeSeriesTest
 {
 
     private static final String VARIABLE_NAME = "Chickens";
-    private static final String FEATURE_NAME = "Georgia";
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Georgia" );
     private static final String UNIT = "kg/h";
 
     /**

@@ -11,10 +11,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -22,6 +20,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -54,10 +53,7 @@ public final class ProbabilityOfFalseDetectionTest
     public void setUpBeforeEachTest()
     {
         pofd = ProbabilityOfFalseDetection.of();
-        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                        DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
-                                                                              "SQIN",
-                                                                              "HEFS" ) ),
+        meta = StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                      365,
                                      MeasurementUnit.of(),
                                      MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
