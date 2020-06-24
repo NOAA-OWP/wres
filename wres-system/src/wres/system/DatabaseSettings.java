@@ -101,6 +101,7 @@ final class DatabaseSettings
         LOGGER.debug( "Default db settings before applying settings xml and before applying system property overrides: {}",
                       this );
 
+
 		try
 		{
 			while ( reader.hasNext() )
@@ -703,6 +704,8 @@ final class DatabaseSettings
 
     private void applySystemPropertyOverrides()
 	{
+        validateSystemPropertiesRelatedToDatabase();
+
 		String usernameOverride = System.getProperty( "wres.username" );
 		if ( usernameOverride != null )
 		{
@@ -811,6 +814,28 @@ final class DatabaseSettings
             {
                 throw new IllegalStateException( "Unable to get connection.", se );
             }
+        }
+    }
+
+    /**
+     * Throws exception when essential system properties are not set properly.
+     */
+
+    private void validateSystemPropertiesRelatedToDatabase()
+    {
+        String zoneProperty = System.getProperty( "user.timezone" );
+
+        if ( !zoneProperty.equals( "UTC" ) )
+        {
+            // For both H2 and Postgres datetimes to work (as of 2020-06-22), the
+            // Java user.timezone must be set to UTC. It might not be required if
+            // we use unambiguous "with zone" columns in the timeseriesvalue tables.
+            // That is something to explore whenever refactoring timeseriesvalue.
+            throw new IllegalStateException( "It is required that the Java "
+                                             + "system property 'user.timezone'"
+                                             + " be set to 'UTC', e.g. "
+                                             + "-Duser.timezone=UTC (found "
+                                             + zoneProperty + " instead)." );
         }
     }
 }

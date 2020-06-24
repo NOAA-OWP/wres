@@ -15,13 +15,14 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -68,8 +69,6 @@ public class ReadValueManager
 
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
 
-    private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
-
     private final SystemSettings systemSettings;
     private final Database database;
     private final DataSources dataSourcesCache;
@@ -80,7 +79,6 @@ public class ReadValueManager
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
-    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
 
     ReadValueManager( SystemSettings systemSettings,
                       Database database,
@@ -177,6 +175,8 @@ public class ReadValueManager
                                      location, ioe );
                     }
                 }
+
+                return Collections.emptyList();
             }
         }
         else
@@ -228,17 +228,7 @@ public class ReadValueManager
             {
                 LOGGER.debug( "Parsing {}", forecast );
                 TimeSeries<Double> timeSeries = this.read( forecast );
-                TimeSeriesIngester ingester = TimeSeriesIngester.of( this.getSystemSettings(),
-                                                                     this.getDatabase(),
-                                                                     this.getFeaturesCache(),
-                                                                     this.getVariablesCache(),
-                                                                     this.getEnsemblesCache(),
-                                                                     this.getMeasurementUnitsCache(),
-                                                                     this.projectConfig,
-                                                                     this.dataSource,
-                                                                     this.lockManager,
-                                                                     timeSeries );
-                List<IngestResult> result = ingester.call();
+                List<IngestResult> result = this.ingest( timeSeries );
                 results.addAll( result );
             }
 
@@ -292,10 +282,30 @@ public class ReadValueManager
 
         Duration timeDuration = Duration.between( dataPointsList.get( 0 ).getTime(),
                                                   dataPointsList.get( 1 ).getTime() );
-        Instant basisDateTime = forecast.getBasisTime()
-                                        .toInstant();
-        Instant issuedDateTime = forecast.getIssuedTime()
-                                         .toInstant();
+
+        Map<ReferenceTimeType,Instant> datetimes = new HashMap<>( 2 );
+
+        if ( Objects.nonNull( forecast.getBasisTime() ) )
+        {
+            Instant basisDateTime = forecast.getBasisTime()
+                                            .toInstant();
+            datetimes.put( ReferenceTimeType.T0, basisDateTime );
+        }
+
+        if ( Objects.nonNull( forecast.getIssuedTime() ) )
+        {
+            Instant issuedDateTime = forecast.getIssuedTime()
+                                             .toInstant();
+            datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
+        }
+
+        if ( datetimes.isEmpty() )
+        {
+            LOGGER.warn( "Forecast at {} had neither a basis datetime nor an issued datetime. Skipping it.",
+                         location );
+            return null;
+        }
+
         // Get the time scale information, if available
         TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), location );
         String measurementUnit = forecast.getUnits()
@@ -310,8 +320,7 @@ public class ReadValueManager
                                             .getNwsName();
         FeatureKey feature = new FeatureKey( featureName, featureDescription, null, null );
         TimeSeriesMetadata metadata =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, basisDateTime,
-                                               ReferenceTimeType.ISSUED_TIME, issuedDateTime ),
+                TimeSeriesMetadata.of( datetimes,
                                        timeScale,
                                        variableName,
                                        feature,
@@ -459,6 +468,41 @@ public class ReadValueManager
                                           + "requests made to WRDS services "
                                           + "and furthermore could not get the "
                                           + "default SSLContext.", nsae );
+        }
+    }
+
+
+    /**
+     * Perform ingest of the given timeSeries.
+     *
+     * A step toward separating ingest classes from reading classes.
+     * Also facilitates testing.
+     * @param timeSeries The timeSeries to ingest
+     * @return The ingest results.
+     * @throws IngestException When an exception occurs during ingest.
+     */
+
+    List<IngestResult> ingest( TimeSeries<Double> timeSeries )
+            throws IngestException
+    {
+        TimeSeriesIngester ingester = TimeSeriesIngester.of( this.getSystemSettings(),
+                                                             this.getDatabase(),
+                                                             this.getFeaturesCache(),
+                                                             this.getVariablesCache(),
+                                                             this.getEnsemblesCache(),
+                                                             this.getMeasurementUnitsCache(),
+                                                             this.projectConfig,
+                                                             this.dataSource,
+                                                             this.lockManager,
+                                                             timeSeries );
+        try
+        {
+            return ingester.call();
+        }
+        catch ( IOException ioe )
+        {
+            throw new IngestException( "Failed to ingest data from "
+                                       + this.getLocation(), ioe );
         }
     }
 }

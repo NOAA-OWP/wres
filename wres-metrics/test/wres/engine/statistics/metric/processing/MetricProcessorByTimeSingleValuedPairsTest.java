@@ -41,7 +41,6 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -180,7 +179,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( FeatureKey.of( DRRC2 ),
+                                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
@@ -215,7 +214,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         StatisticMetadata expectedMeta =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( DRRC2 ),
+                                                         DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
                                                                                "SQIN",
                                                                                "HEFS" ),
                                                          expectedWindow,
@@ -317,7 +316,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( FeatureKey.of( "A" ),
+                                                                        DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                               STREAMFLOW ),
                                                                         firstWindow,
                                                                         thresholds ),
@@ -327,7 +326,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      MetricConstants.MAIN );
 
         StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( FeatureKey.of( "A" ),
+                                                                        DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                               STREAMFLOW ),
                                                                         secondWindow,
                                                                         thresholds ),
@@ -408,7 +407,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                   ThresholdDataType.LEFT_AND_RIGHT ) );
 
         SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                   DatasetIdentifier.of( FeatureKey.of( "A" ),
+                                                   DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                          STREAMFLOW ) );
 
         List<PairedStatistic<Instant, Duration>> expected = new ArrayList<>();
@@ -498,7 +497,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
         StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                               DatasetIdentifier.of( FeatureKey.of( "A" ),
+                                                                               DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                                      STREAMFLOW ),
                                                                                timeWindow,
                                                                                thresholds ),
@@ -560,7 +559,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( FeatureKey.of( DRRC2 ),
+                                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
@@ -592,7 +591,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  DatasetIdentifier.of( FeatureKey.of( DRRC2 ),
+                                                                                  DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
                                                                                                         "SQIN",
                                                                                                         "HEFS" ),
                                                                                   expectedWindow,
@@ -640,7 +639,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( FeatureKey.of( DRRC2 ),
+                                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
                                                                    .setTimeWindow( window )
@@ -674,7 +673,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           MeasurementUnit.of( "CMS" ) ) );
 
         StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  DatasetIdentifier.of( FeatureKey.of( DRRC2 ),
+                                                                                  DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
                                                                                                         "SQIN",
                                                                                                         "HEFS" ),
                                                                                   expectedWindow,
@@ -746,7 +745,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
         StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                               DatasetIdentifier.of( FeatureKey.of( "A" ),
+                                                                               DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                                      STREAMFLOW ),
                                                                                timeWindow,
                                                                                thresholds ),
@@ -777,7 +776,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Instant.MAX,
                                                  Duration.ZERO );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( DRRC2 ),
+                                                               .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "AHPS" ) )
                                                                .setTimeWindow( window )

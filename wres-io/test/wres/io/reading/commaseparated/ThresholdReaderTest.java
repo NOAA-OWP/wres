@@ -17,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.config.generated.FeatureType;
 import wres.config.generated.ThresholdFormat;
@@ -76,14 +75,14 @@ public class ThresholdReaderTest
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
 
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<String, Set<Threshold>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<String, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
         first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
@@ -102,9 +101,8 @@ public class ThresholdReaderTest
                                                      "C",
                                                      this.units ) );
 
-        Feature firstFeature =
-                new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( firstFeature ), first );
+        String firstFeature = "DRRC2";
+        expected.put( firstFeature, first );
 
         Set<Threshold> second = new TreeSet<>();
         second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
@@ -123,9 +121,8 @@ public class ThresholdReaderTest
                                                       "C",
                                                       this.units ) );
 
-        Feature secondFeature =
-                new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( secondFeature ), second );
+        String secondFeature = "DOLC2";
+        expected.put( secondFeature, second );
 
         // Compare
         assertEquals( expected, actual );
@@ -152,14 +149,14 @@ public class ThresholdReaderTest
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
 
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<String, Set<Threshold>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<String, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
         first.add( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
@@ -178,9 +175,8 @@ public class ThresholdReaderTest
                                  "G",
                                  this.units ) );
 
-        Feature firstFeature =
-                new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( firstFeature ), first );
+        String firstFeature = "DRRC2";
+        expected.put( firstFeature, first );
 
         Set<Threshold> second = new TreeSet<>();
         second.add( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
@@ -199,9 +195,8 @@ public class ThresholdReaderTest
                                   "G",
                                   this.units ) );
 
-        Feature secondFeature =
-                new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( secondFeature ), second );
+        String secondFeature = "DOLC2";
+        expected.put( secondFeature, second );
 
         // Compare
         assertTrue( "The actual thresholds do not match the expected thresholds.", actual.equals( expected ) );
@@ -227,14 +222,14 @@ public class ThresholdReaderTest
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<String, Set<Threshold>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<String, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
         first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
@@ -250,9 +245,8 @@ public class ThresholdReaderTest
                                                      ThresholdDataType.LEFT,
                                                      this.units ) );
 
-        Feature firstFeature =
-                new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( firstFeature ), first );
+        String firstFeature = "DRRC2";
+        expected.put( firstFeature, first );
 
         Set<Threshold> second = new TreeSet<>();
         second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
@@ -268,9 +262,8 @@ public class ThresholdReaderTest
                                                       ThresholdDataType.LEFT,
                                                       this.units ) );
 
-        Feature secondFeature =
-                new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( secondFeature ), second );
+        String secondFeature = "DOLC2";
+        expected.put( secondFeature, second );
 
         // Compare
         assertEquals( expected, actual );
@@ -296,14 +289,14 @@ public class ThresholdReaderTest
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<String, Set<Threshold>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<String, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
         first.add( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
@@ -319,9 +312,8 @@ public class ThresholdReaderTest
                                  ThresholdDataType.LEFT,
                                  this.units ) );
 
-        Feature firstFeature =
-                new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( firstFeature ), first );
+        String firstFeature = "DRRC2";
+        expected.put( firstFeature, first );
 
         Set<Threshold> second = new TreeSet<>();
         second.add( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
@@ -337,9 +329,8 @@ public class ThresholdReaderTest
                                   ThresholdDataType.LEFT,
                                   this.units ) );
 
-        Feature secondFeature =
-                new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( secondFeature ), second );
+        String secondFeature = "DOLC2";
+        expected.put( secondFeature, second );
 
         // Compare
         assertEquals( expected, actual );
@@ -365,14 +356,14 @@ public class ThresholdReaderTest
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<String, Set<Threshold>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<String, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
         first.add( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
@@ -384,9 +375,8 @@ public class ThresholdReaderTest
                                  ThresholdDataType.LEFT,
                                  this.units ) );
 
-        Feature firstFeature =
-                new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( firstFeature ), first );
+        String firstFeature = "DRRC2";
+        expected.put( firstFeature, first );
 
         Set<Threshold> second = new TreeSet<>();
         second.add( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
@@ -398,9 +388,8 @@ public class ThresholdReaderTest
                                   ThresholdDataType.LEFT,
                                   this.units ) );
 
-        Feature secondFeature =
-                new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null, null );
-        expected.put( FeaturePlus.of( secondFeature ), second );
+        String secondFeature = "DOLC2";
+        expected.put( secondFeature, second );
 
         // Compare
         assertEquals( expected, actual );

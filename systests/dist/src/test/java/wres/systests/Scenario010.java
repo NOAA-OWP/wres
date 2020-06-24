@@ -28,12 +28,12 @@ public class Scenario010
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "DRRC2_QME_HEFS_BRIER_SCORE.csv" ),
-                    Path.of( "DRRC2_QME_HEFS_BRIER_SCORE.png" ),
-                    Path.of( "DRRC2_QME_HEFS_MEAN_ERROR.csv" ),
-                    Path.of( "DRRC2_QME_HEFS_MEAN_ERROR.png" ),
-                    Path.of( "DRRC2_QME_HEFS_RELIABILITY_DIAGRAM_154800_SECONDS.csv" ),
-                    Path.of( "DRRC2_QME_HEFS_RELIABILITY_DIAGRAM_154800_SECONDS.png" ),                  
+            Set.of( Path.of( "DRRC2HSF_QME_HEFS_BRIER_SCORE.csv" ),
+                    Path.of( "DRRC2HSF_QME_HEFS_BRIER_SCORE.png" ),
+                    Path.of( "DRRC2HSF_QME_HEFS_MEAN_ERROR.csv" ),
+                    Path.of( "DRRC2HSF_QME_HEFS_MEAN_ERROR.png" ),
+                    Path.of( "DRRC2HSF_QME_HEFS_RELIABILITY_DIAGRAM_154800_SECONDS.csv" ),
+                    Path.of( "DRRC2HSF_QME_HEFS_RELIABILITY_DIAGRAM_154800_SECONDS.png" ),
                     Path.of( "pairs.csv" ) );       
     
     private ScenarioInformation scenarioInfo;

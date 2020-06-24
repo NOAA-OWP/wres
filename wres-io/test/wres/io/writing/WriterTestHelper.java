@@ -18,11 +18,12 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxPlotStatistic;
@@ -106,18 +107,8 @@ public class WriterTestHelper
 
     public static Feature getMockedFeature( String locationId )
     {
-        return new Feature( null,
-                            null,
-                            null,
-                            null,
-                            null,
+        return new Feature( locationId,
                             locationId,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
                             null );
     }
 
@@ -130,7 +121,7 @@ public class WriterTestHelper
     public static List<BoxPlotStatistics> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        String LID = "JUNP1";
+        FeatureKey LID = FeatureKey.of( "JUNP1" );
 
         // Create fake outputs
         TimeWindow timeOne =
@@ -148,7 +139,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataOne =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -209,7 +200,7 @@ public class WriterTestHelper
     public static List<BoxPlotStatistics> getBoxPlotPerPairForOnePool()
     {
         // location id
-        String LID = "JUNP1";
+        FeatureKey LID = FeatureKey.of( "JUNP1" );
 
         // Create fake outputs
         TimeWindow timeOne =
@@ -227,7 +218,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -277,7 +268,7 @@ public class WriterTestHelper
     {
 
         // location id
-        String LID = "CREC1";
+        FeatureKey LID = FeatureKey.of( "CREC1" );
 
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
@@ -295,7 +286,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -332,7 +323,7 @@ public class WriterTestHelper
     {
 
         // location id
-        String LID = "FTSC1";
+        FeatureKey LID = FeatureKey.of( "FTSC1" );
 
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
@@ -349,7 +340,7 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -381,7 +372,7 @@ public class WriterTestHelper
     {
 
         // location id
-        final String LID = "DRRC2";
+        final FeatureKey LID = FeatureKey.of( "DRRC2" );
 
         TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
@@ -391,7 +382,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataA =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -441,7 +432,7 @@ public class WriterTestHelper
     {
 
         // location id
-        final String LID = "DOLC2";
+        final FeatureKey LID = FeatureKey.of( "DOLC2" );
 
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
@@ -455,7 +446,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -488,7 +479,7 @@ public class WriterTestHelper
     {
 
         // location id
-        final String LID = "FTSC1";
+        final FeatureKey LID = FeatureKey.of( "FTSC1" );
 
         TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
@@ -498,7 +489,7 @@ public class WriterTestHelper
                                                      ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( FeatureKey.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadataA =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),

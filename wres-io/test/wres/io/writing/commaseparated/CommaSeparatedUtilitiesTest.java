@@ -11,7 +11,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -25,6 +26,8 @@ import wres.datamodel.time.TimeWindow;
 
 public class CommaSeparatedUtilitiesTest
 {
+    private static final FeatureKey FEATURE_ONE = FeatureKey.of( "fooBasin" );
+    private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( FEATURE_ONE, FEATURE_ONE, FEATURE_ONE );
 
     private TimeWindow timeWindow;
 
@@ -90,7 +93,7 @@ public class CommaSeparatedUtilitiesTest
     public void testGetFeatureNameFromMetadataWithNamedLocation()
     {
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( FeatureKey.of( "fooBasin" ), "barVariable" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( FEATURE_TUPLE, "barVariable" );
 
         SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )
@@ -109,7 +112,7 @@ public class CommaSeparatedUtilitiesTest
     public void testGetFeatureNameFromMetadataWithNullLocation()
     {
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( (Location) null, "barVariable" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( (FeatureTuple) null, "barVariable" );
 
         SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )

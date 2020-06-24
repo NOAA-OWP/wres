@@ -13,6 +13,7 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
@@ -55,7 +56,7 @@ public class TimeSeriesPairerByExactTimeTest
     private static final String APPLE = "apple";
 
     private static final String VARIABLE_NAME = "Fruit";
-    private static final String FEATURE_NAME = "Tropics";
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadata()
@@ -268,7 +269,7 @@ public class TimeSeriesPairerByExactTimeTest
                                                                         T2551_03_17T12_00_00Z ),
                                                                 TimeScale.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
-                                                                "FAKE2",
+                                                                FeatureKey.of( "FAKE2" ),
                                                                 "CMS" );
         SortedSet<Event<Double>> firstEvents = new TreeSet<>();
         firstEvents.add( Event.of( T2551_03_17T15_00_00Z, 73.0 ) );
@@ -290,7 +291,7 @@ public class TimeSeriesPairerByExactTimeTest
                                                                         T2551_03_18T00_00_00Z ),
                                                                 TimeScale.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
-                                                                "FAKE2",
+                                                                FeatureKey.of( "FAKE2" ),
                                                                 "CMS" );
         SortedSet<Event<Double>> secondEvents = new TreeSet<>();
         secondEvents.add( Event.of( T2551_03_18T03_00_00Z, 131.0 ) );

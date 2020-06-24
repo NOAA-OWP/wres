@@ -14,7 +14,6 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -55,7 +54,7 @@ public final class SumOfSquareErrorTest
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
+                                                                              DatasetIdentifier.of( MetricTestDataFactory.getLocation( "DRRC2" ),
                                                                                                     "SQIN",
                                                                                                     "HEFS" ) ),
                                                            input.getRawData().size(),

@@ -41,7 +41,6 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -53,6 +52,7 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindow;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -612,9 +612,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                          Duration.ofHours( 24 ) );
 
         SampleMetadata expectedSampleMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
-                                                                                     "SQIN",
-                                                                                     "HEFS" ),
+                                                               DatasetIdentifier.of(
+                                                                       Boilerplate.getFeatureTuple(),
+                                                                       "SQIN",
+                                                                       "HEFS" ),
                                                                expectedWindow,
                                                                null );
 

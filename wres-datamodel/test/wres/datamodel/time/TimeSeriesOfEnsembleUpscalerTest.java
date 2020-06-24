@@ -13,6 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
@@ -26,7 +27,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 public class TimeSeriesOfEnsembleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
-    private static final String FEATURE_NAME = "Tropics";
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,

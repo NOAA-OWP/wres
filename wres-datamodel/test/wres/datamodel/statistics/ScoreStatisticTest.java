@@ -7,8 +7,9 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 
@@ -27,27 +28,30 @@ public final class ScoreStatisticTest
     @Test
     public void testEquals()
     {
-        final Location l1 = FeatureKey.of( "A" );
+        final FeatureKey l1 = FeatureKey.of( "A" );
+        final FeatureTuple locationOne = new FeatureTuple( l1, l1, l1 );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+                                                                              DatasetIdentifier.of( locationOne,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
                                                            MeasurementUnit.of(),
                                                            MetricConstants.MEAN_ERROR,
                                                            MetricConstants.MAIN );
-        final Location l2 = FeatureKey.of( "A" );
+        final FeatureKey l2 = FeatureKey.of( "B" );
+        final FeatureTuple locationTwo = new FeatureTuple( l2, l2, l2 );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
+                                                                              DatasetIdentifier.of( locationTwo,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            11,
                                                            MeasurementUnit.of(),
                                                            MetricConstants.MEAN_ERROR,
                                                            MetricConstants.MAIN );
-        final Location l3 = FeatureKey.of( "B" );
+        final FeatureKey l3 = FeatureKey.of( "B" );
+        final FeatureTuple locationThree = new FeatureTuple( l3, l3, l3 );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l3,
+                                                                              DatasetIdentifier.of( locationThree,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
@@ -76,9 +80,10 @@ public final class ScoreStatisticTest
     @Test
     public void testToString()
     {
-        final Location l1 = FeatureKey.of( "A" );
+        final FeatureKey l1 = FeatureKey.of( "A" );
+        final FeatureTuple locationOne = new FeatureTuple( l1, l1, l1 );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+                                                                              DatasetIdentifier.of( locationOne,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
@@ -97,18 +102,20 @@ public final class ScoreStatisticTest
     @Test
     public void testGetMetadata()
     {
-        final Location l1 = FeatureKey.of( "A" );
+        final FeatureKey l1 = FeatureKey.of( "A" );
+        final FeatureTuple locationOne = new FeatureTuple( l1, l1, l1 );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+                                                                              DatasetIdentifier.of( locationOne,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
                                                            MeasurementUnit.of(),
                                                            MetricConstants.MEAN_ERROR,
                                                            MetricConstants.MAIN );
-        final Location l2 = FeatureKey.of( "B" );
+        final FeatureKey l2 = FeatureKey.of( "B" );
+        final FeatureTuple locationTwo = new FeatureTuple( l2, l2, l2 );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
+                                                                              DatasetIdentifier.of( locationTwo,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
@@ -127,27 +134,30 @@ public final class ScoreStatisticTest
     @Test
     public void testHashCode()
     {
-        final Location l1 = FeatureKey.of( "A" );
+        final FeatureKey l1 = FeatureKey.of( "A" );
+        final FeatureTuple locationOne = new FeatureTuple( l1, l1, l1 );
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
+                                                                              DatasetIdentifier.of( locationOne,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
                                                            MeasurementUnit.of(),
                                                            MetricConstants.MEAN_ERROR,
                                                            MetricConstants.MAIN );
-        final Location l2 = FeatureKey.of( "A" );
+        final FeatureKey l2 = FeatureKey.of( "A" );
+        final FeatureTuple locationTwo = new FeatureTuple( l2, l2, l2 );
         final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
+                                                                              DatasetIdentifier.of( locationTwo,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,
                                                            MeasurementUnit.of(),
                                                            MetricConstants.MEAN_ERROR,
                                                            MetricConstants.MAIN );
-        final Location l3 = FeatureKey.of( "B" );
+        final FeatureKey l3 = FeatureKey.of( "B" );
+        final FeatureTuple locationThree = new FeatureTuple( l3, l3, l3 );
         final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l3,
+                                                                              DatasetIdentifier.of( locationThree,
                                                                                                     "B",
                                                                                                     "C" ) ),
                                                            10,

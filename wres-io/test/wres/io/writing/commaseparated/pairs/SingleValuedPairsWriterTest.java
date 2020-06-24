@@ -27,7 +27,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -68,7 +69,7 @@ public final class SingleValuedPairsWriterTest
     private static PoolOfPairs<Double, Double> pairsThree = null;
 
     private static final String VARIABLE_NAME = "ARMS";
-    private static final String FEATURE_NAME = "FRUIT";
+    private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
     private static final String UNIT = "SCOOBIES";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
@@ -76,7 +77,7 @@ public final class SingleValuedPairsWriterTest
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScale.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -85,7 +86,7 @@ public final class SingleValuedPairsWriterTest
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScale.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -95,7 +96,7 @@ public final class SingleValuedPairsWriterTest
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       timeScale,
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -105,7 +106,7 @@ public final class SingleValuedPairsWriterTest
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       timeScale,
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -125,7 +126,8 @@ public final class SingleValuedPairsWriterTest
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( FeatureKey.of( "PLUM" ), "RIFLE" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PLUM" ), FeatureKey.of( "PLUM" ), null ),
+                                                         "RIFLE" ) );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -145,7 +147,8 @@ public final class SingleValuedPairsWriterTest
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( FeatureKey.of( "ORANGE" ), "PISTOL" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "ORANGE" ), FeatureKey.of( "ORANGE" ), null ),
+                                                         "PISTOL" ) );
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
@@ -166,7 +169,8 @@ public final class SingleValuedPairsWriterTest
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( FeatureKey.of( "BANANA" ), "GRENADE" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "BANANA" ), FeatureKey.of( "BANANA" ), null ),
+                                                         "GRENADE" ) );
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
@@ -195,7 +199,9 @@ public final class SingleValuedPairsWriterTest
             // Set the measurement units and time scale
             SampleMetadata meta =
                     new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "PINEAPPLE" ),
+                                               .setIdentifier( DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
+                                                                                                       FeatureKey.of( "PINEAPPLE" ),
+                                                                                                       null ),
                                                                                      "MORTARS" ) )
                                                .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )
