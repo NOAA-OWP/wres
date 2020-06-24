@@ -313,7 +313,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
                     properties.setProperty( propertyName, updated );
 
-                    LOGGER.debug( "The embedded broker was configured with a binding to TCP port 0 for AMQP messages "
+                    LOGGER.debug( "The embedded broker was configured with a binding to TCP port 0 for AMQP traffic "
                                   + "but is actually bound to TCP port {}. Updated the configured TCP port to reflect "
                                   + "the bound port. The configured property is {}={}. The updated property is "
                                   + "{}={}.",

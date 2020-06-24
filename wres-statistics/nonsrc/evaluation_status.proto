@@ -32,6 +32,10 @@ message EvaluationStatus
     	ONGOING = 1;
     	COMPLETE_REPORTED_SUCCESS = 2;
     	COMPLETE_REPORTED_FAILURE = 3;
+
+        GROUP_COMPLETE_REPORTED_SUCCESS = 4;
+        // A message group has been completed. The group identifier is assumed to 
+        // be part of the metadata associated with the messaging protocol.
     }
     
     CompletionStatus completion_status = 3;
@@ -39,6 +43,18 @@ message EvaluationStatus
     repeated EvaluationStatusEvent status_events = 4;
     // Zero or more caller-facing status events.
     
+    int64 message_count = 5;
+    // Number of messages that were published, where applicable, excluding status
+    // messages. This is the expected number of messages a client consumer should 
+    // receive. Always set when the completion status indicates that a stage has 
+    // been completed.
+
+    int64 status_message_count = 6;
+    // Number of evaluation status messages (like this one) that were published, 
+    // where applicable. This is the expected number of messages a client 
+    // consumer should receive. Always set when the completion status indicates 
+    // that an evaluation has been completed.
+
     message EvaluationStatusEvent
     {
         /*A message that encapsulates an evaluation status event, such as

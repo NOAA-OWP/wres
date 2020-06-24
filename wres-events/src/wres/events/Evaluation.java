@@ -4,12 +4,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -24,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 
+import net.jcip.annotations.Immutable;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -56,10 +60,21 @@ import wres.statistics.generated.Statistics;
  * @author james.brown@hydrosolved.com
  */
 
+@Immutable
 public class Evaluation implements Closeable
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Evaluation.class );
+
+    private static final String DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION =
+            " discovered an evaluation message with missing information. ";
+
+    private static final String WHILE_PUBLISHING_TO_EVALUATION = "While publishing to evaluation ";
+
+    private static final String CANNOT_BUILD_AN_EVALUATION_WITHOUT_ONE_OR_MORE_SUBSCRIBERS =
+            "Cannot build an evaluation without one or more subscribers for ";
+
+    private static final String MESSAGE_FROM_A_BYTEBUFFER = " message from a bytebuffer.";
 
     /**
      * Used to generate unique evaluation identifiers.
@@ -84,19 +99,6 @@ public class Evaluation implements Closeable
      */
 
     private static final String STATISTICS_QUEUE = "statistics";
-
-    /**
-     * Repeated error message on failing to find subscribers.
-     */
-
-    private static final String CANNOT_BUILD_AN_EVALUATION_WITHOUT_ONE_OR_MORE_SUBSCRIBERS =
-            "Cannot build an evaluation without one or more subscribers for ";
-
-    /**
-     * Repeated error message on mapping from a bytebuffer to a message.
-     */
-
-    private static final String MESSAGE_FROM_A_BYTEBUFFER = " message from a bytebuffer.";
 
     /**
      * A publisher for {@link wres.statistics.generated.Evaluation} messages.
@@ -141,6 +143,39 @@ public class Evaluation implements Closeable
     private final String evaluationId;
 
     /**
+     * Is <code>true</code> if this evaluation has one or more subscribers for message groups. If <code>true</code>,
+     * then any attempt to publish a message must be accompanied by a message group identifier.
+     */
+
+    private final boolean hasGroupSubscriptions;
+
+    /**
+     * The total message count, excluding evaluation status messages. This is one more than the number of statistics
+     * messages because an evaluation begins with an evaluation description message.
+     */
+
+    private final AtomicInteger messageCount;
+
+    /**
+     * The total number of evaluation status messages.
+     */
+
+    private final AtomicInteger statusMessageCount;
+
+    /**
+     * Monitors the completion state of an evaluation, allowing for a graceful exit.
+     */
+
+    private final CompletionTracker completionTracker;
+
+    /**
+     * An object that contains a completion status message and a latch that counts to zero when an evaluation has been 
+     * notified complete.
+     */
+
+    private final CompletionStatusEvent completionEvent;
+
+    /**
      * Returns the unique evaluation identifier.
      * 
      * @return the evaluation identifier
@@ -156,27 +191,23 @@ public class Evaluation implements Closeable
      * 
      * @param evaluation the evaluation message
      * @param broker the broker
-     * @param consumerGroup the consumers to subscribe
+     * @param consumers the consumers to subscribe
      * @return an open evaluation
      * @throws NullPointerException if any input is null
      */
 
     public static Evaluation open( wres.statistics.generated.Evaluation evaluation,
                                    BrokerConnectionFactory broker,
-                                   ConsumerGroup consumerGroup )
+                                   Consumers consumers )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( broker );
-        Objects.requireNonNull( consumerGroup );
+        Objects.requireNonNull( consumers );
 
-        Builder builder = new Builder();
-        builder.setBroker( broker )
-               .setEvaluation( evaluation );
-        consumerGroup.getEvaluationStatusConsumers().forEach( builder::addEvaluationStatusSubscriber );
-        consumerGroup.getEvaluationConsumers().forEach( builder::addEvaluationSubscriber );
-        consumerGroup.getStatisticsConsumers().forEach( builder::addStatisticsSubscriber );
-
-        return builder.build();
+        return new Builder().setBroker( broker )
+                            .setEvaluation( evaluation )
+                            .setConsumers( consumers )
+                            .build();
     }
 
     /**
@@ -187,34 +218,57 @@ public class Evaluation implements Closeable
 
     public void publish( EvaluationStatus status )
     {
-        Objects.requireNonNull( status );
-
-        ByteBuffer body = ByteBuffer.wrap( status.toByteArray() );
-        
-
-        // Provide a hint to the application to await consumption on closing an evaluation
-        this.evaluationStatusSubscribers.advanceCountToAwaitOnClose();
-        
-        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, null );
+        this.publish( status, null );
     }
 
     /**
      * Publish an {@link wres.statistics.generated.Statistics} message for the current evaluation.
      * 
      * @param statistics the statistics message
-     * @param groupId an optional group identifier to group statistics for consumption
+     */
+
+    public void publish( Statistics statistics )
+    {
+        this.publish( statistics, null );
+    }
+
+    /**
+     * Publish an {@link wres.statistics.generated.EvaluationStatus} message for the current evaluation.
+     * 
+     * @param status the status message
+     * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
+     * @throws NullPointerException if the message is null or the groupId is null when there are group subscriptions
+     */
+
+    public void publish( EvaluationStatus status, String groupId )
+    {
+        this.validateStatusMessage( status, groupId );
+
+        ByteBuffer body = ByteBuffer.wrap( status.toByteArray() );
+
+        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, groupId );
+
+        this.statusMessageCount.getAndIncrement();
+    }
+
+    /**
+     * Publish an {@link wres.statistics.generated.Statistics} message for the current evaluation.
+     * 
+     * @param statistics the statistics message
+     * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
+     * @throws NullPointerException if the message is null or the groupId is null when there are group subscriptions
      */
 
     public void publish( Statistics statistics, String groupId )
     {
         Objects.requireNonNull( statistics );
+        this.validateGroupId( groupId );
 
         ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
-        
-        // Provide a hint to the application to await consumption on closing an evaluation
-        this.statisticsSubscribers.advanceCountToAwaitOnClose();
 
         this.internalPublish( body, this.statisticsPublisher, Evaluation.STATISTICS_QUEUE, groupId );
+
+        this.messageCount.getAndIncrement();
 
         // Update the status
         String message = "Published a new statistics message for evaluation " + this.getEvaluationId()
@@ -227,8 +281,8 @@ public class Evaluation implements Closeable
                                                                                           .setEventType( StatusMessageType.INFO )
                                                                                           .setEventMessage( message ) )
                                                    .build();
-        
-        this.publish( ongoing );
+
+        this.publish( ongoing, groupId );
     }
 
     @Override
@@ -242,28 +296,64 @@ public class Evaluation implements Closeable
     {
         LOGGER.debug( "Closing evaluation {} gracefully.", this.getEvaluationId() );
 
-        // Close gracefully, once consumption has completed
-        Phaser statisticsPhaser = this.statisticsSubscribers.getStatus();
-        Phaser statusPhaser = this.evaluationStatusSubscribers.getStatus();
-        Phaser evaluationPhaser = this.evaluationSubscribers.getStatus();
+        LOGGER.debug( "Awaiting receipt of completion status message for evaluation {}...", this.getEvaluationId() );
 
-        LOGGER.debug( "While closing evaluation {}, found {} evaluation messages, {} statistics messages and {} "
-                      + "evaluation status messages awaiting consumption...",
+        Instant then = Instant.now();
+
+        try
+        {
+            this.completionEvent.await();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            throw new EvaluationEventException( "Interrupted while waiting for completion status event for evaluuation "
+                                                + this.getEvaluationId() );
+        }
+
+        EvaluationStatus completionMessage = this.completionEvent.getStatus();
+
+        LOGGER.debug( "Received notification of completion for evaluation {}. The completion message is {}"
+                      + "Awaiting local consumption...",
                       this.getEvaluationId(),
-                      evaluationPhaser.getRegisteredParties(),
-                      statisticsPhaser.getRegisteredParties(),
-                      statusPhaser.getRegisteredParties() );
+                      completionMessage );
 
-        // Wait for enqueued messages in the absence of failure. Wait for status messages later, as there is
-        // one more to publish on success
-        statisticsPhaser.awaitAdvance( 0 );
-        evaluationPhaser.awaitAdvance( 0 );
+        // Awaiting the completion notifier implicitly asserts that the number of messages published and consumed is
+        // equal because the notifier tracks the number of actual consumptions and obtains the expected number of 
+        // consumptions from the completion event message. If the actual consumption count is smaller, the evaluation 
+        // will wait until a safety timeout that resets on progress. If it is larger, an exception can be expected.
+        // See the CompletionTracker for details.
+        try
+        {
+            this.completionTracker.await( completionMessage );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            throw new EvaluationEventException( "Interrupted while waiting for completion of evaluation "
+                                                + this.getEvaluationId() );
+        }
+        catch ( IllegalArgumentException f )
+        {
+            throw new EvaluationEventException( "Failure while waiting for the completion of evaluation "
+                                                + this.getEvaluationId()
+                                                + " with completion status: "
+                                                + this.completionTracker,
+                                                f );
+        }
 
         Instant now = Instant.now();
-        long seconds = now.getEpochSecond();
-        int nanos = now.getNano();
 
-        // Failure?
+        LOGGER.debug( "Completed local consumption for evaluation {} and received completition notifier, {} {} "
+                      + "elapsed between notification of completion and the end of consumption. Ready to validate and "
+                      + "then close this evaluation.",
+                      this.getEvaluationId(),
+                      this.completionTracker,
+                      Duration.between( then, now ) );
+
+        // Exceptions uncovered?
         // Perhaps failing on the delivery of evaluation status messages is too high a bar?
         boolean failed = Objects.nonNull( this.evaluationSubscribers.getFailedOn() )
                          || Objects.nonNull( this.evaluationStatusSubscribers.getFailedOn() )
@@ -299,19 +389,6 @@ public class Evaluation implements Closeable
                                                 + "letter queue (DLQ) for further inspection and removal." );
         }
 
-        // Success
-        EvaluationStatus ongoing = EvaluationStatus.newBuilder()
-                                                   .setCompletionStatus( CompletionStatus.COMPLETE_REPORTED_SUCCESS )
-                                                   .setEvaluationEndTime( Timestamp.newBuilder()
-                                                                                   .setSeconds( seconds )
-                                                                                   .setNanos( nanos ) )
-                                                   .build();
-
-        this.publish( ongoing );
-        
-        // Await consumption of the final status message
-        statusPhaser.awaitAdvance( 0 );
-        
         this.evaluationPublisher.close();
         this.evaluationSubscribers.close();
         this.evaluationStatusPublisher.close();
@@ -320,6 +397,29 @@ public class Evaluation implements Closeable
         this.statisticsSubscribers.close();
 
         LOGGER.debug( "Closed evaluation {}.", this.getEvaluationId() );
+    }
+
+    /**
+     * Returns the expected number of messages, excluding evaluation status messages. This is one more than the number
+     * of statistics messages because an evaluation starts with an evaluation description message.
+     * 
+     * @return the published message count
+     */
+
+    public int getPublishedMessageCount()
+    {
+        return this.messageCount.get();
+    }
+
+    /**
+     * Returns the expected number of evaluation status messages.
+     * 
+     * @return the evaluation status message count
+     */
+
+    public int getPublishedStatusMessageCount()
+    {
+        return this.statusMessageCount.get();
     }
 
     /**
@@ -343,22 +443,10 @@ public class Evaluation implements Closeable
         private wres.statistics.generated.Evaluation evaluation;
 
         /**
-         * List of subscriptions to evaluation status events.
+         * Consumers of evaluation events.
          */
 
-        private List<Consumer<EvaluationStatus>> statusConsumers = new ArrayList<>();
-
-        /**
-         * List of subscriptions to evaluation events.
-         */
-
-        private List<Consumer<wres.statistics.generated.Evaluation>> evaluationConsumers = new ArrayList<>();
-
-        /**
-         * List of subscriptions to statistics events.
-         */
-
-        private List<Consumer<Statistics>> statisticsConsumers = new ArrayList<>();
+        private Consumers consumers;
 
         /**
          * Sets the broker.
@@ -389,43 +477,15 @@ public class Evaluation implements Closeable
         }
 
         /**
-         * Adds a subscription to evaluation status events.
+         * Adds a collection of consumers of evaluation events.
          * 
-         * @param subscriber the consumer subscription
+         * @param consumers the consumer subscription
          * @return this builder 
          */
 
-        public Builder addEvaluationStatusSubscriber( Consumer<EvaluationStatus> subscriber )
+        public Builder setConsumers( Consumers consumers )
         {
-            this.statusConsumers.add( subscriber );
-
-            return this;
-        }
-
-        /**
-         * Adds a subscription to evaluation events.
-         * 
-         * @param subscriber the consumer subscription
-         * @return this builder
-         */
-
-        public Builder addEvaluationSubscriber( Consumer<wres.statistics.generated.Evaluation> subscriber )
-        {
-            this.evaluationConsumers.add( subscriber );
-
-            return this;
-        }
-
-        /**
-         * Adds a subscription to statistics events.
-         * 
-         * @param subscriber the consumer subscription
-         * @return this builder
-         */
-
-        public Builder addStatisticsSubscriber( Consumer<Statistics> subscriber )
-        {
-            this.statisticsConsumers.add( subscriber );
+            this.consumers = consumers;
 
             return this;
         }
@@ -443,6 +503,83 @@ public class Evaluation implements Closeable
     }
 
     /**
+     * Validates a status message for expected content and looks for the presence of a group identifier where required. 
+     * 
+     * @param groupId a group identifier
+     * @throws NullPointerException if the group identifier is null
+     */
+
+    private void validateStatusMessage( EvaluationStatus message, String groupId )
+    {
+        Objects.requireNonNull( message );
+
+        // Group identifier required in some cases
+        if ( message.getCompletionStatus() == CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
+        {
+            this.validateGroupId( groupId );
+
+            if ( message.getMessageCount() == 0 )
+            {
+                throw new IllegalArgumentException( WHILE_PUBLISHING_TO_EVALUATION + this.getEvaluationId()
+                                                    + DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION
+                                                    + "The expected message count is required when the completion "
+                                                    + "status reports "
+                                                    + CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS );
+            }
+        }
+
+        if ( message.getCompletionStatus() == CompletionStatus.COMPLETE_REPORTED_SUCCESS )
+        {
+
+            if ( message.getMessageCount() == 0 )
+            {
+                throw new IllegalArgumentException( WHILE_PUBLISHING_TO_EVALUATION + this.getEvaluationId()
+                                                    + DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION
+                                                    + "The expected message count is required when the completion "
+                                                    + "status reports "
+                                                    + CompletionStatus.COMPLETE_REPORTED_SUCCESS );
+            }
+            if ( message.getStatusMessageCount() == 0 )
+            {
+                throw new IllegalArgumentException( WHILE_PUBLISHING_TO_EVALUATION + this.getEvaluationId()
+                                                    + DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION
+                                                    + "The expected count of evaluation status messages is required "
+                                                    + "when the completion status reports "
+                                                    + CompletionStatus.COMPLETE_REPORTED_SUCCESS );
+            }
+        }
+    }
+
+    /**
+     * Looks for the presence of a group identifier and throws an exception when absent.
+     * 
+     * @param groupId a group identifier
+     * @throws NullPointerException if the group identifier is null
+     */
+
+    private void validateGroupId( String groupId )
+    {
+        if ( this.hasGroupSubscriptions() )
+        {
+            Objects.requireNonNull( groupId,
+                                    "Evaluation " + this.getEvaluationId()
+                                             + " has subscriptions to message groups. When publishing to this "
+                                             + "evaluation, a group identifier must be supplied." );
+        }
+    }
+
+    /**
+     * Returns <code>true</code> if the evaluation has subscriptions for message groups, otherwise <code>false</code>.
+     * 
+     * @return true if there are subscriptions for message groups
+     */
+
+    private boolean hasGroupSubscriptions()
+    {
+        return this.hasGroupSubscriptions;
+    }
+
+    /**
      * Builds an exception with the specified message.
      * 
      * @param builder the builder
@@ -454,15 +591,20 @@ public class Evaluation implements Closeable
 
     private Evaluation( Builder builder )
     {
-        // Set then validate
+        // Copy then validate
         BrokerConnectionFactory broker = builder.broker;
         List<Consumer<wres.statistics.generated.Evaluation>> evaluationSubs =
-                new ArrayList<>( builder.evaluationConsumers );
-        List<Consumer<EvaluationStatus>> statusSubs = new ArrayList<>( builder.statusConsumers );
-        List<Consumer<Statistics>> statisticsSubs = new ArrayList<>( builder.statisticsConsumers );
+                new ArrayList<>( builder.consumers.getEvaluationConsumers() );
+        List<Consumer<EvaluationStatus>> statusSubs =
+                new ArrayList<>( builder.consumers.getEvaluationStatusConsumers() );
+        List<Consumer<Statistics>> statisticsSubs = new ArrayList<>( builder.consumers.getStatisticsConsumers() );
+        List<OneGroupConsumer<Statistics>> groupedStatisticsSubs =
+                new ArrayList<>( builder.consumers.getGroupedStatisticsConsumers() );
+
         wres.statistics.generated.Evaluation evaluationMessage = builder.evaluation;
-        Objects.requireNonNull( builder.broker, "Cannot create an evaluation without a broker connection." );
-        Objects.requireNonNull( builder.evaluation, "Cannot create an evaluation without an evaluation message." );
+
+        Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
+        Objects.requireNonNull( evaluationMessage, "Cannot create an evaluation without an evaluation message." );
 
         if ( evaluationSubs.isEmpty() )
         {
@@ -476,7 +618,7 @@ public class Evaluation implements Closeable
                                                 + "evaluation status events." );
         }
 
-        if ( statisticsSubs.isEmpty() )
+        if ( statisticsSubs.isEmpty() && groupedStatisticsSubs.isEmpty() )
         {
             throw new IllegalArgumentException( CANNOT_BUILD_AN_EVALUATION_WITHOUT_ONE_OR_MORE_SUBSCRIBERS
                                                 + "evaluation statistics events." );
@@ -492,6 +634,18 @@ public class Evaluation implements Closeable
         }
 
         this.evaluationId = Evaluation.ID_GENERATOR.generate();
+        this.hasGroupSubscriptions = !groupedStatisticsSubs.isEmpty();
+
+        // Completion subscriber that tracks the completion status
+        this.completionEvent = new CompletionStatusEvent();
+
+        // Register with status subscribers
+        statusSubs.add( this.completionEvent );
+
+        this.completionTracker = CompletionTracker.of( evaluationSubs.size(),
+                                                       statisticsSubs.size(),
+                                                       statusSubs.size(),
+                                                       groupedStatisticsSubs );
 
         // Register publishers and subscribers
         try
@@ -504,6 +658,7 @@ public class Evaluation implements Closeable
                     new MessageSubscriber.Builder<EvaluationStatus>().setConnectionFactory( factory )
                                                                      .setDestination( status )
                                                                      .addSubscribers( statusSubs )
+                                                                     .setCompletionTracker( this.completionTracker )
                                                                      .setMapper( this.getStatusMapper() )
                                                                      .setEvaluationId( this.getEvaluationId() )
                                                                      .build();
@@ -514,6 +669,7 @@ public class Evaluation implements Closeable
                     new MessageSubscriber.Builder<wres.statistics.generated.Evaluation>().setConnectionFactory( factory )
                                                                                          .setDestination( evaluation )
                                                                                          .addSubscribers( evaluationSubs )
+                                                                                         .setCompletionTracker( this.completionTracker )
                                                                                          .setMapper( this.getEvaluationMapper() )
                                                                                          .setEvaluationId( this.getEvaluationId() )
                                                                                          .build();
@@ -524,6 +680,9 @@ public class Evaluation implements Closeable
                     new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
                                                                .setDestination( statistics )
                                                                .addSubscribers( statisticsSubs )
+                                                               .setCompletionTracker( this.completionTracker )
+                                                               .addGroupSubscribers( groupedStatisticsSubs )
+                                                               .setEvaluationStatusDestination( status )
                                                                .setMapper( this.getStatisticsMapper() )
                                                                .setEvaluationId( this.getEvaluationId() )
                                                                .build();
@@ -534,6 +693,9 @@ public class Evaluation implements Closeable
         }
 
         LOGGER.info( "Created a new evaluation with id {}.", evaluationId );
+
+        this.messageCount = new AtomicInteger();
+        this.statusMessageCount = new AtomicInteger();
 
         // Publish the evaluation and update the evaluation status
         this.internalPublish( evaluationMessage );
@@ -631,10 +793,9 @@ public class Evaluation implements Closeable
 
     private void internalPublish( ByteBuffer body, MessagePublisher publisher, String queue, String groupId )
     {
-
         // Published below, so increment by 1 here 
         String messageId = "ID:" + this.getEvaluationId() + "-m" + ( publisher.getMessageCount() + 1 );
-        
+
         try
         {
             publisher.publish( body, messageId, this.getEvaluationId(), groupId );
@@ -667,11 +828,10 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( evaluation );
 
         ByteBuffer body = ByteBuffer.wrap( evaluation.toByteArray() );
-        
-        // Provide a hint to the application to await consumption on closing an evaluation
-        this.evaluationSubscribers.advanceCountToAwaitOnClose();
 
         this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null );
+
+        this.messageCount.getAndIncrement();
     }
 
     /**
@@ -691,6 +851,45 @@ public class Evaluation implements Closeable
             byte[] buffer = new byte[20];
             random.nextBytes( buffer );
             return encoder.encodeToString( buffer );
+        }
+    }
+
+    /**
+     * Value object for storing a completion status message and a latch to wait until it is available.
+     * 
+     * @author james.brown@hydrosolved.com
+     */
+
+    private class CompletionStatusEvent implements Consumer<EvaluationStatus>
+    {
+
+        private final CountDownLatch latch = new CountDownLatch( 1 );
+
+        final AtomicReference<EvaluationStatus> statusMessage = new AtomicReference<>();
+
+        @Override
+        public void accept( EvaluationStatus message )
+        {
+            Objects.requireNonNull( message );
+
+            CompletionStatus status = message.getCompletionStatus();
+
+            if ( status == CompletionStatus.COMPLETE_REPORTED_SUCCESS
+                 || status == CompletionStatus.COMPLETE_REPORTED_FAILURE )
+            {
+                this.statusMessage.set( message );
+                this.latch.countDown();
+            }
+        }
+
+        private void await() throws InterruptedException
+        {
+            this.latch.await();
+        }
+
+        private EvaluationStatus getStatus()
+        {
+            return this.statusMessage.get();
         }
     }
 

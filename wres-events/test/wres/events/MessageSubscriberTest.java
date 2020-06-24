@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -17,8 +17,13 @@ import javax.naming.NamingException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.statistics.generated.EvaluationStatus;
+import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 
 /**
  * Tests the {@link MessageSubscriber}
@@ -42,44 +47,172 @@ public class MessageSubscriberTest
     }
 
     @Test
-    public void consumeOneMessageFilteredByEvaluationAndGroup()
+    public void consumeOneMessageFilteredByEvaluationId()
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Create and start a broker and open an evaluation, closing on completion
         Destination destination = MessageSubscriberTest.connections.getDestination( "status" );
         Function<ByteBuffer, Integer> mapper = buffer -> buffer.getInt();
-        AtomicInteger actual = new AtomicInteger();
-        Consumer<Integer> consumer = anInt -> actual.set( anInt );
+        AtomicInteger actualOne = new AtomicInteger();
+        Consumer<Integer> consumerOne = anInt -> actualOne.set( anInt );
 
         // Bytes sent, representing integer 1695609641
-        ByteBuffer sent = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );
+        ByteBuffer sentOne = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );
+
+        
+        // Mock completion: decrement latch when a new consumption is registered
+        CountDownLatch latch = new CountDownLatch( 1 );
+        CompletionTracker completionNotifier = Mockito.mock( CompletionTracker.class );
+        
+        Mockito.doAnswer( new Answer<>()
+        {
+            public Object answer( InvocationOnMock invocation )
+            {
+                latch.countDown();
+                return null;
+            }
+        } ).when( completionNotifier ).register();
 
         try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
                                                                 destination );
-              MessageSubscriber subscriber =
+              MessageSubscriber subscriberOne =
                       new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
                                                               .setDestination( destination )
                                                               .setMapper( mapper )
+                                                              .setCompletionTracker( completionNotifier )
                                                               .setEvaluationId( "someEvaluationId" )
-                                                              .setGroupId( "someGroupId" )
-                                                              .addSubscribers( List.of( consumer ) )
+                                                              .addSubscribers( List.of( consumerOne ) )
+                                                              .build(); )
+        {           
+            publisher.publish( sentOne,
+                               "ID:someId",
+                               "someEvaluationId" );
+            
+            // Must set the evaluation and group identifiers because messages are filtered by these           
+            latch.await();
+            
+            assertEquals( 1695609641, actualOne.get() );
+        }
+    }
+
+    @Test
+    public void consumeTwoMessagesFilteredByEvaluationIdAndGroupIdForTwoGroups()
+            throws IOException, NamingException, JMSException, InterruptedException
+    {
+        // Create and start a broker and open an evaluation, closing on completion
+        Destination statisticsDestination = MessageSubscriberTest.connections.getDestination( "statistics" );
+        Destination statusDestination = MessageSubscriberTest.connections.getDestination( "status" );
+        Function<ByteBuffer, Integer> mapper = buffer -> buffer.getInt();
+        AtomicInteger actualOne = new AtomicInteger();
+        AtomicInteger actualTwo = new AtomicInteger();
+
+        // Each consumer group adds two integers together from two separate integer messages
+        Function<List<Integer>, Integer> aggregator = list -> list.stream().mapToInt( Integer::intValue ).sum();
+        Consumer<Integer> consumerOne = anInt -> actualOne.set( anInt );
+        Consumer<Integer> consumerTwo = anInt -> actualTwo.set( anInt );
+        OneGroupConsumer<Integer> groupOne = OneGroupConsumer.of( consumerOne, aggregator, "someGroupId" );
+        OneGroupConsumer<Integer> groupTwo = OneGroupConsumer.of( consumerTwo, aggregator, "anotherGroupId" );
+
+        // Bytes sent, representing integers 1695609641, 243, 1746072600 and 7, respectively
+        ByteBuffer sentOne = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );
+        ByteBuffer sentTwo = ByteBuffer.wrap( new byte[] { (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0xf3 } );
+        ByteBuffer sentThree = ByteBuffer.wrap( new byte[] { (byte) 0x68, (byte) 0x12, (byte) 0xf4, (byte) 0x18 } );
+        ByteBuffer sentFour = ByteBuffer.wrap( new byte[] { (byte) 0x0, (byte) 0x0, (byte) 0x0, (byte) 0x7 } );
+
+        // Group complete message
+        EvaluationStatus status =
+                EvaluationStatus.newBuilder()
+                                .setCompletionStatus( CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
+                                .setMessageCount( 2 )
+                                .build();
+
+        ByteBuffer groupComplete = ByteBuffer.wrap( status.toByteArray() );
+        
+        // Mock completion: decrement latch when a new consumption is registered
+        CountDownLatch latchOne = new CountDownLatch( 2 );
+        CountDownLatch latchTwo = new CountDownLatch( 2 );
+        CompletionTracker completionNotifierOne = Mockito.mock( CompletionTracker.class );
+        CompletionTracker completionNotifierTwo = Mockito.mock( CompletionTracker.class );
+        
+        Mockito.doAnswer( new Answer<>()
+        {
+            public Object answer( InvocationOnMock invocation )
+            {
+                latchOne.countDown();
+
+                return null;
+            }
+        } ).when( completionNotifierOne ).register();
+        
+        Mockito.doAnswer( new Answer<>()
+        {
+            public Object answer( InvocationOnMock invocation )
+            {
+                latchTwo.countDown();
+
+                return null;
+            }
+        } ).when( completionNotifierTwo ).register();
+        
+        Mockito.when( completionNotifierOne.getExpectedMessagesPerGroup( "someGroupId" ) ).thenReturn( 2 );
+        Mockito.when( completionNotifierTwo.getExpectedMessagesPerGroup( "anotherGroupId" ) ).thenReturn( 2 );
+
+        try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
+                                                                statisticsDestination );
+              MessagePublisher statusPublisher =
+                      MessagePublisher.of( MessageSubscriberTest.connections.get(), statusDestination );
+              MessageSubscriber subscriberOne =
+                      new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
+                                                              .setDestination( statisticsDestination )
+                                                              .setEvaluationStatusDestination( statusDestination )
+                                                              .setMapper( mapper )
+                                                              .setEvaluationId( "someEvaluationId" )
+                                                              .setCompletionTracker( completionNotifierOne )
+                                                              .addGroupSubscribers( List.of( groupOne ) )
+                                                              .build();
+              MessageSubscriber subscriberTwo =
+                      new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
+                                                              .setDestination( statisticsDestination )
+                                                              .setEvaluationStatusDestination( statusDestination )
+                                                              .setMapper( mapper )
+                                                              .setEvaluationId( "someEvaluationId" )
+                                                              .setCompletionTracker( completionNotifierTwo )
+                                                              .addGroupSubscribers( List.of( groupTwo ) )
                                                               .build() )
         {
-            // Signal one message
-            subscriber.advanceCountToAwaitOnClose();
-
             // Must set the evaluation and group identifiers because messages are filtered by these
-            publisher.publish( sent,
-                               "ID:someId",
+            publisher.publish( sentOne,
+                               "ID:123",
                                "someEvaluationId",
                                "someGroupId" );
 
-            // Wait
-            Phaser phase = subscriber.getStatus();
-            phase.awaitAdvance( 0 );
+            publisher.publish( sentTwo,
+                               "ID:456",
+                               "someEvaluationId",
+                               "someGroupId" );
+            
+            // Group complete
+            statusPublisher.publish( groupComplete, "ID:131415", "someEvaluationId", "someGroupId" );
 
-            assertEquals( 1695609641, actual.get() );
+            publisher.publish( sentThree,
+                               "ID:789",
+                               "someEvaluationId",
+                               "anotherGroupId" );
+
+            publisher.publish( sentFour,
+                               "ID:101112",
+                               "someEvaluationId",
+                               "anotherGroupId" );
+
+            // Another group complete
+            statusPublisher.publish( groupComplete, "ID:161718", "someEvaluationId", "anotherGroupId" );
+            
+            latchOne.await();
+            latchTwo.await();
         }
+
+        assertEquals( 1695609641 + 243, actualOne.get() );
+        assertEquals( 1746072600 + 7, actualTwo.get() );
     }
 
     @AfterClass

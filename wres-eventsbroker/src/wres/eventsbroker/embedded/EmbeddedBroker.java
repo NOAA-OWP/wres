@@ -106,6 +106,9 @@ public class EmbeddedBroker implements Closeable
                                                             e );
         }
 
+        LOGGER.debug( "When starting the embedded broker, discovered the following bound ports {}.",
+                      this.getBoundPorts() );
+
         LOGGER.debug( "Finished starting embedded broker with launch options {}.", this.launchOptions );
     }
 
