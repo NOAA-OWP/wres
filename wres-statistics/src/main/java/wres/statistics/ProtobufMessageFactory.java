@@ -19,11 +19,12 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
@@ -157,7 +158,7 @@ public class ProtobufMessageFactory
 
         if ( metadata.hasIdentifier() && metadata.getIdentifier().hasGeospatialID() )
         {
-            Location location = metadata.getIdentifier().getGeospatialID();
+            FeatureTuple location = metadata.getIdentifier().getGeospatialID();
             Geometry geometry = ProtobufMessageFactory.parse( location );
             sample.addGeometries( geometry );
         }
@@ -796,34 +797,54 @@ public class ProtobufMessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.Geometry} from a 
-     * {@link wres.datamodel.sampledata.Location}.
-     * 
-     * TODO: map across the new FeatureTuple when it arrives and then delete this comment.
+     * {@link wres.datamodel.FeatureTuple}.
      * 
      * @param location the location from which to create a message
      * @return the message
      */
 
-    public static Geometry parse( wres.datamodel.sampledata.Location location )
+    public static Geometry parse( FeatureTuple location )
     {
         Objects.requireNonNull( location );
 
         Geometry.Builder builder = Geometry.newBuilder();
 
-        if ( location.hasLocationName() )
+        // TODO consider the right name the primary name because it is the right
+        // dataset that is being evaluated, the left and baseline are used for
+        // the purpose of evaluating the right. Or discover what makes most
+        // sense to users if they vehemently disagree with this idea.
+
+        if ( Objects.nonNull( location.getLeft()
+                                      .getName() ) )
         {
-            builder.setName( location.getLocationName() );
+            builder.setName( location.getLeft()
+                                     .getName() );
+        }
+        // Add the wkt, srid, description and right/baseline names, as available
+        if ( Objects.nonNull( location.getRight()
+                                      .getName() ) )
+        {
+            builder.setRightName( location.getRight()
+                                          .getName() );
         }
 
-        // Add the wkt, srid, description and right/baseline names, as available
+        FeatureKey baseline = location.getBaseline();
 
+        if ( Objects.nonNull( baseline )
+             && Objects.nonNull( baseline.getName() ) )
+        {
+            builder.setBaselineName( baseline.getName() );
+        }
+
+        // TODO: either add the other wkts, srids, descriptions or choose which
+        // one of the three to report. All should probably be included.
         return builder.build();
     }
 
     /**
      * Returns a {@link Pairs} from a {@link PoolOfPairs}.
      * 
-     * @param metadata the metadata
+     * @param pairs The pairs
      * @return a pairs message
      */
 

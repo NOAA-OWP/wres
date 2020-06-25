@@ -68,7 +68,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         //Check the results
         final DoubleScoreStatistic actual = this.msessn.apply( input );
         final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8338214896144127, m1 );
-        assertEquals( expected, actual );
+        assertEquals( expected.getData(), actual.getData() );
     }
 
     @Test

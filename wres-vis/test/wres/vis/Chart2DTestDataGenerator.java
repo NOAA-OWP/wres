@@ -24,12 +24,13 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
@@ -48,6 +49,11 @@ import wres.datamodel.time.TimeWindow;
 
 public abstract class Chart2DTestDataGenerator
 {
+
+    private static final FeatureKey NWS_FEATURE = new FeatureKey( "DRRC2", null, null, null );
+    private static final FeatureKey USGS_FEATURE = new FeatureKey( "09165000", "DOLORES RIVER BELOW RICO, CO.", 4326, "POINT ( -108.0603517 37.63888428 )");
+    private static final FeatureKey NWM_FEATURE = new FeatureKey( "18384141", null, null, null );
+    private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE );
 
     /**
      * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the CRPSS for a
@@ -124,7 +130,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "NPTP1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "HEFS",
                                                                                "ESP" ) );
@@ -192,7 +198,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "NPTP1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "HEFS",
                                                                                "ESP" ) );
@@ -271,7 +277,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "NPTP1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "HEFS" ) );
 
@@ -391,7 +397,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "NPTP1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "HEFS" ) );
 
@@ -482,7 +488,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "NPTP1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "HEFS" ) );
 
@@ -583,7 +589,7 @@ public abstract class Chart2DTestDataGenerator
         //Source metadata
         final SampleMetadata source =
                 new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MILLIMETER" ) )
-                                           .setIdentifier( DatasetIdentifier.of( FeatureKey.of( "WGCM8" ),
+                                           .setIdentifier( DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                  "PRECIPITATION",
                                                                                  "HEFS" ) )
                                            .setTimeWindow( timeWindow )
@@ -652,7 +658,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "INCH" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "NBBC1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "PRECIPITATION",
                                                                                "HEFS" ) );
 
@@ -731,7 +737,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "INCH" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "NBBC1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "PRECIPITATION",
                                                                                "HEFS" ) );
         //Single threshold
@@ -806,7 +812,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "DOSC1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "HEFS",
                                                                                "ESP"),
@@ -903,7 +909,7 @@ public abstract class Chart2DTestDataGenerator
         
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FeatureKey.of( "ABEC2" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "NWM" ),
                                                          null,
@@ -994,7 +1000,7 @@ public abstract class Chart2DTestDataGenerator
                                                      ThresholdDataType.LEFT ) );
 
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                          DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
+                                                                          DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                                 "Streamflow",
                                                                                                 "HEFS" ),
                                                                           window,
@@ -1044,7 +1050,7 @@ public abstract class Chart2DTestDataGenerator
                                                                             ThresholdDataType.LEFT ) );
         
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                          DatasetIdentifier.of( FeatureKey.of( "DRRC2" ),
+                                                                          DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                                 "Streamflow",
                                                                                                 "HEFS" ),
                                                                           window,

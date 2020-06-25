@@ -8,6 +8,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
@@ -147,24 +149,15 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
     {
         return getScore( statistic.get( component ),
                                StatisticMetadata.of( meta, meta.getMetricID(), component ) );
-    }        
+    }
 
     @Override
     public String toString()
     {
-        StringBuilder b = new StringBuilder();
-        statistic.forEach( ( key, value ) -> b.append( "(" )
-                                           .append( key )
-                                           .append( "," )
-                                           .append( value )
-                                           .append( ")" )
-                                           .append( NEWLINE ) );
-        int lines = b.length();
-        if( lines > 0 )
-        {
-            b.delete( lines - NEWLINE.length(), lines );
-        }
-        return b.toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                .append( "statistic", statistic )
+                .append( "meta", meta )
+                .toString();
     }
 
     /**
