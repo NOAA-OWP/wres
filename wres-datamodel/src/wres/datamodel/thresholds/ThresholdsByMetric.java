@@ -582,21 +582,21 @@ public class ThresholdsByMetric
 
         return builder.build();
     }
-    
+
     @Override
     public String toString()
     {
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
-        
+
         joiner.add( "ThresholdsByMetric@" + this.hashCode() );
         joiner.add( "    Event probability thresholds: " + this.getProbabilities() );
         joiner.add( "    Event value thresholds: " + this.getValues() );
         joiner.add( "    Event quantile thresholds: " + this.getQuantiles() );
         joiner.add( "    Decision thresholds: " + this.getProbabilityClassifiers() );
-        
-        return joiner.toString(); 
+
+        return joiner.toString();
     }
-    
+
     /**
      * Builder.
      */
@@ -628,19 +628,23 @@ public class ThresholdsByMetric
 
         private Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
 
-        public boolean isEmpty() {
-            boolean empty = this.values.values().stream().allMatch(Set::isEmpty);
+        public boolean isEmpty()
+        {
+            boolean empty = this.values.values().stream().allMatch( Set::isEmpty );
 
-            if (empty) {
-                empty = this.probabilities.values().stream().allMatch(Set::isEmpty);
+            if ( empty )
+            {
+                empty = this.probabilities.values().stream().allMatch( Set::isEmpty );
             }
 
-            if (empty) {
-                empty = this.probabilityClassifiers.values().stream().allMatch(Set::isEmpty);
+            if ( empty )
+            {
+                empty = this.probabilityClassifiers.values().stream().allMatch( Set::isEmpty );
             }
 
-            if (empty) {
-                empty = this.quantiles.values().stream().allMatch(Set::isEmpty);
+            if ( empty )
+            {
+                empty = this.quantiles.values().stream().allMatch( Set::isEmpty );
             }
 
             return empty;
@@ -707,10 +711,15 @@ public class ThresholdsByMetric
         /**
          * Adds a map of thresholds.
          *
+         * @param group the threshold group
+         * @param metric the metric
+         * @param threshold the threshold
          * @throws NullPointerException if any input is null
+         * @return the builder
          */
 
-        public ThresholdsByMetricBuilder addThreshold(ThresholdGroup group, MetricConstants metric, Threshold threshold)
+        public ThresholdsByMetricBuilder
+                addThreshold( ThresholdGroup group, MetricConstants metric, Threshold threshold )
         {
             Objects.requireNonNull( threshold, "Cannot build a store of thresholds with null thresholds." );
 
@@ -748,7 +757,9 @@ public class ThresholdsByMetric
             // Add
             else
             {
-                container.put( metric, new HashSet<>(){{add(threshold);}});
+                Set<Threshold> thresholds = new HashSet<>();
+                thresholds.add( threshold );
+                container.put( metric, thresholds );
             }
 
             return this;
@@ -756,11 +767,16 @@ public class ThresholdsByMetric
 
         /**
          * Adds a map of thresholds.
-         *
+         * 
+         * @param group the threshold group
+         * @param metric the metric
+         * @param thresholds the thresholds
+         * @return the builder
          * @throws NullPointerException if any input is null
          */
 
-        public ThresholdsByMetricBuilder addThresholds(ThresholdGroup group, MetricConstants metric, Set<Threshold> thresholds)
+        public ThresholdsByMetricBuilder
+                addThresholds( ThresholdGroup group, MetricConstants metric, Set<Threshold> thresholds )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
@@ -793,12 +809,12 @@ public class ThresholdsByMetric
             // Append
             if ( container.containsKey( metric ) )
             {
-                container.get( metric ).addAll(thresholds);
+                container.get( metric ).addAll( thresholds );
             }
             // Add
             else
             {
-                container.put( metric, new HashSet<>(){{addAll(thresholds);}});
+                container.put( metric, new HashSet<>( thresholds ) );
             }
 
             return this;
@@ -828,22 +844,22 @@ public class ThresholdsByMetric
         // Set immutable stores
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.probabilities.entrySet() )
         {
-            this.probabilities.put( next.getKey(), Set.copyOf(next.getValue()));
+            this.probabilities.put( next.getKey(), Set.copyOf( next.getValue() ) );
         }
 
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.values.entrySet() )
         {
-            this.values.put( next.getKey(), Set.copyOf(next.getValue()));
+            this.values.put( next.getKey(), Set.copyOf( next.getValue() ) );
         }
 
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.probabilityClassifiers.entrySet() )
         {
-            this.probabilityClassifiers.put( next.getKey(), Set.copyOf(next.getValue()));
+            this.probabilityClassifiers.put( next.getKey(), Set.copyOf( next.getValue() ) );
         }
 
         for ( Entry<MetricConstants, Set<Threshold>> next : builder.quantiles.entrySet() )
         {
-            this.quantiles.put( next.getKey(), Set.copyOf(next.getValue()));
+            this.quantiles.put( next.getKey(), Set.copyOf( next.getValue() ) );
         }
 
         // Render the stores immutable       

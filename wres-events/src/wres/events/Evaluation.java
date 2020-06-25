@@ -122,19 +122,19 @@ public class Evaluation implements Closeable
      * A collection of subscribers for {@link wres.statistics.generated.Evaluation} messages.
      */
 
-    private final MessageSubscriber evaluationSubscribers;
+    private final MessageSubscriber<wres.statistics.generated.Evaluation> evaluationSubscribers;
 
     /**
      * A collection of subscribers for {@link wres.statistics.generated.Statistics} messages.
      */
 
-    private final MessageSubscriber statisticsSubscribers;
+    private final MessageSubscriber<Statistics> statisticsSubscribers;
 
     /**
      * A collection of subscribers for {@link EvaluationStatus} messages.
      */
 
-    private final MessageSubscriber evaluationStatusSubscribers;
+    private final MessageSubscriber<EvaluationStatus> evaluationStatusSubscribers;
 
     /**
      * A unique identifier for the evaluation.
@@ -598,7 +598,7 @@ public class Evaluation implements Closeable
         List<Consumer<EvaluationStatus>> statusSubs =
                 new ArrayList<>( builder.consumers.getEvaluationStatusConsumers() );
         List<Consumer<Statistics>> statisticsSubs = new ArrayList<>( builder.consumers.getStatisticsConsumers() );
-        List<OneGroupConsumer<Statistics>> groupedStatisticsSubs =
+        List<Consumer<Statistics>> groupedStatisticsSubs =
                 new ArrayList<>( builder.consumers.getGroupedStatisticsConsumers() );
 
         wres.statistics.generated.Evaluation evaluationMessage = builder.evaluation;
@@ -639,13 +639,13 @@ public class Evaluation implements Closeable
         // Completion subscriber that tracks the completion status
         this.completionEvent = new CompletionStatusEvent();
 
-        // Register with status subscribers
+        // Register with status subscribers: one more consumer
         statusSubs.add( this.completionEvent );
 
         this.completionTracker = CompletionTracker.of( evaluationSubs.size(),
                                                        statisticsSubs.size(),
                                                        statusSubs.size(),
-                                                       groupedStatisticsSubs );
+                                                       groupedStatisticsSubs.size() );
 
         // Register publishers and subscribers
         try
@@ -676,12 +676,20 @@ public class Evaluation implements Closeable
 
             Destination statistics = broker.getDestination( Evaluation.STATISTICS_QUEUE );
             this.statisticsPublisher = MessagePublisher.of( factory, statistics );
+
+            Function<List<Statistics>, Statistics> aggregator = null;
+            if ( this.hasGroupSubscriptions() )
+            {
+                aggregator = OneGroupConsumer.getStatisticsAggregator();
+            }
+
             this.statisticsSubscribers =
                     new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
                                                                .setDestination( statistics )
                                                                .addSubscribers( statisticsSubs )
                                                                .setCompletionTracker( this.completionTracker )
                                                                .addGroupSubscribers( groupedStatisticsSubs )
+                                                               .setGroupAggregator( aggregator )
                                                                .setEvaluationStatusDestination( status )
                                                                .setMapper( this.getStatisticsMapper() )
                                                                .setEvaluationId( this.getEvaluationId() )

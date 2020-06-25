@@ -55,6 +55,9 @@ message EvaluationStatus
     // consumer should receive. Always set when the completion status indicates 
     // that an evaluation has been completed.
 
+    int32 group_count = 7;
+    // The number of groups within the evaluation
+
     message EvaluationStatusEvent
     {
         /*A message that encapsulates an evaluation status event, such as

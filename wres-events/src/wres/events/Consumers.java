@@ -50,7 +50,7 @@ public class Consumers
      * Consumers of groups of evaluation statistics where consumption is triggered by group.
      */
 
-    private final List<OneGroupConsumer<Statistics>> groupedStatisticsConsumers;
+    private final List<Consumer<Statistics>> groupedStatisticsConsumers;
 
     /**
      * @return the evaluation consumers
@@ -75,11 +75,11 @@ public class Consumers
     {
         return this.statisticsConsumers; //Immutable on construction
     }
-
+    
     /**
      * @return the consumers of statistics groups
      */
-    List<OneGroupConsumer<Statistics>> getGroupedStatisticsConsumers()
+    List<Consumer<Statistics>> getGroupedStatisticsConsumers()
     {
         return this.groupedStatisticsConsumers; //Immutable on construction
     }
@@ -114,7 +114,7 @@ public class Consumers
          * Consumers of groups of evaluation statistics.
          */
 
-        private List<OneGroupConsumer<Statistics>> groupedStatisticsConsumers = new ArrayList<>();
+        private List<Consumer<Statistics>> groupedStatisticsConsumers = new ArrayList<>();
 
         /**
          * @param evaluationConsumers the evaluation consumers to set
@@ -150,7 +150,7 @@ public class Consumers
          * @param groupedStatisticsConsumers the statistics consumers to set
          * @return this builder
          */
-        public Builder setGroupedStatisticsConsumers( List<OneGroupConsumer<Statistics>> groupedStatisticsConsumers )
+        public Builder setGroupedStatisticsConsumers( List<Consumer<Statistics>> groupedStatisticsConsumers )
         {
             this.groupedStatisticsConsumers = groupedStatisticsConsumers;
             return this;
@@ -160,6 +160,7 @@ public class Consumers
          * @param evaluationConsumer the evaluation consumer to add
          * @return this builder
          */
+
         public Builder addEvaluationConsumer( Consumer<Evaluation> evaluationConsumer )
         {
             this.evaluationConsumers.add( evaluationConsumer );
@@ -170,6 +171,7 @@ public class Consumers
          * @param statusConsumer the status consumer to add
          * @return this builder
          */
+
         public Builder addStatusConsumer( Consumer<EvaluationStatus> statusConsumer )
         {
             this.statusConsumers.add( statusConsumer );
@@ -180,6 +182,7 @@ public class Consumers
          * @param statisticsConsumer the statistics consumer to add
          * @return this builder
          */
+
         public Builder addStatisticsConsumer( Consumer<Statistics> statisticsConsumer )
         {
             this.statisticsConsumers.add( statisticsConsumer );
@@ -187,12 +190,17 @@ public class Consumers
         }
 
         /**
-         * @param statisticsConsumer the statistics consumer to add
+         * Adds a grouped subscribers for evaluation events.
+         * 
+         * @param subscriber the subscriber for groups of evaluation events
          * @return this builder
+         * @throws NullPointerException if the list is null
          */
-        public Builder addGroupedStatisticsConsumer( OneGroupConsumer<Statistics> statisticsConsumer )
+
+        Builder addGroupedStatisticsConsumer( Consumer<Statistics> subscriber )
         {
-            this.groupedStatisticsConsumers.add( statisticsConsumer );
+            this.groupedStatisticsConsumers.add( subscriber );
+
             return this;
         }
 

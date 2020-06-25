@@ -282,7 +282,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                          .thenApplyAsync( metricOutputs -> {
                                              ProduceOutputsFromStatistics outputProcessor =
                                                      ProduceOutputsFromStatistics.of( systemSettings,
-                                                                                      executor,
                                                                                       this.resolvedProject,
                                                                                       onlyWriteTheseTypes,
                                                                                       this.sharedWriters.getStatisticsWriters() );
@@ -481,7 +480,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 try ( // End of pipeline processor
                       ProduceOutputsFromStatistics endOfPipeline =
                               ProduceOutputsFromStatistics.of( systemSettings,
-                                                               executor,
                                                                this.resolvedProject,
                                                                nowWriteTheseTypes,
                                                                this.sharedWriters.getStatisticsWriters()) )

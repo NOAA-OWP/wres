@@ -34,6 +34,10 @@ class MessagePublisher implements Closeable
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
 
+    static final String JMSX_GROUP_ID = "JMSXGroupID";
+    
+    static final String JMS_CORRELATION_ID = "JMSCorrelationID='";
+    
     /**
      * A connection to the broker.
      */
@@ -169,7 +173,7 @@ class MessagePublisher implements Closeable
 
         if( Objects.nonNull( groupId ) )
         {
-            message.setStringProperty( "JMSXGroupID", groupId );
+            message.setStringProperty( MessagePublisher.JMSX_GROUP_ID, groupId );
         }
         
         // At least until we can write from a buffer directly
