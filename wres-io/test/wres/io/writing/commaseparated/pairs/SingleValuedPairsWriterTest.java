@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -71,6 +73,8 @@ public final class SingleValuedPairsWriterTest
     private static final String VARIABLE_NAME = "ARMS";
     private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
     private static final String UNIT = "SCOOBIES";
+
+    private Path tempDir = null;
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
@@ -178,6 +182,12 @@ public final class SingleValuedPairsWriterTest
         pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree ).setMetadata( metaThree ).build();
     }
 
+    @Before
+    public void setup() throws IOException
+    {
+        this.tempDir = Files.createTempDirectory( "wres_temp" );
+    }
+
     /**
      * Builds a {@link SingleValuedPairsWriter}, writes some empty pairs, and checks that the written output matches the
      * expected output.
@@ -188,7 +198,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptWithEmptyPairs() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -234,7 +244,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForOneSetOfPairs() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -272,7 +282,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForOneSetOfPairsWithTimeWindow() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -345,7 +355,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForTwoSetsOfPairsWrittenSync() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -390,7 +400,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForThreeSetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
@@ -444,7 +454,7 @@ public final class SingleValuedPairsWriterTest
     public void testSuppliedPath() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -461,4 +471,9 @@ public final class SingleValuedPairsWriterTest
         }
     }
 
+    @After
+    public void tearDown() throws IOException
+    {
+        Files.deleteIfExists( this.tempDir );
+    }
 }

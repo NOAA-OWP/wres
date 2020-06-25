@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -68,12 +69,8 @@ public final class BrierSkillScoreTest
 
         // Check the results       
         final DoubleScoreStatistic actual = brierSkillScore.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.11363636363636376, m1, )
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.11363636363636376, m1 );
+        assertEquals( expected.getData(), actual.getData() );
     }
 
     /**

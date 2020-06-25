@@ -36,6 +36,8 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
@@ -611,11 +613,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
                                                          Duration.ofHours( 24 ) );
 
+        FeatureKey featureKey = FeatureKey.of( "DRRC2" );
+        FeatureTuple featureTuple = new FeatureTuple( featureKey, featureKey, featureKey );
         SampleMetadata expectedSampleMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of(
-                                                                       Boilerplate.getFeatureTuple(),
-                                                                       "SQIN",
-                                                                       "HEFS" ),
+                                                               DatasetIdentifier.of( featureTuple,
+                                                                                     "SQIN",
+                                                                                     "HEFS" ),
                                                                expectedWindow,
                                                                null );
 
