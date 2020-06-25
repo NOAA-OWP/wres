@@ -6,7 +6,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -36,19 +40,28 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
  * pool of sessions might be better (to allow better message throughput, as a session is the work thread). Overall, it 
  * may be better to abstract connections and sessions away from specific helpers.
  * 
+ * @param <T> the message type
  * @author james.brown@hydrosolved.com
  */
 
-class MessageSubscriber implements Closeable
+class MessageSubscriber<T> implements Closeable
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessageSubscriber.class );
 
-    /**
-     * Unknown mesage identifier.
-     */
-
     private static final String UNKNOWN = "unknown";
+
+    private static final String ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY =
+            "encountered an error that prevented recovery: ";
+
+    private static final String WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION =
+            "While attempting to recover a session for evaluation {}, ";
+
+    private static final String ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION =
+            "encountered an error that prevented consumption: ";
+
+    private static final String WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER =
+            "While attempting to consume a message with identifier {} and correlation identifier {}, ";
 
     /**
      * A connection to the broker.
@@ -69,28 +82,22 @@ class MessageSubscriber implements Closeable
     private final Destination destination;
 
     /**
-     * Destination for evaluation status messages, which are used to trigger consumption of statistics groups.
+     * Consumer for evaluation status messages, which are used to trigger consumption of statistics groups.
      */
 
-    private final Destination statusDestination;
+    private final MessageConsumer statusConsumer;
 
     /**
-     * A list of consumers that do not filter by message group.
+     * A list of message consumers that do not filter by message group. These are resources to be closed.
      */
 
     private final List<MessageConsumer> consumers;
 
     /**
-     * A list of consumers that filter by message group.
+     * A map of group subscribers by group identifier.
      */
 
-    private final List<MessageConsumer> groupedConsumers;
-
-    /**
-     * A list of grouped consumers whose consumption should be completed with closing.
-     */
-
-    private final List<OneGroupConsumer<?>> cleanUp;
+    private final Map<String, Queue<OneGroupConsumer<T>>> groupConsumers;
 
     /**
      * Used to register consumptions for notification of completion against an expected number of consumptions.
@@ -152,13 +159,19 @@ class MessageSubscriber implements Closeable
          * List of subscriptions to groups of evaluation events.
          */
 
-        private List<OneGroupConsumer<T>> groupSubscribers = new ArrayList<>();
+        private List<Consumer<T>> groupSubscribers = new ArrayList<>();
 
         /**
-         * List of subscriptions to statistics events.
+         * A mapper between message bytes and messages.
          */
 
         private Function<ByteBuffer, T> mapper;
+
+        /**
+         * A group aggregator.
+         */
+
+        private Function<List<T>, T> groupAggregator;
 
         /**
          * An evaluation identifier.
@@ -234,16 +247,32 @@ class MessageSubscriber implements Closeable
         /**
          * Adds a list of subscribers for groups of evaluation events.
          * 
+         * @param groupIds the group identifiers to which the subscriptions apply
          * @param subscribers the subscribers for groups of evaluation events
          * @return this builder
          * @throws NullPointerException if the list is null
          */
 
-        Builder<T> addGroupSubscribers( List<OneGroupConsumer<T>> subscribers )
+        Builder<T> addGroupSubscribers( List<Consumer<T>> subscribers )
         {
             Objects.requireNonNull( subscribers );
 
             this.groupSubscribers.addAll( subscribers );
+
+            return this;
+        }
+
+        /**
+         * Sets a function that aggregates the grouped statistics.
+         * 
+         * @param groupAggregator the group aggregator
+         * @return this builder
+         * @throws NullPointerException if the list is null
+         */
+
+        Builder<T> setGroupAggregator( Function<List<T>, T> groupAggregator )
+        {
+            this.groupAggregator = groupAggregator;
 
             return this;
         }
@@ -297,9 +326,9 @@ class MessageSubscriber implements Closeable
          * @throws JMSException if the subscriber cannot be built for any reason
          */
 
-        MessageSubscriber build() throws JMSException
+        MessageSubscriber<T> build() throws JMSException
         {
-            return new MessageSubscriber( this );
+            return new MessageSubscriber<>( this );
         }
     }
 
@@ -307,7 +336,7 @@ class MessageSubscriber implements Closeable
      * Subscribes a list of consumers.
      * 
      * @param <T> the type of message
-     * @param subscribers the consumers
+     * @param consumers the consumers
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
      * @param groupId an optional group identifier to filter messages
@@ -316,19 +345,19 @@ class MessageSubscriber implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private <T> List<MessageConsumer> subscribeAll( List<Consumer<T>> subscribers,
-                                                    Function<ByteBuffer, T> mapper,
-                                                    String evaluationId )
+    private List<MessageConsumer> subscribeAllConsumers( List<Consumer<T>> consumers,
+                                                         Function<ByteBuffer, T> mapper,
+                                                         String evaluationId )
             throws JMSException
     {
-        Objects.requireNonNull( subscribers );
+        Objects.requireNonNull( consumers );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( evaluationId );
 
         List<MessageConsumer> returnMe = new ArrayList<>();
-        for ( Consumer<T> next : subscribers )
+        for ( Consumer<T> next : consumers )
         {
-            MessageConsumer consumer = this.subscribe( next, mapper, evaluationId, null );
+            MessageConsumer consumer = this.subscribeOneConsumer( next, mapper, evaluationId );
             returnMe.add( consumer );
         }
 
@@ -339,27 +368,30 @@ class MessageSubscriber implements Closeable
      * Subscribes a list of grouped consumers.
      * 
      * @param <T> the type of message
-     * @param subscribers the consumers
+     * @param consumers the consumers
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
+     * @param groupAggregator a group aggregator
      * @return a list of subscriptions
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
      */
 
-    private <T> List<MessageConsumer> subscribeAllGrouped( List<OneGroupConsumer<T>> subscribers,
-                                                           Function<ByteBuffer, T> mapper,
-                                                           String evaluationId )
+    private List<MessageConsumer> subscribeAllGroupedConsumers( List<Consumer<T>> consumers,
+                                                                Function<ByteBuffer, T> mapper,
+                                                                String evaluationId,
+                                                                Function<List<T>, T> groupAggregator )
             throws JMSException
     {
-        Objects.requireNonNull( subscribers );
+        Objects.requireNonNull( consumers );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( evaluationId );
+        Objects.requireNonNull( groupAggregator );
 
         List<MessageConsumer> returnMe = new ArrayList<>();
-        for ( OneGroupConsumer<T> next : subscribers )
+        for ( Consumer<T> next : consumers )
         {
-            MessageConsumer consumer = this.subscribe( next, mapper, evaluationId, next.getGroupId() );
+            MessageConsumer consumer = this.subscribeOneGroupedConsumer( next, mapper, evaluationId, groupAggregator );
             returnMe.add( consumer );
         }
 
@@ -370,47 +402,47 @@ class MessageSubscriber implements Closeable
      * Subscribes a grouped consumer for grouped consumption.
      * 
      * @param <T> the type of message
-     * @param subscriber the consumer
+     * @param innerSubscriber the inner consumer that should receive aggregated messages
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
-     * @param groupId an optional group identifier by which to filter messages
-     * @return a subscription
+     * @param groupIds the group identifiers by which to filter messages
+     * @param groupAggregator a group aggregator
+     * @return a group subscription
      * @throws JMSException if the session fails to create a consumer due to some internal error
      * @throws NullPointerException if any input is null
      */
 
-    private <T> MessageConsumer subscribe( OneGroupConsumer<T> subscriber,
-                                           Function<ByteBuffer, T> mapper,
-                                           String evaluationId,
-                                           String groupId )
+    private MessageConsumer subscribeOneGroupedConsumer( Consumer<T> innerSubscriber,
+                                                         Function<ByteBuffer, T> mapper,
+                                                         String evaluationId,
+                                                         Function<List<T>, T> groupAggregator )
             throws JMSException
     {
-        Objects.requireNonNull( subscriber );
+        Objects.requireNonNull( innerSubscriber );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( evaluationId );
-        Objects.requireNonNull( groupId );
+        Objects.requireNonNull( groupAggregator );
 
-        // Subscribe the message consumer and then subscribe a listener for status messages, which triggers 
-        // the inner/grouped consumption
-        MessageConsumer messageConsumer = this.subscribe( (Consumer<T>) subscriber, mapper, evaluationId, groupId );
+        // Create a consumer that accepts the small messages and then populates the list of group subscribers
+        // as those messages arrive
+        MessageConsumer messageConsumer = this.getConsumerForGroupedMessages( innerSubscriber,
+                                                                              mapper,
+                                                                              evaluationId,
+                                                                              groupAggregator );
 
-        // Only consume messages for the current evaluation based on JMSCorrelationID and JMSXGroupID
-        // In other words, the groupId must be in the status information too
-        String selector = "JMSCorrelationID='" + evaluationId + "' AND JMSXGroupID='" + groupId + "'";
-
-        MessageConsumer statusConsumer = this.getConsumer( this.statusDestination, selector );
-
-        // A listener acknowledges the message when the consumption completes 
+        // Now listen for status messages when a group completes
         MessageListener listener = message -> {
 
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
+            String messageGroupId = UNKNOWN;
 
             try
             {
                 messageId = message.getJMSMessageID();
                 correlationId = message.getJMSCorrelationID();
+                messageGroupId = message.getStringProperty( MessagePublisher.JMSX_GROUP_ID );
 
                 // Create the byte array to hold the message
                 int messageLength = (int) receivedBytes.getBodyLength();
@@ -428,53 +460,41 @@ class MessageSubscriber implements Closeable
                 if ( status.getCompletionStatus() == CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
                 {
                     // Set the expected number of messages per group
-                    this.completionTracker.registerGroupComplete( status, groupId );
+                    this.completionTracker.registerGroupComplete( status, messageGroupId );
+                    int completed = this.checkAndCompleteGroup( messageGroupId );
 
-                    if ( status.getMessageCount() == subscriber.size() )
+                    if ( completed > 0 && LOGGER.isDebugEnabled() )
                     {
-                        // Accept the group of messages
-                        subscriber.acceptGroup();
-
-                        // Close the consumer, as this group is done. According to the API docs, calling close on the
-                        // parent consumer of a listener will allow the listener's onMessage method (this method) to 
-                        // complete normally
-                        messageConsumer.close();
-                        statusConsumer.close();
-
-                        LOGGER.debug( "While consuming message group {} with consumer {}, encountered an evaluation "
+                        LOGGER.debug( "While consuming grouped messages for evaluation {}, encountered an evaluation "
                                       + "status message with identifier {} and correlation identifier {} and "
-                                      + "completion state {}, which successfully triggered the consumption of the "
-                                      + "message group containing {} messages.",
-                                      groupId,
-                                      this,
+                                      + "completion state {}, which successfully triggered consumption across {} "
+                                      + "consumers containing {} messages.",
+                                      evaluationId,
+                                      messageId,
+                                      correlationId,
+                                      status.getCompletionStatus(),
+                                      completed,
+                                      status.getMessageCount() );
+                    }
+                    else if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "While consuming grouped messages for evaluation {}, encountered an evaluation "
+                                      + "status message with identifier {} and correlation identifier {} and "
+                                      + "completion state {}. The expected number of messages within the group is {} "
+                                      + "but some of these messages are outstanding. Grouped consumption will happen "
+                                      + "when this subscriber is closed.",
+                                      evaluationId,
                                       messageId,
                                       correlationId,
                                       status.getCompletionStatus(),
                                       status.getMessageCount() );
-                    }
-                    else
-                    {
-                        this.cleanUp.add( subscriber );
-
-                        LOGGER.debug( "While consuming message group {} with consumer {}, encountered an evaluation "
-                                      + "status message with identifier {} and correlation identifier {} and "
-                                      + "completion state {}. The expected number of messages within the group is {} "
-                                      + "but only {} messages have been consumed. Grouped consumption will happen when "
-                                      + "this subscriber is closed.",
-                                      groupId,
-                                      this,
-                                      messageId,
-                                      correlationId,
-                                      status.getCompletionStatus(),
-                                      status.getMessageCount(),
-                                      subscriber.size() );
                     }
                 }
 
                 LOGGER.debug( "While consuming message group {} with consumer {}, successfully consumed an evaluation "
                               + "status message with identifier {} and correlation "
                               + "identifier {} and completion state {}",
-                              groupId,
+                              messageGroupId,
                               this,
                               messageId,
                               correlationId,
@@ -491,8 +511,8 @@ class MessageSubscriber implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier {}, "
-                              + "encountered an error that prevented consumption: ",
+                LOGGER.error( WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER
+                              + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION,
                               messageId,
                               correlationId,
                               e.getMessage() );
@@ -505,23 +525,187 @@ class MessageSubscriber implements Closeable
                 }
                 catch ( JMSException f )
                 {
-                    LOGGER.error( "While attempting to recover a session for evaluation {}, "
-                                  + "encountered an error that prevented recovery: ",
+                    LOGGER.error( WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION
+                                  + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY,
                                   evaluationId,
                                   f.getMessage() );
                 }
             }
         };
 
-        statusConsumer.setMessageListener( listener );
+        this.statusConsumer.setMessageListener( listener );
 
-        LOGGER.debug( "Successfully registered a consumer {} for statistics messages in group {} associated with "
+        LOGGER.debug( "Successfully registered a subscriber {} for grouped statistics messages associated with "
                       + "evaluation {}",
                       this,
-                      groupId,
                       evaluationId );
 
         return messageConsumer;
+    }
+
+    /**
+     * Returns a consumer for grouped messages.
+     * 
+     * @param <T> the type of message
+     * @param innerSubscriber the inner subscriber that accepts aggregated messages
+     * @param mapper to map from message bytes to a typed message
+     * @param evaluationId an evaluation identifier to help with exception messaging and logging
+     * @param groupAggregator the function that aggregates grouped messages
+     * @return a subscription
+     * @throws JMSException if the session fails to create a consumer due to some internal error
+     * @throws NullPointerException if any input is null
+     */
+
+    private MessageConsumer getConsumerForGroupedMessages( Consumer<T> innerSubscriber,
+                                                           Function<ByteBuffer, T> mapper,
+                                                           String evaluationId,
+                                                           Function<List<T>, T> groupAggregator )
+            throws JMSException
+    {
+        Objects.requireNonNull( mapper );
+        Objects.requireNonNull( evaluationId );
+
+        // A listener acknowledges the message when the consumption completes 
+        MessageListener listener = message -> {
+
+            BytesMessage receivedBytes = (BytesMessage) message;
+            String messageId = UNKNOWN;
+            String correlationId = UNKNOWN;
+            String groupId = UNKNOWN;
+
+            try
+            {
+                messageId = message.getJMSMessageID();
+                correlationId = message.getJMSCorrelationID();
+                groupId = message.getStringProperty( MessagePublisher.JMSX_GROUP_ID );
+
+                // Create the byte array to hold the message
+                int messageLength = (int) receivedBytes.getBodyLength();
+
+                byte[] messageContainer = new byte[messageLength];
+
+                receivedBytes.readBytes( messageContainer );
+
+                ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
+
+                T received = mapper.apply( bufferedMessage );
+
+                Queue<OneGroupConsumer<T>> subscribers = this.getGroupSubscriber( innerSubscriber,
+                                                                                  groupId,
+                                                                                  groupAggregator );
+
+                // Register the message with each grouped subscriber
+                subscribers.forEach( next -> next.accept( received ) );
+
+                // Acknowledge
+                message.acknowledge();
+
+                LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
+                              + "identifier {}.",
+                              this,
+                              messageId,
+                              correlationId );
+            }
+            catch ( JMSException | EvaluationEventException e )
+            {
+                // Messages are on the DLQ, but signal locally too
+                if ( Objects.isNull( this.failure ) )
+                {
+                    this.failure = receivedBytes;
+                }
+
+                LOGGER.error( WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER
+                              + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION,
+                              messageId,
+                              correlationId,
+                              e.getMessage() );
+
+                try
+                {
+                    // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
+                    // messages should hit the dead letter queue/DLQ
+                    this.session.recover();
+                }
+                catch ( JMSException f )
+                {
+                    LOGGER.error( WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION
+                                  + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY,
+                                  evaluationId,
+                                  f.getMessage() );
+                }
+            }
+
+            // Count down, whether success or failure
+            LOGGER.debug( "Reduced the expected count associated with subscriber {} by 1.", this );
+
+            this.completionTracker.register();
+
+            // Check and close early if group consumption is complete for one or more subscribers
+            this.checkAndCompleteGroup( groupId );
+        };
+
+        // Only consume messages for the current evaluation based on JMSCorrelationID
+        String selector = MessagePublisher.JMS_CORRELATION_ID + evaluationId + "'";
+        MessageConsumer messageConsumer = this.getConsumer( this.destination, selector );
+        messageConsumer.setMessageListener( listener );
+
+        LOGGER.debug( "Successfully registered a subscriber {} for grouped statistics messages associated with "
+                      + "evaluation {}",
+                      this,
+                      evaluationId );
+
+        return messageConsumer;
+    }
+
+    /**
+     * Creates a map of grouped subscriptions by group identifier. Returns a mutable queue, so do not expose more 
+     * generally.
+     * 
+     * @param <T> the type of message
+     * @param innerConsumer the inner consumer that accepts aggregate messages
+     * @param groupId the group identifier
+     * @param groupAggregator a group aggregator
+     */
+
+    private Queue<OneGroupConsumer<T>> getGroupSubscriber( Consumer<T> innerConsumer,
+                                                           String groupId,
+                                                           Function<List<T>, T> groupAggregator )
+    {
+        Objects.requireNonNull( innerConsumer );
+        Objects.requireNonNull( groupId );
+        Objects.requireNonNull( groupAggregator );
+
+        Queue<OneGroupConsumer<T>> add = new ConcurrentLinkedQueue<>();
+
+        Queue<OneGroupConsumer<T>> existingConsumers = this.groupConsumers.putIfAbsent( groupId, add );
+
+        // Already exists?
+        if ( Objects.nonNull( existingConsumers ) )
+        {
+            for ( OneGroupConsumer<T> next : existingConsumers )
+            {
+                // Group subscriber already exists
+                if ( next.getInnerConsumer() == innerConsumer )
+                {
+                    break;
+                }
+
+                // Does not exist, so add
+                OneGroupConsumer<T> newConsumer = OneGroupConsumer.of( innerConsumer, groupAggregator, groupId );
+
+                existingConsumers.add( newConsumer );
+            }
+
+            return existingConsumers;
+        }
+        // No, so add it
+        else
+        {
+            OneGroupConsumer<T> newConsumer = OneGroupConsumer.of( innerConsumer, groupAggregator, groupId );
+            add.add( newConsumer );
+
+            return add;
+        }
     }
 
     /**
@@ -537,10 +721,9 @@ class MessageSubscriber implements Closeable
      * @throws NullPointerException if any input is null, except the optional groupId
      */
 
-    private <T> MessageConsumer subscribe( Consumer<T> subscriber,
-                                           Function<ByteBuffer, T> mapper,
-                                           String evaluationId,
-                                           String groupId )
+    private MessageConsumer subscribeOneConsumer( Consumer<T> subscriber,
+                                                  Function<ByteBuffer, T> mapper,
+                                                  String evaluationId )
             throws JMSException
     {
         Objects.requireNonNull( subscriber );
@@ -548,12 +731,7 @@ class MessageSubscriber implements Closeable
         Objects.requireNonNull( evaluationId );
 
         // Only consume messages for the current evaluation based on JMSCorrelationID
-        String selector = "JMSCorrelationID='" + evaluationId + "'";
-
-        if ( Objects.nonNull( groupId ) )
-        {
-            selector = selector + " AND JMSXGroupID='" + groupId + "'";
-        }
+        String selector = MessagePublisher.JMS_CORRELATION_ID + evaluationId + "'";
 
         // This resource needs to be kept open until consumption is done
         MessageConsumer consumer = this.getConsumer( this.destination, selector );
@@ -600,8 +778,8 @@ class MessageSubscriber implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier {}, "
-                              + "encountered an error that prevented consumption: ",
+                LOGGER.error( WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER
+                              + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION,
                               messageId,
                               correlationId,
                               e.getMessage() );
@@ -614,8 +792,8 @@ class MessageSubscriber implements Closeable
                 }
                 catch ( JMSException f )
                 {
-                    LOGGER.error( "While attempting to recover a session for evaluation {}, "
-                                  + "encountered an error that prevented recovery: ",
+                    LOGGER.error( WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION
+                                  + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY,
                                   evaluationId,
                                   f.getMessage() );
                 }
@@ -625,13 +803,6 @@ class MessageSubscriber implements Closeable
             LOGGER.debug( "Reduced the expected count associated with subscriber {} by 1.", this );
 
             this.completionTracker.register();
-
-            // Check and close early if group consumption complete
-            // A little ugly to check for instanceof, but it is a private implementation detail of this class
-            if ( subscriber instanceof OneGroupConsumer )
-            {
-                this.checkAndCloseEarlyIfGroupConsumptionIsComplete( (OneGroupConsumer<?>) subscriber, consumer );
-            }
         };
 
         consumer.setMessageListener( listener );
@@ -642,36 +813,37 @@ class MessageSubscriber implements Closeable
     }
 
     /**
-     * Allows for grouped consumption to complete earlier than the closure of this subscriber when a group complete 
-     * status message is received before all grouped messages have been received.
+     * Checks for complete groups and finalizes them.
      * 
-     * @param group the grouped consumer whose consumption should be completed
+     * @param group the grouped consumers whose consumption should be completed
      * @param consumer the message consumer whose resources should be closed
+     * @return the number of groups completed
      */
 
-    private void checkAndCloseEarlyIfGroupConsumptionIsComplete( OneGroupConsumer<?> group, MessageConsumer consumer )
+    private int checkAndCompleteGroup( String groupId )
     {
-        Integer expected = this.completionTracker.getExpectedMessagesPerGroup( group.getGroupId() );
+        int completed = 0;
 
-        if ( Objects.nonNull( expected ) && expected == group.size() && !group.hasBeenUsed() )
+        if ( Objects.nonNull( this.groupConsumers ) && this.groupConsumers.containsKey( groupId ) )
         {
-            LOGGER.debug( "Discovered a consumer of message groups, {}, whose {} grouped messages have all been "
-                          + "consumed. Triggering final consumption/aggregation of the group and clean-up.",
-                          group,
-                          group.size() );
+            Queue<OneGroupConsumer<T>> check = this.groupConsumers.get( groupId );
 
-            group.acceptGroup();
+            if ( Objects.nonNull( check ) )
+            {
+                for ( OneGroupConsumer<T> next : check )
+                {
+                    Integer expected = this.completionTracker.getExpectedMessagesPerGroup( next.getGroupId() );
 
-            try
-            {
-                consumer.close();
-            }
-            catch ( JMSException e )
-            {
-                throw new EvaluationEventException( "Failed to close a consumer early when completing group "
-                                                    + "consumption." );
+                    if ( Objects.nonNull( expected ) && expected == next.size() && !next.hasBeenUsed() )
+                    {
+                        next.acceptGroup();
+                        completed++;
+                    }
+                }
             }
         }
+
+        return completed;
     }
 
     @Override
@@ -680,37 +852,46 @@ class MessageSubscriber implements Closeable
         LOGGER.debug( "Closing subscriber, {}.", this );
 
         // Check for group subscriptions that have not completed
-        if ( !this.cleanUp.isEmpty() )
+        for ( Map.Entry<String, Queue<OneGroupConsumer<T>>> next : this.groupConsumers.entrySet() )
         {
-            LOGGER.debug( "On closing subscriber {}, discovered {} consumers of message groups whose consumption had "
-                          + "not yet completed. Cleaning up...",
-                          this,
-                          this.cleanUp.size() );
+            String groupId = next.getKey();
+            Queue<OneGroupConsumer<T>> consumersToClose = next.getValue();
 
-            for ( OneGroupConsumer<?> next : this.cleanUp )
+            Integer expectedCount = this.completionTracker.getExpectedMessagesPerGroup( groupId );
+
+            int total = 0;
+
+            for ( OneGroupConsumer<T> consumer : consumersToClose )
             {
-                Integer expectedCount = this.completionTracker.getExpectedMessagesPerGroup( next.getGroupId() );
-
-                if ( Objects.nonNull( expectedCount ) && !next.hasBeenUsed() )
+                if ( Objects.nonNull( expectedCount ) && !consumer.hasBeenUsed() )
                 {
-                    if ( next.size() != expectedCount )
+                    if ( consumer.size() != expectedCount )
                     {
                         throw new EvaluationEventException( "While attempting to gracefully close subscriber " + this
                                                             + " , encountered an error. A consumer of grouped messages "
                                                             + "attached to this subscription expected to receive "
                                                             + expectedCount
                                                             + " but had only received "
-                                                            + next.size()
+                                                            + consumer.size()
                                                             + " messages on closing. A subscriber should not be closed "
                                                             + "until consumption is complete." );
                     }
 
-                    next.acceptGroup();
+                    consumer.acceptGroup();
+                    total++;
                 }
             }
 
-            LOGGER.debug( "Completed clean-up of subscriber {}", this );
+            LOGGER.trace( "On closing subscriber {}, discovered {} consumers associated with group {} whose "
+                          + "consumption was ready to complete, but had not yet completed. These were completed.",
+                          this,
+                          total,
+                          groupId );
+
         }
+
+        LOGGER.debug( "Completed clean-up of subscriber {}", this );
+
 
         this.internalClose();
     }
@@ -754,14 +935,16 @@ class MessageSubscriber implements Closeable
 
         try
         {
-            for ( MessageConsumer next : this.groupedConsumers )
+            if ( Objects.nonNull( this.statusConsumer ) )
             {
-                next.close();
+                this.statusConsumer.close();
             }
         }
         catch ( JMSException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a grouped consumer.", e );
+            throw new IOException( "Encountered an error while attempting to close a evaluation status message "
+                                   + "consumer.",
+                                   e );
         }
     }
 
@@ -789,7 +972,7 @@ class MessageSubscriber implements Closeable
         @Override
         public void onException( JMSException exception )
         {
-            throw new EvaluationEventException( "Encountered an error while attempting to post an evaluation "
+            throw new EvaluationEventException( "Encountered an error while attempting to complete an evaluation "
                                                 + "message.",
                                                 exception );
         }
@@ -806,18 +989,19 @@ class MessageSubscriber implements Closeable
      * @throws IllegalArgumentException if no subscribers are defined
      */
 
-    private <T> MessageSubscriber( Builder<T> builder )
+    private MessageSubscriber( Builder<T> builder )
             throws JMSException
     {
         // Set then validate
         this.destination = builder.destination;
-        this.statusDestination = builder.statusDestination;
         this.completionTracker = builder.completionTracker;
+        Destination statusDestination = builder.statusDestination;
         ConnectionFactory localFactory = builder.connectionFactory;
         String evaluationId = builder.evaluationId;
         Function<ByteBuffer, T> mapper = builder.mapper;
         List<Consumer<T>> subscribers = builder.subscribers;
-        List<OneGroupConsumer<T>> groupSubscribers = builder.groupSubscribers;
+        List<Consumer<T>> groupSubscribers = builder.groupSubscribers;
+        Function<List<T>, T> groupAggregator = builder.groupAggregator;
 
         Objects.requireNonNull( this.destination );
         Objects.requireNonNull( this.completionTracker );
@@ -826,9 +1010,27 @@ class MessageSubscriber implements Closeable
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
 
-        if ( subscribers.isEmpty() && groupSubscribers.isEmpty() )
+        if ( subscribers.isEmpty() && ( Objects.isNull( groupSubscribers ) || groupSubscribers.isEmpty() ) )
         {
             throw new IllegalArgumentException( "Specify one or more subscribers for evaluation " + evaluationId );
+        }
+
+        if ( groupSubscribers.isEmpty() && Objects.nonNull( groupAggregator ) )
+        {
+            throw new IllegalArgumentException( "While creating a subscriber for "
+                                                + evaluationId
+                                                + ", found an aggregator for message groups without any group "
+                                                + "consumers. Remove the aggregator or add some group consumers." );
+        }
+
+        if ( !groupSubscribers.isEmpty() && Objects.isNull( groupAggregator ) )
+        {
+            throw new IllegalArgumentException( "While creating a subscriber for "
+                                                + evaluationId
+                                                + ", found "
+                                                + groupSubscribers.size()
+                                                + " consumers for message groups, but no group message aggregator. "
+                                                + "Add the aggregator or remove the group consumers." );
         }
 
         this.connection = localFactory.createConnection();
@@ -839,35 +1041,50 @@ class MessageSubscriber implements Closeable
         // Client acknowledges
         this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 
+        String selector = MessagePublisher.JMS_CORRELATION_ID + evaluationId + "'";
+
+        if ( Objects.nonNull( statusDestination ) )
+        {
+            this.statusConsumer = this.getConsumer( statusDestination, selector );
+        }
+        else
+        {
+            this.statusConsumer = null;
+        }
+
+        this.groupConsumers = new ConcurrentHashMap<>();
+
         // Add subscriptions
         List<MessageConsumer> localConsumers = new ArrayList<>();
-        List<MessageConsumer> localGroupedConsumers = new ArrayList<>();
 
         if ( !subscribers.isEmpty() )
         {
-            List<MessageConsumer> someConsumers = this.subscribeAll( subscribers, mapper, evaluationId );
+            List<MessageConsumer> someConsumers = this.subscribeAllConsumers( subscribers, mapper, evaluationId );
             localConsumers.addAll( someConsumers );
         }
         if ( !groupSubscribers.isEmpty() )
         {
-            List<MessageConsumer> moreConsumers =
-                    this.subscribeAllGrouped( groupSubscribers, mapper, evaluationId );
-            localGroupedConsumers.addAll( moreConsumers );
+            LOGGER.debug( "Discovered {} consumers for message groups associated with evaluation {}.",
+                          groupSubscribers.size(),
+                          evaluationId );
 
-            Objects.requireNonNull( this.statusDestination,
+            List<MessageConsumer> moreConsumers = this.subscribeAllGroupedConsumers( groupSubscribers,
+                                                                                     mapper,
+                                                                                     evaluationId,
+                                                                                     groupAggregator );
+            localConsumers.addAll( moreConsumers );
+
+            Objects.requireNonNull( statusDestination,
                                     "When setting grouped subscribers, the destination for evaluation status messages "
-                                                            + "is also required because grouped subscriptions listen "
-                                                            + "for status messages that identify when the group has "
-                                                            + "completed." );
+                                                       + "is also required because grouped subscriptions listen "
+                                                       + "for status messages that identify when the group has "
+                                                       + "completed." );
         }
 
         this.consumers = Collections.unmodifiableList( localConsumers );
-        this.groupedConsumers = Collections.unmodifiableList( localGroupedConsumers );
 
         // Start the connection
         this.connection.start();
-
-        this.cleanUp = new ArrayList<>();
 
         LOGGER.debug( "Created message subscriber {}, which is ready to receive subscriptions.", this );
     }

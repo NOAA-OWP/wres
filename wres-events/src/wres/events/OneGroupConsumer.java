@@ -27,7 +27,7 @@ import wres.statistics.generated.Statistics;
  */
 
 @ThreadSafe
-public class OneGroupConsumer<T> implements Consumer<T>
+class OneGroupConsumer<T> implements Consumer<T>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( OneGroupConsumer.class );
@@ -84,9 +84,22 @@ public class OneGroupConsumer<T> implements Consumer<T>
      * @throws NullPointerException if any input is null
      */
 
-    public static OneGroupConsumer<Statistics> of( Consumer<Statistics> innerConsumer, String groupId )
+    static OneGroupConsumer<Statistics> of( Consumer<Statistics> innerConsumer, String groupId )
     {
-        Function<List<Statistics>, Statistics> statisticsAggregator = statistics -> {
+        Function<List<Statistics>, Statistics> statisticsAggregator = OneGroupConsumer.getStatisticsAggregator();
+
+        return new OneGroupConsumer<>( innerConsumer, statisticsAggregator, groupId );
+    }
+
+    /**
+     * Helper that returns an aggregator for statistics messages.
+     * 
+     * @return a statistics aggregator
+     */
+
+    static Function<List<Statistics>, Statistics> getStatisticsAggregator()
+    {
+        return statistics -> {
 
             // Build the aggregate statistics
             Statistics.Builder aggregate = Statistics.newBuilder();
@@ -99,8 +112,6 @@ public class OneGroupConsumer<T> implements Consumer<T>
 
             return aggregate.build();
         };
-
-        return new OneGroupConsumer<>( innerConsumer, statisticsAggregator, groupId );
     }
 
     /**
@@ -114,9 +125,9 @@ public class OneGroupConsumer<T> implements Consumer<T>
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> OneGroupConsumer<T> of( Consumer<T> innerConsumer,
-                                              Function<List<T>, T> aggregator,
-                                              String groupId )
+    static <T> OneGroupConsumer<T> of( Consumer<T> innerConsumer,
+                                       Function<List<T>, T> aggregator,
+                                       String groupId )
     {
         return new OneGroupConsumer<>( innerConsumer, aggregator, groupId );
     }
@@ -127,11 +138,22 @@ public class OneGroupConsumer<T> implements Consumer<T>
      * @return the number of messages
      */
 
-    public int size()
+    int size()
     {
         return this.cache.size();
     }
+    
+    /**
+     * Gets the inner consumer.
+     * 
+     * @return the inner consumer
+     */
 
+    Consumer<T> getInnerConsumer()
+    {
+        return this.innerConsumer;
+    }
+    
     /**
      * Accept a message.
      * 
@@ -162,7 +184,7 @@ public class OneGroupConsumer<T> implements Consumer<T>
      * Flushes the cache of statistics to the inner consumer.
      */
 
-    public void acceptGroup()
+    void acceptGroup()
     {
         if ( this.hasBeenUsed.getAndSet( true ) )
         {
@@ -193,13 +215,13 @@ public class OneGroupConsumer<T> implements Consumer<T>
     {
         return this.groupId;
     }
-    
+
     /**
      * Returns <code>true</code> if the consumer has been used already, otherwise <code>false</code>.
      * 
      * @return true if the consumer has consumed
      */
-    
+
     boolean hasBeenUsed()
     {
         return this.hasBeenUsed.get();

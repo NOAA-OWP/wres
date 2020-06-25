@@ -41,14 +41,11 @@ import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.io.concurrency.Executor;
-import wres.io.retrieval.UnitMapper;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedPairedWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedScoreWriter;
-import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.png.PNGBoxPlotWriter;
 import wres.io.writing.png.PNGDiagramWriter;
 import wres.io.writing.png.PNGDoubleScoreWriter;
@@ -92,12 +89,6 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     private final SystemSettings systemSettings;
-
-    /**
-     * Executor.
-     */
-
-    private final Executor executor;
 
     /**
      * The resolved project configuration.
@@ -179,6 +170,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     /**
      * Build a product processor.
      * 
+     * @param systemSettings the system settings
      * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @param sharedWriters an optional set of shared writers to consume outputs
@@ -187,13 +179,11 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     static ProduceOutputsFromStatistics of( SystemSettings systemSettings,
-                                            Executor executor,
                                             ResolvedProject resolvedProject,
                                             BiPredicate<StatisticType, DestinationType> writeWhenTrue,
                                             SharedStatisticsWriters sharedWriters)
     {
         return new ProduceOutputsFromStatistics( systemSettings,
-                                                 executor,
                                                  resolvedProject,
                                                  writeWhenTrue,
                                                  sharedWriters);
@@ -942,17 +932,9 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * @return the executor.
-     */
-
-    private Executor getExecutor()
-    {
-        return this.executor;
-    }
-
-    /**
      * Build a product processor that writes conditionally.
      * 
+     * @param systemSettings the system settings
      * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @param sharedWriters an optional set of shared writers to consume outputs
@@ -961,19 +943,16 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      */
 
     private ProduceOutputsFromStatistics( SystemSettings systemSettings,
-                                          Executor executor,
                                           ResolvedProject resolvedProject,
                                           BiPredicate<StatisticType, DestinationType> writeWhenTrue,
                                           SharedStatisticsWriters sharedWriters)
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( executor );
         Objects.requireNonNull( resolvedProject,
                                 "Specify a non-null configuration for the results processor." );
 
         Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
 
-        this.executor = executor;
         this.systemSettings = systemSettings;
         this.resourcesToClose = new ArrayList<>( 1 );
         this.writersToPaths = new ArrayList<>();

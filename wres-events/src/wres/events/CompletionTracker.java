@@ -1,7 +1,5 @@
 package wres.events;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
-import wres.statistics.generated.Statistics;
 
 /**
  * <p>Used to track the completion state of an evaluation and to bind a latch to the reported completion state in order 
@@ -66,12 +63,10 @@ class CompletionTracker
 
     /**
      * Number of consumers for each message group. This is used to determine the expected number of consumptions 
-     * across all groups. In principle, grouped consumers may consume only a subset of all messages and there may be 
-     * multiple consumers of the same messages. Thus, calculating the expected number of consumptions per group 
-     * requires a correlation between the registered group consumers and the notification of groups completed.
+     * across all groups.
      */
 
-    private final Map<String, Integer> numberOfConsumersPerGroup;
+    private final int numberOfConsumersPerGroup;
 
     /**
      * The expected number of messages per message group.
@@ -105,20 +100,19 @@ class CompletionTracker
      * @param evaluationConsumerCount the number of evaluation description consumers
      * @param statisticsConsumerCount the number of statistics consumers
      * @param evaluationStatusConsumerCount the number of evaluation status consumers
-     * @param groupConsumers the consumers by message group, used to help track the expcted number of grouped 
-     *            consumptions
+     * @param statisticsGroupConsumerCount the number of consumers for statistics groups
      * @throws IllegalArgumentException if any count is <= 0
      */
 
     static CompletionTracker of( int evaluationConsumerCount,
                                  int statisticsConsumerCount,
                                  int evaluationStatusConsumerCount,
-                                 List<OneGroupConsumer<Statistics>> groupConsumers )
+                                 int statisticsGroupConsumerCount )
     {
         return new CompletionTracker( evaluationConsumerCount,
                                       statisticsConsumerCount,
                                       evaluationStatusConsumerCount,
-                                      groupConsumers );
+                                      statisticsGroupConsumerCount );
     }
 
     /**
@@ -170,10 +164,9 @@ class CompletionTracker
         {
             this.groupLatch.countDown();
 
-            LOGGER.debug( "Registered completion of group {}, which contained {} messages. There are {} groups remaining.",
+            LOGGER.debug( "Registered completion of group {}, which contained {} messages.",
                           groupId,
-                          groupCount,
-                          this.groupLatch.getCount() );
+                          groupCount );
         }
     }
 
@@ -209,10 +202,20 @@ class CompletionTracker
                                                 + "evaluation status messages." );
         }
 
+        if ( completionState.getGroupCount() == 0 && this.numberOfConsumersPerGroup > 0 )
+        {
+            throw new IllegalArgumentException( "The evaluation has "
+                                                + this.numberOfConsumersPerGroup
+                                                + " group subscriptions, but the completion status message for this "
+                                                + " evaluation does not include the expected count of "
+                                                + "message groups." );
+        }
+
         // Wait for expected group messages first, because this informs the total number of consumptions expected
         // Wait for up to a fixed period, but only in the absence of any progress whatsoever.
         // If the latch counts down, the fixed period is reset.
         // This remains extremely lenient, i.e. not a single message consumed within the fixed period.
+        this.groupLatch.addCount( completionState.getGroupCount() );
         this.groupLatch.waitFor( this.getExpiryDurationInMinutes(), TimeUnit.MINUTES );
 
         if ( this.groupLatch.getCount() != 0 )
@@ -224,11 +227,11 @@ class CompletionTracker
         }
 
         // Report on groups complete if grouping consumers exist
-        if( ! this.numberOfConsumersPerGroup.isEmpty() )
+        if ( this.numberOfConsumersPerGroup > 0 )
         {
             LOGGER.debug( "Completion notifier has received the expected number of groups. Notifier is {}", this );
         }
-        
+
         // Sum the expected number of consumptions across all consumers
         int totalCount = this.evaluationConsumerCount * 1; // 1 evaluation description message (EDM) per evaluation
         totalCount += this.statisticsConsumerCount * ( completionState.getMessageCount() - 1 ); // -1 EDM
@@ -238,7 +241,7 @@ class CompletionTracker
         // Now the expected count is known, so add it. 
         // Any existing stored registrations will also be subtracted at this point.
         this.latch.addCount( totalCount );
-        
+
         LOGGER.debug( "Updated completion notifier {} Registered {} expected consumptions, {} completed consumptions "
                       + "and {} outstanding consumptions.",
                       this,
@@ -300,22 +303,21 @@ class CompletionTracker
      * @param evaluationConsumerCount the number of evaluation description consumers
      * @param statisticsConsumerCount the number of statistics consumers
      * @param evaluationStatusConsumerCount the number of evaluation status consumers
-     * @param groupConsumers the consumers by message group, used to help track the expected number of grouped 
-     *            consumptions
+     * @param statisticsGroupConsumerCount the number of consumers of grouped statistics messages
      * @throws IllegalArgumentException if any count is <= 0
      */
 
     private CompletionTracker( int evaluationConsumerCount,
                                int statisticsConsumerCount,
                                int evaluationStatusConsumerCount,
-                               List<OneGroupConsumer<Statistics>> groupConsumers )
+                               int statisticsGroupConsumerCount )
     {
         if ( evaluationConsumerCount <= 0 )
         {
             throw new IllegalArgumentException( "The evaluation consumer count must be >= 0. " );
         }
 
-        if ( statisticsConsumerCount <= 0 )
+        if ( statisticsConsumerCount <= 0 && statisticsGroupConsumerCount <= 0  )
         {
             throw new IllegalArgumentException( "The statistics consumer count must be >= 0. " );
         }
@@ -331,28 +333,10 @@ class CompletionTracker
         this.expectedMessagesPerGroup = new ConcurrentHashMap<>();
 
         // Register the number of consumers per group
-        this.numberOfConsumersPerGroup = new HashMap<>();
-
-        if ( Objects.nonNull( groupConsumers ) )
-        {
-            for ( OneGroupConsumer<?> next : groupConsumers )
-            {
-                String key = next.getGroupId();
-
-                if ( this.numberOfConsumersPerGroup.containsKey( key ) )
-                {
-                    int existing = this.numberOfConsumersPerGroup.get( key );
-                    this.numberOfConsumersPerGroup.put( key, existing + 1 );
-                }
-                else
-                {
-                    this.numberOfConsumersPerGroup.put( key, 1 );
-                }
-            }
-        }
+        this.numberOfConsumersPerGroup = statisticsGroupConsumerCount;
 
         // Set the latches
-        this.groupLatch = new SafeCountUpAndDownLatch( numberOfConsumersPerGroup.size() );
+        this.groupLatch = new SafeCountUpAndDownLatch();
         // The expected number of messages is unknown until a status message is received
         this.latch = new SafeCountUpAndDownLatch();
 
@@ -373,13 +357,8 @@ class CompletionTracker
 
         for ( Map.Entry<String, Integer> next : this.expectedMessagesPerGroup.entrySet() )
         {
-            String groupId = next.getKey();
             int messages = next.getValue();
-
-            if ( this.numberOfConsumersPerGroup.containsKey( groupId ) )
-            {
-                total += ( this.numberOfConsumersPerGroup.get( groupId ) * messages );
-            }
+            total += ( this.numberOfConsumersPerGroup * messages );
         }
 
         return total;
@@ -405,7 +384,7 @@ class CompletionTracker
         private final Sync sync;
         private AtomicLong timestamp;
         private AtomicInteger countToSubtractOnNextAdd;
-        
+
         /**
          * Constructs a {@link CountingLatch} initialized to zero.
          */
@@ -413,18 +392,6 @@ class CompletionTracker
         private SafeCountUpAndDownLatch()
         {
             this.sync = new Sync();
-            this.timestamp = new AtomicLong( System.nanoTime() );
-            this.countToSubtractOnNextAdd = new AtomicInteger();
-        }
-
-        /**
-         * Construct with a starting count.
-         * @param count
-         */
-        
-        private SafeCountUpAndDownLatch( int count )
-        {
-            this.sync = new Sync( count );
             this.timestamp = new AtomicLong( System.nanoTime() );
             this.countToSubtractOnNextAdd = new AtomicInteger();
         }
@@ -439,17 +406,17 @@ class CompletionTracker
 
         private void countDown()
         {
-            if( this.getCount() == 0 )
+            if ( this.getCount() == 0 )
             {
                 this.countToSubtractOnNextAdd.incrementAndGet();
             }
-            else 
+            else
             {
                 this.sync.releaseShared( -1 );
                 this.timestamp = new AtomicLong( System.nanoTime() );
             }
         }
-        
+
         /**
          * Adds to the count, removing any registered count that occurred while the latch count was zero. 
          * 
@@ -461,7 +428,7 @@ class CompletionTracker
         private void addCount( final int count )
         {
             int increment = count - this.countToSubtractOnNextAdd.get();
-            
+
             this.sync.releaseShared( increment );
             this.timestamp = new AtomicLong( System.nanoTime() );
         }
@@ -499,7 +466,7 @@ class CompletionTracker
          * @return true if acquired, false if timed out
          * @throws InterruptedException
          */
-        
+
         private boolean waitFor( long timeout, TimeUnit unit ) throws InterruptedException
         {
             long start = this.timestamp.get();
@@ -515,7 +482,7 @@ class CompletionTracker
                 difference = System.nanoTime() - start;
             }
         }
-        
+
         /**
          * Synchronization control.
          * 
@@ -529,7 +496,7 @@ class CompletionTracker
             private Sync()
             {
             }
-            
+
             private Sync( int count )
             {
                 this.setState( count );
@@ -575,6 +542,6 @@ class CompletionTracker
             }
         }
     }
-    
-    
+
+
 }

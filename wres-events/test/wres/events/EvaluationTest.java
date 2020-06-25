@@ -3,10 +3,10 @@ package wres.events;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import javax.jms.JMSException;
@@ -15,6 +15,7 @@ import javax.naming.NamingException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
@@ -265,6 +266,96 @@ public class EvaluationTest
         assertEquals( 24, actualStatuses.size() );
     }
 
+    // Performance testing only. Not to be exposed. Remove @ignore locally, when needed.
+    @Test
+    @Ignore
+    public void testLargeEvaluation()
+            throws IOException, NamingException, JMSException, InterruptedException
+    {
+        Instant then = Instant.now();
+
+        // Create the consumers upfront
+        // Consumers simply dump to an actual output store for comparison with the expected output
+        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>(); // Common store
+        List<EvaluationStatus> actualStatuses = new ArrayList<>();
+
+        // Statistics incremented as the pipeline progresses
+        List<Statistics> actualStatistics = new ArrayList<>();
+
+        // End-of-pipeline statistics
+        List<Statistics> actualAggregatedStatistics = new ArrayList<>();
+
+        // Consumers for the incremental messages
+        Consumer<EvaluationStatus> status = actualStatuses::add;
+        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
+        Consumer<Statistics> aggregatedStatistics = actualAggregatedStatistics::add;
+        Consumer<Statistics> statistics = actualStatistics::add;
+
+        int featureCount = 10000;
+
+        // Create a container for all the consumers
+        Consumers consumerGroup =
+                new Consumers.Builder().addStatusConsumer( status )
+                                       .addEvaluationConsumer( description )
+                                       .addStatisticsConsumer( statistics )
+                                       .addGroupedStatisticsConsumer( aggregatedStatistics )
+                                       .build();
+
+        // Create and start a broker and open an evaluation, closing on completion
+        try ( Evaluation evaluation = Evaluation.open( this.oneEvaluation,
+                                                       EvaluationTest.connections,
+                                                       consumerGroup ); )
+        {
+            // Iterate the groups/features
+            for ( int i = 0; i < featureCount; i++ )
+            {
+                // Publish the group/feature
+                for ( Statistics next : this.oneStatistics )
+                {
+                    evaluation.publish( next, "group_" + i );
+                }
+
+                // Flag completion of group one
+                EvaluationStatus groupDone =
+                        EvaluationStatus.newBuilder()
+                                        .setCompletionStatus( CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
+                                        .setMessageCount( 10 )
+                                        .build();
+
+                evaluation.publish( groupDone, "group_" + i );
+            }
+
+            // Success
+            Instant now = Instant.now();
+            long seconds = now.getEpochSecond();
+            int nanos = now.getNano();
+            EvaluationStatus complete = EvaluationStatus.newBuilder()
+                                                        .setCompletionStatus( CompletionStatus.COMPLETE_REPORTED_SUCCESS )
+                                                        .setEvaluationEndTime( Timestamp.newBuilder()
+                                                                                        .setSeconds( seconds )
+                                                                                        .setNanos( nanos ) )
+                                                        .setMessageCount( evaluation.getPublishedMessageCount() )
+                                                        .setGroupCount( featureCount )
+                                                        .setStatusMessageCount( evaluation.getPublishedStatusMessageCount()
+                                                                                + 1 ) // This one
+                                                        .build();
+
+            evaluation.publish( complete );
+        }
+
+        assertEquals( featureCount, actualAggregatedStatistics.size() );
+        assertEquals( featureCount * this.oneStatistics.size(), actualStatistics.size() );
+
+        Instant now = Instant.now();
+        
+        System.out.println();
+        System.out.println( "Time elapsed for messaging an evaluation composed of " + featureCount
+                            + " features, each with "
+                            + this.oneStatistics.size()
+                            + " pools (and asserting the correct number of consumed statistics): "
+                            + Duration.between( then, now ) );
+    }
+
     @Test
     public void publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumer()
             throws IOException, NamingException, JMSException, InterruptedException
@@ -278,8 +369,7 @@ public class EvaluationTest
         List<Statistics> actualStatistics = new ArrayList<>();
 
         // End-of-pipeline statistics
-        AtomicReference<Statistics> actualAggregatedStatisticsOne = new AtomicReference<>();
-        AtomicReference<Statistics> actualAggregatedStatisticsTwo = new AtomicReference<>();
+        List<Statistics> actualAggregatedStatistics = new ArrayList<>();
 
         // Consumers for the incremental messages
         Consumer<EvaluationStatus> status = actualStatuses::add;
@@ -287,18 +377,14 @@ public class EvaluationTest
         Consumer<Statistics> statistics = actualStatistics::add;
 
         // Consumers for the end-of-pipeline/grouped statistics
-        OneGroupConsumer<Statistics> aggregatedStatisticsOne =
-                OneGroupConsumer.of( actualAggregatedStatisticsOne::set, "groupOne" );
-        OneGroupConsumer<Statistics> aggregatedStatisticsTwo =
-                OneGroupConsumer.of( actualAggregatedStatisticsTwo::set, "groupTwo" );
+        Consumer<Statistics> aggregatedStatistics = actualAggregatedStatistics::add;
 
         // Create a container for all the consumers
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( status )
                                        .addEvaluationConsumer( description )
                                        .addStatisticsConsumer( statistics )
-                                       .addGroupedStatisticsConsumer( aggregatedStatisticsOne )
-                                       .addGroupedStatisticsConsumer( aggregatedStatisticsTwo )
+                                       .addGroupedStatisticsConsumer( aggregatedStatistics )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -346,6 +432,7 @@ public class EvaluationTest
                                                                                         .setSeconds( seconds )
                                                                                         .setNanos( nanos ) )
                                                         .setMessageCount( evaluation.getPublishedMessageCount() )
+                                                        .setGroupCount( 2 )
                                                         .setStatusMessageCount( evaluation.getPublishedStatusMessageCount()
                                                                                 + 1 ) // This one
                                                         .build();
@@ -367,12 +454,13 @@ public class EvaluationTest
         Statistics.Builder expectedOneBuilder = Statistics.newBuilder();
         this.oneStatistics.forEach( next -> expectedOneBuilder.mergeFrom( next ) );
 
-        assertEquals( expectedOneBuilder.build(), actualAggregatedStatisticsOne.get() );
-
         Statistics.Builder expectedTwoBuilder = Statistics.newBuilder();
         this.anotherStatistics.forEach( next -> expectedTwoBuilder.mergeFrom( next ) );
 
-        assertEquals( expectedTwoBuilder.build(), actualAggregatedStatisticsTwo.get() );
+        List<Statistics> expectedAggregatedStatistics = List.of( expectedOneBuilder.build(),
+                                                                 expectedTwoBuilder.build() );
+
+        assertEquals( expectedAggregatedStatistics, actualAggregatedStatistics );
 
         // For status messages, assert number only: 15 statistics, 1 evaluation start and 1 evaluation end, 1 message 
         // for each 2 group completed = 19
