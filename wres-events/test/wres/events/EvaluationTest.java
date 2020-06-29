@@ -21,10 +21,14 @@ import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.ScoreStatistic;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
+import wres.statistics.generated.Pairs.Pair;
+import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
+import wres.statistics.generated.Pairs;
 import wres.statistics.generated.ScoreStatistic.ScoreStatisticComponent;
 
 /**
@@ -58,6 +62,12 @@ public class EvaluationTest
      */
 
     private List<Statistics> anotherStatistics;
+
+    /**
+     * Some pairs to reuse.
+     */
+
+    private Pairs somePairs;
 
     /**
      * Connection factory.
@@ -107,6 +117,14 @@ public class EvaluationTest
             statistics.addScores( scoreBuilder );
             this.anotherStatistics.add( statistics.build() );
         }
+
+        this.somePairs =
+                Pairs.newBuilder()
+                     .addTimeSeries( TimeSeriesOfPairs.newBuilder()
+                                                      .addPairs( Pair.newBuilder()
+                                                                     .addLeft( 7.0 )
+                                                                     .addRight( 13.0 ) ) )
+                     .build();
     }
 
     @Test
@@ -288,7 +306,9 @@ public class EvaluationTest
         // Consumers for the incremental messages
         Consumer<EvaluationStatus> status = actualStatuses::add;
         Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<Statistics> aggregatedStatistics = actualAggregatedStatistics::add;
+        Consumer<List<Statistics>> aggregatedStatistics =
+                aList -> actualAggregatedStatistics.add( MessageFactory.getStatisticsAggregator()
+                                                                       .apply( aList ) );
         Consumer<Statistics> statistics = actualStatistics::add;
 
         int featureCount = 10000;
@@ -347,7 +367,7 @@ public class EvaluationTest
         assertEquals( featureCount * this.oneStatistics.size(), actualStatistics.size() );
 
         Instant now = Instant.now();
-        
+
         System.out.println();
         System.out.println( "Time elapsed for messaging an evaluation composed of " + featureCount
                             + " features, each with "
@@ -357,8 +377,9 @@ public class EvaluationTest
     }
 
     @Test
-    public void publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumer()
-            throws IOException, NamingException, JMSException, InterruptedException
+    public void
+            publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumerAndOnePairsConsumer()
+                    throws IOException, NamingException, JMSException, InterruptedException
     {
         // Create the consumers upfront
         // Consumers simply dump to an actual output store for comparison with the expected output
@@ -371,13 +392,19 @@ public class EvaluationTest
         // End-of-pipeline statistics
         List<Statistics> actualAggregatedStatistics = new ArrayList<>();
 
+        // Pairs
+        List<Pairs> actualPairs = new ArrayList<>();
+
         // Consumers for the incremental messages
         Consumer<EvaluationStatus> status = actualStatuses::add;
         Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
         Consumer<Statistics> statistics = actualStatistics::add;
+        Consumer<Pairs> pairs = actualPairs::add;
 
         // Consumers for the end-of-pipeline/grouped statistics
-        Consumer<Statistics> aggregatedStatistics = actualAggregatedStatistics::add;
+        Consumer<List<Statistics>> aggregatedStatistics =
+                aList -> actualAggregatedStatistics.add( MessageFactory.getStatisticsAggregator()
+                                                                       .apply( aList ) );
 
         // Create a container for all the consumers
         Consumers consumerGroup =
@@ -385,6 +412,7 @@ public class EvaluationTest
                                        .addEvaluationConsumer( description )
                                        .addStatisticsConsumer( statistics )
                                        .addGroupedStatisticsConsumer( aggregatedStatistics )
+                                       .addPairsConsumer( pairs )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -397,6 +425,9 @@ public class EvaluationTest
             {
                 evaluation.publish( next, "groupOne" );
             }
+
+            // Publish the pairs
+            evaluation.publish( this.somePairs );
 
             // Flag completion of group one
             EvaluationStatus groupOneDone =
@@ -412,6 +443,9 @@ public class EvaluationTest
             {
                 evaluation.publish( next, "groupTwo" );
             }
+
+            // Publish the pairs
+            evaluation.publish( this.somePairs );
 
             // Flag completion of group two
             EvaluationStatus groupTwoDone =
@@ -432,6 +466,7 @@ public class EvaluationTest
                                                                                         .setSeconds( seconds )
                                                                                         .setNanos( nanos ) )
                                                         .setMessageCount( evaluation.getPublishedMessageCount() )
+                                                        .setPairsMessageCount( evaluation.getPublishedPairsMessageCount() )
                                                         .setGroupCount( 2 )
                                                         .setStatusMessageCount( evaluation.getPublishedStatusMessageCount()
                                                                                 + 1 ) // This one
@@ -465,6 +500,9 @@ public class EvaluationTest
         // For status messages, assert number only: 15 statistics, 1 evaluation start and 1 evaluation end, 1 message 
         // for each 2 group completed = 19
         assertEquals( 19, actualStatuses.size() );
+
+        List<Pairs> expectedPairs = List.of( this.somePairs, this.somePairs );
+        assertEquals( expectedPairs, actualPairs );
     }
 
     @AfterClass

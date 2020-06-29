@@ -79,12 +79,12 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
 
 /**
- * Tests the {@link ProtobufMessageFactory}.
+ * Tests the {@link MessageFactory}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class ProtobufMessageFactoryTest
+public class MessageFactoryTest
 {
     private static final String ESP = "ESP";
     private static final String HEFS = "HEFS";
@@ -179,7 +179,7 @@ public class ProtobufMessageFactoryTest
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
-        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics, this.ensemblePairs );
+        Statistics statisticsOut = MessageFactory.parse( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -213,7 +213,7 @@ public class ProtobufMessageFactoryTest
                                                   .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                   .build();
 
-        Statistics firstOut = ProtobufMessageFactory.parse( statistics, this.ensemblePairs );
+        Statistics firstOut = MessageFactory.parse( statistics, this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
@@ -250,7 +250,7 @@ public class ProtobufMessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics,
+        Statistics statisticsOut = MessageFactory.parse( statistics,
                                                                  this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
@@ -283,7 +283,7 @@ public class ProtobufMessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics );
+        Statistics statisticsOut = MessageFactory.parse( statistics );
 
         Path path = this.outputDirectory.resolve( "duration_score_statistics.pb3" );
 
@@ -315,7 +315,7 @@ public class ProtobufMessageFactoryTest
                                                   .build();
 
         // Create a statistics message
-        Statistics statisticsOut = ProtobufMessageFactory.parse( statistics );
+        Statistics statisticsOut = MessageFactory.parse( statistics );
 
         Path path = this.outputDirectory.resolve( "duration_diagrams_statistics.pb3" );
 
@@ -347,7 +347,7 @@ public class ProtobufMessageFactoryTest
 
         // Create a message
         EvaluationStatus statusOut =
-                ProtobufMessageFactory.parse( ELEVENTH_TIME,
+                MessageFactory.parse( ELEVENTH_TIME,
                                               TWELFTH_TIME,
                                               CompletionStatus.COMPLETE_REPORTED_SUCCESS,
                                               List.of( warning, error, info ) );
@@ -391,7 +391,7 @@ public class ProtobufMessageFactoryTest
                                                       .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
                                                       .build();
 
-            Statistics sent = ProtobufMessageFactory.parse( statistics, this.ensemblePairs );
+            Statistics sent = MessageFactory.parse( statistics, this.ensemblePairs );
 
             // Latch to identify when consumption is complete
             CountDownLatch consumerCount = new CountDownLatch( 1 );

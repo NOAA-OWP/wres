@@ -357,7 +357,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                                       Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
-                                              thresholdExecutor );
+                                              this.thresholdExecutor );
     }
 
 
@@ -378,7 +378,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                                      Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
-                                              thresholdExecutor );
+                                              this.thresholdExecutor );
     }
 
 }

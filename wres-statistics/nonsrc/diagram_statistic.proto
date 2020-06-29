@@ -16,14 +16,8 @@ message DiagramStatistic
 
     DiagramMetric metric = 1;
     // The metric.
-
-    Threshold event_threshold = 2;
-    // Threshold used to define a partition of pairs or categorical event.
-        
-    Threshold decision_threshold = 3;
-    // Threshold used to convert a probability into a dichotomous outcome.
     
-    repeated DiagramStatisticComponent statistics = 4;
+    repeated DiagramStatisticComponent statistics = 2;
     // The diagram component values.
     
     message DiagramStatisticComponent 

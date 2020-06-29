@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.ScoreStatistic;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.ScoreStatistic.ScoreStatisticComponent;
@@ -32,8 +33,8 @@ public class OneGroupConsumerTest
 
         // Each consumer group involves an addition of integers
         Function<List<Integer>, Integer> aggregator = list -> list.stream().mapToInt( Integer::intValue ).sum();
-        Consumer<Integer> consumer = anInt -> sum.set( anInt );
-        OneGroupConsumer<Integer> group = OneGroupConsumer.of( consumer, aggregator, "someGroupId" );
+        Consumer<List<Integer>> consumer = aList -> sum.set( aggregator.apply( aList ) );
+        OneGroupConsumer<Integer> group = OneGroupConsumer.of( consumer, "someGroupId" );
 
         group.accept( 23 );
         group.accept( 17 );
@@ -53,7 +54,8 @@ public class OneGroupConsumerTest
         AtomicReference<Statistics> aggregated = new AtomicReference<>();
 
         // Each consumer group involves an addition of integers
-        Consumer<Statistics> consumer = stat -> aggregated.set( stat );
+        Consumer<List<Statistics>> consumer = aList -> aggregated.set( MessageFactory.getStatisticsAggregator()
+                                                                                             .apply( aList ) );
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( consumer, "someGroupId" );
 
         // Add two statistics and accept them
@@ -93,7 +95,7 @@ public class OneGroupConsumerTest
         group.acceptGroup();
 
         IllegalStateException expected = assertThrows( IllegalStateException.class,
-                                           () -> group.acceptGroup() );
+                                                       () -> group.acceptGroup() );
 
         String expectedMessage = "Attempted to reuse a one-use consumer, which is not allowed.";
 
@@ -109,9 +111,9 @@ public class OneGroupConsumerTest
         group.acceptGroup();
 
         Statistics defaultInstance = Statistics.getDefaultInstance();
-        
+
         IllegalStateException expected = assertThrows( IllegalStateException.class,
-                                           () -> group.accept( defaultInstance ) );
+                                                       () -> group.accept( defaultInstance ) );
 
         String expectedMessage = "Attempted to reuse a one-use consumer, which is not allowed.";
 

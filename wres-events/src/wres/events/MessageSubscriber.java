@@ -159,19 +159,13 @@ class MessageSubscriber<T> implements Closeable
          * List of subscriptions to groups of evaluation events.
          */
 
-        private List<Consumer<T>> groupSubscribers = new ArrayList<>();
+        private List<Consumer<List<T>>> groupSubscribers = new ArrayList<>();
 
         /**
          * A mapper between message bytes and messages.
          */
 
         private Function<ByteBuffer, T> mapper;
-
-        /**
-         * A group aggregator.
-         */
-
-        private Function<List<T>, T> groupAggregator;
 
         /**
          * An evaluation identifier.
@@ -253,26 +247,11 @@ class MessageSubscriber<T> implements Closeable
          * @throws NullPointerException if the list is null
          */
 
-        Builder<T> addGroupSubscribers( List<Consumer<T>> subscribers )
+        Builder<T> addGroupSubscribers( List<Consumer<List<T>>> subscribers )
         {
             Objects.requireNonNull( subscribers );
 
             this.groupSubscribers.addAll( subscribers );
-
-            return this;
-        }
-
-        /**
-         * Sets a function that aggregates the grouped statistics.
-         * 
-         * @param groupAggregator the group aggregator
-         * @return this builder
-         * @throws NullPointerException if the list is null
-         */
-
-        Builder<T> setGroupAggregator( Function<List<T>, T> groupAggregator )
-        {
-            this.groupAggregator = groupAggregator;
 
             return this;
         }
@@ -371,27 +350,24 @@ class MessageSubscriber<T> implements Closeable
      * @param consumers the consumers
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
-     * @param groupAggregator a group aggregator
      * @return a list of subscriptions
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
      */
 
-    private List<MessageConsumer> subscribeAllGroupedConsumers( List<Consumer<T>> consumers,
+    private List<MessageConsumer> subscribeAllGroupedConsumers( List<Consumer<List<T>>> consumers,
                                                                 Function<ByteBuffer, T> mapper,
-                                                                String evaluationId,
-                                                                Function<List<T>, T> groupAggregator )
+                                                                String evaluationId )
             throws JMSException
     {
         Objects.requireNonNull( consumers );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( evaluationId );
-        Objects.requireNonNull( groupAggregator );
 
         List<MessageConsumer> returnMe = new ArrayList<>();
-        for ( Consumer<T> next : consumers )
+        for ( Consumer<List<T>> next : consumers )
         {
-            MessageConsumer consumer = this.subscribeOneGroupedConsumer( next, mapper, evaluationId, groupAggregator );
+            MessageConsumer consumer = this.subscribeOneGroupedConsumer( next, mapper, evaluationId );
             returnMe.add( consumer );
         }
 
@@ -406,29 +382,25 @@ class MessageSubscriber<T> implements Closeable
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
      * @param groupIds the group identifiers by which to filter messages
-     * @param groupAggregator a group aggregator
      * @return a group subscription
      * @throws JMSException if the session fails to create a consumer due to some internal error
      * @throws NullPointerException if any input is null
      */
 
-    private MessageConsumer subscribeOneGroupedConsumer( Consumer<T> innerSubscriber,
+    private MessageConsumer subscribeOneGroupedConsumer( Consumer<List<T>> innerSubscriber,
                                                          Function<ByteBuffer, T> mapper,
-                                                         String evaluationId,
-                                                         Function<List<T>, T> groupAggregator )
+                                                         String evaluationId )
             throws JMSException
     {
         Objects.requireNonNull( innerSubscriber );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( evaluationId );
-        Objects.requireNonNull( groupAggregator );
 
         // Create a consumer that accepts the small messages and then populates the list of group subscribers
         // as those messages arrive
         MessageConsumer messageConsumer = this.getConsumerForGroupedMessages( innerSubscriber,
                                                                               mapper,
-                                                                              evaluationId,
-                                                                              groupAggregator );
+                                                                              evaluationId );
 
         // Now listen for status messages when a group completes
         MessageListener listener = message -> {
@@ -550,16 +522,14 @@ class MessageSubscriber<T> implements Closeable
      * @param innerSubscriber the inner subscriber that accepts aggregated messages
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
-     * @param groupAggregator the function that aggregates grouped messages
      * @return a subscription
      * @throws JMSException if the session fails to create a consumer due to some internal error
      * @throws NullPointerException if any input is null
      */
 
-    private MessageConsumer getConsumerForGroupedMessages( Consumer<T> innerSubscriber,
+    private MessageConsumer getConsumerForGroupedMessages( Consumer<List<T>> innerSubscriber,
                                                            Function<ByteBuffer, T> mapper,
-                                                           String evaluationId,
-                                                           Function<List<T>, T> groupAggregator )
+                                                           String evaluationId )
             throws JMSException
     {
         Objects.requireNonNull( mapper );
@@ -591,8 +561,7 @@ class MessageSubscriber<T> implements Closeable
                 T received = mapper.apply( bufferedMessage );
 
                 Queue<OneGroupConsumer<T>> subscribers = this.getGroupSubscriber( innerSubscriber,
-                                                                                  groupId,
-                                                                                  groupAggregator );
+                                                                                  groupId );
 
                 // Register the message with each grouped subscriber
                 subscribers.forEach( next -> next.accept( received ) );
@@ -664,16 +633,14 @@ class MessageSubscriber<T> implements Closeable
      * @param <T> the type of message
      * @param innerConsumer the inner consumer that accepts aggregate messages
      * @param groupId the group identifier
-     * @param groupAggregator a group aggregator
+     * @return the group subscriber
      */
 
-    private Queue<OneGroupConsumer<T>> getGroupSubscriber( Consumer<T> innerConsumer,
-                                                           String groupId,
-                                                           Function<List<T>, T> groupAggregator )
+    private Queue<OneGroupConsumer<T>> getGroupSubscriber( Consumer<List<T>> innerConsumer,
+                                                           String groupId )
     {
         Objects.requireNonNull( innerConsumer );
         Objects.requireNonNull( groupId );
-        Objects.requireNonNull( groupAggregator );
 
         Queue<OneGroupConsumer<T>> add = new ConcurrentLinkedQueue<>();
 
@@ -691,7 +658,7 @@ class MessageSubscriber<T> implements Closeable
                 }
 
                 // Does not exist, so add
-                OneGroupConsumer<T> newConsumer = OneGroupConsumer.of( innerConsumer, groupAggregator, groupId );
+                OneGroupConsumer<T> newConsumer = OneGroupConsumer.of( innerConsumer, groupId );
 
                 existingConsumers.add( newConsumer );
             }
@@ -701,7 +668,7 @@ class MessageSubscriber<T> implements Closeable
         // No, so add it
         else
         {
-            OneGroupConsumer<T> newConsumer = OneGroupConsumer.of( innerConsumer, groupAggregator, groupId );
+            OneGroupConsumer<T> newConsumer = OneGroupConsumer.of( innerConsumer, groupId );
             add.add( newConsumer );
 
             return add;
@@ -892,7 +859,6 @@ class MessageSubscriber<T> implements Closeable
 
         LOGGER.debug( "Completed clean-up of subscriber {}", this );
 
-
         this.internalClose();
     }
 
@@ -986,7 +952,6 @@ class MessageSubscriber<T> implements Closeable
      * @throws JMSException if the JMS provider fails to create the connection due to some internal error
      * @throws JMSSecurityException if client authentication fails
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if no subscribers are defined
      */
 
     private MessageSubscriber( Builder<T> builder )
@@ -1000,8 +965,7 @@ class MessageSubscriber<T> implements Closeable
         String evaluationId = builder.evaluationId;
         Function<ByteBuffer, T> mapper = builder.mapper;
         List<Consumer<T>> subscribers = builder.subscribers;
-        List<Consumer<T>> groupSubscribers = builder.groupSubscribers;
-        Function<List<T>, T> groupAggregator = builder.groupAggregator;
+        List<Consumer<List<T>>> groupSubscribers = builder.groupSubscribers;
 
         Objects.requireNonNull( this.destination );
         Objects.requireNonNull( this.completionTracker );
@@ -1009,29 +973,6 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( evaluationId );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
-
-        if ( subscribers.isEmpty() && ( Objects.isNull( groupSubscribers ) || groupSubscribers.isEmpty() ) )
-        {
-            throw new IllegalArgumentException( "Specify one or more subscribers for evaluation " + evaluationId );
-        }
-
-        if ( groupSubscribers.isEmpty() && Objects.nonNull( groupAggregator ) )
-        {
-            throw new IllegalArgumentException( "While creating a subscriber for "
-                                                + evaluationId
-                                                + ", found an aggregator for message groups without any group "
-                                                + "consumers. Remove the aggregator or add some group consumers." );
-        }
-
-        if ( !groupSubscribers.isEmpty() && Objects.isNull( groupAggregator ) )
-        {
-            throw new IllegalArgumentException( "While creating a subscriber for "
-                                                + evaluationId
-                                                + ", found "
-                                                + groupSubscribers.size()
-                                                + " consumers for message groups, but no group message aggregator. "
-                                                + "Add the aggregator or remove the group consumers." );
-        }
 
         this.connection = localFactory.createConnection();
 
@@ -1070,8 +1011,7 @@ class MessageSubscriber<T> implements Closeable
 
             List<MessageConsumer> moreConsumers = this.subscribeAllGroupedConsumers( groupSubscribers,
                                                                                      mapper,
-                                                                                     evaluationId,
-                                                                                     groupAggregator );
+                                                                                     evaluationId );
             localConsumers.addAll( moreConsumers );
 
             Objects.requireNonNull( statusDestination,

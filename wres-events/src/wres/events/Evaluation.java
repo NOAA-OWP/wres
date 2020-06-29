@@ -33,6 +33,7 @@ import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
+import wres.statistics.generated.Pairs;
 import wres.statistics.generated.Statistics;
 
 /**
@@ -83,22 +84,28 @@ public class Evaluation implements Closeable
     private static final RandomString ID_GENERATOR = new RandomString();
 
     /**
-     * Default name for the amq.topic that accepts evaluation messages.
+     * Default name for the queue on the amq.topic that accepts evaluation messages.
      */
 
     private static final String EVALUATION_QUEUE = "evaluation";
 
     /**
-     * Default name for the amq.topic that accepts evaluation status messages.
+     * Default name for the queue on the amq.topic that accepts evaluation status messages.
      */
 
     private static final String EVALUATION_STATUS_QUEUE = "status";
 
     /**
-     * Default name for the amq.topic that accepts statistics messages.
+     * Default name for the queue on the amq.topic that accepts statistics messages.
      */
 
     private static final String STATISTICS_QUEUE = "statistics";
+
+    /**
+     * Default name for the queue on the amq.topic that accepts pairs messages.
+     */
+
+    private static final String PAIRS_QUEUE = "pairs";
 
     /**
      * A publisher for {@link wres.statistics.generated.Evaluation} messages.
@@ -119,6 +126,12 @@ public class Evaluation implements Closeable
     private final MessagePublisher statisticsPublisher;
 
     /**
+     * A publisher for {@link Pairs} messages.
+     */
+
+    private final MessagePublisher pairsPublisher;
+
+    /**
      * A collection of subscribers for {@link wres.statistics.generated.Evaluation} messages.
      */
 
@@ -135,6 +148,12 @@ public class Evaluation implements Closeable
      */
 
     private final MessageSubscriber<EvaluationStatus> evaluationStatusSubscribers;
+
+    /**
+     * A collection of subscribers for {@link Pairs} messages.
+     */
+
+    private final MessageSubscriber<Pairs> pairsSubscribers;
 
     /**
      * A unique identifier for the evaluation.
@@ -161,6 +180,12 @@ public class Evaluation implements Closeable
      */
 
     private final AtomicInteger statusMessageCount;
+
+    /**
+     * The total number of pairs messages.
+     */
+
+    private final AtomicInteger pairsMessageCount;
 
     /**
      * Monitors the completion state of an evaluation, allowing for a graceful exit.
@@ -214,6 +239,7 @@ public class Evaluation implements Closeable
      * Publish an {@link wres.statistics.generated.EvaluationStatus} message for the current evaluation.
      * 
      * @param status the status message
+     * @throws NullPointerException if the input is null
      */
 
     public void publish( EvaluationStatus status )
@@ -225,11 +251,30 @@ public class Evaluation implements Closeable
      * Publish an {@link wres.statistics.generated.Statistics} message for the current evaluation.
      * 
      * @param statistics the statistics message
+     * @throws NullPointerException if the input is null
      */
 
     public void publish( Statistics statistics )
     {
         this.publish( statistics, null );
+    }
+
+    /**
+     * Publish an {@link wres.statistics.generated.Pairs} message for the current evaluation.
+     * 
+     * @param pairs the pairs message
+     * @throws NullPointerException if the input is null
+     */
+
+    public void publish( Pairs pairs )
+    {
+        Objects.requireNonNull( pairs );
+
+        ByteBuffer body = ByteBuffer.wrap( pairs.toByteArray() );
+
+        this.internalPublish( body, this.pairsPublisher, Evaluation.PAIRS_QUEUE, null );
+
+        this.pairsMessageCount.getAndIncrement();
     }
 
     /**
@@ -357,7 +402,8 @@ public class Evaluation implements Closeable
         // Perhaps failing on the delivery of evaluation status messages is too high a bar?
         boolean failed = Objects.nonNull( this.evaluationSubscribers.getFailedOn() )
                          || Objects.nonNull( this.evaluationStatusSubscribers.getFailedOn() )
-                         || Objects.nonNull( this.statisticsSubscribers.getFailedOn() );
+                         || Objects.nonNull( this.statisticsSubscribers.getFailedOn() )
+                         || Objects.nonNull( this.pairsSubscribers.getFailedOn() );
 
         if ( failed )
         {
@@ -365,7 +411,8 @@ public class Evaluation implements Closeable
 
             LOGGER.debug( "While closing evaluation {}, discovered one or more undeliverable messages. The first "
                           + "undeliverable evaluation message is:{}{}{}The first undeliverable evaluation status "
-                          + "message is:{}{}{}The first undeliverable statistics message is:{}{}",
+                          + "message is:{}{}{}The first undeliverable statistics message is:{}{}{}The first "
+                          + "undeliverable pairs message is:{}{}",
                           this.getEvaluationId(),
                           separator,
                           this.evaluationSubscribers.getFailedOn(),
@@ -374,7 +421,10 @@ public class Evaluation implements Closeable
                           this.evaluationStatusSubscribers.getFailedOn(),
                           separator,
                           separator,
-                          this.statisticsSubscribers.getFailedOn() );
+                          this.statisticsSubscribers.getFailedOn(),
+                          separator,
+                          separator,
+                          this.pairsSubscribers.getFailedOn() );
 
             this.evaluationPublisher.close();
             this.evaluationSubscribers.close();
@@ -382,6 +432,7 @@ public class Evaluation implements Closeable
             this.evaluationStatusSubscribers.close();
             this.statisticsPublisher.close();
             this.statisticsSubscribers.close();
+            this.pairsSubscribers.close();
 
             throw new EvaluationEventException( "While closing evaluation " + this.getEvaluationId()
                                                 + ", discovered undeliverable messages after repeated delivery "
@@ -395,6 +446,7 @@ public class Evaluation implements Closeable
         this.evaluationStatusSubscribers.close();
         this.statisticsPublisher.close();
         this.statisticsSubscribers.close();
+        this.pairsSubscribers.close();
 
         LOGGER.debug( "Closed evaluation {}.", this.getEvaluationId() );
     }
@@ -422,6 +474,17 @@ public class Evaluation implements Closeable
         return this.statusMessageCount.get();
     }
 
+    /**
+     * Returns the expected number of pairs messages.
+     * 
+     * @return the pairs message count
+     */
+
+    public int getPublishedPairsMessageCount()
+    {
+        return this.pairsMessageCount.get();
+    }
+    
     /**
      * Builds an evaluation.
      * 
@@ -598,8 +661,10 @@ public class Evaluation implements Closeable
         List<Consumer<EvaluationStatus>> statusSubs =
                 new ArrayList<>( builder.consumers.getEvaluationStatusConsumers() );
         List<Consumer<Statistics>> statisticsSubs = new ArrayList<>( builder.consumers.getStatisticsConsumers() );
-        List<Consumer<Statistics>> groupedStatisticsSubs =
+        List<Consumer<List<Statistics>>> groupedStatisticsSubs =
                 new ArrayList<>( builder.consumers.getGroupedStatisticsConsumers() );
+        List<Consumer<Pairs>> pairsSubs = new ArrayList<>( builder.consumers.getPairsConsumers() );
+
 
         wres.statistics.generated.Evaluation evaluationMessage = builder.evaluation;
 
@@ -645,7 +710,8 @@ public class Evaluation implements Closeable
         this.completionTracker = CompletionTracker.of( evaluationSubs.size(),
                                                        statisticsSubs.size(),
                                                        statusSubs.size(),
-                                                       groupedStatisticsSubs.size() );
+                                                       groupedStatisticsSubs.size(),
+                                                       pairsSubs.size() );
 
         // Register publishers and subscribers
         try
@@ -676,24 +742,27 @@ public class Evaluation implements Closeable
 
             Destination statistics = broker.getDestination( Evaluation.STATISTICS_QUEUE );
             this.statisticsPublisher = MessagePublisher.of( factory, statistics );
-
-            Function<List<Statistics>, Statistics> aggregator = null;
-            if ( this.hasGroupSubscriptions() )
-            {
-                aggregator = OneGroupConsumer.getStatisticsAggregator();
-            }
-
             this.statisticsSubscribers =
                     new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
                                                                .setDestination( statistics )
                                                                .addSubscribers( statisticsSubs )
                                                                .setCompletionTracker( this.completionTracker )
                                                                .addGroupSubscribers( groupedStatisticsSubs )
-                                                               .setGroupAggregator( aggregator )
                                                                .setEvaluationStatusDestination( status )
                                                                .setMapper( this.getStatisticsMapper() )
                                                                .setEvaluationId( this.getEvaluationId() )
                                                                .build();
+
+            Destination pairs = broker.getDestination( Evaluation.PAIRS_QUEUE );
+            this.pairsPublisher = MessagePublisher.of( factory, pairs );
+            this.pairsSubscribers =
+                    new MessageSubscriber.Builder<Pairs>().setConnectionFactory( factory )
+                                                          .setDestination( pairs )
+                                                          .addSubscribers( pairsSubs )
+                                                          .setCompletionTracker( this.completionTracker )
+                                                          .setMapper( this.getPairsMapper() )
+                                                          .setEvaluationId( this.getEvaluationId() )
+                                                          .build();
         }
         catch ( JMSException | NamingException e )
         {
@@ -704,6 +773,7 @@ public class Evaluation implements Closeable
 
         this.messageCount = new AtomicInteger();
         this.statusMessageCount = new AtomicInteger();
+        this.pairsMessageCount = new AtomicInteger();
 
         // Publish the evaluation and update the evaluation status
         this.internalPublish( evaluationMessage );
@@ -738,6 +808,29 @@ public class Evaluation implements Closeable
                 throw new EvaluationEventException( "While processing an evaluation status event for evaluation "
                                                     + this.getEvaluationId()
                                                     + ", failed to create an evaluation status "
+                                                    + MESSAGE_FROM_A_BYTEBUFFER,
+                                                    e );
+            }
+        };
+    }
+
+    /**
+     * Maps a message contained in a {@link ByteBuffer} to a {@link Pairs}.
+     * @return a mapper
+     */
+
+    private Function<ByteBuffer, Pairs> getPairsMapper()
+    {
+        return buffer -> {
+            try
+            {
+                return Pairs.parseFrom( buffer );
+            }
+            catch ( InvalidProtocolBufferException e )
+            {
+                throw new EvaluationEventException( "While processing a pairs event for evaluation "
+                                                    + this.getEvaluationId()
+                                                    + ", failed to create a pairs "
                                                     + MESSAGE_FROM_A_BYTEBUFFER,
                                                     e );
             }

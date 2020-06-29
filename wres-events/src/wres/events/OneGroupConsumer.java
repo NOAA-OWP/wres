@@ -5,19 +5,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
-import wres.statistics.generated.Statistics;
 
 /**
- * <p>An abstraction for grouped consumption of messages. For example, when a consumer fronts a producer that creates 
- * something from N messages, rather than one message, this consumer will cache messages until the expected group has 
- * been assembled and will then create and propagate an aggregate message to the inner consumer on request.
+ * <p>An abstraction for grouped consumption of messages. This consumer will cache messages until the expected group has 
+ * been assembled and will then propagate the grouped messages to the inner consumer on request.
  * 
  * <p>This consumer is intended to consume one group only. Upon attempting to re-use the consumer, after calling 
  * {@link #acceptGroup()}, an exception will be thrown.
@@ -40,10 +37,10 @@ class OneGroupConsumer<T> implements Consumer<T>
             "Attempted to reuse a one-use consumer, which is not allowed.";
 
     /**
-     * Inner consumer to consume upon flushing the cache.
+     * Inner consumer to consume the messages upon flushing the cache.
      */
 
-    private final Consumer<T> innerConsumer;
+    private final Consumer<List<T>> innerConsumer;
 
     /**
      * Cache lock for mutation of the cache.
@@ -64,72 +61,25 @@ class OneGroupConsumer<T> implements Consumer<T>
     private final List<T> cache;
 
     /**
-     * Message aggregator.
-     */
-
-    private final Function<List<T>, T> aggregator;
-
-    /**
      * Is <code>true</code> if this consumer has been used once.
      */
 
     private final AtomicBoolean hasBeenUsed;
 
     /**
-     * Returns an instance for grouped consumption of statistics messages.
-     * 
-     * @param innerConsumer the inner consumer
-     * @param groupId the message groupId
-     * @return an instance
-     * @throws NullPointerException if any input is null
-     */
-
-    static OneGroupConsumer<Statistics> of( Consumer<Statistics> innerConsumer, String groupId )
-    {
-        Function<List<Statistics>, Statistics> statisticsAggregator = OneGroupConsumer.getStatisticsAggregator();
-
-        return new OneGroupConsumer<>( innerConsumer, statisticsAggregator, groupId );
-    }
-
-    /**
-     * Helper that returns an aggregator for statistics messages.
-     * 
-     * @return a statistics aggregator
-     */
-
-    static Function<List<Statistics>, Statistics> getStatisticsAggregator()
-    {
-        return statistics -> {
-
-            // Build the aggregate statistics
-            Statistics.Builder aggregate = Statistics.newBuilder();
-
-            // Merge the cached statistics
-            for ( Statistics next : statistics )
-            {
-                aggregate.mergeFrom( next );
-            }
-
-            return aggregate.build();
-        };
-    }
-
-    /**
      * Returns an instance for grouped consumption of messages.
      * 
      * @param <T> the message type
      * @param innerConsumer the inner consumer
-     * @param aggregator the aggregator
      * @param groupId the message groupId
      * @return an instance
      * @throws NullPointerException if any input is null
      */
 
-    static <T> OneGroupConsumer<T> of( Consumer<T> innerConsumer,
-                                       Function<List<T>, T> aggregator,
+    static <T> OneGroupConsumer<T> of( Consumer<List<T>> innerConsumer,
                                        String groupId )
     {
-        return new OneGroupConsumer<>( innerConsumer, aggregator, groupId );
+        return new OneGroupConsumer<>( innerConsumer, groupId );
     }
 
     /**
@@ -142,18 +92,18 @@ class OneGroupConsumer<T> implements Consumer<T>
     {
         return this.cache.size();
     }
-    
+
     /**
      * Gets the inner consumer.
      * 
      * @return the inner consumer
      */
 
-    Consumer<T> getInnerConsumer()
+    Consumer<List<T>> getInnerConsumer()
     {
         return this.innerConsumer;
     }
-    
+
     /**
      * Accept a message.
      * 
@@ -193,12 +143,10 @@ class OneGroupConsumer<T> implements Consumer<T>
 
         synchronized ( this.cacheLock )
         {
-            T aggregate = this.aggregator.apply( this.cache );
-
-            LOGGER.trace( "Grouped consumer {} aggregated a new message, {}.", this, aggregate );
+            LOGGER.trace( "Grouped consumer {} consumed a new group of {} message.", this, this.cache.size() );
 
             // Propagate
-            this.innerConsumer.accept( aggregate );
+            this.innerConsumer.accept( this.cache );
 
             // Clear the cache
             this.cache.clear();
@@ -231,21 +179,18 @@ class OneGroupConsumer<T> implements Consumer<T>
      * Hidden constructor.
      * 
      * @param innerConsumer the inner consumer
-     * @param aggregator the message aggregator
      * @param groupId the message groupId
-     * @throws NullPointerException if the input is null
+     * @throws NullPointerException if any required input is null
      */
 
-    private OneGroupConsumer( Consumer<T> innerConsumer, Function<List<T>, T> aggregator, String groupId )
+    private OneGroupConsumer( Consumer<List<T>> innerConsumer, String groupId )
     {
-        Objects.requireNonNull( innerConsumer );
-        Objects.requireNonNull( aggregator );
         Objects.requireNonNull( groupId );
+        Objects.requireNonNull( innerConsumer );
 
         this.innerConsumer = innerConsumer;
         this.cache = new ArrayList<>();
         this.hasBeenUsed = new AtomicBoolean();
-        this.aggregator = aggregator;
         this.groupId = groupId;
     }
 

@@ -107,8 +107,10 @@ public class MessageSubscriberTest
         List<Integer> actual = new ArrayList<>();
 
         // Each consumer group adds two integers together from two separate integer messages
-        Function<List<Integer>, Integer> groupAggregator = list -> list.stream().mapToInt( Integer::intValue ).sum();
-        Consumer<Integer> consumer = anInt -> actual.add( anInt );
+        Function<List<Integer>, Integer> groupAggregator = list -> list.stream()
+                                                                       .mapToInt( Integer::intValue )
+                                                                       .sum();
+        Consumer<List<Integer>> consumer = aList -> actual.add( groupAggregator.apply( aList ) );
 
         // Bytes sent, representing integers 1695609641, 243, 1746072600 and 7, respectively
         ByteBuffer sentOne = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );
@@ -154,7 +156,6 @@ public class MessageSubscriberTest
                                                               .setEvaluationId( "someEvaluationId" )
                                                               .setCompletionTracker( completionTracker )
                                                               .addGroupSubscribers( List.of( consumer ) )
-                                                              .setGroupAggregator( groupAggregator )
                                                               .build(); )
         {
             // Must set the evaluation and group identifiers because messages are filtered by these
@@ -188,7 +189,7 @@ public class MessageSubscriberTest
         }
 
         List<Integer> expected = List.of( 1695609641 + 243, 1746072600 + 7 );
-        
+
         assertEquals( expected, actual );
     }
 

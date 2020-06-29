@@ -11,9 +11,11 @@ option java_multiple_files = true;
 
 message Pairs
 {
-    /*A message that encapsulated pairs, which must be continuous numerical 
-    (single-valued or ensemble). The time-series composition of the paired values is 
-    respected by the message.*/
+    /*A message that encapsulated pairs. The time-series composition of the 
+    paired values is respected by the message. Pairs are decribed with real
+    numbers, but could be probabilities or categories. When these cases emerge, 
+    further clarification will be needed, such as the type and the category
+    names associated with the natural numbers that form the pairs.*/
 
     repeated TimeSeriesOfPairs time_series = 1;
     // Zero or more time-series of pairs.

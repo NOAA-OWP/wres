@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -80,8 +81,31 @@ import wres.statistics.generated.ValueFilter;
  * @author james.brown@hydrosolved.com
  */
 
-public class ProtobufMessageFactory
+public class MessageFactory
 {
+    
+    /**
+     * Helper that returns an aggregator for statistics messages.
+     * 
+     * @return a statistics aggregator
+     */
+
+    public static Function<List<Statistics>, Statistics> getStatisticsAggregator()
+    {
+        return statistics -> {
+
+            // Build the aggregate statistics
+            Statistics.Builder aggregate = Statistics.newBuilder();
+
+            // Merge the cached statistics
+            for ( Statistics next : statistics )
+            {
+                aggregate.mergeFrom( next );
+            }
+
+            return aggregate.build();
+        };
+    }
 
     /**
      * Creates a {@link wres.statistics.generated.Statistics} from a
@@ -106,7 +130,7 @@ public class ProtobufMessageFactory
         if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
             List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores = project.getDoubleScoreStatistics();
-            doubleScores.forEach( next -> statistics.addScores( ProtobufMessageFactory.parse( next ) ) );
+            doubleScores.forEach( next -> statistics.addScores( MessageFactory.parse( next ) ) );
             metadata = doubleScores.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -114,7 +138,7 @@ public class ProtobufMessageFactory
         if ( project.hasStatistic( StatisticType.DIAGRAM ) )
         {
             List<wres.datamodel.statistics.DiagramStatistic> diagrams = project.getDiagramStatistics();
-            diagrams.forEach( next -> statistics.addDiagrams( ProtobufMessageFactory.parse( next ) ) );
+            diagrams.forEach( next -> statistics.addDiagrams( MessageFactory.parse( next ) ) );
             metadata = diagrams.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -125,7 +149,7 @@ public class ProtobufMessageFactory
             List<wres.datamodel.statistics.BoxPlotStatistics> boxplots =
                     new ArrayList<>( project.getBoxPlotStatisticsPerPair() );
             boxplots.addAll( project.getBoxPlotStatisticsPerPool() );
-            boxplots.forEach( next -> statistics.addBoxplots( ProtobufMessageFactory.parse( next ) ) );
+            boxplots.forEach( next -> statistics.addBoxplots( MessageFactory.parse( next ) ) );
             metadata = boxplots.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -134,7 +158,7 @@ public class ProtobufMessageFactory
         {
             List<wres.datamodel.statistics.DurationScoreStatistic> durationScores =
                     project.getDurationScoreStatistics();
-            durationScores.forEach( next -> statistics.addDurationScores( ProtobufMessageFactory.parse( next ) ) );
+            durationScores.forEach( next -> statistics.addDurationScores( MessageFactory.parse( next ) ) );
             metadata = durationScores.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -143,7 +167,7 @@ public class ProtobufMessageFactory
         {
             List<wres.datamodel.statistics.PairedStatistic<Instant, java.time.Duration>> durationDiagrams =
                     project.getInstantDurationPairStatistics();
-            durationDiagrams.forEach( next -> statistics.addDurationDiagrams( ProtobufMessageFactory.parse( next ) ) );
+            durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
             metadata = durationDiagrams.get( 0 ).getMetadata().getSampleMetadata();
         }
 
@@ -151,14 +175,26 @@ public class ProtobufMessageFactory
 
         if ( metadata.hasTimeWindow() )
         {
-            TimeWindow timeWindow = ProtobufMessageFactory.parse( metadata.getTimeWindow() );
+            TimeWindow timeWindow = MessageFactory.parse( metadata.getTimeWindow() );
             sample.setTimeWindow( timeWindow );
+        }
+        
+        if ( metadata.hasThresholds() )
+        {
+            OneOrTwoThresholds thresholds = metadata.getThresholds();
+            Threshold evenThreshold = MessageFactory.parse( thresholds.first() );
+            sample.setEventThreshold( evenThreshold );
+            if ( thresholds.hasTwo() )
+            {
+                Threshold decisionThreshold = MessageFactory.parse( thresholds.second() );
+                sample.setDecisionThreshold( decisionThreshold );
+            }
         }
 
         if ( metadata.hasIdentifier() && metadata.getIdentifier().hasGeospatialID() )
         {
             Location location = metadata.getIdentifier().getGeospatialID();
-            Geometry geometry = ProtobufMessageFactory.parse( location );
+            Geometry geometry = MessageFactory.parse( location );
             sample.addGeometries( geometry );
         }
 
@@ -183,7 +219,7 @@ public class ProtobufMessageFactory
                                     PoolOfPairs<Double, Ensemble> pairs )
             throws InterruptedException
     {
-        Statistics prototype = ProtobufMessageFactory.parse( project );
+        Statistics prototype = MessageFactory.parse( project );
 
         Statistics.Builder statistics = Statistics.newBuilder( prototype );
 
@@ -191,7 +227,7 @@ public class ProtobufMessageFactory
         {
             Pool prototypeSample = statistics.getPool();
             Pool.Builder sampleBuilder = Pool.newBuilder( prototypeSample );
-            sampleBuilder.setPairs( ProtobufMessageFactory.parseEnsemblePairs( pairs ) );
+            sampleBuilder.setPairs( MessageFactory.parseEnsemblePairs( pairs ) );
             statistics.setPool( sampleBuilder );
         }
 
@@ -224,7 +260,7 @@ public class ProtobufMessageFactory
 
         if ( metadata.hasTimeScale() )
         {
-            evaluationPlus.setTimeScale( ProtobufMessageFactory.parse( metadata.getTimeScale() ) );
+            evaluationPlus.setTimeScale( MessageFactory.parse( metadata.getTimeScale() ) );
         }
 
         if ( metadata.hasIdentifier() )
@@ -251,12 +287,12 @@ public class ProtobufMessageFactory
             ProjectConfig project = metadata.getProjectConfig();
             if ( Objects.nonNull( project.getPair().getSeason() ) )
             {
-                evaluationPlus.setSeason( ProtobufMessageFactory.parse( project.getPair().getSeason() ) );
+                evaluationPlus.setSeason( MessageFactory.parse( project.getPair().getSeason() ) );
             }
 
             if ( Objects.nonNull( project.getPair().getValues() ) )
             {
-                evaluationPlus.setValueFilter( ProtobufMessageFactory.parse( project.getPair().getValues() ) );
+                evaluationPlus.setValueFilter( MessageFactory.parse( project.getPair().getValues() ) );
             }
 
         }
@@ -489,19 +525,6 @@ public class ProtobufMessageFactory
         ScoreMetric.Builder metricBuilder = ScoreMetric.newBuilder();
         ScoreStatistic.Builder scoreBuilder = ScoreStatistic.newBuilder();
 
-        SampleMetadata metadata = statistic.getMetadata().getSampleMetadata();
-        if ( metadata.hasThresholds() )
-        {
-            OneOrTwoThresholds thresholds = metadata.getThresholds();
-            Threshold evenThreshold = ProtobufMessageFactory.parse( thresholds.first() );
-            scoreBuilder.setEventThreshold( evenThreshold );
-            if ( thresholds.hasTwo() )
-            {
-                Threshold decisionThreshold = ProtobufMessageFactory.parse( thresholds.second() );
-                scoreBuilder.setDecisionThreshold( decisionThreshold );
-            }
-        }
-
         MetricConstants metricName = statistic.getMetadata().getMetricID();
 
         // Set the metric components and score values
@@ -580,7 +603,7 @@ public class ProtobufMessageFactory
             DurationScoreMetricComponent.Builder metricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                                .setName( scoreName );
 
-            ProtobufMessageFactory.addLimitsToTimingStatistic( metricComponent, next );
+            MessageFactory.addLimitsToTimingStatistic( metricComponent, next );
 
             metricBuilder.addComponents( metricComponent );
 
@@ -619,19 +642,6 @@ public class ProtobufMessageFactory
 
         DiagramMetric.Builder metricBuilder = DiagramMetric.newBuilder();
         DiagramStatistic.Builder diagramBuilder = DiagramStatistic.newBuilder();
-
-        SampleMetadata metadata = statistic.getMetadata().getSampleMetadata();
-        if ( metadata.hasThresholds() )
-        {
-            OneOrTwoThresholds thresholds = metadata.getThresholds();
-            Threshold evenThreshold = ProtobufMessageFactory.parse( thresholds.first() );
-            diagramBuilder.setEventThreshold( evenThreshold );
-            if ( thresholds.hasTwo() )
-            {
-                Threshold decisionThreshold = ProtobufMessageFactory.parse( thresholds.second() );
-                diagramBuilder.setDecisionThreshold( decisionThreshold );
-            }
-        }
 
         // Set the diagram components and values
         for ( Map.Entry<MetricDimension, VectorOfDoubles> nextDimension : statistic.getData().entrySet() )
@@ -940,7 +950,7 @@ public class ProtobufMessageFactory
      * Do not construct.
      */
 
-    private ProtobufMessageFactory()
+    private MessageFactory()
     {
     }
 
