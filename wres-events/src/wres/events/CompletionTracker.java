@@ -62,6 +62,12 @@ class CompletionTracker
     private final int evaluationStatusConsumerCount;
 
     /**
+     * The number of consumers of paired messages registered for this notifier.
+     */
+
+    private final int pairsConsumerCount;
+
+    /**
      * Number of consumers for each message group. This is used to determine the expected number of consumptions 
      * across all groups.
      */
@@ -101,18 +107,21 @@ class CompletionTracker
      * @param statisticsConsumerCount the number of statistics consumers
      * @param evaluationStatusConsumerCount the number of evaluation status consumers
      * @param statisticsGroupConsumerCount the number of consumers for statistics groups
-     * @throws IllegalArgumentException if any count is <= 0
+     * @param pairsConsumerCount the number of consumers of pairs messages
+     * @throws IllegalArgumentException if any count is <= 0, except for grouped messages or pairs messages
      */
 
     static CompletionTracker of( int evaluationConsumerCount,
                                  int statisticsConsumerCount,
                                  int evaluationStatusConsumerCount,
-                                 int statisticsGroupConsumerCount )
+                                 int statisticsGroupConsumerCount,
+                                 int pairsConsumerCount )
     {
         return new CompletionTracker( evaluationConsumerCount,
                                       statisticsConsumerCount,
                                       evaluationStatusConsumerCount,
-                                      statisticsGroupConsumerCount );
+                                      statisticsGroupConsumerCount,
+                                      pairsConsumerCount );
     }
 
     /**
@@ -202,6 +211,13 @@ class CompletionTracker
                                                 + "evaluation status messages." );
         }
 
+        if ( completionState.getPairsMessageCount() == 0 && this.pairsConsumerCount > 0 )
+        {
+            throw new IllegalArgumentException( "The completion status message is missing an expected count of "
+                                                + "pairs messages, yet there are consumers of pairs attached to "
+                                                + "this evaluation." );
+        }
+
         if ( completionState.getGroupCount() == 0 && this.numberOfConsumersPerGroup > 0 )
         {
             throw new IllegalArgumentException( "The evaluation has "
@@ -236,6 +252,7 @@ class CompletionTracker
         int totalCount = this.evaluationConsumerCount * 1; // 1 evaluation description message (EDM) per evaluation
         totalCount += this.statisticsConsumerCount * ( completionState.getMessageCount() - 1 ); // -1 EDM
         totalCount += this.evaluationStatusConsumerCount * completionState.getStatusMessageCount();
+        totalCount += this.pairsConsumerCount * completionState.getPairsMessageCount();
         totalCount += this.getGroupConsumptionCount();
 
         // Now the expected count is known, so add it. 
@@ -304,20 +321,22 @@ class CompletionTracker
      * @param statisticsConsumerCount the number of statistics consumers
      * @param evaluationStatusConsumerCount the number of evaluation status consumers
      * @param statisticsGroupConsumerCount the number of consumers of grouped statistics messages
-     * @throws IllegalArgumentException if any count is <= 0
+     * @param pairsConsumerCount the number of consumers of pairs messages
+     * @throws IllegalArgumentException if any count is <= 0, except for grouped messages or pairs messages
      */
 
     private CompletionTracker( int evaluationConsumerCount,
                                int statisticsConsumerCount,
                                int evaluationStatusConsumerCount,
-                               int statisticsGroupConsumerCount )
+                               int statisticsGroupConsumerCount,
+                               int pairsConsumerCount )
     {
         if ( evaluationConsumerCount <= 0 )
         {
             throw new IllegalArgumentException( "The evaluation consumer count must be >= 0. " );
         }
 
-        if ( statisticsConsumerCount <= 0 && statisticsGroupConsumerCount <= 0  )
+        if ( statisticsConsumerCount <= 0 && statisticsGroupConsumerCount <= 0 )
         {
             throw new IllegalArgumentException( "The statistics consumer count must be >= 0. " );
         }
@@ -330,6 +349,7 @@ class CompletionTracker
         this.evaluationConsumerCount = evaluationConsumerCount;
         this.statisticsConsumerCount = statisticsConsumerCount;
         this.evaluationStatusConsumerCount = evaluationStatusConsumerCount;
+        this.pairsConsumerCount = pairsConsumerCount;
         this.expectedMessagesPerGroup = new ConcurrentHashMap<>();
 
         // Register the number of consumers per group

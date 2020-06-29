@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 import wres.statistics.generated.EvaluationStatus;
+import wres.statistics.generated.Pairs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Evaluation;
 
@@ -50,7 +51,13 @@ public class Consumers
      * Consumers of groups of evaluation statistics where consumption is triggered by group.
      */
 
-    private final List<Consumer<Statistics>> groupedStatisticsConsumers;
+    private final List<Consumer<List<Statistics>>> groupedStatisticsConsumers;
+
+    /**
+     * Consumers of pairs.
+     */
+
+    private final List<Consumer<Pairs>> pairsConsumers;
 
     /**
      * @return the evaluation consumers
@@ -75,13 +82,21 @@ public class Consumers
     {
         return this.statisticsConsumers; //Immutable on construction
     }
-    
+
     /**
      * @return the consumers of statistics groups
      */
-    List<Consumer<Statistics>> getGroupedStatisticsConsumers()
+    List<Consumer<List<Statistics>>> getGroupedStatisticsConsumers()
     {
         return this.groupedStatisticsConsumers; //Immutable on construction
+    }
+
+    /**
+     * @return the consumers of pairs
+     */
+    List<Consumer<Pairs>> getPairsConsumers()
+    {
+        return this.pairsConsumers; //Immutable on construction
     }
 
     /**
@@ -114,14 +129,23 @@ public class Consumers
          * Consumers of groups of evaluation statistics.
          */
 
-        private List<Consumer<Statistics>> groupedStatisticsConsumers = new ArrayList<>();
+        private List<Consumer<List<Statistics>>> groupedStatisticsConsumers = new ArrayList<>();
+
+        /**
+         * Consumers of pairs.
+         */
+
+        private List<Consumer<Pairs>> pairsConsumers = new ArrayList<>();
 
         /**
          * @param evaluationConsumers the evaluation consumers to set
          * @return this builder
+         * @throws NullPointerException if the input is null
          */
         public Builder setEvaluationConsumers( List<Consumer<Evaluation>> evaluationConsumers )
         {
+            Objects.requireNonNull( evaluationConsumers );
+
             this.evaluationConsumers = evaluationConsumers;
             return this;
         }
@@ -129,19 +153,25 @@ public class Consumers
         /**
          * @param statusConsumers the status consumers to set
          * @return this builder
+         * @throws NullPointerException if the input is null
          */
         public Builder setStatusConsumers( List<Consumer<EvaluationStatus>> statusConsumers )
         {
+            Objects.requireNonNull( statusConsumers );
+
             this.statusConsumers = statusConsumers;
             return this;
         }
 
         /**
-         * @param statisticsConsumers the statistics consumers to set#
+         * @param statisticsConsumers the statistics consumers to set
          * @return this builder
+         * @throws NullPointerException if the input is null
          */
         public Builder setStatisticsConsumers( List<Consumer<Statistics>> statisticsConsumers )
         {
+            Objects.requireNonNull( statisticsConsumers );
+
             this.statisticsConsumers = statisticsConsumers;
             return this;
         }
@@ -149,20 +179,39 @@ public class Consumers
         /**
          * @param groupedStatisticsConsumers the statistics consumers to set
          * @return this builder
+         * @throws NullPointerException if the input is null
          */
-        public Builder setGroupedStatisticsConsumers( List<Consumer<Statistics>> groupedStatisticsConsumers )
+        public Builder setGroupedStatisticsConsumers( List<Consumer<List<Statistics>>> groupedStatisticsConsumers )
         {
+            Objects.requireNonNull( groupedStatisticsConsumers );
+
             this.groupedStatisticsConsumers = groupedStatisticsConsumers;
+            return this;
+        }
+
+        /**
+         * @param pairsConsumers the pairs consumers to set
+         * @return this builder
+         * @throws NullPointerException if the input is null
+         */
+        public Builder setPairsConsumers( List<Consumer<Pairs>> pairsConsumers )
+        {
+            Objects.requireNonNull( pairsConsumers );
+
+            this.pairsConsumers = pairsConsumers;
             return this;
         }
 
         /**
          * @param evaluationConsumer the evaluation consumer to add
          * @return this builder
+         * @throws NullPointerException if the input is null
          */
 
         public Builder addEvaluationConsumer( Consumer<Evaluation> evaluationConsumer )
         {
+            Objects.requireNonNull( evaluationConsumer );
+
             this.evaluationConsumers.add( evaluationConsumer );
             return this;
         }
@@ -170,10 +219,13 @@ public class Consumers
         /**
          * @param statusConsumer the status consumer to add
          * @return this builder
+         * @throws NullPointerException if the input is null
          */
 
         public Builder addStatusConsumer( Consumer<EvaluationStatus> statusConsumer )
         {
+            Objects.requireNonNull( statusConsumer );
+
             this.statusConsumers.add( statusConsumer );
             return this;
         }
@@ -181,10 +233,13 @@ public class Consumers
         /**
          * @param statisticsConsumer the statistics consumer to add
          * @return this builder
+         * @throws NullPointerException if the input is null
          */
 
         public Builder addStatisticsConsumer( Consumer<Statistics> statisticsConsumer )
         {
+            Objects.requireNonNull( statisticsConsumer );
+
             this.statisticsConsumers.add( statisticsConsumer );
             return this;
         }
@@ -192,15 +247,29 @@ public class Consumers
         /**
          * Adds a grouped subscribers for evaluation events.
          * 
-         * @param subscriber the subscriber for groups of evaluation events
+         * @param groupStatisticsConsumer the subscriber for groups of evaluation events
          * @return this builder
-         * @throws NullPointerException if the list is null
+         * @throws NullPointerException if the input is null
          */
 
-        Builder addGroupedStatisticsConsumer( Consumer<Statistics> subscriber )
+        Builder addGroupedStatisticsConsumer( Consumer<List<Statistics>> groupStatisticsConsumer )
         {
-            this.groupedStatisticsConsumers.add( subscriber );
+            Objects.requireNonNull( groupStatisticsConsumer );
 
+            this.groupedStatisticsConsumers.add( groupStatisticsConsumer );
+            return this;
+        }
+
+        /**
+         * @param pairsConsumer the pairs consumer to add
+         * @return this builder
+         */
+
+        public Builder addPairsConsumer( Consumer<Pairs> pairsConsumer )
+        {
+            Objects.requireNonNull( pairsConsumer );
+
+            this.pairsConsumers.add( pairsConsumer );
             return this;
         }
 
@@ -227,10 +296,12 @@ public class Consumers
         this.statisticsConsumers = Collections.unmodifiableList( builder.statisticsConsumers );
         this.statusConsumers = Collections.unmodifiableList( builder.statusConsumers );
         this.groupedStatisticsConsumers = Collections.unmodifiableList( builder.groupedStatisticsConsumers );
+        this.pairsConsumers = Collections.unmodifiableList( builder.pairsConsumers );
 
         Objects.requireNonNull( this.evaluationConsumers );
         Objects.requireNonNull( this.statisticsConsumers );
         Objects.requireNonNull( this.statusConsumers );
+        Objects.requireNonNull( this.pairsConsumers );
 
         LOGGER.debug( "Successfully constructed a consumer group with {} evaluation consumers, {} evaluation status "
                       + "consumers and {} statistics consumers.",

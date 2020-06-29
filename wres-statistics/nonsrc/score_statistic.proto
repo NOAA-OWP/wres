@@ -17,16 +17,7 @@ message ScoreStatistic
     ScoreMetric metric = 1;
     // The score metric.
 
-    Threshold event_threshold = 2;
-    // The threshold associated with an event.
-    
-    Threshold decision_threshold = 3;
-    /*The threshold associated with a decision, such as the forecast probability 
-    of flooding at which to issue a flood warning. This is used to transform 
-    probabilistic data to dichitomous data to which dichotomous statistics may
-    be applied.*/
-
-    repeated ScoreStatisticComponent statistics = 4;
+    repeated ScoreStatisticComponent statistics = 2;
     // The score components.
     
     message ScoreStatisticComponent

@@ -5,6 +5,7 @@ package wres.statistics.generated;
 import "geometry.proto";
 import "time_window.proto";
 import "pairs.proto";
+import "threshold.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "PoolProto";
@@ -20,10 +21,19 @@ message Pool
         
     TimeWindow time_window = 2;
     // The temporal boundaries of the pool.
+
+    Threshold event_threshold = 3;
+    // Threshold used to define a partition of pairs or a categorical event.
+        
+    Threshold decision_threshold = 4;
+    /*The threshold associated with a decision, such as the forecast probability 
+    of flooding at which to issue a flood warning. This is used to transform 
+    probabilistic dichotomous data to single-valued dichitomous data to which 
+    dichotomous statistics may be applied, such as the equitable threat score.*/
     
-    Pairs pairs = 3;
+    Pairs pairs = 5;
     // The paired values that form the pool.
         
-    Pairs baseline_pairs = 4;
+    Pairs baseline_pairs = 6;
     // The pairs for the baseline source, where applicable.
 }
