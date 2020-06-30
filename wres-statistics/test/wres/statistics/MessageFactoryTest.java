@@ -1,6 +1,7 @@
 package wres.statistics;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
@@ -13,10 +14,12 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -251,7 +254,7 @@ public class MessageFactoryTest
 
         // Create a statistics message
         Statistics statisticsOut = MessageFactory.parse( statistics,
-                                                                 this.ensemblePairs );
+                                                         this.ensemblePairs );
 
         Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
 
@@ -348,9 +351,9 @@ public class MessageFactoryTest
         // Create a message
         EvaluationStatus statusOut =
                 MessageFactory.parse( ELEVENTH_TIME,
-                                              TWELFTH_TIME,
-                                              CompletionStatus.COMPLETE_REPORTED_SUCCESS,
-                                              List.of( warning, error, info ) );
+                                      TWELFTH_TIME,
+                                      CompletionStatus.COMPLETE_REPORTED_SUCCESS,
+                                      List.of( warning, error, info ) );
 
         Path path = this.outputDirectory.resolve( "status.pb3" );
 
@@ -382,7 +385,7 @@ public class MessageFactoryTest
         try ( BrokerConnectionFactory factory = BrokerConnectionFactory.of();
               Connection connection = factory.get().createConnection(); // Consumer connection
               Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE ); // Consumer session
-              MessageProducer messageProducer = session.createProducer( factory.getDestination( topic ) );  // Producer              
+              MessageProducer messageProducer = session.createProducer( factory.getDestination( topic ) ); // Producer              
               MessageConsumer messageConsumer = session.createConsumer( factory.getDestination( topic ) ); ) // Consumer
         {
             // Create a statistics message
@@ -457,6 +460,38 @@ public class MessageFactoryTest
                 fail( "Failed to consume an expected statistics message within the timeout period of 2000ms." );
             }
         }
+    }
+
+    @Test
+    public void testParseByPool() throws Exception
+    {
+        // Create a statistics message composed of scores and diagrams
+        StatisticsForProject statistics =
+                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+                                                  .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                                  .build();
+
+        // Scores and diagrams should be split due to threshold difference
+        Collection<Statistics> actual = MessageFactory.parseByPool( statistics );
+
+        assertEquals( 2, actual.size() );
+
+        StatisticsForProject scores =
+                new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
+                                                  .build();
+
+        StatisticsForProject diagrams =
+                new StatisticsForProject.Builder().addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                                  .build();
+
+        Statistics expectedScores = MessageFactory.parse( scores );
+        Statistics expectedDiagrams = MessageFactory.parse( diagrams );
+
+        Collection<Statistics> expected = Set.of( expectedDiagrams, expectedScores );
+
+        // Assert set-like equality
+        assertTrue( expected.containsAll( actual ) );        
+        assertTrue( actual.containsAll( expected ) );
     }
 
     /**

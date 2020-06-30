@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -661,7 +662,7 @@ public class Evaluation implements Closeable
         List<Consumer<EvaluationStatus>> statusSubs =
                 new ArrayList<>( builder.consumers.getEvaluationStatusConsumers() );
         List<Consumer<Statistics>> statisticsSubs = new ArrayList<>( builder.consumers.getStatisticsConsumers() );
-        List<Consumer<List<Statistics>>> groupedStatisticsSubs =
+        List<Consumer<Collection<Statistics>>> groupedStatisticsSubs =
                 new ArrayList<>( builder.consumers.getGroupedStatisticsConsumers() );
         List<Consumer<Pairs>> pairsSubs = new ArrayList<>( builder.consumers.getPairsConsumers() );
 

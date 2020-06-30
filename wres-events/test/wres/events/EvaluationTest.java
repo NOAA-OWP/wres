@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -306,7 +307,7 @@ public class EvaluationTest
         // Consumers for the incremental messages
         Consumer<EvaluationStatus> status = actualStatuses::add;
         Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<List<Statistics>> aggregatedStatistics =
+        Consumer<Collection<Statistics>> aggregatedStatistics =
                 aList -> actualAggregatedStatistics.add( MessageFactory.getStatisticsAggregator()
                                                                        .apply( aList ) );
         Consumer<Statistics> statistics = actualStatistics::add;
@@ -402,7 +403,7 @@ public class EvaluationTest
         Consumer<Pairs> pairs = actualPairs::add;
 
         // Consumers for the end-of-pipeline/grouped statistics
-        Consumer<List<Statistics>> aggregatedStatistics =
+        Consumer<Collection<Statistics>> aggregatedStatistics =
                 aList -> actualAggregatedStatistics.add( MessageFactory.getStatisticsAggregator()
                                                                        .apply( aList ) );
 

@@ -280,7 +280,7 @@ public class StatisticsForProject
         public Builder
                 addDoubleScoreStatistics( Future<List<DoubleScoreStatistic>> result )
         {
-            doubleScoreInternal.add( result );
+            this.doubleScoreInternal.add( result );
 
             return this;
         }
@@ -296,7 +296,7 @@ public class StatisticsForProject
         public Builder
                 addDurationScoreStatistics( Future<List<DurationScoreStatistic>> result )
         {
-            durationScoreInternal.add( result );
+            this.durationScoreInternal.add( result );
 
             return this;
         }
@@ -312,7 +312,7 @@ public class StatisticsForProject
         public Builder
                 addDiagramStatistics( Future<List<DiagramStatistic>> result )
         {
-            diagramsInternal.add( result );
+            this.diagramsInternal.add( result );
 
             return this;
         }
@@ -328,7 +328,7 @@ public class StatisticsForProject
         public Builder
                 addBoxPlotStatisticsPerPair( Future<List<BoxPlotStatistics>> result )
         {
-            boxplotPerPairInternal.add( result );
+            this.boxplotPerPairInternal.add( result );
 
             return this;
         }
@@ -344,7 +344,7 @@ public class StatisticsForProject
         public Builder
                 addBoxPlotStatisticsPerPool( Future<List<BoxPlotStatistics>> result )
         {
-            boxplotPerPoolInternal.add( result );
+            this.boxplotPerPoolInternal.add( result );
 
             return this;
         }
@@ -360,7 +360,7 @@ public class StatisticsForProject
         public Builder
                 addInstantDurationPairStatistics( Future<List<PairedStatistic<Instant, Duration>>> result )
         {
-            pairedInternal.add( result );
+            this.pairedInternal.add( result );
 
             return this;
         }

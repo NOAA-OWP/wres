@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -107,10 +108,10 @@ public class MessageSubscriberTest
         List<Integer> actual = new ArrayList<>();
 
         // Each consumer group adds two integers together from two separate integer messages
-        Function<List<Integer>, Integer> groupAggregator = list -> list.stream()
+        Function<Collection<Integer>, Integer> groupAggregator = list -> list.stream()
                                                                        .mapToInt( Integer::intValue )
                                                                        .sum();
-        Consumer<List<Integer>> consumer = aList -> actual.add( groupAggregator.apply( aList ) );
+        Consumer<Collection<Integer>> consumer = aList -> actual.add( groupAggregator.apply( aList ) );
 
         // Bytes sent, representing integers 1695609641, 243, 1746072600 and 7, respectively
         ByteBuffer sentOne = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );
