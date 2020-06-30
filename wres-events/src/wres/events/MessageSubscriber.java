@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -159,7 +160,7 @@ class MessageSubscriber<T> implements Closeable
          * List of subscriptions to groups of evaluation events.
          */
 
-        private List<Consumer<List<T>>> groupSubscribers = new ArrayList<>();
+        private List<Consumer<Collection<T>>> groupSubscribers = new ArrayList<>();
 
         /**
          * A mapper between message bytes and messages.
@@ -247,7 +248,7 @@ class MessageSubscriber<T> implements Closeable
          * @throws NullPointerException if the list is null
          */
 
-        Builder<T> addGroupSubscribers( List<Consumer<List<T>>> subscribers )
+        Builder<T> addGroupSubscribers( List<Consumer<Collection<T>>> subscribers )
         {
             Objects.requireNonNull( subscribers );
 
@@ -355,7 +356,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private List<MessageConsumer> subscribeAllGroupedConsumers( List<Consumer<List<T>>> consumers,
+    private List<MessageConsumer> subscribeAllGroupedConsumers( List<Consumer<Collection<T>>> consumers,
                                                                 Function<ByteBuffer, T> mapper,
                                                                 String evaluationId )
             throws JMSException
@@ -365,7 +366,7 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( evaluationId );
 
         List<MessageConsumer> returnMe = new ArrayList<>();
-        for ( Consumer<List<T>> next : consumers )
+        for ( Consumer<Collection<T>> next : consumers )
         {
             MessageConsumer consumer = this.subscribeOneGroupedConsumer( next, mapper, evaluationId );
             returnMe.add( consumer );
@@ -387,7 +388,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private MessageConsumer subscribeOneGroupedConsumer( Consumer<List<T>> innerSubscriber,
+    private MessageConsumer subscribeOneGroupedConsumer( Consumer<Collection<T>> innerSubscriber,
                                                          Function<ByteBuffer, T> mapper,
                                                          String evaluationId )
             throws JMSException
@@ -527,7 +528,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private MessageConsumer getConsumerForGroupedMessages( Consumer<List<T>> innerSubscriber,
+    private MessageConsumer getConsumerForGroupedMessages( Consumer<Collection<T>> innerSubscriber,
                                                            Function<ByteBuffer, T> mapper,
                                                            String evaluationId )
             throws JMSException
@@ -636,7 +637,7 @@ class MessageSubscriber<T> implements Closeable
      * @return the group subscriber
      */
 
-    private Queue<OneGroupConsumer<T>> getGroupSubscriber( Consumer<List<T>> innerConsumer,
+    private Queue<OneGroupConsumer<T>> getGroupSubscriber( Consumer<Collection<T>> innerConsumer,
                                                            String groupId )
     {
         Objects.requireNonNull( innerConsumer );
@@ -965,7 +966,7 @@ class MessageSubscriber<T> implements Closeable
         String evaluationId = builder.evaluationId;
         Function<ByteBuffer, T> mapper = builder.mapper;
         List<Consumer<T>> subscribers = builder.subscribers;
-        List<Consumer<List<T>>> groupSubscribers = builder.groupSubscribers;
+        List<Consumer<Collection<T>>> groupSubscribers = builder.groupSubscribers;
 
         Objects.requireNonNull( this.destination );
         Objects.requireNonNull( this.completionTracker );

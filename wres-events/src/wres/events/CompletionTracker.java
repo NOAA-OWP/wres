@@ -20,7 +20,7 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
  * to await completion on closing an evaluation. Any client that listens for evaluation messages will need to establish 
  * when an evaluation has completed. The hooks for this are provided in the AMQP messaging, notably in the 
  * {@link EvaluationStatus} messages that are reported on completion of a message group or an entire evaluation. This
- * class uses those hooks to establish an implementation for the core-wres.
+ * class uses those hooks to establish a completion tracker for the core-wres.
  * 
  * <p>This class is an implementation detail of the core-wres client that might be repeated in a similar (or different) 
  * way across other client consumers. This particular implementation is complicated by the need to track multiple 

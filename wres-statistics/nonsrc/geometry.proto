@@ -19,7 +19,7 @@ message Geometry
 
     string name = 3;
     /*User-friendly name for all sides of a pairing or the left side only if 
-    other sides are defined. (e.g. DRRC2).*/
+    other sides are defined explicitly. (e.g., DRRC2).*/
     
     string right_name = 4;
     /*The name of the geometry used on the right side of a pairing when 

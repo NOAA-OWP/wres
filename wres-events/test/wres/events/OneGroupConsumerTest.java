@@ -3,7 +3,7 @@ package wres.events;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -32,8 +32,8 @@ public class OneGroupConsumerTest
         AtomicInteger sum = new AtomicInteger();
 
         // Each consumer group involves an addition of integers
-        Function<List<Integer>, Integer> aggregator = list -> list.stream().mapToInt( Integer::intValue ).sum();
-        Consumer<List<Integer>> consumer = aList -> sum.set( aggregator.apply( aList ) );
+        Function<Collection<Integer>, Integer> aggregator = list -> list.stream().mapToInt( Integer::intValue ).sum();
+        Consumer<Collection<Integer>> consumer = aList -> sum.set( aggregator.apply( aList ) );
         OneGroupConsumer<Integer> group = OneGroupConsumer.of( consumer, "someGroupId" );
 
         group.accept( 23 );
@@ -54,7 +54,7 @@ public class OneGroupConsumerTest
         AtomicReference<Statistics> aggregated = new AtomicReference<>();
 
         // Each consumer group involves an addition of integers
-        Consumer<List<Statistics>> consumer = aList -> aggregated.set( MessageFactory.getStatisticsAggregator()
+        Consumer<Collection<Statistics>> consumer = aList -> aggregated.set( MessageFactory.getStatisticsAggregator()
                                                                                              .apply( aList ) );
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( consumer, "someGroupId" );
 

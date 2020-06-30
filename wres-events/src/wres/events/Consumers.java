@@ -1,6 +1,7 @@
 package wres.events;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -51,7 +52,7 @@ public class Consumers
      * Consumers of groups of evaluation statistics where consumption is triggered by group.
      */
 
-    private final List<Consumer<List<Statistics>>> groupedStatisticsConsumers;
+    private final List<Consumer<Collection<Statistics>>> groupedStatisticsConsumers;
 
     /**
      * Consumers of pairs.
@@ -86,7 +87,7 @@ public class Consumers
     /**
      * @return the consumers of statistics groups
      */
-    List<Consumer<List<Statistics>>> getGroupedStatisticsConsumers()
+    List<Consumer<Collection<Statistics>>> getGroupedStatisticsConsumers()
     {
         return this.groupedStatisticsConsumers; //Immutable on construction
     }
@@ -129,7 +130,7 @@ public class Consumers
          * Consumers of groups of evaluation statistics.
          */
 
-        private List<Consumer<List<Statistics>>> groupedStatisticsConsumers = new ArrayList<>();
+        private List<Consumer<Collection<Statistics>>> groupedStatisticsConsumers = new ArrayList<>();
 
         /**
          * Consumers of pairs.
@@ -181,7 +182,7 @@ public class Consumers
          * @return this builder
          * @throws NullPointerException if the input is null
          */
-        public Builder setGroupedStatisticsConsumers( List<Consumer<List<Statistics>>> groupedStatisticsConsumers )
+        public Builder setGroupedStatisticsConsumers( List<Consumer<Collection<Statistics>>> groupedStatisticsConsumers )
         {
             Objects.requireNonNull( groupedStatisticsConsumers );
 
@@ -252,7 +253,7 @@ public class Consumers
          * @throws NullPointerException if the input is null
          */
 
-        Builder addGroupedStatisticsConsumer( Consumer<List<Statistics>> groupStatisticsConsumer )
+        Builder addGroupedStatisticsConsumer( Consumer<Collection<Statistics>> groupStatisticsConsumer )
         {
             Objects.requireNonNull( groupStatisticsConsumer );
 

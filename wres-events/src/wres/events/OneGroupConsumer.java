@@ -1,7 +1,7 @@
 package wres.events;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -40,7 +40,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * Inner consumer to consume the messages upon flushing the cache.
      */
 
-    private final Consumer<List<T>> innerConsumer;
+    private final Consumer<Collection<T>> innerConsumer;
 
     /**
      * Cache lock for mutation of the cache.
@@ -58,7 +58,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * Cache of statistics.
      */
     @GuardedBy( "cacheLock" )
-    private final List<T> cache;
+    private final Collection<T> cache;
 
     /**
      * Is <code>true</code> if this consumer has been used once.
@@ -76,7 +76,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * @throws NullPointerException if any input is null
      */
 
-    static <T> OneGroupConsumer<T> of( Consumer<List<T>> innerConsumer,
+    static <T> OneGroupConsumer<T> of( Consumer<Collection<T>> innerConsumer,
                                        String groupId )
     {
         return new OneGroupConsumer<>( innerConsumer, groupId );
@@ -99,7 +99,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * @return the inner consumer
      */
 
-    Consumer<List<T>> getInnerConsumer()
+    Consumer<Collection<T>> getInnerConsumer()
     {
         return this.innerConsumer;
     }
@@ -183,7 +183,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * @throws NullPointerException if any required input is null
      */
 
-    private OneGroupConsumer( Consumer<List<T>> innerConsumer, String groupId )
+    private OneGroupConsumer( Consumer<Collection<T>> innerConsumer, String groupId )
     {
         Objects.requireNonNull( groupId );
         Objects.requireNonNull( innerConsumer );
