@@ -384,6 +384,7 @@ public class SingleValuedRetrieverFactoryTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  null );
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
 

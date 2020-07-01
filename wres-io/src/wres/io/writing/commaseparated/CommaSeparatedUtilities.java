@@ -115,18 +115,7 @@ public class CommaSeparatedUtilities
             // TODO: decide if "right" is sufficient or a combination is better.
             FeatureKey location = identifier.getGeospatialID()
                                             .getRight();
-
-            // Full string representation unless a sensible short one is available
-            featureName = location.toString();
-
-            if ( Objects.nonNull( location.getName() ) )
-            {
-                featureName = location.getName();
-            }
-            else if ( Objects.nonNull( location.getWkt() ) )
-            {
-                featureName = location.getWkt();
-            }
+            featureName = location.getName();
         }
 
         return featureName;

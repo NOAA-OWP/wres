@@ -34,6 +34,10 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
+import wres.config.generated.Polygon;
+import wres.config.generated.UnnamedFeature;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
@@ -78,22 +82,7 @@ public class SingleValuedGriddedRetrieverTest
     /**
      * A feature for testing.
      */
-    /* TODO: create and use selection declaration element distinct from feature
-    private static final Feature FEATURE = new Feature( null,
-                                                        new CoordinateSelection( 1F, 2F, 3F ),
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        "FEAT",
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null );
-
-     */
+    private static final FeatureKey FEATURE = new FeatureKey( "POINT( 1 2 )", null, 4326, "POINT( 1 2 )"  );
 
     /**
      * A variable name for testing.
@@ -171,11 +160,11 @@ public class SingleValuedGriddedRetrieverTest
 
         TimeWindow timeWindow = TimeWindow.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
 
+        FeatureTuple featureTuple = new FeatureTuple( FEATURE, FEATURE, FEATURE );
         // Build the retriever
         Retriever<TimeSeries<Double>> retriever =
                 new SingleValuedGriddedRetriever.Builder().setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
-                                                          // TODO: figure this out
-                                                          // .setFeatures( List.of( SingleValuedGriddedRetrieverTest.FEATURE ) )
+                                                          .setFeatures( List.of( featureTuple ) )
                                                           .setIsForecast( true )
                                                           .setProjectId( SingleValuedGriddedRetrieverTest.PROJECT_ID )
                                                           .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
@@ -203,9 +192,7 @@ public class SingleValuedGriddedRetrieverTest
                                               "/this/is/just/a/test/source_3.nc",
                                               "/this/is/just/a/test/source_4.nc" );
         Request expected = Fetcher.prepareRequest( expectedPaths,
-                                                   // TODO: fiture this out
-                                                   //List.of( SingleValuedGriddedRetrieverTest.FEATURE ),
-                                                   null,
+                                                   List.of( FEATURE ),
                                                    SingleValuedGriddedRetrieverTest.VARIABLE_NAME,
                                                    timeWindow,
                                                    true,

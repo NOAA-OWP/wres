@@ -15,8 +15,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.SortedSet;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.bind.ValidationEvent;
@@ -32,7 +30,6 @@ import wres.config.generated.DateCondition;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
@@ -53,7 +50,6 @@ import wres.datamodel.scale.TimeScale;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.system.SystemSettings;
 import wres.util.Collections;
-import wres.util.Strings;
 
 
 /**
@@ -1606,12 +1602,6 @@ public class Validation
         sourceValid = Validation.isURIDefinedInSourceWhenExpected( projectConfigPlus, source )
                       && sourceValid;
 
-        if ( source.getFormat() == Format.S_3 )
-        {
-            sourceValid = Validation.isS3SourceValid( projectConfigPlus, source )
-                          && sourceValid;
-        }
-
         if ( source.getFormat() == Format.WRDS )
         {
             sourceValid = Validation.isWRDSSourceValid( projectConfigPlus,
@@ -1625,10 +1615,8 @@ public class Validation
     
     /**
      * <p>Returns <code>true</code> if the source has a URI when expected, otherwise
-     * <code>false</code>. A URI is expected unless the format is {@link Format#S_3}
-     * of {@link Format#USGS}.
-     * 
-     * <p> TODO: a URI should be defined in all circumstances: see #63493-18
+     * <code>false</code>. A URI is expected even when full path and parameters
+     * are not included.
      * 
      * @param projectConfigPlus the project declaration
      * @param source the source to inspect
@@ -1639,25 +1627,17 @@ public class Validation
                                                              DataSourceConfig.Source source )
     {
         Objects.requireNonNull( projectConfigPlus );
-
         Objects.requireNonNull( source );
-
         boolean result = true;
 
-        Format format = source.getFormat();
-
-        // Null or empty URIs accepted in limited circumstances for now
-        // See #63493, notably #63493-18. In future, we will require a URI always
-        // TODO: remove the conditionality on format when the declared format disappears
         if ( Objects.isNull( source.getValue() )
-             || source.getValue().toString().isBlank() && format != Format.S_3 )
+             || source.getValue().toString().isBlank() )
         {
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
                          " A source has an invalid URI: please add a valid URI, which cannot be empty.",
                          projectConfigPlus,
                          source.sourceLocation().getLineNumber(),
-                         source.sourceLocation().getColumnNumber(),
-                         format );
+                         source.sourceLocation().getColumnNumber() );
 
             result = false;
         }
@@ -1729,52 +1709,6 @@ public class Validation
 
         return wrdsSourceValid;
     }
-
-
-    private static boolean isS3SourceValid(ProjectConfigPlus projectConfigPlus,
-                                           DataSourceConfig.Source source)
-    {
-        boolean result = true;
-
-        if (!Strings.hasValue(source.getPattern()))
-        {
-            result = false;
-
-            if (LOGGER.isWarnEnabled())
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " A file name pattern is required for S3 data sources.",
-                             projectConfigPlus,
-                             source.sourceLocation()
-                                             .getLineNumber(),
-                             source.sourceLocation()
-                                             .getColumnNumber() );
-            }
-        }
-
-        PairConfig pairConfig = projectConfigPlus.getProjectConfig().getPair();
-
-        if ((pairConfig.getDates() == null || pairConfig.getDates().getEarliest() == null) &&
-            (pairConfig.getIssuedDates() == null || pairConfig.getIssuedDates().getEarliest() == null))
-        {
-            result = false;
-            if ( LOGGER.isWarnEnabled() )
-            {
-                String msg = FILE_LINE_COLUMN_BOILERPLATE
-                             + " An earliest date or earliest issued date must be supplied to use S3 data.";
-
-                LOGGER.warn( msg,
-                             projectConfigPlus.getOrigin(),
-                             pairConfig.sourceLocation().getLineNumber(),
-                             pairConfig.sourceLocation()
-                                       .getColumnNumber() );
-            }
-
-        }
-
-        return result;
-    }
-
 
 
     /**

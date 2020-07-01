@@ -203,6 +203,7 @@ public class WrdsNwmReaderTest
                                                 null,
                                                 null,
                                                 null,
+                                                null,
                                                 null );
 
         ProjectConfig projectConfig = new ProjectConfig( inputs,
@@ -366,6 +367,7 @@ public class WrdsNwmReaderTest
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,

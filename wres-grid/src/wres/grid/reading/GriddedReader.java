@@ -299,12 +299,14 @@ public class GriddedReader
         private final Instant validTime;
     }
 
-    private static Pair<Double,Double> getLatLonCoordFromSridWkt( int srid, String wkt )
+    /**
+     * Parse a point from a point WKT, ignoring srid.
+     *
+     * TODO: do an affine transform, not just parse a point.
+     */
+    private static FeatureKey.GeoPoint getLatLonCoordFromSridWkt( int srid, String wkt )
     {
-        Double lat = Double.MIN_VALUE;
-        Double lon = Double.MIN_VALUE;
-
-        return Pair.of( lat, lon );
+        return FeatureKey.getLonLatFromPointWkt( wkt );
     }
 
     private static class GridFileReader
@@ -326,9 +328,7 @@ public class GriddedReader
 
             this.readLock.lock();
 
-            Pair<Double,Double> latLeftLonRight = getLatLonCoordFromSridWkt( srid, wkt );
-            double latitude = latLeftLonRight.getLeft();
-            double longitude = latLeftLonRight.getRight();
+            FeatureKey.GeoPoint point = getLatLonCoordFromSridWkt( srid, wkt );
 
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
@@ -339,7 +339,7 @@ public class GriddedReader
                 GridDatatype variable = gridDataset.findGridDatatype( variableName );
 
                 // Returns XY from YX parameters
-                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( latitude, longitude, null );
+                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( point.getY(), point.getX(), null );
 
                 // readDataSlice takes (time, z, y, x) as parameters. Since the previous call was XY, we need to flip
                 // the two, yielding indexes 1 then 0

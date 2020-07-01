@@ -17,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.config.generated.Feature;
 import wres.config.generated.FeatureType;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdOperator;
