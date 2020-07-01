@@ -7,8 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -163,10 +165,14 @@ public class Scenario650
         LOGGER.info( "Checking expected file names against actual file names that exist for {} files...",
                      EXPECTED_FILE_NAMES.size() );
 
-        assertEquals( "The actual set of file names does not match the expected set of file names.",
+        assertEquals( "The actual set of file names does not match the expected set of file names."
+                      + " These existed in expected, but not in actual: "
+                      + new TreeSet( Sets.difference( EXPECTED_FILE_NAMES, actualFileNamesThatExist ) )
+                      + " while these existed in actual, but not expected: "
+                      + new TreeSet( Sets.difference( actualFileNamesThatExist, EXPECTED_FILE_NAMES ) ),
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
-        
+
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
         
         ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );

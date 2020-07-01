@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.generated.Polygon;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.UnnamedFeature;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.FeatureKey;
 import wres.io.config.ConfigHelper;
@@ -303,7 +305,7 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
     {
         Set<FeatureTuple> features;
 
-        if (details.getProjectConfig().getPair().getFeature().size() > 0)
+        if (details.getProjectConfig().getPair().getGridSelection().size() > 0)
         {
             features = this.getSpecifiedGriddedFeatures( details.getProjectConfig() );
         }
@@ -338,9 +340,6 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
     private Set<FeatureTuple> getSpecifiedGriddedFeatures( ProjectConfig projectConfig )
             throws SQLException
     {
-        return Collections.emptySet();
-
-        /* TODO find solution works with at least postgres and h2
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
 
@@ -353,7 +352,7 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
 
         boolean geometryAdded = false;
 
-        for (Feature feature : projectConfig.getPair().getFeature())
+        for ( UnnamedFeature feature : projectConfig.getPair().getGridSelection() )
         {
             if (feature.getCircle() != null)
             {
@@ -406,14 +405,121 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
                     pointJoiner.add(point.getLongitude() + ", " + point.getLatitude());
                 }
 
-
-
                 script.addLine(pointJoiner.toString(), " )");
             }
         }
 
-        return this.getDetailsFromDatabase( script );
-         */
+        return this.getUnnamedFeaturesFromDatabase( script );
+    }
+
+    private Set<FeatureTuple> getUnnamedFeaturesFromDatabase( DataScripter scripter )
+            throws SQLException
+    {
+        Set<FeatureTuple> featureTuples = new HashSet<>();
+
+        try ( DataProvider dataProvider = scripter.getData() )
+        {
+            LOGGER.info( "{}", dataProvider.getColumnNames() );
+            while ( dataProvider.next() )
+            {
+                double x = dataProvider.getDouble( "longitude" );
+                double y = dataProvider.getDouble( "latitude" );
+                StringJoiner wktBuilder =
+                        new StringJoiner( " " );
+                wktBuilder.add( "POINT(" );
+                wktBuilder.add( Double.toString( x ) );
+                wktBuilder.add( Double.toString( y ) );
+                wktBuilder.add( ")" );
+                String wkt = wktBuilder.toString();
+                FeatureKey featureKey = new FeatureKey( Features.getGriddedNameFromLonLat( x, y ),
+                                                        Features.getGriddedDescriptionFromLonLat( x, y ),
+                                                        4326,
+                                                        wkt );
+                FeatureTuple featureTuple =
+                        new FeatureTuple( featureKey, featureKey, featureKey );
+                featureTuples.add( featureTuple );
+                LOGGER.info( "Added gridded feature: {}", featureKey );
+            }
+        }
+
+        return Collections.unmodifiableSet( featureTuples );
+    }
+
+
+    /**
+     * Creates a float-rounded shorthand name for given lon, lat values.
+     *
+     * TODO: Use full precision, not truncated to float values
+     *
+     * This name will be used for filenames, the other for the data itself. The
+     * goal is to keep scenario650 benchmarks intact, however inconsistent.
+     *
+     * @param x The longitude value
+     * @param y The latitude value
+     * @return Name with E or W and N or S.
+     * @throws IllegalArgumentException When longitude or latitude out of range.
+     */
+    private static String getGriddedDescriptionFromLonLat( double x, double y )
+    {
+        Features.validateLonLat( x, y );
+
+        String name;
+
+        if ( x < 0 )
+        {
+            name = Math.abs( (float) x ) + "W_";
+        }
+        else
+        {
+            name = (float) x + "E_";
+        }
+
+        if ( y < 0 )
+        {
+            name += Math.abs( (float) y ) + "S";
+        }
+        else
+        {
+            name += (float) y + "N";
+        }
+
+        return name;
+    }
+
+    /**
+     * Creates a float-rounded shorthand name for given lon, lat values.
+     *
+     * TODO: Use full precision, not truncated to float values
+     *
+     * This name will be used for data itself, the other for filenames. The
+     * goal is to keep scenario650 benchmarks intact, however inconsistent.
+     * @param x The longitude value
+     * @param y The latitude value
+     * @return Name with E or W and N or S.
+     * @throws IllegalArgumentException When longitude or latitude out of range.
+     */
+    private static String getGriddedNameFromLonLat( double x, double y )
+    {
+        Features.validateLonLat( x, y );
+        return (float) x + " " + (float) y;
+    }
+
+    /**
+     * @throws IllegalArgumentException When longitude or latitude out of range.
+     */
+    private static void validateLonLat( double x, double y )
+    {
+        if ( x < -180.0 || x > 180.0 )
+        {
+            throw new IllegalArgumentException( "Expected longitude x between -180.0 and 180.0, got "
+                                                + x );
+        }
+
+        if ( y < -90.0 || y > 90.0 )
+        {
+            throw new IllegalArgumentException( "Expected latitude y between -90.0 and 90.0, got "
+                                                + y );
+        }
     }
 
     /* TODO see if can be done using wkt

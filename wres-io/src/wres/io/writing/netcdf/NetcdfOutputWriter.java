@@ -46,6 +46,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
+import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -1010,7 +1011,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             // What if we got the info through the template?
             if ( this.outputWriter.isGridded() )
             {
-                // TODO: use the wkt.
                 if ( Objects.isNull( location.getWkt() ) )
                 {
                     throw new CoordinateNotFoundException( "The location '" +
@@ -1023,22 +1023,23 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                               + "support it." );
                 }
 
+                String wkt = location.getWkt();
+                FeatureKey.GeoPoint point = FeatureKey.getLonLatFromPointWkt( wkt );
+
                 // contains the the y index and the x index
                 origin = new int[2];
 
                 // TODO: Find a different approach to handle grids without a coordinate system
                 try ( GridDataset gridDataset = GridDataset.open( this.outputPath ) )
                 {
-                    /*
                     GridDatatype variable = gridDataset.findGridDatatype( name );
                     int[] xyIndex = variable.getCoordinateSystem()
-                                            .findXYindexFromLatLon( location.getLatitude(),
-                                                                    location.getLongitude(),
+                                            .findXYindexFromLatLon( point.getY(),
+                                                                    point.getX(),
                                                                     null );
 
                     origin[0] = xyIndex[1];
                     origin[1] = xyIndex[0];
-                     */
                 }
             }
             else

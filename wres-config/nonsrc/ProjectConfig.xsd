@@ -93,7 +93,6 @@
             <xs:enumeration value="netCDF" />
             <xs:enumeration value="datacard" />
             <!-- Use interface="usgs_nwis" rather than format="usgs" -->
-            <xs:enumeration value="s3" />
             <!-- Neither "archive" nor "all" make sense to me. The idea is to
                  help describe the actual format of the data when it is not
                  obvious from examining it. Filtering/conditioning is in another
@@ -152,9 +151,34 @@
     </xs:complexType>
 
     <xs:complexType name="feature">
+        <xs:annotation>
+            <xs:documentation>Declaration of features to pair. The name of the
+                feature on the left, as it exists in the left dataset, goes in
+                the "left" attribute. The name of the feature on the right, as
+                it exists in the right dataset, goes in the "right" attribute.
+                The name in a dataset may be an arbitrary name (e.g. from CSV),
+                it may be an NWS LID (e.g. from AHPS), it may be a USGS site
+                code (e.g. from NWIS), it may be an NWM feature id (e.g. from
+                WRDS). When left="X" and right="Y" is declared, it means "pair
+                data from left that the left calls feature X with data from
+                right that the right calls feature Y."
+            </xs:documentation>
+        </xs:annotation>
         <xs:attribute name="left" type="xs:string" />
         <xs:attribute name="right" type="xs:string" />
         <xs:attribute name="baseline" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="unnamedFeature">
+        <xs:annotation>
+            <xs:documentation>
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="coordinate" type="coordinateSelection" minOccurs="0" />
+            <xs:element name="polygon" type="PolygonSelection" minOccurs="0"/>
+            <xs:element name="circle" type="CircleSelection" minOccurs="0" />
+        </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="coordinateSelection">
@@ -815,6 +839,7 @@ time scale within a single class, rather than two classes.
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="gridSelection" type="unnamedFeature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
 

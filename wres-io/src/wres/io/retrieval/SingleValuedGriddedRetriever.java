@@ -286,7 +286,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             List<FeatureKey> featureKeys = this.getFeatures()
                                                .stream()
                                                .map( FeatureTuple::getRight )
-                                               .filter( Objects::isNull )
+                                               .filter( Objects::nonNull )
                                                .collect( Collectors.toList() );
 
             // Build the request object
@@ -335,6 +335,17 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         }
 
         return toStream.stream();
+    }
+
+    /**
+     * Returns the variable name.
+     *
+     * @return the variable name
+     */
+    @Override
+    protected String getVariableName()
+    {
+        return this.variableName;
     }
 
     /**

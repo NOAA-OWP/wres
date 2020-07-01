@@ -803,10 +803,27 @@ public class ConfigHelper
             inputs = projectConfig.getInputs();
         }
 
-        joinElements.add( identifier.getGeospatialID()
-                                    .getRight()
-                                    .getName() )
-                    .add( identifier.getVariableID() );
+        // Work-around to figure out if this is gridded data and if so to use
+        // something other than the feature name, use the description.
+        // When you make gridded benchmarks congruent, remove this.
+        if ( identifier.getGeospatialID()
+                       .getRight()
+                       .getName()
+                       .matches( "^-?[0-9]+\\.[0-9]+ -?[0-9]+\\.[0-9]+$" ) )
+        {
+            LOGGER.debug( "Using ugly workaround for ugly gridded benchmarks: {}",
+                          identifier );
+            joinElements.add( identifier.getGeospatialID()
+                                        .getRight()
+                                        .getDescription() );
+        }
+        else
+        {
+            joinElements.add( identifier.getGeospatialID()
+                                        .getRight()
+                                        .getName() );
+        }
+        joinElements.add( identifier.getVariableID() );
         
         // Baseline scenarioId
         String configuredScenarioId = null;

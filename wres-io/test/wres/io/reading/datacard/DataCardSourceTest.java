@@ -1,6 +1,5 @@
 package wres.io.reading.datacard;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 
 import java.io.IOException;
@@ -161,6 +160,7 @@ public class DataCardSourceTest
                                                 null,
                                                 null,
                                                 null,
+                                                null,
                                                 null );
 
         ProjectConfig projectConfig = new ProjectConfig( inputs,
@@ -245,6 +245,7 @@ public class DataCardSourceTest
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,

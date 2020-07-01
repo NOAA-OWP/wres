@@ -1,6 +1,9 @@
 package wres.datamodel;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -175,4 +178,112 @@ public class FeatureKey implements Comparable<FeatureKey>
                 .append( "wkt", wkt )
                 .toString();
     }
+
+
+    /**
+     * Geometric or geographic point with double x and double y.
+     */
+
+    public static class GeoPoint
+    {
+        private final double x;
+        private final double y;
+
+        public GeoPoint( double x, double y )
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public double getX()
+        {
+            return this.x;
+        }
+
+        public double getY()
+        {
+            return this.y;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            GeoPoint geoPoint = ( GeoPoint ) o;
+            return Double.compare( geoPoint.getX(), getX() ) == 0 &&
+                   Double.compare( geoPoint.getY(), getY() ) == 0;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( getX(), getY() );
+        }
+
+        @Override
+        public String toString()
+        {
+            return new ToStringBuilder( this )
+                    .append( "x", x )
+                    .append( "y", y )
+                    .toString();
+        }
+    }
+
+
+    /**
+     * Return x,y from a wkt with a POINT in it.
+     * As of 2020-06-30 only used for gridded evaluation.
+     * @param wkt A well-known text geometry with POINT
+     * @return GeoPoint with x,y doubles parsed
+     * @throws IllegalArgumentException When no "POINT" found or parsing fails
+     */
+
+    public static GeoPoint getLonLatFromPointWkt( String wkt )
+    {
+        String wktUpperCase = wkt.strip()
+                                 .toUpperCase();
+
+        // Validate it's a point
+        if ( !wktUpperCase.startsWith( "POINT" ) ||
+             !wktUpperCase.contains( "(" ) ||
+             !wktUpperCase.contains( ")" ) )
+        {
+            throw new IllegalArgumentException( "Only able to support POINT for gridded selection" );
+        }
+
+        double x;
+        double y;
+        String[] wktParts = wktUpperCase.split( "[ )(]", 30 );
+        List<String> parts = Arrays.stream( wktParts )
+                                   .filter( s -> !s.isBlank() )
+                                   .collect( Collectors.toList() );
+
+        if ( parts.size() != 3 )
+        {
+            throw new IllegalArgumentException( "Only found these elements from wkt, expected three: "
+                                                + parts );
+        }
+
+        try
+        {
+            x = Double.parseDouble( parts.get( 1 ) );
+            y = Double.parseDouble( parts.get( 2 ) );
+        }
+        catch ( NumberFormatException nfe )
+        {
+            throw new IllegalArgumentException( "Unable to parse coordinates from this wkt: "
+                                                + wkt );
+        }
+
+        return new GeoPoint( x, y );
+    }
+
 }
