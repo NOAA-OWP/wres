@@ -1,4 +1,4 @@
-package wres.statistics;
+package wres.datamodel.messages;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -12,7 +12,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -93,29 +92,6 @@ import wres.statistics.generated.ValueFilter;
 
 public class MessageFactory
 {
-
-    /**
-     * Helper that returns an aggregator for statistics messages.
-     * 
-     * @return a statistics aggregator
-     */
-
-    public static Function<Collection<Statistics>, Statistics> getStatisticsAggregator()
-    {
-        return statistics -> {
-
-            // Build the aggregate statistics
-            Statistics.Builder aggregate = Statistics.newBuilder();
-
-            // Merge the cached statistics
-            for ( Statistics next : statistics )
-            {
-                aggregate.mergeFrom( next );
-            }
-
-            return aggregate.build();
-        };
-    }
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a

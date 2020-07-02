@@ -18,8 +18,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
 import javax.jms.JMSException;
+import javax.jms.Topic;
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
@@ -88,25 +88,25 @@ public class Evaluation implements Closeable
      * Default name for the queue on the amq.topic that accepts evaluation messages.
      */
 
-    private static final String EVALUATION_QUEUE = "evaluation";
+    static final String EVALUATION_QUEUE = "evaluation";
 
     /**
      * Default name for the queue on the amq.topic that accepts evaluation status messages.
      */
 
-    private static final String EVALUATION_STATUS_QUEUE = "status";
+    static final String EVALUATION_STATUS_QUEUE = "status";
 
     /**
      * Default name for the queue on the amq.topic that accepts statistics messages.
      */
 
-    private static final String STATISTICS_QUEUE = "statistics";
+    static final String STATISTICS_QUEUE = "statistics";
 
     /**
      * Default name for the queue on the amq.topic that accepts pairs messages.
      */
 
-    private static final String PAIRS_QUEUE = "pairs";
+    static final String PAIRS_QUEUE = "pairs";
 
     /**
      * A publisher for {@link wres.statistics.generated.Evaluation} messages.
@@ -149,6 +149,12 @@ public class Evaluation implements Closeable
      */
 
     private final MessageSubscriber<EvaluationStatus> evaluationStatusSubscribers;
+
+    /**
+     * A subscriber that listens for an {@link EvaluationStatus} messaging indicating that the evaluation is complete.
+     */
+
+    private final MessageSubscriber<EvaluationStatus> completionSubscriber;
 
     /**
      * A collection of subscribers for {@link Pairs} messages.
@@ -372,7 +378,7 @@ public class Evaluation implements Closeable
         // See the CompletionTracker for details.
         try
         {
-            this.completionTracker.await( completionMessage );
+            this.getCompletionTracker().await( completionMessage );
         }
         catch ( InterruptedException e )
         {
@@ -386,7 +392,7 @@ public class Evaluation implements Closeable
             throw new EvaluationEventException( "Failure while waiting for the completion of evaluation "
                                                 + this.getEvaluationId()
                                                 + " with completion status: "
-                                                + this.completionTracker,
+                                                + this.getCompletionTracker(),
                                                 f );
         }
 
@@ -396,7 +402,7 @@ public class Evaluation implements Closeable
                       + "elapsed between notification of completion and the end of consumption. Ready to validate and "
                       + "then close this evaluation.",
                       this.getEvaluationId(),
-                      this.completionTracker,
+                      this.getCompletionTracker(),
                       Duration.between( then, now ) );
 
         // Exceptions uncovered?
@@ -404,7 +410,8 @@ public class Evaluation implements Closeable
         boolean failed = Objects.nonNull( this.evaluationSubscribers.getFailedOn() )
                          || Objects.nonNull( this.evaluationStatusSubscribers.getFailedOn() )
                          || Objects.nonNull( this.statisticsSubscribers.getFailedOn() )
-                         || Objects.nonNull( this.pairsSubscribers.getFailedOn() );
+                         || Objects.nonNull( this.pairsSubscribers.getFailedOn() )
+                         || Objects.nonNull( this.completionSubscriber.getFailedOn() );
 
         if ( failed )
         {
@@ -413,7 +420,8 @@ public class Evaluation implements Closeable
             LOGGER.debug( "While closing evaluation {}, discovered one or more undeliverable messages. The first "
                           + "undeliverable evaluation message is:{}{}{}The first undeliverable evaluation status "
                           + "message is:{}{}{}The first undeliverable statistics message is:{}{}{}The first "
-                          + "undeliverable pairs message is:{}{}",
+                          + "undeliverable pairs message is:{}{}{}The first undeliverable evaluation completion "
+                          + "message is:{}{}",
                           this.getEvaluationId(),
                           separator,
                           this.evaluationSubscribers.getFailedOn(),
@@ -425,7 +433,10 @@ public class Evaluation implements Closeable
                           this.statisticsSubscribers.getFailedOn(),
                           separator,
                           separator,
-                          this.pairsSubscribers.getFailedOn() );
+                          this.pairsSubscribers.getFailedOn(),
+                          separator,
+                          separator,
+                          this.completionSubscriber.getFailedOn());
 
             this.evaluationPublisher.close();
             this.evaluationSubscribers.close();
@@ -434,6 +445,7 @@ public class Evaluation implements Closeable
             this.statisticsPublisher.close();
             this.statisticsSubscribers.close();
             this.pairsSubscribers.close();
+            this.completionSubscriber.close();
 
             throw new EvaluationEventException( "While closing evaluation " + this.getEvaluationId()
                                                 + ", discovered undeliverable messages after repeated delivery "
@@ -448,6 +460,7 @@ public class Evaluation implements Closeable
         this.statisticsPublisher.close();
         this.statisticsSubscribers.close();
         this.pairsSubscribers.close();
+        this.completionSubscriber.close();
 
         LOGGER.debug( "Closed evaluation {}.", this.getEvaluationId() );
     }
@@ -485,7 +498,7 @@ public class Evaluation implements Closeable
     {
         return this.pairsMessageCount.get();
     }
-    
+
     /**
      * Builds an evaluation.
      * 
@@ -565,6 +578,98 @@ public class Evaluation implements Closeable
             return new Evaluation( this );
         }
     }
+    
+    /**
+     * Small bag of state for sharing evaluation information.
+     * 
+     * @author james.brown@hydrosolved.com
+     */
+    
+    static class EvaluationInfo
+    {
+
+        /**
+         * Evaluation identifier.
+         */
+        
+        private final String evaluationId;
+
+        /**
+         * Completion tracker.
+         */
+        
+        private final CompletionTracker completionTracker;
+        
+        /**
+         * Number of queues constructed with respect to this evaluation, which assists in naming durable queues.
+         */
+        
+        private final AtomicInteger queuesConstructed;
+        
+        /**
+         * Returns a unique identifier for a durable subscription.
+         * 
+         * TODO: in future, this may need to be packaged along with each consumer (as part of the {@link Consumers}). 
+         * That way, durable subscriptions can be created that persist for something other than one evaluation.
+         * 
+         * @return a unique identifier.
+         */
+
+        String getNextDurableSubscriptionName()
+        {
+            int next = this.queuesConstructed.incrementAndGet();
+            
+            return this.getEvaluationId() + "-" + next;
+        }
+        
+        /**
+         * @return the evaluation identifier
+         */
+        String getEvaluationId()
+        {
+            return evaluationId;
+        }
+
+        /**
+         * @return the completion tracker
+         */
+        CompletionTracker getCompletionTracker()
+        {
+            return completionTracker;
+        }
+        
+        /**
+         * Return an instance.
+         * 
+         * @param evaluationId the evaluation identifier
+         * @param completionTracker the completion tracker
+         * @return an instance
+         */
+        
+        static EvaluationInfo of( String evaluationId, CompletionTracker completionTracker )
+        {
+            return new EvaluationInfo( evaluationId, completionTracker );
+        }
+        
+        /**
+         * Build an instance.
+         * 
+         * @param evaluationId the evaluation identifier
+         * @param completionTracker the completion tracker
+         * @throws NullPointerException if any input is null
+         */
+        
+        private EvaluationInfo( String evaluationId, CompletionTracker completionTracker )
+        {
+            Objects.requireNonNull( evaluationId );
+            Objects.requireNonNull( completionTracker );
+            
+            this.evaluationId = evaluationId;
+            this.completionTracker = completionTracker;
+            this.queuesConstructed = new AtomicInteger();
+        }
+    }
+    
 
     /**
      * Validates a status message for expected content and looks for the presence of a group identifier where required. 
@@ -705,64 +810,73 @@ public class Evaluation implements Closeable
         // Completion subscriber that tracks the completion status
         this.completionEvent = new CompletionStatusEvent();
 
-        // Register with status subscribers: one more consumer
-        statusSubs.add( this.completionEvent );
-
         this.completionTracker = CompletionTracker.of( evaluationSubs.size(),
                                                        statisticsSubs.size(),
-                                                       statusSubs.size(),
+                                                       statusSubs.size() + 1,  // Completion event added below
                                                        groupedStatisticsSubs.size(),
                                                        pairsSubs.size() );
+        
+        EvaluationInfo evaluationInfo = EvaluationInfo.of( this.getEvaluationId(), this.getCompletionTracker() );
 
         // Register publishers and subscribers
         try
         {
             ConnectionFactory factory = broker.get();
 
-            Destination status = broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
+            Topic status = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
             this.evaluationStatusPublisher = MessagePublisher.of( factory, status );
             this.evaluationStatusSubscribers =
                     new MessageSubscriber.Builder<EvaluationStatus>().setConnectionFactory( factory )
-                                                                     .setDestination( status )
+                                                                     .setTopic( status )
                                                                      .addSubscribers( statusSubs )
-                                                                     .setCompletionTracker( this.completionTracker )
+                                                                     .setEvaluationInfo( evaluationInfo )
                                                                      .setMapper( this.getStatusMapper() )
-                                                                     .setEvaluationId( this.getEvaluationId() )
+                                                                     .setContext( Evaluation.EVALUATION_STATUS_QUEUE )
                                                                      .build();
 
-            Destination evaluation = broker.getDestination( Evaluation.EVALUATION_QUEUE );
+            String completionContext = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-complete";
+            this.completionSubscriber =
+                    new MessageSubscriber.Builder<EvaluationStatus>().setConnectionFactory( factory )
+                                                                     .setTopic( status )
+                                                                     .addSubscribers( List.of( this.completionEvent ) )
+                                                                     .setEvaluationInfo( evaluationInfo )
+                                                                     .setMapper( this.getStatusMapper() )
+                                                                     .setContext( completionContext )
+                                                                     .build();
+
+            Topic evaluation = (Topic) broker.getDestination( Evaluation.EVALUATION_QUEUE );
             this.evaluationPublisher = MessagePublisher.of( factory, evaluation );
             this.evaluationSubscribers =
                     new MessageSubscriber.Builder<wres.statistics.generated.Evaluation>().setConnectionFactory( factory )
-                                                                                         .setDestination( evaluation )
+                                                                                         .setTopic( evaluation )
                                                                                          .addSubscribers( evaluationSubs )
-                                                                                         .setCompletionTracker( this.completionTracker )
+                                                                                         .setEvaluationInfo( evaluationInfo )
                                                                                          .setMapper( this.getEvaluationMapper() )
-                                                                                         .setEvaluationId( this.getEvaluationId() )
+                                                                                         .setContext( Evaluation.EVALUATION_QUEUE )
                                                                                          .build();
 
-            Destination statistics = broker.getDestination( Evaluation.STATISTICS_QUEUE );
+            Topic statistics = (Topic) broker.getDestination( Evaluation.STATISTICS_QUEUE );
             this.statisticsPublisher = MessagePublisher.of( factory, statistics );
             this.statisticsSubscribers =
                     new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
-                                                               .setDestination( statistics )
+                                                               .setTopic( statistics )
                                                                .addSubscribers( statisticsSubs )
-                                                               .setCompletionTracker( this.completionTracker )
+                                                               .setEvaluationInfo( evaluationInfo )
                                                                .addGroupSubscribers( groupedStatisticsSubs )
-                                                               .setEvaluationStatusDestination( status )
+                                                               .setEvaluationStatusTopic( status )
                                                                .setMapper( this.getStatisticsMapper() )
-                                                               .setEvaluationId( this.getEvaluationId() )
+                                                               .setContext( Evaluation.STATISTICS_QUEUE )
                                                                .build();
 
-            Destination pairs = broker.getDestination( Evaluation.PAIRS_QUEUE );
+            Topic pairs = (Topic) broker.getDestination( Evaluation.PAIRS_QUEUE );
             this.pairsPublisher = MessagePublisher.of( factory, pairs );
             this.pairsSubscribers =
                     new MessageSubscriber.Builder<Pairs>().setConnectionFactory( factory )
-                                                          .setDestination( pairs )
+                                                          .setTopic( pairs )
                                                           .addSubscribers( pairsSubs )
-                                                          .setCompletionTracker( this.completionTracker )
+                                                          .setEvaluationInfo( evaluationInfo )
                                                           .setMapper( this.getPairsMapper() )
-                                                          .setEvaluationId( this.getEvaluationId() )
+                                                          .setContext( Evaluation.PAIRS_QUEUE )
                                                           .build();
         }
         catch ( JMSException | NamingException e )
@@ -935,6 +1049,14 @@ public class Evaluation implements Closeable
 
         this.messageCount.getAndIncrement();
     }
+    
+    /**
+     * @return the completion tracker
+     */
+    private CompletionTracker getCompletionTracker()
+    {
+        return completionTracker;
+    }
 
     /**
      * Generate a compact, unique, identifier for an evaluation. Thanks to: 
@@ -994,5 +1116,5 @@ public class Evaluation implements Closeable
             return this.statusMessage.get();
         }
     }
-
+    
 }

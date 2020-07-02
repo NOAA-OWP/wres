@@ -25,7 +25,6 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DataModelTestDataFactory;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -330,16 +329,42 @@ public final class SlicerTest
     public void testFilterByMetricComponent()
     {
         //Obtain input and slice
-        List<DoubleScoreStatistic> toSlice =
-                DataModelTestDataFactory.getVectorMetricOutputOne();
-        Map<MetricConstants, List<DoubleScoreStatistic>> sliced =
-                Slicer.filterByMetricComponent( toSlice );
+        List<DoubleScoreStatistic> toSlice = new ArrayList<>();
+
+        SampleMetadata meta = SampleMetadata.of();
+
+        DoubleScoreStatistic one = DoubleScoreStatistic.of( 0.5,
+                                                            StatisticMetadata.of( meta,
+                                                                                  1,
+                                                                                  MeasurementUnit.of(),
+                                                                                  MetricConstants.BRIER_SCORE,
+                                                                                  MetricConstants.RELIABILITY ) );
+
+        DoubleScoreStatistic two = DoubleScoreStatistic.of( 0.2,
+                                                            StatisticMetadata.of( meta,
+                                                                                  1,
+                                                                                  MeasurementUnit.of(),
+                                                                                  MetricConstants.BRIER_SCORE,
+                                                                                  MetricConstants.RESOLUTION ) );
+
+        DoubleScoreStatistic three = DoubleScoreStatistic.of( 0.1,
+                                                              StatisticMetadata.of( meta,
+                                                                                    1,
+                                                                                    MeasurementUnit.of(),
+                                                                                    MetricConstants.BRIER_SCORE,
+                                                                                    MetricConstants.SHARPNESS ) );
+
+        toSlice.add( one );
+        toSlice.add( two );
+        toSlice.add( three );
+
+        Map<MetricConstants, List<DoubleScoreStatistic>> sliced = Slicer.filterByMetricComponent( toSlice );
 
         //Check the results
-        assertTrue( "Expected five slices of data.", sliced.size() == 5 );
-
-        sliced.forEach( ( key, value ) -> assertTrue( "Expected 638 elements in each slice.",
-                                                      value.size() == 638 ) );
+        assertEquals( 3, sliced.size() );
+        assertEquals( List.of( one ), sliced.get( MetricConstants.RELIABILITY ) );
+        assertEquals( List.of( two ), sliced.get( MetricConstants.RESOLUTION ) );
+        assertEquals( List.of( three ), sliced.get( MetricConstants.SHARPNESS ) );
     }
 
     @Test

@@ -12,8 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import javax.jms.Destination;
 import javax.jms.JMSException;
+import javax.jms.Topic;
 import javax.naming.NamingException;
 
 import org.junit.AfterClass;
@@ -23,6 +23,7 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import wres.events.Evaluation.EvaluationInfo;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -53,7 +54,7 @@ public class MessageSubscriberTest
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Create and start a broker and open an evaluation, closing on completion
-        Destination destination = MessageSubscriberTest.connections.getDestination( "status" );
+        Topic destination = (Topic) MessageSubscriberTest.connections.getDestination( "status" );
         Function<ByteBuffer, Integer> mapper = buffer -> buffer.getInt();
         AtomicInteger actualOne = new AtomicInteger();
         Consumer<Integer> consumerOne = anInt -> actualOne.set( anInt );
@@ -64,7 +65,7 @@ public class MessageSubscriberTest
 
         // Mock completion: decrement latch when a new consumption is registered
         CountDownLatch latch = new CountDownLatch( 1 );
-        CompletionTracker completionNotifier = Mockito.mock( CompletionTracker.class );
+        CompletionTracker completionTracker = Mockito.mock( CompletionTracker.class );
 
         Mockito.doAnswer( new Answer<>()
         {
@@ -73,16 +74,17 @@ public class MessageSubscriberTest
                 latch.countDown();
                 return null;
             }
-        } ).when( completionNotifier ).register();
+        } ).when( completionTracker ).register();
 
+        EvaluationInfo evaluationInfo = EvaluationInfo.of( "someEvaluationId", completionTracker );
+        
         try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
                                                                 destination );
               MessageSubscriber<Integer> subscriberOne =
                       new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
-                                                              .setDestination( destination )
+                                                              .setTopic( destination )
                                                               .setMapper( mapper )
-                                                              .setCompletionTracker( completionNotifier )
-                                                              .setEvaluationId( "someEvaluationId" )
+                                                              .setEvaluationInfo( evaluationInfo )
                                                               .addSubscribers( List.of( consumerOne ) )
                                                               .build(); )
         {
@@ -102,8 +104,8 @@ public class MessageSubscriberTest
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Create and start a broker and open an evaluation, closing on completion
-        Destination statisticsDestination = MessageSubscriberTest.connections.getDestination( "statistics" );
-        Destination statusDestination = MessageSubscriberTest.connections.getDestination( "status" );
+        Topic statisticsDestination = (Topic) MessageSubscriberTest.connections.getDestination( "statistics" );
+        Topic statusDestination = (Topic) MessageSubscriberTest.connections.getDestination( "status" );
         Function<ByteBuffer, Integer> mapper = buffer -> buffer.getInt();
         List<Integer> actual = new ArrayList<>();
 
@@ -145,17 +147,18 @@ public class MessageSubscriberTest
         Mockito.when( completionTracker.getExpectedMessagesPerGroup( "someGroupId" ) ).thenReturn( 2 );
         Mockito.when( completionTracker.getExpectedMessagesPerGroup( "anotherGroupId" ) ).thenReturn( 2 );
 
+        EvaluationInfo evaluationInfo = EvaluationInfo.of( "someEvaluationId", completionTracker );
+        
         try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
                                                                 statisticsDestination );
               MessagePublisher statusPublisher =
                       MessagePublisher.of( MessageSubscriberTest.connections.get(), statusDestination );
               MessageSubscriber<Integer> subscriberOne =
                       new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
-                                                              .setDestination( statisticsDestination )
-                                                              .setEvaluationStatusDestination( statusDestination )
+                                                              .setTopic( statisticsDestination )
+                                                              .setEvaluationStatusTopic( statusDestination )
                                                               .setMapper( mapper )
-                                                              .setEvaluationId( "someEvaluationId" )
-                                                              .setCompletionTracker( completionTracker )
+                                                              .setEvaluationInfo( evaluationInfo )
                                                               .addGroupSubscribers( List.of( consumer ) )
                                                               .build(); )
         {

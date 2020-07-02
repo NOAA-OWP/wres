@@ -271,14 +271,16 @@ project(':wres-datamodel')
 {
     dependencies
     {
+        compile project(':wres-statistics')
+        
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         compile 'org.apache.commons:commons-lang3:3.9'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile project(':wres-config')
+        // JCIP annotations
+        compile group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         testCompile 'junit:junit:4.13'
-
-        testCompile files('../libs/external/EVS.jar')
     }
 }
 
@@ -636,7 +638,6 @@ project(':wres-statistics')
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         compile 'com.google.protobuf:protobuf-java:3.12.2'
-        compile project(':wres-datamodel')
         compile project(':wres-config')
 
         // Flatbuffers

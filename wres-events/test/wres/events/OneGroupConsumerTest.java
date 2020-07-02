@@ -11,7 +11,6 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
-import wres.statistics.MessageFactory;
 import wres.statistics.generated.ScoreStatistic;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.ScoreStatistic.ScoreStatisticComponent;
@@ -54,8 +53,9 @@ public class OneGroupConsumerTest
         AtomicReference<Statistics> aggregated = new AtomicReference<>();
 
         // Each consumer group involves an addition of integers
-        Consumer<Collection<Statistics>> consumer = aList -> aggregated.set( MessageFactory.getStatisticsAggregator()
-                                                                                             .apply( aList ) );
+        Consumer<Collection<Statistics>> consumer =
+                aList -> aggregated.set( OneGroupConsumerTest.getStatisticsAggregator()
+                                                             .apply( aList ) );
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( consumer, "someGroupId" );
 
         // Add two statistics and accept them
@@ -138,5 +138,28 @@ public class OneGroupConsumerTest
         }, "someGroupId" );
 
         assertEquals( 0, group.size() );
+    }
+
+    /**
+     * Helper that returns an aggregator for statistics messages.
+     * 
+     * @return a statistics aggregator
+     */
+
+    private static Function<Collection<Statistics>, Statistics> getStatisticsAggregator()
+    {
+        return statistics -> {
+
+            // Build the aggregate statistics
+            Statistics.Builder aggregate = Statistics.newBuilder();
+
+            // Merge the cached statistics
+            for ( Statistics next : statistics )
+            {
+                aggregate.mergeFrom( next );
+            }
+
+            return aggregate.build();
+        };
     }
 }
