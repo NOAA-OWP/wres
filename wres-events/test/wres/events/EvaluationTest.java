@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.jms.JMSException;
 import javax.naming.NamingException;
@@ -22,7 +23,6 @@ import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.eventsbroker.BrokerConnectionFactory;
-import wres.statistics.MessageFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.ScoreStatistic;
 import wres.statistics.generated.Statistics;
@@ -308,7 +308,7 @@ public class EvaluationTest
         Consumer<EvaluationStatus> status = actualStatuses::add;
         Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
         Consumer<Collection<Statistics>> aggregatedStatistics =
-                aList -> actualAggregatedStatistics.add( MessageFactory.getStatisticsAggregator()
+                aList -> actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
                                                                        .apply( aList ) );
         Consumer<Statistics> statistics = actualStatistics::add;
 
@@ -404,7 +404,7 @@ public class EvaluationTest
 
         // Consumers for the end-of-pipeline/grouped statistics
         Consumer<Collection<Statistics>> aggregatedStatistics =
-                aList -> actualAggregatedStatistics.add( MessageFactory.getStatisticsAggregator()
+                aList -> actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
                                                                        .apply( aList ) );
 
         // Create a container for all the consumers
@@ -506,6 +506,29 @@ public class EvaluationTest
         assertEquals( expectedPairs, actualPairs );
     }
 
+    /**
+     * Helper that returns an aggregator for statistics messages.
+     * 
+     * @return a statistics aggregator
+     */
+
+    private static Function<Collection<Statistics>, Statistics> getStatisticsAggregator()
+    {
+        return statistics -> {
+
+            // Build the aggregate statistics
+            Statistics.Builder aggregate = Statistics.newBuilder();
+
+            // Merge the cached statistics
+            for ( Statistics next : statistics )
+            {
+                aggregate.mergeFrom( next );
+            }
+
+            return aggregate.build();
+        };
+    } 
+    
     @AfterClass
     public static void runAfterAllTests() throws IOException
     {

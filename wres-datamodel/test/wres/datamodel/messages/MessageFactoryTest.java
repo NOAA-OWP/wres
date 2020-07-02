@@ -1,8 +1,7 @@
-package wres.statistics;
+package wres.datamodel.messages;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,23 +23,9 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.DeliveryMode;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
-import com.google.protobuf.InvalidProtocolBufferException;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
@@ -76,7 +61,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindow;
-import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
@@ -374,92 +358,6 @@ public class MessageFactoryTest
 
         // Delete if succeeded
         Files.deleteIfExists( path );
-    }
-
-    @Test
-    public void testSendAndReceiveOneStatisticsMessage() throws Exception
-    {
-        String topic = "statistics";
-
-        // Post a message and then consume it using asynchronous pub-sub style messaging
-        try ( BrokerConnectionFactory factory = BrokerConnectionFactory.of();
-              Connection connection = factory.get().createConnection(); // Consumer connection
-              Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE ); // Consumer session
-              MessageProducer messageProducer = session.createProducer( factory.getDestination( topic ) ); // Producer              
-              MessageConsumer messageConsumer = session.createConsumer( factory.getDestination( topic ) ); ) // Consumer
-        {
-            // Create a statistics message
-            StatisticsForProject statistics =
-                    new StatisticsForProject.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
-                                                      .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
-                                                      .build();
-
-            Statistics sent = MessageFactory.parse( statistics, this.ensemblePairs );
-
-            // Latch to identify when consumption is complete
-            CountDownLatch consumerCount = new CountDownLatch( 1 );
-
-            // Listen for messages, async
-            MessageListener listener = message -> {
-
-                BytesMessage receivedBytes = (BytesMessage) message;
-
-                try
-                {
-
-                    // Create the byte array to hold the message
-                    int messageLength = (int) receivedBytes.getBodyLength();
-
-                    byte[] messageContainer = new byte[messageLength];
-
-                    receivedBytes.readBytes( messageContainer );
-
-                    Statistics received = Statistics.parseFrom( messageContainer );
-
-                    // Received message equals sent message
-                    assertEquals( received, sent );
-
-                    consumerCount.countDown();
-                }
-                catch ( JMSException | InvalidProtocolBufferException e )
-                {
-                    throw new StatisticsMessageException( "While attempting to listen for statistics messages.",
-                                                          e );
-                }
-            };
-
-            // Start the consumer connection 
-            connection.start();
-
-            // Subscribe the listener to the consumer
-            messageConsumer.setMessageListener( listener );
-
-            // Publish a message to the statistics topic with an arbitrary identifier and correlation identifier
-            // The message identifier must begin with "ID:"
-            BytesMessage message = session.createBytesMessage();
-
-            // Set the message identifiers
-            message.setJMSMessageID( "ID:1234567" );
-            message.setJMSCorrelationID( "89101112" );
-
-            // At least until we can write from a buffer directly
-            // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
-            message.writeBytes( sent.toByteArray() );
-
-            // Send the message
-            messageProducer.send( message,
-                                  DeliveryMode.NON_PERSISTENT,
-                                  Message.DEFAULT_PRIORITY,
-                                  Message.DEFAULT_TIME_TO_LIVE );
-
-            // Await the sooner of all messages read and a timeout
-            boolean done = consumerCount.await( 2000L, TimeUnit.MILLISECONDS );
-
-            if ( !done )
-            {
-                fail( "Failed to consume an expected statistics message within the timeout period of 2000ms." );
-            }
-        }
     }
 
     @Test

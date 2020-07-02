@@ -44,12 +44,6 @@ public final class DataFactoryTest
             "Specify input configuration with a non-null identifier to map.";
 
     /**
-     * Location for metadata.
-     */
-
-    private static final String DRRC2 = "DRRC2";
-
-    /**
      * Second time for testing.
      */
 

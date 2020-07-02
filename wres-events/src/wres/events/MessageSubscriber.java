@@ -18,7 +18,6 @@ import java.util.function.Function;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.JMSSecurityException;
@@ -26,17 +25,19 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
+import javax.jms.Topic;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import wres.events.Evaluation.EvaluationInfo;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 
 /**
- * Registers a subscriber to a destination that is supplied on construction. There is one {@link Connection} per instance 
+ * Registers a subscriber to a topic that is supplied on construction. There is one {@link Connection} per instance 
  * because connections are assumed to be expensive. Currently, there is also one {@link Session} per instance, but a 
  * pool of sessions might be better (to allow better message throughput, as a session is the work thread). Overall, it 
  * may be better to abstract connections and sessions away from specific helpers.
@@ -77,10 +78,10 @@ class MessageSubscriber<T> implements Closeable
     private final Session session;
 
     /**
-     * A destination to which messages should be posted.
+     * A topic to which messages should be posted.
      */
 
-    private final Destination destination;
+    private final Topic topic;
 
     /**
      * Consumer for evaluation status messages, which are used to trigger consumption of statistics groups.
@@ -101,10 +102,11 @@ class MessageSubscriber<T> implements Closeable
     private final Map<String, Queue<OneGroupConsumer<T>>> groupConsumers;
 
     /**
-     * Used to register consumptions for notification of completion against an expected number of consumptions.
+     * Evaluation information, including a tracker to register the number of consumptions for notification of completion 
+     * against an expected number of consumptions.
      */
 
-    private final CompletionTracker completionTracker;
+    private final EvaluationInfo evaluationInfo;
 
     /**
      * The message on which consumption failed, null if no failure.
@@ -142,13 +144,13 @@ class MessageSubscriber<T> implements Closeable
          * Destination.
          */
 
-        private Destination destination;
+        private Topic topic;
 
         /**
          * Destination for evaluation status messages.
          */
 
-        private Destination statusDestination;
+        private Topic statusTopic;
 
         /**
          * List of subscriptions to evaluation events.
@@ -169,16 +171,17 @@ class MessageSubscriber<T> implements Closeable
         private Function<ByteBuffer, T> mapper;
 
         /**
-         * An evaluation identifier.
+         * The evaluation information, including a completion tracker used to register consumptions for notification of 
+         * completion against an expected number of consumptions.
          */
 
-        private String evaluationId;
+        private EvaluationInfo evaluationInfo;
 
         /**
-         * Used to register consumptions for notification of completion against an expected number of consumptions.
+         * Optional context for naming durable queues.
          */
 
-        private CompletionTracker completionTracker;
+        private String context;
 
         /**
          * Sets the connection factory.
@@ -195,29 +198,29 @@ class MessageSubscriber<T> implements Closeable
         }
 
         /**
-         * Sets the destination.
+         * Sets the topic.
          * 
-         * @param destination the destination
+         * @param topic the topic
          * @return this builder
          */
 
-        Builder<T> setDestination( Destination destination )
+        Builder<T> setTopic( Topic topic )
         {
-            this.destination = destination;
+            this.topic = topic;
 
             return this;
         }
 
         /**
-         * Sets the destination for evaluation status messages when listening to these for grouped consumption.
+         * Sets the topic for evaluation status messages when listening to these for grouped consumption.
          * 
-         * @param statusDestination the destination for evaluation status messages
+         * @param statusTopic the topic for evaluation status messages
          * @return this builder
          */
 
-        Builder<T> setEvaluationStatusDestination( Destination statusDestination )
+        Builder<T> setEvaluationStatusTopic( Topic statusTopic )
         {
-            this.statusDestination = statusDestination;
+            this.statusTopic = statusTopic;
 
             return this;
         }
@@ -258,15 +261,15 @@ class MessageSubscriber<T> implements Closeable
         }
 
         /**
-         * Sets a notifier for monitoring the completion state of consumption.
+         * Sets a evaluation information, including an evaluation completion tracker.
          * 
-         * @param completionTracker the notifier
+         * @param evaluationInfo the evaluation information
          * @return this builder
          */
 
-        Builder<T> setCompletionTracker( CompletionTracker completionTracker )
+        Builder<T> setEvaluationInfo( EvaluationInfo evaluationInfo )
         {
-            this.completionTracker = completionTracker;
+            this.evaluationInfo = evaluationInfo;
 
             return this;
         }
@@ -286,15 +289,15 @@ class MessageSubscriber<T> implements Closeable
         }
 
         /**
-         * Sets the evaluation identifier.
+         * Sets the context for naming a durable queue. This name will be prepended to each queue.
          * 
-         * @param evaluationId the evaluation identifier
-         * @return this builder
+         * @param context the context
+         * @return this builder 
          */
 
-        Builder<T> setEvaluationId( String evaluationId )
+        Builder<T> setContext( String context )
         {
-            this.evaluationId = evaluationId;
+            this.context = context;
 
             return this;
         }
@@ -319,7 +322,7 @@ class MessageSubscriber<T> implements Closeable
      * @param consumers the consumers
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
-     * @param groupId an optional group identifier to filter messages
+     * @param context an optional context string to use when naming durable queues
      * @return a list of subscriptions
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
@@ -327,7 +330,8 @@ class MessageSubscriber<T> implements Closeable
 
     private List<MessageConsumer> subscribeAllConsumers( List<Consumer<T>> consumers,
                                                          Function<ByteBuffer, T> mapper,
-                                                         String evaluationId )
+                                                         String evaluationId,
+                                                         String context )
             throws JMSException
     {
         Objects.requireNonNull( consumers );
@@ -337,7 +341,7 @@ class MessageSubscriber<T> implements Closeable
         List<MessageConsumer> returnMe = new ArrayList<>();
         for ( Consumer<T> next : consumers )
         {
-            MessageConsumer consumer = this.subscribeOneConsumer( next, mapper, evaluationId );
+            MessageConsumer consumer = this.subscribeOneConsumer( next, mapper, evaluationId, context );
             returnMe.add( consumer );
         }
 
@@ -351,6 +355,7 @@ class MessageSubscriber<T> implements Closeable
      * @param consumers the consumers
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
+     * @param context an optional context string to use when naming durable queues
      * @return a list of subscriptions
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
@@ -358,7 +363,8 @@ class MessageSubscriber<T> implements Closeable
 
     private List<MessageConsumer> subscribeAllGroupedConsumers( List<Consumer<Collection<T>>> consumers,
                                                                 Function<ByteBuffer, T> mapper,
-                                                                String evaluationId )
+                                                                String evaluationId,
+                                                                String context )
             throws JMSException
     {
         Objects.requireNonNull( consumers );
@@ -368,7 +374,7 @@ class MessageSubscriber<T> implements Closeable
         List<MessageConsumer> returnMe = new ArrayList<>();
         for ( Consumer<Collection<T>> next : consumers )
         {
-            MessageConsumer consumer = this.subscribeOneGroupedConsumer( next, mapper, evaluationId );
+            MessageConsumer consumer = this.subscribeOneGroupedConsumer( next, mapper, evaluationId, context );
             returnMe.add( consumer );
         }
 
@@ -382,7 +388,7 @@ class MessageSubscriber<T> implements Closeable
      * @param innerSubscriber the inner consumer that should receive aggregated messages
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
-     * @param groupIds the group identifiers by which to filter messages
+     * @param context an optional context string to use when naming durable queues
      * @return a group subscription
      * @throws JMSException if the session fails to create a consumer due to some internal error
      * @throws NullPointerException if any input is null
@@ -390,7 +396,8 @@ class MessageSubscriber<T> implements Closeable
 
     private MessageConsumer subscribeOneGroupedConsumer( Consumer<Collection<T>> innerSubscriber,
                                                          Function<ByteBuffer, T> mapper,
-                                                         String evaluationId )
+                                                         String evaluationId,
+                                                         String context )
             throws JMSException
     {
         Objects.requireNonNull( innerSubscriber );
@@ -401,7 +408,8 @@ class MessageSubscriber<T> implements Closeable
         // as those messages arrive
         MessageConsumer messageConsumer = this.getConsumerForGroupedMessages( innerSubscriber,
                                                                               mapper,
-                                                                              evaluationId );
+                                                                              evaluationId,
+                                                                              context );
 
         // Now listen for status messages when a group completes
         MessageListener listener = message -> {
@@ -433,7 +441,7 @@ class MessageSubscriber<T> implements Closeable
                 if ( status.getCompletionStatus() == CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
                 {
                     // Set the expected number of messages per group
-                    this.completionTracker.registerGroupComplete( status, messageGroupId );
+                    this.evaluationInfo.getCompletionTracker().registerGroupComplete( status, messageGroupId );
                     int completed = this.checkAndCompleteGroup( messageGroupId );
 
                     if ( completed > 0 && LOGGER.isDebugEnabled() )
@@ -523,6 +531,7 @@ class MessageSubscriber<T> implements Closeable
      * @param innerSubscriber the inner subscriber that accepts aggregated messages
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
+     * @param context an optional context string to use when naming durable queues
      * @return a subscription
      * @throws JMSException if the session fails to create a consumer due to some internal error
      * @throws NullPointerException if any input is null
@@ -530,7 +539,8 @@ class MessageSubscriber<T> implements Closeable
 
     private MessageConsumer getConsumerForGroupedMessages( Consumer<Collection<T>> innerSubscriber,
                                                            Function<ByteBuffer, T> mapper,
-                                                           String evaluationId )
+                                                           String evaluationId,
+                                                           String context )
             throws JMSException
     {
         Objects.requireNonNull( mapper );
@@ -608,7 +618,7 @@ class MessageSubscriber<T> implements Closeable
             // Count down, whether success or failure
             LOGGER.debug( "Reduced the expected count associated with subscriber {} by 1.", this );
 
-            this.completionTracker.register();
+            this.evaluationInfo.getCompletionTracker().register();
 
             // Check and close early if group consumption is complete for one or more subscribers
             this.checkAndCompleteGroup( groupId );
@@ -616,7 +626,7 @@ class MessageSubscriber<T> implements Closeable
 
         // Only consume messages for the current evaluation based on JMSCorrelationID
         String selector = MessagePublisher.JMS_CORRELATION_ID + evaluationId + "'";
-        MessageConsumer messageConsumer = this.getConsumer( this.destination, selector );
+        MessageConsumer messageConsumer = this.getConsumer( this.topic, selector, context );
         messageConsumer.setMessageListener( listener );
 
         LOGGER.debug( "Successfully registered a subscriber {} for grouped statistics messages associated with "
@@ -683,7 +693,7 @@ class MessageSubscriber<T> implements Closeable
      * @param subscriber the consumer
      * @param mapper to map from message bytes to a typed message
      * @param evaluationId an evaluation identifier to help with exception messaging and logging
-     * @param groupId an optional group identifier by which to filter messages
+     * @param context an optional context string to use when naming durable queues
      * @return a subscription
      * @throws JMSException if the session fails to create a consumer due to some internal error
      * @throws NullPointerException if any input is null, except the optional groupId
@@ -691,7 +701,8 @@ class MessageSubscriber<T> implements Closeable
 
     private MessageConsumer subscribeOneConsumer( Consumer<T> subscriber,
                                                   Function<ByteBuffer, T> mapper,
-                                                  String evaluationId )
+                                                  String evaluationId,
+                                                  String context )
             throws JMSException
     {
         Objects.requireNonNull( subscriber );
@@ -702,7 +713,7 @@ class MessageSubscriber<T> implements Closeable
         String selector = MessagePublisher.JMS_CORRELATION_ID + evaluationId + "'";
 
         // This resource needs to be kept open until consumption is done
-        MessageConsumer consumer = this.getConsumer( this.destination, selector );
+        MessageConsumer consumer = this.getConsumer( this.topic, selector, context );
 
         // A listener acknowledges the message when the consumption completes 
         MessageListener listener = message -> {
@@ -770,7 +781,7 @@ class MessageSubscriber<T> implements Closeable
             // Count down, whether success or failure
             LOGGER.debug( "Reduced the expected count associated with subscriber {} by 1.", this );
 
-            this.completionTracker.register();
+            this.evaluationInfo.getCompletionTracker().register();
         };
 
         consumer.setMessageListener( listener );
@@ -800,7 +811,8 @@ class MessageSubscriber<T> implements Closeable
             {
                 for ( OneGroupConsumer<T> next : check )
                 {
-                    Integer expected = this.completionTracker.getExpectedMessagesPerGroup( next.getGroupId() );
+                    Integer expected = this.evaluationInfo.getCompletionTracker()
+                                                          .getExpectedMessagesPerGroup( next.getGroupId() );
 
                     if ( Objects.nonNull( expected ) && expected == next.size() && !next.hasBeenUsed() )
                     {
@@ -825,7 +837,7 @@ class MessageSubscriber<T> implements Closeable
             String groupId = next.getKey();
             Queue<OneGroupConsumer<T>> consumersToClose = next.getValue();
 
-            Integer expectedCount = this.completionTracker.getExpectedMessagesPerGroup( groupId );
+            Integer expectedCount = this.evaluationInfo.getCompletionTracker().getExpectedMessagesPerGroup( groupId );
 
             int total = 0;
 
@@ -918,15 +930,20 @@ class MessageSubscriber<T> implements Closeable
     /**
      * Returns a consumer.
      * 
-     * @param destination the destination
+     * @param topic the topic
      * @param selector the message selector
+     * @param prepend a string to prepend to a durable queue name
      * @return a consumer
      * @throws JMSException if the consumer could not be created for any reason
      */
 
-    private MessageConsumer getConsumer( Destination destination, String selector ) throws JMSException
+    private MessageConsumer getConsumer( Topic topic, String selector, String prepend ) throws JMSException
     {
-        return this.session.createConsumer( destination, selector );
+        // For a non-durable subscriber, use: "return this.session.createConsumer( topic, selector );"
+        // Get a unique subscriber name, using the method in the evaluation class
+        String uniqueId = this.evaluationInfo.getNextDurableSubscriptionName();
+        String name = prepend + "-" + uniqueId;
+        return this.session.createDurableSubscriber( topic, name, selector, false );
     }
 
     /**
@@ -959,19 +976,20 @@ class MessageSubscriber<T> implements Closeable
             throws JMSException
     {
         // Set then validate
-        this.destination = builder.destination;
-        this.completionTracker = builder.completionTracker;
-        Destination statusDestination = builder.statusDestination;
+        this.topic = builder.topic;
+        this.evaluationInfo = builder.evaluationInfo;
+        Topic statusTopic = builder.statusTopic;
         ConnectionFactory localFactory = builder.connectionFactory;
-        String evaluationId = builder.evaluationId;
+        String context = builder.context;
         Function<ByteBuffer, T> mapper = builder.mapper;
         List<Consumer<T>> subscribers = builder.subscribers;
         List<Consumer<Collection<T>>> groupSubscribers = builder.groupSubscribers;
 
-        Objects.requireNonNull( this.destination );
-        Objects.requireNonNull( this.completionTracker );
+        String evaluationId = this.evaluationInfo.getEvaluationId();
+        
+        Objects.requireNonNull( this.topic );
+        Objects.requireNonNull( this.evaluationInfo );
         Objects.requireNonNull( localFactory );
-        Objects.requireNonNull( evaluationId );
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
 
@@ -985,9 +1003,11 @@ class MessageSubscriber<T> implements Closeable
 
         String selector = MessagePublisher.JMS_CORRELATION_ID + evaluationId + "'";
 
-        if ( Objects.nonNull( statusDestination ) )
+        if ( Objects.nonNull( statusTopic ) )
         {
-            this.statusConsumer = this.getConsumer( statusDestination, selector );
+            String groupContext = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-group-complete";
+
+            this.statusConsumer = this.getConsumer( statusTopic, selector, groupContext );
         }
         else
         {
@@ -1001,7 +1021,10 @@ class MessageSubscriber<T> implements Closeable
 
         if ( !subscribers.isEmpty() )
         {
-            List<MessageConsumer> someConsumers = this.subscribeAllConsumers( subscribers, mapper, evaluationId );
+            List<MessageConsumer> someConsumers = this.subscribeAllConsumers( subscribers, 
+                                                                              mapper, 
+                                                                              evaluationId, 
+                                                                              context );
             localConsumers.addAll( someConsumers );
         }
         if ( !groupSubscribers.isEmpty() )
@@ -1010,16 +1033,19 @@ class MessageSubscriber<T> implements Closeable
                           groupSubscribers.size(),
                           evaluationId );
 
+            String groupContext = context + "-groups";
+
             List<MessageConsumer> moreConsumers = this.subscribeAllGroupedConsumers( groupSubscribers,
                                                                                      mapper,
-                                                                                     evaluationId );
+                                                                                     evaluationId,
+                                                                                     groupContext );
             localConsumers.addAll( moreConsumers );
 
-            Objects.requireNonNull( statusDestination,
-                                    "When setting grouped subscribers, the destination for evaluation status messages "
-                                                       + "is also required because grouped subscriptions listen "
-                                                       + "for status messages that identify when the group has "
-                                                       + "completed." );
+            Objects.requireNonNull( statusTopic,
+                                    "When setting grouped subscribers, the topic for evaluation status messages "
+                                                 + "is also required because grouped subscriptions listen "
+                                                 + "for status messages that identify when the group has "
+                                                 + "completed." );
         }
 
         this.consumers = Collections.unmodifiableList( localConsumers );
