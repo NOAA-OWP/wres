@@ -21,7 +21,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleForecastRetriever.Builder;
@@ -145,13 +145,13 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindow timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindowOuter timeWindow )
     {
         return this.leftFactory.getLeftRetriever( timeWindow );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( TimeWindow timeWindow )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( TimeWindowOuter timeWindow )
     {
         LOGGER.debug( "Creating a right retriever for project '{}', feature '{}' and time window {}.",
                       this.project.getId(),
@@ -201,7 +201,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( TimeWindow timeWindow )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( TimeWindowOuter timeWindow )
     {
         Supplier<Stream<TimeSeries<Ensemble>>> baseline = null;
 

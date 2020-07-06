@@ -47,7 +47,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.utilities.NoDataException;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -1029,7 +1029,7 @@ public class ConfigHelper
 
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
-     * associated with the results and a {@link TimeWindow}.
+     * associated with the results and a {@link TimeWindowOuter}.
      *
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration
@@ -1044,7 +1044,7 @@ public class ConfigHelper
     public static Path getOutputPathToWrite( Path outputDirectory,
                                              DestinationConfig destinationConfig,
                                              StatisticMetadata meta,
-                                             TimeWindow timeWindow,
+                                             TimeWindowOuter timeWindow,
                                              ChronoUnit leadUnits )
             throws IOException
     {
@@ -1226,7 +1226,7 @@ public class ConfigHelper
     public static Path getOutputPathToWriteForOneTimeWindow( final Path outputDirectory,
                                                              final DestinationConfig destinationConfig,
                                                              final DatasetIdentifier identifier,
-                                                             final TimeWindow timeWindow,
+                                                             final TimeWindowOuter timeWindow,
                                                              final ChronoUnit leadUnits )
             throws IOException
     {

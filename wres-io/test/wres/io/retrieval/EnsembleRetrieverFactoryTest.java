@@ -48,7 +48,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -209,7 +209,7 @@ public class EnsembleRetrieverFactoryTest
     {
 
         // The time window to select events
-        TimeWindow timeWindow = TimeWindow.of( Instant.parse( T2023_04_01T02_00_00Z ),
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( T2023_04_01T02_00_00Z ),
                                                Instant.parse( T2023_04_01T07_00_00Z ) );
 
         // Get the actual left series
@@ -247,7 +247,7 @@ public class EnsembleRetrieverFactoryTest
     {
 
         // The time window to select events
-        TimeWindow timeWindow = TimeWindow.of( Instant.parse( "2023-03-31T11:00:00Z" ),
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
                                                Instant.parse( T2023_04_01T00_00_00Z ),
                                                Instant.parse( T2023_04_01T01_00_00Z ),
                                                Instant.parse( T2023_04_01T04_00_00Z ) );
@@ -286,7 +286,7 @@ public class EnsembleRetrieverFactoryTest
     {
 
         // The time window to select events
-        TimeWindow timeWindow = TimeWindow.of( Instant.parse( "2023-03-31T11:00:00Z" ),
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
                                                Instant.parse( T2023_04_01T00_00_00Z ),
                                                Instant.parse( T2023_04_01T01_00_00Z ),
                                                Instant.parse( T2023_04_01T04_00_00Z ) );

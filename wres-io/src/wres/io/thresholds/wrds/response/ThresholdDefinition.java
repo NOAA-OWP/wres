@@ -5,7 +5,7 @@ import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.retrieval.UnitMapper;
 
@@ -323,7 +323,7 @@ public class ThresholdDefinition implements Serializable {
     OriginalThresholdValues original_values;
     CalculatedThresholdValues calculated_values;
 
-    public Map<FeaturePlus, Set<Threshold>> getThresholds(
+    public Map<FeaturePlus, Set<ThresholdOuter>> getThresholds(
             WRDSThresholdType thresholdType,
             ThresholdConstants.Operator thresholdOperator,
             ThresholdConstants.ThresholdDataType dataType,
@@ -346,7 +346,7 @@ public class ThresholdDefinition implements Serializable {
                 null
         ));
 
-        Set<Threshold> thresholds = new HashSet<>();
+        Set<ThresholdOuter> thresholds = new HashSet<>();
 
         if (thresholdType.equals(WRDSThresholdType.FLOW)) {
             thresholds = this.getFlowThresholds(getCalculated, thresholdOperator, dataType, desiredUnitMapper);
@@ -357,13 +357,13 @@ public class ThresholdDefinition implements Serializable {
         return Map.of(feature, thresholds);
     }
 
-    private Set<Threshold> getFlowThresholds(
+    private Set<ThresholdOuter> getFlowThresholds(
             boolean getCalculated,
             ThresholdConstants.Operator thresholdOperator,
             ThresholdConstants.ThresholdDataType dataType,
             UnitMapper desiredUnitMapper
     ) {
-        Set<Threshold> thresholds = new HashSet<>();
+        Set<ThresholdOuter> thresholds = new HashSet<>();
 
         Double low = this.getLowFlow(getCalculated, desiredUnitMapper);
         Double action = this.getActionFlow(getCalculated, desiredUnitMapper);
@@ -375,7 +375,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (low != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(low),
                             thresholdOperator,
                             dataType,
@@ -387,7 +387,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (action != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(action),
                             thresholdOperator,
                             dataType,
@@ -399,7 +399,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (minor != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(minor),
                             thresholdOperator,
                             dataType,
@@ -411,7 +411,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (moderate != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(moderate),
                             thresholdOperator,
                             dataType,
@@ -423,7 +423,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (major != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(major),
                             thresholdOperator,
                             dataType,
@@ -435,7 +435,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (bankful != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(bankful),
                             thresholdOperator,
                             dataType,
@@ -447,7 +447,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (record != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(record),
                             thresholdOperator,
                             dataType,
@@ -460,13 +460,13 @@ public class ThresholdDefinition implements Serializable {
         return thresholds;
     }
 
-    private Set<Threshold> getStageThresholds(
+    private Set<ThresholdOuter> getStageThresholds(
             boolean getCalculated,
             ThresholdConstants.Operator thresholdOperator,
             ThresholdConstants.ThresholdDataType dataType,
             UnitMapper desiredUnitMapper
     ) {
-        Set<Threshold> thresholds = new HashSet<>();
+        Set<ThresholdOuter> thresholds = new HashSet<>();
 
         Double low = this.getLowStage(getCalculated, desiredUnitMapper);
         Double action = this.getActionStage(getCalculated, desiredUnitMapper);
@@ -478,7 +478,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (low != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(low),
                             thresholdOperator,
                             dataType,
@@ -490,7 +490,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (action != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(action),
                             thresholdOperator,
                             dataType,
@@ -502,7 +502,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (minor != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(minor),
                             thresholdOperator,
                             dataType,
@@ -514,7 +514,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (moderate != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(moderate),
                             thresholdOperator,
                             dataType,
@@ -526,7 +526,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (major != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(major),
                             thresholdOperator,
                             dataType,
@@ -538,7 +538,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (bankful != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(bankful),
                             thresholdOperator,
                             dataType,
@@ -550,7 +550,7 @@ public class ThresholdDefinition implements Serializable {
 
         if (record != null) {
             thresholds.add(
-                    Threshold.of(
+                    ThresholdOuter.of(
                             OneOrTwoDoubles.of(record),
                             thresholdOperator,
                             dataType,

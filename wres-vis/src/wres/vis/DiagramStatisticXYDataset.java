@@ -11,7 +11,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
 
 /**
@@ -115,7 +115,7 @@ public class DiagramStatisticXYDataset
             return getOverrideLegendName(series);
         }
         
-        SortedSet<TimeWindow> timeWindows =
+        SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( getPlotData(), meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( getPlotData(), meta -> meta.getMetadata().getSampleMetadata().getThresholds() );

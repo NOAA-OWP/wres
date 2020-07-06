@@ -17,10 +17,10 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the {@link StatisticMetadata}.
@@ -42,10 +42,10 @@ public class StatisticMetadataTest
     @Test
     public void testEquals()
     {
-        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ) );
         OneOrTwoThresholds thresholds =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -113,7 +113,7 @@ public class StatisticMetadataTest
         assertFalse( first.equals( sixth ) );
         // Unequal input dimensions
         Location seventhLocation = Location.of( DRRC3 );
-        final TimeWindow timeWindow = firstWindow;
+        final TimeWindowOuter timeWindow = firstWindow;
         StatisticMetadata seventh =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                                  .setIdentifier( DatasetIdentifier.of( seventhLocation,
@@ -212,11 +212,11 @@ public class StatisticMetadataTest
     public void testHashCode()
     {
         // Equal
-        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ) );
 
         OneOrTwoThresholds thresholds =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -279,7 +279,7 @@ public class StatisticMetadataTest
         assertFalse( first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
         Location seventhLocation = Location.of( DRRC3 );
-        final TimeWindow timeWindow = firstWindow;
+        final TimeWindowOuter timeWindow = firstWindow;
         StatisticMetadata seventh =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                                  .setIdentifier( DatasetIdentifier.of( seventhLocation,

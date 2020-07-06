@@ -6,7 +6,7 @@ import wres.config.generated.*;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.csv.CSVThresholdReader;
@@ -61,7 +61,7 @@ public class ExternalThresholdReader {
     }
 
     /**
-     * Reads a {@link ThresholdsConfig} and returns a corresponding {@link Set} of external {@link Threshold}
+     * Reads a {@link ThresholdsConfig} and returns a corresponding {@link Set} of external {@link ThresholdOuter}
      * by {@link FeaturePlus}.
      *
      * @param thresholdsConfig the threshold configuration
@@ -90,7 +90,7 @@ public class ExternalThresholdReader {
 
         try
         {
-            Map<FeaturePlus, Set<Threshold>> readThresholds;
+            Map<FeaturePlus, Set<ThresholdOuter>> readThresholds;
 
             ThresholdFormat format = ExternalThresholdReader.getThresholdFormat(thresholdsConfig);
 
@@ -117,12 +117,12 @@ public class ExternalThresholdReader {
             }
 
             // Add the thresholds for each feature
-            for ( Map.Entry<FeaturePlus, Set<Threshold>> thresholds : readThresholds.entrySet() )
+            for ( Map.Entry<FeaturePlus, Set<ThresholdOuter>> thresholds : readThresholds.entrySet() )
             {
                 recognizedFeatures.add(thresholds.getKey().getFeature());
 
                 for(MetricConstants metricName : metrics) {
-                    for (Threshold threshold : thresholds.getValue()) {
+                    for (ThresholdOuter threshold : thresholds.getValue()) {
                         // This employs the FeaturePlus; this will eventually devolve into just a Feature
                         this.sharedBuilders.addThreshold(
                                 thresholds.getKey().getFeature(),

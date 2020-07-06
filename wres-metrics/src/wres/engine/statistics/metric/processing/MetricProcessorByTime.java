@@ -24,18 +24,18 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
- * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
+ * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindowOuter}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -52,7 +52,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                                                       + "at time window '{}'.";
 
     /**
-     * The metric futures from previous calls, indexed by {@link TimeWindow}.
+     * The metric futures from previous calls, indexed by {@link TimeWindowOuter}.
      */
 
     List<MetricFuturesByTime> futures = new CopyOnWriteArrayList<>();
@@ -157,15 +157,15 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     /**
      * Helper that returns a predicate for filtering single-valued pairs based on the 
-     * {@link Threshold#getDataType()} of the input threshold.
+     * {@link ThresholdOuter#getDataType()} of the input threshold.
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link Threshold#getDataType()} is null
-     * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
+     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
      */
 
-    static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( Threshold input )
+    static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter input )
     {
         switch ( input.getDataType() )
         {
@@ -186,15 +186,15 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     /**
      * Helper that returns a predicate for filtering {@link TimeSeriesOfSinglevaluedPairs} based on the 
-     * {@link Threshold#getDataType()} of the input threshold.
+     * {@link ThresholdOuter#getDataType()} of the input threshold.
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link Threshold#getDataType()} is null
-     * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
+     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
      */
 
-    static Predicate<TimeSeries<Pair<Double, Double>>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    static Predicate<TimeSeries<Pair<Double, Double>>> getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter input )
     {
         switch ( input.getDataType() )
         {
@@ -257,17 +257,17 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the union across metrics
-        Set<Threshold> union = filtered.union();
+        Set<ThresholdOuter> union = filtered.union();
 
         double[] sorted = this.getSortedClimatology( input, union );
 
         // Iterate the thresholds
-        for ( Threshold threshold : union )
+        for ( ThresholdOuter threshold : union )
         {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add the quantiles to the threshold
-            Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
@@ -342,7 +342,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     /**
      * Builds a metric future for a {@link MetricCollection} that consumes single-valued pairs at a specific 
-     * {@link TimeWindow} and {@link Threshold}.
+     * {@link TimeWindowOuter} and {@link ThresholdOuter}.
      * 
      * @param <T> the type of {@link Statistic}
      * @param pairs the pairs

@@ -31,7 +31,7 @@ import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.util.TimeHelper;
@@ -231,7 +231,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
                 String featureName = CommaSeparatedUtilities.getFeatureNameFromMetadata( pairs.getMetadata() );
 
                 // Time window to write, which is fixed across all pairs
-                TimeWindow timeWindow = pairs.getMetadata().getTimeWindow();
+                TimeWindowOuter timeWindow = pairs.getMetadata().getTimeWindow();
 
                 LOGGER.debug( "Writing pairs for {} at time window {} to {}",
                               pairs.getMetadata().getIdentifier(),

@@ -38,7 +38,7 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
 
 /**
@@ -498,7 +498,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        SortedSet<TimeWindow> timeWindows =
+        SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
 
         buildInitialParameters( source, orderIndex, timeWindows.size() );

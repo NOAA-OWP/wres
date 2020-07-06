@@ -30,7 +30,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.system.SystemSettings;
@@ -171,7 +171,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
             List<List<DoubleScoreStatistic>> allOutputs = new ArrayList<>();
 
-            SortedSet<Threshold> secondThreshold =
+            SortedSet<ThresholdOuter> secondThreshold =
                     Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
 
             if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
@@ -202,7 +202,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 String append = null;
 
                 // Secondary threshold? If yes, only, one as this was sliced above
-                SortedSet<Threshold> second =
+                SortedSet<ThresholdOuter> second =
                         Slicer.discover( nextOutput,
                                          next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
                 if ( !second.isEmpty() )

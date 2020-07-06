@@ -21,7 +21,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
@@ -156,7 +156,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindow timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( TimeWindowOuter timeWindow )
     {
         return this.get( this.getProject().getProjectConfig(),
                          this.leftConfig,
@@ -165,7 +165,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindow timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindowOuter timeWindow )
     {
         return get( this.getProject().getProjectConfig(),
                     this.rightConfig,
@@ -174,7 +174,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindow timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindowOuter timeWindow )
     {
         return get( this.getProject().getProjectConfig(),
                     this.baselineConfig,
@@ -185,7 +185,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private Supplier<Stream<TimeSeries<Double>>> get( ProjectConfig projectConfig,
                                                       DataSourceConfig dataSourceConfig,
-                                                      TimeWindow timeWindow,
+                                                      TimeWindowOuter timeWindow,
                                                       String featureName )
     {
         Objects.requireNonNull( projectConfig );

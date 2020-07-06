@@ -21,7 +21,7 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -42,7 +42,7 @@ public final class TimeToPeakRelativeErrorTest
         PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );

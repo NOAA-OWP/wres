@@ -40,7 +40,7 @@ import wres.datamodel.scale.TimeScale.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -195,8 +195,8 @@ public class ObservationRetrieverTest
     public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
     {
         // Build the pool boundaries
-        TimeWindow poolBoundaries =
-                TimeWindow.of( Instant.parse( "2023-04-01T02:00:00Z" ), Instant.parse( SECOND_TIME ) );
+        TimeWindowOuter poolBoundaries =
+                TimeWindowOuter.of( Instant.parse( "2023-04-01T02:00:00Z" ), Instant.parse( SECOND_TIME ) );
 
         // Build the retriever
         Retriever<TimeSeries<Double>> observedRetriever =

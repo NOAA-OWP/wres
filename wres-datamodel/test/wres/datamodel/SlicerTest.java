@@ -29,10 +29,10 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the {@link Slicer}.
@@ -87,7 +87,7 @@ public final class SlicerTest
         values.add( Pair.of( 0.0, 0.0 / 5.0 ) );
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
+        ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT );
         SampleMetadata meta = SampleMetadata.of();
@@ -114,7 +114,7 @@ public final class SlicerTest
         values.add( Pair.of( 0.0, Ensemble.of( 1, 2, 3 ) ) );
         values.add( Pair.of( 1.0, Ensemble.of( 1, 2, 3 ) ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
+        ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT );
         SampleMetadata meta = SampleMetadata.of();
@@ -209,7 +209,7 @@ public final class SlicerTest
         values.add( Pair.of( 0.0, Ensemble.of( 1, 2, 3, 4, 5 ) ) );
         values.add( Pair.of( 5.0, Ensemble.of( 1, 1, 6, 6, 50 ) ) );
         SampleMetadata meta = SampleMetadata.of();
-        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+        ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT );
 
@@ -248,7 +248,7 @@ public final class SlicerTest
         Pair<Double, Ensemble> d = Pair.of( 4.0, Ensemble.of( 4, 4, 4, 4, 4 ) );
         Pair<Double, Ensemble> e = Pair.of( 0.0, Ensemble.of( 1, 2, 3, 4, 5 ) );
         Pair<Double, Ensemble> f = Pair.of( 5.0, Ensemble.of( 1, 1, 6, 6, 50 ) );
-        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+        ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT );
 
@@ -451,25 +451,25 @@ public final class SlicerTest
         // Populate a list of outputs
         SampleMetadata metadata = SampleMetadata.of( MeasurementUnit.of() );
 
-        TimeWindow windowOne =
-                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter windowOne =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
-        TimeWindow windowTwo =
-                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowTwo =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
-        TimeWindow windowThree =
-                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 3 ) );
+        TimeWindowOuter windowThree =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 3 ) );
 
         OneOrTwoThresholds thresholdOne =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
         OneOrTwoThresholds thresholdTwo =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 2.0 ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
         OneOrTwoThresholds thresholdThree =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -537,25 +537,25 @@ public final class SlicerTest
         // Populate a list of outputs
         SampleMetadata metadata = SampleMetadata.of( MeasurementUnit.of() );
 
-        TimeWindow windowOne =
-                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter windowOne =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
-        TimeWindow windowTwo =
-                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowTwo =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
-        TimeWindow windowThree =
-                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter windowThree =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
         OneOrTwoThresholds thresholdOne =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
         OneOrTwoThresholds thresholdTwo =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 2.0 ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
         OneOrTwoThresholds thresholdThree =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -593,9 +593,9 @@ public final class SlicerTest
         assertEquals( actualOutputOne, expectedOutputOne );
 
         // Discover the unique time windows available
-        Set<TimeWindow> actualOutputTwo =
+        Set<TimeWindowOuter> actualOutputTwo =
                 Slicer.discover( listOfOutputs, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
-        Set<TimeWindow> expectedOutputTwo = new TreeSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
+        Set<TimeWindowOuter> expectedOutputTwo = new TreeSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
 
         assertEquals( actualOutputTwo, expectedOutputTwo );
 

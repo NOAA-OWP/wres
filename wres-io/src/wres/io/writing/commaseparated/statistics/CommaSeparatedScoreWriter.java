@@ -30,8 +30,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
@@ -170,7 +170,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
         {
             List<T> nextMetric = Slicer.filter( output, m );
 
-            SortedSet<Threshold> secondThreshold =
+            SortedSet<ThresholdOuter> secondThreshold =
                     Slicer.discover( nextMetric,
                                      next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
 
@@ -222,7 +222,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                 String append = null;
 
                 // Secondary threshold? If yes, only one, as this was sliced above
-                SortedSet<Threshold> secondThresholds =
+                SortedSet<ThresholdOuter> secondThresholds =
                         Slicer.discover( nextOutput,
                                          next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
                 if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
@@ -314,7 +314,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
-        SortedSet<TimeWindow> timeWindows =
+        SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
 
         SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( component );
@@ -325,7 +325,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             String column = name + HEADER_DELIMITER + t;
             headerRow.add( column );
             // Loop across time windows
-            for ( TimeWindow timeWindow : timeWindows )
+            for ( TimeWindowOuter timeWindow : timeWindows )
             {
                 // Find the next score
                 List<T> nextScore = Slicer.filter( component,

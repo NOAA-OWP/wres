@@ -17,7 +17,7 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.scale.TimeScale.TimeScaleFunction;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the {@link CommaSeparatedUtilities}.
@@ -26,7 +26,7 @@ import wres.datamodel.time.TimeWindow;
 public class CommaSeparatedUtilitiesTest
 {
 
-    private TimeWindow timeWindow;
+    private TimeWindowOuter timeWindow;
 
     @Before
     public void runBeforeEachTest()
@@ -38,7 +38,7 @@ public class CommaSeparatedUtilitiesTest
         Duration earlyLead = Duration.ofHours( 6 );
         Duration lateLead = Duration.ofHours( 120 );
 
-        timeWindow = TimeWindow.of( earlyRef, lateRef, earlyValid, lateValid, earlyLead, lateLead );
+        timeWindow = TimeWindowOuter.of( earlyRef, lateRef, earlyValid, lateValid, earlyLead, lateLead );
     }
 
     @Test

@@ -1,7 +1,7 @@
 package wres.io.thresholds.wrds.response;
 
 import wres.config.FeaturePlus;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.retrieval.UnitMapper;
 
@@ -107,7 +107,7 @@ public class ThresholdExtractor {
      *
      * @return A mapping between feature definitions and all of their thresholds
      */
-    public Map<FeaturePlus, Set<Threshold>> extract() {
+    public Map<FeaturePlus, Set<ThresholdOuter>> extract() {
         return response.getThresholds()
                 .stream()
                 .filter(

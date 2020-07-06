@@ -20,7 +20,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.util.TimeHelper;
 
@@ -43,7 +43,7 @@ abstract class CommaSeparatedStatisticsWriter
      * Earliest possible time window to index the header.
      */
 
-    static final TimeWindow HEADER_INDEX = TimeWindow.of( Instant.MIN,
+    static final TimeWindowOuter HEADER_INDEX = TimeWindowOuter.of( Instant.MIN,
                                                           Instant.MIN,
                                                           Duration.ofSeconds( Long.MIN_VALUE ) );
 
@@ -160,7 +160,7 @@ abstract class CommaSeparatedStatisticsWriter
 
         Objects.requireNonNull( sampleMetadata, "Specify the sample metadata." );
 
-        TimeWindow timeWindow = sampleMetadata.getTimeWindow();
+        TimeWindowOuter timeWindow = sampleMetadata.getTimeWindow();
 
         Objects.requireNonNull( timeWindow, "The sample metadata must have a time window." );
 
@@ -246,7 +246,7 @@ abstract class CommaSeparatedStatisticsWriter
     }
 
     /**
-     * A helper class that contains a single row whose natural order is based on the {@link TimeWindow} of the row
+     * A helper class that contains a single row whose natural order is based on the {@link TimeWindowOuter} of the row
      * and one or more additional strings, not the contents of the row value.
      *
      * @author james.brown@hydrosolved.com
@@ -257,7 +257,7 @@ abstract class CommaSeparatedStatisticsWriter
         /**
          * The row time window.
          */
-        private final TimeWindow left;
+        private final TimeWindowOuter left;
 
         /**
          * Optional further comparators.
@@ -280,7 +280,7 @@ abstract class CommaSeparatedStatisticsWriter
          * @return an instance
          */
 
-        static RowCompareByLeft of( TimeWindow timeWindow, StringJoiner value, String... leftOptions )
+        static RowCompareByLeft of( TimeWindowOuter timeWindow, StringJoiner value, String... leftOptions )
         {
             return new RowCompareByLeft( timeWindow, value, leftOptions );
         }
@@ -291,7 +291,7 @@ abstract class CommaSeparatedStatisticsWriter
          * @return the left value
          */
 
-        private TimeWindow getLeft()
+        private TimeWindowOuter getLeft()
         {
             return left;
         }
@@ -391,7 +391,7 @@ abstract class CommaSeparatedStatisticsWriter
          * @param leftOptions additional comparators for the left
          */
 
-        private RowCompareByLeft( TimeWindow timeWindow, StringJoiner value, String[] leftOptions )
+        private RowCompareByLeft( TimeWindowOuter timeWindow, StringJoiner value, String[] leftOptions )
         {
             Objects.requireNonNull( timeWindow, "Specify a non-null time window for the row." );
             this.left = timeWindow;

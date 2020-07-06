@@ -6,7 +6,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 
 import java.util.*;
@@ -53,8 +53,8 @@ public class InBandThresholdReader {
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<Threshold> includeAllDataThreshold(MetricConstants metric,
-                                                          Set<Threshold> thresholds,
+    private static Set<ThresholdOuter> includeAllDataThreshold(MetricConstants metric,
+                                                          Set<ThresholdOuter> thresholds,
                                                           ThresholdConstants.ThresholdGroup group )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
@@ -68,7 +68,7 @@ public class InBandThresholdReader {
             return thresholds;
         }
 
-        Threshold allData = Threshold.of(
+        ThresholdOuter allData = ThresholdOuter.of(
                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                 ThresholdConstants.Operator.GREATER,
                 ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT
@@ -83,7 +83,7 @@ public class InBandThresholdReader {
         }
 
         // Otherwise, add the input thresholds
-        Set<Threshold> combinedThresholds = new HashSet<>(thresholds);
+        Set<ThresholdOuter> combinedThresholds = new HashSet<>(thresholds);
 
         // Add all data for appropriate types
         if ( metric.isInGroup( MetricConstants.SampleDataGroup.ENSEMBLE )
@@ -107,7 +107,7 @@ public class InBandThresholdReader {
         }
 
         // Thresholds
-        Set<Threshold> thresholds = InBandThresholdReader.createThresholds( thresholdsConfig, units );
+        Set<ThresholdOuter> thresholds = InBandThresholdReader.createThresholds( thresholdsConfig, units );
 
         for (MetricConstants metric : metrics) {
 
@@ -118,14 +118,14 @@ public class InBandThresholdReader {
                 thresholdGroup = DataFactory.getThresholdGroup( thresholdsConfig.getType() );
             }
 
-            Set<Threshold> adjustedThresholds = InBandThresholdReader.includeAllDataThreshold(metric, thresholds, thresholdGroup);
+            Set<ThresholdOuter> adjustedThresholds = InBandThresholdReader.includeAllDataThreshold(metric, thresholds, thresholdGroup);
 
             this.sharedBuilders.addThresholdsToAll(thresholdGroup, metric, adjustedThresholds);
         }
     }
 
     /**
-     * Obtains a set of {@link Threshold} from a {@link ThresholdsConfig} for thresholds that are configured internally
+     * Obtains a set of {@link ThresholdOuter} from a {@link ThresholdsConfig} for thresholds that are configured internally
      * and not sourced externally. In other words, {@link ThresholdsConfig#getCommaSeparatedValuesOrSource()} must
      * return a string of thresholds and not a {@link ThresholdsConfig.Source}.
      *
@@ -136,7 +136,7 @@ public class InBandThresholdReader {
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<Threshold> createThresholds(ThresholdsConfig thresholds, MeasurementUnit units )
+    private static Set<ThresholdOuter> createThresholds(ThresholdsConfig thresholds, MeasurementUnit units )
     {
         Objects.requireNonNull( thresholds, "Specify non-null thresholds configuration." );
 
@@ -182,7 +182,7 @@ public class InBandThresholdReader {
     }
 
     /**
-     * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}
+     * Returns a list of {@link ThresholdOuter} from a comma-separated string. Specify the type of {@link ThresholdOuter}
      * required.
      *
      * @param inputString the comma-separated input string
@@ -195,7 +195,7 @@ public class InBandThresholdReader {
      * @throws NullPointerException if the input is null
      */
 
-    public static Set<Threshold> readCommaSeparatedValues(
+    public static Set<ThresholdOuter> readCommaSeparatedValues(
             String inputString,
             ThresholdConstants.Operator operator,
             ThresholdConstants.ThresholdDataType dataType,
@@ -214,7 +214,7 @@ public class InBandThresholdReader {
                 .map( Double::parseDouble )
                 .collect( Collectors.toList() );
 
-        Set<Threshold> commaSeparatedThresholds = new TreeSet<>();
+        Set<ThresholdOuter> commaSeparatedThresholds = new TreeSet<>();
 
         //Between operator
         if ( operator == ThresholdConstants.Operator.BETWEEN )
@@ -233,7 +233,7 @@ public class InBandThresholdReader {
             {
                 valuesToAdd.forEach(
                         value -> commaSeparatedThresholds.add(
-                                Threshold.ofProbabilityThreshold(
+                                ThresholdOuter.ofProbabilityThreshold(
                                         OneOrTwoDoubles.of( value ),
                                         operator,
                                         dataType,
@@ -246,7 +246,7 @@ public class InBandThresholdReader {
             {
                 valuesToAdd.forEach(
                         value -> commaSeparatedThresholds.add(
-                                Threshold.of(
+                                ThresholdOuter.of(
                                         OneOrTwoDoubles.of( value ),
                                         operator,
                                         dataType,
@@ -260,13 +260,13 @@ public class InBandThresholdReader {
         return Collections.unmodifiableSet( commaSeparatedThresholds );
     }
 
-    public static Set<Threshold> readBetweenThresholds(
+    public static Set<ThresholdOuter> readBetweenThresholds(
             List<Double> valuesToAdd,
             ThresholdConstants.ThresholdDataType dataType,
             boolean valuesAreProbabilistic,
             MeasurementUnit units
     ) {
-        Set<Threshold> thresholdsBetween = new HashSet<>();
+        Set<ThresholdOuter> thresholdsBetween = new HashSet<>();
         if ( valuesToAdd.size() < 2 )
         {
             throw new MetricConfigException( "At least two values are required to compose a "
@@ -274,11 +274,11 @@ public class InBandThresholdReader {
         }
         for ( int i = 0; i < valuesToAdd.size() - 1; i++ )
         {
-            Threshold newThreshold;
+            ThresholdOuter newThreshold;
 
             if ( valuesAreProbabilistic )
             {
-                newThreshold = Threshold.ofProbabilityThreshold(
+                newThreshold = ThresholdOuter.ofProbabilityThreshold(
                         OneOrTwoDoubles.of( valuesToAdd.get( i ), valuesToAdd.get( i + 1 ) ),
                         ThresholdConstants.Operator.BETWEEN,
                         dataType,
@@ -287,7 +287,7 @@ public class InBandThresholdReader {
             }
             else
             {
-                newThreshold = Threshold.of(
+                newThreshold = ThresholdOuter.of(
                         OneOrTwoDoubles.of( valuesToAdd.get( i ), valuesToAdd.get( i + 1 ) ),
                         ThresholdConstants.Operator.BETWEEN,
                         dataType,

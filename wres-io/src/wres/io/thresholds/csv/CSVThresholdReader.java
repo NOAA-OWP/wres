@@ -8,7 +8,7 @@ import wres.config.generated.*;
 import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -40,7 +40,7 @@ public class CSVThresholdReader
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
-     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link Threshold}.
+     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
      *
      * @param systemSettings the system settings used to help resolve a path to thresholds
      * @param threshold the threshold configuration
@@ -55,7 +55,7 @@ public class CSVThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds).
      */
 
-    public static Map<FeaturePlus, Set<Threshold>> readThresholds( SystemSettings systemSettings,
+    public static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds( SystemSettings systemSettings,
                                                                    ThresholdsConfig threshold,
                                                                    MeasurementUnit units,
                                                                    UnitMapper unitMapper )
@@ -137,7 +137,7 @@ public class CSVThresholdReader
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
-     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link Threshold}.
+     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
      *
      * @param commaSeparated the path to the comma separated values
      * @param dataTypes the threshold data types
@@ -153,14 +153,14 @@ public class CSVThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds).
      */
 
-    private static Map<FeaturePlus, Set<Threshold>> readThresholds( Path commaSeparated,
+    private static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds( Path commaSeparated,
                                                                     ThresholdDataTypes dataTypes,
                                                                     Double missingValue,
                                                                     MeasurementUnit units,
                                                                     UnitMapper unitMapper )
             throws IOException
     {
-        Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
+        Map<FeaturePlus, Set<ThresholdOuter>> returnMe = new TreeMap<>();
 
         // Rather than drip-feeding failures, collect all expected failure types, which
         // are IllegalArgumentException and NumberFormatException and propagate at the end.
@@ -321,7 +321,7 @@ public class CSVThresholdReader
      * @return the thresholds for one feature
      */
 
-    private static Set<Threshold> getAllThresholdsForOneFeature( ThresholdDataTypes dataType,
+    private static Set<ThresholdOuter> getAllThresholdsForOneFeature( ThresholdDataTypes dataType,
                                                                  String[] labels,
                                                                  String[] featureThresholds,
                                                                  Double missingValue,
@@ -358,7 +358,7 @@ public class CSVThresholdReader
     }
 
     /**
-     * Generates a {@link Set} of {@link Threshold} from the input string.
+     * Generates a {@link Set} of {@link ThresholdOuter} from the input string.
      *
      * @param input the comma separated input string
      * @param labels a set of labels (as many as thresholds) or null
@@ -373,7 +373,7 @@ public class CSVThresholdReader
      * @throws NumberFormatException if the strings cannot be parsed to numbers
      */
 
-    private static Set<Threshold> getThresholds( String[] input,
+    private static Set<ThresholdOuter> getThresholds( String[] input,
                                                  String[] labels,
                                                  boolean isProbability,
                                                  Operator condition,
@@ -383,7 +383,7 @@ public class CSVThresholdReader
     {
         Objects.requireNonNull( input, "Specify a non-null input in order to read the thresholds." );
 
-        Set<Threshold> returnMe = new TreeSet<>();
+        Set<ThresholdOuter> returnMe = new TreeSet<>();
 
         // Define possibly null labels for iteration
         String[] iterateLabels = labels;
@@ -408,7 +408,7 @@ public class CSVThresholdReader
                 // Probability thresholds
                 if ( isProbability )
                 {
-                    returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
+                    returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
                                                                     condition,
                                                                     dataType,
                                                                     iterateLabels[i],
@@ -419,7 +419,7 @@ public class CSVThresholdReader
                 {
                     double thresholdInDesiredUnits = unitMapper.getValueInDesiredUnits( threshold );
 
-                    returnMe.add( Threshold.of( OneOrTwoDoubles.of( thresholdInDesiredUnits ),
+                    returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( thresholdInDesiredUnits ),
                                                 condition,
                                                 dataType,
                                                 iterateLabels[i],

@@ -24,7 +24,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
@@ -84,8 +84,8 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         // Change the lead duration to the analysis step set by the user,
         // also set the reference datetime to an infinitely wide range so
         // that we do not restrict the analyses incorrectly.
-        TimeWindow originalRanges = super.getTimeWindow();
-        TimeWindow analysisRanges = originalRanges;
+        TimeWindowOuter originalRanges = super.getTimeWindow();
+        TimeWindowOuter analysisRanges = originalRanges;
 
         if ( Objects.nonNull( this.getEarliestAnalysisDuration() )
              || Objects.nonNull( this.getLatestAnalysisDuration() ) )
@@ -108,7 +108,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                 latestValidTime = originalRanges.getLatestValidTime();
             }
 
-            analysisRanges = TimeWindow.of( Instant.MIN,
+            analysisRanges = TimeWindowOuter.of( Instant.MIN,
                                             Instant.MAX,
                                             earliestValidTime,
                                             latestValidTime,
@@ -124,7 +124,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
             // time should be treated when that declaration is concerned with filtering or pooling by reference time.
             // TODO: be explicit about the connection between reference times/types and declaration options. 
             // For now, reference times are not used to filter here
-            analysisRanges = TimeWindow.of( Instant.MIN,
+            analysisRanges = TimeWindowOuter.of( Instant.MIN,
                                             Instant.MAX,
                                             originalRanges.getEarliestValidTime(),
                                             originalRanges.getLatestValidTime() );
@@ -170,9 +170,9 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     static class Builder extends TimeSeriesRetrieverBuilder<Double>
     {
-        private Duration earliestAnalysisDuration = TimeWindow.DURATION_MIN;
+        private Duration earliestAnalysisDuration = TimeWindowOuter.DURATION_MIN;
 
-        private Duration latestAnalysisDuration = TimeWindow.DURATION_MAX;
+        private Duration latestAnalysisDuration = TimeWindowOuter.DURATION_MAX;
 
         private DuplicatePolicy duplicatePolicy = DuplicatePolicy.KEEP_ALL;
 
@@ -348,8 +348,8 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     private boolean addOneTimeSeriesForEachAnalysisDuration()
     {
-        return !this.getEarliestAnalysisDuration().equals( TimeWindow.DURATION_MIN )
-               || !this.getLatestAnalysisDuration().equals( TimeWindow.DURATION_MAX );
+        return !this.getEarliestAnalysisDuration().equals( TimeWindowOuter.DURATION_MIN )
+               || !this.getLatestAnalysisDuration().equals( TimeWindowOuter.DURATION_MAX );
     }
 
     /**

@@ -9,7 +9,7 @@ import java.util.Set;
 
 import java.time.Duration;
 
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -276,15 +276,15 @@ public enum MetricConstants
      * Identifier for the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED, TimeWindow.DURATION_MIN,
-            TimeWindow.DURATION_MAX, Duration.ZERO ),
+    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED, TimeWindowOuter.DURATION_MIN,
+            TimeWindowOuter.DURATION_MAX, Duration.ZERO ),
 
     /**
      * Identifier for a statistic derived from the Time-to-Peak Error.
      */
 
     TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            TimeWindow.DURATION_MIN, TimeWindow.DURATION_MAX,
+            TimeWindowOuter.DURATION_MIN, TimeWindowOuter.DURATION_MAX,
             Duration.ZERO ),
 
     /**
@@ -292,7 +292,7 @@ public enum MetricConstants
      */
 
     TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED,
-            TimeWindow.DURATION_MIN, TimeWindow.DURATION_MAX,
+            TimeWindowOuter.DURATION_MIN, TimeWindowOuter.DURATION_MAX,
             Duration.ZERO ),
 
     /**
@@ -300,7 +300,7 @@ public enum MetricConstants
      */
 
     TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            TimeWindow.DURATION_MIN, TimeWindow.DURATION_MAX, Duration.ZERO ),
+            TimeWindowOuter.DURATION_MIN, TimeWindowOuter.DURATION_MAX, Duration.ZERO ),
 
     /**
      * Mean statistic.

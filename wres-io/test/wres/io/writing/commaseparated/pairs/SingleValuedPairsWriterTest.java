@@ -39,7 +39,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the {@link SingleValuedPairsWriter}.
@@ -257,7 +257,7 @@ public final class SingleValuedPairsWriterTest
     }
 
     /**
-     * Builds a {@link SingleValuedPairsWriter} whose {@link SampleMetadata} includes a {@link TimeWindow}, 
+     * Builds a {@link SingleValuedPairsWriter} whose {@link SampleMetadata} includes a {@link TimeWindowOuter}, 
      * writes some pairs, and checks that the written output matches the expected output.
      * @throws IOException if the writing or removal of the paired file fails
      */
@@ -276,7 +276,7 @@ public final class SingleValuedPairsWriterTest
             PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
             tsBuilder.addTimeSeries( pairs );
             tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
-                                                      TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                      TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                      Instant.parse( "1990-01-01T00:00:00Z" ),
                                                                      Duration.ZERO ) ) );
 

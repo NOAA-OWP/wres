@@ -10,7 +10,7 @@ public final class ThresholdConstants
 {
     
     /**
-     * Operators associated with a {@link Threshold}.
+     * Operators associated with a {@link ThresholdOuter}.
      */
 
     public enum Operator
@@ -61,25 +61,25 @@ public final class ThresholdConstants
     {
 
         /**
-         * A {@link Threshold} that comprises one or two probability values only. A {@link Threshold} has two 
-         * probability values if {@link Threshold#hasBetweenCondition()} returns <code>true</code>, otherwise only 
+         * A {@link ThresholdOuter} that comprises one or two probability values only. A {@link ThresholdOuter} has two 
+         * probability values if {@link ThresholdOuter#hasBetweenCondition()} returns <code>true</code>, otherwise only 
          * one value.
          */
 
         PROBABILITY_ONLY,
 
         /**
-         * A {@link Threshold} that comprises one or two real values only. A {@link Threshold} has two 
-         * real values if {@link Threshold#hasBetweenCondition()} returns <code>true</code>, otherwise only one 
+         * A {@link ThresholdOuter} that comprises one or two real values only. A {@link ThresholdOuter} has two 
+         * real values if {@link ThresholdOuter#hasBetweenCondition()} returns <code>true</code>, otherwise only one 
          * value.
          */
 
         VALUE_ONLY,
 
         /**
-         * A {@link Threshold} that comprises both real values and probability values. It contains the same number of 
-         * each. A {@link Threshold} has two values for each if {@link Threshold#hasBetweenCondition()} returns 
-         * <code>true</code>, otherwise one value for each.
+         * A {@link ThresholdOuter} that comprises both real values and probability values. It contains the same number 
+         * of each. A {@link ThresholdOuter} has two values for each if {@link ThresholdOuter#hasBetweenCondition()} 
+         * returns <code>true</code>, otherwise one value for each.
          */
 
         PROBABILITY_AND_VALUE;
@@ -87,7 +87,7 @@ public final class ThresholdConstants
     }    
 
     /**
-     * An enumeration of the data types to which a {@link Threshold} should be applied.
+     * An enumeration of the data types to which a {@link ThresholdOuter} should be applied.
      */
 
     public enum ThresholdDataType

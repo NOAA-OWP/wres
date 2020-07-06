@@ -23,7 +23,7 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 
@@ -57,11 +57,11 @@ public final class TimeToPeakErrorTest
         PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
-        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-02T00:00:00Z" ),
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 18 ) );
-        final TimeWindow timeWindow = window;
+        final TimeWindowOuter timeWindow = window;
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )

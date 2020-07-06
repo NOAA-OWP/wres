@@ -3,11 +3,15 @@ package wres.datamodel.thresholds;
 import java.util.Objects;
 import java.util.function.DoublePredicate;
 
+import com.google.protobuf.DoubleValue;
+
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
+import wres.statistics.generated.Threshold;
+import wres.statistics.generated.Threshold.ThresholdOperator;
 
 /**
  * <p>Stores a threshold value and associated logical condition. A threshold comprises one or both of: 
@@ -26,53 +30,25 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
  * 
  * <p>This implementation is immutable.</p>
  * 
+ * <p>The internal data is stored, and accessible, as a {@link Threshold}.
+ * 
  * @author james.brown@hydrosolved.com
  */
 
-public class Threshold implements Comparable<Threshold>, DoublePredicate
+public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredicate
 {
-    public static final Threshold ALL_DATA = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                           ThresholdConstants.Operator.GREATER,
-                                                           ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
+    public static final ThresholdOuter ALL_DATA = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                     ThresholdConstants.Operator.GREATER,
+                                                                     ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
     /**
-     * The real values or null.
+     * The actual threshold.
      */
 
-    private final OneOrTwoDoubles values;
+    private final Threshold threshold;
 
     /**
-     * The probability values or null.
-     */
-
-    private final OneOrTwoDoubles probabilities;
-
-    /**
-     * The threshold condition.
-     */
-
-    private final Operator condition;
-
-    /**
-     * The type of data to which the threshold applies.
-     */
-
-    private final ThresholdDataType dataType;
-
-    /**
-     * The label associated with the threshold.
-     */
-
-    private final String label;
-
-    /**
-     * The units associated with the threshold.
-     */
-
-    private final MeasurementUnit units;
-
-    /**
-     * Returns {@link Threshold} from the specified input.
+     * Returns {@link ThresholdOuter} from the specified input.
      * 
      * @param values the values
      * @param condition the threshold condition
@@ -80,14 +56,13 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold of( OneOrTwoDoubles values, Operator condition, ThresholdDataType dataType )
+    public static ThresholdOuter of( OneOrTwoDoubles values, Operator condition, ThresholdDataType dataType )
     {
-        return Threshold.of( values, condition, dataType, null, null );
+        return ThresholdOuter.of( values, condition, dataType, null, null );
     }
 
-
     /**
-     * Returns {@link Threshold} from the specified input.
+     * Returns {@link ThresholdOuter} from the specified input.
      * 
      * @param values the values
      * @param condition the threshold condition
@@ -96,16 +71,16 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold of( OneOrTwoDoubles values,
-                                Operator condition,
-                                ThresholdDataType dataType,
-                                MeasurementUnit units )
+    public static ThresholdOuter of( OneOrTwoDoubles values,
+                                     Operator condition,
+                                     ThresholdDataType dataType,
+                                     MeasurementUnit units )
     {
-        return Threshold.of( values, condition, dataType, null, units );
+        return ThresholdOuter.of( values, condition, dataType, null, units );
     }
 
     /**
-     * Returns {@link Threshold} from the specified input.
+     * Returns {@link ThresholdOuter} from the specified input.
      * 
      * @param values the threshold values
      * @param condition the threshold condition
@@ -115,22 +90,22 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold of( OneOrTwoDoubles values,
-                                Operator condition,
-                                ThresholdDataType dataType,
-                                String label,
-                                MeasurementUnit units )
+    public static ThresholdOuter of( OneOrTwoDoubles values,
+                                     Operator condition,
+                                     ThresholdDataType dataType,
+                                     String label,
+                                     MeasurementUnit units )
     {
-        return new ThresholdBuilder().setValues( values )
-                                     .setCondition( condition )
-                                     .setDataType( dataType )
-                                     .setLabel( label )
-                                     .setUnits( units )
-                                     .build();
+        return new Builder().setValues( values )
+                            .setCondition( condition )
+                            .setDataType( dataType )
+                            .setLabel( label )
+                            .setUnits( units )
+                            .build();
     }
 
     /**
-     * Returns {@link Threshold} from the specified input.
+     * Returns {@link ThresholdOuter} from the specified input.
      * 
      * @param values the values
      * @param probabilities the probabilities
@@ -139,16 +114,16 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold ofQuantileThreshold( OneOrTwoDoubles values,
-                                                 OneOrTwoDoubles probabilities,
-                                                 Operator condition,
-                                                 ThresholdDataType dataType )
+    public static ThresholdOuter ofQuantileThreshold( OneOrTwoDoubles values,
+                                                      OneOrTwoDoubles probabilities,
+                                                      Operator condition,
+                                                      ThresholdDataType dataType )
     {
-        return Threshold.ofQuantileThreshold( values, probabilities, condition, dataType, null, null );
+        return ThresholdOuter.ofQuantileThreshold( values, probabilities, condition, dataType, null, null );
     }
 
     /**
-     * Returns a {@link Threshold} from the specified input
+     * Returns a {@link ThresholdOuter} from the specified input
      * 
      * @param values the value or null
      * @param probabilities the probabilities or null
@@ -159,24 +134,24 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a quantile
      */
 
-    public static Threshold ofQuantileThreshold( OneOrTwoDoubles values,
-                                                 OneOrTwoDoubles probabilities,
-                                                 Operator condition,
-                                                 ThresholdDataType dataType,
-                                                 String label,
-                                                 MeasurementUnit units )
+    public static ThresholdOuter ofQuantileThreshold( OneOrTwoDoubles values,
+                                                      OneOrTwoDoubles probabilities,
+                                                      Operator condition,
+                                                      ThresholdDataType dataType,
+                                                      String label,
+                                                      MeasurementUnit units )
     {
-        return new ThresholdBuilder().setValues( values )
-                                     .setProbabilities( probabilities )
-                                     .setCondition( condition )
-                                     .setDataType( dataType )
-                                     .setLabel( label )
-                                     .setUnits( units )
-                                     .build();
+        return new Builder().setValues( values )
+                            .setProbabilities( probabilities )
+                            .setCondition( condition )
+                            .setDataType( dataType )
+                            .setLabel( label )
+                            .setUnits( units )
+                            .build();
     }
 
     /**
-     * Returns {@link Threshold} from the specified input.
+     * Returns {@link ThresholdOuter} from the specified input.
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
@@ -184,15 +159,15 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                    Operator condition,
-                                                    ThresholdDataType dataType )
+    public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                         Operator condition,
+                                                         ThresholdDataType dataType )
     {
-        return Threshold.ofProbabilityThreshold( probabilities, condition, dataType, null, null );
+        return ThresholdOuter.ofProbabilityThreshold( probabilities, condition, dataType, null, null );
     }
 
     /**
-     * Returns {@link Threshold} from the specified input.
+     * Returns {@link ThresholdOuter} from the specified input.
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
@@ -201,16 +176,16 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                    Operator condition,
-                                                    ThresholdDataType dataType,
-                                                    MeasurementUnit units )
+    public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                         Operator condition,
+                                                         ThresholdDataType dataType,
+                                                         MeasurementUnit units )
     {
-        return Threshold.ofProbabilityThreshold( probabilities, condition, dataType, null, units );
+        return ThresholdOuter.ofProbabilityThreshold( probabilities, condition, dataType, null, units );
     }
 
     /**
-     * Returns {@link Threshold} from the specified input.
+     * Returns {@link ThresholdOuter} from the specified input.
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
@@ -219,16 +194,16 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                    Operator condition,
-                                                    ThresholdDataType dataType,
-                                                    String label )
+    public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                         Operator condition,
+                                                         ThresholdDataType dataType,
+                                                         String label )
     {
-        return Threshold.ofProbabilityThreshold( probabilities, condition, dataType, label, null );
+        return ThresholdOuter.ofProbabilityThreshold( probabilities, condition, dataType, label, null );
     }
 
     /**
-     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
+     * Returns {@link ThresholdOuter} from the specified input. Both inputs must be in the unit interval, [0,1].
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
@@ -238,18 +213,18 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a threshold
      */
 
-    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                    Operator condition,
-                                                    ThresholdDataType dataType,
-                                                    String label,
-                                                    MeasurementUnit units )
+    public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                         Operator condition,
+                                                         ThresholdDataType dataType,
+                                                         String label,
+                                                         MeasurementUnit units )
     {
-        return new ThresholdBuilder().setProbabilities( probabilities )
-                                     .setCondition( condition )
-                                     .setDataType( dataType )
-                                     .setLabel( label )
-                                     .setUnits( units )
-                                     .build();
+        return new Builder().setProbabilities( probabilities )
+                            .setCondition( condition )
+                            .setDataType( dataType )
+                            .setLabel( label )
+                            .setUnits( units )
+                            .build();
     }
 
     /**
@@ -261,7 +236,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public boolean hasValues()
     {
-        return Objects.nonNull( this.getValues() );
+        return this.getThreshold().hasLeftThresholdValue();
     }
 
     /**
@@ -272,7 +247,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public boolean hasProbabilities()
     {
-        return Objects.nonNull( this.getProbabilities() );
+        return this.getThreshold().hasLeftThresholdProbability();
     }
 
     /**
@@ -283,7 +258,8 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public boolean hasLabel()
     {
-        return Objects.nonNull( this.getLabel() );
+        String label = this.getLabel();
+        return Objects.nonNull( label ) && !label.isBlank();
     }
 
     /**
@@ -337,7 +313,9 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public ThresholdDataType getDataType()
     {
-        return dataType;
+        Threshold threshold = this.getThreshold();
+        wres.statistics.generated.Threshold.ThresholdDataType type = threshold.getDataType();
+        return ThresholdDataType.valueOf( type.name() );
     }
 
     /**
@@ -349,7 +327,21 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public OneOrTwoDoubles getValues()
     {
-        return values;
+        OneOrTwoDoubles returnMe = null;
+
+        Threshold threshold = this.getThreshold();
+
+        if ( threshold.hasLeftThresholdValue() && threshold.hasRightThresholdValue() )
+        {
+            returnMe = OneOrTwoDoubles.of( threshold.getLeftThresholdValue().getValue(),
+                                           threshold.getRightThresholdValue().getValue() );
+        }
+        else if ( threshold.hasLeftThresholdValue() )
+        {
+            returnMe = OneOrTwoDoubles.of( threshold.getLeftThresholdValue().getValue() );
+        }
+
+        return returnMe;
     }
 
     /**
@@ -361,11 +353,25 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public OneOrTwoDoubles getProbabilities()
     {
-        return probabilities;
+        OneOrTwoDoubles returnMe = null;
+
+        Threshold threshold = this.getThreshold();
+
+        if ( threshold.hasLeftThresholdProbability() && threshold.hasRightThresholdProbability() )
+        {
+            returnMe = OneOrTwoDoubles.of( threshold.getLeftThresholdProbability().getValue(),
+                                           threshold.getRightThresholdProbability().getValue() );
+        }
+        else if ( threshold.hasLeftThresholdProbability() )
+        {
+            returnMe = OneOrTwoDoubles.of( threshold.getLeftThresholdProbability().getValue() );
+        }
+
+        return returnMe;
     }
 
     /**
-     * Returns the units associated with the {@link Threshold} or null. Always returns null when 
+     * Returns the units associated with the {@link ThresholdOuter} or null. Always returns null when 
      * {@link #hasValues()} returns <code>false</code>.
      * 
      * @return the units or null
@@ -373,7 +379,14 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public MeasurementUnit getUnits()
     {
-        return units;
+        MeasurementUnit returnMe = null;
+        String unit = this.getThreshold().getThresholdValueUnits();
+        if ( Objects.nonNull( unit ) && !unit.isBlank() )
+        {
+            returnMe = MeasurementUnit.of( unit );
+        }
+
+        return returnMe;
     }
 
     /**
@@ -384,22 +397,33 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     public Operator getOperator()
     {
-        return condition;
+        return Operator.valueOf( this.getThreshold().getOperator().name() );
     }
 
     /**
-     * Returns the label associated with the {@link Threshold} or null if no label is defined.
+     * Returns the label associated with the {@link ThresholdOuter} or null if no label is defined.
      * 
      * @return the label or null
      */
 
     public String getLabel()
     {
-        return label;
+        return this.getThreshold().getName();
     }
 
     /**
-     * Returns <code>true</code> if the {@link Threshold} condition corresponds to a {@link Operator#BETWEEN} condition.
+     * Returns the canonical representation of the threshold wrapped by this instance.
+     * 
+     * @return the canonical representation
+     */
+
+    public Threshold getThreshold()
+    {
+        return this.threshold;
+    }
+
+    /**
+     * Returns <code>true</code> if the {@link ThresholdOuter} condition corresponds to a {@link Operator#BETWEEN} condition.
      * 
      * @return true if the condition is a {@link Operator#BETWEEN} condition, false otherwise.
      */
@@ -439,7 +463,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     }
 
     /**
-     * Returns a string representation of the {@link Threshold} that contains only alphanumeric characters A-Z, a-z, 
+     * Returns a string representation of the {@link ThresholdOuter} that contains only alphanumeric characters A-Z, a-z, 
      * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as
      * a decimal separator.
      * 
@@ -470,8 +494,8 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     }
 
     /**
-     * Returns a string representation of the {@link Threshold} without any units. This is useful when forming string
-     * representions of a collection of {@link Threshold} and abstracting the common units to a higher level.
+     * Returns a string representation of the {@link ThresholdOuter} without any units. This is useful when forming string
+     * representions of a collection of {@link ThresholdOuter} and abstracting the common units to a higher level.
      * 
      * @return a string without any units
      */
@@ -489,26 +513,20 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof Threshold ) )
+        if ( ! ( o instanceof ThresholdOuter ) )
         {
             return false;
         }
 
-        final Threshold in = (Threshold) o;
-        boolean first = this.hasValues() == in.hasValues()
-                        && this.hasProbabilities() == in.hasProbabilities();
-        boolean second = hasLabel() == in.hasLabel()
-                         && this.getOperator() == in.getOperator()
-                         && this.getDataType() == in.getDataType()
-                         && this.hasUnits() == in.hasUnits();
+        final ThresholdOuter in = (ThresholdOuter) o;
 
-        return first && second && this.areOptionalStatesEqual( in );
+        return in.getThreshold().equals( this.getThreshold() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.values, this.probabilities, this.condition, this.dataType, this.label, this.units );
+        return this.threshold.hashCode();
     }
 
     @Override
@@ -526,7 +544,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
             append = " (" + this.getLabel() + ")";
         }
 
-        final String c = this.getConditionID();
+        final String c = this.getConditionString();
 
         String stringUnits = "";
         if ( this.hasUnits() )
@@ -583,7 +601,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     }
 
     @Override
-    public int compareTo( final Threshold o )
+    public int compareTo( final ThresholdOuter o )
     {
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
 
@@ -670,7 +688,9 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
             upperBound = this.getProbabilities().second();
         }
 
-        switch ( condition )
+        Operator operator = this.getOperator();
+
+        switch ( operator )
         {
             case GREATER:
                 return t > lowerBound;
@@ -693,7 +713,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * A builder to build the threshold.
      */
 
-    public static class ThresholdBuilder
+    public static class Builder
     {
 
         /**
@@ -733,13 +753,19 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         private MeasurementUnit units;
 
         /**
+         * The existing threshold data, supplied on construction.
+         */
+
+        private Threshold threshold;
+
+        /**
          * Sets the {@link Operator} associated with the threshold
          * 
          * @param condition the threshold condition
          * @return the builder
          */
 
-        public ThresholdBuilder setCondition( Operator condition )
+        public Builder setCondition( Operator condition )
         {
             this.condition = condition;
             return this;
@@ -752,7 +778,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
          * @return the builder
          */
 
-        public ThresholdBuilder setDataType( ThresholdDataType dataType )
+        public Builder setDataType( ThresholdDataType dataType )
         {
             this.dataType = dataType;
             return this;
@@ -765,7 +791,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
          * @return the builder
          */
 
-        public ThresholdBuilder setValues( OneOrTwoDoubles values )
+        public Builder setValues( OneOrTwoDoubles values )
         {
             this.values = values;
             return this;
@@ -778,7 +804,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
          * @return the builder
          */
 
-        public ThresholdBuilder setProbabilities( OneOrTwoDoubles probabilities )
+        public Builder setProbabilities( OneOrTwoDoubles probabilities )
         {
             this.probabilities = probabilities;
             return this;
@@ -791,7 +817,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
          * @return the builder
          */
 
-        public ThresholdBuilder setLabel( String label )
+        public Builder setLabel( String label )
         {
             this.label = label;
             return this;
@@ -804,20 +830,39 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
          * @return the builder
          */
 
-        public ThresholdBuilder setUnits( MeasurementUnit units )
+        public Builder setUnits( MeasurementUnit units )
         {
             this.units = units;
             return this;
         }
 
         /**
-         * Return the {@link Threshold}
+         * Return the {@link ThresholdOuter}
          * 
-         * @return the {@link Threshold}
+         * @return the {@link ThresholdOuter}
          */
-        public Threshold build()
+        public ThresholdOuter build()
         {
-            return new Threshold( this );
+            return new ThresholdOuter( this );
+        }
+
+        /**
+         * Default constructor.
+         */
+
+        public Builder()
+        {
+        }
+
+        /**
+         * Construct with an existing {@link Threshold}.
+         * 
+         * @param threshold the threshold.
+         */
+
+        public Builder( Threshold threshold )
+        {
+            this.threshold = threshold;
         }
     }
 
@@ -827,67 +872,117 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @param builder the builder
      */
 
-    private Threshold( ThresholdBuilder builder )
+    private ThresholdOuter( Builder builder )
     {
         //Set, then validate
-        this.condition = builder.condition;
-        this.label = builder.label;
-        this.units = builder.units;
-        this.dataType = builder.dataType;
+        Operator operator = builder.condition;
+        String label = builder.label;
+        MeasurementUnit units = builder.units;
+        ThresholdDataType dataType = builder.dataType;
+        OneOrTwoDoubles localValues = builder.values;
+        OneOrTwoDoubles localProbabilities = builder.probabilities;
+        Threshold innerThreshold = builder.threshold;
 
-        // Set values
-        final OneOrTwoDoubles localValues = builder.values;
+        Threshold.Builder thresholdBuilder = null;
+
+        if ( Objects.isNull( innerThreshold ) )
+        {
+            thresholdBuilder = Threshold.newBuilder();
+        }
+        else
+        {
+            thresholdBuilder = Threshold.newBuilder( innerThreshold );
+        }
+
+        if ( Objects.nonNull( operator ) )
+        {
+            ThresholdOperator anOperator = ThresholdOperator.valueOf( operator.name() );
+            thresholdBuilder.setOperator( anOperator );
+        }
+
+        if ( Objects.nonNull( label ) )
+        {
+            thresholdBuilder.setName( label );
+        }
+
+        if ( Objects.nonNull( units ) )
+        {
+            thresholdBuilder.setThresholdValueUnits( units.getUnit() );
+        }
+
+        if ( Objects.nonNull( dataType ) )
+        {
+            wres.statistics.generated.Threshold.ThresholdDataType aDataType =
+                    wres.statistics.generated.Threshold.ThresholdDataType.valueOf( dataType.name() );
+            thresholdBuilder.setDataType( aDataType );
+        }
+
         if ( Objects.nonNull( localValues ) )
         {
-            this.values = OneOrTwoDoubles.of( localValues.first(), localValues.second() );
-        }
-        else
-        {
-            this.values = null;
+            thresholdBuilder.setLeftThresholdValue( DoubleValue.of( localValues.first() ) );
+            if ( localValues.hasTwo() )
+            {
+                thresholdBuilder.setRightThresholdValue( DoubleValue.of( localValues.second() ) );
+            }
         }
 
-        // Set probabilities
-        final OneOrTwoDoubles localProbabilities = builder.probabilities;
         if ( Objects.nonNull( localProbabilities ) )
         {
-            this.probabilities = OneOrTwoDoubles.of( localProbabilities.first(), localProbabilities.second() );
+            thresholdBuilder.setLeftThresholdProbability( DoubleValue.of( localProbabilities.first() ) );
+            if ( localProbabilities.hasTwo() )
+            {
+                thresholdBuilder.setRightThresholdProbability( DoubleValue.of( localProbabilities.second() ) );
+            }
         }
-        else
+
+        this.threshold = thresholdBuilder.build();
+
+        this.validate();
+    }
+
+    /**
+     * @throws IllegalArgumentException if any inputs are invalid
+     */
+
+    private void validate()
+    {
+        if ( this.threshold.getOperator() == ThresholdOperator.UNRECOGNIZED )
         {
-            this.probabilities = null;
+            throw new IllegalArgumentException( "Specify a recognized threshold operator." );
         }
 
-        //Bounds checks
-        Objects.requireNonNull( condition, "Specify a non-null condition." );
+        if ( this.threshold.getDataType() == wres.statistics.generated.Threshold.ThresholdDataType.UNRECOGNIZED )
+        {
+            throw new IllegalArgumentException( "Specify a recognized threshold data type." );
+        }
 
-        Objects.requireNonNull( dataType, "Specify a non-null data type." );
-
-        //Do not allow only an upper threshold or all null thresholds
+        // Do not allow only an upper threshold or all null thresholds
         if ( !this.hasValues() && !this.hasProbabilities() )
         {
             throw new IllegalArgumentException( "Specify one or more values for the threshold." );
         }
 
-        //Check the probability
+        // Check the probability
         this.validateProbabilities();
 
-        //Check a two-sided threshold
+        // Check a two-sided threshold
         if ( this.hasBetweenCondition() )
         {
             this.validateTwoSidedThreshold();
         }
 
-        //Check a one-sided threshold
+        // Check a one-sided threshold
         else
         {
             this.validateOneSidedThreshold();
         }
 
-        //Check for no label when setting threshold as "all data"
+        // Check for no label when setting threshold as "all data"
         if ( !this.isFinite() && this.hasLabel() )
         {
             throw new IllegalArgumentException( "Cannot set a label for an infinite threshold, as the label is "
-                                                + "reserved." );
+                                                + "reserved. Requested label: "
+                                                + this.getLabel() );
         }
     }
 
@@ -953,6 +1048,9 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
     void validateTwoSidedThreshold()
     {
+        OneOrTwoDoubles values = this.getValues();
+        OneOrTwoDoubles probabilities = this.getProbabilities();
+
         //Do not allow a partially defined pair of thresholds/probabilities          
         if ( ( this.hasProbabilities() && !this.getProbabilities().hasTwo() )
              || ( this.hasValues() && !this.getValues().hasTwo() ) )
@@ -998,9 +1096,11 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return a string for the elementary condition
      */
 
-    private String getConditionID()
+    private String getConditionString()
     {
-        switch ( condition )
+        Operator operator = this.getOperator();
+
+        switch ( operator )
         {
             case GREATER:
                 return "> ";
@@ -1032,7 +1132,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      *            input, respectively
      */
 
-    private int comparePresenceAbsence( final Threshold o )
+    private int comparePresenceAbsence( final ThresholdOuter o )
     {
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
 
@@ -1058,40 +1158,6 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
             return returnMe;
         }
         return 0;
-    }
-
-    /**
-     * Returns <code>true</code> if the optional elements of a threshold are equal, otherwise <code>false</code>.
-     * 
-     * @param in the threshold to test
-     * @return true if the optional elements are equal
-     */
-
-    private boolean areOptionalStatesEqual( Threshold in )
-    {
-        boolean returnMe = true;
-
-        if ( hasValues() )
-        {
-            returnMe = this.getValues().equals( in.getValues() );
-        }
-
-        if ( hasProbabilities() )
-        {
-            returnMe = returnMe && this.getProbabilities().equals( in.getProbabilities() );
-        }
-
-        if ( hasLabel() )
-        {
-            returnMe = returnMe && this.getLabel().equals( in.getLabel() );
-        }
-
-        if ( hasUnits() )
-        {
-            returnMe = returnMe && this.getUnits().equals( in.getUnits() );
-        }
-
-        return returnMe;
     }
 
 }

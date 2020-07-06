@@ -57,7 +57,7 @@ import wres.datamodel.thresholds.*;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -173,7 +173,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
-            final TimeWindow window = TimeWindow.of( Instant.MIN,
+            final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -201,11 +201,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             .size() );
 
         // Expected result
-        final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
+        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
                                                          Instant.MAX,
                                                          Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                           Operator.GREATER,
                                                                                           ThresholdDataType.LEFT,
                                                                                           MeasurementUnit.of( "CMS" ) ) );
@@ -299,17 +299,17 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         expectedFirst.add( Pair.of( Instant.parse( FIRST_DATE ), Duration.ofHours( -6 ) ) );
         expectedSecond.add( Pair.of( Instant.parse( SECOND_DATE ), Duration.ofHours( 12 ) ) );
         // Metadata for the output
-        TimeWindow firstWindow = TimeWindow.of( Instant.parse( FIRST_DATE ),
+        TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( FIRST_DATE ),
                                                 Instant.parse( FIRST_DATE ),
                                                 Duration.ofHours( 6 ),
                                                 Duration.ofHours( 18 ) );
-        TimeWindow secondWindow = TimeWindow.of( Instant.parse( SECOND_DATE ),
+        TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( SECOND_DATE ),
                                                  Instant.parse( SECOND_DATE ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds thresholds =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
@@ -387,20 +387,20 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         expectedSecond.add( Pair.of( Instant.parse( SECOND_DATE ), Duration.ofHours( 12 ) ) );
 
         // Metadata for the output
-        TimeWindow firstWindow = TimeWindow.of( Instant.parse( FIRST_DATE ),
+        TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( FIRST_DATE ),
                                                 Instant.parse( FIRST_DATE ),
                                                 Duration.ofHours( 6 ),
                                                 Duration.ofHours( 18 ) );
-        TimeWindow secondWindow = TimeWindow.of( Instant.parse( SECOND_DATE ),
+        TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( SECOND_DATE ),
                                                  Instant.parse( SECOND_DATE ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds firstThreshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
-        OneOrTwoThresholds secondThreshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 5.0 ),
+        OneOrTwoThresholds secondThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
                                                                                   Operator.GREATER,
                                                                                   ThresholdDataType.LEFT_AND_RIGHT ) );
 
@@ -483,14 +483,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         expectedSource.put( MetricConstants.MEAN_ABSOLUTE, Duration.ofHours( 9 ) );
 
         //Metadata
-        TimeWindow combinedWindow = TimeWindow.of( Instant.parse( FIRST_DATE ),
+        TimeWindowOuter combinedWindow = TimeWindowOuter.of( Instant.parse( FIRST_DATE ),
                                                    Instant.parse( SECOND_DATE ),
                                                    Duration.ofHours( 6 ),
                                                    Duration.ofHours( 18 ) );
-        final TimeWindow timeWindow = combinedWindow;
+        final TimeWindowOuter timeWindow = combinedWindow;
 
         OneOrTwoThresholds thresholds =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
@@ -519,10 +519,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = TEST_SOURCE;
 
         // Define the external thresholds to use
-        Map<MetricConstants, Set<Threshold>> canonical = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> canonical = new EnumMap<>( MetricConstants.class );
 
-        Set<Threshold> thresholds =
-                new HashSet<>( Arrays.asList( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
+        Set<ThresholdOuter> thresholds =
+                new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
                                                             Operator.GREATER_EQUAL,
                                                             ThresholdDataType.LEFT ) ) );
 
@@ -557,7 +557,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Generate results for 20 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
-            final TimeWindow window = TimeWindow.of( Instant.MIN,
+            final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -584,11 +584,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             .size() );
 
         // Expected result
-        final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
+        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
                                                          Instant.MAX,
                                                          Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
+        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
                                                                                           Operator.GREATER_EQUAL,
                                                                                           ThresholdDataType.LEFT ) );
 
@@ -637,7 +637,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
-            final TimeWindow window = TimeWindow.of( Instant.MIN,
+            final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -665,11 +665,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             .size() );
 
         // Expected result
-        final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
+        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
                                                          Instant.MAX,
                                                          Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                           Operator.GREATER,
                                                                                           ThresholdDataType.LEFT,
                                                                                           MeasurementUnit.of( "CMS" ) ) );
@@ -737,12 +737,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         expectedSource.put( MetricConstants.MEAN_ABSOLUTE, null );
 
         //Metadata
-        TimeWindow combinedWindow = TimeWindow.of( Instant.MIN,
+        TimeWindowOuter combinedWindow = TimeWindowOuter.of( Instant.MIN,
                                                    Instant.MAX );
-        final TimeWindow timeWindow = combinedWindow;
+        final TimeWindowOuter timeWindow = combinedWindow;
 
         OneOrTwoThresholds thresholds =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
@@ -774,7 +774,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsEight();
 
         // Generate results
-        final TimeWindow window = TimeWindow.of( Instant.MIN,
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                  Instant.MAX,
                                                  Duration.ZERO );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )

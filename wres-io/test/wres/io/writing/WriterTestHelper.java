@@ -33,10 +33,10 @@ import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Helpers for writing outputs.
@@ -133,14 +133,14 @@ public class WriterTestHelper
         String LID = "JUNP1";
 
         // Create fake outputs
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
+        TimeWindowOuter timeOne =
+                TimeWindowOuter.of( Instant.MIN,
                                Instant.MAX,
                                Duration.ofHours( 24 ),
                                Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -167,8 +167,8 @@ public class WriterTestHelper
                                                  VectorOfDoubles.of( 1, 3, 5, 7, 9 ),
                                                  fakeMetadataOne ) );
 
-        TimeWindow timeTwo =
-                TimeWindow.of( Instant.MIN,
+        TimeWindowOuter timeTwo =
+                TimeWindowOuter.of( Instant.MIN,
                                Instant.MAX,
                                Duration.ofHours( 48 ),
                                Duration.ofHours( 48 ) );
@@ -212,14 +212,14 @@ public class WriterTestHelper
         String LID = "JUNP1";
 
         // Create fake outputs
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
+        TimeWindowOuter timeOne =
+                TimeWindowOuter.of( Instant.MIN,
                                Instant.MAX,
                                Duration.ofHours( 24 ),
                                Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -279,14 +279,14 @@ public class WriterTestHelper
         // location id
         String LID = "CREC1";
 
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
+        TimeWindowOuter timeOne =
+                TimeWindowOuter.of( Instant.MIN,
                                Instant.MAX,
                                Duration.ofHours( 24 ),
                                Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
                                                                       OneOrTwoDoubles.of( 0.9 ),
                                                                       Operator.GREATER_EQUAL,
                                                                       ThresholdDataType.LEFT ) );
@@ -334,14 +334,14 @@ public class WriterTestHelper
         // location id
         String LID = "FTSC1";
 
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
+        TimeWindowOuter timeOne =
+                TimeWindowOuter.of( Instant.MIN,
                                Instant.MAX,
                                Duration.ofHours( 1 ),
                                Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -383,10 +383,10 @@ public class WriterTestHelper
         // location id
         final String LID = "DRRC2";
 
-        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -443,14 +443,14 @@ public class WriterTestHelper
         // location id
         final String LID = "DOLC2";
 
-        TimeWindow timeOne =
-                TimeWindow.of( Instant.MIN,
+        TimeWindowOuter timeOne =
+                TimeWindowOuter.of( Instant.MIN,
                                Instant.MAX,
                                Duration.ofHours( 1 ),
                                Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -490,10 +490,10 @@ public class WriterTestHelper
         // location id
         final String LID = "FTSC1";
 
-        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
         OneOrTwoThresholds thresholdOne =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -514,7 +514,7 @@ public class WriterTestHelper
 
         // Add the data for another threshold at the same time
         OneOrTwoThresholds thresholdTwo =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -531,7 +531,7 @@ public class WriterTestHelper
         DoubleScoreStatistic fakeOutputB = DoubleScoreStatistic.of( 1.0, fakeMetadataB );
 
         // Add data for another time, and one threshold only
-        TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindowOuter timeTwo = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
         StatisticMetadata fakeMetadataC =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),

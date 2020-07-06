@@ -31,10 +31,10 @@ import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
@@ -88,14 +88,14 @@ public final class MetricFuturesByTimeTest
      * A key used to store output.
      */
 
-    Pair<TimeWindow, OneOrTwoThresholds> key;
+    Pair<TimeWindowOuter, OneOrTwoThresholds> key;
 
     @Before
     public void setupBeforeEachTest()
     {
-        key = Pair.of( TimeWindow.of( Instant.parse( "1985-05-01T12:00:00Z" ),
+        key = Pair.of( TimeWindowOuter.of( Instant.parse( "1985-05-01T12:00:00Z" ),
                                       Instant.parse( "1985-05-03T12:00:00Z" ) ),
-                       OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                       OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT ) ) );
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();

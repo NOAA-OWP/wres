@@ -11,7 +11,7 @@ import org.jfree.data.xy.AbstractXYDataset;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
 
 /**
@@ -54,9 +54,9 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         int seriesIndex = 0;
-        SortedSet<TimeWindow> timeWindows =
+        SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
-        for ( final TimeWindow lead : timeWindows )
+        for ( final TimeWindowOuter lead : timeWindows )
         {
             setOverrideLegendName( seriesIndex,
                                    Long.toString( TimeHelper.durationToLongUnits( lead.getLatestLeadDuration(),
@@ -77,9 +77,9 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
     {
         //Cast the raw data input and check the size.
         final List<List<DoubleScoreStatistic>> data = new ArrayList<>();
-        SortedSet<TimeWindow> timeWindows =
+        SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
-        for ( final TimeWindow lead : timeWindows )
+        for ( final TimeWindowOuter lead : timeWindows )
         {
             data.add( Slicer.filter( rawData, next -> next.getSampleMetadata().getTimeWindow().equals( lead ) ) );
         }

@@ -49,10 +49,10 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -81,31 +81,31 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                    condition,
                                                                                                    ThresholdDataType.LEFT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                    condition,
                                                                                                    ThresholdDataType.RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                    condition,
                                                                                                    ThresholdDataType.LEFT_AND_RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                    condition,
                                                                                                    ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                    condition,
                                                                                                    ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                    condition,
                                                                                                    ThresholdDataType.ANY_RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                    condition,
                                                                                                    ThresholdDataType.RIGHT_MEAN ) ) );
         // Check that average works        
         Pair<Double, Ensemble> pair = Pair.of( 1.0, Ensemble.of( 1.5, 2.0 ) );
 
-        assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
+        assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                 condition,
                                                                                                 ThresholdDataType.RIGHT_MEAN ) )
                                                       .test( pair ) );
@@ -607,7 +607,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
 
         // Expected result
-        final TimeWindow expectedWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
                                                          Duration.ofHours( 24 ) );
 
@@ -631,10 +631,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         expectedFirstElements.put( MetricConstants.FALSE_POSITIVES, 32.0 );
         expectedFirstElements.put( MetricConstants.FALSE_NEGATIVES, 2.0 );
 
-        OneOrTwoThresholds first = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+        OneOrTwoThresholds first = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
-                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
+                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 
@@ -659,10 +659,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         expectedSecondElements.put( MetricConstants.FALSE_POSITIVES, 17.0 );
         expectedSecondElements.put( MetricConstants.FALSE_NEGATIVES, 3.0 );
 
-        OneOrTwoThresholds second = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+        OneOrTwoThresholds second = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                           Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
+                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ) );
 
@@ -687,10 +687,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         expectedThirdElements.put( MetricConstants.FALSE_POSITIVES, 15.0 );
         expectedThirdElements.put( MetricConstants.FALSE_NEGATIVES, 3.0 );
 
-        OneOrTwoThresholds third = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+        OneOrTwoThresholds third = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
-                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
+                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 
@@ -715,10 +715,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         expectedFourthElements.put( MetricConstants.FALSE_POSITIVES, 14.0 );
         expectedFourthElements.put( MetricConstants.FALSE_NEGATIVES, 5.0 );
 
-        OneOrTwoThresholds fourth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+        OneOrTwoThresholds fourth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                           Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
+                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ) );
 
@@ -742,10 +742,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         expectedFifthElements.put( MetricConstants.FALSE_POSITIVES, 11.0 );
         expectedFifthElements.put( MetricConstants.FALSE_NEGATIVES, 5.0 );
 
-        OneOrTwoThresholds fifth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+        OneOrTwoThresholds fifth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
-                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
+                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 
@@ -770,10 +770,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         expectedSixthElements.put( MetricConstants.FALSE_POSITIVES, 10.0 );
         expectedSixthElements.put( MetricConstants.FALSE_NEGATIVES, 6.0 );
 
-        OneOrTwoThresholds sixth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+        OneOrTwoThresholds sixth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT ),
-                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
+                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
                                                                                             Operator.GREATER,
                                                                                             ThresholdDataType.LEFT ) );
 

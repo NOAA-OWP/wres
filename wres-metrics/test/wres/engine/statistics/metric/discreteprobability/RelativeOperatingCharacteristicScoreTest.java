@@ -29,7 +29,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -280,7 +280,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         SampleData<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+        ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT );
 

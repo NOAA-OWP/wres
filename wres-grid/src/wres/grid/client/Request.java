@@ -4,7 +4,7 @@ import java.util.List;
 
 import wres.config.generated.Feature;
 import wres.datamodel.scale.TimeScale;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 import java.nio.file.Path;
 
@@ -33,7 +33,7 @@ public interface Request
      * @return the time window
      */
     
-    TimeWindow getTimeWindow();
+    TimeWindowOuter getTimeWindow();
     
     /**
      * @return the variable name

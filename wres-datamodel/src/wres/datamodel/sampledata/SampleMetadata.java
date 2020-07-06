@@ -12,7 +12,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * An immutable store of metadata associated with {@link SampleData}. Includes a {@link SampleMetadataBuilder} for 
@@ -39,7 +39,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * An optional time window associated with the data, may be null.
      */
 
-    private final TimeWindow timeWindow;
+    private final TimeWindowOuter timeWindow;
 
     /**
      * An optional set of thresholds associated with the data, may be null.
@@ -108,7 +108,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final MeasurementUnit unit,
                                      final DatasetIdentifier identifier,
-                                     final TimeWindow timeWindow,
+                                     final TimeWindowOuter timeWindow,
                                      final OneOrTwoThresholds thresholds )
     {
         return new SampleMetadataBuilder().setMeasurementUnit( unit )
@@ -133,7 +133,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindow}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindowOuter}.
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
@@ -141,7 +141,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( final SampleMetadata input, final TimeWindow timeWindow )
+    public static SampleMetadata of( final SampleMetadata input, final TimeWindowOuter timeWindow )
     {
         return new SampleMetadataBuilder().setFromExistingInstance( input ).setTimeWindow( timeWindow ).build();
     }
@@ -161,7 +161,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindow} and 
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link TimeScale}.
      * 
      * @param input the source metadata
@@ -172,7 +172,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      */
 
     public static SampleMetadata of( final SampleMetadata input,
-                                     final TimeWindow timeWindow,
+                                     final TimeWindowOuter timeWindow,
                                      final TimeScale timeScale )
     {
         return new SampleMetadataBuilder().setFromExistingInstance( input )
@@ -182,7 +182,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindow} and 
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link OneOrTwoThresholds}.
      * 
      * @param input the source metadata
@@ -193,7 +193,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      */
 
     public static SampleMetadata of( final SampleMetadata input,
-                                     final TimeWindow timeWindow,
+                                     final TimeWindowOuter timeWindow,
                                      final OneOrTwoThresholds thresholds )
     {
         return new SampleMetadataBuilder().setFromExistingInstance( input )
@@ -203,9 +203,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Finds the union of the input, based on the {@link TimeWindow}. All components of the input must be equal, 
+     * Finds the union of the input, based on the {@link TimeWindowOuter}. All components of the input must be equal, 
      * except the {@link SampleMetadata#getTimeWindow()} and {@link SampleMetadata#getThresholds()}, otherwise an 
-     * exception is thrown. See also {@link TimeWindow#unionOf(List)}. No threshold information is represented in the 
+     * exception is thrown. See also {@link TimeWindowOuter#unionOf(List)}. No threshold information is represented in the 
      * union.
      * 
      * @param input the input metadata
@@ -226,7 +226,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         {
             throw new IllegalArgumentException( "Cannot find the union of empty input." );
         }
-        List<TimeWindow> unionWindow = new ArrayList<>();
+        List<TimeWindowOuter> unionWindow = new ArrayList<>();
 
         // Test entry
         SampleMetadata test = input.get( 0 );
@@ -252,7 +252,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
         if ( !unionWindow.isEmpty() )
         {
-            test = of( test, TimeWindow.unionOf( unionWindow ) );
+            test = of( test, TimeWindowOuter.unionOf( unionWindow ) );
         }
         return test;
     }
@@ -277,7 +277,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         }
 
         // Check the time window
-        Comparator<TimeWindow> compareWindows = Comparator.nullsFirst( Comparator.naturalOrder() );
+        Comparator<TimeWindowOuter> compareWindows = Comparator.nullsFirst( Comparator.naturalOrder() );
         returnMe = Objects.compare( this.getTimeWindow(), input.getTimeWindow(), compareWindows );
         if ( returnMe != 0 )
         {
@@ -467,12 +467,12 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Returns a {@link TimeWindow} associated with the metadata or null.
+     * Returns a {@link TimeWindowOuter} associated with the metadata or null.
      * 
      * @return a time window or null
      */
 
-    public TimeWindow getTimeWindow()
+    public TimeWindowOuter getTimeWindow()
     {
         return this.timeWindow;
     }
@@ -539,7 +539,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * An optional time window associated with the data, may be null.
          */
 
-        private TimeWindow timeWindow;
+        private TimeWindowOuter timeWindow;
 
         /**
          * An optional set of thresholds associated with the data, may be null.
@@ -592,7 +592,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * @return the builder
          */
 
-        public SampleMetadataBuilder setTimeWindow( TimeWindow timeWindow )
+        public SampleMetadataBuilder setTimeWindow( TimeWindowOuter timeWindow )
         {
             this.timeWindow = timeWindow;
             return this;

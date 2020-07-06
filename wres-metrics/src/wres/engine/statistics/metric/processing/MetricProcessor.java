@@ -29,7 +29,7 @@ import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.ScoreStatistic;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
@@ -44,17 +44,17 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 /**
  * <p>
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for all configured
- * {@link Threshold}. Typically, this will represent a single forecast lead time within a processing pipeline. The
+ * {@link ThresholdOuter}. Typically, this will represent a single forecast lead time within a processing pipeline. The
  * {@link MetricCollection} are computed by calling {@link #apply(Object)}.
  * </p>
  * <p>
  * The current implementation adopts the following simplifying assumptions:
  * </p>
  * <ol>
- * <li>That a global set of {@link Threshold} is defined for all {@link Metric} within a {@link ProjectConfig} and hence
+ * <li>That a global set of {@link ThresholdOuter} is defined for all {@link Metric} within a {@link ProjectConfig} and hence
  * {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
  * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
- * <li>If the {@link Threshold#hasProbabilities()}, the corresponding quantiles are derived from the 
+ * <li>If the {@link ThresholdOuter#hasProbabilities()}, the corresponding quantiles are derived from the 
  * observations associated with the {@link SampleData} at runtime, i.e. upon calling
  * {@link #apply(Object)}</li>
  * </ol>
@@ -71,7 +71,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * </p>
  * <p>
  * Upon calling {@link #apply(Object)} with a concrete {@link SampleData}, the configured {@link Metric} are computed
- * asynchronously for each {@link Threshold}.
+ * asynchronously for each {@link ThresholdOuter}.
  * </p>
  * <p>
  * The {@link Statistic} are computed and stored by {@link StatisticType}. For {@link Statistic} that are not
@@ -103,7 +103,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * The all data threshold.
      */
 
-    final Threshold allDataThreshold;
+    final ThresholdOuter allDataThreshold;
 
     /**
      * Set of thresholds associated with each metric.
@@ -262,8 +262,8 @@ public abstract class MetricProcessor<S extends SampleData<?>>
 
     /**
      * <p>
-     * Returns true if metrics are available that require {@link Threshold}, in order to define a discrete event from a
-     * continuous variable, false otherwise. The metrics that require {@link Threshold} belong to one of:
+     * Returns true if metrics are available that require {@link ThresholdOuter}, in order to define a discrete event from a
+     * continuous variable, false otherwise. The metrics that require {@link ThresholdOuter} belong to one of:
      * </p>
      * <ol>
      * <li>{@link SampleDataGroup#DISCRETE_PROBABILITY}</li>
@@ -271,7 +271,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * <li>{@link SampleDataGroup#MULTICATEGORY}</li>
      * </ol>
      * 
-     * @return true if metrics are available that require {@link Threshold}, false otherwise
+     * @return true if metrics are available that require {@link ThresholdOuter}, false otherwise
      */
 
     public boolean hasThresholdMetrics()
@@ -425,7 +425,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
         //Set the executor for processing thresholds
         this.thresholdExecutor = thresholdExecutor;
 
-        this.allDataThreshold = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+        this.allDataThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                               Operator.GREATER,
                                               ThresholdDataType.LEFT_AND_RIGHT );
 
@@ -450,7 +450,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @return the all data threshold
      */
 
-    Threshold getAllDataThreshold()
+    ThresholdOuter getAllDataThreshold()
     {
         return this.allDataThreshold;
     }
@@ -462,9 +462,9 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @return true if the input list contains one or more probability thresholds, false otherwise
      */
 
-    boolean hasProbabilityThreshold( Set<Threshold> check )
+    boolean hasProbabilityThreshold( Set<ThresholdOuter> check )
     {
-        return check.stream().anyMatch( Threshold::hasProbabilities );
+        return check.stream().anyMatch( ThresholdOuter::hasProbabilities );
     }
 
     /**
@@ -513,7 +513,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * <ol>
      * <li>The {@link SampleData#hasClimatology()} returns <code>true</code>; and</li>
      * <li>One or more of the input thresholds is a probability threshold according to 
-     * {@link Threshold#hasProbabilities()}.</li>
+     * {@link ThresholdOuter#hasProbabilities()}.</li>
      * </ol>
      * 
      * @param input the inputs pairs
@@ -521,7 +521,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( SampleData<?> input, Set<Threshold> thresholds )
+    double[] getSortedClimatology( SampleData<?> input, Set<ThresholdOuter> thresholds )
     {
         double[] sorted = null;
         if ( this.hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
@@ -543,7 +543,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
 
-    Threshold addQuantilesToThreshold( Threshold threshold, double[] sorted )
+    ThresholdOuter addQuantilesToThreshold( ThresholdOuter threshold, double[] sorted )
     {
         if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
         {

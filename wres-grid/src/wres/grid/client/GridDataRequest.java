@@ -7,7 +7,7 @@ import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
 import wres.datamodel.scale.TimeScale;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * A request for gridded data.
@@ -37,7 +37,7 @@ class GridDataRequest implements Request
     /**
      * The time window to consider.
      */
-    private final TimeWindow timeWindow;
+    private final TimeWindowOuter timeWindow;
 
     /**
      * Is <code>true</code> if the paths point to forecasts, <code>false</code> otherwise.
@@ -67,7 +67,7 @@ class GridDataRequest implements Request
     static GridDataRequest of( List<String> paths,
                                List<Feature> features,
                                String variableName,
-                               TimeWindow timeWindow,
+                               TimeWindowOuter timeWindow,
                                boolean isForecast,
                                TimeScale declaredExistingTimeScale )
     {
@@ -88,7 +88,7 @@ class GridDataRequest implements Request
     private GridDataRequest( List<String> paths,
                              List<Feature> features,
                              String variableName,
-                             TimeWindow timeWindow,
+                             TimeWindowOuter timeWindow,
                              boolean isForecast,
                              TimeScale declaredExistingTimeScale )
     {
@@ -130,7 +130,7 @@ class GridDataRequest implements Request
     }
 
     @Override
-    public TimeWindow getTimeWindow()
+    public TimeWindowOuter getTimeWindow()
     {
         return this.timeWindow;
     }

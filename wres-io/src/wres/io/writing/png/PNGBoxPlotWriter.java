@@ -30,7 +30,7 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.system.SystemSettings;
@@ -203,7 +203,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     /**
      * Writes a separate box plot chart for each {@link BoxPlotStatistics} in the {@link List}
      * provided. Each {@link BoxPlotStatistics} represents one metric result for one pool or 
-     * {@link TimeWindow}.
+     * {@link TimeWindowOuter}.
      *
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
@@ -230,7 +230,7 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
-            Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engines =
+            Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engines =
                     ChartEngineFactory.buildBoxPlotChartEnginePerPool( projectConfigPlus.getProjectConfig(),
                                                                        output,
                                                                        helper.getTemplateResourceName(),
@@ -238,7 +238,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                        durationUnits );
 
             // Build the outputs
-            for ( final Entry<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
+            for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
             {
                 Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                       destinationConfig,

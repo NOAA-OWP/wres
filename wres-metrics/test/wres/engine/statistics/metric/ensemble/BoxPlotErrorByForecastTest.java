@@ -30,7 +30,7 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -73,17 +73,17 @@ public final class BoxPlotErrorByForecastTest
         List<Pair<Double,Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
-        TimeWindow window = TimeWindow.of( Instant.MIN,
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
-        final TimeWindow timeWindow1 = window;
+        final TimeWindowOuter timeWindow1 = window;
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
                                                                .build();
         SampleData<Pair<Double,Ensemble>> input = SampleDataBasic.of( values, meta );
-        final TimeWindow timeWindow = window;
+        final TimeWindowOuter timeWindow = window;
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
@@ -127,17 +127,17 @@ public final class BoxPlotErrorByForecastTest
         List<Pair<Double,Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 0.0, 20.0, 30.0, 50.0, 100.0 ) ) );
 
-        TimeWindow window = TimeWindow.of( Instant.MIN,
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
-        final TimeWindow timeWindow1 = window;
+        final TimeWindowOuter timeWindow1 = window;
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
                                                                .build();
         SampleData<Pair<Double,Ensemble>> input = SampleDataBasic.of( values, meta );
-        final TimeWindow timeWindow = window;
+        final TimeWindowOuter timeWindow = window;
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )

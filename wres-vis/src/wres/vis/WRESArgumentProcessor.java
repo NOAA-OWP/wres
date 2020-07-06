@@ -26,8 +26,8 @@ import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
 import wres.vis.ChartEngineFactory.ChartType;
 
@@ -186,10 +186,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         // Assemble a collection of smaller time windows where necessary
         if ( plotType == ChartType.POOLING_WINDOW || meta.getMetricID().isInGroup( StatisticType.PAIRED ) )
         {
-            SortedSet<TimeWindow> timeWindows =
+            SortedSet<TimeWindowOuter> timeWindows =
                     Slicer.discover( displayedPlotInput,
                                      next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
-            TimeWindow timeWindow = TimeWindow.of( timeWindows.first().getEarliestReferenceTime(),
+            TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindows.first().getEarliestReferenceTime(),
                                                    timeWindows.last().getLatestReferenceTime(),
                                                    timeWindows.first().getEarliestValidTime(),
                                                    timeWindows.last().getLatestValidTime(),
@@ -271,7 +271,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
     }
 
-    private void recordWindowingArguments( final TimeWindow timeWindow )
+    private void recordWindowingArguments( final TimeWindowOuter timeWindow )
     {
         // Check for unbounded times and do not display this unconstrained condition: #46772
         if ( Objects.nonNull( timeWindow ) && ! timeWindow.hasUnboundedReferenceTimes() )
@@ -304,7 +304,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param plotTimeWindow the time window
      */
     public <T extends Statistic<?>> void addLeadThresholdArguments( List<T> displayedPlotInput,
-                                           TimeWindow plotTimeWindow )
+                                           TimeWindowOuter plotTimeWindow )
     {
         final StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
 
@@ -346,7 +346,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         // Augment the plot title when the input dataset contains a secondary threshold/classifier
         // Create a string from the set of secondary thresholds
         String supplementary = "";
-        SortedSet<Threshold> secondThresholds =
+        SortedSet<ThresholdOuter> secondThresholds =
                 Slicer.discover( displayedPlotInput,
                                  next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
         if ( !secondThresholds.isEmpty() )

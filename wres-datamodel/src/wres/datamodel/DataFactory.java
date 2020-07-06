@@ -34,7 +34,7 @@ import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -383,7 +383,7 @@ public final class DataFactory
         }
         
         List<Pair<S, T>> combined = new ArrayList<>();
-        List<TimeWindow> combinedWindows = new ArrayList<>();
+        List<TimeWindowOuter> combinedWindows = new ArrayList<>();
         StatisticMetadata sourceMeta = null;
         for ( PairedStatistic<S, T> next : collection )
         {
@@ -400,10 +400,10 @@ public final class DataFactory
             throw new IllegalArgumentException( "Cannot find the union of input whose metadata is missing." );
         }
         
-        TimeWindow unionWindow = null;
+        TimeWindowOuter unionWindow = null;
         if ( !combinedWindows.isEmpty() )
         {
-            unionWindow = TimeWindow.unionOf( combinedWindows );
+            unionWindow = TimeWindowOuter.unionOf( combinedWindows );
         }
 
         StatisticMetadata combinedMeta =

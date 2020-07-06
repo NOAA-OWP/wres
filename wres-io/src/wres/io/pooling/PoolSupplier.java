@@ -47,7 +47,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
@@ -1389,7 +1389,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private <S, T> List<TimeSeries<S>> snip( List<TimeSeries<S>> toSnip,
                                              List<TimeSeries<T>> snipTo )
     {
-        TimeWindow timeWindow = this.getTimeWindowFromSeries( snipTo );
+        TimeWindowOuter timeWindow = this.getTimeWindowFromSeries( snipTo );
 
         List<TimeSeries<S>> returnMe = new ArrayList<>();
 
@@ -1416,7 +1416,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return the snipped pairs
      */
 
-    private TimeSeries<Pair<L, R>> snip( TimeSeries<Pair<L, R>> toSnip, TimeWindow snipTo )
+    private TimeSeries<Pair<L, R>> snip( TimeSeries<Pair<L, R>> toSnip, TimeWindowOuter snipTo )
     {
         Objects.requireNonNull( toSnip );
 
@@ -1427,7 +1427,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             // Snip datetimes first, because lead durations are only snipped with respect to 
             // the ReferenceTimeType.T0            
-            TimeWindow partialSnip = TimeWindow.of( snipTo.getEarliestReferenceTime(),
+            TimeWindowOuter partialSnip = TimeWindowOuter.of( snipTo.getEarliestReferenceTime(),
                                                     snipTo.getLatestReferenceTime(),
                                                     snipTo.getEarliestValidTime(),
                                                     snipTo.getLatestValidTime() );
@@ -1557,7 +1557,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return the time window
      */
 
-    private <T> TimeWindow getTimeWindowFromSeries( List<TimeSeries<T>> bounds )
+    private <T> TimeWindowOuter getTimeWindowFromSeries( List<TimeSeries<T>> bounds )
     {
         SortedSet<Instant> validTimes = new TreeSet<>();
 
@@ -1592,7 +1592,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             lowerBound = lowerBound.minus( timeScale.getPeriod() );
         }
 
-        return TimeWindow.of( lowerBound, upperBound );
+        return TimeWindowOuter.of( lowerBound, upperBound );
     }
 
     /**

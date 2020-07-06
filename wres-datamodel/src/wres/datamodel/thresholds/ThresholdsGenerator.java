@@ -97,7 +97,7 @@ public class ThresholdsGenerator
         {
             for ( MetricConstants next : metrics )
             {
-                Set<Threshold> allData = ThresholdsGenerator.getAdjustedThresholds( next,
+                Set<ThresholdOuter> allData = ThresholdsGenerator.getAdjustedThresholds( next,
                                                                                     Collections.emptySet(),
                                                                                     ThresholdConstants.ThresholdGroup.VALUE );
 
@@ -110,11 +110,11 @@ public class ThresholdsGenerator
         for ( ThresholdsConfig nextThresholds : metricsConfig.getThresholds() )
         {
             // Thresholds
-            Set<Threshold> thresholds =
+            Set<ThresholdOuter> thresholds =
                     ThresholdsGenerator.getInternalThresholdsFromThresholdsConfig( nextThresholds, units );
 
             // Build the thresholds map per metric
-            Map<MetricConstants, Set<Threshold>> thresholdsMap = new EnumMap<>( MetricConstants.class );
+            Map<MetricConstants, Set<ThresholdOuter>> thresholdsMap = new EnumMap<>( MetricConstants.class );
 
             // Type of thresholds
             ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
@@ -149,8 +149,8 @@ public class ThresholdsGenerator
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<Threshold> getAdjustedThresholds( MetricConstants metric,
-                                                         Set<Threshold> thresholds,
+    private static Set<ThresholdOuter> getAdjustedThresholds( MetricConstants metric,
+                                                         Set<ThresholdOuter> thresholds,
                                                          ThresholdConstants.ThresholdGroup type )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
@@ -164,10 +164,10 @@ public class ThresholdsGenerator
             return thresholds;
         }
 
-        Set<Threshold> returnMe = new HashSet<>();
+        Set<ThresholdOuter> returnMe = new HashSet<>();
 
-        Threshold allData =
-                Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+        ThresholdOuter allData =
+                ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                               Operator.GREATER,
                               ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
@@ -193,7 +193,7 @@ public class ThresholdsGenerator
     }
 
     /**
-     * Obtains a set of {@link Threshold} from a {@link ThresholdsConfig} for thresholds that are configured internally
+     * Obtains a set of {@link ThresholdOuter} from a {@link ThresholdsConfig} for thresholds that are configured internally
      * and not sourced externally. In other words, {@link ThresholdsConfig#getCommaSeparatedValuesOrSource()} must 
      * return a string of thresholds and not a {@link ThresholdsConfig.Source}.
      * 
@@ -204,12 +204,12 @@ public class ThresholdsGenerator
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<Threshold> getInternalThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
+    private static Set<ThresholdOuter> getInternalThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
                                                                              MeasurementUnit units )
     {
         Objects.requireNonNull( thresholds, "Specify non-null thresholds configuration." );
 
-        Set<Threshold> returnMe = new HashSet<>();
+        Set<ThresholdOuter> returnMe = new HashSet<>();
 
         Operator operator = Operator.GREATER;
 
@@ -251,7 +251,7 @@ public class ThresholdsGenerator
     }
 
     /**
-     * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}
+     * Returns a list of {@link ThresholdOuter} from a comma-separated string. Specify the type of {@link ThresholdOuter}
      * required.
      * 
      * @param inputString the comma-separated input string
@@ -264,7 +264,7 @@ public class ThresholdsGenerator
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<Threshold> getThresholdsFromCommaSeparatedValues( String inputString,
+    private static Set<ThresholdOuter> getThresholdsFromCommaSeparatedValues( String inputString,
                                                                          Operator oper,
                                                                          ThresholdConstants.ThresholdDataType dataType,
                                                                          boolean areProbs,
@@ -279,7 +279,7 @@ public class ThresholdsGenerator
         //Parse the double values
         List<Double> addMe =
                 Arrays.stream( inputString.split( "," ) ).map( Double::parseDouble ).collect( Collectors.toList() );
-        Set<Threshold> returnMe = new TreeSet<>();
+        Set<ThresholdOuter> returnMe = new TreeSet<>();
 
         //Between operator
         if ( oper == Operator.BETWEEN )
@@ -293,7 +293,7 @@ public class ThresholdsGenerator
             {
                 if ( areProbs )
                 {
-                    returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
+                    returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
                                                                                         addMe.get( i
                                                                                                    + 1 ) ),
                                                                     oper,
@@ -302,7 +302,7 @@ public class ThresholdsGenerator
                 }
                 else
                 {
-                    returnMe.add( Threshold.of( OneOrTwoDoubles.of( addMe.get( i ),
+                    returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( addMe.get( i ),
                                                                     addMe.get( i + 1 ) ),
                                                 oper,
                                                 dataType,
@@ -315,14 +315,14 @@ public class ThresholdsGenerator
         {
             if ( areProbs )
             {
-                addMe.forEach( threshold -> returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
+                addMe.forEach( threshold -> returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
                                                                                             oper,
                                                                                             dataType,
                                                                                             units ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( Threshold.of( OneOrTwoDoubles.of( threshold ),
+                addMe.forEach( threshold -> returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( threshold ),
                                                                         oper,
                                                                         dataType,
                                                                         units ) ) );
