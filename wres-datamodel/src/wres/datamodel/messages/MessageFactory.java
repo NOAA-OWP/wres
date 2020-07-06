@@ -75,6 +75,7 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pairs;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
+import wres.statistics.generated.Threshold.ThresholdDataType;
 import wres.statistics.generated.Threshold.ThresholdOperator;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -578,7 +579,8 @@ public class MessageFactory
         Objects.requireNonNull( threshold );
 
         Threshold.Builder builder = Threshold.newBuilder()
-                                             .setType( ThresholdOperator.valueOf( threshold.getOperator().name() ) )
+                                             .setOperator( ThresholdOperator.valueOf( threshold.getOperator().name() ) )
+                                             .setDataType( ThresholdDataType.valueOf( threshold.getDataType().name() ) )
                                              .setLeftThresholdValue( threshold.getValues().first() );
 
         if ( threshold.hasProbabilities() )

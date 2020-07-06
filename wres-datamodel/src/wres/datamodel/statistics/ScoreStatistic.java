@@ -12,7 +12,7 @@ import wres.datamodel.MetricConstants;
  * {@link MetricConstants} and score values.
  * 
  * @param <T> the raw type of the score
- * @param <U> the score component type
+ * @param <U> the type of score component
  * @author james.brown@hydrosolved.com
  */
 

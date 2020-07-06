@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants.MetricGroup;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements ScoreStatistic<T,U>
+abstract class BasicScoreStatistic<T, U extends ScoreStatistic<T, ?>> implements ScoreStatistic<T, U>
 {
 
     /**
@@ -27,19 +27,19 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
      */
 
     private static final String NEWLINE = System.lineSeparator();
-    
+
     /**
      * Null output message.
      */
 
     private static final String NULL_OUTPUT_MESSAGE = "Specify a non-null statistic.";
-    
+
     /**
      * Null metadata message.
      */
 
     private static final String NULL_METADATA_MESSAGE = "Specify non-null metadata for the statistic.";
-        
+
     /**
      * The statistic.
      */
@@ -59,13 +59,13 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
      * @param meta the score metadata
      * @return the score
      */
-    
-    abstract U getScore( T input, StatisticMetadata meta );    
-    
+
+    abstract U getScore( T input, StatisticMetadata meta );
+
     @Override
     public StatisticMetadata getMetadata()
     {
-        return meta;
+        return this.meta;
     }
 
     @Override
@@ -75,13 +75,13 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
         {
             return false;
         }
-        final BasicScoreStatistic<?,?> v = (BasicScoreStatistic<?,?>) o;
-        boolean start = meta.equals( v.getMetadata() );
+        final BasicScoreStatistic<?, ?> v = (BasicScoreStatistic<?, ?>) o;
+        boolean start = this.meta.equals( v.getMetadata() );
         if ( !start )
         {
             return false;
         }
-        return statistic.equals( v.statistic );
+        return this.statistic.equals( v.statistic );
     }
 
     @Override
@@ -93,12 +93,12 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
     @Override
     public T getData()
     {
-        if( this.hasComponent( MetricConstants.MAIN ) )
+        if ( this.hasComponent( MetricConstants.MAIN ) )
         {
-            return statistic.get( MetricConstants.MAIN );
+            return this.statistic.get( MetricConstants.MAIN );
         }
 
-        return statistic.values().iterator().next();
+        return this.statistic.values().iterator().next();
     }
 
     @Override
@@ -111,13 +111,13 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
             @Override
             public boolean hasNext()
             {
-                return iterator.hasNext();
+                return this.iterator.hasNext();
             }
 
             @Override
             public Pair<MetricConstants, T> next()
             {
-                Entry<MetricConstants, T> next = iterator.next();
+                Entry<MetricConstants, T> next = this.iterator.next();
                 return Pair.of( next.getKey(), next.getValue() );
             }
 
@@ -133,34 +133,34 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
     @Override
     public Set<MetricConstants> getComponents()
     {
-        return Collections.unmodifiableSet( statistic.keySet() );
+        return Collections.unmodifiableSet( this.statistic.keySet() );
     }
 
     @Override
     public boolean hasComponent( MetricConstants component )
     {
-        return statistic.containsKey( component );
+        return this.statistic.containsKey( component );
     }
-    
+
     @Override
     public U getComponent( MetricConstants component )
     {
-        return getScore( statistic.get( component ),
-                               StatisticMetadata.of( meta, meta.getMetricID(), component ) );
-    }        
+        return this.getScore( statistic.get( component ),
+                              StatisticMetadata.of( this.meta, this.meta.getMetricID(), component ) );
+    }
 
     @Override
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        statistic.forEach( ( key, value ) -> b.append( "(" )
-                                           .append( key )
-                                           .append( "," )
-                                           .append( value )
-                                           .append( ")" )
-                                           .append( NEWLINE ) );
+        this.statistic.forEach( ( key, value ) -> b.append( "(" )
+                                                   .append( key )
+                                                   .append( "," )
+                                                   .append( value )
+                                                   .append( ")" )
+                                                   .append( NEWLINE ) );
         int lines = b.length();
-        if( lines > 0 )
+        if ( lines > 0 )
         {
             b.delete( lines - NEWLINE.length(), lines );
         }
@@ -182,9 +182,9 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
         {
             throw new StatisticException( NULL_METADATA_MESSAGE );
         }
-        
+
         this.statistic = new EnumMap<>( MetricConstants.class );
-        if( Objects.nonNull( meta.getMetricComponentID() ) )
+        if ( Objects.nonNull( meta.getMetricComponentID() ) )
         {
             this.statistic.put( meta.getMetricComponentID(), statistic );
         }
@@ -208,7 +208,7 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
         this.statistic = new EnumMap<>( MetricConstants.class );
         this.statistic.putAll( statistic );
         this.meta = meta;
-        
+
         // Validate
         if ( Objects.isNull( statistic ) )
         {
@@ -240,7 +240,7 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
     {
         this.statistic = new EnumMap<>( MetricConstants.class );
         this.meta = meta;
-        
+
         // Validate
         if ( Objects.isNull( template ) )
         {
@@ -259,11 +259,11 @@ abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements S
         if ( components.size() != statistic.length )
         {
             throw new StatisticException( "The specified output template '" + template
-                                             + "' has more components than metric inputs provided ["
-                                             + template.getAllComponents().size()
-                                             + ", "
-                                             + statistic.length
-                                             + "]." );
+                                          + "' has more components than metric inputs provided ["
+                                          + template.getAllComponents().size()
+                                          + ", "
+                                          + statistic.length
+                                          + "]." );
         }
         // Add the components
         Iterator<MetricConstants> iterator = components.iterator();
