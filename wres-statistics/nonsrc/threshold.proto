@@ -11,25 +11,28 @@ message Threshold
     /*A message that encapsulates a threshold, which may contain one or two values
     with prescribed units and a user-friendly name.*/
 
-    ThresholdOperator type = 1;
+    ThresholdOperator operator = 1;
     // The type of threshold operator.
 
-    string name = 2;
+    ThresholdDataType data_type = 2;
+    // The side of paired data to which the threshold applies
+
+    string name = 3;
     // A user-friendly name for a threshold (e.g., MINOR FLOOD).
     
-    double left_threshold_value = 3;
+    double left_threshold_value = 4;
     // A real-valued left threshold.
         
-    double right_threshold_value = 4;
+    double right_threshold_value = 5;
     // A real-valued right threshold when the ThresholdType is BETWEEN.
         
     // The probability associated with the left threshold in [0,1]
-    double left_threshold_probability = 5;
+    double left_threshold_probability = 6;
     
-    double right_threshold_probability = 6;
+    double right_threshold_probability = 7;
     // The probability associated with the right threshold when BETWEEN in [0,1]
         
-    string threshold_value_units = 7;
+    string threshold_value_units = 8;
     // The units of the threshold, which may differ from evaluation units.
     
     enum ThresholdOperator 
@@ -55,4 +58,31 @@ message Threshold
         BETWEEN = 5;
         // Between condition with left exclusive and right inclusive
     }
+
+    enum ThresholdDataType 
+    {
+        // The side of the paired data to which the threshold applies.
+        
+        LEFT = 0;
+        // Left side of a pair meets the threshold condition.
+
+        RIGHT = 1;
+        // Right side of a pair meets the threshold condition.
+
+        LEFT_AND_RIGHT = 2;
+        // Left side and all values of the right side of a pair meet the threshold condition.
+        
+        ANY_RIGHT = 3;
+        // Any value on the right side of a pair meet the threshold condition. 
+
+        LEFT_AND_ANY_RIGHT = 4;
+        // Left side and any value on the right side of a pair meet the threshold condition.
+
+        RIGHT_MEAN = 5;
+        // The mean value of the right side of a pair meets the threshold condition.
+
+        LEFT_AND_RIGHT_MEAN = 6;
+        // The left side and the mean value of the right side of a pair meets the threshold condition.
+    }
+
 }

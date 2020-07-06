@@ -6,6 +6,7 @@ import wres.datamodel.sampledata.SampleData;
  * <p>A {@link Statistic} is used to describe {@link SampleData} or to infer something about the population from which
  * it originates.</p>
  * 
+ * @param <U> the type of statistic data
  * @author james.brown@hydrosolved.com
  */
 public interface Statistic<U>

@@ -31,11 +31,9 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 
 public class Threshold implements Comparable<Threshold>, DoublePredicate
 {
-    public static final Threshold ALL_DATA = Threshold.of(
-            OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-            ThresholdConstants.Operator.GREATER,
-            ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT
-    );
+    public static final Threshold ALL_DATA = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                           ThresholdConstants.Operator.GREATER,
+                                                           ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
     /**
      * The real values or null.
@@ -464,10 +462,10 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         safe = safe.replace( "]", "" );
         safe = safe.replace( "(", "" );
         safe = safe.replace( ")", "" );
-        
+
         // Any others, replace with empty
-        safe = safe.replaceAll("[^a-zA-Z0-9_.]", "");
-        
+        safe = safe.replaceAll( "[^a-zA-Z0-9_.]", "" );
+
         return safe;
     }
 
@@ -484,7 +482,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         {
             return toString().replaceAll( " " + this.getUnits().toString(), "" );
         }
-        
+
         return toString();
     }
 
