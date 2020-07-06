@@ -3,7 +3,7 @@ package wres.io.thresholds;
 import wres.config.generated.*;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -37,7 +37,7 @@ public class ThresholdBuilderCollection {
                 );
     }
 
-    public void addThresholdToAll(ThresholdGroup group, MetricConstants metric, Threshold threshold) {
+    public void addThresholdToAll(ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold) {
         synchronized (BUILDER_ACCESS_LOCK) {
             for (Feature feature : this.builders.keySet()) {
                 this.addThreshold(feature, group, metric, threshold);
@@ -45,7 +45,7 @@ public class ThresholdBuilderCollection {
         }
     }
 
-    public void addThresholdsToAll(ThresholdGroup group, MetricConstants metric, Set<Threshold> thresholds) {
+    public void addThresholdsToAll(ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds) {
         synchronized (BUILDER_ACCESS_LOCK) {
             for (Feature feature : this.builders.keySet()) {
                 this.addThresholds(feature, group, metric, thresholds);
@@ -53,14 +53,14 @@ public class ThresholdBuilderCollection {
         }
     }
 
-    public void addThreshold(Feature feature, ThresholdGroup group, MetricConstants metric, Threshold threshold) {
+    public void addThreshold(Feature feature, ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold) {
         synchronized (BUILDER_ACCESS_LOCK) {
             ThresholdsByMetricBuilder builder = this.getCorrespondingBuilder(feature);
             builder.addThreshold(group, metric, threshold);
         }
     }
 
-    public void addThresholds(Feature feature, ThresholdGroup group, MetricConstants metric, Set<Threshold> thresholds) {
+    public void addThresholds(Feature feature, ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds) {
         synchronized (BUILDER_ACCESS_LOCK) {
             ThresholdsByMetricBuilder builder = this.getCorrespondingBuilder(feature);
             builder.addThresholds(group, metric, thresholds);
@@ -83,7 +83,7 @@ public class ThresholdBuilderCollection {
                     this.addThresholdToAll(
                             ThresholdConstants.ThresholdGroup.VALUE,
                             metricName,
-                            Threshold.ALL_DATA
+                            ThresholdOuter.ALL_DATA
                     );
                 }
             }

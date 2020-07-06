@@ -26,7 +26,7 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.io.retrieval.UnitMapper;
@@ -57,7 +57,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
      * using input from testinput/commaseparated/testProbabiiltyThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -84,27 +84,27 @@ public class ThresholdReaderTest
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
 
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<FeaturePlus, Set<ThresholdOuter>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<FeaturePlus, Set<ThresholdOuter>> expected = new TreeMap<>();
 
-        Set<Threshold> first = new TreeSet<>();
-        first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
+        Set<ThresholdOuter> first = new TreeSet<>();
+        first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT,
                                                      "A",
                                                      this.units ) );
-        first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.6 ),
+        first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.6 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT,
                                                      "B",
                                                      this.units ) );
-        first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.8 ),
+        first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.8 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT,
                                                      "C",
@@ -114,18 +114,18 @@ public class ThresholdReaderTest
                 new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
-        Set<Threshold> second = new TreeSet<>();
-        second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
+        Set<ThresholdOuter> second = new TreeSet<>();
+        second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT,
                                                       "A",
                                                       this.units ) );
-        second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+        second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT,
                                                       "B",
                                                       this.units ) );
-        second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
+        second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT,
                                                       "C",
@@ -141,7 +141,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -168,27 +168,27 @@ public class ThresholdReaderTest
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
 
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<FeaturePlus, Set<ThresholdOuter>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<FeaturePlus, Set<ThresholdOuter>> expected = new TreeMap<>();
 
-        Set<Threshold> first = new TreeSet<>();
-        first.add( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+        Set<ThresholdOuter> first = new TreeSet<>();
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  "E",
                                  this.units ) );
-        first.add( Threshold.of( OneOrTwoDoubles.of( 7.0 ),
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 7.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  "F",
                                  this.units ) );
-        first.add( Threshold.of( OneOrTwoDoubles.of( 15.0 ),
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 15.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  "G",
@@ -198,18 +198,18 @@ public class ThresholdReaderTest
                 new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
-        Set<Threshold> second = new TreeSet<>();
-        second.add( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
+        Set<ThresholdOuter> second = new TreeSet<>();
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   "E",
                                   this.units ) );
-        second.add( Threshold.of( OneOrTwoDoubles.of( 12.0 ),
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   "F",
                                   this.units ) );
-        second.add( Threshold.of( OneOrTwoDoubles.of( 99.7 ),
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 99.7 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   "G",
@@ -225,7 +225,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
      * using input from testinput/commaseparated/testProbabiiltyThresholdsWithoutLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -251,25 +251,25 @@ public class ThresholdReaderTest
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<FeaturePlus, Set<ThresholdOuter>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<FeaturePlus, Set<ThresholdOuter>> expected = new TreeMap<>();
 
-        Set<Threshold> first = new TreeSet<>();
-        first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
+        Set<ThresholdOuter> first = new TreeSet<>();
+        first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT,
                                                      this.units ) );
-        first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.6 ),
+        first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.6 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT,
                                                      this.units ) );
-        first.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.8 ),
+        first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.8 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT,
                                                      this.units ) );
@@ -278,16 +278,16 @@ public class ThresholdReaderTest
                 new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
-        Set<Threshold> second = new TreeSet<>();
-        second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
+        Set<ThresholdOuter> second = new TreeSet<>();
+        second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT,
                                                       this.units ) );
-        second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+        second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT,
                                                       this.units ) );
-        second.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
+        second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT,
                                                       this.units ) );
@@ -302,7 +302,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithoutLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -328,25 +328,25 @@ public class ThresholdReaderTest
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<FeaturePlus, Set<ThresholdOuter>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<FeaturePlus, Set<ThresholdOuter>> expected = new TreeMap<>();
 
-        Set<Threshold> first = new TreeSet<>();
-        first.add( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+        Set<ThresholdOuter> first = new TreeSet<>();
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  this.units ) );
-        first.add( Threshold.of( OneOrTwoDoubles.of( 7.0 ),
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 7.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  this.units ) );
-        first.add( Threshold.of( OneOrTwoDoubles.of( 15.0 ),
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 15.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  this.units ) );
@@ -355,16 +355,16 @@ public class ThresholdReaderTest
                 new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
-        Set<Threshold> second = new TreeSet<>();
-        second.add( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
+        Set<ThresholdOuter> second = new TreeSet<>();
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   this.units ) );
-        second.add( Threshold.of( OneOrTwoDoubles.of( 12.0 ),
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   this.units ) );
-        second.add( Threshold.of( OneOrTwoDoubles.of( 99.7 ),
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 99.7 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   this.units ) );
@@ -379,7 +379,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -405,21 +405,21 @@ public class ThresholdReaderTest
                                                                  wres.config.generated.ThresholdDataType.LEFT,
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
-        Map<FeaturePlus, Set<Threshold>> actual =
+        Map<FeaturePlus, Set<ThresholdOuter>> actual =
                 ThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
 
         // Compare to expected
-        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+        Map<FeaturePlus, Set<ThresholdOuter>> expected = new TreeMap<>();
 
-        Set<Threshold> first = new TreeSet<>();
-        first.add( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+        Set<ThresholdOuter> first = new TreeSet<>();
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  this.units ) );
-        first.add( Threshold.of( OneOrTwoDoubles.of( 7.0 ),
+        first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 7.0 ),
                                  Operator.GREATER,
                                  ThresholdDataType.LEFT,
                                  this.units ) );
@@ -428,12 +428,12 @@ public class ThresholdReaderTest
                 new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
-        Set<Threshold> second = new TreeSet<>();
-        second.add( Threshold.of( OneOrTwoDoubles.of( 23.0 ),
+        Set<ThresholdOuter> second = new TreeSet<>();
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   this.units ) );
-        second.add( Threshold.of( OneOrTwoDoubles.of( 99.7 ),
+        second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 99.7 ),
                                   Operator.GREATER,
                                   ThresholdDataType.LEFT,
                                   this.units ) );
@@ -448,7 +448,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
      * using input from testinput/commaseparated/testValueThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read

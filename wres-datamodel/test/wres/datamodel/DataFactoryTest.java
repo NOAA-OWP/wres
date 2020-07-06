@@ -20,10 +20,10 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the {@link DataFactory}.
@@ -104,50 +104,50 @@ public final class DataFactoryTest
     public void compareDefaultMapBiKeyTest()
     {
         //Test equality
-        Pair<TimeWindow, Threshold> first = Pair.of( TimeWindow.of( Instant.MIN,
+        Pair<TimeWindowOuter, ThresholdOuter> first = Pair.of( TimeWindowOuter.of( Instant.MIN,
                                                                     Instant.MAX ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
-        Pair<TimeWindow, Threshold> second = Pair.of( TimeWindow.of( Instant.MIN,
+        Pair<TimeWindowOuter, ThresholdOuter> second = Pair.of( TimeWindowOuter.of( Instant.MIN,
                                                                      Instant.MAX ),
-                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                      ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                     Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
         assertTrue( first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
-        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> third = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.MAX ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
         assertTrue( third.compareTo( first ) > 0 );
         assertTrue( first.compareTo( third ) + third.compareTo( first ) == 0 );
         //Latest date
-        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> fourth = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                      Instant.parse( SECOND_TIME ) ),
-                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                      ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                     Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
         assertTrue( third.compareTo( fourth ) > 0 );
         assertTrue( third.compareTo( fourth ) + fourth.compareTo( third ) == 0 );
         //Valid time
-        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> fifth = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ),
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
         assertTrue( fourth.compareTo( fifth ) < 0 );
         assertTrue( fourth.compareTo( fifth ) + fifth.compareTo( fourth ) == 0 );
         //Threshold
-        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> sixth = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ),
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 0.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
         assertTrue( fifth.compareTo( sixth ) > 0 );
@@ -167,19 +167,19 @@ public final class DataFactoryTest
     public void equalsHashCodePairTest()
     {
         //Equality
-        Pair<TimeWindow, Threshold> zeroeth = Pair.of( TimeWindow.of( Instant.MIN,
+        Pair<TimeWindowOuter, ThresholdOuter> zeroeth = Pair.of( TimeWindowOuter.of( Instant.MIN,
                                                                       Instant.MAX ),
-                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                       ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                      Operator.GREATER,
                                                                      ThresholdDataType.LEFT ) );
-        Pair<TimeWindow, Threshold> first = Pair.of( TimeWindow.of( Instant.MIN,
+        Pair<TimeWindowOuter, ThresholdOuter> first = Pair.of( TimeWindowOuter.of( Instant.MIN,
                                                                     Instant.MAX ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
-        Pair<TimeWindow, Threshold> second = Pair.of( TimeWindow.of( Instant.MIN,
+        Pair<TimeWindowOuter, ThresholdOuter> second = Pair.of( TimeWindowOuter.of( Instant.MIN,
                                                                      Instant.MAX ),
-                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                      ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                     Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
         //Reflexive
@@ -199,37 +199,37 @@ public final class DataFactoryTest
 
         //Test inequalities
         //Earliest date
-        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> third = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.MAX ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
         assertNotEquals( third, first );
 
         //Latest date
-        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> fourth = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                      Instant.parse( SECOND_TIME ) ),
-                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                      ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                     Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
         assertNotEquals( third, fourth );
 
         //Valid time
-        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> fifth = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ),
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
         assertNotEquals( fourth, fifth );
 
         //Threshold
-        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( FIRST_TIME ),
+        Pair<TimeWindowOuter, ThresholdOuter> sixth = Pair.of( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ),
                                                                     Instant.parse( FIRST_TIME ),
                                                                     Instant.parse( SECOND_TIME ) ),
-                                                     Threshold.of( OneOrTwoDoubles.of( 0.0 ),
+                                                     ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT ) );
         assertNotEquals( fifth, sixth );

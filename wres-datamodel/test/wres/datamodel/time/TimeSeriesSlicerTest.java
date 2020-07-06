@@ -136,36 +136,36 @@ public final class TimeSeriesSlicerTest
         //Iterate and test
         TimeSeries<Pair<Double, Double>> filteredOne =
                 TimeSeriesSlicer.filter( one,
-                                         TimeWindow.of( secondBasisTime,
+                                         TimeWindowOuter.of( secondBasisTime,
                                                         secondBasisTime,
-                                                        TimeWindow.DURATION_MIN,
-                                                        TimeWindow.DURATION_MAX ) );
+                                                        TimeWindowOuter.DURATION_MIN,
+                                                        TimeWindowOuter.DURATION_MAX ) );
 
         assertEquals( TimeSeries.of( metadataOneNoRefTimes ), filteredOne );
 
         TimeSeries<Pair<Double, Double>> filteredTwo =
                 TimeSeriesSlicer.filter( two,
-                                         TimeWindow.of( secondBasisTime,
+                                         TimeWindowOuter.of( secondBasisTime,
                                                         secondBasisTime,
-                                                        TimeWindow.DURATION_MIN,
-                                                        TimeWindow.DURATION_MAX ) );
+                                                        TimeWindowOuter.DURATION_MIN,
+                                                        TimeWindowOuter.DURATION_MAX ) );
 
         assertEquals( two, filteredTwo );
 
         TimeSeries<Pair<Double, Double>> filteredThree =
                 TimeSeriesSlicer.filter( three,
-                                         TimeWindow.of( secondBasisTime,
+                                         TimeWindowOuter.of( secondBasisTime,
                                                         secondBasisTime,
-                                                        TimeWindow.DURATION_MIN,
-                                                        TimeWindow.DURATION_MAX ) );
+                                                        TimeWindowOuter.DURATION_MIN,
+                                                        TimeWindowOuter.DURATION_MAX ) );
 
         assertEquals( TimeSeries.of( metadataThreeNoRefTimes ), filteredThree );
 
         //Check exceptional cases
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filter( (TimeSeries<Object>) null, (TimeWindow) null ) );
+                      () -> TimeSeriesSlicer.filter( (TimeSeries<Object>) null, (TimeWindowOuter) null ) );
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filter( one, (TimeWindow) null ) );
+                      () -> TimeSeriesSlicer.filter( one, (TimeWindowOuter) null ) );
     }
 
     @Test
@@ -185,7 +185,7 @@ public final class TimeSeriesSlicerTest
         // Filter the series
         TimeSeries<Pair<Double, Double>> actual =
                 TimeSeriesSlicer.filter( one,
-                                         TimeWindow.of( T1985_01_01T01_00_00Z,
+                                         TimeWindowOuter.of( T1985_01_01T01_00_00Z,
                                                         T1985_01_01T02_00_00Z ) );
 
         // Create the expected series
@@ -244,7 +244,7 @@ public final class TimeSeriesSlicerTest
 
         for ( Duration duration : durations )
         {
-            TimeWindow window = TimeWindow.of( duration, duration );
+            TimeWindowOuter window = TimeWindowOuter.of( duration, duration );
             TimeSeries<Pair<Double, Double>> events =
                     TimeSeriesSlicer.filter( ts.get().get( 0 ), window );
             for ( Event<Pair<Double, Double>> nextPair : events.getEvents() )
@@ -268,7 +268,7 @@ public final class TimeSeriesSlicerTest
                   .build();
 
         TimeSeries<Pair<Double, Double>> next = durationCheck.get().get( 0 );
-        next = TimeSeriesSlicer.filter( next, TimeWindow.of( Duration.ofHours( 51 ), Duration.ofHours( 51 ) ) );
+        next = TimeSeriesSlicer.filter( next, TimeWindowOuter.of( Duration.ofHours( 51 ), Duration.ofHours( 51 ) ) );
 
         Duration actualDuration = Duration.between( next.getReferenceTimes().values().iterator().next(),
                                                     next.getEvents().first().getTime() );

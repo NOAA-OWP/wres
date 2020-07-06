@@ -40,7 +40,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
@@ -167,7 +167,7 @@ public class SingleValuedGriddedRetrieverTest
         Duration leadStart = Duration.ofHours( 0 );
         Duration leadEnd = Duration.ofHours( 5 );
 
-        TimeWindow timeWindow = TimeWindow.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
 
         // Build the retriever
         Retriever<TimeSeries<Double>> retriever =

@@ -30,7 +30,7 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -144,7 +144,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -257,7 +257,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -330,7 +330,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -401,7 +401,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -474,7 +474,7 @@ public class Chart2DTestOutput
         // final DataFactory factory = DefaultDataFactory.getInstance();
 
         //Call the factory.
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
+        final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engineMap =
                 ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
                                                             results,
                                                             null,
@@ -482,7 +482,7 @@ public class Chart2DTestOutput
                                                             ChronoUnit.HOURS );
 
         //Generate the output file.
-        for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
+        for ( final Pair<TimeWindowOuter, OneOrTwoThresholds> key : engineMap.keySet() )
         {
 
             long lead = key.getLeft().getEarliestLeadDuration().toHours();
@@ -525,7 +525,7 @@ public class Chart2DTestOutput
         // final DataFactory factory = DefaultDataFactory.getInstance();
 
         //Call the factory.
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
+        final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engineMap =
                 ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
                                                             results,
                                                             null,
@@ -533,7 +533,7 @@ public class Chart2DTestOutput
                                                             ChronoUnit.HOURS );
 
         //Generate the output file.
-        for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
+        for ( final Pair<TimeWindowOuter, OneOrTwoThresholds> key : engineMap.keySet() )
         {
             long lead = key.getLeft().getLatestLeadDuration().toHours();
             OneOrTwoThresholds thresh = key.getRight();

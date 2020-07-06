@@ -4,7 +4,7 @@ import java.util.Comparator;
 import java.util.Objects;
 
 /**
- * An immutable composition of one or two {@link Threshold}.
+ * An immutable composition of one or two {@link ThresholdOuter}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -16,29 +16,29 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
      * The first threshold.
      */
 
-    Threshold first;
+    ThresholdOuter first;
 
     /**
      * The second threshold.
      */
 
-    Threshold second;
+    ThresholdOuter second;
 
     /**
-     * Returns an instance with one {@link Threshold}.
+     * Returns an instance with one {@link ThresholdOuter}.
      * 
      * @param first the first threshold
      * @return a composition of one threshold
      * @throws NullPointerException if the threshold is null
      */
 
-    public static OneOrTwoThresholds of( Threshold first )
+    public static OneOrTwoThresholds of( ThresholdOuter first )
     {
         return OneOrTwoThresholds.of( first, null );
     }
 
     /**
-     * Returns an instance with one or two {@link Threshold}.
+     * Returns an instance with one or two {@link ThresholdOuter}.
      * 
      * @param first the first threshold
      * @param second the second threshold, may be null
@@ -46,35 +46,35 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
      * @throws NullPointerException if the first threshold is null
      */
 
-    public static OneOrTwoThresholds of( Threshold first, Threshold second )
+    public static OneOrTwoThresholds of( ThresholdOuter first, ThresholdOuter second )
     {
         return new OneOrTwoThresholds( first, second );
     }
 
     /**
-     * Return the first {@link Threshold}.
+     * Return the first {@link ThresholdOuter}.
      * 
      * @return the first threshold
      */
 
-    public Threshold first()
+    public ThresholdOuter first()
     {
         return this.first;
     }
 
     /**
-     * Returns the second {@link Threshold} or null.
+     * Returns the second {@link ThresholdOuter} or null.
      * 
      * @return the second threshold or null
      */
 
-    public Threshold second()
+    public ThresholdOuter second()
     {
         return this.second;
     }
 
     /**
-     * Returns <code>true</code> if the composition contains two {@link Threshold}, <code>false</code> if it contains
+     * Returns <code>true</code> if the composition contains two {@link ThresholdOuter}, <code>false</code> if it contains
      * only one.
      * 
      * @return true if the composition has two thresholds, otherwise false
@@ -104,7 +104,7 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
 
     /**
      * Returns a string representation of the {@link OneOrTwoThresholds} without any units. This is useful when forming string
-     * representions of a collection of {@link Threshold} and abstracting the common units to a higher level.
+     * representions of a collection of {@link ThresholdOuter} and abstracting the common units to a higher level.
      * 
      * @return a string without any units
      */
@@ -165,7 +165,7 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
     }
 
     /**
-     * Build a container with one or two {@link Threshold}.
+     * Build a container with one or two {@link ThresholdOuter}.
      * 
      * @param first the first threshold
      * @param second the second threshold, may be null
@@ -173,7 +173,7 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
      * @throws NullPointerException if the first threshold is null
      */
 
-    private OneOrTwoThresholds( Threshold first, Threshold second )
+    private OneOrTwoThresholds( ThresholdOuter first, ThresholdOuter second )
     {
         Objects.requireNonNull( first, "Specify a non-null primary threshold." );
         this.first = first;

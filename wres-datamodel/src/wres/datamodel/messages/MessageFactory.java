@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -75,8 +74,6 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pairs;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
-import wres.statistics.generated.Threshold.ThresholdDataType;
-import wres.statistics.generated.Threshold.ThresholdOperator;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.TimeWindow;
@@ -198,7 +195,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( metadata );
 
-        wres.datamodel.time.TimeWindow window = metadata.getTimeWindow();
+        wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
         // TODO: To be replaced by some other abstraction, probably a FeatureTuple
@@ -516,99 +513,32 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.TimeWindow} from a {@link wres.datamodel.time.TimeWindow}.
+     * Creates a {@link wres.statistics.generated.TimeWindow} from a {@link wres.datamodel.time.TimeWindowOuter}.
      * 
      * @param timeWindow the time window from which to create a message
      * @return the message
      */
 
-    public static TimeWindow parse( wres.datamodel.time.TimeWindow timeWindow )
+    public static TimeWindow parse( wres.datamodel.time.TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( timeWindow );
 
-        Timestamp earliestReferenceTime = Timestamp.newBuilder()
-                                                   .setSeconds( timeWindow.getEarliestReferenceTime().getEpochSecond() )
-                                                   .build();
-
-        Timestamp latestReferenceTime = Timestamp.newBuilder()
-                                                 .setSeconds( timeWindow.getLatestReferenceTime().getEpochSecond() )
-                                                 .build();
-
-        Timestamp earliestValidTime = Timestamp.newBuilder()
-                                               .setSeconds( timeWindow.getEarliestValidTime().getEpochSecond() )
-                                               .build();
-
-        Timestamp latestValidTime = Timestamp.newBuilder()
-                                             .setSeconds( timeWindow.getLatestValidTime().getEpochSecond() )
-                                             .build();
-
-        Duration earliestLeadDuration = Duration.newBuilder()
-                                                .setSeconds( timeWindow.getEarliestLeadDuration().getSeconds() )
-                                                .setNanos( timeWindow.getEarliestLeadDuration().getNano() )
-                                                .build();
-
-        Duration latestLeadDuration = Duration.newBuilder()
-                                              .setSeconds( timeWindow.getLatestLeadDuration().getSeconds() )
-                                              .setNanos( timeWindow.getLatestLeadDuration().getNano() )
-                                              .build();
-
-        // Currently no hint from the internal type about the reference time types considered. Default to UNKNOWN.
-        Set<ReferenceTimeType> referenceTimeTypes = Set.of( ReferenceTimeType.UNKNOWN );
-
-        return TimeWindow.newBuilder()
-                         .setEarliestReferenceTime( earliestReferenceTime )
-                         .setLatestReferenceTime( latestReferenceTime )
-                         .setEarliestValidTime( earliestValidTime )
-                         .setLatestValidTime( latestValidTime )
-                         .setEarliestLeadDuration( earliestLeadDuration )
-                         .setLatestLeadDuration( latestLeadDuration )
-                         .addAllReferenceTimeType( referenceTimeTypes )
-                         .build();
+        return timeWindow.getTimeWindow();
     }
 
     /**
      * Creates a {@link wres.statistics.generated.Threshold} from a 
-     * {@link wres.datamodel.thresholds.Threshold}.
+     * {@link wres.datamodel.thresholds.ThresholdOuter}.
      * 
      * @param threshold the threshold from which to create a message
      * @return the message
      */
 
-    public static Threshold parse( wres.datamodel.thresholds.Threshold threshold )
+    public static Threshold parse( wres.datamodel.thresholds.ThresholdOuter threshold )
     {
         Objects.requireNonNull( threshold );
 
-        Threshold.Builder builder = Threshold.newBuilder()
-                                             .setOperator( ThresholdOperator.valueOf( threshold.getOperator().name() ) )
-                                             .setDataType( ThresholdDataType.valueOf( threshold.getDataType().name() ) )
-                                             .setLeftThresholdValue( threshold.getValues().first() );
-
-        if ( threshold.hasProbabilities() )
-        {
-            builder.setLeftThresholdProbability( threshold.getProbabilities().first() );
-
-            if ( threshold.hasBetweenCondition() )
-            {
-                builder.setRightThresholdProbability( threshold.getValues().second() );
-            }
-        }
-
-        if ( threshold.hasBetweenCondition() )
-        {
-            builder.setRightThresholdValue( threshold.getProbabilities().second() );
-        }
-
-        if ( threshold.hasUnits() )
-        {
-            builder.setThresholdValueUnits( threshold.getUnits().toString() );
-        }
-
-        if ( threshold.hasLabel() )
-        {
-            builder.setName( threshold.getLabel() );
-        }
-
-        return builder.build();
+        return threshold.getThreshold();
     }
 
     /**
@@ -1006,13 +936,13 @@ public class MessageFactory
         Objects.requireNonNull( name );
 
         Duration minimum = Duration.newBuilder()
-                                   .setSeconds( wres.datamodel.time.TimeWindow.DURATION_MIN.getSeconds() )
-                                   .setNanos( wres.datamodel.time.TimeWindow.DURATION_MIN.getNano() )
+                                   .setSeconds( wres.datamodel.time.TimeWindowOuter.DURATION_MIN.getSeconds() )
+                                   .setNanos( wres.datamodel.time.TimeWindowOuter.DURATION_MIN.getNano() )
                                    .build();
 
         Duration maximum = Duration.newBuilder()
-                                   .setSeconds( wres.datamodel.time.TimeWindow.DURATION_MAX.getSeconds() )
-                                   .setNanos( wres.datamodel.time.TimeWindow.DURATION_MAX.getNano() )
+                                   .setSeconds( wres.datamodel.time.TimeWindowOuter.DURATION_MAX.getSeconds() )
+                                   .setNanos( wres.datamodel.time.TimeWindowOuter.DURATION_MAX.getNano() )
                                    .build();
 
         Duration zero = Duration.newBuilder()
@@ -1056,11 +986,11 @@ public class MessageFactory
     private static class PoolBoundaries
     {
         private final OneOrTwoThresholds thresholds;
-        private final wres.datamodel.time.TimeWindow window;
+        private final wres.datamodel.time.TimeWindowOuter window;
         private final wres.datamodel.sampledata.Location location;
 
         private PoolBoundaries( wres.datamodel.sampledata.Location location,
-                                wres.datamodel.time.TimeWindow window,
+                                wres.datamodel.time.TimeWindowOuter window,
                                 OneOrTwoThresholds thresholds )
         {
             this.location = location;

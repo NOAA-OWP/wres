@@ -17,10 +17,10 @@ import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
- * <p>Helper class whose methods generate collections of {@link TimeWindow} from project declaration.
+ * <p>Helper class whose methods generate collections of {@link TimeWindowOuter} from project declaration.
  *
  * @author james.brown@hydrosolved.com
  */
@@ -35,8 +35,8 @@ public final class TimeWindowGenerator
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeWindowGenerator.class );
 
     /**
-     * Consumes a {@link ProjectConfig} and returns a {@link Set} of {@link TimeWindow}
-     * for evaluation. Returns at least one {@link TimeWindow}.
+     * Consumes a {@link ProjectConfig} and returns a {@link Set} of {@link TimeWindowOuter}
+     * for evaluation. Returns at least one {@link TimeWindowOuter}.
      * 
      * @param pairConfig the pair declaration, cannot be null
      * @return a set of one or more time windows for evaluation
@@ -44,7 +44,7 @@ public final class TimeWindowGenerator
      * @throws ProjectConfigException if the time windows cannot be determined
      */
 
-    public static Set<TimeWindow> getTimeWindowsFromPairConfig( PairConfig pairConfig )
+    public static Set<TimeWindowOuter> getTimeWindowsFromPairConfig( PairConfig pairConfig )
     {
         Objects.requireNonNull( pairConfig, "Cannot determine time windows from null pair configuration." );
 
@@ -86,9 +86,9 @@ public final class TimeWindowGenerator
     }
 
     /**
-     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindow}
+     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindowOuter}
      * for evaluation using the {@link PairConfig#getLeadTimesPoolingWindow()} and 
-     * the {@link PairConfig#getLeadHours()}. Returns at least one {@link TimeWindow}. 
+     * the {@link PairConfig#getLeadHours()}. Returns at least one {@link TimeWindowOuter}. 
      * 
      * <p>Throws an exception if either of the <code>leadHours</code> or 
      * <code>leadTimesPoolingWindow</code> is undefined. 
@@ -99,7 +99,7 @@ public final class TimeWindowGenerator
      * @throws ProjectConfigException if the time windows cannot be determined
      */
 
-    private static Set<TimeWindow> getLeadDurationTimeWindows( PairConfig pairConfig )
+    private static Set<TimeWindowOuter> getLeadDurationTimeWindows( PairConfig pairConfig )
     {
         String messageStart = "Cannot determine lead duration time windows ";
 
@@ -126,7 +126,7 @@ public final class TimeWindowGenerator
         PoolingWindowConfig leadTimesPoolingWindow = pairConfig.getLeadTimesPoolingWindow();
 
         // Obtain the base window
-        TimeWindow baseWindow = TimeWindowGenerator.getOneBigTimeWindow( pairConfig );
+        TimeWindowOuter baseWindow = TimeWindowGenerator.getOneBigTimeWindow( pairConfig );
 
         // Create the elements necessary to increment the windows
         ChronoUnit periodUnits = ChronoUnit.valueOf( leadTimesPoolingWindow.getUnit()
@@ -156,14 +156,14 @@ public final class TimeWindowGenerator
         Duration latestInclusive = earliestExclusive.plus( periodOfLeadTimesPoolingWindow );
 
         // Create the time windows
-        Set<TimeWindow> timeWindows = new HashSet<>();
+        Set<TimeWindowOuter> timeWindows = new HashSet<>();
 
         // Increment left-to-right and stop when the right bound extends past the 
         // latestLeadDurationInclusive: #56213-104
         // Window increments are zero?
         if ( Duration.ZERO.equals( increment ) )
         {
-            timeWindows.add( TimeWindow.of( baseWindow.getEarliestReferenceTime(),
+            timeWindows.add( TimeWindowOuter.of( baseWindow.getEarliestReferenceTime(),
                                             baseWindow.getLatestReferenceTime(),
                                             baseWindow.getEarliestValidTime(),
                                             baseWindow.getLatestValidTime(),
@@ -176,7 +176,7 @@ public final class TimeWindowGenerator
             while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
             {
                 // Add the current time window
-                timeWindows.add( TimeWindow.of( baseWindow.getEarliestReferenceTime(),
+                timeWindows.add( TimeWindowOuter.of( baseWindow.getEarliestReferenceTime(),
                                                 baseWindow.getLatestReferenceTime(),
                                                 baseWindow.getEarliestValidTime(),
                                                 baseWindow.getLatestValidTime(),
@@ -193,9 +193,9 @@ public final class TimeWindowGenerator
     }
 
     /**
-     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindow}
+     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindowOuter}
      * for evaluation using the {@link PairConfig#getIssuedDatesPoolingWindow()} and 
-     * the {@link PairConfig#getIssuedDates()}. Returns at least one {@link TimeWindow}. 
+     * the {@link PairConfig#getIssuedDates()}. Returns at least one {@link TimeWindowOuter}. 
      * 
      * <p>Throws an exception if either of the <code>issuedDates</code> or 
      * <code>issuedDatesPoolingWindow</code> is undefined. 
@@ -206,7 +206,7 @@ public final class TimeWindowGenerator
      * @throws ProjectConfigException if the time windows cannot be determined
      */
 
-    private static Set<TimeWindow> getIssuedDatesTimeWindows( PairConfig pairConfig )
+    private static Set<TimeWindowOuter> getIssuedDatesTimeWindows( PairConfig pairConfig )
     {
         String messageStart = "Cannot determine issued dates time windows ";
 
@@ -233,7 +233,7 @@ public final class TimeWindowGenerator
         PoolingWindowConfig issuedDatesPoolingWindow = pairConfig.getIssuedDatesPoolingWindow();
 
         // Obtain the base window
-        TimeWindow baseWindow = TimeWindowGenerator.getOneBigTimeWindow( pairConfig );
+        TimeWindowOuter baseWindow = TimeWindowGenerator.getOneBigTimeWindow( pairConfig );
 
         // Create the elements necessary to increment the windows
         ChronoUnit timeUnits = ChronoUnit.valueOf( issuedDatesPoolingWindow.getUnit()
@@ -264,14 +264,14 @@ public final class TimeWindowGenerator
         Instant latestInclusive = earliestExclusive.plus( periodOfIssuedDatesPoolingWindow );
 
         // Create the time windows
-        Set<TimeWindow> timeWindows = new HashSet<>();
+        Set<TimeWindowOuter> timeWindows = new HashSet<>();
 
         // Increment left-to-right and stop when the right bound 
         // extends past the latestInstantInclusive: #56213-104
         while ( latestInclusive.compareTo( latestInstantInclusive ) <= 0 )
         {
             // Add the current time window
-            timeWindows.add( TimeWindow.of( earliestExclusive,
+            timeWindows.add( TimeWindowOuter.of( earliestExclusive,
                                             latestInclusive,
                                             baseWindow.getEarliestValidTime(),
                                             baseWindow.getLatestValidTime(),
@@ -287,10 +287,10 @@ public final class TimeWindowGenerator
     }
 
     /**
-     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindow}
+     * <p>Consumes a {@link PairConfig} and returns a {@link Set} of {@link TimeWindowOuter}
      * for evaluation using the {@link PairConfig#getLeadTimesPoolingWindow()}, 
      * the {@link PairConfig#getLeadHours()}, the {@link PairConfig#getIssuedDatesPoolingWindow()}
-     * and the {@link PairConfig#getIssuedDates()}. Returns at least one {@link TimeWindow}. 
+     * and the {@link PairConfig#getIssuedDates()}. Returns at least one {@link TimeWindowOuter}. 
      * 
      * <p>Throws an exception if any of the <code>leadHours</code>, 
      * <code>leadTimesPoolingWindow</code>, <code>issuedDates</code> or 
@@ -302,21 +302,21 @@ public final class TimeWindowGenerator
      * @throws ProjectConfigException if the time windows cannot be determined
      */
 
-    private static Set<TimeWindow> getIssuedDatesAndLeadDurationTimeWindows( PairConfig pairConfig )
+    private static Set<TimeWindowOuter> getIssuedDatesAndLeadDurationTimeWindows( PairConfig pairConfig )
     {
         Objects.requireNonNull( pairConfig, "Cannot determine time windows from null pair configuration." );
 
-        Set<TimeWindow> leadDurationWindows = TimeWindowGenerator.getLeadDurationTimeWindows( pairConfig );
+        Set<TimeWindowOuter> leadDurationWindows = TimeWindowGenerator.getLeadDurationTimeWindows( pairConfig );
 
-        Set<TimeWindow> issuedDatesWindows = TimeWindowGenerator.getIssuedDatesTimeWindows( pairConfig );
+        Set<TimeWindowOuter> issuedDatesWindows = TimeWindowGenerator.getIssuedDatesTimeWindows( pairConfig );
 
         // Create a new window for each combination of issued dates and lead duration
-        Set<TimeWindow> timeWindows = new HashSet<>( leadDurationWindows.size() * issuedDatesWindows.size() );
-        for ( TimeWindow nextIssuedWindow : issuedDatesWindows )
+        Set<TimeWindowOuter> timeWindows = new HashSet<>( leadDurationWindows.size() * issuedDatesWindows.size() );
+        for ( TimeWindowOuter nextIssuedWindow : issuedDatesWindows )
         {
-            for ( TimeWindow nextLeadWindow : leadDurationWindows )
+            for ( TimeWindowOuter nextLeadWindow : leadDurationWindows )
             {
-                timeWindows.add( TimeWindow.of( nextIssuedWindow.getEarliestReferenceTime(),
+                timeWindows.add( TimeWindowOuter.of( nextIssuedWindow.getEarliestReferenceTime(),
                                                 nextIssuedWindow.getLatestReferenceTime(),
                                                 nextIssuedWindow.getEarliestValidTime(),
                                                 nextIssuedWindow.getLatestValidTime(),
@@ -329,14 +329,14 @@ public final class TimeWindowGenerator
     }
 
     /**
-     * <p>Builds a {@link TimeWindow} whose {@link TimeWindow#getEarliestReferenceTime()}
-     * and {@link TimeWindow#getLatestReferenceTime()} return the <code>earliest</earliest> 
+     * <p>Builds a {@link TimeWindowOuter} whose {@link TimeWindowOuter#getEarliestReferenceTime()}
+     * and {@link TimeWindowOuter#getLatestReferenceTime()} return the <code>earliest</earliest> 
      * and <code>latest</earliest> bookends of the {@link PairConfig#getIssuedDates()}, 
-     * respectively, whose {@link TimeWindow#getEarliestValidTime()}
-     * and {@link TimeWindow#getLatestValidTime()} return the <code>earliest</earliest> 
+     * respectively, whose {@link TimeWindowOuter#getEarliestValidTime()}
+     * and {@link TimeWindowOuter#getLatestValidTime()} return the <code>earliest</earliest> 
      * and <code>latest</earliest> bookends of the {@link PairConfig#getDates()}, 
-     * respectively, and whose {@link TimeWindow#getEarliestLeadDuration()}
-     * and {@link TimeWindow#getLatestLeadDuration()} return the <code>minimum</earliest> 
+     * respectively, and whose {@link TimeWindowOuter#getEarliestLeadDuration()}
+     * and {@link TimeWindowOuter#getLatestLeadDuration()} return the <code>minimum</earliest> 
      * and <code>maximum</earliest> bookends of the {@link PairConfig#getLeadHours()}, 
      * respectively. 
      * 
@@ -344,14 +344,14 @@ public final class TimeWindowGenerator
      * are used, which represent the computationally-feasible limiting values. For example, 
      * the smallest and largest possible instant is {@link Instant#MIN} and {@link Instant#MAX}, 
      * respectively. The smallest and largest possible {@link Duration} is 
-     * {@link TimeWindow#DURATION_MIN} and {@link TimeWindow#DURATION_MAX}, respectively.
+     * {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
      * 
      * @param pairConfig the pair configuration
      * @return a time window
      * @throws NullPointerException if the input is null
      */
 
-    private static TimeWindow getOneBigTimeWindow( PairConfig pairConfig )
+    private static TimeWindowOuter getOneBigTimeWindow( PairConfig pairConfig )
     {
         Objects.requireNonNull( pairConfig, "Cannot determine the time window from null pair configuration." );
 
@@ -359,8 +359,8 @@ public final class TimeWindowGenerator
         Instant latestReferenceTime = Instant.MAX;
         Instant earliestValidTime = Instant.MIN;
         Instant latestValidTime = Instant.MAX;
-        Duration smallestLeadDuration = TimeWindow.DURATION_MIN;
-        Duration largestLeadDuration = TimeWindow.DURATION_MAX;
+        Duration smallestLeadDuration = TimeWindowOuter.DURATION_MIN;
+        Duration largestLeadDuration = TimeWindowOuter.DURATION_MAX;
 
         // Issued datetimes
         if ( Objects.nonNull( pairConfig.getIssuedDates() ) )
@@ -401,7 +401,7 @@ public final class TimeWindowGenerator
             }
         }
 
-        return TimeWindow.of( earliestReferenceTime,
+        return TimeWindowOuter.of( earliestReferenceTime,
                               latestReferenceTime,
                               earliestValidTime,
                               latestValidTime,

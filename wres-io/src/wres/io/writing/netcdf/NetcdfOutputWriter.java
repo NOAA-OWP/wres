@@ -61,7 +61,7 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
@@ -91,7 +91,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private NetcdfType netcdfConfiguration;
     
     // Guarded by windowLock
-    private final Map<TimeWindow, TimeWindowWriter> writersMap = new HashMap<>();
+    private final Map<TimeWindowOuter, TimeWindowWriter> writersMap = new HashMap<>();
 
     /**
      * Default resolution for writing duration outputs. To change the resolution, change this default.
@@ -218,7 +218,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     {
         // Time windows
         PairConfig pairConfig = projectConfig.getPair();
-        Set<TimeWindow> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
+        Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
         Optional<ThresholdsByMetric> possibleThresholds = thresholds.values().stream().findFirst();
 
@@ -263,7 +263,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      */
 
     private Set<Path> createBlobsAndBlobWriters( Inputs inputs,
-                                                 Set<TimeWindow> timeWindows,
+                                                 Set<TimeWindowOuter> timeWindows,
                                                  ThresholdsByMetric thresholds,
                                                  String units,
                                                  TimeScale desiredTimeScale )
@@ -272,7 +272,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         Set<Path> returnMe = new TreeSet<>();
 
         // One blob and blob writer per time window      
-        for ( TimeWindow nextWindow : timeWindows )
+        for ( TimeWindowOuter nextWindow : timeWindows )
         {
 
             Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( inputs,
@@ -381,7 +381,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      */
 
     private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( Inputs inputs,
-                                                                           TimeWindow timeWindow,
+                                                                           TimeWindowOuter timeWindow,
                                                                            ThresholdsByMetric thresholds,
                                                                            String units,
                                                                            TimeScale desiredTimeScale )
@@ -423,7 +423,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * @return the metric variables
      */
 
-    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( TimeWindow timeWindow,
+    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( TimeWindowOuter timeWindow,
                                                                            ThresholdsByMetric thresholds,
                                                                            String units,
                                                                            TimeScale desiredTimeScale,
@@ -544,14 +544,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     {
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
 
-        Map<TimeWindow, List<DoubleScoreStatistic>> outputByTimeWindow = wres.util.Collections.group(
+        Map<TimeWindowOuter, List<DoubleScoreStatistic>> outputByTimeWindow = wres.util.Collections.group(
                 output,
                 score -> score.getMetadata().getSampleMetadata().getTimeWindow()
         );
 
-        for ( Map.Entry<TimeWindow, List<DoubleScoreStatistic>> entries : outputByTimeWindow.entrySet() )
+        for ( Map.Entry<TimeWindowOuter, List<DoubleScoreStatistic>> entries : outputByTimeWindow.entrySet() )
         {
-            TimeWindow timeWindow = entries.getKey();
+            TimeWindowOuter timeWindow = entries.getKey();
             List<DoubleScoreStatistic> scores = entries.getValue();
 
             synchronized ( this.windowLock )
@@ -569,7 +569,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                         return Collections.unmodifiableSet( pathsWritten );
                     }
 
-                    Callable<Set<Path>> initialize( final TimeWindow window,
+                    Callable<Set<Path>> initialize( final TimeWindowOuter window,
                                                     final List<DoubleScoreStatistic> scores )
                     {
                         this.output = scores;
@@ -578,7 +578,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     }
 
                     private List<DoubleScoreStatistic> output;
-                    private TimeWindow window;
+                    private TimeWindowOuter window;
                 }.initialize( timeWindow, scores );
 
                 LOGGER.debug( "Submitting a task to write to a netcdf file." );
@@ -713,8 +713,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
 
     /**
-     * Writes output for a specific pair of lead times, representing the {@link TimeWindow#getEarliestLeadDuration()} and
-     * the {@link TimeWindow#getLatestLeadDuration()}.
+     * Writes output for a specific pair of lead times, representing the {@link TimeWindowOuter#getEarliestLeadDuration()} and
+     * the {@link TimeWindowOuter#getLatestLeadDuration()}.
      */
     
     private static class TimeWindowWriter implements Closeable
@@ -729,7 +729,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         private final List<NetcdfValueKey> valuesToSave = new ArrayList<>();
 
         private final String outputPath;
-        private final TimeWindow timeWindow;
+        private final TimeWindowOuter timeWindow;
         private final ReentrantLock writeLock;
 
         /**
@@ -740,7 +740,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
                           String outputPath,
-                          final TimeWindow timeWindow )
+                          final TimeWindowOuter timeWindow )
         {
             this.outputWriter = outputWriter;
             this.outputPath = outputPath;

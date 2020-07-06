@@ -54,7 +54,7 @@ import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Factory to use in order to construct a wres-vis chart.
@@ -282,7 +282,7 @@ public abstract class ChartEngineFactory
         WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice, usedPlotType, durationUnits );
         if ( usedPlotType.equals( ChartType.LEAD_THRESHOLD ) )
         {
-            args.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
+            args.addLeadThresholdArguments( inputSlice, (TimeWindowOuter) inputKeyInstance );
         }
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
@@ -698,7 +698,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails
      */
-    public static Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
+    public static Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEnginePerPool( final ProjectConfig config,
                                             final List<BoxPlotStatistics> input,
                                             final String userSpecifiedTemplateResourceName,
@@ -706,7 +706,7 @@ public abstract class ChartEngineFactory
                                             final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );

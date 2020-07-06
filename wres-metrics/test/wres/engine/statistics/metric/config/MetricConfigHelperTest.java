@@ -45,7 +45,7 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
@@ -249,9 +249,9 @@ public final class MetricConfigHelperTest
                                    null );
 
         // Mock external thresholds
-        Map<MetricConstants, Set<Threshold>> mockExternal = new EnumMap<>( MetricConstants.class );
-        Set<Threshold> atomicExternal = new HashSet<>();
-        atomicExternal.add( Threshold.of( OneOrTwoDoubles.of( 0.3 ),
+        Map<MetricConstants, Set<ThresholdOuter>> mockExternal = new EnumMap<>( MetricConstants.class );
+        Set<ThresholdOuter> atomicExternal = new HashSet<>();
+        atomicExternal.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
                                                      Operator.GREATER,
                                                      ThresholdConstants.ThresholdDataType.LEFT,
                                                      dimension ) );
@@ -269,18 +269,18 @@ public final class MetricConfigHelperTest
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.1 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT,
                                                                               dimension ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT,
                                                                               dimension ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.3 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT,
                                                                               dimension ) ) );
@@ -320,36 +320,36 @@ public final class MetricConfigHelperTest
 
         // Test with probability thresholds
         @SuppressWarnings( "unchecked" )
-        Set<Threshold> actual = (Set<Threshold>) method.invoke( null,
+        Set<ThresholdOuter> actual = (Set<ThresholdOuter>) method.invoke( null,
                                                                 TEST_THRESHOLDS,
                                                                 Operator.BETWEEN,
                                                                 ThresholdConstants.ThresholdDataType.LEFT,
                                                                 true,
                                                                 null );
 
-        Set<Threshold> expected = new HashSet<>();
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1, 0.2 ),
+        Set<ThresholdOuter> expected = new HashSet<>();
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1, 0.2 ),
                                                           Operator.BETWEEN,
                                                           ThresholdConstants.ThresholdDataType.LEFT ) );
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2, 0.3 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2, 0.3 ),
                                                           Operator.BETWEEN,
                                                           ThresholdConstants.ThresholdDataType.LEFT ) );
         assertTrue( actual.equals( expected ) );
 
         // Test with value thresholds
         @SuppressWarnings( "unchecked" )
-        Set<Threshold> actualValue = (Set<Threshold>) method.invoke( null,
+        Set<ThresholdOuter> actualValue = (Set<ThresholdOuter>) method.invoke( null,
                                                                      TEST_THRESHOLDS,
                                                                      Operator.BETWEEN,
                                                                      ThresholdConstants.ThresholdDataType.LEFT,
                                                                      false,
                                                                      null );
 
-        Set<Threshold> expectedValue = new HashSet<>();
-        expectedValue.add( Threshold.of( OneOrTwoDoubles.of( 0.1, 0.2 ),
+        Set<ThresholdOuter> expectedValue = new HashSet<>();
+        expectedValue.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1, 0.2 ),
                                                     Operator.BETWEEN,
                                                     ThresholdConstants.ThresholdDataType.LEFT ) );
-        expectedValue.add( Threshold.of( OneOrTwoDoubles.of( 0.2, 0.3 ),
+        expectedValue.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2, 0.3 ),
                                                     Operator.BETWEEN,
                                                     ThresholdConstants.ThresholdDataType.LEFT ) );
 

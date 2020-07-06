@@ -38,7 +38,7 @@ import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
@@ -361,15 +361,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the union across metrics
-        Set<Threshold> union = filtered.union();
+        Set<ThresholdOuter> union = filtered.union();
 
         double[] sorted = this.getSortedClimatology( input, union );
 
         // Iterate the thresholds
-        for ( Threshold threshold : union )
+        for ( ThresholdOuter threshold : union )
         {
 
-            Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
@@ -422,17 +422,17 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the union across metrics
-        Set<Threshold> union = filtered.union();
+        Set<ThresholdOuter> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
 
         // Iterate the thresholds
-        for ( Threshold threshold : union )
+        for ( ThresholdOuter threshold : union )
         {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
-            Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             PoolOfPairs<Double, Double> pairs;

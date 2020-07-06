@@ -30,9 +30,9 @@ import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
@@ -374,7 +374,7 @@ public final class Slicer
 
     /**
      * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
-     * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
+     * example, to filter by a particular {@link TimeWindowOuter} and {@link OneOrTwoThresholds} associated with the 
      * output metadata:</p>
      * 
      * <p><code>Slicer.filter( list, a {@literal ->} a.getSampleMetadata().getTimeWindow().equals( someWindow ) 
@@ -584,7 +584,7 @@ public final class Slicer
 
     /**
      * Converts an ensemble pair to a pair that contains the probabilities that a discrete event occurs according to 
-     * the left side and the right side, respectively. The event is represented by a {@link Threshold}.
+     * the left side and the right side, respectively. The event is represented by a {@link ThresholdOuter}.
      * 
      * @param pair the pair to transform
      * @param threshold the threshold
@@ -593,7 +593,7 @@ public final class Slicer
      */
 
     public static Pair<Probability, Probability> toDiscreteProbabilityPair( Pair<Double, Ensemble> pair,
-                                                                            Threshold threshold )
+                                                                            ThresholdOuter threshold )
     {
         Objects.requireNonNull( pair, NULL_INPUT_EXCEPTION );
 
@@ -665,7 +665,7 @@ public final class Slicer
     }
 
     /**
-     * Returns a {@link Threshold} with quantiles defined from a prescribed {@link Threshold} with probabilities, 
+     * Returns a {@link ThresholdOuter} with quantiles defined from a prescribed {@link ThresholdOuter} with probabilities, 
      * where the quantiles are mapped using {@link #getQuantileFunction(double[])}. If the input is empty, returns
      * a threshold whose value is {@link Double#NaN}.
      * 
@@ -676,7 +676,7 @@ public final class Slicer
      * @throws NullPointerException if either input is null
      */
 
-    public static Threshold getQuantileFromProbability( Threshold threshold, double[] sorted, Integer digits )
+    public static ThresholdOuter getQuantileFromProbability( ThresholdOuter threshold, double[] sorted, Integer digits )
     {
         Objects.requireNonNull( threshold, "Specify a non-null probability threshold." );
 
@@ -693,7 +693,7 @@ public final class Slicer
             LOGGER.debug( "Returning a default quantile because there were no measurements from which to determine a "
                           + "measured quantile." );
 
-            return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),
+            return ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),
                                                   threshold.getProbabilities(),
                                                   threshold.getOperator(),
                                                   threshold.getDataType(),
@@ -718,7 +718,7 @@ public final class Slicer
             }
         }
 
-        return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
+        return ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
                                               threshold.getProbabilities(),
                                               threshold.getOperator(),
                                               threshold.getDataType(),

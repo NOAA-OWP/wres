@@ -31,7 +31,7 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
@@ -218,9 +218,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
         // Loop across time windows
-        SortedSet<TimeWindow> timeWindows =
+        SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
-        for ( TimeWindow nextWindow : timeWindows )
+        for ( TimeWindowOuter nextWindow : timeWindows )
         {
             List<BoxPlotStatistics> next =
                     Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( nextWindow ) );
@@ -319,7 +319,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         // Discover the time windows and thresholds to loop
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
-        SortedSet<TimeWindow> timeWindows =
+        SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
 
         SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
@@ -328,7 +328,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         for ( OneOrTwoThresholds t : thresholds )
         {
             // Loop across time windows
-            for ( TimeWindow timeWindow : timeWindows )
+            for ( TimeWindowOuter timeWindow : timeWindows )
             {
                 BoxPlotStatistics nextValues = Slicer.filter( output,
                                                               next -> next.getSampleMetadata()

@@ -239,7 +239,7 @@ public class TimeSeriesCrossPairer<L, R>
     {
         // Default to empty
         TimeSeries<Pair<L, R>> nearest = null;
-        Duration durationError = TimeWindow.DURATION_MAX;
+        Duration durationError = TimeWindowOuter.DURATION_MAX;
 
         Map<ReferenceTimeType, Instant> refTimesToCheck = lookNearToMe.getReferenceTimes();
 

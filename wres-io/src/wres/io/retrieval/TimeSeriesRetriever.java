@@ -27,7 +27,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
@@ -75,7 +75,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * Time window filter.
      */
 
-    private final TimeWindow timeWindow;
+    private final TimeWindowOuter timeWindow;
 
     /**
      * The desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
@@ -265,7 +265,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds a {@link TimeWindow} constraint to the retrieval script, if available. All intervals are treated as 
+     * Adds a {@link TimeWindowOuter} constraint to the retrieval script, if available. All intervals are treated as 
      * right-closed.
      * 
      * @param script the script to augment
@@ -280,7 +280,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Does the filter exist?
         if ( this.hasTimeWindow() )
         {
-            TimeWindow filter = this.getTimeWindow();
+            TimeWindowOuter filter = this.getTimeWindow();
 
             // Forecasts?
             if ( this.isForecast() )
@@ -420,7 +420,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the time window filter
      */
 
-    TimeWindow getTimeWindow()
+    TimeWindowOuter getTimeWindow()
     {
         return this.timeWindow;
     }
@@ -770,7 +770,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addLeadBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    private void addLeadBoundsToScript( ScriptBuilder script, TimeWindowOuter filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -780,7 +780,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Long upperLead = null;
 
         // Lower bound
-        if ( !filter.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+        if ( !filter.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
             lowerLead = filter.getEarliestLeadDuration().toMinutes();
 
@@ -802,7 +802,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
         }
         // Upper bound
-        if ( !filter.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+        if ( !filter.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
         {
             upperLead = filter.getLatestLeadDuration().toMinutes();
         }
@@ -855,7 +855,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      */
 
     private void addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( ScriptBuilder script,
-                                                                              TimeWindow filter,
+                                                                              TimeWindowOuter filter,
                                                                               int tabsIn )
     {
         Objects.requireNonNull( script );
@@ -926,7 +926,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addValidTimeBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    private void addValidTimeBoundsToScript( ScriptBuilder script, TimeWindowOuter filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -964,14 +964,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Helper that returns the lower valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
+     * Helper that returns the lower valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the 
      * lower valid time from the forecast information present.
      * 
      * @param timeWindow the time window
      * @return the lower valid time
      */
 
-    private Instant getOrInferLowerValidTime( TimeWindow timeWindow )
+    private Instant getOrInferLowerValidTime( TimeWindowOuter timeWindow )
     {
         Instant lowerValidTime = Instant.MIN;
 
@@ -990,7 +990,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 lowerValidTime = timeWindow.getEarliestReferenceTime();
 
                 // Adjust for the earliest lead duration
-                if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+                if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
                 {
                     lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
 
@@ -1008,14 +1008,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Helper that returns the upper valid time from the {@link TimeWindow}, preferentially, but otherwise infers the 
+     * Helper that returns the upper valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the 
      * upper valid time from the forecast information present.
      * 
      * @param timeWindow the time window
      * @return the upper valid time
      */
 
-    private Instant getOrInferUpperValidTime( TimeWindow timeWindow )
+    private Instant getOrInferUpperValidTime( TimeWindowOuter timeWindow )
     {
         Instant upperValidTime = Instant.MAX;
 
@@ -1029,7 +1029,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             // Both the latest reference time and the latest lead duration available?
             if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX )
-                 && !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+                 && !timeWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
             {
                 // Use the upper reference time plus upper lead duration
                 upperValidTime = timeWindow.getLatestReferenceTime().plus( timeWindow.getLatestLeadDuration() );
@@ -1048,7 +1048,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any input is null
      */
 
-    private void addReferenceTimeBoundsToScript( ScriptBuilder script, TimeWindow filter, int tabsIn )
+    private void addReferenceTimeBoundsToScript( ScriptBuilder script, TimeWindowOuter filter, int tabsIn )
     {
         Objects.requireNonNull( script );
 
@@ -1124,7 +1124,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * Time window filter.
          */
 
-        private TimeWindow timeWindow;
+        private TimeWindowOuter timeWindow;
 
         /**
          * The <code>wres.Project.project_id</code>.
@@ -1244,7 +1244,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setTimeWindow( TimeWindow timeWindow )
+        TimeSeriesRetrieverBuilder<S> setTimeWindow( TimeWindowOuter timeWindow )
         {
             this.timeWindow = timeWindow;
             return this;

@@ -30,7 +30,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
@@ -473,7 +473,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         try
         {
             // Time windows
-            Set<TimeWindow> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
+            Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
             // Climatological data required?
             Supplier<Stream<TimeSeries<L>>> climatologySupplier = null;
@@ -501,7 +501,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
             List<PoolSupplier<L, R>> returnMe = new ArrayList<>();
 
             // Create the retrievers for each time window
-            for ( TimeWindow nextWindow : timeWindows )
+            for ( TimeWindowOuter nextWindow : timeWindows )
             {
                 Supplier<Stream<TimeSeries<R>>> rightSupplier =
                         this.getRetrieverFactory().getRightRetriever( nextWindow );

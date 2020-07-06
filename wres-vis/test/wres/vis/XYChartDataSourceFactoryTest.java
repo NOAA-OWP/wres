@@ -10,7 +10,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the {@link XYChartDataSourceFactory}.
@@ -26,7 +26,7 @@ public class XYChartDataSourceFactoryTest
      */
 
     private final StatisticMetadata meta =
-            StatisticMetadata.of( SampleMetadata.of( SampleMetadata.of( MeasurementUnit.of() ), TimeWindow.of() ),
+            StatisticMetadata.of( SampleMetadata.of( SampleMetadata.of( MeasurementUnit.of() ), TimeWindowOuter.of() ),
                                   0,
                                   MeasurementUnit.of(),
                                   MetricConstants.BOX_PLOT_OF_ERRORS,

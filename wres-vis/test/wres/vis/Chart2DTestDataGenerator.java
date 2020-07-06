@@ -41,10 +41,10 @@ import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 public abstract class Chart2DTestDataGenerator
 {
@@ -69,7 +69,7 @@ public abstract class Chart2DTestDataGenerator
         for ( final double[] next : allow )
         {
             OneOrTwoThresholds filter =
-                    OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
+                    OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
                                                                           OneOrTwoDoubles.of( next[0] ),
                                                                           Operator.GREATER,
                                                                           ThresholdDataType.LEFT ) );
@@ -95,7 +95,7 @@ public abstract class Chart2DTestDataGenerator
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
-            TimeWindow filter = TimeWindow.of( Instant.MIN,
+            TimeWindowOuter filter = TimeWindowOuter.of( Instant.MIN,
                                                Instant.MAX,
                                                Duration.ofHours( next ) );
             Slicer.filter( full, data -> data.getSampleMetadata().getTimeWindow().equals( filter ) ).forEach( statistics::add );
@@ -145,11 +145,11 @@ public abstract class Chart2DTestDataGenerator
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final OneOrTwoThresholds q =
-                        OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                        OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
                                                                               OneOrTwoDoubles.of( probConstants[0] ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-                TimeWindow window = TimeWindow.of( Instant.MIN,
+                TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                    Instant.MAX,
                                                    Duration.ofHours( (long) leadTime ) );
 
@@ -212,11 +212,11 @@ public abstract class Chart2DTestDataGenerator
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final OneOrTwoThresholds q =
-                        OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                        OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
                                                                               OneOrTwoDoubles.of( probConstants[0] ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-                TimeWindow window = TimeWindow.of( Instant.MIN,
+                TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                    Instant.MAX,
                                                    Duration.ofHours( (long) leadTime ) );
 
@@ -252,12 +252,12 @@ public abstract class Chart2DTestDataGenerator
     {
         final List<DiagramStatistic> rawData = new ArrayList<>();
         //Read only selected quantiles
-        final List<Threshold> allowed = new ArrayList<>();
+        final List<ThresholdOuter> allowed = new ArrayList<>();
         final double[][] allow =
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
         {
-            allowed.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
+            allowed.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
                                                         OneOrTwoDoubles.of( next[0] ),
                                                         Operator.GREATER,
                                                         ThresholdDataType.LEFT ) );
@@ -300,14 +300,14 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                final ThresholdOuter q = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
                                                                    OneOrTwoDoubles.of( probConstants[0] ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
-                    TimeWindow window = TimeWindow.of( Instant.MIN,
+                    TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                        Instant.MAX,
                                                        Duration.ofHours( (long) leadTime ) );
 
@@ -372,12 +372,12 @@ public abstract class Chart2DTestDataGenerator
     {
         final List<DiagramStatistic> rawData = new ArrayList<>();
         //Read only selected quantiles
-        final List<Threshold> allowed = new ArrayList<>();
+        final List<ThresholdOuter> allowed = new ArrayList<>();
         final double[][] allow =
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
         {
-            allowed.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
+            allowed.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
                                                         OneOrTwoDoubles.of( next[0] ),
                                                         Operator.GREATER,
                                                         ThresholdDataType.LEFT ) );
@@ -410,14 +410,14 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                final ThresholdOuter q = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
                                                                    OneOrTwoDoubles.of( probConstants[0] ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
-                    TimeWindow window = TimeWindow.of( Instant.MIN,
+                    TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                        Instant.MAX,
                                                        Duration.ofHours( (long) leadTime ) );
 
@@ -508,11 +508,11 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                final ThresholdOuter q = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
                                                                    OneOrTwoDoubles.of( probConstants[0] ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
-                TimeWindow window = TimeWindow.of( Instant.MIN,
+                TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                    Instant.MAX,
                                                    Duration.ofHours( (long) leadTime ) );
 
@@ -574,11 +574,11 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata
-        TimeWindow windowMeta = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter windowMeta = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                Instant.parse( "2015-12-31T11:59:59Z" ),
                                                Duration.ofHours( 24 ),
                                                Duration.ofHours( 120 ) );
-        final TimeWindow timeWindow = windowMeta;
+        final TimeWindowOuter timeWindow = windowMeta;
         
         //Source metadata
         final SampleMetadata source =
@@ -591,7 +591,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Single threshold
         final OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) );
@@ -602,7 +602,7 @@ public abstract class Chart2DTestDataGenerator
 
             //Set the lead time
             final double leadTime = (Double) d.next().getKey();
-            TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+            TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                Instant.parse( "2015-12-31T11:59:59Z" ),
                                                Duration.ofHours( (long) leadTime ) );
 
@@ -658,7 +658,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Single threshold
         final OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) );
@@ -668,7 +668,7 @@ public abstract class Chart2DTestDataGenerator
         {
             //Set the lead time
             final double leadTime = (Double) d.next().getKey();
-            TimeWindow window = TimeWindow.of( Instant.MIN,
+            TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                Instant.MAX,
                                                Duration.ofHours( (long) leadTime ) );
 
@@ -736,7 +736,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                "HEFS" ) );
         //Single threshold
         final OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) );
@@ -746,7 +746,7 @@ public abstract class Chart2DTestDataGenerator
         {
             //Set the lead time
             final double leadTime = (Double) d.next().getKey();
-            TimeWindow window = TimeWindow.of( Instant.MIN,
+            TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                Instant.MAX,
                                                Duration.ofHours( (long) leadTime ) );
 
@@ -799,7 +799,7 @@ public abstract class Chart2DTestDataGenerator
 
         // Threshold
         final OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) );
@@ -830,7 +830,7 @@ public abstract class Chart2DTestDataGenerator
             Instant begin = start.plus( frequency.multipliedBy( i ) );
             Instant end = begin.plus( period );
             //Add the 6h data
-            TimeWindow sixHourWindow = TimeWindow.of( begin,
+            TimeWindowOuter sixHourWindow = TimeWindowOuter.of( begin,
                                                       end,
                                                       Duration.ofHours( 6 ) );
             DoubleScoreStatistic sixHourOutput =
@@ -843,7 +843,7 @@ public abstract class Chart2DTestDataGenerator
                                                                    MetricConstants.MAIN ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
-            TimeWindow twelveHourWindow = TimeWindow.of( begin,
+            TimeWindowOuter twelveHourWindow = TimeWindowOuter.of( begin,
                                                          end,
                                                          Duration.ofHours( 12 ) );
             DoubleScoreStatistic twelveHourOutput =
@@ -856,7 +856,7 @@ public abstract class Chart2DTestDataGenerator
                                                                    MetricConstants.MAIN ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
-            TimeWindow eighteenHourWindow = TimeWindow.of( begin,
+            TimeWindowOuter eighteenHourWindow = TimeWindowOuter.of( begin,
                                                            end,
                                                            Duration.ofHours( 18 ) );
             DoubleScoreStatistic eighteenHourOutput =
@@ -869,7 +869,7 @@ public abstract class Chart2DTestDataGenerator
                                                                    MetricConstants.MAIN ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
-            TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
+            TimeWindowOuter twentyFourHourWindow = TimeWindowOuter.of( begin,
                                                              end,
                                                              Duration.ofHours( 24 ) );
             DoubleScoreStatistic twentyFourHourOutput =
@@ -897,7 +897,7 @@ public abstract class Chart2DTestDataGenerator
         final List<DoubleScoreStatistic> rawData = new ArrayList<>();
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
         
@@ -940,7 +940,7 @@ public abstract class Chart2DTestDataGenerator
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
 
-            TimeWindow timeWindow = TimeWindow.of( Instant.parse( nextDate ),
+            TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( nextDate ),
                                                    Instant.parse( nextDate ),
                                                    Duration.ofHours( 0 ),
                                                    Duration.ofHours( 18 ) );
@@ -983,13 +983,13 @@ public abstract class Chart2DTestDataGenerator
         input.add( Pair.of( Instant.parse( "1985-01-10T12:00:00Z" ), Duration.ofHours( 24 ) ) );
 
         // Create the metadata
-        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-10T00:00:00Z" ),
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 336 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -1034,12 +1034,12 @@ public abstract class Chart2DTestDataGenerator
         returnMe.put( MetricConstants.MEAN_ABSOLUTE, Duration.ofMinutes( 612 ) );
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-10T00:00:00Z" ),
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 336 ) );
 
-        OneOrTwoThresholds threshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+        OneOrTwoThresholds threshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT ) );
         

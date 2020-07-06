@@ -16,7 +16,7 @@ import wres.config.generated.DurationUnit;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 
 /**
@@ -91,34 +91,34 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 24 );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 0 ), Duration.ofHours( 1 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 1 ), Duration.ofHours( 2 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 2 ), Duration.ofHours( 3 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 3 ), Duration.ofHours( 4 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 4 ), Duration.ofHours( 5 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 5 ), Duration.ofHours( 6 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 6 ), Duration.ofHours( 7 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 7 ), Duration.ofHours( 8 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 8 ), Duration.ofHours( 9 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 9 ), Duration.ofHours( 10 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 10 ), Duration.ofHours( 11 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 11 ), Duration.ofHours( 12 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 12 ), Duration.ofHours( 13 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 13 ), Duration.ofHours( 14 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 14 ), Duration.ofHours( 15 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 15 ), Duration.ofHours( 16 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 16 ), Duration.ofHours( 17 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 17 ), Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 18 ), Duration.ofHours( 19 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 19 ), Duration.ofHours( 20 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 20 ), Duration.ofHours( 21 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 21 ), Duration.ofHours( 22 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 22 ), Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 23 ), Duration.ofHours( 24 ) ) );
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 24 );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 0 ), Duration.ofHours( 1 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 1 ), Duration.ofHours( 2 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 2 ), Duration.ofHours( 3 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 3 ), Duration.ofHours( 4 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 4 ), Duration.ofHours( 5 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 5 ), Duration.ofHours( 6 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 6 ), Duration.ofHours( 7 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 7 ), Duration.ofHours( 8 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 8 ), Duration.ofHours( 9 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 9 ), Duration.ofHours( 10 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 10 ), Duration.ofHours( 11 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 11 ), Duration.ofHours( 12 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 12 ), Duration.ofHours( 13 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 13 ), Duration.ofHours( 14 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 14 ), Duration.ofHours( 15 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 15 ), Duration.ofHours( 16 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 16 ), Duration.ofHours( 17 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 17 ), Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 18 ), Duration.ofHours( 19 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 19 ), Duration.ofHours( 20 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 20 ), Duration.ofHours( 21 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 21 ), Duration.ofHours( 22 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 22 ), Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 23 ), Duration.ofHours( 24 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 24, actualTimeWindows.size() );
@@ -162,12 +162,12 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 2 );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 0 ), Duration.ofHours( 24 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Duration.ofHours( 24 ), Duration.ofHours( 48 ) ) );
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 2 );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 0 ), Duration.ofHours( 24 ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( Duration.ofHours( 24 ), Duration.ofHours( 48 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 2, actualTimeWindows.size() );
@@ -216,82 +216,82 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 18 );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 18 );
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
                                                 Instant.parse( INSTANT_TWELVE ), //2551-03-17T13:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
                                                 Instant.parse( INSTANT_TWELVE ), //2551-03-17T13:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
                                                 Instant.parse( INSTANT_FOURTEEN ), //2551-03-17T20:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
                                                 Instant.parse( INSTANT_FOURTEEN ), //2551-03-17T20:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
                                                 Instant.parse( INSTANT_SIXTEEN ), //2551-03-18T03:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
                                                 Instant.parse( INSTANT_SIXTEEN ), //2551-03-18T03:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
                                                 Instant.parse( INSTANT_EIGHTEEN ), //2551-03-18T10:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
                                                 Instant.parse( INSTANT_EIGHTEEN ), //2551-03-18T10:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
                                                 Instant.parse( INSTANT_TWENTY ), //2551-03-18T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
                                                 Instant.parse( INSTANT_TWENTY ), //2551-03-18T17:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
                                                 Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
                                                 Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_THREE ), //2551-03-19T07:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_THREE ), //2551-03-19T07:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_FIVE ), //2551-03-19T14:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_FIVE ), //2551-03-19T14:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_SEVEN ), //2551-03-19T21:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_SEVEN ), //2551-03-19T21:00:00Z
                                                 Duration.ofHours( 17 ),
                                                 Duration.ofHours( 40 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 18, actualTimeWindows.size() );
@@ -335,8 +335,8 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 1 );
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
                                                 Instant.parse( INSTANT_TEN ), //2551-03-20T00:00:00Z
                                                 Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_EIGHT ), //2551-03-24T00:00:00Z
@@ -344,7 +344,7 @@ public final class TimeWindowGeneratorTest
                                                 Duration.ofHours( 25 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -381,16 +381,16 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( TimeWindow.of( Instant.MIN,
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 1 );
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.MIN,
                                                 Instant.MAX,
                                                 Instant.MIN,
                                                 Instant.MAX,
-                                                TimeWindow.DURATION_MIN,
-                                                TimeWindow.DURATION_MAX ) );
+                                                TimeWindowOuter.DURATION_MIN,
+                                                TimeWindowOuter.DURATION_MAX ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -454,140 +454,140 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected time windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 23 );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 23 );
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_FOUR ), //2017-08-08T01:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_FOUR ), //2017-08-08T01:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_FOUR ), //2017-08-08T01:00:00Z
                                                 Instant.parse( INSTANT_FIVE ), //2017-08-08T02:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_FIVE ), //2017-08-08T02:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_FIVE ), //2017-08-08T02:00:00Z
                                                 Instant.parse( INSTANT_SIX ), //2017-08-08T03:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_SIX ), //2017-08-08T03:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_SIX ), //2017-08-08T03:00:00Z
                                                 Instant.parse( INSTANT_SEVEN ), //2017-08-08T04:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_SEVEN ), //2017-08-08T04:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_SEVEN ), //2017-08-08T04:00:00Z
                                                 Instant.parse( INSTANT_EIGHT ), //2017-08-08T05:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_EIGHT ), //2017-08-08T05:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_EIGHT ), //2017-08-08T05:00:00Z
                                                 Instant.parse( "2017-08-08T06:00:00Z" ), //2017-08-08T06:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T06:00:00Z" ), //2017-08-08T06:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T06:00:00Z" ), //2017-08-08T06:00:00Z
                                                 Instant.parse( "2017-08-08T07:00:00Z" ), //2017-08-08T07:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T07:00:00Z" ), //2017-08-08T07:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T07:00:00Z" ), //2017-08-08T07:00:00Z
                                                 Instant.parse( "2017-08-08T08:00:00Z" ), //2017-08-08T08:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T08:00:00Z" ), //2017-08-08T08:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T08:00:00Z" ), //2017-08-08T08:00:00Z
                                                 Instant.parse( "2017-08-08T09:00:00Z" ), //2017-08-08T09:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T09:00:00Z" ), //2017-08-08T09:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T09:00:00Z" ), //2017-08-08T09:00:00Z
                                                 Instant.parse( "2017-08-08T10:00:00Z" ), //2017-08-08T10:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T10:00:00Z" ), //2017-08-08T10:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T10:00:00Z" ), //2017-08-08T10:00:00Z
                                                 Instant.parse( "2017-08-08T11:00:00Z" ), //2017-08-08T11:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T11:00:00Z" ), //2017-08-08T11:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T11:00:00Z" ), //2017-08-08T11:00:00Z
                                                 Instant.parse( "2017-08-08T12:00:00Z" ), //2017-08-08T12:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T12:00:00Z" ), //2017-08-08T12:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T12:00:00Z" ), //2017-08-08T12:00:00Z
                                                 Instant.parse( "2017-08-08T13:00:00Z" ), //2017-08-08T13:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T13:00:00Z" ), //2017-08-08T13:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T13:00:00Z" ), //2017-08-08T13:00:00Z
                                                 Instant.parse( "2017-08-08T14:00:00Z" ), //2017-08-08T14:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T14:00:00Z" ), //2017-08-08T14:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T14:00:00Z" ), //2017-08-08T14:00:00Z
                                                 Instant.parse( "2017-08-08T15:00:00Z" ), //2017-08-08T15:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T15:00:00Z" ), //2017-08-08T15:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T15:00:00Z" ), //2017-08-08T15:00:00Z
                                                 Instant.parse( "2017-08-08T16:00:00Z" ), //2017-08-08T16:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T16:00:00Z" ), //2017-08-08T16:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T16:00:00Z" ), //2017-08-08T16:00:00Z
                                                 Instant.parse( "2017-08-08T17:00:00Z" ), //2017-08-08T17:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T17:00:00Z" ), //2017-08-08T17:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T17:00:00Z" ), //2017-08-08T17:00:00Z
                                                 Instant.parse( "2017-08-08T18:00:00Z" ), //2017-08-08T18:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T18:00:00Z" ), //2017-08-08T18:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T18:00:00Z" ), //2017-08-08T18:00:00Z
                                                 Instant.parse( "2017-08-08T19:00:00Z" ), //2017-08-08T19:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T19:00:00Z" ), //2017-08-08T19:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T19:00:00Z" ), //2017-08-08T19:00:00Z
                                                 Instant.parse( "2017-08-08T20:00:00Z" ), //2017-08-08T20:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T20:00:00Z" ), //2017-08-08T20:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T20:00:00Z" ), //2017-08-08T20:00:00Z
                                                 Instant.parse( "2017-08-08T21:00:00Z" ), //2017-08-08T21:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T21:00:00Z" ), //2017-08-08T21:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T21:00:00Z" ), //2017-08-08T21:00:00Z
                                                 Instant.parse( "2017-08-08T22:00:00Z" ), //2017-08-08T22:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
                                                 Duration.ofHours( 0 ),
                                                 Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( "2017-08-08T22:00:00Z" ), //2017-08-08T22:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( "2017-08-08T22:00:00Z" ), //2017-08-08T22:00:00Z
                                                 Instant.parse( INSTANT_TWO ), //2017-08-08T23:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
@@ -595,7 +595,7 @@ public final class TimeWindowGeneratorTest
                                                 Duration.ofHours( 18 ) ) );
 
         // Generate the actual time windows for the explicit test
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 23, actualTimeWindows.size() );
@@ -624,7 +624,7 @@ public final class TimeWindowGeneratorTest
                                                        null );
 
         // Generate the actual time windows for the implicit test
-        Set<TimeWindow> actualTimeWindowsNoFreq = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfigNoFreq );
+        Set<TimeWindowOuter> actualTimeWindowsNoFreq = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfigNoFreq );
 
         // Assert that the expected and actual time windows are equal
         assertEquals( expectedTimeWindows, actualTimeWindowsNoFreq );
@@ -668,8 +668,8 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 1 );
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_TWO ), //2017-08-08T23:00:00Z
                                                 Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
                                                 Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
@@ -677,7 +677,7 @@ public final class TimeWindowGeneratorTest
                                                 Duration.ofHours( 18 ) ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );
@@ -724,50 +724,50 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 9 );
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 9 );
 
         Duration first = Duration.ofHours( 0 );
         Duration last = Duration.ofHours( 40 );
 
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
                                                 Instant.parse( INSTANT_TWELVE ), //2551-03-17T13:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
                                                 Instant.parse( INSTANT_FOURTEEN ), //2551-03-17T20:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
                                                 Instant.parse( INSTANT_SIXTEEN ), //2551-03-18T03:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
                                                 Instant.parse( INSTANT_EIGHTEEN ), //2551-03-18T10:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
                                                 Instant.parse( INSTANT_TWENTY ), //2551-03-18T17:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
                                                 Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_THREE ), //2551-03-19T07:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_FIVE ), //2551-03-19T14:00:00Z
                                                 first,
                                                 last ) );
-        expectedTimeWindows.add( TimeWindow.of( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
                                                 Instant.parse( INSTANT_TWENTY_SEVEN ), //2551-03-19T21:00:00Z
                                                 first,
                                                 last ) );
 
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 9, actualTimeWindows.size() );
@@ -811,16 +811,16 @@ public final class TimeWindowGeneratorTest
                                                  null );
 
         // Generate the expected windows
-        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
+        Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 1 );
 
         Duration first = Duration.ofHours( 43 );
         Duration last = Duration.ofHours( 43 );
 
-        expectedTimeWindows.add( TimeWindow.of( first,
+        expectedTimeWindows.add( TimeWindowOuter.of( first,
                                                 last ) );
         
         // Generate the actual windows
-        Set<TimeWindow> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
+        Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
 
         // Assert the expected cardinality
         assertEquals( 1, actualTimeWindows.size() );

@@ -26,7 +26,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -332,7 +332,7 @@ public final class PoolOfPairsTest
 
         for ( Duration nextDuration : durations )
         {
-            TimeWindow window = TimeWindow.of( nextDuration, nextDuration );
+            TimeWindowOuter window = TimeWindowOuter.of( nextDuration, nextDuration );
 
             for ( TimeSeries<Pair<Double, Double>> next : ts.get() )
             {

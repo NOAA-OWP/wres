@@ -37,7 +37,7 @@ import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
@@ -304,16 +304,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     }
 
     /**
-     * Helper that returns a predicate for filtering pairs based on the {@link Threshold#getDataType()}
+     * Helper that returns a predicate for filtering pairs based on the {@link ThresholdOuter#getDataType()}
      * of the input threshold.
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link Threshold#getDataType()} is null
-     * @throws IllegalStateException if the {@link Threshold#getDataType()} is not recognized
+     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
      */
 
-    static Predicate<Pair<Double, Ensemble>> getFilterForEnsemblePairs( Threshold input )
+    static Predicate<Pair<Double, Ensemble>> getFilterForEnsemblePairs( ThresholdOuter input )
     {
         switch ( input.getDataType() )
         {
@@ -440,17 +440,17 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the union across metrics
-        Set<Threshold> union = filtered.union();
+        Set<ThresholdOuter> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
 
         // Iterate the thresholds
-        for ( Threshold threshold : union )
+        for ( ThresholdOuter threshold : union )
         {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
-            Threshold useMe = addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter useMe = addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
@@ -587,17 +587,17 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                           .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the union across metrics
-        Set<Threshold> union = filtered.union();
+        Set<ThresholdOuter> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
 
         // Iterate the thresholds
-        for ( Threshold threshold : union )
+        for ( ThresholdOuter threshold : union )
         {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
-            Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter useMe = this.addQuantilesToThreshold( threshold, sorted );
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Transform the pairs
@@ -678,7 +678,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     /**
      * Builds a metric future for a {@link MetricCollection} that consumes ensemble pairs at a specific
-     * {@link Threshold} and appends it to the input map of futures.
+     * {@link ThresholdOuter} and appends it to the input map of futures.
      * 
      * @param <T> the type of {@link Statistic}
      * @param threshold the threshold
@@ -722,18 +722,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         ThresholdsByMetric filteredByInner = filtered.filterByType( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Find the union across metrics
-        Set<Threshold> union = filteredByOuter.union();
+        Set<ThresholdOuter> union = filteredByOuter.union();
 
         double[] sorted = getSortedClimatology( input, union );
 
         // Iterate the thresholds
-        for ( Threshold threshold : union )
+        for ( ThresholdOuter threshold : union )
         {
             Set<MetricConstants> ignoreTheseMetrics =
                     filteredByOuter.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
-            Threshold outerThreshold = addQuantilesToThreshold( threshold, sorted );
+            ThresholdOuter outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
             // Transform the pairs to probabilities first
             // Transform the pairs
@@ -744,9 +744,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             SampleData<Pair<Probability, Probability>> transformed = Slicer.transform( input, transformer );
 
             // Find the union of classifiers across all metrics   
-            Set<Threshold> classifiers = filteredByInner.union();
+            Set<ThresholdOuter> classifiers = filteredByInner.union();
 
-            for ( Threshold innerThreshold : classifiers )
+            for ( ThresholdOuter innerThreshold : classifiers )
             {
                 // Metrics for which the current classifier is not required
                 Set<MetricConstants> innerIgnoreTheseMetrics =
@@ -826,7 +826,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
         // Check that the relevant parameters have been set first
 
-        Map<MetricConstants, Set<Threshold>> probabilityClassifiers =
+        Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
                 this.getThresholdsByMetric().getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Dichotomous

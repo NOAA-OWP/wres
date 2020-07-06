@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import wres.datamodel.scale.TimeScale;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
 
 class MetricVariable
@@ -59,7 +59,7 @@ class MetricVariable
      */
     
     MetricVariable( String variableName,
-                    TimeWindow timeWindow,
+                    TimeWindowOuter timeWindow,
                     String metricName,
                     OneOrTwoThresholds thresholds,
                     String units,
@@ -108,12 +108,12 @@ class MetricVariable
         int leadLow = Integer.MIN_VALUE;
         int leadHigh = Integer.MAX_VALUE;
 
-        if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindow.DURATION_MIN ) )
+        if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
             leadLow = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                             this.getDurationUnits() );
         }
-        if ( !timeWindow.getLatestLeadDuration().equals( TimeWindow.DURATION_MAX ) )
+        if ( !timeWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
         {
             leadHigh = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                              this.getDurationUnits() );

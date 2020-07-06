@@ -33,7 +33,7 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -117,7 +117,7 @@ public final class BoxPlotPercentageErrorTest
         {
             List<Event<Pair<Double,Double>>> events = new ArrayList<>();
             
-            TimeWindow window = TimeWindow.of( duration, duration );
+            TimeWindowOuter window = TimeWindowOuter.of( duration, duration );
 
             for ( TimeSeries<Pair<Double, Double>> next : input.get() )
             {

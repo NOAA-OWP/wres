@@ -193,7 +193,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
-     * prescribed {@link TimeWindow}.
+     * prescribed {@link TimeWindowOuter}.
      * 
      * @param <T> the type of time-series data
      * @param input the input to slice
@@ -203,7 +203,7 @@ public final class TimeSeriesSlicer
      */
 
     public static <T> TimeSeries<T> filter( TimeSeries<T> input,
-                                            TimeWindow timeWindow )
+                                            TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( input );
 
@@ -212,7 +212,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
-     * prescribed {@link TimeWindow}. When considering lead durations, the filter may focus on all 
+     * prescribed {@link TimeWindowOuter}. When considering lead durations, the filter may focus on all 
      * {@link ReferenceTimeType} or a prescribed subset.
      * 
      * @param <T> the type of time-series data
@@ -224,7 +224,7 @@ public final class TimeSeriesSlicer
      */
 
     public static <T> TimeSeries<T> filter( TimeSeries<T> input,
-                                            TimeWindow timeWindow,
+                                            TimeWindowOuter timeWindow,
                                             Set<ReferenceTimeType> referenceTimeTypes )
     {
         Objects.requireNonNull( input );
@@ -1060,7 +1060,7 @@ public final class TimeSeriesSlicer
      */
 
     private static Map<ReferenceTimeType, Instant> filterReferenceTimes( Map<ReferenceTimeType, Instant> referenceTimes,
-                                                                         TimeWindow timeWindow )
+                                                                         TimeWindowOuter timeWindow )
     {
 
         Map<ReferenceTimeType, Instant> returnMe = new TreeMap<>();

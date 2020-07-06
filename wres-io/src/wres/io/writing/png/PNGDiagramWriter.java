@@ -25,7 +25,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DiagramStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.system.SystemSettings;
@@ -165,12 +165,12 @@ public class PNGDiagramWriter extends PNGWriter
                 // Build the output file name
                 Path outputImage = null;
                 Object append = nextEntry.getKey();
-                if ( append instanceof TimeWindow )
+                if ( append instanceof TimeWindowOuter )
                 {
                     outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                      destinationConfig,
                                                                      meta,
-                                                                     (TimeWindow) append,
+                                                                     (TimeWindowOuter) append,
                                                                      durationUnits );
                 }
                 else if ( append instanceof OneOrTwoThresholds )

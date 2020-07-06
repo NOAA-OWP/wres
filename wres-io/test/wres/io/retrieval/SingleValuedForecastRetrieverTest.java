@@ -41,7 +41,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -217,7 +217,7 @@ public class SingleValuedForecastRetrieverTest
         Duration leadStart = Duration.ofHours( 1 );
         Duration leadEnd = Duration.ofHours( 4 );
 
-        TimeWindow timeWindow = TimeWindow.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( referenceStart, referenceEnd, validStart, validEnd, leadStart, leadEnd );
 
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =

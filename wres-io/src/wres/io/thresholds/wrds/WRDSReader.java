@@ -7,7 +7,7 @@ import org.apache.commons.compress.utils.IOUtils;
 import wres.config.FeaturePlus;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.thresholds.exceptions.StreamIOException;
 import wres.io.thresholds.wrds.response.ThresholdExtractor;
@@ -35,7 +35,7 @@ public final class WRDSReader {
                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final int LOCATION_REQUEST_COUNT = 20;
 
-    public static Map<FeaturePlus, Set<Threshold>> readThresholds(
+    public static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds(
             final SystemSettings systemSettings,
             final ThresholdsConfig threshold,
             final UnitMapper unitMapper,
@@ -75,7 +75,7 @@ public final class WRDSReader {
         }
     }
 
-    static Map<FeaturePlus, Set<Threshold>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
+    static Map<FeaturePlus, Set<ThresholdOuter>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource();
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.valueOf(config.getApplyTo().name());

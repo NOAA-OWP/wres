@@ -23,7 +23,7 @@ import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
@@ -286,7 +286,7 @@ class MetricFuturesByTime
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
+        MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindowOuter, OneOrTwoThresholds> key,
                                                          Future<List<DoubleScoreStatistic>> value )
         {
             Objects.requireNonNull( key.getLeft() );

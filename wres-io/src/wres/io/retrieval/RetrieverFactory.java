@@ -4,7 +4,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.pooling.PoolsGenerator;
 
 /**
@@ -35,33 +35,33 @@ public interface RetrieverFactory<L, R>
     Supplier<Stream<TimeSeries<L>>> getLeftRetriever();
 
     /**
-     * Creates a retriever for the left-ish data associated with a particular {@link TimeWindow}.
+     * Creates a retriever for the left-ish data associated with a particular {@link TimeWindowOuter}.
      * 
      * @param timeWindow the time window
      * @return a retriever for left data
      * @throws DataAccessException if the retriever could not be created for any reason
      */
 
-    Supplier<Stream<TimeSeries<L>>> getLeftRetriever( TimeWindow timeWindow );
+    Supplier<Stream<TimeSeries<L>>> getLeftRetriever( TimeWindowOuter timeWindow );
 
     /**
-     * Creates a retriever of right-ish data associated with a particular {@link TimeWindow}.
+     * Creates a retriever of right-ish data associated with a particular {@link TimeWindowOuter}.
      * 
      * @param timeWindow the time window
      * @return a retriever for right data
      * @throws DataAccessException if the retriever could not be created for any reason
      */
 
-    Supplier<Stream<TimeSeries<R>>> getRightRetriever( TimeWindow timeWindow );
+    Supplier<Stream<TimeSeries<R>>> getRightRetriever( TimeWindowOuter timeWindow );
 
     /**
-     * Creates a retriever of right-ish data associated with a baseline for a particular {@link TimeWindow}.
+     * Creates a retriever of right-ish data associated with a baseline for a particular {@link TimeWindowOuter}.
      * 
      * @param timeWindow the time window
      * @return a retriever for baseline data
      * @throws DataAccessException if the retriever could not be created for any reason
      */
 
-    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( TimeWindow timeWindow );
+    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( TimeWindowOuter timeWindow );
 
 }

@@ -24,7 +24,7 @@ import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -58,11 +58,11 @@ public final class TimingErrorDurationStatisticsTest
         PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
-        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-02T00:00:00Z" ),
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 18 ) );
-        final TimeWindow timeWindow = window;
+        final TimeWindowOuter timeWindow = window;
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -117,11 +117,11 @@ public final class TimingErrorDurationStatisticsTest
         PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
-        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-02T00:00:00Z" ),
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 18 ) );
-        final TimeWindow timeWindow = window;
+        final TimeWindowOuter timeWindow = window;
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -170,9 +170,9 @@ public final class TimingErrorDurationStatisticsTest
         PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         // Metadata for the output
-        TimeWindow window = TimeWindow.of( Instant.MIN,
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                            Instant.MAX );
-        final TimeWindow timeWindow = window;
+        final TimeWindowOuter timeWindow = window;
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )

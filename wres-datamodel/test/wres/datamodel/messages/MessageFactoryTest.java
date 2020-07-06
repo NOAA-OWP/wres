@@ -53,14 +53,14 @@ import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
@@ -96,7 +96,7 @@ public class MessageFactoryTest
     private static final String FEATURE_NAME = "DRRC2";
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
 
-    private static final wres.datamodel.time.TimeWindow TIME_WINDOW = wres.datamodel.time.TimeWindow.of( NINTH_TIME,
+    private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW = wres.datamodel.time.TimeWindowOuter.of( NINTH_TIME,
                                                                                                          TENTH_TIME,
                                                                                                          ELEVENTH_TIME,
                                                                                                          TWELFTH_TIME,
@@ -405,7 +405,7 @@ public class MessageFactoryTest
                                                    wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( wres.datamodel.thresholds.Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
 
@@ -463,7 +463,7 @@ public class MessageFactoryTest
                                                    wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( wres.datamodel.thresholds.Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
                                                                                                 OneOrTwoDoubles.of( 0.9 ),
                                                                                                 Operator.GREATER_EQUAL,
                                                                                                 ThresholdDataType.LEFT ) );
@@ -511,7 +511,7 @@ public class MessageFactoryTest
                                                    wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( wres.datamodel.thresholds.Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
                                                                                                 OneOrTwoDoubles.of( 0.9 ),
                                                                                                 Operator.GREATER_EQUAL,
                                                                                                 ThresholdDataType.LEFT ) );
@@ -629,8 +629,8 @@ public class MessageFactoryTest
 
     private List<DurationScoreStatistic> getDurationScoreStatisticsForOnePool()
     {
-        TimeWindow timeOne =
-                TimeWindow.of( FIRST_TIME,
+        TimeWindowOuter timeOne =
+                TimeWindowOuter.of( FIRST_TIME,
                                FIFTH_TIME,
                                FIRST_TIME,
                                SEVENTH_TIME,
@@ -638,7 +638,7 @@ public class MessageFactoryTest
                                Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
@@ -667,8 +667,8 @@ public class MessageFactoryTest
 
     private List<PairedStatistic<Instant, Duration>> getDurationDiagramStatisticsForOnePool()
     {
-        TimeWindow timeOne =
-                TimeWindow.of( FIRST_TIME,
+        TimeWindowOuter timeOne =
+                TimeWindowOuter.of( FIRST_TIME,
                                FIFTH_TIME,
                                FIRST_TIME,
                                SEVENTH_TIME,
@@ -676,7 +676,7 @@ public class MessageFactoryTest
                                Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 

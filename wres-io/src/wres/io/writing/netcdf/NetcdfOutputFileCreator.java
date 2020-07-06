@@ -17,7 +17,7 @@ import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 class NetcdfOutputFileCreator
 {
@@ -30,7 +30,7 @@ class NetcdfOutputFileCreator
     static String create( final String templatePath,
                           Path targetPath,
                           final DestinationConfig destinationConfig,
-                          final TimeWindow window,
+                          final TimeWindowOuter window,
                           final ZonedDateTime analysisTime,
                           final Collection<MetricVariable> metricVariables,
                           final ChronoUnit durationUnits )

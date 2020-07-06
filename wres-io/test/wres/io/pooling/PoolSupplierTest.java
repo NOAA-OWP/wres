@@ -37,7 +37,7 @@ import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Tests the {@link PoolSupplier}.
@@ -441,7 +441,7 @@ public class PoolSupplierTest
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
-        TimeWindow poolOneWindow = TimeWindow.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
                                                   T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
                                                   Duration.ofHours( 0 ),
                                                   Duration.ofHours( 23 ) );
@@ -520,7 +520,7 @@ public class PoolSupplierTest
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
-        TimeWindow poolOneWindow = TimeWindow.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
                                                   T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
                                                   Duration.ofHours( 0 ),
                                                   Duration.ofHours( 23 ) );
@@ -606,7 +606,7 @@ public class PoolSupplierTest
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierEleven = CachingRetriever.of( this.forecastRetriever );
 
-        TimeWindow poolElevenWindow = TimeWindow.of( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
+        TimeWindowOuter poolElevenWindow = TimeWindowOuter.of( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
                                                      T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
                                                      Duration.ofHours( 0 ),
                                                      Duration.ofHours( 23 ) );
@@ -707,7 +707,7 @@ public class PoolSupplierTest
                .thenReturn( Stream.of( this.forecastOne, this.forecastTwo, this.forecastThree, this.forecastFour ) );
         Supplier<Stream<TimeSeries<Double>>> forcSupplierEighteen = CachingRetriever.of( this.forecastRetriever );
 
-        TimeWindow poolEighteenWindow = TimeWindow.of( T2551_03_19T08_00_00Z, //2551-03-19T08:00:00Z
+        TimeWindowOuter poolEighteenWindow = TimeWindowOuter.of( T2551_03_19T08_00_00Z, //2551-03-19T08:00:00Z
                                                        T2551_03_19T21_00_00Z, //2551-03-19T21:00:00Z
                                                        Duration.ofHours( 17 ),
                                                        Duration.ofHours( 40 ) );

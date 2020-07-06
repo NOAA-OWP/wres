@@ -13,10 +13,10 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -62,17 +62,17 @@ public final class DataModelTestDataFactory
         //Iterate through the lead times
         for ( int leadTime : leadTimes )
         {
-            final TimeWindow timeWindow = TimeWindow.of( Instant.parse( FIRST_TIME ),
+            final TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                          Instant.parse( SECOND_TIME ),
                                                          Duration.ofHours( leadTime ) );
 
             // Add first result
             OneOrTwoThresholds first =
-                    OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.0 ),
+                    OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                           OneOrTwoDoubles.of( 0.1 ),
                                                                           Operator.GREATER,
                                                                           ThresholdDataType.LEFT ),
-                                           Threshold.of( OneOrTwoDoubles.of( 5.0 ),
+                                           ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT ) );
 
@@ -89,11 +89,11 @@ public final class DataModelTestDataFactory
 
             // Add second result
             OneOrTwoThresholds second =
-                    OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 2.0 ),
+                    OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 2.0 ),
                                                                           OneOrTwoDoubles.of( 0.2 ),
                                                                           Operator.GREATER,
                                                                           ThresholdDataType.LEFT ),
-                                           Threshold.of( OneOrTwoDoubles.of( 5.0 ),
+                                           ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT ) );
 
@@ -110,11 +110,11 @@ public final class DataModelTestDataFactory
 
             // Add third result
             OneOrTwoThresholds third =
-                    OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 3.0 ),
+                    OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                                           OneOrTwoDoubles.of( 0.3 ),
                                                                           Operator.GREATER,
                                                                           ThresholdDataType.LEFT ),
-                                           Threshold.of( OneOrTwoDoubles.of( 6.0 ),
+                                           ThresholdOuter.of( OneOrTwoDoubles.of( 6.0 ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT ) );
 

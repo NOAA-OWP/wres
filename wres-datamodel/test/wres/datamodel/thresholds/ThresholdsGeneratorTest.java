@@ -30,7 +30,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -98,16 +98,16 @@ public final class ThresholdsGeneratorTest
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                    Operator.GREATER,
                                                                    ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                                        Operator.GREATER,
                                                                                        ThresholdConstants.ThresholdDataType.LEFT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
                                                                                        Operator.GREATER,
                                                                                        ThresholdConstants.ThresholdDataType.LEFT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                                        Operator.GREATER,
                                                                                        ThresholdConstants.ThresholdDataType.LEFT ) ) );
 
@@ -201,7 +201,7 @@ public final class ThresholdsGeneratorTest
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
         Set<OneOrTwoThresholds> atomicExpected = new HashSet<>();
 
-        atomicExpected.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+        atomicExpected.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                  Operator.GREATER,
                                                                  ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
         expected.put( MetricConstants.BIAS_FRACTION, atomicExpected );

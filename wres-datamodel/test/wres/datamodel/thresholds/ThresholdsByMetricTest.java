@@ -39,34 +39,34 @@ public class ThresholdsByMetricTest
     {
 
         // Probability thresholds
-        Map<MetricConstants, Set<Threshold>> probabilities = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
 
         probabilities.put( MetricConstants.FREQUENCY_BIAS,
-                           new HashSet<>( Arrays.asList( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+                           new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ),
-                                                         Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+                                                         ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ) ) ) );
 
         // Value thresholds
-        Map<MetricConstants, Set<Threshold>> values = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
         values.put( MetricConstants.FREQUENCY_BIAS,
-                    new HashSet<>( Arrays.asList( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
+                    new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                                            Operator.GREATER,
                                                                            ThresholdDataType.LEFT ) ) ) );
 
         // Probability classifier thresholds
-        Map<MetricConstants, Set<Threshold>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
         probabilityClassifiers.put( MetricConstants.FREQUENCY_BIAS,
-                                    new HashSet<>( Arrays.asList( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+                                    new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                                                       Operator.GREATER,
                                                                                                       ThresholdDataType.LEFT ) ) ) );
 
         // Quantile thresholds
-        Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
         quantiles.put( MetricConstants.FREQUENCY_BIAS,
-                       new HashSet<>( Arrays.asList( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+                       new HashSet<>( Arrays.asList( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                                                       OneOrTwoDoubles.of( 0.5 ),
                                                                                       Operator.GREATER,
                                                                                       ThresholdDataType.LEFT ) ) ) );
@@ -124,25 +124,25 @@ public class ThresholdsByMetricTest
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
-        Set<Threshold> expected = new HashSet<>();
+        Set<ThresholdOuter> expected = new HashSet<>();
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
+        expected.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                Operator.GREATER,
                                                ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                        OneOrTwoDoubles.of( 0.5 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT ) );
@@ -160,25 +160,25 @@ public class ThresholdsByMetricTest
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
-        Set<Threshold> expected = new HashSet<>();
+        Set<ThresholdOuter> expected = new HashSet<>();
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
+        expected.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                Operator.GREATER,
                                                ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                        OneOrTwoDoubles.of( 0.5 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT ) );
@@ -197,17 +197,17 @@ public class ThresholdsByMetricTest
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
-        Set<Threshold> expected = new HashSet<>();
+        Set<ThresholdOuter> expected = new HashSet<>();
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                        OneOrTwoDoubles.of( 0.5 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT ) );
@@ -230,17 +230,17 @@ public class ThresholdsByMetricTest
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
-        Set<Threshold> expected = new HashSet<>();
+        Set<ThresholdOuter> expected = new HashSet<>();
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                        OneOrTwoDoubles.of( 0.5 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT ) );
@@ -267,29 +267,29 @@ public class ThresholdsByMetricTest
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
-        Set<Threshold> expected = new HashSet<>();
+        Set<ThresholdOuter> expected = new HashSet<>();
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
                                                           Operator.GREATER_EQUAL,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
+        expected.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                Operator.GREATER,
                                                ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+        expected.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                        OneOrTwoDoubles.of( 0.5 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT ) );
@@ -306,13 +306,13 @@ public class ThresholdsByMetricTest
         // Union for stores with different types        
         ThresholdsByMetric secondUnion = containerTwo.unionWithThisStore( this.getDefaultContainerThree() );
 
-        Set<Threshold> expectedSecond = new HashSet<>();
+        Set<ThresholdOuter> expectedSecond = new HashSet<>();
 
-        expectedSecond.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
+        expectedSecond.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
                                                                 Operator.GREATER_EQUAL,
                                                                 ThresholdDataType.LEFT ) );
 
-        expectedSecond.add( Threshold.of( OneOrTwoDoubles.of( 12.0 ),
+        expectedSecond.add( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
                                                      Operator.LESS,
                                                      ThresholdDataType.LEFT ) );
 
@@ -330,26 +330,26 @@ public class ThresholdsByMetricTest
 
         Set<OneOrTwoThresholds> expected = new HashSet<>();
 
-        Threshold classifier = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+        ThresholdOuter classifier = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
 
-        expected.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                                  Operator.GREATER,
                                                                                  ThresholdDataType.LEFT ),
                                              classifier ) );
 
-        expected.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                                  Operator.GREATER,
                                                                                  ThresholdDataType.LEFT ),
                                              classifier ) );
 
-        expected.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
+        expected.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ),
                                              classifier ) );
 
-        expected.add( OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+        expected.add( OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                                               OneOrTwoDoubles.of( 0.5 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ),
@@ -399,7 +399,7 @@ public class ThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link ThresholdsByMetric#hasTheseMetricsForThisThreshold(Threshold)}.
+     * Tests the {@link ThresholdsByMetric#hasTheseMetricsForThisThreshold(ThresholdOuter)}.
      */
 
     @Test
@@ -409,14 +409,14 @@ public class ThresholdsByMetricTest
 
         Set<MetricConstants> expected = new HashSet<>( Arrays.asList( MetricConstants.FREQUENCY_BIAS ) );
 
-        Threshold threshold = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        ThresholdOuter threshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                   Operator.GREATER,
                                                                   ThresholdDataType.LEFT );
 
         assertTrue( container.hasTheseMetricsForThisThreshold( threshold ).equals( expected ) );
 
         // Empty set       
-        Threshold secondThreshold = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
+        ThresholdOuter secondThreshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT );
 
@@ -425,7 +425,7 @@ public class ThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link ThresholdsByMetric#doesNotHaveTheseMetricsForThisThreshold(Threshold)}.
+     * Tests the {@link ThresholdsByMetric#doesNotHaveTheseMetricsForThisThreshold(ThresholdOuter)}.
      */
 
     @Test
@@ -434,14 +434,14 @@ public class ThresholdsByMetricTest
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
 
-        Threshold threshold = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        ThresholdOuter threshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                   Operator.GREATER,
                                                                   ThresholdDataType.LEFT );
 
         assertTrue( container.doesNotHaveTheseMetricsForThisThreshold( threshold ).equals( Collections.emptySet() ) );
 
         // Empty set       
-        Threshold secondThreshold = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
+        ThresholdOuter secondThreshold = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
                                                                         Operator.GREATER,
                                                                         ThresholdDataType.LEFT );
 
@@ -474,13 +474,13 @@ public class ThresholdsByMetricTest
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
-        Set<Threshold> expected = new HashSet<>();
+        Set<ThresholdOuter> expected = new HashSet<>();
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
@@ -504,13 +504,13 @@ public class ThresholdsByMetricTest
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
-        Set<Threshold> expected = new HashSet<>();
+        Set<ThresholdOuter> expected = new HashSet<>();
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+        expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
@@ -544,10 +544,10 @@ public class ThresholdsByMetricTest
 
         Set<OneOrTwoThresholds> expected = new HashSet<>();
 
-        expected.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.85 ),
+        expected.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.85 ),
                                                                                  Operator.GREATER,
                                                                                  ThresholdDataType.LEFT ) ) );
-        expected.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
+        expected.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
                                                                                  Operator.GREATER,
                                                                                  ThresholdDataType.LEFT ) ) );
 
@@ -559,7 +559,7 @@ public class ThresholdsByMetricTest
 
         Set<OneOrTwoThresholds> expectedTwo = new HashSet<>();
 
-        expectedTwo.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
+        expectedTwo.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
                                                                                     Operator.GREATER_EQUAL,
                                                                                     ThresholdDataType.LEFT ) ) );
 
@@ -580,38 +580,38 @@ public class ThresholdsByMetricTest
         ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
-        Map<MetricConstants, Set<Threshold>> probabilities = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
 
         probabilities.put( MetricConstants.FREQUENCY_BIAS,
-                           new HashSet<>( Arrays.asList( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
+                           new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ),
-                                                         Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+                                                         ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ) ) ) );
 
         builder.addThresholds( probabilities, ThresholdGroup.PROBABILITY );
 
         // Value thresholds
-        Map<MetricConstants, Set<Threshold>> values = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
         values.put( MetricConstants.FREQUENCY_BIAS,
-                    new HashSet<>( Arrays.asList( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
+                    new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                                            Operator.GREATER,
                                                                            ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( values, ThresholdGroup.VALUE );
 
         // Probability classifier thresholds
-        Map<MetricConstants, Set<Threshold>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
         probabilityClassifiers.put( MetricConstants.FREQUENCY_BIAS,
-                                    new HashSet<>( Arrays.asList( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+                                    new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                                                       Operator.GREATER,
                                                                                                       ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilityClassifiers, ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Quantile thresholds
-        Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
         quantiles.put( MetricConstants.FREQUENCY_BIAS,
-                       new HashSet<>( Arrays.asList( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
+                       new HashSet<>( Arrays.asList( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
                                                                                       OneOrTwoDoubles.of( 0.5 ),
                                                                                       Operator.GREATER,
                                                                                       ThresholdDataType.LEFT ) ) ) );
@@ -632,9 +632,9 @@ public class ThresholdsByMetricTest
         ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
-        Map<MetricConstants, Set<Threshold>> probabilities = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
         probabilities.put( MetricConstants.FREQUENCY_BIAS,
-                           new HashSet<>( Arrays.asList( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
+                           new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
                                                                                              Operator.GREATER_EQUAL,
                                                                                              ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilities, ThresholdGroup.PROBABILITY );
@@ -654,9 +654,9 @@ public class ThresholdsByMetricTest
         ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
-        Map<MetricConstants, Set<Threshold>> values = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
         values.put( MetricConstants.FREQUENCY_BIAS,
-                    new HashSet<>( Arrays.asList( Threshold.of( OneOrTwoDoubles.of( 12.0 ),
+                    new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
                                                                            Operator.LESS,
                                                                            ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( values, ThresholdGroup.VALUE );
@@ -676,12 +676,12 @@ public class ThresholdsByMetricTest
         ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
-        Map<MetricConstants, Set<Threshold>> probabilities = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
         probabilities.put( MetricConstants.MEAN_ERROR,
-                           new HashSet<>( Arrays.asList( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.85 ),
+                           new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.85 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ),
-                                                         Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
+                                                         ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
                                                                                              Operator.GREATER,
                                                                                              ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilities, ThresholdGroup.PROBABILITY );

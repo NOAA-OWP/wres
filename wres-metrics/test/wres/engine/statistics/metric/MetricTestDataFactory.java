@@ -36,7 +36,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -322,7 +322,7 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 1 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -375,7 +375,7 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
@@ -401,7 +401,7 @@ public final class MetricTestDataFactory
 
         List<Event<Pair<Double, Double>>> values = new ArrayList<>();
         values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
-        TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                            Instant.parse( SECOND_TIME ),
                                            Duration.ofHours( 24 ) );
         SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
@@ -599,7 +599,7 @@ public final class MetricTestDataFactory
         fourth.add( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ),
                               Pair.of( 840.33, 311.00 ) ) );
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( "2551-03-17T00:00:00Z" ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                  Instant.parse( "2551-03-20T00:00:00Z" ),
                                                  Duration.ofSeconds( 10800 ),
                                                  Duration.ofSeconds( 118800 ) );
@@ -654,7 +654,7 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -726,7 +726,7 @@ public final class MetricTestDataFactory
                               Pair.of( Double.NaN,
                                        Ensemble.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN ) ) ) );
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -793,7 +793,7 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -826,7 +826,7 @@ public final class MetricTestDataFactory
         final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
         values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
 
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
@@ -851,7 +851,7 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Ensemble> getEnsemblePairsFour()
     {
         //Construct some ensemble pairs
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
@@ -1467,7 +1467,7 @@ public final class MetricTestDataFactory
         secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 10.0 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
@@ -1505,7 +1505,7 @@ public final class MetricTestDataFactory
         firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), Pair.of( 5.0, 1.0 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( FIRST_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( FIRST_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
@@ -1544,7 +1544,7 @@ public final class MetricTestDataFactory
         secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 10.0 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( THIRD_TIME ),
                                                  Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
@@ -1575,7 +1575,7 @@ public final class MetricTestDataFactory
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.MIN,
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                  Instant.MAX );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
@@ -1612,7 +1612,7 @@ public final class MetricTestDataFactory
         secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), Pair.of( 4.0, 7.0 ) ) );
 
         // Create some default metadata for the time-series
-        final TimeWindow window = TimeWindow.of( Instant.parse( THIRD_TIME ),
+        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( THIRD_TIME ),
                                                  Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
