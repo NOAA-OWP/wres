@@ -241,7 +241,7 @@ project(':wres-system')
         compile 'com.google.guava:guava:29.0-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.12'
+        compile 'org.postgresql:postgresql:42.2.14'
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.9.0'
 
         // connection pooling:
@@ -315,7 +315,7 @@ project(':wres-io')
         compile group: 'org.apache.commons', name: 'commons-compress', version: '1.20'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.12'
+        compile 'org.postgresql:postgresql:42.2.14'
 
         // connection pooling:
         compile 'com.zaxxer:HikariCP:3.4.5'
