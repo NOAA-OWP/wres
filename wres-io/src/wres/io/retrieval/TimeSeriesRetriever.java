@@ -21,8 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -82,7 +82,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * the {@link #timeWindow} but starts outside it.
      */
 
-    private final TimeScale desiredTimeScale;
+    private final TimeScaleOuter desiredTimeScale;
 
     /**
      * The <code>wres.Project.project_id</code>.
@@ -115,7 +115,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * A declared existing time-scale, which can be used to augment a source, but not override it.
      */
 
-    private final TimeScale declaredExistingTimeScale;
+    private final TimeScaleOuter declaredExistingTimeScale;
 
     /**
      * The start monthday of a season constraint.
@@ -198,7 +198,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             // so re-duplicate here. See #56214-272
             Map<Integer, Integer> seriesCounts = new HashMap<>();
 
-            TimeScale lastScale = null; // Record of last scale
+            TimeScaleOuter lastScale = null; // Record of last scale
 
             while ( provider.next() )
             {
@@ -242,7 +242,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 String functionString = provider.getString( "scale_function" );
                 Duration period = provider.getDuration( "scale_period" );
 
-                TimeScale latestScale = this.checkAndGetLatestScale( lastScale, period, functionString, event );
+                TimeScaleOuter latestScale = this.checkAndGetLatestScale( lastScale, period, functionString, event );
 
                 // TODO use actual variable, feature in TimeSeriesMetadata.
                 TimeSeriesMetadata metadata =
@@ -431,7 +431,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the desired time scale
      */
 
-    TimeScale getDesiredTimeScale()
+    TimeScaleOuter getDesiredTimeScale()
     {
         return this.desiredTimeScale;
     }
@@ -442,7 +442,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the declared existing time scale or null
      */
 
-    TimeScale getDeclaredExistingTimeScale()
+    TimeScaleOuter getDeclaredExistingTimeScale()
     {
         return this.declaredExistingTimeScale;
     }
@@ -647,7 +647,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if the current time scale is inconsistent with the last time scale
      */
 
-    private <S> TimeScale checkAndGetLatestScale( TimeScale lastScale,
+    private <S> TimeScaleOuter checkAndGetLatestScale( TimeScaleOuter lastScale,
                                                   Duration period,
                                                   String functionString,
                                                   Event<S> event )
@@ -665,13 +665,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Function available?
         if ( Objects.nonNull( functionString ) )
         {
-            functionToUse = TimeScale.TimeScaleFunction.valueOf( functionString.toUpperCase() );
+            functionToUse = TimeScaleOuter.TimeScaleFunction.valueOf( functionString.toUpperCase() );
         }
 
         // Otherwise, existing scale to help augment?
         if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
         {
-            TimeScale declared = this.getDeclaredExistingTimeScale();
+            TimeScaleOuter declared = this.getDeclaredExistingTimeScale();
 
             if ( Objects.isNull( periodToUse ) )
             {
@@ -686,11 +686,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
         }
 
-        TimeScale returnMe = null;
+        TimeScaleOuter returnMe = null;
 
         if ( Objects.nonNull( periodToUse ) && Objects.nonNull( functionToUse ) )
         {
-            returnMe = TimeScale.of( periodToUse, functionToUse );
+            returnMe = TimeScaleOuter.of( periodToUse, functionToUse );
         }
 
         if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
@@ -1154,13 +1154,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * Desired time scale.
          */
 
-        private TimeScale desiredTimeScale;
+        private TimeScaleOuter desiredTimeScale;
 
         /**
          * Declared existing time scale;
          */
 
-        private TimeScale declaredExistingTimeScale;
+        private TimeScaleOuter declaredExistingTimeScale;
 
         /**
          * The start monthday of a season constraint.
@@ -1258,7 +1258,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setDesiredTimeScale( TimeScale desiredTimeScale )
+        TimeSeriesRetrieverBuilder<S> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
         {
             this.desiredTimeScale = desiredTimeScale;
             return this;
@@ -1272,7 +1272,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setDeclaredExistingTimeScale( TimeScale declaredExistingTimeScale )
+        TimeSeriesRetrieverBuilder<S> setDeclaredExistingTimeScale( TimeScaleOuter declaredExistingTimeScale )
         {
             this.declaredExistingTimeScale = declaredExistingTimeScale;
             return this;

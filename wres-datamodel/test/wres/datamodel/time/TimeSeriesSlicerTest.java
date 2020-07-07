@@ -26,7 +26,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -64,7 +64,7 @@ public final class TimeSeriesSlicerTest
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -93,14 +93,14 @@ public final class TimeSeriesSlicerTest
 
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         firstBasisTime ),
-                                                                TimeScale
+                                                                TimeScaleOuter
                                                                         .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
                                                                 CFS );
         
         TimeSeriesMetadata metadataOneNoRefTimes = TimeSeriesMetadata.of( Map.of(),
-                                                                TimeScale
+                                                                TimeScaleOuter
                                                                         .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
@@ -108,7 +108,7 @@ public final class TimeSeriesSlicerTest
 
         TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         secondBasisTime ),
-                                                                TimeScale
+                                                                TimeScaleOuter
                                                                         .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
@@ -116,14 +116,14 @@ public final class TimeSeriesSlicerTest
 
         TimeSeriesMetadata metadataThree = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                           thirdBasisTime ),
-                                                                  TimeScale
+                                                                  TimeScaleOuter
                                                                           .of( Duration.ofHours( 1 ) ),
                                                                   STREAMFLOW,
                                                                   DRRC2,
                                                                   CFS );
         
         TimeSeriesMetadata metadataThreeNoRefTimes = TimeSeriesMetadata.of( Map.of(),
-                                                                            TimeScale
+                                                                            TimeScaleOuter
                                                                                      .of( Duration.ofHours( 1 ) ),
                                                                             STREAMFLOW,
                                                                             DRRC2,

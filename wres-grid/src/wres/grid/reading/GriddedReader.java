@@ -4,7 +4,7 @@ import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -174,7 +174,7 @@ public class GriddedReader
      */
 
     static <T> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events,
-                                                                  TimeScale timeScale,
+                                                                  TimeScaleOuter timeScale,
                                                                   boolean isForecast,
                                                                   String variableName,
                                                                   FeaturePlus featurePlus,

@@ -200,7 +200,7 @@ public class MessageFactory
 
         // TODO: To be replaced by some other abstraction, probably a FeatureTuple
         Location location = metadata.getIdentifier()
-                                    .getGeospatialID();
+                                    .getLocation();
 
         return new PoolBoundaries( location, window, thresholds );
     }
@@ -289,9 +289,9 @@ public class MessageFactory
             }
         }
 
-        if ( metadata.hasIdentifier() && metadata.getIdentifier().hasGeospatialID() )
+        if ( metadata.hasIdentifier() && metadata.getIdentifier().hasLocation() )
         {
-            Location location = metadata.getIdentifier().getGeospatialID();
+            Location location = metadata.getIdentifier().getLocation();
             Geometry geometry = MessageFactory.parse( location );
             sample.addGeometries( geometry );
         }
@@ -363,17 +363,17 @@ public class MessageFactory
         if ( metadata.hasIdentifier() )
         {
             DatasetIdentifier identifier = metadata.getIdentifier();
-            if ( identifier.hasVariableID() )
+            if ( identifier.hasVariableName() )
             {
-                evaluationPlus.setVariableName( identifier.getVariableID() );
+                evaluationPlus.setVariableName( identifier.getVariableName() );
             }
-            if ( identifier.hasScenarioID() )
+            if ( identifier.hasScenarioName() )
             {
-                evaluationPlus.setRightSourceName( identifier.getScenarioID() );
+                evaluationPlus.setRightSourceName( identifier.getScenarioName() );
             }
-            if ( identifier.hasScenarioIDForBaseline() )
+            if ( identifier.hasScenarioNameForBaseline() )
             {
-                evaluationPlus.setBaselineSourceName( identifier.getScenarioIDForBaseline() );
+                evaluationPlus.setBaselineSourceName( identifier.getScenarioNameForBaseline() );
             }
         }
 
@@ -492,24 +492,17 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.TimeScale} from a {@link wres.datamodel.scale.TimeScale}.
+     * Creates a {@link wres.statistics.generated.TimeScale} from a {@link wres.datamodel.scale.TimeScaleOuter}.
      * 
      * @param timeScale the time scale from which to create a message
      * @return the message
      */
 
-    public static TimeScale parse( wres.datamodel.scale.TimeScale timeScale )
+    public static TimeScale parse( wres.datamodel.scale.TimeScaleOuter timeScale )
     {
         Objects.requireNonNull( timeScale );
 
-        return TimeScale.newBuilder()
-                        .setPeriod( Duration.newBuilder()
-                                            .setSeconds( timeScale.getPeriod()
-                                                                  .toSeconds() )
-                                            .build() )
-                        .setFunction( TimeScaleFunction.valueOf( timeScale.getFunction()
-                                                                          .name() ) )
-                        .build();
+        return timeScale.getTimeScale();
     }
 
     /**

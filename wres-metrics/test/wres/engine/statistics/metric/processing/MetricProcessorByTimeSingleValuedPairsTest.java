@@ -44,7 +44,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.BoxPlotStatistics;
@@ -176,7 +176,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
-            final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+            final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
@@ -560,7 +560,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
-            final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+            final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
@@ -640,7 +640,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                      Instant.MAX,
                                                      Duration.ofHours( i ) );
-            final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+            final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "HEFS" ) )
@@ -777,7 +777,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                  Instant.MAX,
                                                  Duration.ZERO );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "AHPS" ) )

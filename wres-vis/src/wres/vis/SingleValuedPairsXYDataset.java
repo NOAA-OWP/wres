@@ -59,8 +59,8 @@ public class SingleValuedPairsXYDataset
         {
             return getOverrideLegendName(series);
         }
-        return getPlotData().getMetadata().getIdentifier().getGeospatialID() + "."
-            + getPlotData().getMetadata().getIdentifier().getVariableID() + "."
-            + getPlotData().getMetadata().getIdentifier().getScenarioID();
+        return getPlotData().getMetadata().getIdentifier().getLocation() + "."
+            + getPlotData().getMetadata().getIdentifier().getVariableName() + "."
+            + getPlotData().getMetadata().getIdentifier().getScenarioName();
     }
 }

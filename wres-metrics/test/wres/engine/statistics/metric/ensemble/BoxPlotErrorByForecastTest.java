@@ -26,7 +26,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -77,7 +77,7 @@ public final class BoxPlotErrorByForecastTest
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
         final TimeWindowOuter timeWindow1 = window;
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
@@ -86,7 +86,7 @@ public final class BoxPlotErrorByForecastTest
         final TimeWindowOuter timeWindow = window;
 
         final StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        "MAP" ) )
                                                                  .setTimeWindow( timeWindow )
@@ -131,7 +131,7 @@ public final class BoxPlotErrorByForecastTest
                                            Instant.MAX,
                                            Duration.ofHours( 24 ) );
         final TimeWindowOuter timeWindow1 = window;
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( timeWindow1 )
@@ -140,7 +140,7 @@ public final class BoxPlotErrorByForecastTest
         final TimeWindowOuter timeWindow = window;
 
         final StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        "MAP" ) )
                                                                  .setTimeWindow( timeWindow )

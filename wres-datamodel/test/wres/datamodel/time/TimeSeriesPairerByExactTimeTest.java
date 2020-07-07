@@ -14,7 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.sampledata.pairs.PairingException;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -61,7 +61,7 @@ public class TimeSeriesPairerByExactTimeTest
     private static TimeSeriesMetadata getBoilerplateMetadata()
     {
         return TimeSeriesMetadata.of( Collections.emptyMap(),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -70,7 +70,7 @@ public class TimeSeriesPairerByExactTimeTest
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -79,7 +79,7 @@ public class TimeSeriesPairerByExactTimeTest
     private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( Duration timeScale )
     {
         return TimeSeriesMetadata.of( Collections.emptyMap(),
-                                      TimeScale.of( timeScale ),
+                                      TimeScaleOuter.of( timeScale ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -266,7 +266,7 @@ public class TimeSeriesPairerByExactTimeTest
         // First time-series
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         T2551_03_17T12_00_00Z ),
-                                                                TimeScale.of( Duration.ofHours( 3 ) ),
+                                                                TimeScaleOuter.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
                                                                 "FAKE2",
                                                                 "CMS" );
@@ -288,7 +288,7 @@ public class TimeSeriesPairerByExactTimeTest
         // Second time-series
         TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         T2551_03_18T00_00_00Z ),
-                                                                TimeScale.of( Duration.ofHours( 3 ) ),
+                                                                TimeScaleOuter.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
                                                                 "FAKE2",
                                                                 "CMS" );

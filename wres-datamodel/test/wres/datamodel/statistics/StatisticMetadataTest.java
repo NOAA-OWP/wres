@@ -15,7 +15,7 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -115,7 +115,7 @@ public class StatisticMetadataTest
         Location seventhLocation = Location.of( DRRC3 );
         final TimeWindowOuter timeWindow = firstWindow;
         StatisticMetadata seventh =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                                  .setIdentifier( DatasetIdentifier.of( seventhLocation,
                                                                                                        "SQIN",
                                                                                                        "HEFS" ) )
@@ -281,7 +281,7 @@ public class StatisticMetadataTest
         Location seventhLocation = Location.of( DRRC3 );
         final TimeWindowOuter timeWindow = firstWindow;
         StatisticMetadata seventh =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
                                                                  .setIdentifier( DatasetIdentifier.of( seventhLocation,
                                                                                                        "SQIN",
                                                                                                        "HEFS" ) )

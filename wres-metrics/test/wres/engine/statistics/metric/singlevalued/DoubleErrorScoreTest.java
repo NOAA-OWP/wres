@@ -56,7 +56,7 @@ public final class DoubleErrorScoreTest
                     actual.getMetadata()
                           .getSampleMetadata()
                           .getIdentifier()
-                          .getScenarioIDForBaseline()
+                          .getScenarioNameForBaseline()
                           .equals( "ESP" ) );
     }
 

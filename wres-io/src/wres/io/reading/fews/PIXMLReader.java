@@ -39,7 +39,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -461,7 +461,7 @@ public final class PIXMLReader extends XMLReader
 
         String localName;
 		Duration scalePeriod = null;
-		TimeScale.TimeScaleFunction scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
+		TimeScaleOuter.TimeScaleFunction scaleFunction = TimeScaleOuter.TimeScaleFunction.UNKNOWN;
 		Duration timeStep = null;
         LocalDateTime forecastDate = null;
         String locationName = null;
@@ -578,7 +578,7 @@ public final class PIXMLReader extends XMLReader
 		    scalePeriod = timeStep;
 		}
 
-		TimeScale scale = TimeScale.of( scalePeriod, scaleFunction );
+		TimeScaleOuter scale = TimeScaleOuter.of( scalePeriod, scaleFunction );
 
         Map<ReferenceTimeType,Instant> basisDatetimes = new HashMap<>( 1 );
 

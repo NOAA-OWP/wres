@@ -127,7 +127,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      input.getMetadata().getIdentifier().getGeospatialID(),
+                      input.getMetadata().getIdentifier().getLocation(),
                       input.getMetadata().getTimeWindow() );
 
         //Process and return the result       

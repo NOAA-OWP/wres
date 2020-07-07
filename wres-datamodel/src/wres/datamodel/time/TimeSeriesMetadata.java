@@ -8,7 +8,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 
 /**
  * Value object the stores the metadata associated with an {@link TimeSeries}.
@@ -17,10 +17,10 @@ import wres.datamodel.scale.TimeScale;
 public class TimeSeriesMetadata
 {
     /**
-     * The {@link TimeScale} associated with the events in the time-series.
+     * The {@link TimeScaleOuter} associated with the events in the time-series.
      */
 
-    private final TimeScale timeScale;
+    private final TimeScaleOuter timeScale;
 
 
     /**
@@ -63,7 +63,7 @@ public class TimeSeriesMetadata
      */
 
     public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes,
-                                         TimeScale timeScale,
+                                         TimeScaleOuter timeScale,
                                          String variableName,
                                          String featureName,
                                          String unit )
@@ -76,7 +76,7 @@ public class TimeSeriesMetadata
                             .build();
     }
 
-    public TimeScale getTimeScale()
+    public TimeScaleOuter getTimeScale()
     {
         return this.timeScale;
     }
@@ -151,10 +151,10 @@ public class TimeSeriesMetadata
     public static class Builder 
     {
         /**
-         * The {@link TimeScale} associated with the events in the time-series.
+         * The {@link TimeScaleOuter} associated with the events in the time-series.
          */
 
-        private TimeScale timeScale;
+        private TimeScaleOuter timeScale;
 
         /**
          * The zero or more reference datetimes associated with the time-series.
@@ -190,7 +190,7 @@ public class TimeSeriesMetadata
          * @return the builder
          */
         
-        public Builder setTimeScale( TimeScale timeScale )
+        public Builder setTimeScale( TimeScaleOuter timeScale )
         {
             this.timeScale = timeScale;
             

@@ -32,7 +32,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DoubleScoreStatistic;
@@ -582,7 +582,7 @@ public abstract class Chart2DTestDataGenerator
         
         //Source metadata
         final SampleMetadata source =
-                new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MILLIMETER" ) )
+                new Builder().setMeasurementUnit( MeasurementUnit.of( "MILLIMETER" ) )
                                            .setIdentifier( DatasetIdentifier.of( Location.of( "WGCM8" ),
                                                                                  "PRECIPITATION",
                                                                                  "HEFS" ) )

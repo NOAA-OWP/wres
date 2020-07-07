@@ -44,7 +44,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
@@ -1137,8 +1137,8 @@ public class ConfigHelper
             inputs = projectConfig.getInputs();
         }
         
-        joinElements.add( identifier.getGeospatialID().toString() )
-                    .add( identifier.getVariableID() );
+        joinElements.add( identifier.getLocation().toString() )
+                    .add( identifier.getVariableName() );
         
         // Baseline scenarioId
         String configuredScenarioId = null;
@@ -1156,9 +1156,9 @@ public class ConfigHelper
         
         // Add optional scenario identifier unless the configured identifiers cannot discriminate between 
         // RIGHT and BASELINE 
-        if ( identifier.hasScenarioID() && !Objects.equals( configuredScenarioId, configuredBaselineScenarioId ) )
+        if ( identifier.hasScenarioName() && !Objects.equals( configuredScenarioId, configuredBaselineScenarioId ) )
         {
-            joinElements.add( identifier.getScenarioID() );
+            joinElements.add( identifier.getScenarioName() );
         }
         // If there are metrics for both the RIGHT and BASELINE, then additionally qualify the context
         else if ( identifier.hasLeftOrRightOrBaseline()
@@ -1240,12 +1240,12 @@ public class ConfigHelper
 
         StringJoiner filename = new StringJoiner( "_" );
         
-        filename.add( identifier.getVariableID() );
+        filename.add( identifier.getVariableName() );
 
         // Add optional scenario identifier
-        if ( identifier.hasScenarioID() )
+        if ( identifier.hasScenarioName() )
         {
-            filename.add( identifier.getScenarioID() );
+            filename.add( identifier.getScenarioName() );
         }
 
         if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX ) )
@@ -1300,14 +1300,14 @@ public class ConfigHelper
      * @return the desired time scale or null
      */
 
-    public static TimeScale getDesiredTimeScale( PairConfig pairConfig )
+    public static TimeScaleOuter getDesiredTimeScale( PairConfig pairConfig )
     {
-        TimeScale returnMe = null;
+        TimeScaleOuter returnMe = null;
 
         if ( Objects.nonNull( pairConfig )
              && Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
         {
-            returnMe = TimeScale.of( pairConfig.getDesiredTimeScale() );
+            returnMe = TimeScaleOuter.of( pairConfig.getDesiredTimeScale() );
         }
 
         return returnMe;

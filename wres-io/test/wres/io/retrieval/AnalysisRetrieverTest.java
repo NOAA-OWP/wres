@@ -35,8 +35,8 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -183,7 +183,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -201,7 +201,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataTwo =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -219,7 +219,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataThree =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -269,7 +269,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -285,7 +285,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataTwo =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -301,7 +301,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataThree =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -350,7 +350,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -366,7 +366,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataTwo =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T00_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -382,7 +382,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataThree =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -398,7 +398,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataFour =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -414,7 +414,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataFive =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -430,7 +430,7 @@ public class AnalysisRetrieverTest
         TimeSeriesMetadata metadataSix =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        Integer.toString( this.variableFeatureId ),
                                        Integer.toString( this.variableFeatureId ),
                                        CFS );
@@ -592,7 +592,7 @@ public class AnalysisRetrieverTest
         Instant secondReference = T2023_04_01T03_00_00Z;
         Instant thirdReference = T2023_04_01T06_00_00Z;
 
-        TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
         String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
                                   + "ensemble_id,"

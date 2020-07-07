@@ -39,11 +39,11 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.ScaleValidationEvent;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.BoxPlotStatistics;
 import wres.datamodel.statistics.DiagramStatistic;
@@ -400,9 +400,9 @@ public class MessageFactoryTest
 
     private List<DoubleScoreStatistic> getScoreStatisticsForOnePool()
     {
-        wres.datamodel.scale.TimeScale timeScale =
-                wres.datamodel.scale.TimeScale.of( java.time.Duration.ofHours( 1 ),
-                                                   wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
+        wres.datamodel.scale.TimeScaleOuter timeScale =
+                wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
+                                                   wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -414,7 +414,7 @@ public class MessageFactoryTest
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( CMS )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                              .setTimeScale( timeScale )
                                                              .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
@@ -458,9 +458,9 @@ public class MessageFactoryTest
 
     private List<DiagramStatistic> getReliabilityDiagramForOnePool()
     {
-        wres.datamodel.scale.TimeScale timeScale =
-                wres.datamodel.scale.TimeScale.of( java.time.Duration.ofHours( 1 ),
-                                                   wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
+        wres.datamodel.scale.TimeScaleOuter timeScale =
+                wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
+                                                   wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
@@ -473,7 +473,7 @@ public class MessageFactoryTest
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( CMS )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                              .setTimeScale( timeScale )
                                                              .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
@@ -506,9 +506,9 @@ public class MessageFactoryTest
 
     private List<BoxPlotStatistics> getBoxPlotsForOnePool()
     {
-        wres.datamodel.scale.TimeScale timeScale =
-                wres.datamodel.scale.TimeScale.of( java.time.Duration.ofHours( 1 ),
-                                                   wres.datamodel.scale.TimeScale.TimeScaleFunction.MEAN );
+        wres.datamodel.scale.TimeScaleOuter timeScale =
+                wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
+                                                   wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
@@ -521,7 +521,7 @@ public class MessageFactoryTest
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( CMS )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                              .setTimeScale( timeScale )
                                                              .setTimeWindow( TIME_WINDOW )
                                                              .setThresholds( threshold )
@@ -712,7 +712,7 @@ public class MessageFactoryTest
         times.put( ReferenceTimeType.ISSUED_TIME, t1 );
 
         return TimeSeriesMetadata.of( times,
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       CMS.getUnit() );

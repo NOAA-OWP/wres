@@ -14,9 +14,9 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
@@ -45,9 +45,9 @@ public class CommaSeparatedUtilitiesTest
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setTimeWindow( this.timeWindow )
-                                                             .setTimeScale( TimeScale.of() )
+                                                             .setTimeScale( TimeScaleOuter.of() )
                                                              .build();
 
         String expected = "EARLIEST ISSUE TIME,"
@@ -66,9 +66,9 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetTimeWindowHeaderFromSampleMetadataWithAccumulatedTimeScale()
     {
-        TimeScale timeScale = TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setTimeWindow( this.timeWindow )
                                                              .setTimeScale( timeScale )
                                                              .build();
@@ -92,7 +92,7 @@ public class CommaSeparatedUtilitiesTest
 
         DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "fooBasin" ), "barVariable" );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )
                                                              .build();
 
@@ -110,7 +110,7 @@ public class CommaSeparatedUtilitiesTest
 
         DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( 43.23F, 23.41F ), "barVariable" );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )
                                                              .build();
 
@@ -127,7 +127,7 @@ public class CommaSeparatedUtilitiesTest
 
         DatasetIdentifier identifier = DatasetIdentifier.of( (Location) null, "barVariable" );
 
-        SampleMetadata metadata = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )
                                                              .build();
 

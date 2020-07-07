@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -162,7 +162,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
             }
             else
             {
-                TimeScale s = pairs.getMetadata().getTimeScale();
+                TimeScaleOuter s = pairs.getMetadata().getTimeScale();
                 leadDurationString = leadDurationString + " ["
                                      + s.getFunction()
                                      + " OVER PAST "
@@ -215,7 +215,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
         Objects.requireNonNull( pairs.getMetadata().getIdentifier(),
                                 "Cannot write pairs with a null dataset identifier." );
 
-        Objects.requireNonNull( pairs.getMetadata().getIdentifier().getGeospatialID(),
+        Objects.requireNonNull( pairs.getMetadata().getIdentifier().getLocation(),
                                 "Cannot write pairs with a null geospatial identifier." );
 
         try

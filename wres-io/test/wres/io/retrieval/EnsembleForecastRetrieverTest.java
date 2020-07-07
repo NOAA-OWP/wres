@@ -38,8 +38,8 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -194,7 +194,7 @@ public class EnsembleForecastRetrieverTest
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        this.unitMapper.getDesiredMeasurementUnitName() );
@@ -246,7 +246,7 @@ public class EnsembleForecastRetrieverTest
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        this.unitMapper.getDesiredMeasurementUnitName() );
@@ -488,7 +488,7 @@ public class EnsembleForecastRetrieverTest
         // Two reference times, PT17H apart
         Instant referenceTime = Instant.parse( T2023_04_01T00_00_00Z );
 
-        TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
         String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
                                   + "ensemble_id,"

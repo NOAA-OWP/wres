@@ -23,7 +23,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -467,7 +467,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                .setRightTransformer( this.getRightTransformer() );
 
         // Obtain and set the desired time scale. 
-        TimeScale desiredTimeScale = this.setAndGetDesiredTimeScale( pairConfig, builder );
+        TimeScaleOuter desiredTimeScale = this.setAndGetDesiredTimeScale( pairConfig, builder );
 
         // Create the time windows, iterate over them and create the retrievers 
         try
@@ -716,16 +716,16 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * @param builder the builder
      */
 
-    private TimeScale setAndGetDesiredTimeScale( PairConfig pairConfig,
+    private TimeScaleOuter setAndGetDesiredTimeScale( PairConfig pairConfig,
                                                  PoolOfPairsSupplierBuilder<L, R> builder )
     {
 
-        TimeScale desiredTimeScale = null;
+        TimeScaleOuter desiredTimeScale = null;
         // Obtain from the declaration if available
         if ( Objects.nonNull( pairConfig )
              && Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
         {
-            desiredTimeScale = TimeScale.of( pairConfig.getDesiredTimeScale() );
+            desiredTimeScale = TimeScaleOuter.of( pairConfig.getDesiredTimeScale() );
             builder.setDesiredTimeScale( desiredTimeScale );
 
             if ( Objects.nonNull( pairConfig.getDesiredTimeScale().getFrequency() ) )
@@ -758,7 +758,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     private Supplier<Stream<TimeSeries<L>>>
             getClimatologyAtDesiredTimeScale( Supplier<Stream<TimeSeries<L>>> climatologySupplier,
                                               TimeSeriesUpscaler<L> upscaler,
-                                              TimeScale desiredTimeScale,
+                                              TimeScaleOuter desiredTimeScale,
                                               UnaryOperator<L> transformer,
                                               Predicate<L> admissibleValue )
     {
@@ -772,7 +772,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         for ( TimeSeries<L> next : climData )
         {
             TimeSeries<L> nextSeries = next;
-            TimeScale nextScale = nextSeries.getMetadata()
+            TimeScaleOuter nextScale = nextSeries.getMetadata()
                                             .getTimeScale();
 
             // Upscale? A difference in period is the minimum needed

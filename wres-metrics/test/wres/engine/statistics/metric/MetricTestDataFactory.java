@@ -28,10 +28,10 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -159,7 +159,7 @@ public final class MetricTestDataFactory
     public static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -168,7 +168,7 @@ public final class MetricTestDataFactory
     public static TimeSeriesMetadata getBoilerplateMetadata()
     {
         return TimeSeriesMetadata.of( Collections.emptyMap(),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -325,7 +325,7 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 1 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
@@ -378,7 +378,7 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "103.1" ),
                                                                                                      "QME",
                                                                                                      "NVE" ) )
@@ -404,7 +404,7 @@ public final class MetricTestDataFactory
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                            Instant.parse( SECOND_TIME ),
                                            Duration.ofHours( 24 ) );
-        SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                          .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
                                                                                                "MAP" ) )
                                                          .setTimeWindow( window )
@@ -604,7 +604,7 @@ public final class MetricTestDataFactory
                                                  Duration.ofSeconds( 10800 ),
                                                  Duration.ofSeconds( 118800 ) );
 
-        SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                              .setIdentifier( DatasetIdentifier.of( getLocation( "FAKE2" ),
                                                                                                    "DISCHARGE" ) )
                                                              .setTimeWindow( window )
@@ -657,13 +657,13 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
-        final SampleMetadata baseMeta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata baseMeta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "ESP" ) )
@@ -729,14 +729,14 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
                                                                .setTimeWindow( window )
                                                                .build();
 
-        final SampleMetadata baseMeta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata baseMeta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                          "SQIN",
                                                                                                          "ESP" ) )
@@ -796,7 +796,7 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ) )
@@ -829,7 +829,7 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
@@ -854,7 +854,7 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                  Instant.parse( SECOND_TIME ),
                                                  Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                                                      "MAP" ) )
                                                                .setTimeWindow( window )
@@ -1471,7 +1471,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
                                                                                                          STREAMFLOW ) )
                                                                    .setTimeWindow( window )
@@ -1509,7 +1509,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( FIRST_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
                                                                                                          STREAMFLOW ) )
                                                                    .setTimeWindow( window )
@@ -1549,7 +1549,7 @@ public final class MetricTestDataFactory
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
 
-        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
                                                                                                          STREAMFLOW ) )
                                                                    .setTimeWindow( window )
@@ -1577,7 +1577,7 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                  Instant.MAX );
-        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
                                                                                                          STREAMFLOW ) )
                                                                    .setTimeWindow( window )
@@ -1616,7 +1616,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( THIRD_TIME ),
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
-        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
                                                                                                          STREAMFLOW ) )
                                                                    .setTimeWindow( window )

@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
@@ -49,7 +49,7 @@ class GridDataRequest implements Request
      * Optional time-scale information that can augment a source, but not override it.
      */
 
-    private final TimeScale declaredExistingTimeScale;
+    private final TimeScaleOuter declaredExistingTimeScale;
 
     /**
      * Returns an instance.
@@ -69,7 +69,7 @@ class GridDataRequest implements Request
                                String variableName,
                                TimeWindowOuter timeWindow,
                                boolean isForecast,
-                               TimeScale declaredExistingTimeScale )
+                               TimeScaleOuter declaredExistingTimeScale )
     {
         return new GridDataRequest( paths, features, variableName, timeWindow, isForecast, declaredExistingTimeScale );
     }
@@ -90,7 +90,7 @@ class GridDataRequest implements Request
                              String variableName,
                              TimeWindowOuter timeWindow,
                              boolean isForecast,
-                             TimeScale declaredExistingTimeScale )
+                             TimeScaleOuter declaredExistingTimeScale )
     {
         Objects.requireNonNull( paths );
         Objects.requireNonNull( features );
@@ -136,7 +136,7 @@ class GridDataRequest implements Request
     }
 
     @Override
-    public TimeScale getTimeScale()
+    public TimeScaleOuter getTimeScale()
     {
         return this.declaredExistingTimeScale;
     }

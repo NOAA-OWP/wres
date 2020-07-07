@@ -7,7 +7,7 @@ import java.util.StringJoiner;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.util.TimeHelper;
 
 /**
@@ -47,7 +47,7 @@ public class CommaSeparatedUtilities
         // Set the time scale string, unless instantaneous
         if ( sampleMetadata.hasTimeScale() )
         {
-            TimeScale s = sampleMetadata.getTimeScale();
+            TimeScaleOuter s = sampleMetadata.getTimeScale();
 
             if ( s.isInstantaneous() )
             {
@@ -115,9 +115,9 @@ public class CommaSeparatedUtilities
         String featureName = "UNKNOWN";
 
         DatasetIdentifier identifier = metadata.getIdentifier();
-        if ( Objects.nonNull( identifier ) && Objects.nonNull( identifier.getGeospatialID() ) )
+        if ( Objects.nonNull( identifier ) && Objects.nonNull( identifier.getLocation() ) )
         {
-            Location location = identifier.getGeospatialID();
+            Location location = identifier.getLocation();
 
             // Full string representation unless a sensible short one is available
             featureName = location.toString();

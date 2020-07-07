@@ -8,7 +8,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 
 /**
  * An immutable store of metadata associated with a {@link Statistic}. Includes a {@link StatisticMetadataBuilder} for 
@@ -124,12 +124,11 @@ public class StatisticMetadata implements Comparable<StatisticMetadata>
         if ( Objects.nonNull( baselineID ) )
         {
             identifier =
-                    DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
+                    DatasetIdentifier.of( identifier, baselineID.getScenarioName() );
         }
 
-        return StatisticMetadata.of( new SampleMetadataBuilder().setFromExistingInstance( source )
-                                                                .setIdentifier( identifier )
-                                                                .build(),
+        return StatisticMetadata.of( new Builder( source ).setIdentifier( identifier )
+                                                          .build(),
                                      sampleSize,
                                      statisticUnit,
                                      metricID,

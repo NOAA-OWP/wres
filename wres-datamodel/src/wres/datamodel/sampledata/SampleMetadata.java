@@ -7,15 +7,24 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.Pool;
+import wres.statistics.generated.ValueFilter;
 
 /**
- * An immutable store of metadata associated with {@link SampleData}. Includes a {@link SampleMetadataBuilder} for 
+ * An immutable store of metadata associated with {@link SampleData}. Includes a {@link Builder} for 
  * incremental construction.
  * 
  * @author james.brown@hydrosolved.com
@@ -23,41 +32,45 @@ import wres.datamodel.time.TimeWindowOuter;
 public class SampleMetadata implements Comparable<SampleMetadata>
 {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( SampleMetadata.class );
+
     /**
-     * The measurement unit associated with the data.
+     * A description of the evaluation.
      */
 
-    private final MeasurementUnit unit;
+    private final Evaluation evaluation;
 
     /**
-     * An optional dataset identifier, may be null.
+     * A description of the pool to which the sample data belongs.
      */
 
-    private final DatasetIdentifier identifier;
+    private final Pool pool;
 
     /**
-     * An optional time window associated with the data, may be null.
-     */
-
-    private final TimeWindowOuter timeWindow;
-
-    /**
-     * An optional set of thresholds associated with the data, may be null.
-     */
-
-    private final OneOrTwoThresholds thresholds;
-
-    /**
-     * The optional {@link ProjectConfig} associated with the metadata, may be null.
+     * The optional {@link ProjectConfig}, may be null. TODO: eliminate this, as the evaluation description should be
+     * sufficient.
      */
 
     private final ProjectConfig projectConfig;
 
     /**
-     * The optional time scale information, may be null.
+     * TODO: eliminate this glue. It is currently needed because there is a poor mapping between a {@link Location} and
+     * a canonical {@link Geometry}. After #72747, remove this variable and replace by mapping between whatever new 
+     * geometry abstraction is recorded in the {@link DatasetIdentifier} and the {@link Geometry} contained in the 
+     * {@link Pool}. Eventually, remove options to build instances of this class from non-canonical forms.
      */
 
-    private final TimeScale timeScale;
+    private final Location location;
+
+    /**
+     * TODO: eliminate this glue. It is currently needed to distinguish between statistics that were computed for 
+     * left and baseline data when the declaration requests separate statistics for left/right and left/baseline. There
+     * is currently no mapping for this in either {@link Evaluation} or {@link Pool}, yet there is a dependency on this
+     * aspect of the {@link SampleMetadata} that must persist until it is resolved. Resolved means that is is either
+     * integrated into {@link Evaluation} or {@link Pool} or supplied in another context, such as each statistic. 
+     */
+
+    private final LeftOrRightOrBaseline context;
 
     /**
      * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit}.
@@ -67,7 +80,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of()
     {
-        return new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() ).build();
+        return new Builder().setMeasurementUnit( MeasurementUnit.of() ).build();
     }
 
     /**
@@ -79,7 +92,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final MeasurementUnit unit )
     {
-        return new SampleMetadataBuilder().setMeasurementUnit( unit ).build();
+        return new Builder().setMeasurementUnit( unit ).build();
     }
 
     /**
@@ -92,7 +105,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final MeasurementUnit unit, final DatasetIdentifier identifier )
     {
-        return new SampleMetadataBuilder().setMeasurementUnit( unit ).setIdentifier( identifier ).build();
+        return new Builder().setMeasurementUnit( unit ).setIdentifier( identifier ).build();
     }
 
     /**
@@ -111,11 +124,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                                      final TimeWindowOuter timeWindow,
                                      final OneOrTwoThresholds thresholds )
     {
-        return new SampleMetadataBuilder().setMeasurementUnit( unit )
-                                          .setIdentifier( identifier )
-                                          .setTimeWindow( timeWindow )
-                                          .setThresholds( thresholds )
-                                          .build();
+        return new Builder().setMeasurementUnit( unit )
+                            .setIdentifier( identifier )
+                            .setTimeWindow( timeWindow )
+                            .setThresholds( thresholds )
+                            .build();
     }
 
     /**
@@ -129,7 +142,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final SampleMetadata input, final OneOrTwoThresholds thresholds )
     {
-        return new SampleMetadataBuilder().setFromExistingInstance( input ).setThresholds( thresholds ).build();
+        return new Builder( input ).setThresholds( thresholds ).build();
     }
 
     /**
@@ -143,11 +156,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final SampleMetadata input, final TimeWindowOuter timeWindow )
     {
-        return new SampleMetadataBuilder().setFromExistingInstance( input ).setTimeWindow( timeWindow ).build();
+        return new Builder( input ).setTimeWindow( timeWindow ).build();
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeScale}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeScaleOuter}.
      * 
      * @param input the source metadata
      * @param timeScale the new time scale
@@ -155,14 +168,14 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( final SampleMetadata input, final TimeScale timeScale )
+    public static SampleMetadata of( final SampleMetadata input, final TimeScaleOuter timeScale )
     {
-        return new SampleMetadataBuilder().setFromExistingInstance( input ).setTimeScale( timeScale ).build();
+        return new Builder( input ).setTimeScale( timeScale ).build();
     }
 
     /**
      * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
-     * {@link TimeScale}.
+     * {@link TimeScaleOuter}.
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
@@ -173,12 +186,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final SampleMetadata input,
                                      final TimeWindowOuter timeWindow,
-                                     final TimeScale timeScale )
+                                     final TimeScaleOuter timeScale )
     {
-        return new SampleMetadataBuilder().setFromExistingInstance( input )
-                                          .setTimeWindow( timeWindow )
-                                          .setTimeScale( timeScale )
-                                          .build();
+        return new Builder( input ).setTimeWindow( timeWindow )
+                                   .setTimeScale( timeScale )
+                                   .build();
     }
 
     /**
@@ -196,10 +208,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                                      final TimeWindowOuter timeWindow,
                                      final OneOrTwoThresholds thresholds )
     {
-        return new SampleMetadataBuilder().setFromExistingInstance( input )
-                                          .setThresholds( thresholds )
-                                          .setTimeWindow( timeWindow )
-                                          .build();
+        return new Builder( input ).setThresholds( thresholds )
+                                   .setTimeWindow( timeWindow )
+                                   .build();
     }
 
     /**
@@ -238,8 +249,8 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
             if ( !next.equalsWithoutTimeWindowOrThresholds( test ) )
             {
-                throw new SampleMetadataException( "Only the time window and thresholds can differ when finding the union of "
-                                                   + "metadata." );
+                throw new SampleMetadataException( "Only the time window and thresholds can differ when finding the "
+                                                   + "union of metadata." );
             }
             if ( next.hasTimeWindow() )
             {
@@ -248,11 +259,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         }
 
         // Remove any threshold information from the result
-        test = of( test, (OneOrTwoThresholds) null );
+        test = SampleMetadata.of( test, (OneOrTwoThresholds) null );
 
         if ( !unionWindow.isEmpty() )
         {
-            test = of( test, TimeWindowOuter.unionOf( unionWindow ) );
+            test = SampleMetadata.of( test, TimeWindowOuter.unionOf( unionWindow ) );
         }
         return test;
     }
@@ -304,38 +315,18 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         {
             return false;
         }
-        final SampleMetadata p = (SampleMetadata) o;
-        boolean returnMe = this.hasTimeWindow() == p.hasTimeWindow()
-                           && this.hasThresholds() == p.hasThresholds()
-                           && this.equalsWithoutTimeWindowOrThresholds( p );
-
-        if ( returnMe && hasTimeWindow() )
-        {
-            returnMe = this.getTimeWindow().equals( p.getTimeWindow() );
-        }
-
-        if ( returnMe && hasThresholds() )
-        {
-            returnMe = this.getThresholds().equals( p.getThresholds() );
-        }
-
-        return returnMe;
+        SampleMetadata p = (SampleMetadata) o;
+        return Objects.equals( this.getEvaluation(), p.getEvaluation() )
+               && Objects.equals( this.getPool(), p.getPool() )
+               && Objects.equals( this.location, p.location );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.hasIdentifier(),
-                             this.hasTimeWindow(),
-                             this.hasThresholds(),
-                             this.hasProjectConfig(),
-                             this.hasTimeScale(),
-                             this.getMeasurementUnit(),
-                             this.getIdentifier(),
-                             this.getTimeWindow(),
-                             this.getThresholds(),
-                             this.getProjectConfig(),
-                             this.getTimeScale() );
+        return Objects.hash( this.getEvaluation(),
+                             this.getPool(),
+                             this.location );
     }
 
     @Override
@@ -452,7 +443,8 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public MeasurementUnit getMeasurementUnit()
     {
-        return this.unit;
+        String unit = this.getEvaluation().getMeasurementUnit();
+        return MeasurementUnit.of( unit );
     }
 
     /**
@@ -463,7 +455,37 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public DatasetIdentifier getIdentifier()
     {
-        return this.identifier;
+        DatasetIdentifier returnMe = null;
+
+        Location localLocation = this.location;
+        LeftOrRightOrBaseline localContext = this.context;
+        String variableName = null;
+        String scenario = null;
+        String baselineScenario = null;
+
+        if ( !this.getEvaluation().getVariableName().isBlank() )
+        {
+            variableName = this.getEvaluation().getVariableName();
+        }
+
+        if ( !this.getEvaluation().getRightSourceName().isBlank() )
+        {
+            scenario = this.getEvaluation().getRightSourceName();
+        }
+
+        if ( !this.getEvaluation().getBaselineSourceName().isBlank() )
+        {
+            baselineScenario = this.getEvaluation().getBaselineSourceName();
+        }
+
+        if ( Objects.nonNull( localLocation ) || Objects.nonNull( variableName )
+             || Objects.nonNull( scenario )
+             || Objects.nonNull( baselineScenario ) )
+        {
+            returnMe = DatasetIdentifier.of( localLocation, variableName, scenario, baselineScenario, localContext );
+        }
+
+        return returnMe;
     }
 
     /**
@@ -474,7 +496,15 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public TimeWindowOuter getTimeWindow()
     {
-        return this.timeWindow;
+        TimeWindowOuter outer = null;
+
+        if ( this.getPool().hasTimeWindow() )
+        {
+            wres.statistics.generated.TimeWindow window = this.getPool().getTimeWindow();
+            outer = new TimeWindowOuter.Builder( window ).build();
+        }
+
+        return outer;
     }
 
     /**
@@ -485,7 +515,24 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public OneOrTwoThresholds getThresholds()
     {
-        return this.thresholds;
+        OneOrTwoThresholds thresholds = null;
+
+        if ( this.getPool().hasEventThreshold() )
+        {
+            wres.statistics.generated.Threshold event = this.getPool().getEventThreshold();
+            ThresholdOuter eventOuter = new ThresholdOuter.Builder( event ).build();
+            ThresholdOuter decisionOuter = null;
+
+            if ( this.getPool().hasDecisionThreshold() )
+            {
+                wres.statistics.generated.Threshold decision = this.getPool().getDecisionThreshold();
+                decisionOuter = new ThresholdOuter.Builder( decision ).build();
+            }
+
+            thresholds = OneOrTwoThresholds.of( eventOuter, decisionOuter );
+        }
+
+        return thresholds;
     }
 
     /**
@@ -500,21 +547,49 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Returns a {@link TimeScale} associated with the metadata or null.
+     * Returns a {@link TimeScaleOuter} associated with the metadata or null.
      * 
      * @return the time scale or null
      */
 
-    public TimeScale getTimeScale()
+    public TimeScaleOuter getTimeScale()
     {
-        return this.timeScale;
+        TimeScaleOuter outer = null;
+        if ( this.getEvaluation().hasTimeScale() )
+        {
+            outer = TimeScaleOuter.of( this.getEvaluation().getTimeScale() );
+        }
+
+        return outer;
+    }
+
+    /**
+     * Returns the evaluation description.
+     * 
+     * @return the evaluation description.
+     */
+
+    public Evaluation getEvaluation()
+    {
+        return this.evaluation;
+    }
+
+    /**
+     * Returns the pool description.
+     * 
+     * @return the pool description.
+     */
+
+    public Pool getPool()
+    {
+        return this.pool;
     }
 
     /**
      * Builder.
      */
 
-    public static class SampleMetadataBuilder
+    public static class Builder
     {
 
         /**
@@ -557,7 +632,36 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * The optional time scale information.
          */
 
-        private TimeScale timeScale;
+        private TimeScaleOuter timeScale;
+
+        /**
+         * An existing evaluation description.
+         */
+
+        private Evaluation evaluation;
+
+        /**
+         * An existing pool description.
+         */
+
+        private Pool pool;
+
+        /**
+         * TODO: remove this glue. Replace with mapping between whatever new abstraction is recorded in the
+         * {@link DatasetIdentifier} after #72747 and, eventually, remove options to build from non-canonical forms.
+         */
+
+        private Location location;
+
+        /**
+         * TODO: remove this glue. It is currently needed to distinguish between statistics that were computed for 
+         * left and baseline data when the declaration requests separate statistics for left/right and left/baseline. There
+         * is currently no mapping for this in either {@link Evaluation} or {@link Pool}, yet there is a dependency on this
+         * aspect of the {@link SampleMetadata} that must persist until it is resolved. Resolved means that is is either
+         * integrated into {@link Evaluation} or {@link Pool} or supplied in another context, such as each statistic. 
+         */
+
+        private LeftOrRightOrBaseline context;
 
         /**
          * Sets the measurement unit.
@@ -566,7 +670,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * @return the builder
          */
 
-        public SampleMetadataBuilder setMeasurementUnit( MeasurementUnit unit )
+        public Builder setMeasurementUnit( MeasurementUnit unit )
         {
             this.unit = unit;
             return this;
@@ -579,7 +683,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * @return the builder
          */
 
-        public SampleMetadataBuilder setIdentifier( DatasetIdentifier identifier )
+        public Builder setIdentifier( DatasetIdentifier identifier )
         {
             this.identifier = identifier;
             return this;
@@ -592,7 +696,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * @return the builder
          */
 
-        public SampleMetadataBuilder setTimeWindow( TimeWindowOuter timeWindow )
+        public Builder setTimeWindow( TimeWindowOuter timeWindow )
         {
             this.timeWindow = timeWindow;
             return this;
@@ -605,7 +709,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * @return the builder
          */
 
-        public SampleMetadataBuilder setThresholds( OneOrTwoThresholds thresholds )
+        public Builder setThresholds( OneOrTwoThresholds thresholds )
         {
             this.thresholds = thresholds;
             return this;
@@ -618,7 +722,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * @return the builder
          */
 
-        public SampleMetadataBuilder setProjectConfig( ProjectConfig projectConfig )
+        public Builder setProjectConfig( ProjectConfig projectConfig )
         {
             this.projectConfig = projectConfig;
             return this;
@@ -631,31 +735,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          * @return the builder
          */
 
-        public SampleMetadataBuilder setTimeScale( TimeScale timeScale )
+        public Builder setTimeScale( TimeScaleOuter timeScale )
         {
             this.timeScale = timeScale;
-            return this;
-        }
-
-        /**
-         * Sets the contents from an existing metadata instance.
-         * 
-         * @param sampleMetadata the source metadata
-         * @return the builder
-         * @throws NullPointerException if the input is null
-         */
-
-        public SampleMetadataBuilder setFromExistingInstance( SampleMetadata sampleMetadata )
-        {
-            Objects.requireNonNull( sampleMetadata, NULL_INPUT_ERROR );
-
-            this.unit = sampleMetadata.unit;
-            this.identifier = sampleMetadata.identifier;
-            this.timeWindow = sampleMetadata.timeWindow;
-            this.thresholds = sampleMetadata.thresholds;
-            this.projectConfig = sampleMetadata.projectConfig;
-            this.timeScale = sampleMetadata.timeScale;
-
             return this;
         }
 
@@ -670,6 +752,45 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             return new SampleMetadata( this );
         }
 
+        /**
+         * No argument constructor.
+         */
+
+        public Builder()
+        {
+        }
+
+        /**
+         * Construct with existing evaluation and pool instances.
+         * 
+         * @param evaluation the evaluation
+         * @param pool the pool
+         */
+
+        public Builder( Evaluation evaluation, Pool pool )
+        {
+            this.evaluation = evaluation;
+            this.pool = pool;
+        }
+
+        /**
+         * Sets the contents from an existing metadata instance.
+         * 
+         * @param sampleMetadata the source metadata
+         * @throws NullPointerException if the input is null
+         */
+
+        public Builder( SampleMetadata sampleMetadata )
+        {
+            Objects.requireNonNull( sampleMetadata, NULL_INPUT_ERROR );
+
+            this.evaluation = sampleMetadata.evaluation;
+            this.pool = sampleMetadata.pool;
+            this.location = sampleMetadata.location;
+            this.projectConfig = sampleMetadata.projectConfig;
+            this.context = sampleMetadata.context;
+        }
+
     }
 
     /**
@@ -679,20 +800,229 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the measurement unit has not been set
      */
 
-    private SampleMetadata( SampleMetadataBuilder builder )
+    private SampleMetadata( Builder builder )
     {
         // Set then validate
-        this.unit = builder.unit;
-        this.identifier = builder.identifier;
-        this.timeWindow = builder.timeWindow;
-        this.thresholds = builder.thresholds;
-        this.projectConfig = builder.projectConfig;
-        this.timeScale = builder.timeScale;
+        MeasurementUnit unit = builder.unit;
+        DatasetIdentifier identifier = builder.identifier;
+        TimeWindowOuter timeWindow = builder.timeWindow;
+        OneOrTwoThresholds thresholds = builder.thresholds;
+        ProjectConfig localProjectConfig = builder.projectConfig;
+        TimeScaleOuter timeScale = builder.timeScale;
+        Evaluation localEvaluation = builder.evaluation;
+        Pool localPool = builder.pool;
 
-        Objects.requireNonNull( this.unit,
-                                "Specify a non-null measurement unit from which to build "
-                                           + "the metadata." );
+        Evaluation.Builder evaluationBuilder = null;
+        Pool.Builder poolBuilder = null;
+        Location localLocation = builder.location;
+        LeftOrRightOrBaseline localContext = builder.context;
 
+        if ( Objects.isNull( localEvaluation ) )
+        {
+            evaluationBuilder = Evaluation.newBuilder();
+        }
+        else
+        {
+            evaluationBuilder = localEvaluation.toBuilder();
+        }
+
+        if ( Objects.isNull( localPool ) )
+        {
+            poolBuilder = Pool.newBuilder();
+        }
+        else
+        {
+            poolBuilder = localPool.toBuilder();
+        }
+
+        // TODO: replace the mapping between a Location and a Geometry
+        // For now, this is deferred by storing a location instance locally
+        if ( Objects.nonNull( identifier ) && identifier.hasLocation() )
+        {
+            localLocation = identifier.getLocation();
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a location of {}.",
+                          localLocation );
+        }
+
+        // TODO: remove the dependence on an out-of-band l/r/b context to distinguish statistics that were computed
+        // for left and baseline. This should be inline to the pool or an individual statistic.
+        if ( Objects.nonNull( identifier ) && identifier.hasLeftOrRightOrBaseline() )
+        {
+            localContext = identifier.getLeftOrRightOrBaseline();
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a left/right/baseline "
+                          + "context of {}.",
+                          localContext );
+        }
+
+        this.evaluation = this.getEvaluation( evaluationBuilder, unit, identifier, timeScale, localProjectConfig );
+        this.pool = this.getPool( poolBuilder, timeWindow, thresholds );
+        this.projectConfig = localProjectConfig;
+        this.location = localLocation;
+        this.context = localContext;
+
+        this.validate();
     }
+
+    /**
+     * Sets the evaluation fields using the input and returns an instance of an evaluation.
+     * 
+     * @param evaluationBuilder the evaluation builder
+     * @param unit the measurement units
+     * @param identifier the dataset identifier
+     * @param timeScale the time scale
+     * @param projectConfig the project declaration
+     * @return the evaluation
+     */
+
+    private Evaluation getEvaluation( wres.statistics.generated.Evaluation.Builder evaluationBuilder,
+                                      MeasurementUnit unit,
+                                      DatasetIdentifier identifier,
+                                      TimeScaleOuter timeScale,
+                                      ProjectConfig projectConfig )
+    {
+
+        // Populate the evaluation from the supplied information as reasonably as possible
+        if ( Objects.nonNull( unit ) )
+        {
+            evaluationBuilder.setMeasurementUnit( unit.getUnit() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a measurement unit of {}.",
+                          unit.getUnit() );
+        }
+
+        if ( Objects.nonNull( identifier ) && identifier.hasVariableName() )
+        {
+            evaluationBuilder.setVariableName( identifier.getVariableName() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a variable name of {}.",
+                          identifier.getVariableName() );
+        }
+
+        if ( Objects.nonNull( identifier ) && identifier.hasScenarioName() )
+        {
+            evaluationBuilder.setRightSourceName( identifier.getScenarioName() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a right source name of {}.",
+                          identifier.getScenarioName() );
+        }
+
+        if ( Objects.nonNull( identifier ) && identifier.hasScenarioNameForBaseline() )
+        {
+            evaluationBuilder.setBaselineSourceName( identifier.getScenarioNameForBaseline() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a baseline source name of "
+                          + "{}.",
+                          identifier.getScenarioNameForBaseline() );
+        }
+
+        if ( Objects.nonNull( timeScale ) )
+        {
+            wres.statistics.generated.TimeScale scale = MessageFactory.parse( timeScale );
+            evaluationBuilder.setTimeScale( scale );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a time scale of "
+                          + "{}.",
+                          timeScale );
+        }
+
+        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getPair() )
+             && Objects.nonNull( projectConfig.getPair().getSeason() ) )
+        {
+            wres.statistics.generated.Season season = MessageFactory.parse( projectConfig.getPair().getSeason() );
+            evaluationBuilder.setSeason( season );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a season of "
+                          + "{}.",
+                          projectConfig.getPair().getSeason() );
+        }
+
+        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getPair() )
+             && Objects.nonNull( projectConfig.getPair().getValues() ) )
+        {
+            ValueFilter filter = MessageFactory.parse( projectConfig.getPair().getValues() );
+            evaluationBuilder.setValueFilter( filter );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a value filter of "
+                          + "{}.",
+                          projectConfig.getPair().getValues() );
+        }
+
+        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            int metricCount = projectConfig.getMetrics()
+                                           .stream()
+                                           .mapToInt( a -> a.getMetric().size() )
+                                           .sum();
+
+            evaluationBuilder.setMetricMessageCount( metricCount );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a metric count of "
+                          + "{}.",
+                          metricCount );
+        }
+
+        return evaluationBuilder.build();
+    }
+
+
+    /**
+     * Sets the pool fields using the input and returns an instance of a pool.
+     * 
+     * @param poolBuilder the pool builder
+     * @param timeWindow the time window
+     * @param thresholds the thresholds
+     * @return the pool
+     */
+
+    private Pool getPool( wres.statistics.generated.Pool.Builder poolBuilder,
+                          TimeWindowOuter timeWindow,
+                          OneOrTwoThresholds thresholds )
+    {
+
+        // Populate the pool from the supplied information as reasonably as possible
+        if ( Objects.nonNull( timeWindow ) )
+        {
+            wres.statistics.generated.TimeWindow window = MessageFactory.parse( timeWindow );
+            poolBuilder.setTimeWindow( window );
+
+            LOGGER.debug( "While creating pool metadata, populated the pool with a time window of {}.",
+                          timeWindow );
+        }
+
+        // Populate the pool from the supplied information as reasonably as possible
+        if ( Objects.nonNull( thresholds ) )
+        {
+            wres.statistics.generated.Threshold event = MessageFactory.parse( thresholds.first() );
+            poolBuilder.setEventThreshold( event );
+
+            if ( thresholds.hasTwo() )
+            {
+                wres.statistics.generated.Threshold decision = MessageFactory.parse( thresholds.second() );
+                poolBuilder.setDecisionThreshold( decision );
+            }
+
+            LOGGER.debug( "While creating pool metadata, populated the pool with a threshold of {}.",
+                          thresholds );
+        }
+
+        return poolBuilder.build();
+    }
+
+    /**
+     * Validate the input.
+     */
+
+    private void validate()
+    {
+        String unit = this.getEvaluation().getMeasurementUnit();
+
+        if ( unit.isBlank() )
+        {
+            throw new IllegalArgumentException( "Specify a valid measurement unit from which to build the metadata." );
+        }
+    }
+
 
 }

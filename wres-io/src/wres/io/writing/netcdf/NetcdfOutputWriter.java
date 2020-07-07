@@ -55,7 +55,7 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -234,10 +234,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         }
         
         // Desired time scale, if declared
-        TimeScale desiredTimeScale = null;
+        TimeScaleOuter desiredTimeScale = null;
         if ( Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
         {
-            desiredTimeScale = TimeScale.of( pairConfig.getDesiredTimeScale() );
+            desiredTimeScale = TimeScaleOuter.of( pairConfig.getDesiredTimeScale() );
         }
         
         // Create blobs from components
@@ -266,7 +266,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                  Set<TimeWindowOuter> timeWindows,
                                                  ThresholdsByMetric thresholds,
                                                  String units,
-                                                 TimeScale desiredTimeScale )
+                                                 TimeScaleOuter desiredTimeScale )
             throws IOException
     {
         Set<Path> returnMe = new TreeSet<>();
@@ -384,7 +384,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                            TimeWindowOuter timeWindow,
                                                                            ThresholdsByMetric thresholds,
                                                                            String units,
-                                                                           TimeScale desiredTimeScale )
+                                                                           TimeScaleOuter desiredTimeScale )
     {
         // Statistics for a separate baseline? If no, there's a single set of variables
         if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
@@ -426,7 +426,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( TimeWindowOuter timeWindow,
                                                                            ThresholdsByMetric thresholds,
                                                                            String units,
-                                                                           TimeScale desiredTimeScale,
+                                                                           TimeScaleOuter desiredTimeScale,
                                                                            LeftOrRightOrBaseline context )
     {
 
@@ -767,7 +767,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     Location location = score.getMetadata()
                                              .getSampleMetadata()
                                              .getIdentifier()
-                                             .getGeospatialID();
+                                             .getLocation();
 
                     int[] origin;
 

@@ -25,7 +25,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -399,7 +399,7 @@ public class DatacardSource extends BasicSource
 
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of(
                 Map.of( LATEST_OBSERVATION, values.lastKey() ),
-                TimeScale.of(),
+                TimeScaleOuter.of(),
                 variableName,
                 featureName,
                 unit );
