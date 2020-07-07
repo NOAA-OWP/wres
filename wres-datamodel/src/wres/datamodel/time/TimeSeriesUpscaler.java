@@ -4,11 +4,11 @@ import java.time.Instant;
 import java.util.Set;
 
 import wres.datamodel.scale.RescalingException;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 
 /**
- * Used to increase the {@link TimeScale} of a {@link TimeSeries}, where "increase" means to produce event values whose 
- * {@link TimeScale#getPeriod} is larger than the {@link TimeScale#getPeriod} of the input. This is also known as
+ * Used to increase the {@link TimeScaleOuter} of a {@link TimeSeries}, where "increase" means to produce event values whose 
+ * {@link TimeScaleOuter#getPeriod} is larger than the {@link TimeScaleOuter#getPeriod} of the input. This is also known as
  * temporal upscaling. Here, upscaling has the opposite meaning of upscaling in the context of video encoding. In that 
  * context, upscaling means to increase the resolution or increase amount of data. Here, it means to reduce the amount 
  * of data.
@@ -21,9 +21,9 @@ public interface TimeSeriesUpscaler<T>
 {
 
     /**
-     * Upscales the input {@link TimeSeries} to the desired {@link TimeScale} without any constraints on the times at
+     * Upscales the input {@link TimeSeries} to the desired {@link TimeScaleOuter} without any constraints on the times at
      * which the upscaled values must end. In other words, upscaling starts from the beginning of the input time-series. 
-     * Also see {@link #upscale(TimeSeries, TimeScale, Set)}.
+     * Also see {@link #upscale(TimeSeries, TimeScaleOuter, Set)}.
      * 
      * @param timeSeries the time-series to upscale
      * @param desiredTimeScale the desired time scale
@@ -32,13 +32,13 @@ public interface TimeSeriesUpscaler<T>
      * @throws NullPointerException if any input is null
      */
 
-    RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries, TimeScale desiredTimeScale );
+    RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale );
 
     /**
-     * Upscales the input {@link TimeSeries} to the desired {@link TimeScale} such that each upscaled value ends at one
-     * of the prescribed times. For upscaling without constraints, see {@link #upscale(TimeSeries, TimeScale)}. If no
+     * Upscales the input {@link TimeSeries} to the desired {@link TimeScaleOuter} such that each upscaled value ends at one
+     * of the prescribed times. For upscaling without constraints, see {@link #upscale(TimeSeries, TimeScaleOuter)}. If no
      * times are provided at which the upscaled values should end, the behavior matches the unconditional case, 
-     * {@link #upscale(TimeSeries, TimeScale)}.
+     * {@link #upscale(TimeSeries, TimeScaleOuter)}.
      * 
      * @param timeSeries the time-series to upscale
      * @param desiredTimeScale the desired time scale
@@ -49,7 +49,7 @@ public interface TimeSeriesUpscaler<T>
      */
 
     RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries,
-                                                 TimeScale desiredTimeScale,
+                                                 TimeScaleOuter desiredTimeScale,
                                                  Set<Instant> endsAt );
 
 }

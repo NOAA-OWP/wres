@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -434,7 +434,7 @@ public class ReadValueManager
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
 
         // Get the time scale information, if available
-        TimeScale timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), location );
+        TimeScaleOuter timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), location );
 
         TimeSeries timeSeries;
         try
@@ -560,7 +560,7 @@ public class ReadValueManager
             final Forecast forecast,
             final int sourceId,
             final OffsetDateTime startDate,
-            final TimeScale timeScale
+            final TimeScaleOuter timeScale
     ) throws SQLException
     {
         String startTime = TimeHelper.convertDateToString( startDate );

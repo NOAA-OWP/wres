@@ -760,7 +760,7 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
         this.timeWindow = timeWindowBuilder.build();
 
         // Validate
-        validate();
+        this.validate();
     }
 
     /**

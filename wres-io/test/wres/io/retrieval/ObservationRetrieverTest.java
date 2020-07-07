@@ -35,8 +35,8 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
@@ -168,7 +168,7 @@ public class ObservationRetrieverTest
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        "CFS" );
@@ -224,7 +224,7 @@ public class ObservationRetrieverTest
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        "CFS" );
@@ -449,7 +449,7 @@ public class ObservationRetrieverTest
         assertNotNull( ensembleId );
 
         Instant latestObsDatetime = Instant.parse( "2023-04-01T10:00:00Z" );
-        TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
         String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
                                   + "ensemble_id,"

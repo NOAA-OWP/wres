@@ -20,8 +20,8 @@ import org.junit.Test;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -37,7 +37,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
-                                                                                TimeScale timeScale )
+                                                                                TimeScaleOuter timeScale )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       timeScale,
@@ -46,7 +46,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                       UNIT );
     }
 
-    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScale timeScale )
+    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScaleOuter timeScale )
     {
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       timeScale,
@@ -86,7 +86,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Event<Double> six = Event.of( sixth, 6.0 );
 
         // Time scale of the event values: TOTAL over PT1H
-        TimeScale existingScale = TimeScale.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
+        TimeScaleOuter existingScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithTimeScale( existingScale );
 
@@ -107,7 +107,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         endsAt.add( sixth );
 
         // The desired scale: total amounts over PT2H
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 2 ), TimeScaleFunction.TOTAL );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.TOTAL );
 
         TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt )
                                                  .getTimeSeries();
@@ -149,7 +149,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Event<Double> six = Event.of( sixth, 25.0 );
 
         // Time scale of the event values: instantaneous
-        TimeScale existingScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter existingScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
         TimeSeriesMetadata existingMetadata =
                 getBoilerplateMetadataWithTimeScale( existingScale );
 
@@ -170,7 +170,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         endsAt.add( sixth );
 
         // The desired scale: mean over PT2H
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 2 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.MEAN );
 
         TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt )
                                                  .getTimeSeries();
@@ -188,7 +188,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     }
 
     /**
-     * Tests the {@link TimeSeriesOfDoubleBasicUpscaler#upscale(TimeSeries, TimeScale, Set)} to upscale eleven forecast
+     * Tests the {@link TimeSeriesOfDoubleBasicUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eleven forecast
      * values and then pairs them with observations. This integration test is similar to system test scenario103 as of
      * commit 1a93f88202ae98cee85528a51893dd1521db2a29, but uses fake data.
      */
@@ -223,7 +223,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Event<Double> eleven = Event.of( eleventh, 13.0 );
 
         // Time scale of the event values: instantaneous
-        TimeScale existingScale = TimeScale.of();
+        TimeScaleOuter existingScale = TimeScaleOuter.of();
 
         // Forecast reference time
         Instant referenceTime = Instant.parse( "1985-01-01T12:00:00Z" );
@@ -251,7 +251,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         // Only two of these observations produce pairs
 
         // Time scale of the event values: daily average
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
 
         TimeSeriesMetadata desiredMetadata =
                 getBoilerplateMetadataWithTimeScale( desiredTimeScale );
@@ -301,7 +301,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     }
 
     /**
-     * Tests the {@link TimeSeriesOfDoubleBasicUpscaler#upscale(TimeSeries, TimeScale, Set)} to upscale eighteen 
+     * Tests the {@link TimeSeriesOfDoubleBasicUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eighteen 
      * values into a maximum value that spans PT96H and ends at 2017-01-08T18:00:00Z.
      */
 
@@ -349,7 +349,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Event<Double> eighteen = Event.of( eighteenth, 5.0879264 );
 
         // Time scale of the event values: instantaneous
-        TimeScale existingScale = TimeScale.of();
+        TimeScaleOuter existingScale = TimeScaleOuter.of();
 
         // Forecast reference time
         Instant referenceTime = Instant.parse( "2017-01-02T12:00:00Z" );
@@ -379,7 +379,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .setMetadata( existingMetadata )
                                                                      .build();
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 96 ), TimeScaleFunction.MAXIMUM );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 96 ), TimeScaleFunction.MAXIMUM );
 
         SortedSet<Instant> endsAt = new TreeSet<>( Set.of( eighteenth ) );
         TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
@@ -436,7 +436,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         Event<Double> sixteen = Event.of( sixteenth, 54.829998774454 );
 
         // Time scale of the event values: instantaneous
-        TimeScale existingScale = TimeScale.of();
+        TimeScaleOuter existingScale = TimeScaleOuter.of();
 
         // Forecast reference time
         Instant referenceTime = Instant.parse( "2020-01-14T12:00:00Z" );
@@ -464,7 +464,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
                                                                      .setMetadata( existingMetadata )
                                                                      .build();
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 24 ), TimeScaleFunction.MEAN );
 
         SortedSet<Instant> endsAt = new TreeSet<>( Set.of( first,
                                                            second,
@@ -517,10 +517,10 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     @Test
     public void testValidationFailsIfDownscalingRequested()
     {
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 1 ),
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                     TimeScaleFunction.MEAN );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofMinutes( 1 ),
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ),
                                                    TimeScaleFunction.MEAN );
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
@@ -540,10 +540,10 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     @Test
     public void testValidationFailsIfDesiredFunctionIsUnknown()
     {
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 1 ),
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                     TimeScaleFunction.MEAN );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofMinutes( 1 ),
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ),
                                                    TimeScaleFunction.UNKNOWN );
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
@@ -562,10 +562,10 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     @Test
     public void testValidationFailsIfDesiredPeriodDoesNotCommute()
     {
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 1 ),
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                     TimeScaleFunction.MEAN );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofMinutes( 75 ),
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofMinutes( 75 ),
                                                    TimeScaleFunction.MEAN );
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
@@ -587,10 +587,10 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     @Test
     public void testValidationFailsIfPeriodsMatchAndFunctionsDiffer()
     {
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 1 ),
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                     TimeScaleFunction.MEAN );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 1 ),
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                    TimeScaleFunction.TOTAL );
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
@@ -610,10 +610,10 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     @Test
     public void testValidationFailsIfAccumulatingInstantaneous()
     {
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofSeconds( 1 ),
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofSeconds( 1 ),
                                                     TimeScaleFunction.TOTAL );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 1 ),
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                    TimeScaleFunction.TOTAL );
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
@@ -632,10 +632,10 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     @Test
     public void testValidationFailsIfAccumulatingNonAccumulation()
     {
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 1 ),
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                     TimeScaleFunction.MEAN );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 2 ),
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ),
                                                    TimeScaleFunction.TOTAL );
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );

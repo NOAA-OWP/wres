@@ -10,8 +10,8 @@ import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -148,7 +148,7 @@ public class PersistenceGeneratorTest
      * Desired time scale.
      */
 
-    private TimeScale desiredTimeScale;
+    private TimeScaleOuter desiredTimeScale;
 
     /**
      * A persistence generator.
@@ -163,7 +163,7 @@ public class PersistenceGeneratorTest
         // Observations: 25510317T00_FAKE2_observations.xml
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                      T2551_03_17T12_00_00Z ),
-                                                             TimeScale.of( Duration.ofHours( 1 ),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                                            TimeScaleFunction.MEAN ),
                                                              DISCHARGE,
                                                              FAKE2,
@@ -258,7 +258,7 @@ public class PersistenceGeneratorTest
                                                .build();
 
         // Forecast time scale
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                         T2551_03_17T12_00_00Z ),
                                                                 existingTimeScale,
@@ -348,7 +348,7 @@ public class PersistenceGeneratorTest
                                                .build();
 
         // Desired time scale
-        this.desiredTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
+        this.desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         this.generator = PersistenceGenerator.of( () -> Stream.of( observations ),
                                                   TimeSeriesOfDoubleBasicUpscaler.of(),

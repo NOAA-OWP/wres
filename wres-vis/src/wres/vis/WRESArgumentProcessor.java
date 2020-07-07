@@ -258,11 +258,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( meta.hasIdentifier() )
         {
             final DatasetIdentifier identifier = meta.getIdentifier();
-            addArgument( "locationName", identifier.getGeospatialID().toString() );
-            addArgument( "variableName", identifier.getVariableID() );
-            if ( identifier.hasScenarioID() )
+            addArgument( "locationName", identifier.getLocation().toString() );
+            addArgument( "variableName", identifier.getVariableName() );
+            if ( identifier.hasScenarioName() )
             {
-                addArgument( "primaryScenario", " "+identifier.getScenarioID() );
+                addArgument( "primaryScenario", " "+identifier.getScenarioName() );
             }
             else
             {
@@ -423,9 +423,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         final DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
         String baselineSuffix = "";
-        if ( !Objects.isNull( identifier.getScenarioIDForBaseline() ) )
+        if ( !Objects.isNull( identifier.getScenarioNameForBaseline() ) )
         {
-            baselineSuffix = " Against Predictions From " + identifier.getScenarioIDForBaseline();
+            baselineSuffix = " Against Predictions From " + identifier.getScenarioNameForBaseline();
         }
         addArgument( "baselineLabelSuffix", baselineSuffix );
     }

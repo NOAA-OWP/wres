@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
@@ -11,9 +12,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -24,9 +23,9 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -51,9 +50,6 @@ public class SampleMetadataTest
     private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     /**
      * Tests the {@link SampleMetadata#unionOf(java.util.List)} against a benchmark.
      */
@@ -61,31 +57,32 @@ public class SampleMetadataTest
     public void unionOf()
     {
         Location l1 = Location.of( DRRC2 );
-        SampleMetadata m1 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                       .setIdentifier( DatasetIdentifier.of( l1, SQIN, HEFS ) )
-                                                       .setTimeWindow( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                                                      Instant.parse( "1985-12-31T23:59:59Z" ) ) )
-                                                       .build();
+        SampleMetadata m1 = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                         .setIdentifier( DatasetIdentifier.of( l1, SQIN, HEFS ) )
+                                         .setTimeWindow( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( "1985-12-31T23:59:59Z" ) ) )
+                                         .build();
         Location l2 = Location.of( DRRC2 );
-        SampleMetadata m2 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                       .setIdentifier( DatasetIdentifier.of( l2, SQIN, HEFS ) )
-                                                       .setTimeWindow( TimeWindowOuter.of( Instant.parse( SECOND_TIME ),
-                                                                                      Instant.parse( "1986-12-31T23:59:59Z" ) ) )
-                                                       .build();
+        SampleMetadata m2 = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                         .setIdentifier( DatasetIdentifier.of( l2, SQIN, HEFS ) )
+                                         .setTimeWindow( TimeWindowOuter.of( Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( "1986-12-31T23:59:59Z" ) ) )
+                                         .build();
         Location l3 = Location.of( DRRC2 );
-        SampleMetadata m3 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                       .setIdentifier( DatasetIdentifier.of( l3, SQIN, HEFS ) )
-                                                       .setTimeWindow( TimeWindowOuter.of( Instant.parse( "1987-01-01T00:00:00Z" ),
-                                                                                      Instant.parse( "1988-01-01T00:00:00Z" ) ) )
-                                                       .build();
+        SampleMetadata m3 = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                         .setIdentifier( DatasetIdentifier.of( l3, SQIN, HEFS ) )
+                                         .setTimeWindow( TimeWindowOuter.of( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                                                             Instant.parse( "1988-01-01T00:00:00Z" ) ) )
+                                         .build();
+        
         Location benchmarkLocation = Location.of( DRRC2 );
-        SampleMetadata benchmark = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                              .setIdentifier( DatasetIdentifier.of( benchmarkLocation,
-                                                                                                    SQIN,
-                                                                                                    HEFS ) )
-                                                              .setTimeWindow( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                                                             Instant.parse( "1988-01-01T00:00:00Z" ) ) )
-                                                              .build();
+        SampleMetadata benchmark = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                                .setIdentifier( DatasetIdentifier.of( benchmarkLocation,
+                                                                                      SQIN,
+                                                                                      HEFS ) )
+                                                .setTimeWindow( TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                                                    Instant.parse( "1988-01-01T00:00:00Z" ) ) )
+                                                .build();
 
         assertEquals( "Unexpected difference between union of metadata and benchmark.",
                       benchmark,
@@ -99,10 +96,10 @@ public class SampleMetadataTest
     @Test
     public void testUnionOfThrowsExceptionWithNullInput()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Cannot find the union of null metadata." );
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> SampleMetadata.unionOf( null ) );
 
-        SampleMetadata.unionOf( null );
+        assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
     }
 
     /**
@@ -112,10 +109,10 @@ public class SampleMetadataTest
     @Test
     public void testUnionOfThrowsExceptionWithEmptyInput()
     {
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Cannot find the union of empty input." );
+        IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
+                                                        () -> SampleMetadata.unionOf( Collections.emptyList() ) );
 
-        SampleMetadata.unionOf( Collections.emptyList() );
+        assertEquals( "Cannot find the union of empty input.", actual.getMessage() );
     }
 
     /**
@@ -125,12 +122,11 @@ public class SampleMetadataTest
     @Test
     public void testUnionOfThrowsExceptionWithOneNullInput()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Cannot find the union of null metadata." );
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> SampleMetadata.unionOf( Arrays.asList( (SampleMetadata) null ) ) );
 
-        SampleMetadata.unionOf( Arrays.asList( (SampleMetadata) null ) );
+        assertEquals( "Cannot find the union of null metadata.", actual.getMessage() );
     }
-
 
     /**
      * Tests that the {@link SampleMetadata#unionOf(java.util.List)} throws an expected exception when the inputs are
@@ -139,15 +135,17 @@ public class SampleMetadataTest
     @Test
     public void testUnionOfThrowsExceptionWithUnequalInputs()
     {
-        exception.expect( SampleMetadataException.class );
-        exception.expectMessage( "Only the time window and thresholds can differ when finding the union of metadata." );
-
         SampleMetadata failOne = SampleMetadata.of( MeasurementUnit.of(),
                                                     DatasetIdentifier.of( Location.of( DRRC3 ), SQIN, HEFS ) );
         SampleMetadata failTwo =
                 SampleMetadata.of( MeasurementUnit.of(), DatasetIdentifier.of( Location.of( "A" ), "B" ) );
 
-        SampleMetadata.unionOf( Arrays.asList( failOne, failTwo ) );
+        SampleMetadataException actual = assertThrows( SampleMetadataException.class,
+                                                       () -> SampleMetadata.unionOf( Arrays.asList( failOne,
+                                                                                                    failTwo ) ) );
+
+        assertEquals( "Only the time window and thresholds can differ when finding the union of metadata.",
+                      actual.getMessage() );
     }
 
     /**
@@ -166,8 +164,8 @@ public class SampleMetadataTest
         assertNotNull( SampleMetadata.of( MeasurementUnit.of(), identifier ) );
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                             Operator.EQUAL,
-                                                                             ThresholdDataType.LEFT ) );
+                                                                                  Operator.EQUAL,
+                                                                                  ThresholdDataType.LEFT ) );
 
         assertNotNull( SampleMetadata.of( SampleMetadata.of(), thresholds ) );
 
@@ -180,20 +178,19 @@ public class SampleMetadataTest
 
         assertNotNull( SampleMetadata.of( MeasurementUnit.of(), identifier, timeWindow, thresholds ) );
 
-        assertNotNull( new SampleMetadataBuilder().setFromExistingInstance( SampleMetadata.of() )
-                                                  .setIdentifier( identifier )
-                                                  .setMeasurementUnit( MeasurementUnit.of() )
-                                                  .setProjectConfig( new ProjectConfig( null,
-                                                                                        null,
-                                                                                        null,
-                                                                                        null,
-                                                                                        null,
-                                                                                        null ) )
-                                                  .setThresholds( thresholds )
-                                                  .setTimeWindow( timeWindow )
-                                                  .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                               TimeScaleFunction.MEAN ) )
-                                                  .build() );
+        assertNotNull( new Builder().setIdentifier( identifier )
+                                    .setMeasurementUnit( MeasurementUnit.of() )
+                                    .setProjectConfig( new ProjectConfig( null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null ) )
+                                    .setThresholds( thresholds )
+                                    .setTimeWindow( timeWindow )
+                                    .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
+                                                                      TimeScaleFunction.MEAN ) )
+                                    .build() );
     }
 
     /**
@@ -244,42 +241,42 @@ public class SampleMetadataTest
         }
         // Add a time window
         TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                Instant.parse( SECOND_TIME ) );
+                                                          Instant.parse( SECOND_TIME ) );
         TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ) );
+                                                           Instant.parse( SECOND_TIME ) );
         Location l6 = Location.of( DRRC3 );
         final TimeWindowOuter timeWindow2 = firstWindow;
-        SampleMetadata m6 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                       .setIdentifier( DatasetIdentifier.of( l6, SQIN, HEFS ) )
-                                                       .setTimeWindow( timeWindow2 )
-                                                       .build();
+        SampleMetadata m6 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                         .setIdentifier( DatasetIdentifier.of( l6, SQIN, HEFS ) )
+                                         .setTimeWindow( timeWindow2 )
+                                         .build();
         Location l7 = Location.of( DRRC3 );
         final TimeWindowOuter timeWindow3 = secondWindow;
-        SampleMetadata m7 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                       .setIdentifier( DatasetIdentifier.of( l7, SQIN, HEFS ) )
-                                                       .setTimeWindow( timeWindow3 )
-                                                       .build();
+        SampleMetadata m7 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                         .setIdentifier( DatasetIdentifier.of( l7, SQIN, HEFS ) )
+                                         .setTimeWindow( timeWindow3 )
+                                         .build();
         assertEquals( m6, m7 );
         assertEquals( m7, m6 );
         assertNotEquals( m3, m6 );
 
         TimeWindowOuter thirdWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                Instant.parse( SECOND_TIME ),
-                                                Instant.parse( FIRST_TIME ),
-                                                Instant.parse( SECOND_TIME ) );
+                                                          Instant.parse( SECOND_TIME ),
+                                                          Instant.parse( FIRST_TIME ),
+                                                          Instant.parse( SECOND_TIME ) );
         Location l8 = Location.of( DRRC3 );
         final TimeWindowOuter timeWindow4 = thirdWindow;
-        SampleMetadata m8 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                       .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
-                                                       .setTimeWindow( timeWindow4 )
-                                                       .build();
+        SampleMetadata m8 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                         .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
+                                         .setTimeWindow( timeWindow4 )
+                                         .build();
         assertNotEquals( m6, m8 );
 
         // Add a threshold
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         SampleMetadata m9 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                DatasetIdentifier.of( l8, SQIN, HEFS ),
@@ -343,40 +340,37 @@ public class SampleMetadataTest
         final OneOrTwoThresholds thresholds1 = thresholds;
         final ProjectConfig projectConfig = mockConfigOne;
 
-        SampleMetadata m11 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                        .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
-                                                        .setTimeWindow( timeWindow )
-                                                        .setThresholds( thresholds1 )
-                                                        .setProjectConfig( projectConfig )
-                                                        .build();
+        SampleMetadata m11 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                          .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
+                                          .setTimeWindow( timeWindow )
+                                          .setThresholds( thresholds1 )
+                                          .setProjectConfig( projectConfig )
+                                          .build();
         final TimeWindowOuter timeWindow1 = thirdWindow;
         final OneOrTwoThresholds thresholds2 = thresholds;
         final ProjectConfig projectConfig1 = mockConfigTwo;
 
-        SampleMetadata m12 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                        .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
-                                                        .setTimeWindow( timeWindow1 )
-                                                        .setThresholds( thresholds2 )
-                                                        .setProjectConfig( projectConfig1 )
-                                                        .build();
+        SampleMetadata m12 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                          .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
+                                          .setTimeWindow( timeWindow1 )
+                                          .setThresholds( thresholds2 )
+                                          .setProjectConfig( projectConfig1 )
+                                          .build();
 
         assertEquals( m11, m12 );
 
         // Add a time scale
         SampleMetadata m13 =
-                new SampleMetadataBuilder().setFromExistingInstance( m12 )
-                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) )
-                                           .build();
+                new Builder( m12 ).setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) )
+                                  .build();
 
         SampleMetadata m14 =
-                new SampleMetadataBuilder().setFromExistingInstance( m12 )
-                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) )
-                                           .build();
+                new Builder( m12 ).setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) )
+                                  .build();
 
         SampleMetadata m15 =
-                new SampleMetadataBuilder().setFromExistingInstance( m12 )
-                                           .setTimeScale( TimeScale.of( Duration.ofDays( 2 ), TimeScaleFunction.MEAN ) )
-                                           .build();
+                new Builder( m12 ).setTimeScale( TimeScaleOuter.of( Duration.ofDays( 2 ), TimeScaleFunction.MEAN ) )
+                                  .build();
 
         assertEquals( m13, m14 );
 
@@ -403,30 +397,30 @@ public class SampleMetadataTest
         assertTrue( SampleMetadata.of().equalsWithoutTimeWindowOrThresholds( SampleMetadata.of() ) );
 
         // Remaining cases test scenarios not tested already through Object::equals
-        SampleMetadata metaOne = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                            .setProjectConfig( new ProjectConfig( null,
-                                                                                                  null,
-                                                                                                  null,
-                                                                                                  null,
-                                                                                                  null,
-                                                                                                  null ) )
-                                                            .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                         TimeScaleFunction.MAXIMUM ) )
-                                                            .build();
+        SampleMetadata metaOne = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                              .setProjectConfig( new ProjectConfig( null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null ) )
+                                              .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
+                                                                                TimeScaleFunction.MAXIMUM ) )
+                                              .build();
 
-        SampleMetadata metaTwo = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                            .build();
+        SampleMetadata metaTwo = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                              .build();
 
-        SampleMetadata metaThree = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                              .setProjectConfig( new ProjectConfig( null,
-                                                                                                    null,
-                                                                                                    null,
-                                                                                                    null,
-                                                                                                    null,
-                                                                                                    "A" ) )
-                                                              .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                           TimeScaleFunction.MAXIMUM ) )
-                                                              .build();
+        SampleMetadata metaThree = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                                .setProjectConfig( new ProjectConfig( null,
+                                                                                      null,
+                                                                                      null,
+                                                                                      null,
+                                                                                      null,
+                                                                                      "A" ) )
+                                                .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
+                                                                                  TimeScaleFunction.MAXIMUM ) )
+                                                .build();
 
         assertTrue( metaOne.equalsWithoutTimeWindowOrThresholds( metaOne ) );
 
@@ -434,24 +428,24 @@ public class SampleMetadataTest
 
         assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaThree ) );
 
-        SampleMetadata metaFour = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                          TimeScaleFunction.MEAN ) )
-                                                             .build();
+        SampleMetadata metaFour = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                               .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
+                                                                                 TimeScaleFunction.MEAN ) )
+                                               .build();
 
-        SampleMetadata metaFive = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                          TimeScaleFunction.MAXIMUM ) )
-                                                             .build();
+        SampleMetadata metaFive = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                               .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
+                                                                                 TimeScaleFunction.MAXIMUM ) )
+                                               .build();
 
-        SampleMetadata metaSix = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                                                            .setProjectConfig( new ProjectConfig( null,
-                                                                                                  null,
-                                                                                                  null,
-                                                                                                  null,
-                                                                                                  null,
-                                                                                                  "A" ) )
-                                                            .build();
+        SampleMetadata metaSix = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+                                              .setProjectConfig( new ProjectConfig( null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    "A" ) )
+                                              .build();
 
         assertFalse( metaFour.equalsWithoutTimeWindowOrThresholds( metaOne ) );
 
@@ -500,35 +494,35 @@ public class SampleMetadataTest
 
         // Add a time window
         TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                Instant.parse( SECOND_TIME ) );
+                                                          Instant.parse( SECOND_TIME ) );
         TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ) );
+                                                           Instant.parse( SECOND_TIME ) );
         Location l6 = Location.of( DRRC3 );
         final TimeWindowOuter timeWindow2 = firstWindow;
-        SampleMetadata m6 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                       .setIdentifier( DatasetIdentifier.of( l6, SQIN, HEFS ) )
-                                                       .setTimeWindow( timeWindow2 )
-                                                       .build();
+        SampleMetadata m6 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                         .setIdentifier( DatasetIdentifier.of( l6, SQIN, HEFS ) )
+                                         .setTimeWindow( timeWindow2 )
+                                         .build();
         Location l7 = Location.of( DRRC3 );
         final TimeWindowOuter timeWindow3 = secondWindow;
-        SampleMetadata m7 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                       .setIdentifier( DatasetIdentifier.of( l7, SQIN, HEFS ) )
-                                                       .setTimeWindow( timeWindow3 )
-                                                       .build();
+        SampleMetadata m7 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                         .setIdentifier( DatasetIdentifier.of( l7, SQIN, HEFS ) )
+                                         .setTimeWindow( timeWindow3 )
+                                         .build();
         assertEquals( m6.hashCode(), m7.hashCode() );
         assertEquals( m7.hashCode(), m6.hashCode() );
 
         TimeWindowOuter thirdWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                Instant.parse( SECOND_TIME ),
-                                                Instant.parse( FIRST_TIME ),
-                                                Instant.parse( SECOND_TIME ) );
+                                                          Instant.parse( SECOND_TIME ),
+                                                          Instant.parse( FIRST_TIME ),
+                                                          Instant.parse( SECOND_TIME ) );
         Location l8 = Location.of( DRRC3 );
 
         // Add a threshold
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         SampleMetadata m9 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
                                                DatasetIdentifier.of( l8, SQIN, HEFS ),
@@ -590,22 +584,22 @@ public class SampleMetadataTest
         final OneOrTwoThresholds thresholds1 = thresholds;
         final ProjectConfig projectConfig = mockConfigOne;
 
-        SampleMetadata m11 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                        .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
-                                                        .setTimeWindow( timeWindow )
-                                                        .setThresholds( thresholds1 )
-                                                        .setProjectConfig( projectConfig )
-                                                        .build();
+        SampleMetadata m11 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                          .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
+                                          .setTimeWindow( timeWindow )
+                                          .setThresholds( thresholds1 )
+                                          .setProjectConfig( projectConfig )
+                                          .build();
         final TimeWindowOuter timeWindow1 = thirdWindow;
         final OneOrTwoThresholds thresholds2 = thresholds;
         final ProjectConfig projectConfig1 = mockConfigTwo;
 
-        SampleMetadata m12 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                        .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
-                                                        .setTimeWindow( timeWindow1 )
-                                                        .setThresholds( thresholds2 )
-                                                        .setProjectConfig( projectConfig1 )
-                                                        .build();
+        SampleMetadata m12 = new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
+                                          .setIdentifier( DatasetIdentifier.of( l8, SQIN, HEFS ) )
+                                          .setTimeWindow( timeWindow1 )
+                                          .setThresholds( thresholds2 )
+                                          .setProjectConfig( projectConfig1 )
+                                          .build();
 
         assertEquals( m11.hashCode(), m12.hashCode() );
     }
@@ -626,27 +620,26 @@ public class SampleMetadataTest
         DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "A" ), "B" );
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                             Operator.EQUAL,
-                                                                             ThresholdDataType.LEFT ) );
+                                                                                  Operator.EQUAL,
+                                                                                  ThresholdDataType.LEFT ) );
 
         TimeWindowOuter timeWindow =
                 TimeWindowOuter.of( Instant.parse( THIRD_TIME ),
-                               Instant.parse( THIRD_TIME ),
-                               Instant.parse( THIRD_TIME ),
-                               Instant.parse( THIRD_TIME ),
-                               Duration.ZERO,
-                               Duration.ZERO );
+                                    Instant.parse( THIRD_TIME ),
+                                    Instant.parse( THIRD_TIME ),
+                                    Instant.parse( THIRD_TIME ),
+                                    Duration.ZERO,
+                                    Duration.ZERO );
 
-        SampleMetadata meta = new SampleMetadataBuilder().setFromExistingInstance( SampleMetadata.of() )
-                                                         .setIdentifier( identifier )
-                                                         .setMeasurementUnit( MeasurementUnit.of() )
-                                                         .setThresholds( thresholds )
-                                                         .setTimeWindow( timeWindow )
-                                                         .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                      TimeScaleFunction.MEAN ) )
-                                                         .build();
+        SampleMetadata meta = new Builder().setIdentifier( identifier )
+                                           .setMeasurementUnit( MeasurementUnit.of() )
+                                           .setThresholds( thresholds )
+                                           .setTimeWindow( timeWindow )
+                                           .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
+                                                                             TimeScaleFunction.MEAN ) )
+                                           .build();
 
-        assertEquals( "SampleMetadata[datasetIdentifier=DatasetIdentifier[geospatialId=A,variableId=B,"
+        assertEquals( "SampleMetadata[datasetIdentifier=DatasetIdentifier[location=A,variableId=B,"
                       + "scenarioId=<null>,baselineScenarioId=<null>,pairContext=<null>],"
                       + "timeWindow=[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,"
                       + "2000-02-02T00:00:00Z,PT0S,PT0S],thresholds== 1.0,timeScale=[PT24H,MEAN],"

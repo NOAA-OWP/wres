@@ -42,8 +42,8 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -181,7 +181,7 @@ public class EnsembleRetrieverFactoryTest
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        "CFS" );
@@ -224,7 +224,7 @@ public class EnsembleRetrieverFactoryTest
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        "CFS" );
@@ -265,7 +265,7 @@ public class EnsembleRetrieverFactoryTest
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        "CFS" );
@@ -304,7 +304,7 @@ public class EnsembleRetrieverFactoryTest
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        String.valueOf( this.variableFeatureId ),
                                        String.valueOf( this.variableFeatureId ),
                                        "CFS" );
@@ -588,7 +588,7 @@ public class EnsembleRetrieverFactoryTest
         // Two reference times, PT17H apart
         Instant referenceTime = Instant.parse( T2023_04_01T00_00_00Z );
 
-        TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
         String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
                                   + "ensemble_id,"
@@ -770,7 +770,7 @@ public class EnsembleRetrieverFactoryTest
         assertNotNull( ensembleId );
 
         Instant latestObsDatetime = Instant.parse( "2023-04-01T10:00:00Z" );
-        TimeScale timeScale = TimeScale.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
         String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
                                   + "ensemble_id,"

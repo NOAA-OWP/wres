@@ -194,7 +194,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
                          .getMetadata()
                          .getSampleMetadata()
                          .getIdentifier()
-                         .getScenarioIDForBaseline()
+                         .getScenarioNameForBaseline()
                          .equals( "ESP" ) );
     }
 

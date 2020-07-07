@@ -32,11 +32,11 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -57,7 +57,7 @@ public final class EnsemblePairsWriterTest
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -66,7 +66,7 @@ public final class EnsemblePairsWriterTest
     private static TimeSeriesMetadata getBoilerplateMetadata()
     {
         return TimeSeriesMetadata.of( Collections.emptyMap(),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
@@ -177,10 +177,10 @@ public final class EnsemblePairsWriterTest
 
             // Set the measurement units and time scale
             SampleMetadata meta =
-                    new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
+                    new Builder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
                                                .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
                                                                                      "MORTARS" ) )
-                                               .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
+                                               .setTimeScale( TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
 
@@ -237,10 +237,10 @@ public final class EnsemblePairsWriterTest
 
             // Set the measurement units and time scale
             SampleMetadata meta =
-                    new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
+                    new Builder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
                                                .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
                                                                                      "MORTARS" ) )
-                                               .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
+                                               .setTimeScale( TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
 

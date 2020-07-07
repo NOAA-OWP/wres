@@ -18,7 +18,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
@@ -91,7 +91,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * Declared <code>desiredTimeScale</code>, if any.
      */
 
-    private final TimeScale desiredTimeScale;
+    private final TimeScaleOuter desiredTimeScale;
 
     /**
      * A mapper to convert measurement units.
@@ -343,14 +343,14 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @return a declared existing time scale, or null
      */
 
-    private TimeScale getDeclaredExistingTimeScale( DataSourceConfig dataSourceConfig )
+    private TimeScaleOuter getDeclaredExistingTimeScale( DataSourceConfig dataSourceConfig )
     {
         // Declared existing scale, which can be used to augment a source
-        TimeScale declaredExistingTimeScale = null;
+        TimeScaleOuter declaredExistingTimeScale = null;
 
         if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
         {
-            declaredExistingTimeScale = TimeScale.of( dataSourceConfig.getExistingTimeScale() );
+            declaredExistingTimeScale = TimeScaleOuter.of( dataSourceConfig.getExistingTimeScale() );
         }
 
         return declaredExistingTimeScale;

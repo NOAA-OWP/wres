@@ -40,7 +40,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -294,7 +294,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
         String measurementUnit = document.getVariable().get( "unit" );
         
         // Time scale if available
-        TimeScale timeScale = null;
+        TimeScaleOuter timeScale = null;
  
         if( Objects.nonNull( document.getParameterCodes() ) )
         {
@@ -410,7 +410,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
     private TimeSeries<?> transform( Instant referenceDatetime,
                                      NwmFeature feature,
-                                     TimeScale timeScale,
+                                     TimeScaleOuter timeScale,
                                      String variableName,
                                      String measurementUnit )
     {

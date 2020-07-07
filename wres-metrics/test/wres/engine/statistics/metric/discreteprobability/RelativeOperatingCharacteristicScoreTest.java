@@ -293,7 +293,7 @@ public final class RelativeOperatingCharacteristicScoreTest
                             .getMetadata()
                             .getSampleMetadata()
                             .getIdentifier()
-                            .getScenarioIDForBaseline()
+                            .getScenarioNameForBaseline()
                             .equals( "ESP" ) );
     }
 

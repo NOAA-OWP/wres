@@ -17,7 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -70,7 +70,7 @@ public class TimeSeriesTest
 
         this.metadata =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.referenceTime),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE_NAME,
                                        UNIT );
@@ -109,7 +109,7 @@ public class TimeSeriesTest
     @Test
     public void testGetTimeScale()
     {
-        assertEquals( TimeScale.of(), this.testSeries.getTimeScale() );
+        assertEquals( TimeScaleOuter.of(), this.testSeries.getTimeScale() );
     }
 
     /**
@@ -176,7 +176,7 @@ public class TimeSeriesTest
         TimeSeriesMetadata metadataWithOtherReferenceTime =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                Instant.parse( "1990-03-01T12:00:00Z" ) ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE_NAME,
                                        UNIT );
@@ -188,7 +188,7 @@ public class TimeSeriesTest
         TimeSeriesMetadata metadataWithOtherReferenceTimeType =
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ISSUED_TIME,
                                                this.referenceTime ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE_NAME,
                                        UNIT );

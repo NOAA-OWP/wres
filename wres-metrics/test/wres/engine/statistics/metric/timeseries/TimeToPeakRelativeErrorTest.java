@@ -17,7 +17,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -48,7 +48,7 @@ public final class TimeToPeakRelativeErrorTest
                                                  Duration.ofHours( 18 ) );
 
         StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        "Streamflow" ) )
                                                                  .setTimeWindow( window )

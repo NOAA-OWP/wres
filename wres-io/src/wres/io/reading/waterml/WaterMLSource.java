@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -159,7 +159,7 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
         List<wres.datamodel.time.TimeSeries<Double>> timeSerieses =
                 new ArrayList<>();
         String usgsSiteCode = usgsSiteCodesFound.get( 0 );
-        TimeScale period = null;
+        TimeScaleOuter period = null;
 
         // Assume that USGS "IV" service implies "instantaneous" values, which
         // we model as having a period of 1 minute due to 1 minute being the
@@ -171,7 +171,7 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
                        .contains( "usgs.gov/nwis/iv" ) )
         {
             // Short-hand for declaring "instantaneous scale used by WRES"
-            period = TimeScale.of();
+            period = TimeScaleOuter.of();
         }
 
         int countOfTracesFound = series.getValues().length;

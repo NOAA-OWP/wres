@@ -14,7 +14,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.ScaleValidationEvent;
 
 /**
@@ -58,14 +58,14 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
     @Override
     public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
-                                                               TimeScale desiredTimeScale )
+                                                               TimeScaleOuter desiredTimeScale )
     {
         return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
     }
 
     @Override
     public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
-                                                               TimeScale desiredTimeScale,
+                                                               TimeScaleOuter desiredTimeScale,
                                                                Set<Instant> endsAt )
     {
         Objects.requireNonNull( timeSeries );

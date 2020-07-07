@@ -18,7 +18,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
@@ -99,7 +99,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * Declared <code>desiredTimeScale</code>, if any.
      */
 
-    private final TimeScale desiredTimeScale;
+    private final TimeScaleOuter desiredTimeScale;
 
     /**
      * A mapper to convert measurement units.
@@ -203,7 +203,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         boolean isConfiguredAsForecast = ConfigHelper.isForecast( dataSourceConfig );
         String variableName = dataSourceConfig.getVariable()
                                               .getValue();
-        TimeScale declaredExistingTimeScale =
+        TimeScaleOuter declaredExistingTimeScale =
                 this.getDeclaredExistingTimeScale( dataSourceConfig );
 
         try
@@ -376,14 +376,14 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @return a declared existing time scale, or null
      */
 
-    private TimeScale getDeclaredExistingTimeScale( DataSourceConfig dataSourceConfig )
+    private TimeScaleOuter getDeclaredExistingTimeScale( DataSourceConfig dataSourceConfig )
     {
         // Declared existing scale, which can be used to augment a source
-        TimeScale declaredExistingTimeScale = null;
+        TimeScaleOuter declaredExistingTimeScale = null;
 
         if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
         {
-            declaredExistingTimeScale = TimeScale.of( dataSourceConfig.getExistingTimeScale() );
+            declaredExistingTimeScale = TimeScaleOuter.of( dataSourceConfig.getExistingTimeScale() );
         }
 
         return declaredExistingTimeScale;

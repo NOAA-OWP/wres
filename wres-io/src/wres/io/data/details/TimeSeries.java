@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
@@ -57,7 +57,7 @@ public class TimeSeries
      * The time scale associated with the data
      */
 
-    private TimeScale timeScale = null;
+    private TimeScaleOuter timeScale = null;
 
     /**
      * The ID of the initial source of the data for the time series
@@ -139,12 +139,12 @@ public class TimeSeries
         return this.initializationDate;
     }
 
-    public TimeScale getTimeScale()
+    public TimeScaleOuter getTimeScale()
     {
         return this.timeScale;
     }
 
-    public void setTimeScale(final TimeScale timeScale)
+    public void setTimeScale(final TimeScaleOuter timeScale)
     {
         this.timeScale = timeScale;
     }
@@ -157,7 +157,7 @@ public class TimeSeries
     
     private void setTimeScale( final int period, final String function )
     {
-        this.timeScale = TimeScale.of( Duration.ofMinutes( period ), 
+        this.timeScale = TimeScaleOuter.of( Duration.ofMinutes( period ), 
                                        TimeScaleFunction.valueOf( function ) );
     }
 

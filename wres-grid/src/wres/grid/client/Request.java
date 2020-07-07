@@ -3,7 +3,7 @@ package wres.grid.client;
 import java.util.List;
 
 import wres.config.generated.Feature;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
 
 import java.nio.file.Path;
@@ -45,7 +45,7 @@ public interface Request
      * @return the declared existing time scale, if any
      */
     
-    TimeScale getTimeScale();
+    TimeScaleOuter getTimeScale();
     
     /**
      * @return true if the request involves forecasts, false otherwise

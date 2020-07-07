@@ -7,13 +7,13 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 
 /**
- * <p>Helper class that builds a {@link TimeScale} from a set of {@link ParameterCodes}.
- * A {@link TimeScale} comprises a {@link TimeScale#getPeriod()} and a 
- * {@link TimeScale#getFunction()}. The main hint is the 
+ * <p>Helper class that builds a {@link TimeScaleOuter} from a set of {@link ParameterCodes}.
+ * A {@link TimeScaleOuter} comprises a {@link TimeScaleOuter#getPeriod()} and a 
+ * {@link TimeScaleOuter#getFunction()}. The main hint is the 
  * {@link ParameterCodes#getDuration()}, which describes the <code>period</code> 
  * over which the value applies. The <code>function</code> depends on the 
  * {@link ParameterCodes#getPhysicalElement()}. See #60158-11. 
@@ -33,7 +33,7 @@ public class TimeScaleFromParameterCodes
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeScaleFromParameterCodes.class );
 
     /**
-     * Returns a {@link TimeScale} from the input parameter codes.
+     * Returns a {@link TimeScaleOuter} from the input parameter codes.
      * 
      * @param parameterCodes the parameter codes
      * @param source a source URI, which is used to help with logging
@@ -42,16 +42,16 @@ public class TimeScaleFromParameterCodes
      * @throws UnsupportedOperationException if the scale is unsupported
      */
 
-    public static TimeScale getTimeScale( ParameterCodes parameterCodes, URI source )
+    public static TimeScaleOuter getTimeScale( ParameterCodes parameterCodes, URI source )
     {
         Objects.requireNonNull( parameterCodes,
                                 "Specify non-null parameter codes alongside the WRDS source '" + source + "'." );
 
-        TimeScale returnMe = null;
+        TimeScaleOuter returnMe = null;
 
         if ( "I".equalsIgnoreCase( parameterCodes.getDuration() ) )
         {
-            returnMe = TimeScale.of();
+            returnMe = TimeScaleOuter.of();
         }
         else
         {
@@ -71,7 +71,7 @@ public class TimeScaleFromParameterCodes
      * @throws UnsupportedOperationException if the scale encoding is unsupported
      */
 
-    private static TimeScale getNonInstantaneousTimeScale( ParameterCodes parameterCodes, URI source )
+    private static TimeScaleOuter getNonInstantaneousTimeScale( ParameterCodes parameterCodes, URI source )
     {
         Objects.requireNonNull( parameterCodes.getPhysicalElement(),
                                 "Cannot determine the time scale of the time-series in '"
@@ -98,7 +98,7 @@ public class TimeScaleFromParameterCodes
         Duration duration =
                 TimeScaleFromParameterCodes.getDurationFromDurationCode( parameterCodes.getDuration(), source );
 
-        TimeScale timeScale = TimeScale.of( duration, function );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( duration, function );
 
         LOGGER.trace( "{}{}{}{}.",
                       "While processing the time-series response in ",

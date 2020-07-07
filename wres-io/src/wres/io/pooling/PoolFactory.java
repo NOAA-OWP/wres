@@ -29,9 +29,9 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
@@ -120,7 +120,7 @@ public class PoolFactory
         String desiredMeasurementUnit = pairConfig.getUnit();
 
         // Get the times scale
-        TimeScale desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
 
         // Create a feature-shaped retriever factory to support retrieval for this project
         RetrieverFactory<Double, Double> retrieverFactory = SingleValuedRetrieverFactory.of( database,
@@ -250,7 +250,7 @@ public class PoolFactory
         String desiredMeasurementUnit = pairConfig.getUnit();
 
         // Get the times scale
-        TimeScale desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
 
         // Create a feature-shaped retriever factory to support retrieval for this project
         RetrieverFactory<Double, Ensemble> retrieverFactory = EnsembleRetrieverFactory.of( database,
@@ -369,7 +369,7 @@ public class PoolFactory
                                                   String variableId,
                                                   String scenarioId,
                                                   String measurementUnitString,
-                                                  TimeScale desiredTimeScale,
+                                                  TimeScaleOuter desiredTimeScale,
                                                   LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
         Float longitude = null;
@@ -395,7 +395,7 @@ public class PoolFactory
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( measurementUnitString );
 
-        return new SampleMetadataBuilder().setIdentifier( identifier )
+        return new Builder().setIdentifier( identifier )
                                           .setProjectConfig( projectConfig )
                                           .setMeasurementUnit( measurementUnit )
                                           .setTimeScale( desiredTimeScale )

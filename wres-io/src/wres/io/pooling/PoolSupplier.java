@@ -35,7 +35,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.EvaluationEvent.EventType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -166,7 +166,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * The desired time scale.
      */
 
-    private final TimeScale desiredTimeScale;
+    private final TimeScaleOuter desiredTimeScale;
 
     /**
      * Metadata for the mains pairs.
@@ -303,7 +303,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
-        TimeScale desiredTimeScaleToUse = this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
+        TimeScaleOuter desiredTimeScaleToUse = this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
 
         // Set the metadata, adjusted to include the desired time scale
         builder.setMetadata( SampleMetadata.of( this.metadata, desiredTimeScaleToUse ) );
@@ -454,7 +454,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * The desired time scale.
          */
 
-        private TimeScale desiredTimeScale;
+        private TimeScaleOuter desiredTimeScale;
 
         /**
          * Metadata for the mains pairs.
@@ -604,7 +604,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param desiredTimeScale the desiredTimeScale to set
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setDesiredTimeScale( TimeScale desiredTimeScale )
+        PoolOfPairsSupplierBuilder<L, R> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
         {
             this.desiredTimeScale = desiredTimeScale;
 
@@ -704,7 +704,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
     private List<TimeSeries<Pair<L, R>>> createPairs( List<TimeSeries<L>> left,
                                                       List<TimeSeries<R>> right,
-                                                      TimeScale desiredTimeScale,
+                                                      TimeScaleOuter desiredTimeScale,
                                                       Duration frequency )
     {
         Objects.requireNonNull( left );
@@ -751,7 +751,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
     private TimeSeries<Pair<L, R>> createSeriesPairs( TimeSeries<L> left,
                                                       TimeSeries<R> right,
-                                                      TimeScale desiredTimeScale,
+                                                      TimeScaleOuter desiredTimeScale,
                                                       Duration frequency )
     {
         Objects.requireNonNull( left );
@@ -972,7 +972,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return the desired time scale.
      */
 
-    private TimeScale getDesiredTimeScale( List<TimeSeries<L>> leftData,
+    private TimeScaleOuter getDesiredTimeScale( List<TimeSeries<L>> leftData,
                                            List<TimeSeries<R>> rightData,
                                            List<TimeSeries<R>> baselineData,
                                            Inputs inputDeclaration )
@@ -988,8 +988,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Find the Least Common Scale
-        TimeScale leastCommonScale = null;
-        Set<TimeScale> existingTimeScales = new HashSet<>();
+        TimeScaleOuter leastCommonScale = null;
+        Set<TimeScaleOuter> existingTimeScales = new HashSet<>();
         leftData.forEach( next -> existingTimeScales.add( next.getTimeScale() ) );
         rightData.forEach( next -> existingTimeScales.add( next.getTimeScale() ) );
         if ( Objects.nonNull( baselineData ) )
@@ -1003,7 +1003,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Look for the LCS among the ingested sources
         if ( !existingTimeScales.isEmpty() )
         {
-            leastCommonScale = TimeScale.getLeastCommonTimeScale( existingTimeScales );
+            leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( existingTimeScales );
 
             LOGGER.debug( "While retrieving data for pool {}, discovered that the desired time scale was not supplied "
                           + "on construction of the pool. Instead, determined the desired time scale from the Least "
@@ -1017,27 +1017,27 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Look for the LCS among the declared inputs
         if ( Objects.nonNull( this.inputs ) )
         {
-            Set<TimeScale> declaredExistingTimeScales = new HashSet<>();
+            Set<TimeScaleOuter> declaredExistingTimeScales = new HashSet<>();
             TimeScaleConfig leftScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
             TimeScaleConfig rightScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
 
             if ( Objects.nonNull( leftScaleConfig ) )
             {
-                declaredExistingTimeScales.add( TimeScale.of( leftScaleConfig ) );
+                declaredExistingTimeScales.add( TimeScaleOuter.of( leftScaleConfig ) );
             }
             if ( Objects.nonNull( rightScaleConfig ) )
             {
-                declaredExistingTimeScales.add( TimeScale.of( rightScaleConfig ) );
+                declaredExistingTimeScales.add( TimeScaleOuter.of( rightScaleConfig ) );
             }
             if ( Objects.nonNull( inputDeclaration.getBaseline() )
                  && Objects.nonNull( inputDeclaration.getBaseline().getExistingTimeScale() ) )
             {
-                declaredExistingTimeScales.add( TimeScale.of( inputDeclaration.getBaseline().getExistingTimeScale() ) );
+                declaredExistingTimeScales.add( TimeScaleOuter.of( inputDeclaration.getBaseline().getExistingTimeScale() ) );
             }
 
             if ( !declaredExistingTimeScales.isEmpty() )
             {
-                leastCommonScale = TimeScale.getLeastCommonTimeScale( declaredExistingTimeScales );
+                leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
 
                 LOGGER.debug( "While retrieving data for pool {}, discovered that the desired time scale was not supplied "
                               + "on construction of the pool. Instead, determined the desired time scale from the Least "
@@ -1147,7 +1147,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Returns the frequency at which to create pairs. By default this is equal to the {@link TimeScale#getPeriod()} 
+     * Returns the frequency at which to create pairs. By default this is equal to the {@link TimeScaleOuter#getPeriod()} 
      * associated with the {@link #desiredTimeScale}, where defined, otherwise the value supplied on construction, 
      * which normally corresponds to the <code>frequency</code> associated with the {@link DesiredTimeScaleConfig}.
      * Otherwise <code>null</code>.
@@ -1561,7 +1561,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     {
         SortedSet<Instant> validTimes = new TreeSet<>();
 
-        TimeScale timeScale = null;
+        TimeScaleOuter timeScale = null;
         for ( TimeSeries<T> next : bounds )
         {
             // Add both reference times and valid times
@@ -1635,7 +1635,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @return the period associated with the time scale or null
      */
 
-    private Duration getPeriodFromTimeScale( TimeScale timeScale )
+    private Duration getPeriodFromTimeScale( TimeScaleOuter timeScale )
     {
         Duration period = null;
 

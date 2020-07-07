@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -199,7 +199,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         TimeSeries<T> persistenceSeries = this.persistenceSource;
 
         // Upscale? 
-        TimeScale desiredTimeScale = template.getTimeScale();
+        TimeScaleOuter desiredTimeScale = template.getTimeScale();
         if ( Objects.nonNull( desiredTimeScale )
              && Objects.nonNull( this.persistenceSource.getTimeScale() )
              && !desiredTimeScale.equals( this.persistenceSource.getTimeScale() ) )

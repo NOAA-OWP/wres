@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigs;
 import wres.config.generated.TimeScaleConfig;
+import wres.statistics.generated.TimeScale;
 
 /**
  * <p>Metadata that describes the time scale associated with each value in a time-series. The time scale is described 
@@ -44,10 +45,12 @@ import wres.config.generated.TimeScaleConfig;
  *
  * <p>This class is immutable and thread-safe.</p>
  * 
+ * <p>The internal data is stored, and accessible, as a {@link TimeScale}.
+ * 
  * @author james.brown@hydrosolved.com
  */
 
-public final class TimeScale implements Comparable<TimeScale>
+public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 {
 
     /**
@@ -93,47 +96,54 @@ public final class TimeScale implements Comparable<TimeScale>
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeScale.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeScaleOuter.class );
 
     /**
-     * The period to which each value in a time-series of values applies.
+     * The canonical representation of a time scale.
      */
 
-    private final Duration period;
+    private final TimeScale timeScale;
 
     /**
-     * The name of the mathematical function whose output produced the value over the prescribed period.
-     */
-
-    private final TimeScaleFunction function;
-    
-    /**
-     * Constructs a {@link TimeScale} whose {@link TimeScale#isInstantaneous()} returns 
+     * Constructs a {@link TimeScaleOuter} whose {@link TimeScaleOuter#isInstantaneous()} returns 
      * <code>true</code>.
      * 
      * @return an instantaneous time scale
      */
 
-    public static TimeScale of()
+    public static TimeScaleOuter of()
     {
-        return TimeScale.of( Duration.ofMinutes( 1 ) );
-    }    
+        return TimeScaleOuter.of( Duration.ofMinutes( 1 ) );
+    }
 
     /**
-     * Constructs a {@link TimeScale} from a period and a function that is {@link TimeScaleFunction#UNKNOWN}.
+     * Constructs a {@link TimeScaleOuter} from a period and a function that is {@link TimeScaleFunction#UNKNOWN}.
      * 
      * @param period the period
      * @return a time scale
      * @throws NullPointerException if the input is null
      */
 
-    public static TimeScale of( Duration period )
+    public static TimeScaleOuter of( Duration period )
     {
-        return new TimeScale( period, TimeScaleFunction.UNKNOWN );
+        return new TimeScaleOuter( period, TimeScaleFunction.UNKNOWN );
+    }
+    
+    /**
+     * Constructs a {@link TimeScaleOuter} from a {@link TimeScale}.
+     * 
+     * @param timeScale the time scale
+     * @return a time scale
+     * @throws NullPointerException if the input is null
+     */
+
+    public static TimeScaleOuter of( TimeScale timeScale )
+    {
+        return new TimeScaleOuter( timeScale );
     }
 
     /**
-     * Constructs a {@link TimeScale} with a period and a function.
+     * Constructs a {@link TimeScaleOuter} with a period and a function.
      * 
      * @param period the period
      * @param function the function
@@ -141,13 +151,13 @@ public final class TimeScale implements Comparable<TimeScale>
      * @throws NullPointerException if either input is null
      */
 
-    public static TimeScale of( Duration period, TimeScaleFunction function )
+    public static TimeScaleOuter of( Duration period, TimeScaleFunction function )
     {
-        return new TimeScale( period, function );
+        return new TimeScaleOuter( period, function );
     }
 
     /**
-     * Constructs a {@link TimeScale} from a {@link TimeScaleConfig}. If the {@link TimeScaleConfig#getFunction()}
+     * Constructs a {@link TimeScaleOuter} from a {@link TimeScaleConfig}. If the {@link TimeScaleConfig#getFunction()}
      * is null, the {@link TimeScaleFunction} is set to {@link TimeScaleFunction#UNKNOWN}.
      * 
      * @param config the configuration
@@ -157,7 +167,7 @@ public final class TimeScale implements Comparable<TimeScale>
      *            and its name does not match the name of a {@link TimeScaleFunction}
      */
 
-    public static TimeScale of( TimeScaleConfig config )
+    public static TimeScaleOuter of( TimeScaleConfig config )
     {
         Objects.requireNonNull( config, "Specify non-null time-series configuration" );
 
@@ -174,7 +184,7 @@ public final class TimeScale implements Comparable<TimeScale>
             function = TimeScaleFunction.valueOf( config.getFunction().name() );
         }
 
-        return new TimeScale( period, function );
+        return new TimeScaleOuter( period, function );
     }
 
     /**
@@ -185,7 +195,8 @@ public final class TimeScale implements Comparable<TimeScale>
 
     public Duration getPeriod()
     {
-        return period;
+        return Duration.ofSeconds( this.getTimeScale().getPeriod().getSeconds(),
+                                   this.getTimeScale().getPeriod().getNanos() );
     }
 
     /**
@@ -196,17 +207,28 @@ public final class TimeScale implements Comparable<TimeScale>
 
     public TimeScaleFunction getFunction()
     {
-        return function;
+        return TimeScaleFunction.valueOf( this.getTimeScale().getFunction().name() );
+    }
+
+    /**
+     * Returns the canonical representation of a time scale.
+     * 
+     * @return the canonical representation
+     */
+
+    public TimeScale getTimeScale()
+    {
+        return this.timeScale;
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof TimeScale ) )
+        if ( ! ( o instanceof TimeScaleOuter ) )
         {
             return false;
         }
-        TimeScale in = (TimeScale) o;
+        TimeScaleOuter in = (TimeScaleOuter) o;
 
         return in.getPeriod().equals( this.getPeriod() ) && in.getFunction() == this.getFunction();
     }
@@ -214,7 +236,7 @@ public final class TimeScale implements Comparable<TimeScale>
     @Override
     public int hashCode()
     {
-        return Objects.hash( period, function );
+        return this.getTimeScale().hashCode();
     }
 
     @Override
@@ -224,11 +246,11 @@ public final class TimeScale implements Comparable<TimeScale>
         {
             return "[INSTANTANEOUS]";
         }
-        return "[" + period + "," + function + "]";
+        return "[" + this.getPeriod() + "," + this.getFunction() + "]";
     }
 
     @Override
-    public int compareTo( TimeScale o )
+    public int compareTo( TimeScaleOuter o )
     {
         Objects.requireNonNull( o );
 
@@ -262,10 +284,10 @@ public final class TimeScale implements Comparable<TimeScale>
      * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of seconds. 
      * The LCS is the integer number of seconds that is a common multiple of all of the inputs.
      * 
-     * <p>When the input contains an instantaneous time scale (see {@link TimeScale#isInstantaneous()}), then this
+     * <p>When the input contains an instantaneous time scale (see {@link TimeScaleOuter#isInstantaneous()}), then this
      * method either returns the other time scale present or throws an exception if more than one additional time 
      * scale is present. However, there is no other validation of the proposed rescaling, such as the proposed 
-     * {@link TimeScale#getFunction()} associated with the rescaled quantity.
+     * {@link TimeScaleOuter#getFunction()} associated with the rescaled quantity.
      * 
      * @param timeScales the time scales from which to derive the LCS
      * @return the LCS for the input
@@ -275,7 +297,7 @@ public final class TimeScale implements Comparable<TimeScale>
      * @throws IllegalArgumentException if the input is empty
      */
 
-    public static TimeScale getLeastCommonTimeScale( Set<TimeScale> timeScales )
+    public static TimeScaleOuter getLeastCommonTimeScale( Set<TimeScaleOuter> timeScales )
     {
         Objects.requireNonNull( timeScales, "Cannot compute the Least Common Scale from null input." );
 
@@ -285,11 +307,13 @@ public final class TimeScale implements Comparable<TimeScale>
         }
 
         Set<TimeScaleFunction> functions =
-                timeScales.stream().map( TimeScale::getFunction ).collect( Collectors.toCollection( TreeSet::new ) );
+                timeScales.stream()
+                          .map( TimeScaleOuter::getFunction )
+                          .collect( Collectors.toCollection( TreeSet::new ) );
 
         // Only allowed one function unless instantaneous data is present, in which case only two
         if ( functions.size() > 2
-             || ( functions.size() == 2 && timeScales.stream().noneMatch( TimeScale::isInstantaneous ) ) )
+             || ( functions.size() == 2 && timeScales.stream().noneMatch( TimeScaleOuter::isInstantaneous ) ) )
         {
             throw new RescalingException( "Could not determine the Least Common Scale from the input. Expected input "
                                           + "with only one scale function that does not correspond to an instantaneous "
@@ -309,9 +333,10 @@ public final class TimeScale implements Comparable<TimeScale>
 
         // If the input contains an instantaneous time scale, then return the only non-instantaneous one present
         // The earlier validation guarantees the latter
-        if ( timeScales.stream().anyMatch( TimeScale::isInstantaneous ) )
+        if ( timeScales.stream().anyMatch( TimeScaleOuter::isInstantaneous ) )
         {
-            Optional<TimeScale> nonInst = timeScales.stream().filter( scale -> !scale.isInstantaneous() ).findFirst();
+            Optional<TimeScaleOuter> nonInst =
+                    timeScales.stream().filter( scale -> !scale.isInstantaneous() ).findFirst();
             if ( nonInst.isPresent() )
             {
                 return nonInst.get();
@@ -319,11 +344,11 @@ public final class TimeScale implements Comparable<TimeScale>
         }
 
         // Compute the LCM of the durations
-        Duration lcm = TimeScale.getLeastCommonDuration( timeScales.stream()
-                                                                   .map( TimeScale::getPeriod )
-                                                                   .collect( Collectors.toSet() ) );
+        Duration lcm = TimeScaleOuter.getLeastCommonDuration( timeScales.stream()
+                                                                        .map( TimeScaleOuter::getPeriod )
+                                                                        .collect( Collectors.toSet() ) );
 
-        return of( lcm, timeScales.iterator().next().getFunction() );
+        return TimeScaleOuter.of( lcm, timeScales.iterator().next().getFunction() );
     }
 
     /**
@@ -356,7 +381,7 @@ public final class TimeScale implements Comparable<TimeScale>
             throw new IllegalArgumentException( "When computing the Least Common Duration, found a "
                                                 + "duration of zero, which is not allowed." );
         }
-        
+
         // Only one, then that must be the LCM
         if ( durations.size() == 1 )
         {
@@ -395,8 +420,8 @@ public final class TimeScale implements Comparable<TimeScale>
      * @throws NullPointerException if either input is null
      */
 
-    private TimeScale( Duration period,
-                       TimeScaleFunction function )
+    private TimeScaleOuter( Duration period,
+                            TimeScaleFunction function )
     {
         Objects.requireNonNull( period, "Specify a non-null period for the time scale." );
 
@@ -412,8 +437,29 @@ public final class TimeScale implements Comparable<TimeScale>
             throw new IllegalArgumentException( "Cannot build a time scale with a negative period." );
         }
 
-        this.period = period;
-        this.function = function;
+        this.timeScale =
+                TimeScale.newBuilder()
+                         .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                 .setSeconds( period.getSeconds() )
+                                                                 .setNanos( period.getNano() ) )
+                         .setFunction( wres.statistics.generated.TimeScale.TimeScaleFunction.valueOf( function.name() ) )
+                         .build();
     }
+    
+    /**
+     * Hidden constructor.
+     * 
+     * @param period the positive period
+     * @param function the function
+     * @throws IllegalArgumentException if the period is zero or negative
+     * @throws NullPointerException if either input is null
+     */
 
+    private TimeScaleOuter( TimeScale timeScale )
+    {
+        Objects.requireNonNull( timeScale, "Specify a non-null time scale." );
+
+        this.timeScale = timeScale;
+    }
+    
 }

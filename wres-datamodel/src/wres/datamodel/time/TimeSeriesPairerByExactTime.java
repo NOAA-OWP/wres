@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.pairs.PairingException;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 
 /**
  * <p>Implements pairing of two {@link TimeSeries} by matching times exactly. The times considered may be reference
@@ -263,7 +263,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
      * @return true if the time scales are equal, otherwise false
      */
 
-    private boolean timeScalesAreEqual( TimeScale left, TimeScale right )
+    private boolean timeScalesAreEqual( TimeScaleOuter left, TimeScaleOuter right )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( right );

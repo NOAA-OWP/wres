@@ -20,7 +20,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -65,7 +65,7 @@ public final class TimingErrorDurationStatisticsTest
         final TimeWindowOuter timeWindow = window;
 
         StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
@@ -124,7 +124,7 @@ public final class TimingErrorDurationStatisticsTest
         final TimeWindowOuter timeWindow = window;
 
         StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )
@@ -175,7 +175,7 @@ public final class TimingErrorDurationStatisticsTest
         final TimeWindowOuter timeWindow = window;
 
         StatisticMetadata m1 =
-                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                  .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
                                                                                                        STREAMFLOW ) )
                                                                  .setTimeWindow( timeWindow )

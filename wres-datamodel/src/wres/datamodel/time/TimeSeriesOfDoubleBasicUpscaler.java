@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
@@ -32,7 +32,7 @@ import wres.datamodel.EvaluationEvent.EventType;
 /**
  * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Double} 
  * values. An upscaled value is produced from a collection of values that fall within an interval that ends at a 
- * prescribed time. The interval has the same width as the period associated with the desired {@link TimeScale}. If 
+ * prescribed time. The interval has the same width as the period associated with the desired {@link TimeScaleOuter}. If 
  * the events are not evenly spaced within the interval, that interval is skipped and logged. If any event value is 
  * non-finite, then the upscaled event value is {@link MissingValues#DOUBLE}. The interval is right-closed, 
  * i.e. <code>(end-period,end]</code>. Thus, for example, when upscaling a sequence of instantaneous values 
@@ -161,14 +161,14 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
     @Override
     public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
-                                                             TimeScale desiredTimeScale )
+                                                             TimeScaleOuter desiredTimeScale )
     {
         return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
     }
 
     @Override
     public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
-                                                             TimeScale desiredTimeScale,
+                                                             TimeScaleOuter desiredTimeScale,
                                                              Set<Instant> endsAt )
     {
         Objects.requireNonNull( timeSeries );
@@ -309,7 +309,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @return the times at which upscaled intervals should end
      */
 
-    private <T> Set<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries, TimeScale desiredTimeScale )
+    private <T> Set<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
     {
         Set<Instant> endsAt = new HashSet<>();
 
@@ -348,7 +348,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @return the validation events
      */
 
-    private <T> List<ScaleValidationEvent> validate( TimeSeries<T> timeSeries, TimeScale desiredTimeScale )
+    private <T> List<ScaleValidationEvent> validate( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
     {
         List<ScaleValidationEvent> events =
                 TimeSeriesOfDoubleBasicUpscaler.validateForUpscaling( timeSeries.getTimeScale(), desiredTimeScale );
@@ -531,8 +531,8 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @param desiredTimeScale the desired scale
      */
 
-    private static List<ScaleValidationEvent> validateForUpscaling( TimeScale existingTimeScale,
-                                                                    TimeScale desiredTimeScale )
+    private static List<ScaleValidationEvent> validateForUpscaling( TimeScaleOuter existingTimeScale,
+                                                                    TimeScaleOuter desiredTimeScale )
     {
         // Existing time-scale is unknown
         if ( Objects.isNull( existingTimeScale ) )
@@ -590,8 +590,8 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * if the two inputs are different, except in one of the following two cases:
      *
      * <ol>
-     * <li>The two inputs are both instantaneous according to {@link TimeScale#isInstantaneous()}</li>
-     * <li>The only difference is the {@link TimeScale#getFunction()} and the existingTimeScale is
+     * <li>The two inputs are both instantaneous according to {@link TimeScaleOuter#isInstantaneous()}</li>
+     * <li>The only difference is the {@link TimeScaleOuter#getFunction()} and the existingTimeScale is
      * {@link TimeScaleFunction#UNKNOWN}</li>
      * </ol>
      *
@@ -601,7 +601,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @throws NullPointerException if either input is null
      */
 
-    private static boolean isChangeOfScaleRequired( TimeScale existingTimeScale, TimeScale desiredTimeScale )
+    private static boolean isChangeOfScaleRequired( TimeScaleOuter existingTimeScale, TimeScaleOuter desiredTimeScale )
     {
         Objects.requireNonNull( existingTimeScale );
 
@@ -704,14 +704,14 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
 
     /**
-     * <p>Checks whether the {@link TimeScale#getPeriod()} of the two periods match. Returns a validation event as 
+     * <p>Checks whether the {@link TimeScaleOuter#getPeriod()} of the two periods match. Returns a validation event as 
      * follows:
      * 
      * <ol>
-     * <li>If the {@link TimeScale#getPeriod()} match and the {@link TimeScale#getFunction()} do not match and the 
+     * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and the 
      * the existingTimeScale is {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
      * a {@link EventType#WARN}, which assumes, leniently, that the desiredTimeScale can be achieved.</li>
-     * <li>If the {@link TimeScale#getPeriod()} match and the {@link TimeScale#getFunction()} do not match and the 
+     * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and the 
      * the existingTimeScale is not a {@link TimeScaleFunction#UNKNOWN}, returns a {@link ScaleValidationEvent} that is 
      * a {@link EventType#ERROR}.</li>
      * <li>Otherwise, returns a {@link ScaleValidationEvent} that is a {@link EventType#PASS}.</li>
@@ -722,8 +722,8 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @returns a validation event
      */
 
-    private static ScaleValidationEvent checkIfPeriodsMatchAndFunctionsDiffer( TimeScale existingTimeScale,
-                                                                               TimeScale desiredTimeScale )
+    private static ScaleValidationEvent checkIfPeriodsMatchAndFunctionsDiffer( TimeScaleOuter existingTimeScale,
+                                                                               TimeScaleOuter desiredTimeScale )
     {
         if ( existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
              && existingTimeScale.getFunction() != desiredTimeScale.getFunction() )
@@ -775,7 +775,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @return a validation event
      */
 
-    private static ScaleValidationEvent checkIfAccumulatingInstantaneous( TimeScale existingScale,
+    private static ScaleValidationEvent checkIfAccumulatingInstantaneous( TimeScaleOuter existingScale,
                                                                           TimeScaleFunction desiredFunction )
     {
         if ( existingScale.isInstantaneous() && desiredFunction == TimeScaleFunction.TOTAL )

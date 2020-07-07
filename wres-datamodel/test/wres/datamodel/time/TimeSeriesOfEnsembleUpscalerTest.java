@@ -12,8 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -29,7 +29,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
-                                                                                TimeScale timeScale )
+                                                                                TimeScaleOuter timeScale )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       timeScale,
@@ -65,7 +65,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
         Event<Ensemble> four = Event.of( fourth, Ensemble.of( 17, 18, 19, 20 ) );
 
         // Time scale of the event values: instantaneous
-        TimeScale existingScale = TimeScale.of();
+        TimeScaleOuter existingScale = TimeScaleOuter.of();
 
         // Forecast reference time
         Instant referenceTime = Instant.parse( "1985-01-01T12:00:00Z" );
@@ -86,7 +86,7 @@ public class TimeSeriesOfEnsembleUpscalerTest
         endsAt.add( second );
         endsAt.add( fourth );
 
-        TimeScale desiredTimeScale = TimeScale.of( Duration.ofHours( 12 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 12 ), TimeScaleFunction.MEAN );
 
         TimeSeries<Ensemble> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
                                                            .getTimeSeries();

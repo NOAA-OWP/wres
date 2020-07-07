@@ -13,7 +13,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 
 /**
  * <p>A time-series contains a time-ordered set of {@link Event}, together with zero or more reference datetimes and 
@@ -52,7 +52,7 @@ public class TimeSeries<T>
 
 
     /**
-     * Returns an empty {@link TimeSeries} with a <code>null</code> {@link TimeScale}.
+     * Returns an empty {@link TimeSeries} with a <code>null</code> {@link TimeScaleOuter}.
      *
      * @param <T> the event type
      * @param metadata The metadata for the empty timeseries.
@@ -101,13 +101,13 @@ public class TimeSeries<T>
     }
 
     /**
-     * Returns the {@link TimeScale} associated with the events or <code>null</code> if {@link #hasTimeScale()} returns
+     * Returns the {@link TimeScaleOuter} associated with the events or <code>null</code> if {@link #hasTimeScale()} returns
      * <code>false</code>.
      * 
      * @return the time-scale or null
      */
 
-    public TimeScale getTimeScale()
+    public TimeScaleOuter getTimeScale()
     {
         return this.getMetadata()
                    .getTimeScale();

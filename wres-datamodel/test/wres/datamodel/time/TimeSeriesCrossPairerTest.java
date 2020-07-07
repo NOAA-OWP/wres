@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import wres.datamodel.sampledata.pairs.CrossPairs;
 import wres.datamodel.sampledata.pairs.PairingException;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 
@@ -67,7 +67,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -121,7 +121,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -135,7 +135,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata secondMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -158,7 +158,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata fourthMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  SECOND ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -183,7 +183,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -197,7 +197,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata secondMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -224,7 +224,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -238,7 +238,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata secondMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -265,7 +265,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -280,7 +280,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata secondMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -314,7 +314,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -328,7 +328,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata secondMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -353,7 +353,7 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -365,7 +365,7 @@ public final class TimeSeriesCrossPairerTest
         Event<Pair<Integer, Integer>> second = Event.of( FIRST, Pair.of( 2, 2 ) );
 
         TimeSeriesMetadata secondMetadata = TimeSeriesMetadata.of( Collections.emptyMap(),
-                                                                   TimeScale.of(),
+                                                                   TimeScaleOuter.of(),
                                                                    CHICKENS,
                                                                    GEORGIA,
                                                                    KG_H );
@@ -392,7 +392,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -406,7 +406,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata secondMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  FIRST ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -430,7 +430,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata fourthMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  SECOND ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -448,7 +448,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata fifthMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  nearToFirst ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -464,7 +464,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata sixthMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  THIRD ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -492,7 +492,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata firstMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );
@@ -507,7 +507,7 @@ public final class TimeSeriesCrossPairerTest
         TimeSeriesMetadata secondMetadata =
                 TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.ANALYSIS_START_TIME,
                                                                  ZEROTH ),
-                                       TimeScale.of(),
+                                       TimeScaleOuter.of(),
                                        CHICKENS,
                                        GEORGIA,
                                        KG_H );

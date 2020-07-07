@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import wres.config.generated.Feature;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.grid.reading.GriddedReader;
 
@@ -56,7 +56,7 @@ public class Fetcher
                                                   String variableName,
                                                   TimeWindowOuter timeWindow,
                                                   boolean isForecast,
-                                                  TimeScale declaredExistingTimeScale )
+                                                  TimeScaleOuter declaredExistingTimeScale )
     {
         return GridDataRequest.of( paths, features, variableName, timeWindow, isForecast, declaredExistingTimeScale );
     }

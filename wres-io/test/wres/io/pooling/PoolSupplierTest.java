@@ -24,8 +24,8 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.scale.TimeScale;
-import wres.datamodel.scale.TimeScale.TimeScaleFunction;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -143,14 +143,14 @@ public class PoolSupplierTest
     private static TimeSeriesMetadata getBoilerplateMetadata()
     {
         return TimeSeriesMetadata.of( Collections.emptyMap(),
-                                      TimeScale.of( Duration.ofHours( 1 ) ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       FEATURE_NAME,
                                       UNIT );
     }
 
 
-    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScale timeScale )
+    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScaleOuter timeScale )
     {
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       timeScale,
@@ -160,7 +160,7 @@ public class PoolSupplierTest
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
-                                                                                TimeScale timeScale )
+                                                                                TimeScaleOuter timeScale )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       timeScale,
@@ -217,7 +217,7 @@ public class PoolSupplierTest
      * Desired time scale.
      */
 
-    private TimeScale desiredTimeScale;
+    private TimeScaleOuter desiredTimeScale;
 
     /**
      * Metadata for common pools.
@@ -241,10 +241,10 @@ public class PoolSupplierTest
     public void runBeforeEachTest()
     {
 
-        TimeScale existingTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         // Observations: 25510317T00_FAKE2_observations.xml
-        TimeSeriesMetadata metadata = getBoilerplateMetadataWithTimeScale( TimeScale.of( Duration.ofHours( 1 ),
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithTimeScale( TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                                                          TimeScaleFunction.MEAN ) );
         this.observations =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
@@ -412,7 +412,7 @@ public class PoolSupplierTest
                                                .build();
 
         // Desired time scale
-        this.desiredTimeScale = TimeScale.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
+        this.desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         // Basic metadata
         this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),

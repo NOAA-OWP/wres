@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import wres.datamodel.scale.TimeScale;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
@@ -63,7 +63,7 @@ class MetricVariable
                     String metricName,
                     OneOrTwoThresholds thresholds,
                     String units,
-                    TimeScale desiredTimeScale,
+                    TimeScaleOuter desiredTimeScale,
                     ChronoUnit durationUnits )
     {
         this.durationUnits = durationUnits;
