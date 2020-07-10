@@ -8,11 +8,17 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * The mean square error (MSE) measures the accuracy of a single-valued predictand. It comprises the average square
@@ -23,6 +29,20 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public class MeanSquareError extends SumOfSquareError
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.MEAN_SQUARE_ERROR )
+                             .build();
 
     /**
      * Returns an instance.
@@ -36,7 +56,7 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
     {
         switch ( this.getScoreOutputGroup() )
         {
@@ -64,7 +84,7 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
         if ( Objects.isNull( output ) )
         {
@@ -78,10 +98,25 @@ public class MeanSquareError extends SumOfSquareError
                                                        output.getMetadata().getSampleSize(),
                                                        null );
 
-        double mse = FunctionFactory.finiteOrMissing()
-                                    .applyAsDouble( output.getData() / output.getMetadata().getSampleSize() );
+        double input = output.getComponent( MetricConstants.MAIN )
+                             .getData()
+                             .getValue();
 
-        return DoubleScoreStatistic.of( mse, meta );
+        double mse = FunctionFactory.finiteOrMissing()
+                                    .applyAsDouble( input / output.getMetadata().getSampleSize() );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( mse )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( MeanSquareError.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, meta );
     }
 
     /**

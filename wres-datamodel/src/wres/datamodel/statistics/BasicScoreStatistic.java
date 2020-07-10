@@ -1,17 +1,18 @@
 package wres.datamodel.statistics;
 
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricGroup;
+import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * An abstract base class for an immutable score output.
@@ -19,7 +20,7 @@ import wres.datamodel.MetricConstants.MetricGroup;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class BasicScoreStatistic<T, U extends ScoreStatistic<T, ?>> implements ScoreStatistic<T, U>
+abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements ScoreStatistic<S, T>
 {
 
     /**
@@ -44,23 +45,19 @@ abstract class BasicScoreStatistic<T, U extends ScoreStatistic<T, ?>> implements
      * The statistic.
      */
 
-    private final EnumMap<MetricConstants, T> statistic;
+    private final S score;
+
+    /**
+     * A convenient mapping to internal types.
+     */
+
+    private final Map<MetricConstants, T> internal;
 
     /**
      * The metadata associated with the statistic.
      */
 
     private final StatisticMetadata meta;
-
-    /**
-     * Returns a score from the specified input.
-     * 
-     * @param input the input
-     * @param meta the score metadata
-     * @return the score
-     */
-
-    abstract U getScore( T input, StatisticMetadata meta );
 
     @Override
     public StatisticMetadata getMetadata()
@@ -75,204 +72,198 @@ abstract class BasicScoreStatistic<T, U extends ScoreStatistic<T, ?>> implements
         {
             return false;
         }
-        final BasicScoreStatistic<?, ?> v = (BasicScoreStatistic<?, ?>) o;
-        boolean start = this.meta.equals( v.getMetadata() );
+
+        BasicScoreStatistic<?, ?> v = (BasicScoreStatistic<?, ?>) o;
+        boolean start = this.getMetadata().equals( v.getMetadata() );
+
         if ( !start )
         {
             return false;
         }
-        return this.statistic.equals( v.statistic );
+
+        return this.getData().equals( v.getData() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( statistic, meta );
+        return Objects.hash( this.getData(), this.getMetadata() );
     }
 
     @Override
-    public T getData()
+    public S getData()
     {
-        if ( this.hasComponent( MetricConstants.MAIN ) )
-        {
-            return this.statistic.get( MetricConstants.MAIN );
-        }
-
-        return this.statistic.values().iterator().next();
+        return this.score;
     }
 
     @Override
-    public Iterator<Pair<MetricConstants, T>> iterator()
+    public Iterator<T> iterator()
     {
-        return new Iterator<Pair<MetricConstants, T>>()
-        {
-            private final Iterator<Entry<MetricConstants, T>> iterator = statistic.entrySet().iterator();
-
-            @Override
-            public boolean hasNext()
-            {
-                return this.iterator.hasNext();
-            }
-
-            @Override
-            public Pair<MetricConstants, T> next()
-            {
-                Entry<MetricConstants, T> next = this.iterator.next();
-                return Pair.of( next.getKey(), next.getValue() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException( "Cannot modify this immutable container of score statistics." );
-            }
-        };
-
+        return Collections.unmodifiableCollection( this.internal.values() ).iterator();
     }
 
     @Override
     public Set<MetricConstants> getComponents()
     {
-        return Collections.unmodifiableSet( this.statistic.keySet() );
+        return Collections.unmodifiableSet( this.internal.keySet() );
     }
 
     @Override
     public boolean hasComponent( MetricConstants component )
     {
-        return this.statistic.containsKey( component );
+        return this.internal.containsKey( component );
     }
 
     @Override
-    public U getComponent( MetricConstants component )
+    public T getComponent( MetricConstants component )
     {
-        return this.getScore( statistic.get( component ),
-                              StatisticMetadata.of( this.meta, this.meta.getMetricID(), component ) );
+        if ( !this.internal.containsKey( component ) )
+        {
+            throw new IllegalArgumentException( "The component " + component + " is not defined in this context." );
+        }
+
+        return this.internal.get( component );
     }
 
     @Override
     public String toString()
     {
-        StringBuilder b = new StringBuilder();
-        this.statistic.forEach( ( key, value ) -> b.append( "(" )
-                                                   .append( key )
-                                                   .append( "," )
-                                                   .append( value )
-                                                   .append( ")" )
-                                                   .append( NEWLINE ) );
-        int lines = b.length();
-        if ( lines > 0 )
+        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
+
+        this.internal.forEach( ( key, value ) -> builder.append( "value", value ) );
+
+        return builder.toString();
+    }
+
+    /**
+     * A wrapper for a {@link DoubleScoreStatisticComponent}.
+     * 
+     * @author james.brown@hydrosolved.com
+     */
+
+    abstract static class BasicScoreComponent<S> implements ScoreComponent<S>
+    {
+
+        /**
+         * The component.
+         */
+
+        private final S component;
+
+        /**
+         * The component name.
+         */
+
+        private final MetricConstants name;
+
+        /**
+         * The metadata.
+         */
+
+        private final StatisticMetadata metadata;
+        
+        /**
+         * Mapper to a pretty string.
+         */
+
+        private final Function<S,String> mapper;
+        
+        @Override
+        public MetricConstants getName()
         {
-            b.delete( lines - NEWLINE.length(), lines );
+            return this.name;
         }
-        return b.toString();
+
+        /**
+         * Hidden constructor.
+         * @param name the name
+         * @param component the score component
+         * @param metadata the metadata
+         * @param mapper a mapper to a pretty string
+         * @throws NullPointerException if any input is null
+         */
+
+        BasicScoreComponent( MetricConstants name,
+                             S component,
+                             StatisticMetadata metadata,
+                             Function<S,String> mapper )
+        {
+            Objects.requireNonNull( name );
+            Objects.requireNonNull( component );
+            Objects.requireNonNull( metadata );
+            Objects.requireNonNull( mapper );
+            
+            this.name = name;
+            this.component = component;
+            this.metadata = metadata;
+            this.mapper = mapper;
+        }
+
+        @Override
+        public S getData()
+        {
+            return this.component;
+        }
+
+        @Override
+        public StatisticMetadata getMetadata()
+        {
+            return this.metadata;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( o == this )
+            {
+                return true;
+            }
+
+            if ( o.getClass() != this.getClass() )
+            {
+                return false;
+            }
+
+            BasicScoreComponent<?> component = (BasicScoreComponent<?>) o;
+
+            return Objects.equals( this.getName(), component.getName() )
+                   && Objects.equals( this.getData(), component.getData() )
+                   && Objects.equals( this.getMetadata(), component.getMetadata() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.getName(), this.getData(), this.getMetadata() );
+        }
+
+        @Override
+        public String toString()
+        {
+            String pretty = this.mapper.apply( this.getData() );
+            return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                                .append( "name", this.getName().name() )
+                                                                                .append( "value", pretty )
+                                                                                .build();
+        }
     }
 
     /**
      * Construct the output.
      * 
-     * @param statistic the verification statistic
-     * @param meta the metadata
-     * @throws StatisticException if any of the inputs are invalid
+     * @param score the verification score
+     * @param internal the internal mapping between score component names and component values
+     * @param metadata the metadata
      */
 
-    BasicScoreStatistic( final T statistic, final StatisticMetadata meta )
+    BasicScoreStatistic( S score, Map<MetricConstants, T> internal, StatisticMetadata metadata )
     {
-        // Allow a null score, but not null metadata
-        if ( Objects.isNull( meta ) )
-        {
-            throw new StatisticException( NULL_METADATA_MESSAGE );
-        }
+        Objects.requireNonNull( metadata, NULL_METADATA_MESSAGE );
+        Objects.requireNonNull( score, NULL_OUTPUT_MESSAGE );
 
-        this.statistic = new EnumMap<>( MetricConstants.class );
-        if ( Objects.nonNull( meta.getMetricComponentID() ) )
-        {
-            this.statistic.put( meta.getMetricComponentID(), statistic );
-        }
-        else
-        {
-            this.statistic.put( MetricConstants.MAIN, statistic );
-        }
-        this.meta = meta;
-    }
-
-    /**
-     * Construct the statistic with a map.
-     * 
-     * @param statistic the verification statistic
-     * @param meta the metadata
-     * @throws StatisticException if any of the inputs are invalid
-     */
-
-    BasicScoreStatistic( final Map<MetricConstants, T> statistic, final StatisticMetadata meta )
-    {
-        this.statistic = new EnumMap<>( MetricConstants.class );
-        this.statistic.putAll( statistic );
-        this.meta = meta;
-
-        // Validate
-        if ( Objects.isNull( statistic ) )
-        {
-            throw new StatisticException( NULL_OUTPUT_MESSAGE );
-        }
-        if ( Objects.isNull( meta ) )
-        {
-            throw new StatisticException( NULL_METADATA_MESSAGE );
-        }
-        // Allow a null score, but not a null identifier
-        statistic.forEach( ( key, value ) -> {
-            if ( Objects.isNull( key ) )
-            {
-                throw new StatisticException( "Cannot build a score with null components." );
-            }
-        } );
-    }
-
-    /**
-     * Construct the statistic with a template.
-     * 
-     * @param statistic the verification statistic
-     * @param template the score template
-     * @param meta the metadata
-     * @throws StatisticException if any of the inputs are invalid
-     */
-
-    BasicScoreStatistic( final T[] statistic, final MetricGroup template, final StatisticMetadata meta )
-    {
-        this.statistic = new EnumMap<>( MetricConstants.class );
-        this.meta = meta;
-
-        // Validate
-        if ( Objects.isNull( template ) )
-        {
-            throw new StatisticException( "Specify a non-null output group for the score output." );
-        }
-        if ( Objects.isNull( statistic ) )
-        {
-            throw new StatisticException( NULL_OUTPUT_MESSAGE );
-        }
-        if ( Objects.isNull( meta ) )
-        {
-            throw new StatisticException( NULL_METADATA_MESSAGE );
-        }
-        // Check that the decomposition template is compatible
-        Set<MetricConstants> components = template.getAllComponents();
-        if ( components.size() != statistic.length )
-        {
-            throw new StatisticException( "The specified output template '" + template
-                                          + "' has more components than metric inputs provided ["
-                                          + template.getAllComponents().size()
-                                          + ", "
-                                          + statistic.length
-                                          + "]." );
-        }
-        // Add the components
-        Iterator<MetricConstants> iterator = components.iterator();
-        int index = 0;
-        while ( iterator.hasNext() )
-        {
-            this.statistic.put( iterator.next(), statistic[index] );
-            index++;
-        }
+        this.score = score;
+        this.meta = metadata;
+        this.internal = internal;
     }
 
 }

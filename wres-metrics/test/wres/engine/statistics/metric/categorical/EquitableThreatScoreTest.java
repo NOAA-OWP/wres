@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -20,12 +21,16 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
+import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link EquitableThreatScore}.
@@ -72,16 +77,24 @@ public final class EquitableThreatScoreTest
     public void testApply()
     {
         //Generate some data
-        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreStatistic actual = ets.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.43768152544513195, meta );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.ets.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.43768152544513195 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( EquitableThreatScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, this.meta );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -95,9 +108,9 @@ public final class EquitableThreatScoreTest
         SampleData<Pair<Boolean, Boolean>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = ets.apply( input );
+        DoubleScoreStatisticOuter actual = this.ets.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -160,7 +173,7 @@ public final class EquitableThreatScoreTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the '" + ets.getName() + "'." );
-        ets.aggregate( (DoubleScoreStatistic) null );
+        ets.aggregate( (DoubleScoreStatisticOuter) null );
     }
 
 }

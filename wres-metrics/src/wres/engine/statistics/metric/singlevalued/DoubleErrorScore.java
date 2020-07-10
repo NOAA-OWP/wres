@@ -12,11 +12,16 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.OrdinaryScore;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * A generic implementation of an error score that cannot be decomposed. For scores that can be computed in a single-pass,
@@ -26,7 +31,7 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @author james.brown@hydrosolved.com
  */
 public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>>>
-        extends OrdinaryScore<S, DoubleScoreStatistic>
+        extends OrdinaryScore<S, DoubleScoreStatisticOuter>
 {
     /**
      * The error function.
@@ -41,13 +46,19 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
     final ToDoubleFunction<VectorOfDoubles> errorAccumulator;
 
     /**
+     * The metric description.
+     */
+
+    final DoubleScoreMetric metric;
+
+    /**
      * Partial message on null input.
      */
 
     private static final String NULL_INPUT_STRING = "Cannot construct the error score '";
 
     @Override
-    public DoubleScoreStatistic apply( final S s )
+    public DoubleScoreStatisticOuter apply( final S s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -76,7 +87,19 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
             VectorOfDoubles wrappedDoubles = VectorOfDoubles.of( doubles );
             doubleScore = this.getErrorAccumulator().applyAsDouble( wrappedDoubles );
         }
-        return DoubleScoreStatistic.of( doubleScore, metOut );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( doubleScore )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( this.metric )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override
@@ -94,33 +117,42 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
     /**
      * Construct an error score with a default error function {@link FunctionFactory#error()}
      * and a default accumulator {@link FunctionFactory#mean()}.
+     * 
+     * @param metric the metric description
+     * @throws NullPointerException if the input is null
      */
 
-    DoubleErrorScore()
+    DoubleErrorScore( DoubleScoreMetric metric )
     {
         super();
 
+        Objects.requireNonNull( metric );
+
         this.errorFunction = FunctionFactory.error();
         this.errorAccumulator = FunctionFactory.mean();
+        this.metric = metric;
     }
 
     /**
      * Construct an error score with a default accumulator {@link FunctionFactory#mean()}.
      * 
      * @param function the error function
-     * @throws NullPointerException if the error function is null
+     * @param metric the metric description 
+     * @throws NullPointerException if either input is null
      */
 
-    DoubleErrorScore( DoubleErrorFunction function )
+    DoubleErrorScore( DoubleErrorFunction function, DoubleScoreMetric metric )
     {
         super();
 
+        Objects.requireNonNull( metric );
         Objects.requireNonNull( function,
                                 NULL_INPUT_STRING + this.getName()
                                           + "' with a null error function." );
 
         this.errorFunction = function;
         this.errorAccumulator = FunctionFactory.mean();
+        this.metric = metric;
     }
 
     /**
@@ -128,13 +160,17 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
      * 
      * @param function the error function
      * @param errorAccumulator the error accumulator function 
-     * @throws NullPointerException if either input is null
+     * @param metric the metric description
+     * @throws NullPointerException if any input is null
      */
 
-    DoubleErrorScore( DoubleErrorFunction function, ToDoubleFunction<VectorOfDoubles> errorAccumulator )
+    DoubleErrorScore( DoubleErrorFunction function,
+                      ToDoubleFunction<VectorOfDoubles> errorAccumulator,
+                      DoubleScoreMetric metric )
     {
         super();
 
+        Objects.requireNonNull( metric );
         Objects.requireNonNull( function,
                                 NULL_INPUT_STRING + this.getName()
                                           + "' with a null error function." );
@@ -145,6 +181,7 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
 
         this.errorFunction = function;
         this.errorAccumulator = errorAccumulator;
+        this.metric = metric;
     }
 
     /**

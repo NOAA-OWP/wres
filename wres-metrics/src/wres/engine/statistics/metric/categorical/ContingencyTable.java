@@ -10,10 +10,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * <p>
@@ -25,9 +31,39 @@ import wres.engine.statistics.metric.Metric;
  * @author james.brown@hydrosolved.com
  */
 
-public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic>,
-        Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic>
+public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>,
+        Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setName( ComponentName.TRUE_POSITIVES ) )
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setName( ComponentName.TRUE_NEGATIVES ) )
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setName( ComponentName.TRUE_POSITIVES ) )
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.FALSE_POSITIVES ) )
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.FALSE_NEGATIVES ) )
+                             .setName( MetricName.CONTINGENCY_TABLE )
+                             .build();
 
     /**
      * Returns an instance.
@@ -41,7 +77,7 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Boolean, Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -49,53 +85,64 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
         }
         final int outcomes = 2;
         final double[][] returnMe = new double[outcomes][outcomes];
-        
+
         // Function that returns the index within the contingency table to increment
-        final Consumer<Pair<Boolean,Boolean>> f = a -> {
+        final Consumer<Pair<Boolean, Boolean>> f = a -> {
             boolean left = a.getLeft();
             boolean right = a.getRight();
-            
+
             // True positives aka hits
-            if( left && right )
+            if ( left && right )
             {
-                returnMe[0][0]+=1;
+                returnMe[0][0] += 1;
             }
             // True negatives 
-            else if( !left && !right )
+            else if ( !left && !right )
             {
-                returnMe[1][1]+=1;
+                returnMe[1][1] += 1;
             }
             // False positives aka false alarms
-            else if( !left && right )
+            else if ( !left && right )
             {
-                returnMe[0][1]+=1;
+                returnMe[0][1] += 1;
             }
             // False negatives aka misses
             else
             {
-                returnMe[1][0]+=1;
+                returnMe[1][0] += 1;
             }
         };
-        
+
         // Increment the count in a serial stream as the lambda is stateful
         s.getRawData().stream().forEach( f );
-        
+
         // Name the outcomes for a 2x2 contingency table
-        Map<MetricConstants,Double> statistics = new HashMap<>();
-        statistics.put( MetricConstants.TRUE_POSITIVES, returnMe[0][0] );
-        statistics.put( MetricConstants.FALSE_POSITIVES, returnMe[0][1] );
-        statistics.put( MetricConstants.FALSE_NEGATIVES, returnMe[1][0] );
-        statistics.put( MetricConstants.TRUE_NEGATIVES, returnMe[1][1] );
+        DoubleScoreStatistic table =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( returnMe[0][0] ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( returnMe[0][1] ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( returnMe[1][0] ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( returnMe[1][1] ) )
+                                    .build();
 
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    null,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
-        
-        return DoubleScoreStatistic.of( statistics, metOut );
+                                      this.getID(),
+                                      null,
+                                      this.hasRealUnits(),
+                                      s.getRawData().size(),
+                                      null );
+
+        return DoubleScoreStatisticOuter.of( table, metOut );
     }
 
     @Override
@@ -117,15 +164,15 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
         Objects.requireNonNull( output );
-        
+
         return output;
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Boolean, Boolean>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Boolean, Boolean>> input )
     {
         return this.apply( input );
     }

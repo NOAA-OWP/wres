@@ -11,8 +11,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -43,7 +43,7 @@ public class WRESArgumentProcessorTest
     @Test( expected = Test.None.class /* no exception expected */ )
     public void testConstructionDoesNotThrowIOOBExceptionWhenInputIsEmpty()
     {
-        new WRESArgumentProcessor( BoxPlotStatistics.of( Collections.emptyList(), this.meta ), ChronoUnit.SECONDS );
+        new WRESArgumentProcessor( BoxplotStatisticOuter.of( Collections.emptyList(), this.meta ), ChronoUnit.SECONDS );
     }
 
     /**
@@ -54,7 +54,7 @@ public class WRESArgumentProcessorTest
     public void testConstructionProducesExpectedProbabilitiesWhenInputIsEmpty()
     {
         WRESArgumentProcessor processor =
-                new WRESArgumentProcessor( BoxPlotStatistics.of( Collections.emptyList(), this.meta ),
+                new WRESArgumentProcessor( BoxplotStatisticOuter.of( Collections.emptyList(), this.meta ),
                                            ChronoUnit.SECONDS );
 
         String probs = processor.getArgument( "probabilities" ).getValue();
@@ -69,13 +69,13 @@ public class WRESArgumentProcessorTest
     @Test
     public void testConstructionProducesExpectedProbabilitiesWhenInputIsFull()
     {
-        BoxPlotStatistic box =
-                BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
+        BoxplotStatistic box =
+                BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                      VectorOfDoubles.of( 1, 2, 3, 4, 5 ),
                                      meta );
 
         WRESArgumentProcessor processor =
-                new WRESArgumentProcessor( BoxPlotStatistics.of( Collections.singletonList( box ), this.meta ),
+                new WRESArgumentProcessor( BoxplotStatisticOuter.of( Collections.singletonList( box ), this.meta ),
                                            ChronoUnit.SECONDS );
 
         String probs = processor.getArgument( "probabilities" ).getValue();

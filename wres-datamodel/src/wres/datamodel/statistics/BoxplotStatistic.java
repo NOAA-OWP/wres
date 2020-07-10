@@ -12,7 +12,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
+public class BoxplotStatistic implements Statistic<VectorOfDoubles>
 {
 
     /**
@@ -63,11 +63,11 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
      * @return an instance of the output
      */
 
-    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+    public static BoxplotStatistic of( VectorOfDoubles probabilities,
                                        VectorOfDoubles quantiles,
                                        StatisticMetadata meta )
     {
-        return new BoxPlotStatistic( probabilities, quantiles, MetricDimension.FORECAST_ERROR, meta, Double.NaN, null );
+        return new BoxplotStatistic( probabilities, quantiles, MetricDimension.FORECAST_ERROR, meta, Double.NaN, null );
     }
     
     /**
@@ -82,12 +82,12 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
      * @return an instance of the output
      */
 
-    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+    public static BoxplotStatistic of( VectorOfDoubles probabilities,
                                        VectorOfDoubles quantiles,
                                        MetricDimension valueType,
                                        StatisticMetadata meta )
     {
-        return new BoxPlotStatistic( probabilities, quantiles, valueType, meta, Double.NaN, null );
+        return new BoxplotStatistic( probabilities, quantiles, valueType, meta, Double.NaN, null );
     }
 
     /**
@@ -104,13 +104,13 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
      * @return an instance of the output
      */
 
-    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+    public static BoxplotStatistic of( VectorOfDoubles probabilities,
                                        VectorOfDoubles quantiles,
                                        StatisticMetadata meta,
                                        double linkedValue,
                                        MetricDimension linkedValueType )
     {
-        return new BoxPlotStatistic( probabilities,
+        return new BoxplotStatistic( probabilities,
                                      quantiles,
                                      MetricDimension.FORECAST_ERROR,
                                      meta,
@@ -132,14 +132,14 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
      * @return an instance of the output
      */
 
-    public static BoxPlotStatistic of( VectorOfDoubles probabilities,
+    public static BoxplotStatistic of( VectorOfDoubles probabilities,
                                        VectorOfDoubles quantiles,
                                        MetricDimension valueType,
                                        StatisticMetadata meta,
                                        double linkedValue,
                                        MetricDimension linkedValueType )
     {
-        return new BoxPlotStatistic( probabilities,
+        return new BoxplotStatistic( probabilities,
                                      quantiles,
                                      valueType,
                                      meta,
@@ -219,11 +219,11 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof BoxPlotStatistic ) )
+        if ( ! ( o instanceof BoxplotStatistic ) )
         {
             return false;
         }
-        final BoxPlotStatistic v = (BoxPlotStatistic) o;
+        final BoxplotStatistic v = (BoxplotStatistic) o;
 
         // Check the value type
         if ( this.getValueType() != v.getValueType() )
@@ -296,7 +296,7 @@ public class BoxPlotStatistic implements Statistic<VectorOfDoubles>
      * @throws NullPointerException if any input is null
      */
 
-    private BoxPlotStatistic( VectorOfDoubles probabilities,
+    private BoxplotStatistic( VectorOfDoubles probabilities,
                               VectorOfDoubles quantiles,
                               MetricDimension valueType,
                               StatisticMetadata meta,

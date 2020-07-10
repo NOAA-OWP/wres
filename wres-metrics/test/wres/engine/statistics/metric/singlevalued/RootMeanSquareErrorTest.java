@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -18,9 +19,12 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link RootMeanSquareError}.
@@ -32,7 +36,7 @@ public final class RootMeanSquareErrorTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link RootMeanSquareError}.
      */
@@ -58,13 +62,21 @@ public final class RootMeanSquareErrorTest
                                                      MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                                                      MetricConstants.MAIN );
         //Check the results
-        DoubleScoreStatistic actual = rmse.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 632.4586381732801, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.rmse.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 632.4586381732801 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( RootMeanSquareError.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -73,10 +85,10 @@ public final class RootMeanSquareErrorTest
         // Generate empty data
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
- 
-        DoubleScoreStatistic actual = rmse.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        DoubleScoreStatisticOuter actual = rmse.apply( input );
+
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test
@@ -107,8 +119,8 @@ public final class RootMeanSquareErrorTest
     public void testGetCollectionOf()
     {
         assertTrue( rmse.getCollectionOf().equals( MetricConstants.SUM_OF_SQUARE_ERROR ) );
-    }   
-    
+    }
+
     @Test
     public void testHasRealUnits()
     {
@@ -120,8 +132,8 @@ public final class RootMeanSquareErrorTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'ROOT MEAN SQUARE ERROR'." );
-        
+
         rmse.apply( null );
-    }    
+    }
 
 }

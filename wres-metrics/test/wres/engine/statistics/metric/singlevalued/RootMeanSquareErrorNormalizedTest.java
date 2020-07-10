@@ -18,9 +18,12 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link RootMeanSquareErrorNormalized}.
@@ -55,8 +58,20 @@ public final class RootMeanSquareErrorNormalizedTest
                                                      MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED,
                                                      MetricConstants.MAIN );
         //Check the results
-        DoubleScoreStatistic actual = this.rmsen.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.05719926297814069, m1 );
+        DoubleScoreStatisticOuter actual = this.rmsen.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.05719926297814069 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( RootMeanSquareErrorNormalized.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -67,9 +82,9 @@ public final class RootMeanSquareErrorNormalizedTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = this.rmsen.apply( input );
+        DoubleScoreStatisticOuter actual = this.rmsen.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test

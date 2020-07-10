@@ -14,7 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 
 /**
@@ -24,7 +24,7 @@ import wres.io.writing.netcdf.NetcdfOutputWriter;
  * @author james.brown@hydrosolved.com
  */
 public class SharedStatisticsWriters implements Closeable,
-        Consumer<List<DoubleScoreStatistic>>,
+        Consumer<List<DoubleScoreStatisticOuter>>,
         Supplier<Set<Path>>
 {
 
@@ -123,7 +123,7 @@ public class SharedStatisticsWriters implements Closeable,
      */
 
     @Override
-    public void accept( List<DoubleScoreStatistic> metricOutput )
+    public void accept( List<DoubleScoreStatisticOuter> metricOutput )
     {
         if ( Objects.nonNull( this.netcdfOutputWriter ) )
         {

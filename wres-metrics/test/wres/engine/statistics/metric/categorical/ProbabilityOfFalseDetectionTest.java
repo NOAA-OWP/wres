@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -20,12 +21,15 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link ProbabilityOfFalseDetection}.
@@ -72,16 +76,24 @@ public final class ProbabilityOfFalseDetectionTest
     public void testApply()
     {
         //Generate some data
-        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreStatistic actual = pofd.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.14615384615384616, meta );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.pofd.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.14615384615384616 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ProbabilityOfFalseDetection.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, this.meta );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -92,12 +104,12 @@ public final class ProbabilityOfFalseDetectionTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Boolean,Boolean>> input =
+        SampleData<Pair<Boolean, Boolean>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = pofd.apply( input );
+        DoubleScoreStatisticOuter actual = this.pofd.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -107,7 +119,7 @@ public final class ProbabilityOfFalseDetectionTest
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertTrue( pofd.getName().equals( MetricConstants.PROBABILITY_OF_FALSE_DETECTION.toString() ) );
+        assertTrue( this.pofd.getName().equals( MetricConstants.PROBABILITY_OF_FALSE_DETECTION.toString() ) );
     }
 
     /**
@@ -117,7 +129,7 @@ public final class ProbabilityOfFalseDetectionTest
     @Test
     public void testMetricIsNotDecoposable()
     {
-        assertFalse( pofd.isDecomposable() );
+        assertFalse( this.pofd.isDecomposable() );
     }
 
     /**
@@ -127,7 +139,7 @@ public final class ProbabilityOfFalseDetectionTest
     @Test
     public void testMetricIsASkillScore()
     {
-        assertFalse( pofd.isSkillScore() );
+        assertFalse( this.pofd.isSkillScore() );
     }
 
     /**
@@ -137,7 +149,7 @@ public final class ProbabilityOfFalseDetectionTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( pofd.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.pofd.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -147,7 +159,7 @@ public final class ProbabilityOfFalseDetectionTest
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( pofd.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertTrue( this.pofd.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
     }
 
     /**
@@ -159,8 +171,8 @@ public final class ProbabilityOfFalseDetectionTest
     public void testExceptionOnNullInput()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the '" + pofd.getName() + "'." );
-        pofd.aggregate( (DoubleScoreStatistic) null );
+        exception.expectMessage( "Specify non-null input to the '" + this.pofd.getName() + "'." );
+        pofd.aggregate( (DoubleScoreStatisticOuter) null );
     }
 
 }

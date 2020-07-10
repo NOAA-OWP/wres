@@ -25,18 +25,26 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
+import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 
 /**
  * Helpers for writing outputs.
@@ -122,12 +130,12 @@ public class WriterTestHelper
     }
 
     /**
-     * Returns a {@link List} containing {@link BoxPlotStatistics} for two pools of data.
+     * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
      * 
      * @return a box plot per pool for two pools
      */
 
-    public static List<BoxPlotStatistics> getBoxPlotPerPoolForTwoPools()
+    public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
         String LID = "JUNP1";
@@ -160,10 +168,10 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS,
                                       null );
 
-        List<BoxPlotStatistic> fakeOutputsOne = new ArrayList<>();
+        List<BoxplotStatistic> fakeOutputsOne = new ArrayList<>();
         VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
 
-        fakeOutputsOne.add( BoxPlotStatistic.of( probs,
+        fakeOutputsOne.add( BoxplotStatistic.of( probs,
                                                  VectorOfDoubles.of( 1, 3, 5, 7, 9 ),
                                                  fakeMetadataOne ) );
 
@@ -183,7 +191,7 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS,
                                       null );
 
-        List<BoxPlotStatistic> fakeOutputsTwo = Collections.singletonList( BoxPlotStatistic.of( probs,
+        List<BoxplotStatistic> fakeOutputsTwo = Collections.singletonList( BoxplotStatistic.of( probs,
                                                                                                 VectorOfDoubles.of( 11,
                                                                                                                     33,
                                                                                                                     55,
@@ -192,21 +200,21 @@ public class WriterTestHelper
                                                                                                 fakeMetadataTwo ) );
 
         // Fake output wrapper.
-        List<BoxPlotStatistics> fakeOutputData =
-                Arrays.asList( BoxPlotStatistics.of( fakeOutputsOne,
+        List<BoxplotStatisticOuter> fakeOutputData =
+                Arrays.asList( BoxplotStatisticOuter.of( fakeOutputsOne,
                                                      fakeMetadataOne ),
-                               BoxPlotStatistics.of( fakeOutputsTwo,
+                               BoxplotStatisticOuter.of( fakeOutputsTwo,
                                                      fakeMetadataTwo ) );
         return fakeOutputData;
     }
 
     /**
-     * Returns a {@link List} containing {@link BoxPlotStatistics} for several pairs.
+     * Returns a {@link List} containing {@link BoxplotStatisticOuter} for several pairs.
      * 
      * @return a box plot per pair
      */
 
-    public static List<BoxPlotStatistics> getBoxPlotPerPairForOnePool()
+    public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
         String LID = "JUNP1";
@@ -239,41 +247,41 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       null );
 
-        List<BoxPlotStatistic> fakeOutputs = new ArrayList<>();
+        List<BoxplotStatistic> fakeOutputs = new ArrayList<>();
         VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
 
-        fakeOutputs.add( BoxPlotStatistic.of( probs,
+        fakeOutputs.add( BoxplotStatistic.of( probs,
                                               VectorOfDoubles.of( 2, 3, 4, 5, 6 ),
                                               fakeMetadata,
                                               1,
                                               MetricDimension.OBSERVED_VALUE ) );
-        fakeOutputs.add( BoxPlotStatistic.of( probs,
+        fakeOutputs.add( BoxplotStatistic.of( probs,
                                               VectorOfDoubles.of( 7, 9, 11, 13, 15 ),
                                               fakeMetadata,
                                               3,
                                               MetricDimension.OBSERVED_VALUE ) );
-        fakeOutputs.add( BoxPlotStatistic.of( probs,
+        fakeOutputs.add( BoxplotStatistic.of( probs,
                                               VectorOfDoubles.of( 21, 24, 27, 30, 33 ),
                                               fakeMetadata,
                                               5,
                                               MetricDimension.OBSERVED_VALUE ) );
 
         // Fake output wrapper.
-        List<BoxPlotStatistics> fakeOutputData =
-                Collections.singletonList( BoxPlotStatistics.of( fakeOutputs,
+        List<BoxplotStatisticOuter> fakeOutputData =
+                Collections.singletonList( BoxplotStatisticOuter.of( fakeOutputs,
                                                                  fakeMetadata ) );
 
         return fakeOutputData;
     }
 
     /**
-     * Returns a {@link List} containing a {@link DiagramStatistic} that 
+     * Returns a {@link List} containing a {@link DiagramStatisticOuter} that 
      * represents the output of a reliability diagram for one pool.
      * 
      * @return a reliability diagram for one pool
      */
 
-    public static List<DiagramStatistic> getReliabilityDiagramForOnePool()
+    public static List<DiagramStatisticOuter> getReliabilityDiagramForOnePool()
     {
 
         // location id
@@ -315,20 +323,20 @@ public class WriterTestHelper
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
 
         // Fake output wrapper.
-        List<DiagramStatistic> fakeOutputData =
-                Collections.singletonList( DiagramStatistic.of( fakeOutputs, fakeMetadata ) );
+        List<DiagramStatisticOuter> fakeOutputData =
+                Collections.singletonList( DiagramStatisticOuter.of( fakeOutputs, fakeMetadata ) );
 
         return fakeOutputData;
     }
 
     /**
-     * Returns a {@link List} containing a {@link PairedStatistic} that 
+     * Returns a {@link List} containing a {@link PairedStatisticOuter} that 
      * represents the output of time-to-peak error for each pair in a pool.
      * 
      * @return time time-to-peak errors for one pool
      */
 
-    public static List<PairedStatistic<Instant, Duration>> getTimeToPeakErrorsForOnePool()
+    public static List<PairedStatisticOuter<Instant, Duration>> getTimeToPeakErrorsForOnePool()
     {
 
         // location id
@@ -367,17 +375,17 @@ public class WriterTestHelper
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
 
         // Fake output wrapper.
-        return Collections.singletonList( PairedStatistic.of( fakeOutputs, fakeMetadata ) );
+        return Collections.singletonList( PairedStatisticOuter.of( fakeOutputs, fakeMetadata ) );
     }
 
     /**
-     * Returns a {@link List} containing a {@link DoubleScoreStatistic} that 
+     * Returns a {@link List} containing a {@link DoubleScoreStatisticOuter} that 
      * represents the output of several score statistics for one pool.
      * 
      * @return several score statistics for one pool
      */
 
-    public static List<DoubleScoreStatistic> getScoreStatisticsForOnePool()
+    public static List<DoubleScoreStatisticOuter> getScoreStatisticsForOnePool()
     {
 
         // location id
@@ -422,22 +430,47 @@ public class WriterTestHelper
                                       MetricConstants.MEAN_ABSOLUTE_ERROR,
                                       MetricConstants.MAIN );
 
-        List<DoubleScoreStatistic> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
-        fakeOutputs.add( DoubleScoreStatistic.of( 2.0, fakeMetadataB ) );
-        fakeOutputs.add( DoubleScoreStatistic.of( 3.0, fakeMetadataC ) );
+        DoubleScoreStatistic one =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 1.0 )
+                                                                                 .setName( ComponentName.MAIN ) )
+                                    .build();
+
+        DoubleScoreStatistic two =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 2.0 )
+                                                                                 .setName( ComponentName.MAIN ) )
+                                    .build();
+
+        DoubleScoreStatistic three =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder()
+                                                                 .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 3.0 )
+                                                                                 .setName( ComponentName.MAIN ) )
+                                    .build();
+        
+        List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadataA ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadataB ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( three, fakeMetadataC ) );
 
         return Collections.unmodifiableList( fakeOutputs );
     }
 
     /**
-     * Returns a {@link List} containing a {@link DurationScoreStatistic} that 
+     * Returns a {@link List} containing a {@link DurationScoreStatisticOuter} that 
      * represents the summary statistics of the time-to-peak-errors for one pool.
      * 
      * @return the summary statistics of time-to-peak errors for one pool
      */
 
-    public static List<DurationScoreStatistic> getDurationScoreStatisticsForOnePool()
+    public static List<DurationScoreStatisticOuter> getDurationScoreStatisticsForOnePool()
     {
 
         // location id
@@ -467,24 +500,35 @@ public class WriterTestHelper
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       null );
 
-        Map<MetricConstants, Duration> fakeOutputs = new HashMap<>();
-        fakeOutputs.put( MetricConstants.MEAN, Duration.ofHours( 1 ) );
-        fakeOutputs.put( MetricConstants.MEDIAN, Duration.ofHours( 2 ) );
-        fakeOutputs.put( MetricConstants.MAXIMUM, Duration.ofHours( 3 ) );
+        DurationScoreStatistic score =
+                DurationScoreStatistic.newBuilder()
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 3_600 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 7_200 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 10_800 ) ) )
+                                      .build();
 
         // Fake output wrapper.
-        return Collections.singletonList( DurationScoreStatistic.of( fakeOutputs, fakeMetadata ) );
+        return Collections.singletonList( DurationScoreStatisticOuter.of( score, fakeMetadata ) );
     }
 
     /**
-     * Returns a {@link List} containing a {@link DoubleScoreStatistic} that 
+     * Returns a {@link List} containing a {@link DoubleScoreStatisticOuter} that 
      * represents the output of one score statistic for several pools of data, including
      * missing values for some pools.
      * 
      * @return one score statistics for several pools
      */
 
-    public static List<DoubleScoreStatistic> getScoreStatisticsForThreePoolsWithMissings()
+    public static List<DoubleScoreStatisticOuter> getScoreStatisticsForThreePoolsWithMissings()
     {
 
         // location id
@@ -509,8 +553,16 @@ public class WriterTestHelper
                                       MeasurementUnit.of(),
                                       MetricConstants.MEAN_SQUARE_ERROR,
                                       MetricConstants.MAIN );
+        
+        DoubleScoreStatistic one =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 1.0 )
+                                                                                 .setName( ComponentName.MAIN ) )
+                                    .build();
 
-        DoubleScoreStatistic fakeOutputA = DoubleScoreStatistic.of( 1.0, fakeMetadataA );
+        DoubleScoreStatisticOuter fakeOutputA = DoubleScoreStatisticOuter.of( one, fakeMetadataA );
 
         // Add the data for another threshold at the same time
         OneOrTwoThresholds thresholdTwo =
@@ -528,7 +580,7 @@ public class WriterTestHelper
                                       MetricConstants.MEAN_SQUARE_ERROR,
                                       MetricConstants.MAIN );
 
-        DoubleScoreStatistic fakeOutputB = DoubleScoreStatistic.of( 1.0, fakeMetadataB );
+        DoubleScoreStatisticOuter fakeOutputB = DoubleScoreStatisticOuter.of( one, fakeMetadataB );
 
         // Add data for another time, and one threshold only
         TimeWindowOuter timeTwo = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
@@ -543,7 +595,7 @@ public class WriterTestHelper
                                       MetricConstants.MEAN_SQUARE_ERROR,
                                       MetricConstants.MAIN );
 
-        DoubleScoreStatistic fakeOutputC = DoubleScoreStatistic.of( 1.0, fakeMetadataC );
+        DoubleScoreStatisticOuter fakeOutputC = DoubleScoreStatisticOuter.of( one, fakeMetadataC );
 
         // Fake output wrapper.
         return Arrays.asList( fakeOutputA, fakeOutputB, fakeOutputC );

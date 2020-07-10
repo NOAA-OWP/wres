@@ -22,7 +22,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
@@ -32,13 +32,13 @@ import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link DiagramStatistic} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DiagramStatisticOuter} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDiagramWriter extends PNGWriter
-        implements Consumer<List<DiagramStatistic>>,
+        implements Consumer<List<DiagramStatisticOuter>>,
                    Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -72,7 +72,7 @@ public class PNGDiagramWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final List<DiagramStatistic> output )
+    public void accept( final List<DiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -87,15 +87,15 @@ public class PNGDiagramWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                List<DiagramStatistic> filtered = Slicer.filter( output, next );
+                List<DiagramStatisticOuter> filtered = Slicer.filter( output, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<DiagramStatistic>> groups =
+                Map<LeftOrRightOrBaseline, List<DiagramStatisticOuter>> groups =
                         WriterHelper.getStatisticsGroupedByContext( filtered );
 
-                for ( List<DiagramStatistic> nextGroup : groups.values() )
+                for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
                             PNGDiagramWriter.writeMultiVectorCharts( super.getSystemSettings(),
@@ -123,7 +123,7 @@ public class PNGDiagramWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link DiagramStatistic} for a single metric and time window,
+     * Writes a set of charts associated with {@link DiagramStatisticOuter} for a single metric and time window,
      * stored in a {@link List}.
      *
      * @param outputDirectory the directory into which to write
@@ -139,7 +139,7 @@ public class PNGDiagramWriter extends PNGWriter
                                                      Path outputDirectory,
                                                      ProjectConfigPlus projectConfigPlus,
                                                      DestinationConfig destinationConfig,
-                                                     List<DiagramStatistic> output,
+                                                     List<DiagramStatisticOuter> output,
                                                      ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();

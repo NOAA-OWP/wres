@@ -15,11 +15,11 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -36,40 +36,40 @@ class MetricFuturesByTime
 {
 
     /**
-     * {@link DoubleScoreStatistic} results.
+     * {@link DoubleScoreStatisticOuter} results.
      */
 
-    private final List<Future<List<DoubleScoreStatistic>>> doubleScore = new ArrayList<>();
+    private final List<Future<List<DoubleScoreStatisticOuter>>> doubleScore = new ArrayList<>();
 
     /**
-     * {@link DurationScoreStatistic} results.
+     * {@link DurationScoreStatisticOuter} results.
      */
 
-    private final List<Future<List<DurationScoreStatistic>>> durationScore = new ArrayList<>();
+    private final List<Future<List<DurationScoreStatisticOuter>>> durationScore = new ArrayList<>();
 
     /**
-     * {@link DiagramStatistic} results.
+     * {@link DiagramStatisticOuter} results.
      */
 
-    private final List<Future<List<DiagramStatistic>>> multiVector = new ArrayList<>();
+    private final List<Future<List<DiagramStatisticOuter>>> multiVector = new ArrayList<>();
 
     /**
-     * {@link BoxPlotStatistics} results per pair.
+     * {@link BoxplotStatisticOuter} results per pair.
      */
 
-    private final List<Future<List<BoxPlotStatistics>>> boxplotPerPair = new ArrayList<>();
+    private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPair = new ArrayList<>();
 
     /**
-     * {@link BoxPlotStatistics} results per pool.
+     * {@link BoxplotStatisticOuter} results per pool.
      */
 
-    private final List<Future<List<BoxPlotStatistics>>> boxplotPerPool = new ArrayList<>();    
+    private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPool = new ArrayList<>();    
     
     /**
-     * {@link PairedStatistic} results.
+     * {@link PairedStatisticOuter} results.
      */
 
-    private final List<Future<List<PairedStatistic<Instant, Duration>>>> paired = new ArrayList<>();
+    private final List<Future<List<PairedStatisticOuter<Instant, Duration>>>> paired = new ArrayList<>();
 
     /**
      * Returns the results associated with the futures.
@@ -154,55 +154,55 @@ class MetricFuturesByTime
     {
 
         /**
-         * {@link DoubleScoreStatistic} results.
+         * {@link DoubleScoreStatisticOuter} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DoubleScoreStatistic>>> doubleScore =
+        private final ConcurrentLinkedQueue<Future<List<DoubleScoreStatisticOuter>>> doubleScore =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link DurationScoreStatistic} results.
+         * {@link DurationScoreStatisticOuter} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DurationScoreStatistic>>> durationScore =
+        private final ConcurrentLinkedQueue<Future<List<DurationScoreStatisticOuter>>> durationScore =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link DiagramStatistic} results.
+         * {@link DiagramStatisticOuter} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DiagramStatistic>>> multiVector =
+        private final ConcurrentLinkedQueue<Future<List<DiagramStatisticOuter>>> multiVector =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link BoxPlotStatistics} results per pair.
+         * {@link BoxplotStatisticOuter} results per pair.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<BoxPlotStatistics>>> boxplotPerPair =
+        private final ConcurrentLinkedQueue<Future<List<BoxplotStatisticOuter>>> boxplotPerPair =
                 new ConcurrentLinkedQueue<>();
         
         /**
-         * {@link BoxPlotStatistics} results per pool.
+         * {@link BoxplotStatisticOuter} results per pool.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<BoxPlotStatistics>>> boxplotPerPool =
+        private final ConcurrentLinkedQueue<Future<List<BoxplotStatisticOuter>>> boxplotPerPool =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link PairedStatistic} results.
+         * {@link PairedStatisticOuter} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<PairedStatistic<Instant, Duration>>>> paired =
+        private final ConcurrentLinkedQueue<Future<List<PairedStatisticOuter<Instant, Duration>>>> paired =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Adds a set of future {@link DoubleScoreStatistic} to the appropriate internal store.
+         * Adds a set of future {@link DoubleScoreStatisticOuter} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addDoubleScoreOutput( Future<List<DoubleScoreStatistic>> value )
+        MetricFuturesByTimeBuilder addDoubleScoreOutput( Future<List<DoubleScoreStatisticOuter>> value )
         {
             this.doubleScore.add( value );
 
@@ -210,13 +210,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link DurationScoreStatistic} to the appropriate internal store.
+         * Adds a set of future {@link DurationScoreStatisticOuter} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addDurationScoreOutput( Future<List<DurationScoreStatistic>> value )
+        MetricFuturesByTimeBuilder addDurationScoreOutput( Future<List<DurationScoreStatisticOuter>> value )
         {
             this.durationScore.add( value );
 
@@ -224,13 +224,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link DiagramStatistic} to the appropriate internal store.
+         * Adds a set of future {@link DiagramStatisticOuter} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<List<DiagramStatistic>> value )
+        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<List<DiagramStatisticOuter>> value )
         {
             this.multiVector.add( value );
 
@@ -238,13 +238,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link BoxPlotStatistics} per pair to the appropriate internal store.
+         * Adds a set of future {@link BoxplotStatisticOuter} per pair to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addBoxPlotOutputPerPair( Future<List<BoxPlotStatistics>> value )
+        MetricFuturesByTimeBuilder addBoxPlotOutputPerPair( Future<List<BoxplotStatisticOuter>> value )
         {
             this.boxplotPerPair.add( value );
 
@@ -252,13 +252,13 @@ class MetricFuturesByTime
         }
         
         /**
-         * Adds a set of future {@link BoxPlotStatistics} per pool to the appropriate internal store.
+         * Adds a set of future {@link BoxplotStatisticOuter} per pool to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addBoxPlotOutputPerPool( Future<List<BoxPlotStatistics>> value )
+        MetricFuturesByTimeBuilder addBoxPlotOutputPerPool( Future<List<BoxplotStatisticOuter>> value )
         {
             this.boxplotPerPool.add( value );
 
@@ -266,13 +266,13 @@ class MetricFuturesByTime
         }        
 
         /**
-         * Adds a set of future {@link PairedStatistic} to the appropriate internal store.
+         * Adds a set of future {@link PairedStatisticOuter} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addPairedOutput( Future<List<PairedStatistic<Instant, Duration>>> value )
+        MetricFuturesByTimeBuilder addPairedOutput( Future<List<PairedStatisticOuter<Instant, Duration>>> value )
         {
             this.paired.add( value );
 
@@ -280,14 +280,14 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link DoubleScoreStatistic} to the appropriate internal store.
+         * Adds a set of future {@link DoubleScoreStatisticOuter} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindowOuter, OneOrTwoThresholds> key,
-                                                         Future<List<DoubleScoreStatistic>> value )
+                                                         Future<List<DoubleScoreStatisticOuter>> value )
         {
             Objects.requireNonNull( key.getLeft() );
             

@@ -3,6 +3,7 @@ package wres.control;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -17,6 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -32,15 +34,19 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
+import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
@@ -103,45 +109,45 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     private final BiPredicate<StatisticType, DestinationType> writeWhenTrue;
 
     /**
-     * Store of consumers for processing {@link DoubleScoreStatistic} by {@link DestinationType} format.
+     * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DoubleScoreStatistic>>> doubleScoreConsumers =
+    private final Map<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> doubleScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link DurationScoreStatistic} by {@link DestinationType} format.
+     * Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DurationScoreStatistic>>> durationScoreConsumers =
+    private final Map<DestinationType, Consumer<List<DurationScoreStatisticOuter>>> durationScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link DiagramStatistic} by {@link DestinationType} format.
+     * Store of consumers for processing {@link DiagramStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DiagramStatistic>>> diagramConsumers =
+    private final Map<DestinationType, Consumer<List<DiagramStatisticOuter>>> diagramConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link BoxPlotStatistics} by {@link DestinationType} format.
+     * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<BoxPlotStatistics>>> boxPlotConsumersPerPair =
+    private final Map<DestinationType, Consumer<List<BoxplotStatisticOuter>>> boxPlotConsumersPerPair =
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link BoxPlotStatistics} by {@link DestinationType} format.
+     * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<BoxPlotStatistics>>> boxPlotConsumersPerPool =
+    private final Map<DestinationType, Consumer<List<BoxplotStatisticOuter>>> boxPlotConsumersPerPool =
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link PairedStatistic} by {@link DestinationType} format.
+     * Store of consumers for processing {@link PairedStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<PairedStatistic<Instant, Duration>>>> pairedConsumers =
+    private final Map<DestinationType, Consumer<List<PairedStatisticOuter<Instant, Duration>>>> pairedConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -181,12 +187,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     static ProduceOutputsFromStatistics of( SystemSettings systemSettings,
                                             ResolvedProject resolvedProject,
                                             BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                            SharedStatisticsWriters sharedWriters)
+                                            SharedStatisticsWriters sharedWriters )
     {
         return new ProduceOutputsFromStatistics( systemSettings,
                                                  resolvedProject,
                                                  writeWhenTrue,
-                                                 sharedWriters);
+                                                 sharedWriters );
     }
 
     /**
@@ -275,11 +281,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * <p>Edit this method as new consumer types are supported by the project configuration.</p>
      * 
      * @param sharedWriters an optional set of shared writers
-     * @throws IOException if the sink for the consumers could not be constructed
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers( SharedStatisticsWriters sharedWriters ) throws IOException
+    private void buildConsumers( SharedStatisticsWriters sharedWriters )
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -364,10 +369,23 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
         if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.CSV ) )
         {
-            CommaSeparatedScoreWriter<DoubleScoreStatistic> doubleScoreWriter =
+            // Format
+            Format formatter = this.getDecimalFormatter();           
+            Function<DoubleScoreComponentOuter, String> mapper = next -> 
+            {
+                if(Objects.nonNull( formatter ) )
+                {
+                    return formatter.format( next.getData().getValue() );
+                }
+                
+                return Double.toString( next.getData().getValue() );
+            };
+            
+            CommaSeparatedScoreWriter<DoubleScoreComponentOuter, DoubleScoreStatisticOuter> doubleScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
                                                   this.getDurationUnits(),
-                                                  outputDirectory );
+                                                  outputDirectory,
+                                                  mapper );
             this.doubleScoreConsumers.put( DestinationType.CSV,
                                            doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
@@ -375,16 +393,37 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
         if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, DestinationType.CSV ) )
         {
-            CommaSeparatedScoreWriter<DurationScoreStatistic> durationScoreWriter =
+            CommaSeparatedScoreWriter<DurationScoreComponentOuter, DurationScoreStatisticOuter> durationScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
                                                   this.getDurationUnits(),
-                                                  outputDirectory );
+                                                  outputDirectory,
+                                                  next -> MessageFactory.parse( next.getData().getValue() )
+                                                                        .toString() );
             this.durationScoreConsumers.put( DestinationType.CSV,
                                              durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }
     }
 
+    /**
+     * Returns a formatter for decimal values as strings, null if none is defined.
+     * 
+     * @return a formatter or null
+     */
+    
+    private Format getDecimalFormatter()
+    {
+        for( DestinationConfig next : this.getProjectConfig().getOutputs().getDestination() )
+        {
+            if( next.getType() == DestinationType.CSV || next.getType() == DestinationType.NUMERIC )
+            {
+                return ConfigHelper.getDecimalFormatter( next );
+            }
+        }
+        
+        return null;
+    }
+    
     /**
      * Builds a set of consumers for writing files in Portable Network Graphics (PNG) format.
      *
@@ -494,26 +533,26 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
 
     /**
-     * Processes {@link DiagramStatistic}.
+     * Processes {@link DiagramStatisticOuter}.
      * 
      * @param outputs the outputs to consume
      * @throws NullPointerException if the input is null
      */
 
-    private void processDiagramOutputs( List<DiagramStatistic> outputs )
+    private void processDiagramOutputs( List<DiagramStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DiagramStatistic>>> next : this.diagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<DiagramStatisticOuter>>> next : this.diagramConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
-                List<DiagramStatistic> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                    next.getKey() );
+                List<DiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                         next.getKey() );
 
                 // Consume the output
                 next.getValue().accept( filtered );
@@ -524,26 +563,26 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link BoxPlotStatistics} per pair.
+     * Processes {@link BoxplotStatisticOuter} per pair.
      * 
      * @param outputs the output to consume
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputsPerPair( List<BoxPlotStatistics> outputs )
+    private void processBoxPlotOutputsPerPair( List<BoxplotStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPair.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<BoxplotStatisticOuter>>> next : this.boxPlotConsumersPerPair.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
-                List<BoxPlotStatistics> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                     next.getKey() );
+                List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                         next.getKey() );
 
                 // Consume the output
                 next.getValue().accept( filtered );
@@ -554,26 +593,26 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link BoxPlotStatistics} per pool.
+     * Processes {@link BoxplotStatisticOuter} per pool.
      * 
      * @param outputs the output to consume
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputsPerPool( List<BoxPlotStatistics> outputs )
+    private void processBoxPlotOutputsPerPool( List<BoxplotStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<BoxPlotStatistics>>> next : this.boxPlotConsumersPerPool.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<BoxplotStatisticOuter>>> next : this.boxPlotConsumersPerPool.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
-                List<BoxPlotStatistics> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                     next.getKey() );
+                List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                         next.getKey() );
 
                 // Consume the output
                 next.getValue().accept( filtered );
@@ -584,26 +623,26 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link DoubleScoreStatistic}.
+     * Processes {@link DoubleScoreStatisticOuter}.
      * 
      * @param outputs the output to consume
      * @throws NullPointerException if the input is null
      */
 
-    private void processDoubleScoreOutputs( List<DoubleScoreStatistic> outputs )
+    private void processDoubleScoreOutputs( List<DoubleScoreStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DoubleScoreStatistic>>> next : this.doubleScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> next : this.doubleScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
-                List<DoubleScoreStatistic> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                        next.getKey() );
+                List<DoubleScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                             next.getKey() );
 
                 // Consume the output
                 next.getValue().accept( filtered );
@@ -615,26 +654,26 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link DurationScoreStatistic}.
+     * Processes {@link DurationScoreStatisticOuter}.
      * 
      * @param outputs the output to consume
      * @throws NullPointerException if the input is null
      */
 
-    private void processDurationScoreOutputs( List<DurationScoreStatistic> outputs )
+    private void processDurationScoreOutputs( List<DurationScoreStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DurationScoreStatistic>>> next : this.durationScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<DurationScoreStatisticOuter>>> next : this.durationScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
-                List<DurationScoreStatistic> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                          next.getKey() );
+                List<DurationScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                               next.getKey() );
 
                 // Consume the output
                 next.getValue().accept( filtered );
@@ -645,26 +684,26 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link PairedStatistic}.
+     * Processes {@link PairedStatisticOuter}.
      * 
      * @param outputs the output to consume
      * @throws NullPointerException if the input is null
      */
 
     private void
-            processPairedOutputByInstantDuration( List<PairedStatistic<Instant, Duration>> outputs )
+            processPairedOutputByInstantDuration( List<PairedStatisticOuter<Instant, Duration>> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<PairedStatistic<Instant, Duration>>>> next : this.pairedConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<PairedStatisticOuter<Instant, Duration>>>> next : this.pairedConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.PAIRED, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
-                List<PairedStatistic<Instant, Duration>> filtered =
+                List<PairedStatisticOuter<Instant, Duration>> filtered =
                         this.getFilteredStatisticsForThisDestinationType( outputs, next.getKey() );
 
                 // Consume the output
@@ -847,7 +886,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             LOGGER.debug( "Discovered a map of destination types for which metrics should be suppressed: {}.",
                           returnMe );
         }
-        
+
         return returnMe;
     }
 
@@ -945,7 +984,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     private ProduceOutputsFromStatistics( SystemSettings systemSettings,
                                           ResolvedProject resolvedProject,
                                           BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                          SharedStatisticsWriters sharedWriters)
+                                          SharedStatisticsWriters sharedWriters )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( resolvedProject,
@@ -960,10 +999,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         this.writeWhenTrue = writeWhenTrue;
 
         ProjectConfig projectConfig = resolvedProject.getProjectConfig();
-        
+
         // Could also be supplied on construction, but overhead is not too large
         Set<MetricConstants> metrics = MetricConfigHelper.getMetricsFromConfig( projectConfig );
-        
+
         this.suppressTheseDestinationsForTheseMetrics =
                 this.getMetricsForWhichOutputsShouldBeSuppressed( projectConfig, metrics );
 
@@ -978,7 +1017,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             // implicitly passing resolvedProject via shared state
             this.buildConsumers( sharedWriters );
         }
-        catch ( IOException | ProjectConfigException e )
+        catch ( ProjectConfigException e )
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }

@@ -3,8 +3,6 @@ package wres.engine.statistics.metric;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,9 +18,12 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.categorical.ThreatScore;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link CollectableTask}.
@@ -35,7 +36,7 @@ public final class CollectableTaskTest
     private static final double DOUBLE_COMPARE_THRESHOLD = 0.00001;
 
     private ExecutorService pairPool;
-    private Collectable<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> m;
+    private Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> m;
 
     /** 
      * Metadata for the output 
@@ -47,56 +48,68 @@ public final class CollectableTaskTest
     public void setupBeforeEachTest()
     {
         // Tests can run simultaneously, use only 1 (additional) Thread per test
-        pairPool = Executors.newFixedThreadPool( 1 );
+        this.pairPool = Executors.newFixedThreadPool( 1 );
         //Add some appropriate metrics to the collection
-        m = ThreatScore.of();
+        this.m = ThreatScore.of();
 
-        m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                   100,
-                                   MeasurementUnit.of(),
-                                   MetricConstants.CONTINGENCY_TABLE,
-                                   MetricConstants.MAIN );
+        this.m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                        100,
+                                        MeasurementUnit.of(),
+                                        MetricConstants.CONTINGENCY_TABLE,
+                                        MetricConstants.MAIN );
     }
 
     @Test
     public void testCollectableTask() throws ExecutionException, InterruptedException
     {
+
         //Wrap an input in a future
-        final FutureTask<DoubleScoreStatistic> futureInput =
-                new FutureTask<>( () -> {
+        final FutureTask<DoubleScoreStatisticOuter> futureInput =
+                new FutureTask<DoubleScoreStatisticOuter>( () -> {
 
-                    Map<MetricConstants, Double> elements = new HashMap<>();
-                    elements.put( MetricConstants.TRUE_POSITIVES, 1.0 );
-                    elements.put( MetricConstants.TRUE_NEGATIVES, 1.0 );
-                    elements.put( MetricConstants.FALSE_POSITIVES, 1.0 );
-                    elements.put( MetricConstants.FALSE_NEGATIVES, 1.0 );
+                    DoubleScoreStatistic table =
+                            DoubleScoreStatistic.newBuilder()
+                                                .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                             .setValue( 1 ) )
+                                                .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                             .setValue( 1 ) )
+                                                .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                             .setValue( 1 ) )
+                                                .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                             .setValue( 1 ) )
+                                                .build();
 
-                    return DoubleScoreStatistic.of( elements, m1 );
+                    return DoubleScoreStatisticOuter.of( table, this.m1 );
                 } );
 
-        CollectableTask<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> task =
-                new CollectableTask<>( m,
-                                       futureInput );
+        CollectableTask<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task =
+                new CollectableTask<>( this.m, futureInput );
 
         //Compute the pairs
-        pairPool.submit( futureInput );
+        this.pairPool.submit( futureInput );
 
         //Should not throw an exception
-        DoubleScoreStatistic output = task.call();
+        DoubleScoreStatisticOuter output = task.call();
 
-        assertEquals( 0.333333, output.getData(), DOUBLE_COMPARE_THRESHOLD );
+        assertEquals( 0.333333,
+                      output.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      DOUBLE_COMPARE_THRESHOLD );
     }
 
     @Test
     public void testExceptionOnNullInput() throws ExecutionException, InterruptedException
     {
-        final FutureTask<DoubleScoreStatistic> futureInputNull =
+        final FutureTask<DoubleScoreStatisticOuter> futureInputNull =
                 new FutureTask<>( () -> null );
 
-        pairPool.submit( futureInputNull );
+        this.pairPool.submit( futureInputNull );
 
-        final CollectableTask<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> task2 =
-                new CollectableTask<>( m,
+        final CollectableTask<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> task2 =
+                new CollectableTask<>( this.m,
                                        futureInputNull );
 
         //Should throw an exception
@@ -106,6 +119,6 @@ public final class CollectableTaskTest
     @After
     public void tearDownAfterEachTest()
     {
-        pairPool.shutdownNow();
+        this.pairPool.shutdownNow();
     }
 }

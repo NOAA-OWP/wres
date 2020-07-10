@@ -7,8 +7,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Computes the square of Pearson's product-moment correlation coefficient between the left and right sides of the
@@ -18,6 +24,20 @@ import wres.datamodel.statistics.StatisticMetadata;
  */
 public class CoefficientOfDetermination extends CorrelationPearsons
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.COEFFICIENT_OF_DETERMINATION )
+                             .build();
 
     /**
      * Returns an instance.
@@ -31,7 +51,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         return aggregate( getInputForAggregation( s ) );
     }
@@ -43,7 +63,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
         if ( Objects.isNull( output ) )
         {
@@ -57,11 +77,28 @@ public class CoefficientOfDetermination extends CorrelationPearsons
                                                        output.getMetadata().getSampleSize(),
                                                        null );
 
-        return DoubleScoreStatistic.of( Math.pow( output.getData(), 2 ), meta );
+        double input = output.getComponent( MetricConstants.MAIN )
+                             .getData()
+                             .getValue();
+
+        double result = Math.pow( input, 2 );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( CoefficientOfDetermination.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, meta );
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
         if ( Objects.isNull( input ) )
         {

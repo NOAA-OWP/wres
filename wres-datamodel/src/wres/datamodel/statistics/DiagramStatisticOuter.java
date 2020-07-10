@@ -15,7 +15,7 @@ import wres.datamodel.VectorOfDoubles;
  * @author james.brown@hydrosolved.com
  */
 
-public class DiagramStatistic implements Statistic<Map<MetricDimension, VectorOfDoubles>>
+public class DiagramStatisticOuter implements Statistic<Map<MetricDimension, VectorOfDoubles>>
 {
     /**
      * The statistic.
@@ -38,10 +38,10 @@ public class DiagramStatistic implements Statistic<Map<MetricDimension, VectorOf
      * @return an instance of the output
      */
 
-    public static DiagramStatistic of( Map<MetricDimension, VectorOfDoubles> statistic,
+    public static DiagramStatisticOuter of( Map<MetricDimension, VectorOfDoubles> statistic,
                                        StatisticMetadata meta )
     {
-        return new DiagramStatistic( statistic, meta );
+        return new DiagramStatisticOuter( statistic, meta );
     }
 
     /**
@@ -83,11 +83,11 @@ public class DiagramStatistic implements Statistic<Map<MetricDimension, VectorOf
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof DiagramStatistic ) )
+        if ( ! ( o instanceof DiagramStatisticOuter ) )
         {
             return false;
         }
-        final DiagramStatistic v = (DiagramStatistic) o;
+        final DiagramStatisticOuter v = (DiagramStatisticOuter) o;
         return meta.equals( v.getMetadata() ) && statistic.equals( v.statistic );
     }
 
@@ -113,7 +113,7 @@ public class DiagramStatistic implements Statistic<Map<MetricDimension, VectorOf
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DiagramStatistic( final Map<MetricDimension, VectorOfDoubles> statistic, final StatisticMetadata meta )
+    private DiagramStatisticOuter( final Map<MetricDimension, VectorOfDoubles> statistic, final StatisticMetadata meta )
     {
         if ( Objects.isNull( statistic ) )
         {

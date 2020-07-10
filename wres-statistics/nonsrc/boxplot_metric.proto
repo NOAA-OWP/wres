@@ -22,10 +22,9 @@ message BoxplotMetric
     {
         //The type of value linked to each box.
         
-        UNKNOWN = 0;
-        OBSERVED_VALUE = 1;
-        FORECAST_VALUE = 2;
-        ENSEMBLE_MEAN = 3;
+        OBSERVED_VALUE = 0;
+        FORECAST_VALUE = 1;
+        ENSEMBLE_MEAN = 2;
     }
 
     LinkedValueType linked_value_type = 3;
@@ -33,15 +32,27 @@ message BoxplotMetric
     when plotting boxes by observed value, this is 
     LinkedValueType.OBSERVED_VALUE.*/
 
-    string units = 4;
+    enum QuantileValueType
+    {
+        //The type of value to which the quantiles refer.
+        
+        FORECAST = 0;
+        ERROR = 1;
+        ERROR_PERCENT_OF_VERIFYING_VALUE = 2;
+    }
+
+    QuantileValueType quantile_value_type = 4;
+    // The type of quantile value.
+
+    string units = 5;
     // Units of the quantiles.
     
-    double optimum = 5; 
+    double optimum = 6; 
     // Optimum value.
     
-    double minimum = 6;
+    double minimum = 7;
     // The lower bound of the quantiles.
 
-    double maximum = 7;
+    double maximum = 8;
     // The upper bound of the quantiles.
 }

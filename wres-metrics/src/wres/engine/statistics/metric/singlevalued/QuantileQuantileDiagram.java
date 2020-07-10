@@ -14,7 +14,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 
@@ -26,7 +26,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Double>>, DiagramStatistic>
+public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Double>>, DiagramStatisticOuter>
 {
 
     /**
@@ -53,7 +53,7 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
     }
 
     @Override
-    public DiagramStatistic apply( SampleData<Pair<Double, Double>> s )
+    public DiagramStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -91,7 +91,7 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
-        return DiagramStatistic.of( output, metOut );
+        return DiagramStatisticOuter.of( output, metOut );
     }
 
     @Override

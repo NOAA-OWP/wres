@@ -30,7 +30,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
@@ -44,6 +44,12 @@ import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MetricCollection}.
@@ -73,24 +79,36 @@ public class MetricCollectionTest
         final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.MEAN_ERROR,
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
-        final List<DoubleScoreStatistic> d = collection.apply( input );
+        final List<DoubleScoreStatisticOuter> d = collection.apply( input );
 
         //Check them   
         final Double expectedFirst = 200.55;
         final Double expectedSecond = 201.37;
         final Double expectedThird = 632.4586381732801;
-        final Double actualFirst = Slicer.filter( d, MetricConstants.MEAN_ERROR ).get( 0 ).getData();
+        final Double actualFirst = Slicer.filter( d, MetricConstants.MEAN_ERROR )
+                                         .get( 0 )
+                                         .getComponent( MetricConstants.MAIN )
+                                         .getData()
+                                         .getValue();
         final Double actualSecond =
-                Slicer.filter( d, MetricConstants.MEAN_ABSOLUTE_ERROR ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.MEAN_ABSOLUTE_ERROR )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
         final Double actualThird =
-                Slicer.filter( d, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.ROOT_MEAN_SQUARE_ERROR )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -114,7 +132,7 @@ public class MetricCollectionTest
         //Create a collection of dichotomous metrics that produce a scalar output. Since all scores implement 
         //Collectable, they make efficient use of common intermediate data. In this case, all scores require the 2x2
         //Contingency Table, which is computed only once
-        final MetricCollectionBuilder<SampleData<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatistic> m =
+        final MetricCollectionBuilder<SampleData<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatisticOuter> m =
                 MetricCollectionBuilder.of();
 
         m.setExecutorService( ForkJoinPool.commonPool() );
@@ -127,11 +145,11 @@ public class MetricCollectionTest
         m.addMetric( EquitableThreatScore.of() ); //Should be 0.43768152544513195
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Boolean, Boolean>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 m.build();
 
         //Compute them
-        final List<DoubleScoreStatistic> c = collection.apply( input );
+        final List<DoubleScoreStatisticOuter> c = collection.apply( input );
 
         //Check them
         final Double expectedFirst = 0.5734265734265734;
@@ -139,14 +157,34 @@ public class MetricCollectionTest
         final Double expectedThird = 0.14615384615384616;
         final Double expectedFourth = 0.6347985347985348;
         final Double expectedFifth = 0.43768152544513195;
-        final Double actualFirst = Slicer.filter( c, MetricConstants.THREAT_SCORE ).get( 0 ).getData();
+        final Double actualFirst = Slicer.filter( c, MetricConstants.THREAT_SCORE )
+                                         .get( 0 )
+                                         .getComponent( MetricConstants.MAIN )
+                                         .getData()
+                                         .getValue();
         final Double actualSecond =
-                Slicer.filter( c, MetricConstants.PROBABILITY_OF_DETECTION ).get( 0 ).getData();
+                Slicer.filter( c, MetricConstants.PROBABILITY_OF_DETECTION )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
         final Double actualThird =
-                Slicer.filter( c, MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).get( 0 ).getData();
-        final Double actualFourth = Slicer.filter( c, MetricConstants.PEIRCE_SKILL_SCORE ).get( 0 ).getData();
+                Slicer.filter( c, MetricConstants.PROBABILITY_OF_FALSE_DETECTION )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
+        final Double actualFourth = Slicer.filter( c, MetricConstants.PEIRCE_SKILL_SCORE )
+                                          .get( 0 )
+                                          .getComponent( MetricConstants.MAIN )
+                                          .getData()
+                                          .getValue();
         final Double actualFifth =
-                Slicer.filter( c, MetricConstants.EQUITABLE_THREAT_SCORE ).get( 0 ).getData();
+                Slicer.filter( c, MetricConstants.EQUITABLE_THREAT_SCORE )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -170,7 +208,7 @@ public class MetricCollectionTest
         final SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
-        final MetricCollectionBuilder<SampleData<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatistic> n =
+        final MetricCollectionBuilder<SampleData<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         n.setExecutorService( ForkJoinPool.commonPool() );
@@ -180,18 +218,26 @@ public class MetricCollectionTest
         n.addMetric( BrierSkillScore.of() ); //Should be 0.11363636363636376
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.build();
 
         //Compute them
-        final List<DoubleScoreStatistic> d = collection.apply( input );
+        final List<DoubleScoreStatisticOuter> d = collection.apply( input );
 
         //Check them
         final Double expectedFirst = 0.26;
         final Double expectedSecond = 0.11363636363636376;
-        final Double actualFirst = Slicer.filter( d, MetricConstants.BRIER_SCORE ).get( 0 ).getData();
+        final Double actualFirst = Slicer.filter( d, MetricConstants.BRIER_SCORE )
+                                         .get( 0 )
+                                         .getComponent( MetricConstants.MAIN )
+                                         .getData()
+                                         .getValue();
         final Double actualSecond =
-                Slicer.filter( d, MetricConstants.BRIER_SKILL_SCORE ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.BRIER_SKILL_SCORE )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -212,7 +258,7 @@ public class MetricCollectionTest
         final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Create a collection of metrics that consume single-valued pairs and produce vector outputs
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> n =
+        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         n.setExecutorService( ForkJoinPool.commonPool() );
@@ -222,19 +268,27 @@ public class MetricCollectionTest
         n.addMetric( MeanSquareErrorSkillScore.of() ); //Should be 0.8007025335093799
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 n.build();
 
         //Compute them
-        final List<DoubleScoreStatistic> d = collection.apply( input );
+        final List<DoubleScoreStatisticOuter> d = collection.apply( input );
 
         //Check them
         final Double expectedFirst = 400003.929;
         final Double expectedSecond = 0.8007025335093799;
         final Double actualFirst =
-                Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
         final Double actualSecond =
-                Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -255,7 +309,7 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatistic> n =
+        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         //Add some appropriate metrics to the collection
@@ -265,13 +319,13 @@ public class MetricCollectionTest
         n.setExecutorService( metricPool );
 
         //Finalize
-        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.build();
 
         //Null input
         MetricCalculationException expected =
                 assertThrows( MetricCalculationException.class, () -> collection.apply( null ) );
-        
+
         assertEquals( "Specify non-null input to the metric collection.", expected.getMessage() );
     }
 
@@ -288,18 +342,18 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatistic> n =
+        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
 
         //Null input
         MetricCalculationException expected =
                 assertThrows( MetricCalculationException.class, () -> collection.apply( input, null ) );
-        
+
         assertEquals( "Specify a non-null set of metrics to ignore, such as the empty set.", expected.getMessage() );
     }
 
@@ -317,21 +371,21 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatistic> n =
+        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
         final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
                 n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
 
         //Null input
         MetricCalculationException expected =
                 assertThrows( MetricCalculationException.class,
                               () -> collection.apply( input, Collections.singleton( MetricConstants.MEAN_ERROR ) ) );
-        
+
         assertEquals( "Cannot ignore all metrics in the store: specify some metrics to process. The store contains "
-                + "[MEAN ERROR] and the ignored metrics are [MEAN ERROR].",
+                      + "[MEAN ERROR] and the ignored metrics are [MEAN ERROR].",
                       expected.getMessage() );
     }
 
@@ -346,13 +400,13 @@ public class MetricCollectionTest
     public void testBuildWithNoExecutorService() throws MetricParameterException
     {
         //No output factory            
-        final MetricCollectionBuilder<SampleData<Pair<Double,Double>>, Statistic<?>, DoubleScoreStatistic> m =
+        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> m =
                 MetricCollectionBuilder.of();
 
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
                               () -> m.build() );
-        
+
         assertEquals( "Cannot construct the metric collection without an executor service.", expected.getMessage() );
     }
 
@@ -368,7 +422,7 @@ public class MetricCollectionTest
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
                               () -> MetricCollectionBuilder.of().setExecutorService( metricPool ).build() );
-        
+
         assertEquals( "Cannot construct a metric collection without any metrics.", expected.getMessage() );
     }
 
@@ -388,7 +442,7 @@ public class MetricCollectionTest
     public void testLogStartOfCalculation() throws MetricParameterException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException
     {
-        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> collection =
+        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logStart = collection.getClass().getDeclaredMethod( "logStartOfCalculation", Logger.class );
         logStart.setAccessible( true );
@@ -422,7 +476,7 @@ public class MetricCollectionTest
     public void testLogEndOfCalculation() throws MetricParameterException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException
     {
-        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> collection =
+        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logEnd = collection.getClass()
                                   .getDeclaredMethod( "logEndOfCalculation", Logger.class, List.class );
@@ -466,7 +520,7 @@ public class MetricCollectionTest
                               () -> MetricCollectionBuilder.of().setExecutorService( metricPool ).build() );
         assertEquals( expected.getCause().getClass(), MetricCalculationException.class );
 
-        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> collection =
+        MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
         Method method = collection.getClass().getDeclaredMethod( "apply", SampleData.class, Set.class );
         method.setAccessible( true );
@@ -495,7 +549,7 @@ public class MetricCollectionTest
         Mockito.when( meanError.getID() ).thenReturn( MetricConstants.MEAN_ERROR );
         Mockito.when( meanError.apply( input ) ).thenThrow( IllegalArgumentException.class );
 
-        MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatistic> failed =
+        MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> failed =
                 MetricCollectionBuilder.of();
 
         MetricCalculationException expected = assertThrows( MetricCalculationException.class,
@@ -521,7 +575,7 @@ public class MetricCollectionTest
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
         //Add some appropriate metrics to the collection
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> n =
+        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> n =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
@@ -530,7 +584,7 @@ public class MetricCollectionTest
                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
-        final List<DoubleScoreStatistic> d = n.apply( input );
+        final List<DoubleScoreStatisticOuter> d = n.apply( input );
 
         //Check them   
         final Double expectedFirst = 0.9999999910148981;
@@ -540,13 +594,33 @@ public class MetricCollectionTest
         final Double expectedFifth = 632.4586381732801;
 
         final Double actualFirst =
-                Slicer.filter( d, MetricConstants.PEARSON_CORRELATION_COEFFICIENT ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
         final Double actualSecond =
-                Slicer.filter( d, MetricConstants.COEFFICIENT_OF_DETERMINATION ).get( 0 ).getData();
-        final Double actualThird = Slicer.filter( d, MetricConstants.SUM_OF_SQUARE_ERROR ).get( 0 ).getData();
-        final Double actualFourth = Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.COEFFICIENT_OF_DETERMINATION )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
+        final Double actualThird = Slicer.filter( d, MetricConstants.SUM_OF_SQUARE_ERROR )
+                                         .get( 0 )
+                                         .getComponent( MetricConstants.MAIN )
+                                         .getData()
+                                         .getValue();
+        final Double actualFourth = Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR )
+                                          .get( 0 )
+                                          .getComponent( MetricConstants.MAIN )
+                                          .getData()
+                                          .getValue();
         final Double actualFifth =
-                Slicer.filter( d, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).get( 0 ).getData();
+                Slicer.filter( d, MetricConstants.ROOT_MEAN_SQUARE_ERROR )
+                      .get( 0 )
+                      .getComponent( MetricConstants.MAIN )
+                      .getData()
+                      .getValue();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -576,7 +650,7 @@ public class MetricCollectionTest
         final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> collection =
+        final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.MEAN_SQUARE_ERROR,
@@ -584,15 +658,41 @@ public class MetricCollectionTest
         //Compute them, ignoring two metrics
         Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
-        final List<DoubleScoreStatistic> actual = collection.apply( input, ignore );
+        final List<DoubleScoreStatisticOuter> actual = collection.apply( input, ignore );
         StatisticMetadata outM =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                       10,
                                       MeasurementUnit.of(),
                                       MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                       MetricConstants.MAIN );
-        List<DoubleScoreStatistic> expected = Arrays.asList( DoubleScoreStatistic.of( 0.9999999910148981, outM ) );
-        
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.9999999910148981 )
+                                                                               .build();
+        /**
+         * Canonical description of the metric.
+         */
+
+        DoubleScoreMetric rho =
+                DoubleScoreMetric.newBuilder()
+                                 .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                           .setMinimum( 0 )
+                                                                           .setMaximum( 1 )
+                                                                           .setOptimum( 1 )
+                                                                           .setName( ComponentName.MAIN ) )
+                                 .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                                 .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( rho )
+                                    .addStatistics( component )
+                                    .build();
+
+        List<DoubleScoreStatisticOuter> expected =
+                Arrays.asList( DoubleScoreStatisticOuter.of( score, outM ) );
+
         //Check them   
         assertEquals( expected, actual );
     }

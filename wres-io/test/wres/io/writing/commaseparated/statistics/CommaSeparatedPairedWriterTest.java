@@ -19,7 +19,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.PairedStatisticOuter;
 
 import wres.io.writing.WriterTestHelper;
 
@@ -32,7 +32,7 @@ public class CommaSeparatedPairedWriterTest
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
-     * Tests the writing of {@link PairedStatistic} to file, where the left pair comprises an {@link Instant} and the
+     * Tests the writing of {@link PairedStatisticOuter} to file, where the left pair comprises an {@link Instant} and the
      * right pair comprises an (@link Duration).
      * 
      * @throws ProjectConfigException if the project configuration is incorrect

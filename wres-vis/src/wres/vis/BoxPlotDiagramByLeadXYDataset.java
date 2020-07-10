@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.util.TimeHelper;
 
 /**
@@ -30,7 +30,7 @@ public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
      * @throws NullPointerException if either input is null
      */
     
-    public BoxPlotDiagramByLeadXYDataset( BoxPlotStatistics input, ChronoUnit durationUnits )
+    public BoxPlotDiagramByLeadXYDataset( BoxplotStatisticOuter input, ChronoUnit durationUnits )
     {
         super( input );
         

@@ -8,10 +8,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <P>The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,
@@ -19,13 +25,27 @@ import wres.engine.statistics.metric.MetricCalculationException;
  * predictand, the Peirce Skill Score corresponds to the difference between the {@link ProbabilityOfDetection} and the
  * {@link ProbabilityOfFalseDetection}. 
  * 
- * <p>TODO: The {@link #aggregate(DoubleScoreStatistic)} is implemented for the multicategory case. Abstract this to 
+ * <p>TODO: The {@link #aggregate(DoubleScoreStatisticOuter)} is implemented for the multicategory case. Abstract this to 
  * somewhere appropriately visible for extensibility. 
  * 
  * @author james.brown@hydrosolved.com
  */
 public class PeirceSkillScore extends ContingencyTableScore
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( -1 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.PEIRCE_SKILL_SCORE )
+                             .build();
 
     /**
      * Returns an instance.
@@ -39,19 +59,19 @@ public class PeirceSkillScore extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Boolean, Boolean>> s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( final DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output )
     {
         if ( Objects.isNull( output ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this.toString() + "'." );
         }
-        
+
         if ( output.getComponents().size() == 4 )
         {
             return this.aggregateTwoByTwo( output );
@@ -79,28 +99,43 @@ public class PeirceSkillScore extends ContingencyTableScore
      * @return the score
      */
 
-    private DoubleScoreStatistic aggregateTwoByTwo( DoubleScoreStatistic score )
+    private DoubleScoreStatisticOuter aggregateTwoByTwo( DoubleScoreStatisticOuter contingencyTable )
     {
-        this.is2x2ContingencyTable( score, this );
+        this.is2x2ContingencyTable( contingencyTable, this );
 
-        double tP = score.getComponent( MetricConstants.TRUE_POSITIVES )
-                         .getData();
+        double tP = contingencyTable.getComponent( MetricConstants.TRUE_POSITIVES )
+                                    .getData()
+                                    .getValue();
 
-        double fP = score.getComponent( MetricConstants.FALSE_POSITIVES )
-                         .getData();
+        double fP = contingencyTable.getComponent( MetricConstants.FALSE_POSITIVES )
+                                    .getData()
+                                    .getValue();
 
-        double fN = score.getComponent( MetricConstants.FALSE_NEGATIVES )
-                         .getData();
+        double fN = contingencyTable.getComponent( MetricConstants.FALSE_NEGATIVES )
+                                    .getData()
+                                    .getValue();
 
-        double tN = score.getComponent( MetricConstants.TRUE_NEGATIVES )
-                         .getData();
+        double tN = contingencyTable.getComponent( MetricConstants.TRUE_NEGATIVES )
+                                    .getData()
+                                    .getValue();
 
-        StatisticMetadata meta = this.getMetadata( score );
+        StatisticMetadata meta = this.getMetadata( contingencyTable );
 
         double result = FunctionFactory.finiteOrMissing()
                                        .applyAsDouble( ( tP / ( tP + fN ) )
                                                        - ( fP / ( fP + tN ) ) );
-        return DoubleScoreStatistic.of( result, meta );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( PeirceSkillScore.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, meta );
     }
 
     /**
@@ -111,22 +146,23 @@ public class PeirceSkillScore extends ContingencyTableScore
      * @return the score
      */
 
-    private DoubleScoreStatistic aggregateNByN( DoubleScoreStatistic score )
+    private DoubleScoreStatisticOuter aggregateNByN( DoubleScoreStatisticOuter contingencyTable )
     {
         //Check the input
-        this.isContingencyTable( score, this );
+        this.isContingencyTable( contingencyTable, this );
 
-        int square = (int) Math.sqrt( score.getComponents().size() );
+        int square = (int) Math.sqrt( contingencyTable.getComponents().size() );
 
         double[][] cm = new double[square][square];
 
-        Iterator<MetricConstants> source = score.getComponents().iterator();
+        Iterator<MetricConstants> source = contingencyTable.getComponents().iterator();
         for ( int i = 0; i < square; i++ )
         {
             for ( int j = 0; j < square; j++ )
             {
-                cm[i][j] = score.getComponent( source.next() )
-                                .getData();
+                cm[i][j] = contingencyTable.getComponent( source.next() )
+                                           .getData()
+                                           .getValue();
             }
         }
 
@@ -165,9 +201,20 @@ public class PeirceSkillScore extends ContingencyTableScore
         final double result = FunctionFactory.finiteOrMissing()
                                              .applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
                                                              / ( 1.0 - ( uniProd / nSquared ) ) );
-        StatisticMetadata meta = this.getMetadata( score );
 
-        return DoubleScoreStatistic.of( result, meta );
+        StatisticMetadata meta = this.getMetadata( contingencyTable );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( PeirceSkillScore.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, meta );
     }
 
 

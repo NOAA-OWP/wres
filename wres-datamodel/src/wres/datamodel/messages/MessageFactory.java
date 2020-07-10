@@ -30,9 +30,8 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -51,22 +50,21 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.DurationScoreComponentName;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
-import wres.statistics.generated.ScoreMetric;
-import wres.statistics.generated.ScoreMetric.ScoreMetricComponent;
-import wres.statistics.generated.ScoreMetric.ScoreMetricComponent.ScoreComponentName;
-import wres.statistics.generated.ScoreStatistic.ScoreStatisticComponent;
-import wres.statistics.generated.ScoreStatistic;
 import wres.statistics.generated.Season;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Threshold;
@@ -138,42 +136,44 @@ public class MessageFactory
         // Double scores
         if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
-            List<DoubleScoreStatistic> statistics = project.getDoubleScoreStatistics();
+            List<DoubleScoreStatisticOuter> statistics = project.getDoubleScoreStatistics();
             MessageFactory.addDoubleScoreStatisticsToPool( statistics, mappedStatistics );
         }
 
         // Duration scores
         if ( project.hasStatistic( StatisticType.DURATION_SCORE ) )
         {
-            List<wres.datamodel.statistics.DurationScoreStatistic> statistics = project.getDurationScoreStatistics();
+            List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics =
+                    project.getDurationScoreStatistics();
             MessageFactory.addDurationScoreStatisticsToPool( statistics, mappedStatistics );
         }
 
         // Diagrams
         if ( project.hasStatistic( StatisticType.DIAGRAM ) )
         {
-            List<wres.datamodel.statistics.DiagramStatistic> statistics = project.getDiagramStatistics();
+            List<wres.datamodel.statistics.DiagramStatisticOuter> statistics = project.getDiagramStatistics();
             MessageFactory.addDiagramStatisticsToPool( statistics, mappedStatistics );
         }
 
         // Box plots per pair
         if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
         {
-            List<wres.datamodel.statistics.BoxPlotStatistics> statistics = project.getBoxPlotStatisticsPerPair();
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPair();
             MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, false );
         }
 
         // Box plots statistics per pool
         if ( project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            List<wres.datamodel.statistics.BoxPlotStatistics> statistics = project.getBoxPlotStatisticsPerPool();
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPool();
             MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, true );
         }
 
         // Box plots statistics per pool
         if ( project.hasStatistic( StatisticType.PAIRED ) )
         {
-            List<PairedStatistic<Instant, java.time.Duration>> statistics = project.getInstantDurationPairStatistics();
+            List<PairedStatisticOuter<Instant, java.time.Duration>> statistics =
+                    project.getInstantDurationPairStatistics();
             MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
 
@@ -227,7 +227,7 @@ public class MessageFactory
         // Add the double scores
         if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
         {
-            List<wres.datamodel.statistics.DoubleScoreStatistic> doubleScores = project.getDoubleScoreStatistics();
+            List<wres.datamodel.statistics.DoubleScoreStatisticOuter> doubleScores = project.getDoubleScoreStatistics();
             doubleScores.forEach( next -> statistics.addScores( MessageFactory.parse( next ) ) );
             metadata = doubleScores.get( 0 ).getMetadata().getSampleMetadata();
         }
@@ -235,7 +235,7 @@ public class MessageFactory
         // Add the diagrams
         if ( project.hasStatistic( StatisticType.DIAGRAM ) )
         {
-            List<wres.datamodel.statistics.DiagramStatistic> diagrams = project.getDiagramStatistics();
+            List<wres.datamodel.statistics.DiagramStatisticOuter> diagrams = project.getDiagramStatistics();
             diagrams.forEach( next -> statistics.addDiagrams( MessageFactory.parse( next ) ) );
             metadata = diagrams.get( 0 ).getMetadata().getSampleMetadata();
         }
@@ -244,7 +244,7 @@ public class MessageFactory
         if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR )
              || project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            List<wres.datamodel.statistics.BoxPlotStatistics> boxplots =
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots =
                     new ArrayList<>( project.getBoxPlotStatisticsPerPair() );
             boxplots.addAll( project.getBoxPlotStatisticsPerPool() );
             boxplots.forEach( next -> statistics.addBoxplots( MessageFactory.parse( next ) ) );
@@ -254,7 +254,7 @@ public class MessageFactory
         // Add the duration scores
         if ( project.hasStatistic( StatisticType.DURATION_SCORE ) )
         {
-            List<wres.datamodel.statistics.DurationScoreStatistic> durationScores =
+            List<wres.datamodel.statistics.DurationScoreStatisticOuter> durationScores =
                     project.getDurationScoreStatistics();
             durationScores.forEach( next -> statistics.addDurationScores( MessageFactory.parse( next ) ) );
             metadata = durationScores.get( 0 ).getMetadata().getSampleMetadata();
@@ -263,7 +263,7 @@ public class MessageFactory
         // Add the duration diagrams with instant/duration pairs
         if ( project.hasStatistic( StatisticType.PAIRED ) )
         {
-            List<wres.datamodel.statistics.PairedStatistic<Instant, java.time.Duration>> durationDiagrams =
+            List<wres.datamodel.statistics.PairedStatisticOuter<Instant, java.time.Duration>> durationDiagrams =
                     project.getInstantDurationPairStatistics();
             durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
             metadata = durationDiagrams.get( 0 ).getMetadata().getSampleMetadata();
@@ -520,6 +520,37 @@ public class MessageFactory
     }
 
     /**
+     * Creates a {@link java.time.Duration} from a {@link Duration}.
+     * 
+     * @param duration the duration to parse
+     * @return the duration
+     */
+
+    public static java.time.Duration parse( Duration duration )
+    {
+        Objects.requireNonNull( duration );
+
+        return java.time.Duration.ofSeconds( duration.getSeconds(), duration.getNanos() );
+    }
+
+    /**
+     * Creates a {@link java.time.Duration} from a {@link Duration}.
+     * 
+     * @param duration the duration to parse
+     * @return the duration
+     */
+
+    public static Duration parse( java.time.Duration duration )
+    {
+        Objects.requireNonNull( duration );
+
+        return Duration.newBuilder()
+                       .setSeconds( duration.getSeconds() )
+                       .setNanos( duration.getNano() )
+                       .build();
+    }
+
+    /**
      * Creates a {@link wres.statistics.generated.Threshold} from a 
      * {@link wres.datamodel.thresholds.ThresholdOuter}.
      * 
@@ -535,132 +566,44 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.ScoreStatistic} from a 
-     * {@link wres.datamodel.statistics.DoubleScoreStatistic}.
+     * Creates a {@link wres.statistics.generated.DoubleScoreStatistic} from a 
+     * {@link wres.datamodel.statistics.DoubleScoreStatisticOuter}.
      * 
      * @param statistic the statistic from which to create a message
      * @return the message
      */
 
-    public static ScoreStatistic parse( wres.datamodel.statistics.DoubleScoreStatistic statistic )
+    public static DoubleScoreStatistic parse( wres.datamodel.statistics.DoubleScoreStatisticOuter statistic )
     {
         Objects.requireNonNull( statistic );
 
-        ScoreMetric.Builder metricBuilder = ScoreMetric.newBuilder();
-        ScoreStatistic.Builder scoreBuilder = ScoreStatistic.newBuilder();
-
-        MetricConstants metricName = statistic.getMetadata().getMetricID();
-
-        // Set the metric components and score values
-        // and then propagate to the payload here
-        for ( MetricConstants next : statistic.getComponents() )
-        {
-            // Use the full name for the MAIN component
-            String name = next.name();
-            if ( next == MetricConstants.MAIN )
-            {
-                name = "MAIN_SCORE";
-            }
-
-            ScoreComponentName scoreName = ScoreComponentName.valueOf( name );
-
-            Double minimum = (Double) metricName.getMinimum();
-            Double maximum = (Double) metricName.getMaximum();
-            Double optimum = (Double) metricName.getOptimum();
-
-            // Set the limits for the component where available
-            if ( next.hasLimits() )
-            {
-                minimum = (Double) next.getMinimum();
-                maximum = (Double) next.getMaximum();
-                optimum = (Double) next.getOptimum();
-            }
-
-            ScoreMetricComponent metricComponent = ScoreMetricComponent.newBuilder()
-                                                                       .setName( scoreName )
-                                                                       .setMinimum( minimum )
-                                                                       .setMaximum( maximum )
-                                                                       .setOptimum( optimum )
-                                                                       .build();
-
-            metricBuilder.addComponents( metricComponent );
-
-            ScoreStatisticComponent.Builder scoreComponentBuilder =
-                    ScoreStatisticComponent.newBuilder()
-                                           .setName( scoreName )
-                                           .setValue( statistic.getComponent( next ).getData() );
-
-            scoreBuilder.addStatistics( scoreComponentBuilder );
-        }
-
-        // Set the metric
-        metricBuilder.setName( MetricName.valueOf( metricName.name() ) );
-        scoreBuilder.setMetric( metricBuilder );
-
-        return scoreBuilder.build();
+        return statistic.getData();
     }
 
     /**
      * Creates a {@link wres.statistics.generated.DurationScoreStatistic} from a 
-     * {@link wres.datamodel.statistics.DurationScoreStatistic}.
+     * {@link wres.datamodel.statistics.DurationScoreStatisticOuter}.
      * 
      * @param statistic the statistic from which to create a message
      * @return the message
      */
 
-    public static DurationScoreStatistic parse( wres.datamodel.statistics.DurationScoreStatistic statistic )
+    public static DurationScoreStatistic parse( wres.datamodel.statistics.DurationScoreStatisticOuter statistic )
     {
         Objects.requireNonNull( statistic );
 
-        DurationScoreMetric.Builder metricBuilder = DurationScoreMetric.newBuilder();
-        DurationScoreStatistic.Builder scoreBuilder = DurationScoreStatistic.newBuilder();
-
-        MetricConstants metricName = statistic.getMetadata().getMetricID();
-
-        // Set the metric components and score values
-        // and then propagate to the payload here
-        for ( MetricConstants next : statistic.getComponents() )
-        {
-            String name = next.name();
-            DurationScoreComponentName scoreName = DurationScoreComponentName.valueOf( name );
-
-            DurationScoreMetricComponent.Builder metricComponent = DurationScoreMetricComponent.newBuilder()
-                                                                                               .setName( scoreName );
-
-            MessageFactory.addLimitsToTimingStatistic( metricComponent, next );
-
-            metricBuilder.addComponents( metricComponent );
-
-            java.time.Duration score = statistic.getComponent( next ).getData();
-            Duration protoScore = Duration.newBuilder()
-                                          .setSeconds( score.getSeconds() )
-                                          .setNanos( score.getNano() )
-                                          .build();
-
-            DurationScoreStatisticComponent.Builder scoreComponentBuilder =
-                    DurationScoreStatisticComponent.newBuilder()
-                                                   .setName( scoreName )
-                                                   .setValue( protoScore );
-
-            scoreBuilder.addStatistics( scoreComponentBuilder );
-        }
-
-        // Set the metric
-        metricBuilder.setName( MetricName.valueOf( metricName.name() ) );
-        scoreBuilder.setMetric( metricBuilder );
-
-        return scoreBuilder.build();
+        return statistic.getData();
     }
 
     /**
      * Creates a {@link wres.statistics.generated.DiagramStatistic} from a 
-     * {@link wres.datamodel.statistics.DiagramStatistic}.
+     * {@link wres.datamodel.statistics.DiagramStatisticOuter}.
      * 
      * @param statistic the statistic from which to create a message
      * @return the message
      */
 
-    public static DiagramStatistic parse( wres.datamodel.statistics.DiagramStatistic statistic )
+    public static DiagramStatistic parse( wres.datamodel.statistics.DiagramStatisticOuter statistic )
     {
         Objects.requireNonNull( statistic );
 
@@ -693,7 +636,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.DurationDiagramStatistic} from a 
-     * {@link wres.datamodel.statistics.PairedStatistic} composed of timing 
+     * {@link wres.datamodel.statistics.PairedStatisticOuter} composed of timing 
      * errors.
      * 
      * @param statistic the statistic from which to create a message
@@ -701,7 +644,7 @@ public class MessageFactory
      */
 
     public static DurationDiagramStatistic
-            parse( wres.datamodel.statistics.PairedStatistic<Instant, java.time.Duration> statistic )
+            parse( wres.datamodel.statistics.PairedStatisticOuter<Instant, java.time.Duration> statistic )
     {
         Objects.requireNonNull( statistic );
 
@@ -775,13 +718,13 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.DiagramStatistic} from a 
-     * {@link wres.datamodel.statistics.BoxPlotStatistics}.
+     * {@link wres.datamodel.statistics.BoxplotStatisticOuter}.
      * 
      * @param statistic the statistic from which to create a message
      * @return the message
      */
 
-    public static BoxplotStatistic parse( wres.datamodel.statistics.BoxPlotStatistics statistic )
+    public static BoxplotStatistic parse( wres.datamodel.statistics.BoxplotStatisticOuter statistic )
     {
         Objects.requireNonNull( statistic );
 
@@ -793,7 +736,7 @@ public class MessageFactory
             StatisticMetadata meta = statistic.getMetadata();
 
             // Add the quantiles, which are common to all boxes
-            BoxPlotStatistic first = statistic.getData().get( 0 );
+            wres.datamodel.statistics.BoxplotStatistic first = statistic.getData().get( 0 );
             double[] quantiles = first.getProbabilities().getDoubles();
             Arrays.stream( quantiles ).forEach( metricBuilder::addQuantiles );
 
@@ -812,7 +755,7 @@ public class MessageFactory
                          .setOptimum( (Double) metricName.getOptimum() );
 
             // Set the individual boxes
-            for ( BoxPlotStatistic next : statistic.getData() )
+            for ( wres.datamodel.statistics.BoxplotStatistic next : statistic.getData() )
             {
                 double[] doubles = next.getData().getDoubles();
                 BoxplotStatistic.Box.Builder box = BoxplotStatistic.Box.newBuilder();
@@ -1025,12 +968,12 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addDoubleScoreStatisticsToPool( List<DoubleScoreStatistic> statistics,
+    private static void addDoubleScoreStatisticsToPool( List<DoubleScoreStatisticOuter> statistics,
                                                         Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
-        for ( DoubleScoreStatistic next : statistics )
+        for ( DoubleScoreStatisticOuter next : statistics )
         {
             SampleMetadata metadata = next.getMetadata().getSampleMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
@@ -1043,7 +986,7 @@ public class MessageFactory
                 mappedStatistics.put( poolBoundaries, another );
             }
 
-            Future<List<DoubleScoreStatistic>> future = CompletableFuture.completedFuture( List.of( next ) );
+            Future<List<DoubleScoreStatisticOuter>> future = CompletableFuture.completedFuture( List.of( next ) );
             another.addDoubleScoreStatistics( future );
         }
     }
@@ -1057,12 +1000,12 @@ public class MessageFactory
      */
 
     private static void
-            addDurationScoreStatisticsToPool( List<wres.datamodel.statistics.DurationScoreStatistic> statistics,
+            addDurationScoreStatisticsToPool( List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics,
                                               Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
-        for ( wres.datamodel.statistics.DurationScoreStatistic next : statistics )
+        for ( wres.datamodel.statistics.DurationScoreStatisticOuter next : statistics )
         {
             SampleMetadata metadata = next.getMetadata().getSampleMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
@@ -1075,7 +1018,7 @@ public class MessageFactory
                 mappedStatistics.put( poolBoundaries, another );
             }
 
-            Future<List<wres.datamodel.statistics.DurationScoreStatistic>> future =
+            Future<List<wres.datamodel.statistics.DurationScoreStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addDurationScoreStatistics( future );
         }
@@ -1090,13 +1033,13 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addBoxPlotStatisticsToPool( List<wres.datamodel.statistics.BoxPlotStatistics> statistics,
+    private static void addBoxPlotStatisticsToPool( List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics,
                                                     Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics,
                                                     boolean perPool )
     {
         Objects.requireNonNull( mappedStatistics );
 
-        for ( wres.datamodel.statistics.BoxPlotStatistics next : statistics )
+        for ( wres.datamodel.statistics.BoxplotStatisticOuter next : statistics )
         {
             SampleMetadata metadata = next.getMetadata().getSampleMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
@@ -1109,9 +1052,9 @@ public class MessageFactory
                 mappedStatistics.put( poolBoundaries, another );
             }
 
-            Future<List<wres.datamodel.statistics.BoxPlotStatistics>> future =
+            Future<List<wres.datamodel.statistics.BoxplotStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
-            if( perPool)
+            if ( perPool )
             {
                 another.addBoxPlotStatisticsPerPool( future );
             }
@@ -1130,12 +1073,12 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addDiagramStatisticsToPool( List<wres.datamodel.statistics.DiagramStatistic> statistics,
+    private static void addDiagramStatisticsToPool( List<wres.datamodel.statistics.DiagramStatisticOuter> statistics,
                                                     Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
-        for ( wres.datamodel.statistics.DiagramStatistic next : statistics )
+        for ( wres.datamodel.statistics.DiagramStatisticOuter next : statistics )
         {
             SampleMetadata metadata = next.getMetadata().getSampleMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
@@ -1148,7 +1091,7 @@ public class MessageFactory
                 mappedStatistics.put( poolBoundaries, another );
             }
 
-            Future<List<wres.datamodel.statistics.DiagramStatistic>> future =
+            Future<List<wres.datamodel.statistics.DiagramStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addDiagramStatistics( future );
         }
@@ -1162,12 +1105,12 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addPairedStatisticsToPool( List<PairedStatistic<Instant, java.time.Duration>> statistics,
-                                                    Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
+    private static void addPairedStatisticsToPool( List<PairedStatisticOuter<Instant, java.time.Duration>> statistics,
+                                                   Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
-        for ( PairedStatistic<Instant, java.time.Duration> next : statistics )
+        for ( PairedStatisticOuter<Instant, java.time.Duration> next : statistics )
         {
             SampleMetadata metadata = next.getMetadata().getSampleMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
@@ -1180,12 +1123,12 @@ public class MessageFactory
                 mappedStatistics.put( poolBoundaries, another );
             }
 
-            Future<List<PairedStatistic<Instant, java.time.Duration>>> future =
+            Future<List<PairedStatisticOuter<Instant, java.time.Duration>>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addInstantDurationPairStatistics( future );
         }
     }
-    
+
     /**
      * Do not construct.
      */

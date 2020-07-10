@@ -24,20 +24,19 @@ message DurationScoreMetric
     {
         // A score component.
     
-        enum DurationScoreComponentName 
+        enum ComponentName 
         {
             // A score component name.
             
-            UNKNOWN = 0; 
-            MEAN = 1;
-            MEDIAN = 2;
-            MINIMUM = 3;
-            MAXIMUM = 4;
-            STANDARD_DEVIATION = 5;
-            MEAN_ABSOLUTE = 6;
+            MEAN = 0;
+            MEDIAN = 1;
+            MINIMUM = 2;
+            MAXIMUM = 3;
+            STANDARD_DEVIATION = 4;
+            MEAN_ABSOLUTE = 5;
         }
 
-        DurationScoreComponentName name = 1;
+        ComponentName name = 1;
 
         google.protobuf.Duration optimum = 2; 
         /*The optimum value of the score (e.g., 0.0 for the mean error in 

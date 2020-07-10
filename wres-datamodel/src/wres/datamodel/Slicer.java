@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.statistics.ScoreStatistic;
+import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -492,39 +493,39 @@ public final class Slicer
     }
 
     /**
-     * Returns a map of {@link ScoreStatistic} for each component in the input map of {@link ScoreStatistic}. The slices are 
-     * mapped to their {@link MetricConstants} component identifier.
+     * Returns a map of {@link ScoreComponent} for each component in the input map of {@link ScoreStatistic}. The 
+     * slices are mapped to their {@link MetricConstants} component identifier.
      * 
-     * @param <T> the score component type
+     * @param <S>  the score component type
+     * @param <T> the score type
      * @param input the input map
      * @return the input map sliced by component identifier
      * @throws NullPointerException if the input is null
      */
 
-    public static <T extends ScoreStatistic<?, T>> Map<MetricConstants, List<T>>
+    public static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> Map<MetricConstants, List<S>>
             filterByMetricComponent( List<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        Map<MetricConstants, List<T>> returnMe = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, List<S>> returnMe = new EnumMap<>( MetricConstants.class );
 
-        // Find the components
-        SortedSet<MetricConstants> components = new TreeSet<>();
-        input.forEach( next -> components.addAll( next.getComponents() ) );
-
-        // Loop the components
-        for ( MetricConstants nextComponent : components )
+        // Loop the scores and components
+        for ( T nextScore : input )
         {
-            List<T> listOfComponent = new ArrayList<>();
             // Loop the entries
-            for ( T nextItem : input )
+            for ( S nextComponent : nextScore )
             {
-                if ( nextItem.hasComponent( nextComponent ) )
+                List<S> listOfComponents = returnMe.get( nextComponent.getName() );
+                
+                if ( Objects.isNull( listOfComponents ) )
                 {
-                    listOfComponent.add( nextItem.getComponent( nextComponent ) );
+                    listOfComponents = new ArrayList<>();
+                    returnMe.put( nextComponent.getName(), listOfComponents );
                 }
+                
+                listOfComponents.add( nextComponent );
             }
-            returnMe.put( nextComponent, Collections.unmodifiableList( listOfComponent ) );
         }
 
         return Collections.unmodifiableMap( returnMe );

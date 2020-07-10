@@ -13,8 +13,12 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link SampleSize}.
@@ -35,27 +39,34 @@ public final class SampleSizeTest
         //Obtain the factories
 
         //Generate some data
-        final SampleData<Pair<Double,Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of(),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of( "COUNT" ),
-                                                           MetricConstants.SAMPLE_SIZE,
-                                                           MetricConstants.MAIN );
-        
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of(),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of( "COUNT" ),
+                                                     MetricConstants.SAMPLE_SIZE,
+                                                     MetricConstants.MAIN );
+
         //Build the metric
-        SampleSize<SampleData<Pair<Double,Double>>> ss = SampleSize.of();
+        SampleSize<SampleData<Pair<Double, Double>>> ss = SampleSize.of();
 
         //Check the results
-        DoubleScoreStatistic actual = ss.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( (double) input.getRawData().size(), m1 );
+        DoubleScoreStatisticOuter actual = ss.apply( input );
 
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( input.getRawData().size() )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( SampleSize.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
 
         //Check the parameters
         assertTrue( "Unexpected name for the Sample Size.",
@@ -73,10 +84,10 @@ public final class SampleSizeTest
     public void testExceptions()
     {
         //Build the metric
-        SampleSize<SampleData<Pair<Double,Double>>> ss = SampleSize.of();
+        SampleSize<SampleData<Pair<Double, Double>>> ss = SampleSize.of();
 
-        SampleDataException expected = assertThrows( SampleDataException.class, () -> ss.apply( null ) ); 
-        
+        SampleDataException expected = assertThrows( SampleDataException.class, () -> ss.apply( null ) );
+
         assertEquals( "Specify non-null input to the 'SAMPLE SIZE'.", expected.getMessage() );
     }
 

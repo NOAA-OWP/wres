@@ -24,10 +24,13 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MeanSquareErrorSkillScoreSkillScore}.
@@ -36,7 +39,7 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class MeanSquareErrorSkillScoreTest
 {
-    
+
     /**
      * Default instance of a {@link MeanSquareErrorSkillScore}.
      */
@@ -56,19 +59,31 @@ public final class MeanSquareErrorSkillScoreTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                                    "SQIN",
-                                                                                                    "HEFS",
-                                                                                                    "ESP" ) ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                              "SQIN",
+                                                                                              "HEFS",
+                                                                                              "ESP" ) ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                     MetricConstants.MAIN );
 
         //Check the results
-        final DoubleScoreStatistic actual = msess.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8007025335093799, m1 );
+        DoubleScoreStatisticOuter actual = this.msess.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.8007025335093799 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MeanSquareErrorSkillScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -80,30 +95,38 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Metadata for the output
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           Duration.ofHours( 24 ) );
-        final TimeWindowOuter timeWindow = window;
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     Duration.ofHours( 24 ) );
+        TimeWindowOuter timeWindow = window;
 
-        final StatisticMetadata m1 =
+        StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                       "QME",
-                                                                                                       "NVE" ) )
-                                                                 .setTimeWindow( timeWindow )
-                                                                 .build(),
+                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                         "QME",
+                                                                                         "NVE" ) )
+                                                   .setTimeWindow( timeWindow )
+                                                   .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
                                       MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = msess.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.7832791707526114, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.msess.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.7832791707526114 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MeanSquareErrorSkillScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -120,13 +143,21 @@ public final class MeanSquareErrorSkillScoreTest
                                                      MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = msess.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9963647159052861, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.msess.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.9963647159052861 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MeanSquareErrorSkillScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -136,35 +167,35 @@ public final class MeanSquareErrorSkillScoreTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = msess.apply( input );
+        DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test
     public void testGetName()
     {
-        assertTrue( msess.getName().equals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString() ) );
+        assertTrue( this.msess.getName().equals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString() ) );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertTrue( msess.isDecomposable() );
+        assertTrue( this.msess.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertTrue( msess.isSkillScore() );
+        assertTrue( this.msess.isSkillScore() );
     }
-    
+
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( msess.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.msess.getScoreOutputGroup() == MetricGroup.NONE );
     }
-    
+
     @Test
     public void testGetCollectionOf()
     {

@@ -16,12 +16,18 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>
@@ -40,8 +46,22 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @author james.brown@hydrosolved.com
  */
 public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleData<Pair<Double, Ensemble>>>
-        implements ProbabilityScore<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatistic>
+        implements ProbabilityScore<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SCORE )
+                             .build();
 
     /**
      * Default logger.
@@ -75,7 +95,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double, Ensemble>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -118,7 +138,18 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
-        return DoubleScoreStatistic.of( crps[0], metOut );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( crps[0] )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override

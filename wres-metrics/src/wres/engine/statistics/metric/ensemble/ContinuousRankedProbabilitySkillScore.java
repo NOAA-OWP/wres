@@ -10,10 +10,16 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>
@@ -26,6 +32,20 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProbabilityScore
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                             .build();
 
     /**
      * Returns an instance.
@@ -53,7 +73,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double, Ensemble>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -65,19 +85,35 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         }
         //CRPSS, currently without decomposition
         //TODO: implement the decomposition
-        double numerator = super.apply( s ).getComponent( MetricConstants.MAIN ).getData();
-        double denominator = super.apply( s.getBaselineData() ).getComponent( MetricConstants.MAIN ).getData();
+        double numerator = super.apply( s ).getComponent( MetricConstants.MAIN )
+                                           .getData()
+                                           .getValue();
+        double denominator = super.apply( s.getBaselineData() ).getComponent( MetricConstants.MAIN )
+                                                               .getData()
+                                                               .getValue();
+        
         double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
 
         //Metadata
         DatasetIdentifier baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                          this.getID(),
-                                                          MetricConstants.MAIN,
-                                                          this.hasRealUnits(),
-                                                          s.getRawData().size(),
-                                                          baselineIdentifier );
-        return DoubleScoreStatistic.of( result, metOut );
+                                                         this.getID(),
+                                                         MetricConstants.MAIN,
+                                                         this.hasRealUnits(),
+                                                         s.getRawData().size(),
+                                                         baselineIdentifier );
+        
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContinuousRankedProbabilitySkillScore.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override

@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -23,7 +24,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -74,8 +75,9 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                       MetricConstants.MAIN );
 
         //Check the results       
-        final DiagramStatistic actual = roc.apply( input );
-        VectorOfDoubles expectedPOD = VectorOfDoubles.of( 0.0,
+        DiagramStatisticOuter actual = this.roc.apply( input );
+        
+        VectorOfDoubles expectedPoD = VectorOfDoubles.of( 0.0,
                                                           0.13580246913580246,
                                                           0.2345679012345679,
                                                           0.43209876543209874,
@@ -86,7 +88,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                                           0.9135802469135802,
                                                           0.9753086419753086,
                                                           1.0 );
-        VectorOfDoubles expectedPOFD = VectorOfDoubles.of( 0.0,
+        VectorOfDoubles expectedPoFD = VectorOfDoubles.of( 0.0,
                                                            0.007518796992481203,
                                                            0.018796992481203006,
                                                            0.04887218045112782,
@@ -98,10 +100,12 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                                            0.6240601503759399,
                                                            1.0 );
         Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD );
-        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
-        final DiagramStatistic expected = DiagramStatistic.of( output, m1 );
-        assertTrue( "Difference between actual and expected ROC.", actual.equals( expected ) );
+        output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPoD );
+        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPoFD );
+        
+        DiagramStatisticOuter expected = DiagramStatisticOuter.of( output, m1 );
+        
+        assertEquals( expected, actual );
     }
 
     /**
@@ -116,7 +120,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         SampleData<Pair<Probability,Probability>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DiagramStatistic actual = roc.apply( input );
+        DiagramStatisticOuter actual = roc.apply( input );
 
         double[] source = new double[11];
 

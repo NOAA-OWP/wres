@@ -9,7 +9,8 @@ import java.util.SortedSet;
 import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.util.TimeHelper;
@@ -23,7 +24,7 @@ import wres.util.TimeHelper;
  */
 
 public class ScoreOutputByLeadAndThresholdXYDataset extends
-        WRESAbstractXYDataset<List<List<DoubleScoreStatistic>>, List<DoubleScoreStatistic>>
+        WRESAbstractXYDataset<List<List<DoubleScoreComponentOuter>>, List<DoubleScoreComponentOuter>>
 {
     private static final long serialVersionUID = 2251263309545763140L;
 
@@ -41,7 +42,7 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
      * @throws NullPointerException if any input is null
      */
 
-    public ScoreOutputByLeadAndThresholdXYDataset( final List<DoubleScoreStatistic> input,
+    public ScoreOutputByLeadAndThresholdXYDataset( final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
     {
         super( input );
@@ -69,12 +70,12 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
      * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
      * @param rawData the input data must be of type {@link List} with generic
-     *            {@link ScoreStatistic}.
+     *            {@link DoubleScoreComponentOuter}.
      */
     @Override
-    protected void preparePlotData( final List<DoubleScoreStatistic> rawData )
+    protected void preparePlotData( final List<DoubleScoreComponentOuter> rawData )
     {
-        final List<List<DoubleScoreStatistic>> data = new ArrayList<>();
+        final List<List<DoubleScoreComponentOuter>> data = new ArrayList<>();
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getThresholds() );
         for ( final OneOrTwoThresholds key : thresholds )
@@ -106,7 +107,7 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
     @Override
     public Number getY(final int series, final int item)
     {
-        return getPlotData().get(series).get(item).getData();
+        return getPlotData().get(series).get(item).getData().getValue();
     }
 
     @Override

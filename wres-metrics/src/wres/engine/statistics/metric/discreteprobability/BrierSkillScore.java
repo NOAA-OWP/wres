@@ -10,9 +10,15 @@ import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>
@@ -25,6 +31,20 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
  */
 public class BrierSkillScore extends BrierScore
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.BRIER_SKILL_SCORE )
+                             .build();
 
     /**
      * Instance of MSE-SS used to compute the BSS.
@@ -44,7 +64,7 @@ public class BrierSkillScore extends BrierScore
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Probability, Probability>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -71,7 +91,22 @@ public class BrierSkillScore extends BrierScore
                                   pair -> Pair.of( pair.getLeft().getProbability(),
                                                    pair.getRight().getProbability() ) );
 
-        return DoubleScoreStatistic.of( msess.apply( transformed ).getData(), metOut );
+        double result = this.msess.apply( transformed )
+                                  .getComponent( MetricConstants.MAIN )
+                                  .getData()
+                                  .getValue();
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( BrierSkillScore.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override

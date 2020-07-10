@@ -34,8 +34,8 @@ import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -71,10 +71,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume a {@link PoolOfPairs} with single-valued pairs 
-     * and produce {@link PairedStatistic}.
+     * and produce {@link PairedStatisticOuter}.
      */
 
-    private final MetricCollection<PoolOfPairs<Double, Double>, PairedStatistic<Instant, Duration>, PairedStatistic<Instant, Duration>> timeSeries;
+    private final MetricCollection<PoolOfPairs<Double, Double>, PairedStatisticOuter<Instant, Duration>, PairedStatisticOuter<Instant, Duration>> timeSeries;
 
     /**
      * An instance of {@link TimingErrorDurationStatistics} for each timing error metric that requires 
@@ -283,7 +283,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             for ( Entry<MetricConstants, TimingErrorDurationStatistics> nextStats : this.timingErrorDurationStatistics.entrySet() )
             {
                 // Obtain the output for the current statistic
-                List<PairedStatistic<Instant, Duration>> output =
+                List<PairedStatisticOuter<Instant, Duration>> output =
                         Slicer.filter( this.getCachedMetricOutputInternal().getInstantDurationPairStatistics(), nextStats.getKey() );
 
                 // Compute the collection of statistics for the next timing error metric
@@ -296,21 +296,21 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 for ( OneOrTwoThresholds threshold : thresholds )
                 {
                     // Filter by current threshold  
-                    List<PairedStatistic<Instant, Duration>> sliced =
+                    List<PairedStatisticOuter<Instant, Duration>> sliced =
                             Slicer.filter( output,
                                            next -> next.getSampleMetadata().getThresholds().equals( threshold ) );
 
                     // Find the union of the paired output
-                    PairedStatistic<Instant, Duration> union = DataFactory.unionOf( sliced );
+                    PairedStatisticOuter<Instant, Duration> union = DataFactory.unionOf( sliced );
 
                     //Build the future result
-                    Supplier<List<DurationScoreStatistic>> supplier = () -> {
-                        DurationScoreStatistic result = timeToPeakErrorStats.apply( union );
+                    Supplier<List<DurationScoreStatisticOuter>> supplier = () -> {
+                        DurationScoreStatisticOuter result = timeToPeakErrorStats.apply( union );
                         return Collections.singletonList( result );
                     };
 
                     // Execute
-                    Future<List<DurationScoreStatistic>> addMe =
+                    Future<List<DurationScoreStatisticOuter>> addMe =
                             CompletableFuture.supplyAsync( supplier, thresholdExecutor );
 
                     // Add the future result to the store
@@ -465,7 +465,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Build the future result
             final PoolOfPairs<Double, Double> finalPairs = pairs;
-            Future<List<PairedStatistic<Instant, Duration>>> output =
+            Future<List<PairedStatisticOuter<Instant, Duration>>> output =
                     CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    thresholdExecutor );
 

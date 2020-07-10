@@ -2,7 +2,7 @@ package wres.vis;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 
 /**
  * The {@link XYDataset} for use in building a box plot.
@@ -10,17 +10,17 @@ import wres.datamodel.statistics.BoxPlotStatistics;
  * @author Hank.Herr
  */
 public class BoxPlotDiagramXYDataset extends
-        WRESAbstractXYDataset<BoxPlotStatistics, BoxPlotStatistics>
+        WRESAbstractXYDataset<BoxplotStatisticOuter, BoxplotStatisticOuter>
 {
     private static final long serialVersionUID = 4254109136599641286L;
 
-    public BoxPlotDiagramXYDataset( final BoxPlotStatistics input)
+    public BoxPlotDiagramXYDataset( final BoxplotStatisticOuter input)
     {
         super( input );
     }
 
     @Override
-    protected void preparePlotData( BoxPlotStatistics rawData )
+    protected void preparePlotData( BoxplotStatisticOuter rawData )
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if (rawData.getData().isEmpty())

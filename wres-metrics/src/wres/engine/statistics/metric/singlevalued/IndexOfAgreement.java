@@ -8,9 +8,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>The {@link IndexOfAgreement} was proposed by Willmot (1981) to measure the errors of the model predictions 
@@ -21,8 +27,22 @@ import wres.engine.statistics.metric.FunctionFactory;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
+public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.INDEX_OF_AGREEMENT )
+                             .build();
 
     /**
      * The default exponent.
@@ -48,7 +68,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double,Do
     final double exponent;
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Double,Double>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -65,7 +85,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double,Do
             //Compute the score
             double numerator = 0.0;
             double denominator = 0.0;
-            for ( Pair<Double,Double> nextPair : s.getRawData() )
+            for ( Pair<Double, Double> nextPair : s.getRawData() )
             {
                 numerator += Math.pow( Math.abs( nextPair.getLeft() - nextPair.getRight() ), exponent );
                 denominator += ( Math.abs( nextPair.getRight() - oBar )
@@ -76,13 +96,24 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double,Do
 
         //Metadata
         final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                                this.getID(),
-                                                                MetricConstants.MAIN,
-                                                                this.hasRealUnits(),
-                                                                s.getRawData().size(),
-                                                                null );
+                                                               this.getID(),
+                                                               MetricConstants.MAIN,
+                                                               this.hasRealUnits(),
+                                                               s.getRawData().size(),
+                                                               null );
 
-        return DoubleScoreStatistic.of( returnMe, metOut );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( returnMe )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( IndexOfAgreement.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override
@@ -109,7 +140,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double,Do
 
     private IndexOfAgreement()
     {
-        super();
+        super( IndexOfAgreement.METRIC );
 
         this.exponent = DEFAULT_EXPONENT;
     }

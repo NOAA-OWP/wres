@@ -24,10 +24,13 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MeanSquareErrorSkillScoreSkillScoreNormalized}.
@@ -56,19 +59,31 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                                    "SQIN",
-                                                                                                    "HEFS",
-                                                                                                    "ESP" ) ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                              "SQIN",
+                                                                                              "HEFS",
+                                                                                              "ESP" ) ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
+                                                     MetricConstants.MAIN );
 
         //Check the results
-        final DoubleScoreStatistic actual = this.msessn.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8338214896144127, m1 );
+        DoubleScoreStatisticOuter actual = this.msessn.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.8338214896144127 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MeanSquareErrorSkillScoreNormalized.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -80,25 +95,37 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         //Metadata for the output
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           Duration.ofHours( 24 ) );
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     Duration.ofHours( 24 ) );
         final TimeWindowOuter timeWindow = window;
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                       "QME",
-                                                                                                       "NVE" ) )
-                                                                 .setTimeWindow( timeWindow )
-                                                                 .build(),
+                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                         "QME",
+                                                                                         "NVE" ) )
+                                                   .setTimeWindow( timeWindow )
+                                                   .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
                                       MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = this.msessn.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.82188122037703356, m1 );
+        DoubleScoreStatisticOuter actual = this.msessn.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.82188122037703356 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MeanSquareErrorSkillScoreNormalized.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -116,8 +143,20 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
                                                      MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = this.msessn.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9963778833284114, m1 );
+        DoubleScoreStatisticOuter actual = this.msessn.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.9963778833284114 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MeanSquareErrorSkillScoreNormalized.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -128,9 +167,9 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = this.msessn.apply( input );
+        DoubleScoreStatisticOuter actual = this.msessn.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test

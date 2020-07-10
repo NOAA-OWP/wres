@@ -28,8 +28,8 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -65,7 +65,7 @@ public class PNGBoxPlotWriterTest
     @Mock private SystemSettings mockSystemSettings;
 
     /**
-     * Tests the writing of {@link BoxPlotStatistics} to file.
+     * Tests the writing of {@link BoxplotStatisticOuter} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
@@ -107,7 +107,7 @@ public class PNGBoxPlotWriterTest
     }
 
     /**
-     * Tests the writing of {@link BoxPlotStatistics} to file.
+     * Tests the writing of {@link BoxplotStatisticOuter} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
@@ -190,12 +190,12 @@ public class PNGBoxPlotWriterTest
         Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
 
         // Construct the nothing data
-        BoxPlotStatistics emptyFakeStatistics =
-                BoxPlotStatistics.of( Collections.singletonList( BoxPlotStatistic.of( VectorOfDoubles.of(),
+        BoxplotStatisticOuter emptyFakeStatistics =
+                BoxplotStatisticOuter.of( Collections.singletonList( BoxplotStatistic.of( VectorOfDoubles.of(),
                                                                                       VectorOfDoubles.of(),
                                                                                       fakeMetadata ) ),
                                       fakeMetadata );
-        List<BoxPlotStatistics> fakeStatistics = Collections.singletonList( emptyFakeStatistics );
+        List<BoxplotStatisticOuter> fakeStatistics = Collections.singletonList( emptyFakeStatistics );
 
         // Begin the actual test now that we have the dependencies.
         PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( this.mockSystemSettings,

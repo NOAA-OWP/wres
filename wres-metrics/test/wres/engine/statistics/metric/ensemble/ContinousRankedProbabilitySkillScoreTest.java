@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.ensemble;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -22,10 +23,13 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link ContinuousRankedProbabilitySkillScore}.
@@ -87,14 +91,21 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                            MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreStatistic actual = crpss.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.0779168348809044, m1 );
+        DoubleScoreStatisticOuter actual = this.crpss.apply( input );
 
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.0779168348809044 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ContinuousRankedProbabilitySkillScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -113,9 +124,9 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                     SampleMetadata.of(),
                                     null );
 
-        DoubleScoreStatistic actual = crpss.apply( input );
+        DoubleScoreStatisticOuter actual = this.crpss.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -126,7 +137,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( crpss.getName().equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString() ) );
+        assertTrue( this.crpss.getName()
+                              .equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString() ) );
     }
 
     /**
@@ -136,7 +148,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testIsDecomposable()
     {
-        assertTrue( crpss.isDecomposable() );
+        assertTrue( this.crpss.isDecomposable() );
     }
 
     /**
@@ -146,7 +158,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testIsSkillScore()
     {
-        assertTrue( crpss.isSkillScore() );
+        assertTrue( this.crpss.isSkillScore() );
     }
 
     /**
@@ -157,7 +169,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( crpss.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.crpss.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -167,7 +179,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testIsProper()
     {
-        assertFalse( crpss.isProper() );
+        assertFalse( this.crpss.isProper() );
     }
 
     /**
@@ -177,7 +189,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testIsStrictlyProper()
     {
-        assertFalse( crpss.isStrictlyProper() );
+        assertFalse( this.crpss.isStrictlyProper() );
     }
 
     /**
@@ -190,12 +202,12 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         SampleData<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        assertTrue( crpss.apply( pairs )
-                         .getMetadata()
-                         .getSampleMetadata()
-                         .getIdentifier()
-                         .getScenarioNameForBaseline()
-                         .equals( "ESP" ) );
+        assertTrue( this.crpss.apply( pairs )
+                              .getMetadata()
+                              .getSampleMetadata()
+                              .getIdentifier()
+                              .getScenarioNameForBaseline()
+                              .equals( "ESP" ) );
     }
 
     /**
@@ -209,7 +221,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
 
-        crpss.apply( null );
+        this.crpss.apply( null );
     }
 
     /**
@@ -236,10 +248,10 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
-        List<Pair<Double,Ensemble>> pairs = new ArrayList<>();
+        List<Pair<Double, Ensemble>> pairs = new ArrayList<>();
         pairs.add( Pair.of( 25.7, Ensemble.of( 23, 43, 45, 23, 54 ) ) );
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
-        crpss.apply( input );
+        this.crpss.apply( input );
     }
 
 

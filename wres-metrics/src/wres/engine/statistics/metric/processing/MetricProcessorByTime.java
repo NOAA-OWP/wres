@@ -20,7 +20,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -374,7 +374,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
 
     private <T extends Statistic<?>> Future<List<T>>
             processDichotomousPairs( SampleData<Pair<Boolean, Boolean>> pairs,
-                                     MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, T> collection,
+                                     MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, T> collection,
                                      Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),

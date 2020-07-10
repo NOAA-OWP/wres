@@ -8,9 +8,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Computes the Mean Square Error Skill Score Normalized to (0,1] (MSESSN), which is related to the 
@@ -19,8 +25,22 @@ import wres.engine.statistics.metric.Collectable;
  * @author james.brown@hydrosolved.com
  */
 public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillScore
-        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
+        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED )
+                             .build();
 
     /**
      * Returns an instance.
@@ -34,7 +54,7 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         return this.aggregate( this.getInputForAggregation( s ) );
     }
@@ -64,13 +84,13 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
         if ( Objects.isNull( output ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
                                                        MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
                                                        MetricConstants.MAIN,
@@ -78,11 +98,29 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
                                                        output.getMetadata().getSampleSize(),
                                                        null );
 
-        return DoubleScoreStatistic.of( 1.0 / ( 2.0 - output.getData() ), meta );
+
+        double input = output.getComponent( MetricConstants.MAIN )
+                             .getData()
+                             .getValue();
+
+        double result = 1.0 / ( 2.0 - input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( MeanSquareErrorSkillScoreNormalized.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, meta );
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
         return super.apply( input );
     }

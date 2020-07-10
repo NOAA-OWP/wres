@@ -21,7 +21,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 
@@ -38,7 +38,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, DiagramStatistic>
+public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter>
 {
 
     /**
@@ -71,7 +71,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
     }
 
     @Override
-    public DiagramStatistic apply( SampleData<Pair<Double, Ensemble>> s )
+    public DiagramStatisticOuter apply( SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -118,7 +118,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
-        return DiagramStatistic.of( statistic, metOut );
+        return DiagramStatisticOuter.of( statistic, metOut );
     }
 
     @Override

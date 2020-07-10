@@ -20,7 +20,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 
 /**
- * Tests the {@link PairedStatistic}.
+ * Tests the {@link PairedStatisticOuter}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
@@ -52,7 +52,7 @@ public final class PairedStatisticTest
                                                                MetricConstants.MAIN );
 
     /**
-     * Constructs a {@link PairedStatistic} and tests for equality with another {@link PairedStatistic}.
+     * Constructs a {@link PairedStatisticOuter} and tests for equality with another {@link PairedStatisticOuter}.
      */
 
     @Test
@@ -78,8 +78,8 @@ public final class PairedStatisticTest
                                                            MetricConstants.MAIN );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( FIRST_TIME ), Duration.ofHours( 1 ) ) );
-        final PairedStatistic<Instant, Duration> s = PairedStatistic.of( input, m1 );
-        final PairedStatistic<Instant, Duration> t = PairedStatistic.of( input, m1 );
+        final PairedStatisticOuter<Instant, Duration> s = PairedStatisticOuter.of( input, m1 );
+        final PairedStatisticOuter<Instant, Duration> t = PairedStatisticOuter.of( input, m1 );
         assertTrue( s.getData().size() == t.getData().size() );
 
         // Iterate the pairs
@@ -93,12 +93,12 @@ public final class PairedStatisticTest
         assertNotEquals( Double.valueOf( 1.0 ), s );
         List<Pair<Instant, Duration>> inputSecond = new ArrayList<>();
         inputSecond.add( Pair.of( Instant.parse( FIRST_TIME ), Duration.ofHours( 2 ) ) );
-        assertTrue( !s.equals( PairedStatistic.of( inputSecond, m1 ) ) );
-        assertTrue( !s.equals( PairedStatistic.of( input, m2 ) ) );
+        assertTrue( !s.equals( PairedStatisticOuter.of( inputSecond, m1 ) ) );
+        assertTrue( !s.equals( PairedStatisticOuter.of( input, m2 ) ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( FIRST_TIME ), Duration.ofHours( 1 ) ) );
-        final PairedStatistic<Instant, Duration> q = PairedStatistic.of( inputThird, m2 );
-        final PairedStatistic<Instant, Duration> r = PairedStatistic.of( inputThird, m3 );
+        final PairedStatisticOuter<Instant, Duration> q = PairedStatisticOuter.of( inputThird, m2 );
+        final PairedStatisticOuter<Instant, Duration> r = PairedStatisticOuter.of( inputThird, m3 );
         assertTrue( !s.equals( q ) );
         assertTrue( q.equals( q ) );
         assertTrue( !q.equals( s ) );
@@ -106,7 +106,7 @@ public final class PairedStatisticTest
     }
 
     /**
-     * Constructs a {@link PairedStatistic} and checks the {@link PairedStatistic#toString()} representation.
+     * Constructs a {@link PairedStatisticOuter} and checks the {@link PairedStatisticOuter#toString()} representation.
      */
 
     @Test
@@ -115,13 +115,13 @@ public final class PairedStatisticTest
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( FIRST_TIME ), Duration.ofHours( 1 ) ) );
         input.add( Pair.of( Instant.parse( FIRST_TIME ), Duration.ofHours( 1 ) ) );
-        final PairedStatistic<Instant, Duration> s = PairedStatistic.of( input, m1 );
-        final PairedStatistic<Instant, Duration> t = PairedStatistic.of( input, m1 );
+        final PairedStatisticOuter<Instant, Duration> s = PairedStatisticOuter.of( input, m1 );
+        final PairedStatisticOuter<Instant, Duration> t = PairedStatisticOuter.of( input, m1 );
         assertTrue( "Expected equal string representations.", s.toString().equals( t.toString() ) );
     }
 
     /**
-     * Constructs a {@link PairedStatistic} and checks the {@link PairedStatistic#getMetadata()}.
+     * Constructs a {@link PairedStatisticOuter} and checks the {@link PairedStatisticOuter#getMetadata()}.
      */
 
     @Test
@@ -139,13 +139,13 @@ public final class PairedStatisticTest
                                                            MetricConstants.MAIN );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( FIRST_TIME ), Duration.ofHours( 1 ) ) );
-        final PairedStatistic<Instant, Duration> q = PairedStatistic.of( inputThird, m1 );
-        final PairedStatistic<Instant, Duration> r = PairedStatistic.of( inputThird, m2 );
+        final PairedStatisticOuter<Instant, Duration> q = PairedStatisticOuter.of( inputThird, m1 );
+        final PairedStatisticOuter<Instant, Duration> r = PairedStatisticOuter.of( inputThird, m2 );
         assertTrue( "Unequal metadata.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
     /**
-     * Constructs a {@link PairedStatistic} and checks the {@link PairedStatistic#hashCode()}.
+     * Constructs a {@link PairedStatisticOuter} and checks the {@link PairedStatisticOuter#hashCode()}.
      */
 
     @Test
@@ -172,9 +172,9 @@ public final class PairedStatisticTest
                                                            MetricConstants.MAIN );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( FIRST_TIME ), Duration.ofHours( 1 ) ) );
-        final PairedStatistic<Instant, Duration> q = PairedStatistic.of( inputThird, m1 );
-        final PairedStatistic<Instant, Duration> r = PairedStatistic.of( inputThird, m2 );
-        final PairedStatistic<Instant, Duration> s = PairedStatistic.of( inputThird, m3 );
+        final PairedStatisticOuter<Instant, Duration> q = PairedStatisticOuter.of( inputThird, m1 );
+        final PairedStatisticOuter<Instant, Duration> r = PairedStatisticOuter.of( inputThird, m2 );
+        final PairedStatisticOuter<Instant, Duration> s = PairedStatisticOuter.of( inputThird, m3 );
         assertTrue( q.hashCode() == r.hashCode() );
         assertTrue( q.hashCode() != s.hashCode() );
     }
@@ -184,7 +184,7 @@ public final class PairedStatisticTest
     {
         exception.expect( StatisticException.class );
 
-        PairedStatistic.of( null, m1 );
+        PairedStatisticOuter.of( null, m1 );
     }
 
     @Test
@@ -195,7 +195,7 @@ public final class PairedStatisticTest
 
         exception.expect( StatisticException.class );
 
-        PairedStatistic.of( input, null );
+        PairedStatisticOuter.of( input, null );
 
     }
 
@@ -208,7 +208,7 @@ public final class PairedStatisticTest
 
         exception.expect( StatisticException.class );
 
-        PairedStatistic.of( input, m1 );
+        PairedStatisticOuter.of( input, m1 );
 
     }
 
@@ -222,7 +222,7 @@ public final class PairedStatisticTest
 
         exception.expect( StatisticException.class );
 
-        PairedStatistic.of( input, m1 );
+        PairedStatisticOuter.of( input, m1 );
 
     }
 
@@ -237,7 +237,7 @@ public final class PairedStatisticTest
 
         exception.expect( StatisticException.class );
 
-        PairedStatistic.of( input, m1 );
+        PairedStatisticOuter.of( input, m1 );
 
     }
 

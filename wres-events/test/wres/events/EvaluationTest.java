@@ -23,14 +23,14 @@ import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
-import wres.statistics.generated.ScoreStatistic;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Pairs.Pair;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 import wres.statistics.generated.Pairs;
-import wres.statistics.generated.ScoreStatistic.ScoreStatisticComponent;
 
 /**
  * Tests the {@link Evaluation}.
@@ -96,8 +96,10 @@ public class EvaluationTest
         for ( int i = 0; i < 10; i++ )
         {
             Statistics.Builder statistics = Statistics.newBuilder();
-            ScoreStatisticComponent.Builder componentBuilder = ScoreStatisticComponent.newBuilder().setValue( i );
-            ScoreStatistic.Builder scoreBuilder = ScoreStatistic.newBuilder().addStatistics( componentBuilder );
+            DoubleScoreStatisticComponent.Builder componentBuilder =
+                    DoubleScoreStatisticComponent.newBuilder().setValue( i );
+            DoubleScoreStatistic.Builder scoreBuilder =
+                    DoubleScoreStatistic.newBuilder().addStatistics( componentBuilder );
             statistics.addScores( scoreBuilder );
             this.oneStatistics.add( statistics.build() );
         }
@@ -113,8 +115,10 @@ public class EvaluationTest
         for ( int i = 10; i < 15; i++ )
         {
             Statistics.Builder statistics = Statistics.newBuilder();
-            ScoreStatisticComponent.Builder componentBuilder = ScoreStatisticComponent.newBuilder().setValue( i );
-            ScoreStatistic.Builder scoreBuilder = ScoreStatistic.newBuilder().addStatistics( componentBuilder );
+            DoubleScoreStatisticComponent.Builder componentBuilder =
+                    DoubleScoreStatisticComponent.newBuilder().setValue( i );
+            DoubleScoreStatistic.Builder scoreBuilder =
+                    DoubleScoreStatistic.newBuilder().addStatistics( componentBuilder );
             statistics.addScores( scoreBuilder );
             this.anotherStatistics.add( statistics.build() );
         }
@@ -527,8 +531,8 @@ public class EvaluationTest
 
             return aggregate.build();
         };
-    } 
-    
+    }
+
     @AfterClass
     public static void runAfterAllTests() throws IOException
     {

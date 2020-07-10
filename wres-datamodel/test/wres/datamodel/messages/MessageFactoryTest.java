@@ -44,12 +44,12 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -61,9 +61,17 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
+import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * Tests the {@link MessageFactory}.
@@ -96,42 +104,43 @@ public class MessageFactoryTest
     private static final String FEATURE_NAME = "DRRC2";
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
 
-    private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW = wres.datamodel.time.TimeWindowOuter.of( NINTH_TIME,
-                                                                                                         TENTH_TIME,
-                                                                                                         ELEVENTH_TIME,
-                                                                                                         TWELFTH_TIME,
-                                                                                                         EARLIEST_LEAD,
-                                                                                                         LATEST_LEAD );
+    private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW =
+            wres.datamodel.time.TimeWindowOuter.of( NINTH_TIME,
+                                                    TENTH_TIME,
+                                                    ELEVENTH_TIME,
+                                                    TWELFTH_TIME,
+                                                    EARLIEST_LEAD,
+                                                    LATEST_LEAD );
 
     /**
      * Scores to serialize.
      */
 
-    private List<DoubleScoreStatistic> scores = null;
+    private List<DoubleScoreStatisticOuter> scores = null;
 
     /**
      * Duration scores to serialize.
      */
 
-    private List<DurationScoreStatistic> durationScores = null;
+    private List<DurationScoreStatisticOuter> durationScores = null;
 
     /**
      * Duration scores to serialize.
      */
 
-    private List<PairedStatistic<Instant, Duration>> durationDiagrams = null;
+    private List<PairedStatisticOuter<Instant, Duration>> durationDiagrams = null;
 
     /**
      * Diagrams to serialize.
      */
 
-    private List<DiagramStatistic> diagrams = null;
+    private List<DiagramStatisticOuter> diagrams = null;
 
     /**
      * Box plot statistics.
      */
 
-    private List<BoxPlotStatistics> boxplots = null;
+    private List<BoxplotStatisticOuter> boxplots = null;
 
     /**
      * Pairs to serialize.
@@ -388,26 +397,26 @@ public class MessageFactoryTest
         Collection<Statistics> expected = Set.of( expectedDiagrams, expectedScores );
 
         // Assert set-like equality
-        assertTrue( expected.containsAll( actual ) );        
+        assertTrue( expected.containsAll( actual ) );
         assertTrue( actual.containsAll( expected ) );
     }
 
     /**
-     * Returns a {@link List} containing several {@link DoubleScoreStatistic} for one pool.
+     * Returns a {@link List} containing several {@link DoubleScoreStatisticOuter} for one pool.
      * 
      * @return several score statistics for one pool
      */
 
-    private List<DoubleScoreStatistic> getScoreStatisticsForOnePool()
+    private List<DoubleScoreStatisticOuter> getScoreStatisticsForOnePool()
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
-                                                   wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
+                                                        wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ) );
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) );
 
         Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
 
@@ -415,11 +424,11 @@ public class MessageFactoryTest
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
-                                                             .setTimeScale( timeScale )
-                                                             .setTimeWindow( TIME_WINDOW )
-                                                             .setThresholds( threshold )
-                                                             .setIdentifier( datasetIdentifier )
-                                                             .build();
+                                               .setTimeScale( timeScale )
+                                               .setTimeWindow( TIME_WINDOW )
+                                               .setThresholds( threshold )
+                                               .setIdentifier( datasetIdentifier )
+                                               .build();
 
         StatisticMetadata fakeMetadataA =
                 StatisticMetadata.of( metadata,
@@ -441,32 +450,58 @@ public class MessageFactoryTest
                                       MetricConstants.MEAN_ABSOLUTE_ERROR,
                                       MetricConstants.MAIN );
 
-        List<DoubleScoreStatistic> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
-        fakeOutputs.add( DoubleScoreStatistic.of( 2.0, fakeMetadataB ) );
-        fakeOutputs.add( DoubleScoreStatistic.of( 3.0, fakeMetadataC ) );
+        List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
+
+        DoubleScoreStatistic one =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 1.0 )
+                                                                                 .setName( ComponentName.MAIN ) )
+                                    .build();
+
+        DoubleScoreStatistic two =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 2.0 )
+                                                                                 .setName( ComponentName.MAIN ) )
+                                    .build();
+
+        DoubleScoreStatistic three =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder()
+                                                                 .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 3.0 )
+                                                                                 .setName( ComponentName.MAIN ) )
+                                    .build();
+
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadataA ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadataB ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( three, fakeMetadataC ) );
 
         return Collections.unmodifiableList( fakeOutputs );
     }
 
     /**
-     * Returns a {@link List} containing a {@link DiagramStatistic} that 
+     * Returns a {@link List} containing a {@link DiagramStatisticOuter} that 
      * represents the output of a reliability diagram for one pool.
      * 
      * @return a reliability diagram for one pool
      */
 
-    private List<DiagramStatistic> getReliabilityDiagramForOnePool()
+    private List<DiagramStatisticOuter> getReliabilityDiagramForOnePool()
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
-                                                   wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
+                                                        wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                                                OneOrTwoDoubles.of( 0.9 ),
-                                                                                                Operator.GREATER_EQUAL,
-                                                                                                ThresholdDataType.LEFT ) );
+                                                                                                     OneOrTwoDoubles.of( 0.9 ),
+                                                                                                     Operator.GREATER_EQUAL,
+                                                                                                     ThresholdDataType.LEFT ) );
 
         Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
 
@@ -474,11 +509,11 @@ public class MessageFactoryTest
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
-                                                             .setTimeScale( timeScale )
-                                                             .setTimeWindow( TIME_WINDOW )
-                                                             .setThresholds( threshold )
-                                                             .setIdentifier( datasetIdentifier )
-                                                             .build();
+                                               .setTimeScale( timeScale )
+                                               .setTimeWindow( TIME_WINDOW )
+                                               .setThresholds( threshold )
+                                               .setIdentifier( datasetIdentifier )
+                                               .build();
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( metadata,
@@ -495,26 +530,26 @@ public class MessageFactoryTest
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
 
         // Fake output wrapper.
-        return Collections.unmodifiableList( List.of( DiagramStatistic.of( fakeOutputs, fakeMetadata ) ) );
+        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( fakeOutputs, fakeMetadata ) ) );
     }
 
     /**
-     * Returns a {@link List} containing a {@link BoxPlotStatistics} for one pool.
+     * Returns a {@link List} containing a {@link BoxplotStatisticOuter} for one pool.
      * 
      * @return the box plot statistics for one pool
      */
 
-    private List<BoxPlotStatistics> getBoxPlotsForOnePool()
+    private List<BoxplotStatisticOuter> getBoxPlotsForOnePool()
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
-                                                   wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
+                                                        wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                                                OneOrTwoDoubles.of( 0.9 ),
-                                                                                                Operator.GREATER_EQUAL,
-                                                                                                ThresholdDataType.LEFT ) );
+                                                                                                     OneOrTwoDoubles.of( 0.9 ),
+                                                                                                     Operator.GREATER_EQUAL,
+                                                                                                     ThresholdDataType.LEFT ) );
 
         Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
 
@@ -522,11 +557,11 @@ public class MessageFactoryTest
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
-                                                             .setTimeScale( timeScale )
-                                                             .setTimeWindow( TIME_WINDOW )
-                                                             .setThresholds( threshold )
-                                                             .setIdentifier( datasetIdentifier )
-                                                             .build();
+                                               .setTimeScale( timeScale )
+                                               .setTimeWindow( TIME_WINDOW )
+                                               .setThresholds( threshold )
+                                               .setIdentifier( datasetIdentifier )
+                                               .build();
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( metadata,
@@ -535,23 +570,23 @@ public class MessageFactoryTest
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       null );
 
-        List<BoxPlotStatistic> fakeOutputs = new ArrayList<>();
+        List<BoxplotStatistic> fakeOutputs = new ArrayList<>();
 
         VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
-        BoxPlotStatistic one = BoxPlotStatistic.of( probabilities,
+        BoxplotStatistic one = BoxplotStatistic.of( probabilities,
                                                     VectorOfDoubles.of( 1, 2, 3, 4, 5 ),
                                                     fakeMetadata,
                                                     11,
                                                     MetricDimension.OBSERVED_VALUE );
 
-        BoxPlotStatistic two = BoxPlotStatistic.of( probabilities,
+        BoxplotStatistic two = BoxplotStatistic.of( probabilities,
                                                     VectorOfDoubles.of( 6, 7, 8, 9, 10 ),
                                                     fakeMetadata,
                                                     22,
                                                     MetricDimension.OBSERVED_VALUE );
 
-        BoxPlotStatistic three = BoxPlotStatistic.of( probabilities,
+        BoxplotStatistic three = BoxplotStatistic.of( probabilities,
                                                       VectorOfDoubles.of( 11, 12, 13, 14, 15 ),
                                                       fakeMetadata,
                                                       33,
@@ -569,21 +604,21 @@ public class MessageFactoryTest
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                       null );
 
-        List<BoxPlotStatistic> fakeOutputsTwo = new ArrayList<>();
+        List<BoxplotStatistic> fakeOutputsTwo = new ArrayList<>();
 
-        BoxPlotStatistic four = BoxPlotStatistic.of( probabilities,
+        BoxplotStatistic four = BoxplotStatistic.of( probabilities,
                                                      VectorOfDoubles.of( 16, 17, 18, 19, 20 ),
                                                      fakeMetadataTwo,
                                                      73,
                                                      MetricDimension.ENSEMBLE_MEAN );
 
-        BoxPlotStatistic five = BoxPlotStatistic.of( probabilities,
+        BoxplotStatistic five = BoxplotStatistic.of( probabilities,
                                                      VectorOfDoubles.of( 21, 22, 23, 24, 25 ),
                                                      fakeMetadataTwo,
                                                      92,
                                                      MetricDimension.ENSEMBLE_MEAN );
 
-        BoxPlotStatistic six = BoxPlotStatistic.of( probabilities,
+        BoxplotStatistic six = BoxplotStatistic.of( probabilities,
                                                     VectorOfDoubles.of( 26, 27, 28, 29, 30 ),
                                                     fakeMetadataTwo,
                                                     111,
@@ -594,8 +629,8 @@ public class MessageFactoryTest
         fakeOutputsTwo.add( six );
 
         // Fake output wrapper.
-        return List.of( BoxPlotStatistics.of( fakeOutputs, fakeMetadata ),
-                        BoxPlotStatistics.of( fakeOutputsTwo, fakeMetadataTwo ) );
+        return List.of( BoxplotStatisticOuter.of( fakeOutputs, fakeMetadata ),
+                        BoxplotStatisticOuter.of( fakeOutputsTwo, fakeMetadataTwo ) );
     }
 
     private PoolOfPairs<Double, Ensemble> getPoolOfEnsemblePairs()
@@ -627,20 +662,20 @@ public class MessageFactoryTest
         return b.build();
     }
 
-    private List<DurationScoreStatistic> getDurationScoreStatisticsForOnePool()
+    private List<DurationScoreStatisticOuter> getDurationScoreStatisticsForOnePool()
     {
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( FIRST_TIME,
-                               FIFTH_TIME,
-                               FIRST_TIME,
-                               SEVENTH_TIME,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
+                                    FIFTH_TIME,
+                                    FIRST_TIME,
+                                    SEVENTH_TIME,
+                                    Duration.ofHours( 1 ),
+                                    Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         Location location = Location.of( "DOLC2" );
 
@@ -657,28 +692,39 @@ public class MessageFactoryTest
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                       null );
 
-        Map<MetricConstants, Duration> fakeOutputs = new EnumMap<>( MetricConstants.class );
-        fakeOutputs.put( MetricConstants.MEAN, Duration.ofHours( 1 ) );
-        fakeOutputs.put( MetricConstants.MEDIAN, Duration.ofHours( 2 ) );
-        fakeOutputs.put( MetricConstants.MAXIMUM, Duration.ofHours( 3 ) );
+        DurationScoreStatistic score =
+                DurationScoreStatistic.newBuilder()
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 3_600 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 7_200 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 10_800 ) ) )
+                                      .build();
 
-        return Collections.singletonList( DurationScoreStatistic.of( fakeOutputs, fakeMetadata ) );
+        return Collections.singletonList( DurationScoreStatisticOuter.of( score, fakeMetadata ) );
     }
 
-    private List<PairedStatistic<Instant, Duration>> getDurationDiagramStatisticsForOnePool()
+    private List<PairedStatisticOuter<Instant, Duration>> getDurationDiagramStatisticsForOnePool()
     {
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( FIRST_TIME,
-                               FIFTH_TIME,
-                               FIRST_TIME,
-                               SEVENTH_TIME,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
+                                    FIFTH_TIME,
+                                    FIRST_TIME,
+                                    SEVENTH_TIME,
+                                    Duration.ofHours( 1 ),
+                                    Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         Location location = Location.of( "DOLC2" );
 
@@ -702,7 +748,7 @@ public class MessageFactoryTest
         fakeOutputs.add( Pair.of( FOURTH_TIME, Duration.ofHours( 1 ) ) );
         fakeOutputs.add( Pair.of( FIFTH_TIME, Duration.ofHours( 2 ) ) );
 
-        return Collections.singletonList( PairedStatistic.of( fakeOutputs, fakeMetadata ) );
+        return Collections.singletonList( PairedStatisticOuter.of( fakeOutputs, fakeMetadata ) );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0, Instant t1 )

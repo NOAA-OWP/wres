@@ -15,11 +15,17 @@ import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.ProbabilityScore;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>
@@ -44,9 +50,23 @@ import wres.engine.statistics.metric.ProbabilityScore;
  */
 
 public class RelativeOperatingCharacteristicScore
-        extends OrdinaryScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic>
-        implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic>
+        extends OrdinaryScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
+        implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE )
+                             .build();
 
     /**
      * Returns an instance.
@@ -60,7 +80,7 @@ public class RelativeOperatingCharacteristicScore
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Probability, Probability>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -87,7 +107,18 @@ public class RelativeOperatingCharacteristicScore
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       baselineIdentifier );
-        return DoubleScoreStatistic.of( rocScore, metOut );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( rocScore )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override

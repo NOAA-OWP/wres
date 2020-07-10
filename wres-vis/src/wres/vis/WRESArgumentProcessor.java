@@ -21,8 +21,8 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -98,7 +98,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( final BoxPlotStatistics displayPlotInput, final ChronoUnit durationUnits )
+    public WRESArgumentProcessor( final BoxplotStatisticOuter displayPlotInput, final ChronoUnit durationUnits )
     {
         super();
 
@@ -140,8 +140,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         String probabilities = "none defined";
         if( ! displayPlotInput.getData().isEmpty() )
         {
-             List<BoxPlotStatistic> stats = displayPlotInput.getData();
-             BoxPlotStatistic first = stats.get( 0 );
+             List<BoxplotStatistic> stats = displayPlotInput.getData();
+             BoxplotStatistic first = stats.get( 0 );
              VectorOfDoubles probsWrapped = first.getProbabilities();
              double[] probs = probsWrapped.getDoubles();
              probabilities = Arrays.toString( probs );

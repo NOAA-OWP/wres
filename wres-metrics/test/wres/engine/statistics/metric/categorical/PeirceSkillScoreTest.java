@@ -22,12 +22,16 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link PeirceSkillScore}.
@@ -52,15 +56,15 @@ public final class PeirceSkillScoreTest
     @Before
     public void setUpBeforeEachTest()
     {
-        pss = PeirceSkillScore.of();
-        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                              "SQIN",
-                                                                              "HEFS" ) ),
-                                     365,
-                                     MeasurementUnit.of(),
-                                     MetricConstants.PEIRCE_SKILL_SCORE,
-                                     MetricConstants.MAIN );
+        this.pss = PeirceSkillScore.of();
+        this.meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                   "SQIN",
+                                                                                   "HEFS" ) ),
+                                          365,
+                                          MeasurementUnit.of(),
+                                          MetricConstants.PEIRCE_SKILL_SCORE,
+                                          MetricConstants.MAIN );
     }
 
     /**
@@ -71,16 +75,24 @@ public final class PeirceSkillScoreTest
     public void testApplyWithDichotomousInput()
     {
         //Generate some data
-        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreStatistic actual = pss.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.6347985347985348, meta );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.pss.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.6347985347985348 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( PeirceSkillScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, this.meta );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -94,9 +106,9 @@ public final class PeirceSkillScoreTest
         SampleData<Pair<Boolean, Boolean>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = pss.apply( input );
+        DoubleScoreStatisticOuter actual = this.pss.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -106,7 +118,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertTrue( pss.getName().equals( MetricConstants.PEIRCE_SKILL_SCORE.toString() ) );
+        assertTrue( this.pss.getName().equals( MetricConstants.PEIRCE_SKILL_SCORE.toString() ) );
     }
 
     /**
@@ -116,7 +128,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testMetricIsNotDecoposable()
     {
-        assertFalse( pss.isDecomposable() );
+        assertFalse( this.pss.isDecomposable() );
     }
 
     /**
@@ -126,7 +138,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testMetricIsASkillScore()
     {
-        assertTrue( pss.isSkillScore() );
+        assertTrue( this.pss.isSkillScore() );
     }
 
     /**
@@ -136,7 +148,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( pss.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.pss.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -146,7 +158,7 @@ public final class PeirceSkillScoreTest
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( pss.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertTrue( this.pss.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
     }
 
     /**
@@ -159,7 +171,7 @@ public final class PeirceSkillScoreTest
     {
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> pss.aggregate( pss.aggregate( (DoubleScoreStatistic) null ) ) );
+                              () -> this.pss.aggregate( this.pss.aggregate( (DoubleScoreStatisticOuter) null ) ) );
 
         String expectedMessage = "Specify non-null input to the '" + this.pss.getName() + "'.";
 
@@ -174,14 +186,22 @@ public final class PeirceSkillScoreTest
     @Test
     public void testExceptionOnInputThatIsNotSquare()
     {
-        Map<MetricConstants, Double> elements = new HashMap<>();
-        elements.put( MetricConstants.TRUE_POSITIVES, 1.0 );
-        elements.put( MetricConstants.TRUE_NEGATIVES, 1.0 );
-        elements.put( MetricConstants.FALSE_POSITIVES, 1.0 );
+        DoubleScoreStatistic table = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ContingencyTable.METRIC )
+                                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                                      .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                                      .setValue( 1.0 ) )
+                                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                                      .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                                      .setValue( 1.0 ) )
+                                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                                      .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                                      .setValue( 1.0 ) )
+                                                         .build();
 
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> pss.aggregate( DoubleScoreStatistic.of( elements, this.meta ) ) );
+                              () -> this.pss.aggregate( DoubleScoreStatisticOuter.of( table, this.meta ) ) );
 
         String expectedMessage = "Expected an intermediate result with a square number of elements when computing "
                                  + "the '"

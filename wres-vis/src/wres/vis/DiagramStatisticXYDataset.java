@@ -9,18 +9,18 @@ import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
 
 /**
- * The {@link XYDataset} for use in building a chart that plots a {@link DiagramStatistic}.
+ * The {@link XYDataset} for use in building a chart that plots a {@link DiagramStatisticOuter}.
  * 
  * @author Hank.Herr
  */
 public class DiagramStatisticXYDataset
-        extends WRESAbstractXYDataset<List<DiagramStatistic>, List<DiagramStatistic>>
+        extends WRESAbstractXYDataset<List<DiagramStatisticOuter>, List<DiagramStatisticOuter>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
     private final MetricDimension xConstant;
@@ -42,7 +42,7 @@ public class DiagramStatisticXYDataset
      * @throws NullPointerException if any input is null
      */
 
-    public DiagramStatisticXYDataset( final List<DiagramStatistic> input,
+    public DiagramStatisticXYDataset( final List<DiagramStatisticOuter> input,
                                               final MetricDimension xConstant,
                                               final MetricDimension yConstant,
                                               final ChronoUnit durationUnits )
@@ -63,7 +63,7 @@ public class DiagramStatisticXYDataset
     }
 
     @Override
-    void preparePlotData(final List<DiagramStatistic> rawData)
+    void preparePlotData(final List<DiagramStatisticOuter> rawData)
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if ( rawData.isEmpty() )

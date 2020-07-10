@@ -30,9 +30,9 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -73,37 +73,37 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume discrete probability pairs and produce
-     * {@link DoubleScoreStatistic}.
+     * {@link DoubleScoreStatisticOuter}.
      */
 
-    private final MetricCollection<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic, DoubleScoreStatistic> discreteProbabilityScore;
+    private final MetricCollection<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> discreteProbabilityScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume discrete probability pairs and produce
      * {@link ScoreStatistic}.
      */
 
-    private final MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatistic, DiagramStatistic> discreteProbabilityMultiVector;
+    private final MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> discreteProbabilityMultiVector;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce {@link DoubleScoreStatistic}.
+     * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce {@link DoubleScoreStatisticOuter}.
      */
 
-    private final MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatistic, DoubleScoreStatistic> ensembleScore;
-
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce
-     * {@link DiagramStatistic}.
-     */
-
-    private final MetricCollection<SampleData<Pair<Double, Ensemble>>, DiagramStatistic, DiagramStatistic> ensembleMultiVector;
+    private final MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> ensembleScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce
-     * {@link BoxPlotStatistics}.
+     * {@link DiagramStatisticOuter}.
      */
 
-    final MetricCollection<SampleData<Pair<Double, Ensemble>>, BoxPlotStatistics, BoxPlotStatistics> ensembleBoxPlot;
+    private final MetricCollection<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> ensembleMultiVector;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce
+     * {@link BoxplotStatisticOuter}.
+     */
+
+    final MetricCollection<SampleData<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> ensembleBoxPlot;
 
     /**
      * Default function that maps between ensemble pairs and single-valued pairs.

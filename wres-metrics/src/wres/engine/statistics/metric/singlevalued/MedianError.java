@@ -5,6 +5,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * The median error applies to continuous variables and is the median signed difference 
@@ -15,6 +19,20 @@ import wres.engine.statistics.metric.FunctionFactory;
  */
 public class MedianError extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.MEDIAN_ERROR )
+                             .build();
 
     /**
      * Returns an instance.
@@ -51,7 +69,7 @@ public class MedianError extends DoubleErrorScore<SampleData<Pair<Double, Double
 
     private MedianError()
     {
-        super( FunctionFactory.error(), FunctionFactory.median() );
+        super( FunctionFactory.error(), FunctionFactory.median(), MedianError.METRIC );
     }
 
 }

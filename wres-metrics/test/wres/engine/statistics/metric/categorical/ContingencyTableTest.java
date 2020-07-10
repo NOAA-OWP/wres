@@ -18,10 +18,16 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link ContingencyTable}.
@@ -40,7 +46,7 @@ public final class ContingencyTableTest
     @Before
     public void setupBeforeEachTest()
     {
-        table = ContingencyTable.of();
+        this.table = ContingencyTable.of();
     }
 
     /**
@@ -51,10 +57,10 @@ public final class ContingencyTableTest
     public void testApply()
     {
         //Generate some data
-        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final StatisticMetadata meta =
+        StatisticMetadata meta =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                "SQIN",
@@ -64,18 +70,29 @@ public final class ContingencyTableTest
                                       MetricConstants.CONTINGENCY_TABLE,
                                       null );
 
-        Map<MetricConstants, Double> expectedElements = new HashMap<>();
-        expectedElements.put( MetricConstants.TRUE_POSITIVES, 82.0 );
-        expectedElements.put( MetricConstants.TRUE_NEGATIVES, 222.0 );
-        expectedElements.put( MetricConstants.FALSE_POSITIVES, 38.0 );
-        expectedElements.put( MetricConstants.FALSE_NEGATIVES, 23.0 );
+        DoubleScoreStatistic result =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 82.0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 38.0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 23.0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 222.0 ) )
+                                    .build();
 
-        final DoubleScoreStatistic actual = table.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( expectedElements, meta );
+        final DoubleScoreStatisticOuter actual = this.table.apply( input );
+        final DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( result, meta );
         assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
 
         //Check the parameters
-        assertTrue( table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
+        assertTrue( this.table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
     }
 
     /**
@@ -85,7 +102,7 @@ public final class ContingencyTableTest
     @Test
     public void testContingencyTableIsNamedCorrectly()
     {
-        assertTrue( table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
+        assertTrue( this.table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
     }
 
     /**
@@ -97,7 +114,7 @@ public final class ContingencyTableTest
     {
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> table.apply( (SampleData<Pair<Boolean, Boolean>>) null ) );
+                              () -> this.table.apply( (SampleData<Pair<Boolean, Boolean>>) null ) );
 
         String expectedMessage = "Specify non-null input to the 'CONTINGENCY TABLE'.";
 

@@ -5,10 +5,10 @@ package wres.statistics.generated;
 import "metric_name.proto";
 
 option java_package = "wres.statistics.generated";
-option java_outer_classname = "ScoreMetricProto";
+option java_outer_classname = "DoubleScoreMetricProto";
 option java_multiple_files = true;
 
-message ScoreMetric
+message DoubleScoreMetric
 {
     /*A message that encapsulates a score metric or scoring rule, which is composed 
     of one or more scalar values.*/
@@ -16,29 +16,32 @@ message ScoreMetric
     MetricName name = 1;
     // Metric name.
     
-    repeated ScoreMetricComponent components = 2;
+    repeated DoubleScoreMetricComponent components = 2;
     // One or more score components.
     
-    message ScoreMetricComponent
+    message DoubleScoreMetricComponent
     {
-        // A score component.
+        // A score component name.
         
-        enum ScoreComponentName 
+        enum ComponentName 
         {
             // The name of a score component.
             
-            UNKNOWN = 0;
-            MAIN_SCORE = 1;
-            RELIABILITY = 2; // Type-I bias
-            RESOLUTION = 3;
-            UNCERTAINTY = 4;
-            TYPE_II_BIAS = 5;
-            DISCRIMINATION = 6;
-            SHARPNESS = 7;
-            POTENTIAL = 8; 
+            MAIN = 0;
+            RELIABILITY = 1; // Type-I bias
+            RESOLUTION = 2;
+            UNCERTAINTY = 3;
+            TYPE_II_BIAS = 4;
+            DISCRIMINATION = 5;
+            SHARPNESS = 6;
+            POTENTIAL = 7; 
+            TRUE_POSITIVES = 8;
+            FALSE_POSITIVES = 9;
+            FALSE_NEGATIVES = 10;
+            TRUE_NEGATIVES = 11;
         }
 
-        ScoreComponentName name = 1;
+        ComponentName name = 1;
 
         string units = 2;
         // Units of the score.

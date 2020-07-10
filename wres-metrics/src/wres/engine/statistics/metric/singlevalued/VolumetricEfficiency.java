@@ -7,8 +7,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>The {@link VolumetricEfficiency} (VE) accumulates the absolute observations (VO) and, separately, it accumulates 
@@ -24,6 +30,20 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
 {
 
     /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.SUM_OF_SQUARE_ERROR )
+                             .build();
+
+    /**
      * Returns an instance.
      * 
      * @return an instance
@@ -35,7 +55,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -57,12 +77,27 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
+
+        double result = Double.NaN;
+
         //Compute the atomic errors in a stream
-        if ( vO.equals( 0.0 ) )
+        if ( !vO.equals( 0.0 ) )
         {
-            return DoubleScoreStatistic.of( Double.NaN, metOut );
+            result = ( vO - vP ) / vO;
         }
-        return DoubleScoreStatistic.of( ( vO - vP ) / vO, metOut );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( VolumetricEfficiency.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override
@@ -89,7 +124,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
 
     private VolumetricEfficiency()
     {
-        super();
+        super( VolumetricEfficiency.METRIC );
     }
 
 }

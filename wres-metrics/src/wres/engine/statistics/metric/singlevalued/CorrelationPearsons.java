@@ -11,12 +11,18 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.OrdinaryScore;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Computes Pearson's product-moment correlation coefficient between the left and right sides of the {SingleValuedPairs}
@@ -25,10 +31,24 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, Double>>, DoubleScoreStatistic>
-        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
+public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter>
+        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                             .build();
+    
     /**
      * Instance of {@link PearsonsCorrelation}.
      */
@@ -47,7 +67,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -69,10 +89,22 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
         if ( s.getRawData().size() > 1 )
         {
             returnMe = FunctionFactory.finiteOrMissing()
-                                      .applyAsDouble( correlation.correlation( Slicer.getLeftSide( s ),
+                                      .applyAsDouble( this.correlation.correlation( Slicer.getLeftSide( s ),
                                                                                Slicer.getRightSide( s ) ) );
         }
-        return DoubleScoreStatistic.of( returnMe, meta );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( returnMe )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( CorrelationPearsons.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, meta );
     }
 
     @Override
@@ -106,7 +138,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
         if ( Objects.isNull( output ) )
         {
@@ -117,7 +149,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
         return this.apply( input );
     }

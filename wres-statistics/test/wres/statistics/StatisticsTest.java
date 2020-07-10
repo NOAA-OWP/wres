@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import wres.statistics.generated.ScoreMetric.ScoreMetricComponent.ScoreComponentName;
-import wres.statistics.generated.ScoreStatistic;
-import wres.statistics.generated.ScoreStatistic.ScoreStatisticComponent;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * Tests the generated statistics messages.
@@ -20,10 +20,10 @@ public class StatisticsTest
     @Test
     public void testThatAStatisticCanBeCreated()
     {
-        ScoreStatistic aScore =
-                ScoreStatistic.newBuilder()
-                              .addStatistics( ScoreStatisticComponent.newBuilder()
-                                                                     .setName( ScoreComponentName.MAIN_SCORE )
+        DoubleScoreStatistic aScore =
+                DoubleScoreStatistic.newBuilder()
+                              .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                     .setName( ComponentName.MAIN )
                                                                      .setValue( 1.0 ) )
                               .build();
         
