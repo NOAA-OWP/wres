@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -20,12 +21,15 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link FrequencyBias}.
@@ -53,15 +57,15 @@ public final class FrequencyBiasTest
     @Before
     public void setUpBeforeEachTest()
     {
-        fb = FrequencyBias.of();
-        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                              "SQIN",
-                                                                              "HEFS" ) ),
-                                     365,
-                                     MeasurementUnit.of(),
-                                     MetricConstants.FREQUENCY_BIAS,
-                                     MetricConstants.MAIN );
+        this.fb = FrequencyBias.of();
+        this.meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                   "SQIN",
+                                                                                   "HEFS" ) ),
+                                          365,
+                                          MeasurementUnit.of(),
+                                          MetricConstants.FREQUENCY_BIAS,
+                                          MetricConstants.MAIN );
     }
 
     /**
@@ -72,16 +76,24 @@ public final class FrequencyBiasTest
     public void testApply()
     {
         //Generate some data
-        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreStatistic actual = fb.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 1.1428571428571428, meta );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.fb.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 1.1428571428571428 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( FrequencyBias.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, this.meta );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -95,9 +107,9 @@ public final class FrequencyBiasTest
         SampleData<Pair<Boolean, Boolean>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = fb.apply( input );
+        DoubleScoreStatisticOuter actual = fb.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -160,7 +172,7 @@ public final class FrequencyBiasTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the '" + fb.getName() + "'." );
-        fb.aggregate( (DoubleScoreStatistic) null );
+        fb.aggregate( (DoubleScoreStatisticOuter) null );
     }
 
 }

@@ -21,9 +21,15 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link ContingencyTableScore}.
@@ -56,23 +62,46 @@ public final class ContingencyTableScoreTest
      * Contingency table.
      */
 
-    private Map<MetricConstants, Double> elements;
+    private DoubleScoreStatistic table;
+
+    /**
+     * Invalid contingency table.
+     */
+
+    private DoubleScoreStatistic invalidTable;
 
     @Before
     public void setupBeforeEachTest()
     {
-        cs = ThreatScore.of();
-        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                     365,
-                                     MeasurementUnit.of(),
-                                     MetricConstants.CONTINGENCY_TABLE,
-                                     MetricConstants.MAIN );
-        elements = new HashMap<>();
+        this.cs = ThreatScore.of();
+        this.meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                          365,
+                                          MeasurementUnit.of(),
+                                          MetricConstants.CONTINGENCY_TABLE,
+                                          MetricConstants.MAIN );
 
-        elements.put( MetricConstants.TRUE_POSITIVES, 82.0 );
-        elements.put( MetricConstants.TRUE_NEGATIVES, 222.0 );
-        elements.put( MetricConstants.FALSE_POSITIVES, 38.0 );
-        elements.put( MetricConstants.FALSE_NEGATIVES, 23.0 );
+        this.table =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 82.0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 38.0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 23.0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 222.0 ) )
+                                    .build();
+
+        this.invalidTable = DoubleScoreStatistic.newBuilder()
+                                                .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                             .setValue( 82.0 ) )
+                                                .build();
     }
 
     /**
@@ -84,7 +113,7 @@ public final class ContingencyTableScoreTest
     @Test
     public void testHasRealUnits()
     {
-        assertFalse( "The Critical Success Index should not have real units.", cs.hasRealUnits() );
+        assertFalse( "The Critical Success Index should not have real units.", this.cs.hasRealUnits() );
     }
 
     /**
@@ -95,9 +124,9 @@ public final class ContingencyTableScoreTest
     @Test
     public void testContingencyTableScoreAcceptsCorrectInput()
     {
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( this.elements, meta );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, meta );
 
-        cs.is2x2ContingencyTable( expected, cs );
+        this.cs.is2x2ContingencyTable( expected, this.cs );
     }
 
     /**
@@ -108,9 +137,9 @@ public final class ContingencyTableScoreTest
     @Test
     public void testContingencyTableScoreAcceptsCorrectInputForLargeTable()
     {
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( this.elements, meta );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, meta );
 
-        cs.isContingencyTable( expected, cs );
+        this.cs.isContingencyTable( expected, this.cs );
     }
 
     /**
@@ -120,11 +149,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( cs.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertTrue( this.cs.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
     }
 
     /**
-     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(wres.datamodel.sampledata.pairs.MulticategoryPairs)} 
+     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(SampleData)} 
      * against a benchmark.
      */
 
@@ -144,11 +173,11 @@ public final class ContingencyTableScoreTest
                                       MetricConstants.CONTINGENCY_TABLE,
                                       null );
 
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( this.elements, m1 );
+        final DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, m1 );
 
-        final DoubleScoreStatistic actual = cs.getInputForAggregation( input );
+        final DoubleScoreStatisticOuter actual = this.cs.getInputForAggregation( input );
 
-        assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
+        assertEquals( "Unexpected result for the contingency table.", expected, actual );
     }
 
     /**
@@ -172,7 +201,7 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Checks the output from {@link ContingencyTableScore#getMetadata(DoubleScoreStatistic)} against a benchmark.
+     * Checks the output from {@link ContingencyTableScore#getMetadata(DoubleScoreStatisticOuter)} against a benchmark.
      */
 
     @Test
@@ -190,7 +219,7 @@ public final class ContingencyTableScoreTest
                                       MetricConstants.THREAT_SCORE,
                                       MetricConstants.MAIN );
 
-        assertTrue( cs.getMetadata( cs.getInputForAggregation( input ) ).equals( expected ) );
+        assertTrue( this.cs.getMetadata( this.cs.getInputForAggregation( input ) ).equals( expected ) );
     }
 
     /**
@@ -216,7 +245,7 @@ public final class ContingencyTableScoreTest
     {
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> cs.is2x2ContingencyTable( (DoubleScoreStatistic) null, cs ) );
+                              () -> cs.is2x2ContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
@@ -231,7 +260,7 @@ public final class ContingencyTableScoreTest
     {
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> cs.isContingencyTable( (DoubleScoreStatistic) null, cs ) );
+                              () -> cs.isContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
@@ -243,13 +272,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnInputThatIsTooSmall()
     {
-
-        Map<MetricConstants, Double> table = new HashMap<>();
-        table.put( MetricConstants.TRUE_POSITIVES, 82.0 );
-
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> cs.is2x2ContingencyTable( DoubleScoreStatistic.of( table, this.meta ), this.cs ) );
+                              () -> cs.is2x2ContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
+                                                                                            this.meta ),
+                                                              this.cs ) );
 
         Set<MetricConstants> expected = Set.of( MetricConstants.TRUE_POSITIVES,
                                                 MetricConstants.TRUE_NEGATIVES,
@@ -271,12 +298,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullMetric()
     {
-        Map<MetricConstants, Double> table = new HashMap<>();
-        table.put( MetricConstants.TRUE_POSITIVES, 82.0 );
-
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> cs.is2x2ContingencyTable( DoubleScoreStatistic.of( table, meta ), null ) );
+                              () -> this.cs.is2x2ContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
+                                                                                                 this.meta ),
+                                                                   null ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
@@ -293,7 +319,9 @@ public final class ContingencyTableScoreTest
 
         SampleDataException exception =
                 assertThrows( SampleDataException.class,
-                              () -> cs.isContingencyTable( DoubleScoreStatistic.of( table, meta ), null ) );
+                              () -> this.cs.isContingencyTable( DoubleScoreStatisticOuter.of( this.invalidTable,
+                                                                                              this.meta ),
+                                                                null ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }

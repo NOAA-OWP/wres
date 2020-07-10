@@ -16,6 +16,8 @@ import wres.datamodel.sampledata.SampleMetadata.Builder;
  * 
  * @author james.brown@hydrosolved.com
  */
+
+@Deprecated( since = "4.3", forRemoval = true )
 public class StatisticMetadata implements Comparable<StatisticMetadata>
 {
 

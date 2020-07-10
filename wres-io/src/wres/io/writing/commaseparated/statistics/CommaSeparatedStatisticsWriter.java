@@ -18,6 +18,7 @@ import java.util.StringJoiner;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindowOuter;
@@ -44,8 +45,8 @@ abstract class CommaSeparatedStatisticsWriter
      */
 
     static final TimeWindowOuter HEADER_INDEX = TimeWindowOuter.of( Instant.MIN,
-                                                          Instant.MIN,
-                                                          Duration.ofSeconds( Long.MIN_VALUE ) );
+                                                                    Instant.MIN,
+                                                                    Duration.ofSeconds( Long.MIN_VALUE ) );
 
     /**
      * Resolution for writing duration outputs.
@@ -202,20 +203,23 @@ abstract class CommaSeparatedStatisticsWriter
         for ( T nextColumn : values )
         {
 
-            String toWrite = "NA";
+            String toWrite = MissingValues.STRING;
 
             // Write the current score component at the current window and threshold
-            if ( nextColumn != null && !Double.valueOf( Double.NaN ).equals( nextColumn ) )
+            if ( nextColumn != null )
             {
-                if ( formatter != null )
+                toWrite = nextColumn.toString();
+
+                if ( nextColumn instanceof Double && formatter != null
+                     && !Double.valueOf( Double.NaN ).equals( nextColumn ) )
                 {
                     toWrite = formatter.format( nextColumn );
                 }
-                else
-                {
-                    toWrite = nextColumn.toString();
-                }
             }
+
+            // Replace NaN with default missing
+            toWrite = toWrite.replace( "NaN", MissingValues.STRING );
+
             row.add( toWrite );
         }
     }

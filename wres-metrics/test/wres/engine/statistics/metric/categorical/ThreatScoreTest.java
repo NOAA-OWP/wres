@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -20,15 +21,18 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
- * Tests the {@link ThreatScore}.
+ * Testhis.ts the {@link ThreatScore}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -53,7 +57,7 @@ public final class ThreatScoreTest
     @Before
     public void setUpBeforeEachTest()
     {
-        ts = ThreatScore.of();
+        this.ts = ThreatScore.of();
         meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                               "SQIN",
@@ -72,16 +76,24 @@ public final class ThreatScoreTest
     public void testApply()
     {
         //Generate some data
-        final SampleData<Pair<Boolean,Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        //Check the results
-        final DoubleScoreStatistic actual = ts.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.5734265734265734, meta );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        //Check the resulthis.ts
+        DoubleScoreStatisticOuter actual = this.ts.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.5734265734265734 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ThreatScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, this.meta );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -92,12 +104,12 @@ public final class ThreatScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Boolean,Boolean>> input =
+        SampleData<Pair<Boolean, Boolean>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = ts.apply( input );
+        DoubleScoreStatisticOuter actual = this.ts.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -107,7 +119,7 @@ public final class ThreatScoreTest
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertTrue( ts.getName().equals( MetricConstants.THREAT_SCORE.toString() ) );
+        assertTrue( this.ts.getName().equals( MetricConstants.THREAT_SCORE.toString() ) );
     }
 
     /**
@@ -117,7 +129,7 @@ public final class ThreatScoreTest
     @Test
     public void testMetricIsNotDecoposable()
     {
-        assertFalse( ts.isDecomposable() );
+        assertFalse( this.ts.isDecomposable() );
     }
 
     /**
@@ -127,7 +139,7 @@ public final class ThreatScoreTest
     @Test
     public void testMetricIsASkillScore()
     {
-        assertFalse( ts.isSkillScore() );
+        assertFalse( this.ts.isSkillScore() );
     }
 
     /**
@@ -137,17 +149,17 @@ public final class ThreatScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ts.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.ts.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
-     * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
+     * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstanthis.ts#CONTINGENCY_TABLE}.
      */
 
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( ts.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertTrue( this.ts.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
     }
 
     /**
@@ -159,8 +171,8 @@ public final class ThreatScoreTest
     public void testExceptionOnNullInput()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the '" + ts.getName() + "'." );
-        ts.aggregate( (DoubleScoreStatistic) null );
+        exception.expectMessage( "Specify non-null input to the '" + this.ts.getName() + "'." );
+        this.ts.aggregate( (DoubleScoreStatisticOuter) null );
     }
 
 }

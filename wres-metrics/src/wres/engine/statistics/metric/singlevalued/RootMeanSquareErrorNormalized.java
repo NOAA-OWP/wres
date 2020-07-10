@@ -10,9 +10,15 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * The Root Mean Square Error (RMSE) normalized by the standard deviation of the observations (SDO), also known as
@@ -22,13 +28,28 @@ import wres.engine.statistics.metric.FunctionFactory;
  */
 public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
 {
-    
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.ROOT_MEAN_SQUARE_ERROR_NORMALIZED )
+                             .build();
+
+
     /**
      * Instance of a standard deviation.
      */
-    
+
     private final ToDoubleFunction<VectorOfDoubles> stdev;
-    
+
     /**
      * Returns an instance.
      * 
@@ -41,7 +62,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> t )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> t )
     {
         if ( Objects.isNull( t ) )
         {
@@ -54,17 +75,19 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
         if ( !t.getRawData().isEmpty() )
         {
 
-            double mseValue = super.apply( t ).getData();
+            double mse = super.apply( t ).getComponent( MetricConstants.MAIN )
+                                         .getData()
+                                         .getValue();
 
             //Compute the observation standard deviation
             double[] obs = t.getRawData()
                             .stream()
                             .mapToDouble( Pair::getLeft )
                             .toArray();
-            
+
             double stdevValue = this.stdev.applyAsDouble( VectorOfDoubles.of( obs ) );
 
-            returnMe = Math.sqrt( mseValue ) / stdevValue;
+            returnMe = Math.sqrt( mse ) / stdevValue;
         }
 
         //Metadata
@@ -75,7 +98,18 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
                                                          t.getRawData().size(),
                                                          null );
 
-        return DoubleScoreStatistic.of( returnMe, metOut );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( returnMe )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( RootMeanSquareErrorNormalized.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override
@@ -102,8 +136,8 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
 
     private RootMeanSquareErrorNormalized()
     {
-        super( FunctionFactory.squareError(), FunctionFactory.mean() );
-     
+        super( FunctionFactory.squareError(), FunctionFactory.mean(), RootMeanSquareErrorNormalized.METRIC );
+
         stdev = FunctionFactory.standardDeviation();
     }
 

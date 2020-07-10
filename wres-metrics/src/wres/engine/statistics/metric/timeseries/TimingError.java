@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Random;
 
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.engine.statistics.metric.Metric;
 
 /**
@@ -14,7 +14,7 @@ import wres.engine.statistics.metric.Metric;
  * 
  * @author james.brown@hydrosolved.com
  */
-public abstract class TimingError implements Metric<PoolOfPairs<Double,Double>, PairedStatistic<Instant, Duration>>
+public abstract class TimingError implements Metric<PoolOfPairs<Double,Double>, PairedStatisticOuter<Instant, Duration>>
 {
 
     /**

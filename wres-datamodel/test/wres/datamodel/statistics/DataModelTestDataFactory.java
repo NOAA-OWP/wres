@@ -17,6 +17,11 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -45,10 +50,10 @@ public final class DataModelTestDataFactory
      * @return an output map of verification scores
      */
 
-    public static List<DoubleScoreStatistic> getScalarMetricOutputTwo()
+    public static List<DoubleScoreStatisticOuter> getScalarMetricOutputTwo()
     {
 
-        List<DoubleScoreStatistic> statistics = new ArrayList<>();
+        List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
 
         //Fake metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -63,26 +68,35 @@ public final class DataModelTestDataFactory
         for ( int leadTime : leadTimes )
         {
             final TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                         Instant.parse( SECOND_TIME ),
-                                                         Duration.ofHours( leadTime ) );
+                                                                   Instant.parse( SECOND_TIME ),
+                                                                   Duration.ofHours( leadTime ) );
 
             // Add first result
             OneOrTwoThresholds first =
                     OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1.0 ),
-                                                                          OneOrTwoDoubles.of( 0.1 ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT ),
+                                                                               OneOrTwoDoubles.of( 0.1 ),
+                                                                               Operator.GREATER,
+                                                                               ThresholdDataType.LEFT ),
                                            ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                         Operator.GREATER,
-                                                         ThresholdDataType.LEFT ) );
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ) );
 
-            DoubleScoreStatistic firstValue =
-                    DoubleScoreStatistic.of( 66.0,
-                                             StatisticMetadata.of( SampleMetadata.of( source, timeWindow, first ),
-                                                                   1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                   MetricConstants.MAIN ) );
+            DoubleScoreStatistic one =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( 66.0 )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
+
+            DoubleScoreStatisticOuter firstValue =
+                    DoubleScoreStatisticOuter.of( one,
+                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, first ),
+                                                                        1000,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                        MetricConstants.MAIN ) );
 
             statistics.add( firstValue );
 
@@ -90,20 +104,29 @@ public final class DataModelTestDataFactory
             // Add second result
             OneOrTwoThresholds second =
                     OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 2.0 ),
-                                                                          OneOrTwoDoubles.of( 0.2 ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT ),
+                                                                               OneOrTwoDoubles.of( 0.2 ),
+                                                                               Operator.GREATER,
+                                                                               ThresholdDataType.LEFT ),
                                            ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                         Operator.GREATER,
-                                                         ThresholdDataType.LEFT ) );
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ) );
 
-            DoubleScoreStatistic secondValue =
-                    DoubleScoreStatistic.of( 67.0,
-                                             StatisticMetadata.of( SampleMetadata.of( source, timeWindow, second ),
-                                                                   1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                   MetricConstants.MAIN ) );
+            DoubleScoreStatistic two =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( 67.0 )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
+
+            DoubleScoreStatisticOuter secondValue =
+                    DoubleScoreStatisticOuter.of( two,
+                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, second ),
+                                                                        1000,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                        MetricConstants.MAIN ) );
 
             statistics.add( secondValue );
 
@@ -111,21 +134,30 @@ public final class DataModelTestDataFactory
             // Add third result
             OneOrTwoThresholds third =
                     OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 3.0 ),
-                                                                          OneOrTwoDoubles.of( 0.3 ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT ),
+                                                                               OneOrTwoDoubles.of( 0.3 ),
+                                                                               Operator.GREATER,
+                                                                               ThresholdDataType.LEFT ),
                                            ThresholdOuter.of( OneOrTwoDoubles.of( 6.0 ),
-                                                         Operator.GREATER,
-                                                         ThresholdDataType.LEFT ) );
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ) );
+
+            DoubleScoreStatistic three =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( 68.0 )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
 
 
-            DoubleScoreStatistic thirdValue =
-                    DoubleScoreStatistic.of( 68.0,
-                                             StatisticMetadata.of( SampleMetadata.of( source, timeWindow, third ),
-                                                                   1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                   MetricConstants.MAIN ) );
+            DoubleScoreStatisticOuter thirdValue =
+                    DoubleScoreStatisticOuter.of( three,
+                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, third ),
+                                                                        1000,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                        MetricConstants.MAIN ) );
 
             statistics.add( thirdValue );
 

@@ -8,7 +8,7 @@ import org.junit.Test;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -39,7 +39,7 @@ public class XYChartDataSourceFactoryTest
     @Test( expected = Test.None.class /* no exception expected */ )
     public void testOfBoxPlotOutputDoesNotThrowIOOBExceptionWhenInputIsEmpty()
     {
-        BoxPlotStatistics input = BoxPlotStatistics.of( Collections.emptyList(), this.meta );
+        BoxplotStatisticOuter input = BoxplotStatisticOuter.of( Collections.emptyList(), this.meta );
         
         XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null, ChronoUnit.SECONDS );
     }

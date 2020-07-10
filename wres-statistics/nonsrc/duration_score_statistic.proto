@@ -25,7 +25,7 @@ message DurationScoreStatistic
     {
         // A duration score component.
         
-        DurationScoreMetric.DurationScoreMetricComponent.DurationScoreComponentName name = 1;
+        DurationScoreMetric.DurationScoreMetricComponent.ComponentName name = 1;
         // Metric component name.
         
         google.protobuf.Duration value = 2;

@@ -2,9 +2,8 @@ package wres.datamodel.statistics;
 
 import java.util.Set;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.datamodel.MetricConstants;
+import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 
 /**
  * A score statistic. A score may contain one or more components, such as the components of a score
@@ -16,14 +15,15 @@ import wres.datamodel.MetricConstants;
  * @author james.brown@hydrosolved.com
  */
 
-public interface ScoreStatistic<T, U extends ScoreStatistic<T, ?>> extends Statistic<T>, Iterable<Pair<MetricConstants, T>>
+public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statistic<T>, Iterable<U>
 {
 
     /**
      * Returns the value associated with a prescribed {@link MetricConstants} in the input.
      * 
      * @param component the component required
-     * @return the score associated with the component or null if the component does not exist
+     * @return the score associated with the component
+     * @throws IllegalArgumentException if the component does not exist
      */
 
     U getComponent( MetricConstants component );
@@ -56,4 +56,23 @@ public interface ScoreStatistic<T, U extends ScoreStatistic<T, ?>> extends Stati
     @Override
     T getData();
 
+    /**
+     * Abstractions of a score component.
+     * 
+     * @param <S> the type of component value
+     * @author james.brown@hydrosolved.com
+     */
+    
+    public interface ScoreComponent<S> extends Statistic<S>
+    {
+        
+        /**
+         * Returns the component identifier.
+         * 
+         * @return the component name
+         */
+        
+        MetricConstants getName();
+    }
+    
 }

@@ -56,7 +56,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -71,7 +72,7 @@ import wres.system.SystemSettings;
 import wres.util.FutureQueue;
 import wres.util.Strings;
 
-public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
+public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOuter>,
                                            Supplier<Set<Path>>,
                                            Closeable
 {   
@@ -540,19 +541,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     }
 
     @Override
-    public void accept( List<DoubleScoreStatistic> output )
+    public void accept( List<DoubleScoreStatisticOuter> output )
     {
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
 
-        Map<TimeWindowOuter, List<DoubleScoreStatistic>> outputByTimeWindow = wres.util.Collections.group(
+        Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow = wres.util.Collections.group(
                 output,
                 score -> score.getMetadata().getSampleMetadata().getTimeWindow()
         );
 
-        for ( Map.Entry<TimeWindowOuter, List<DoubleScoreStatistic>> entries : outputByTimeWindow.entrySet() )
+        for ( Map.Entry<TimeWindowOuter, List<DoubleScoreStatisticOuter>> entries : outputByTimeWindow.entrySet() )
         {
             TimeWindowOuter timeWindow = entries.getKey();
-            List<DoubleScoreStatistic> scores = entries.getValue();
+            List<DoubleScoreStatisticOuter> scores = entries.getValue();
 
             synchronized ( this.windowLock )
             {
@@ -570,14 +571,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     }
 
                     Callable<Set<Path>> initialize( final TimeWindowOuter window,
-                                                    final List<DoubleScoreStatistic> scores )
+                                                    final List<DoubleScoreStatisticOuter> scores )
                     {
                         this.output = scores;
                         this.window = window;
                         return this;
                     }
 
-                    private List<DoubleScoreStatistic> output;
+                    private List<DoubleScoreStatisticOuter> output;
                     private TimeWindowOuter window;
                 }.initialize( timeWindow, scores );
 
@@ -748,18 +749,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             this.writeLock = new ReentrantLock();
         }
 
-        void write( List<DoubleScoreStatistic> scores )
+        void write( List<DoubleScoreStatisticOuter> scores )
                 throws IOException, InvalidRangeException, CoordinateNotFoundException
         {
             //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
-            for ( DoubleScoreStatistic score : scores )
+            for ( DoubleScoreStatisticOuter score : scores )
             {
                 Set<MetricConstants> components = score.getComponents();
 
                 for ( MetricConstants nextComponent : components )
                 {
-                    DoubleScoreStatistic componentScore = score.getComponent( nextComponent );
+                    DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
                     
                     String name = this.getVariableName( componentScore, scores );
                     
@@ -787,7 +788,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                e );
                     }
 
-                    Double actualValue = componentScore.getData();
+                    Double actualValue = componentScore.getData().getValue();
                     this.saveValues( name, origin, actualValue );
                 }
             }
@@ -861,7 +862,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
          * @return the standard name
          */
         
-        private String getVariableName( DoubleScoreStatistic score, List<DoubleScoreStatistic> scores )
+        private String getVariableName( DoubleScoreComponentOuter score, List<DoubleScoreStatisticOuter> scores )
         {
             StatisticMetadata statisticMetadata = score.getMetadata();
             SampleMetadata sampleMetadata = statisticMetadata.getSampleMetadata();

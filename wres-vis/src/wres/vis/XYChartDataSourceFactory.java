@@ -31,12 +31,14 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
@@ -65,7 +67,7 @@ public abstract class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
-                                                            final BoxPlotStatistics input,
+                                                            final BoxplotStatisticOuter input,
                                                             Integer subPlotIndex,
                                                             ChronoUnit durationUnits )
     {
@@ -195,7 +197,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofPairedOutputInstantDuration( int orderIndex,
-                                           final List<PairedStatistic<Instant, Duration>> input )
+                                           final List<PairedStatisticOuter<Instant, Duration>> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -222,7 +224,7 @@ public abstract class XYChartDataSourceFactory
                     TimeSeries next =
                             new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
 
-                    List<PairedStatistic<Instant, Duration>> filtered =
+                    List<PairedStatisticOuter<Instant, Duration>> filtered =
                             Slicer.filter( input,
                                            data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
                     
@@ -231,7 +233,7 @@ public abstract class XYChartDataSourceFactory
                     Set<Instant> instants = new HashSet<>();
 
                     // Create the series
-                    for ( PairedStatistic<Instant, Duration> nextSet : filtered )
+                    for ( PairedStatisticOuter<Instant, Duration> nextSet : filtered )
                     {
                         for ( Pair<Instant, Duration> oneValue : nextSet )
                         {
@@ -284,7 +286,7 @@ public abstract class XYChartDataSourceFactory
      * @return A data source that can be used to draw the diagram.
      */
     public static DefaultXYChartDataSource ofMultiVectorOutputDiagram( final int orderIndex,
-                                                                       final List<DiagramStatistic> input,
+                                                                       final List<DiagramStatisticOuter> input,
                                                                        final MetricDimension xConstant,
                                                                        final MetricDimension yConstant,
                                                                        final String domainTitle,
@@ -348,7 +350,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofDoubleScoreOutputByPoolingWindow( final int orderIndex,
-                                                final List<DoubleScoreStatistic> input,
+                                                final List<DoubleScoreComponentOuter> input,
                                                 final ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
@@ -387,7 +389,7 @@ public abstract class XYChartDataSourceFactory
                 {
                     // Slice the data by the lead time in the window.  The resulting output will span
                     // multiple issued time windows and thresholds.
-                    List<DoubleScoreStatistic> slice = Slicer.filter( input,
+                    List<DoubleScoreComponentOuter> slice = Slicer.filter( input,
                                                                                   next -> next.getSampleMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getEarliestLeadDuration()
@@ -404,7 +406,7 @@ public abstract class XYChartDataSourceFactory
                     {
                         // Slice the data by threshold.  The resulting data will still contain potentially
                         // multiple issued time pooling windows.
-                        List<DoubleScoreStatistic> finalSlice =
+                        List<DoubleScoreComponentOuter> finalSlice =
                                 Slicer.filter( slice,
                                                next -> next.getSampleMetadata()
                                                            .getThresholds()
@@ -427,14 +429,14 @@ public abstract class XYChartDataSourceFactory
 
                         // Loop through the slice, forming a time series from the issued time pooling windows
                         // and corresponding values.
-                        for ( DoubleScoreStatistic nextDouble : finalSlice )
+                        for ( DoubleScoreComponentOuter nextDouble : finalSlice )
                         {
                             next.add( new FixedMillisecond( nextDouble.getMetadata()
                                                                       .getSampleMetadata()
                                                                       .getTimeWindow()
                                                                       .getMidPointBetweenEarliestAndLatestReferenceTimes()
                                                                       .toEpochMilli() ),
-                                      nextDouble.getData() );
+                                      nextDouble.getData().getValue() );
                         }
                         returnMe.addSeries( next );
                     }
@@ -476,7 +478,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofDoubleScoreOutputByThresholdAndLead( final int orderIndex,
-                                                   final List<DoubleScoreStatistic> input,
+                                                   final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
@@ -521,7 +523,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofDoubleScoreOutputByLeadAndThreshold( final int orderIndex,
-                                                   final List<DoubleScoreStatistic> input,
+                                                   final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input, "Specify non-null input." );
@@ -568,7 +570,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static CategoricalXYChartDataSource
             ofDurationScoreCategoricalOutput( int orderIndex,
-                                              List<DurationScoreStatistic> input )
+                                              List<DurationScoreStatisticOuter> input )
     {
         String[] xCategories = null;
         List<double[]> yAxisValuesBySeries = new ArrayList<>();
@@ -576,7 +578,7 @@ public abstract class XYChartDataSourceFactory
         boolean populateCategories = false;
 
         //Build the categories and category values to be passed into the categorical source.
-        for ( DurationScoreStatistic entry : input )
+        for ( DurationScoreStatisticOuter entry : input )
         {
             if ( xCategories == null )
             {
@@ -601,7 +603,7 @@ public abstract class XYChartDataSourceFactory
                     throw new IllegalArgumentException( "The named categories are not consistent across all provided input." );
                 }
 
-                Duration durationStat = entry.getComponent( metric ).getData();
+                Duration durationStat = MessageFactory.parse( entry.getComponent( metric ).getData().getValue() );
 
                 // Find the decimal hours
                 double doubleResult = Double.NaN;

@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -71,7 +71,7 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     @Override
-    public PairedStatistic<Instant, Duration> apply( PoolOfPairs<Double,Double> s )
+    public PairedStatisticOuter<Instant, Duration> apply( PoolOfPairs<Double,Double> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -148,7 +148,7 @@ public class TimeToPeakRelativeError extends TimingError
                                                        this.getID(),
                                                        MetricConstants.MAIN );
 
-        return PairedStatistic.of( returnMe, meta );
+        return PairedStatisticOuter.of( returnMe, meta );
     }
 
     @Override

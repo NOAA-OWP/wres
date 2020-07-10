@@ -27,8 +27,8 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -73,18 +73,18 @@ public final class BoxPlotPercentageErrorTest
                                                        MetricConstants.MAIN );
 
         //Check the results
-        BoxPlotStatistics actual = this.boxPlotPercentageError.apply( input );
+        BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
         VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
-        List<BoxPlotStatistic> expectedRaw = new ArrayList<>();
-        BoxPlotStatistic expectedValue =
-                BoxPlotStatistic.of( probabilities,
+        List<BoxplotStatistic> expectedRaw = new ArrayList<>();
+        BoxplotStatistic expectedValue =
+                BoxplotStatistic.of( probabilities,
                                      VectorOfDoubles.of( -60, -3.45251092, 1.96168504, 5.88145897, 47.61904762 ),
                                      MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                      meta );
         expectedRaw.add( expectedValue );
 
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedRaw, meta );
+        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedRaw, meta );
 
         assertEquals( expected.getData().size(), expectedRaw.size() );
 
@@ -104,7 +104,7 @@ public final class BoxPlotPercentageErrorTest
                                                        MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS,
                                                        MetricConstants.MAIN );
         //Check the results        
-        List<BoxPlotStatistic> actualRaw = new ArrayList<>();
+        List<BoxplotStatistic> actualRaw = new ArrayList<>();
 
         // Compute the metric for each duration separately
         SortedSet<Duration> durations = new TreeSet<>();
@@ -135,13 +135,13 @@ public final class BoxPlotPercentageErrorTest
             actualRaw.addAll( this.boxPlotPercentageError.apply( builder.build() ).getData() );
         }
 
-        BoxPlotStatistics actual = BoxPlotStatistics.of( actualRaw, meta );
+        BoxplotStatisticOuter actual = BoxplotStatisticOuter.of( actualRaw, meta );
 
         VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
-        List<BoxPlotStatistic> expectedRaw = new ArrayList<>();
+        List<BoxplotStatistic> expectedRaw = new ArrayList<>();
 
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -82.18077965,
                                                                   -79.77938695,
                                                                   -69.46445012,
@@ -149,7 +149,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -60.67864584 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -81.5562767,
                                                                   -79.28513708,
                                                                   -69.75900354,
@@ -157,7 +157,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -60.6431853 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -81.29240201,
                                                                   -79.25653082,
                                                                   -70.22129674,
@@ -165,7 +165,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -60.76559307 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -80.66604393,
                                                                   -78.70617858,
                                                                   -70.26934241,
@@ -173,7 +173,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -61.10862116 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -79.69309356,
                                                                   -78.11982986,
                                                                   -70.17251793,
@@ -181,7 +181,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -62.27360684 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -79.70542729,
                                                                   -78.07734424,
                                                                   -69.52150926,
@@ -189,7 +189,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -62.4829006 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -80.10315452,
                                                                   -78.3119715,
                                                                   -69.53725234,
@@ -197,7 +197,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -62.84690545 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -80.48620356,
                                                                   -78.59068418,
                                                                   -69.89792593,
@@ -205,7 +205,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -63.54643 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -80.79870347,
                                                                   -78.8235353,
                                                                   -70.23084269,
@@ -213,7 +213,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -63.63275286 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -80.70585825,
                                                                   -78.67640747,
                                                                   -70.10885291,
@@ -221,7 +221,7 @@ public final class BoxPlotPercentageErrorTest
                                                                   -62.72779147 ),
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
-        expectedRaw.add( BoxPlotStatistic.of( probabilities,
+        expectedRaw.add( BoxplotStatistic.of( probabilities,
                                               VectorOfDoubles.of( -78.91521259,
                                                                   -77.43600293,
                                                                   -70.56698806,
@@ -230,7 +230,7 @@ public final class BoxPlotPercentageErrorTest
                                               MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
                                               meta ) );
 
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedRaw, meta );
+        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedRaw, meta );
 
         assertEquals( expected.getData().size(), expectedRaw.size() );
 
@@ -244,7 +244,7 @@ public final class BoxPlotPercentageErrorTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        BoxPlotStatistics actual = this.boxPlotPercentageError.apply( input );
+        BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
 
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
                                                        0,
@@ -259,8 +259,8 @@ public final class BoxPlotPercentageErrorTest
                                                         Double.NaN,
                                                         Double.NaN );
 
-        BoxPlotStatistics expected =
-                BoxPlotStatistics.of( Collections.singletonList( BoxPlotStatistic.of( probabilities,
+        BoxplotStatisticOuter expected =
+                BoxplotStatisticOuter.of( Collections.singletonList( BoxplotStatistic.of( probabilities,
                                                                                       quantiles,
                                                                                       meta ) ),
                                       meta );

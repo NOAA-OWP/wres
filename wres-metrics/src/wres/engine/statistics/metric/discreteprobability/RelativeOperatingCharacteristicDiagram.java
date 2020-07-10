@@ -18,8 +18,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCollection;
@@ -36,7 +36,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 
 public class RelativeOperatingCharacteristicDiagram
-        extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatistic>
+        extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
 {
 
     /**
@@ -49,7 +49,7 @@ public class RelativeOperatingCharacteristicDiagram
      * Components of the ROC.
      */
 
-    private final MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> roc;
+    private final MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> roc;
 
     /**
      * Number of points in the empirical ROC diagram.
@@ -70,12 +70,13 @@ public class RelativeOperatingCharacteristicDiagram
     }
 
     @Override
-    public DiagramStatistic apply( final SampleData<Pair<Probability, Probability>> s )
+    public DiagramStatisticOuter apply( final SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
+
         //Determine the empirical ROC. 
         //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
         //2x2 contingency table, using a metric collection to compute the table only once
@@ -90,26 +91,33 @@ public class RelativeOperatingCharacteristicDiagram
         // Some data to process        
         if ( !s.getRawData().isEmpty() )
         {
-            for ( int i = 1; i < points; i++ )
+            for ( int i = 1; i < this.points; i++ )
             {
                 double prob = Precision.round( 1.0 - ( i * constant ), 5 );
                 //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
                 //according to the probability on the RHS
-                
+
                 // Tranformer from probabilities to yes/no
                 Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>> transformer =
                         in -> Pair.of( Double.compare( in.getLeft().getProbability(),
                                                        1.0 ) == 0,
                                        in.getRight().getProbability() > prob );
-                        
+
                 // Transformed pairs
                 SampleData<Pair<Boolean, Boolean>> transformed = Slicer.transform( s, transformer );
-                List<DoubleScoreStatistic> out = roc.apply( transformed );
+                List<DoubleScoreStatisticOuter> out = this.roc.apply( transformed );
+
                 //Store
-                pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION ).get( 0 ).getData();
+                pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION )
+                               .get( 0 )
+                               .getComponent( MetricConstants.MAIN )
+                               .getData()
+                               .getValue();
                 pOFD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_FALSE_DETECTION )
                                 .get( 0 )
-                                .getData();
+                                .getComponent( MetricConstants.MAIN )
+                                .getData()
+                                .getValue();
             }
 
             //Set the lower and upper margins to (0.0, 0.0) and (1.0, 1.0), respectively            
@@ -130,7 +138,7 @@ public class RelativeOperatingCharacteristicDiagram
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
-        return DiagramStatistic.of( output, metOut );
+        return DiagramStatisticOuter.of( output, metOut );
     }
 
     @Override
@@ -155,8 +163,8 @@ public class RelativeOperatingCharacteristicDiagram
             throws MetricParameterException
     {
         super();
-        roc = MetricFactory.ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
-                                                          MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
+        this.roc = MetricFactory.ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
+                                                               MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
         //Set the default points
         this.points = points;
     }

@@ -9,7 +9,7 @@ import java.util.Objects;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BoxPlotStatistics implements Statistic<List<BoxPlotStatistic>>
+public class BoxplotStatisticOuter implements Statistic<List<BoxplotStatistic>>
 {
 
     /**
@@ -22,7 +22,7 @@ public class BoxPlotStatistics implements Statistic<List<BoxPlotStatistic>>
      * The statistics.
      */
 
-    private final List<BoxPlotStatistic> statistics;
+    private final List<BoxplotStatistic> statistics;
     
     /**
      * Returns an instance from the inputs.
@@ -34,10 +34,10 @@ public class BoxPlotStatistics implements Statistic<List<BoxPlotStatistic>>
      * @return an instance of the output
      */
 
-    public static BoxPlotStatistics of( List<BoxPlotStatistic> statistics,
+    public static BoxplotStatisticOuter of( List<BoxplotStatistic> statistics,
                                         StatisticMetadata metadata )
     {
-        return new BoxPlotStatistics( statistics, metadata );
+        return new BoxplotStatisticOuter( statistics, metadata );
     }
 
     @Override
@@ -49,7 +49,7 @@ public class BoxPlotStatistics implements Statistic<List<BoxPlotStatistic>>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof BoxPlotStatistics ) )
+        if ( ! ( o instanceof BoxplotStatisticOuter ) )
         {
             return false;
         }
@@ -59,7 +59,7 @@ public class BoxPlotStatistics implements Statistic<List<BoxPlotStatistic>>
             return true;
         }
 
-        BoxPlotStatistics p = (BoxPlotStatistics) o;
+        BoxplotStatisticOuter p = (BoxplotStatisticOuter) o;
 
         if ( !this.statistics.equals( p.statistics ) )
         {
@@ -83,7 +83,7 @@ public class BoxPlotStatistics implements Statistic<List<BoxPlotStatistic>>
      * @throws NullPointerException if any input is null
      */
 
-    private BoxPlotStatistics( List<BoxPlotStatistic> statistics,
+    private BoxplotStatisticOuter( List<BoxplotStatistic> statistics,
                                StatisticMetadata metadata )
     {
         Objects.requireNonNull( metadata );
@@ -92,14 +92,14 @@ public class BoxPlotStatistics implements Statistic<List<BoxPlotStatistic>>
         this.metadata = metadata;
         this.statistics = Collections.unmodifiableList( statistics );
         
-        if ( this.statistics.contains( (BoxPlotStatistic) null ) )
+        if ( this.statistics.contains( (BoxplotStatistic) null ) )
         {
             throw new StatisticException( "Cannot build a list of box plot statistics with one or more null entries." );
         }
     }
 
     @Override
-    public List<BoxPlotStatistic> getData()
+    public List<BoxplotStatistic> getData()
     {
         return this.statistics; // Rendered immutable on construction
     }

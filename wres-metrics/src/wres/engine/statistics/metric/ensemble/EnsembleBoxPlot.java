@@ -15,8 +15,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -32,7 +32,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>>, BoxPlotStatistics>
+abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
 {
 
     /**
@@ -46,7 +46,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * Function that orders boxes.
      */
 
-    private static final Comparator<? super BoxPlotStatistic> BOX_COMPARATOR = EnsembleBoxPlot.getBoxComparator();
+    private static final Comparator<? super BoxplotStatistic> BOX_COMPARATOR = EnsembleBoxPlot.getBoxComparator();
 
     /**
      * A vector of probabilities that define the quantiles to plot.
@@ -63,17 +63,17 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract BoxPlotStatistic getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata );
+    abstract BoxplotStatistic getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata );
 
     @Override
-    public BoxPlotStatistics apply( final SampleData<Pair<Double, Ensemble>> s )
+    public BoxplotStatisticOuter apply( final SampleData<Pair<Double, Ensemble>> s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        List<BoxPlotStatistic> boxes = new ArrayList<>();
+        List<BoxplotStatistic> boxes = new ArrayList<>();
 
         StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                          this.getID(),
@@ -91,7 +91,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         // Sort the boxes by value: #70986
         boxes.sort( BOX_COMPARATOR );
 
-        return BoxPlotStatistics.of( boxes, metOut );
+        return BoxplotStatisticOuter.of( boxes, metOut );
     }
 
     @Override
@@ -159,7 +159,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * @return a function that orders boxes
      */
 
-    private static Comparator<? super BoxPlotStatistic> getBoxComparator()
+    private static Comparator<? super BoxplotStatistic> getBoxComparator()
     {
         return ( first, second ) -> {
             int returnMe = Double.compare( first.getLinkedValue(), second.getLinkedValue() );

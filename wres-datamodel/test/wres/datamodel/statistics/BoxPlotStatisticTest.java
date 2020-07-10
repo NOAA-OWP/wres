@@ -22,7 +22,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 
 /**
- * Tests the {@link BoxPlotStatistic}.
+ * Tests the {@link BoxplotStatistic}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
@@ -36,7 +36,7 @@ public final class BoxPlotStatisticTest
      * Basic instance for testing.
      */
 
-    private BoxPlotStatistic bpa = null;
+    private BoxplotStatistic bpa = null;
 
     @Before
     public void beforeEachTest()
@@ -55,11 +55,11 @@ public final class BoxPlotStatisticTest
         VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
         VectorOfDoubles qa = VectorOfDoubles.of( 1, 2, 3 );
         double la = 1;
-        bpa = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+        bpa = BoxplotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
     }
 
     /**
-     * Tests the {@link BoxPlotStatistic#equals(Object)}.
+     * Tests the {@link BoxplotStatistic#equals(Object)}.
      */
 
     @Test
@@ -84,12 +84,12 @@ public final class BoxPlotStatisticTest
         assertEquals( bpa, bpa );
 
         // Symmetric
-        BoxPlotStatistic bpb = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+        BoxplotStatistic bpb = BoxplotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
 
         assertTrue( bpa.equals( bpb ) && bpb.equals( bpa ) );
 
         // Transitive
-        BoxPlotStatistic bpc = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+        BoxplotStatistic bpc = BoxplotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
 
         assertTrue( bpa.equals( bpc ) && bpc.equals( bpb ) && bpa.equals( bpb ) );
 
@@ -103,13 +103,13 @@ public final class BoxPlotStatisticTest
 
         // Unequal probabilities        
         VectorOfDoubles pb = VectorOfDoubles.of( 0.0, 0.6, 1.0 );
-        BoxPlotStatistic bpd = BoxPlotStatistic.of( pb, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+        BoxplotStatistic bpd = BoxplotStatistic.of( pb, qa, ma, la, MetricDimension.OBSERVED_VALUE );
 
         assertThat( bpd, not( bpa ) );
 
         // Unequal quantiles
         VectorOfDoubles qb = VectorOfDoubles.of( 1, 2, 4 );
-        BoxPlotStatistic bpe = BoxPlotStatistic.of( pa, qb, ma, la, MetricDimension.OBSERVED_VALUE );
+        BoxplotStatistic bpe = BoxplotStatistic.of( pa, qb, ma, la, MetricDimension.OBSERVED_VALUE );
 
         assertThat( bpe, not( bpa ) );
 
@@ -123,21 +123,21 @@ public final class BoxPlotStatisticTest
                                                            MetricConstants.CONTINGENCY_TABLE,
                                                            MetricConstants.MAIN );
 
-        BoxPlotStatistic bpf = BoxPlotStatistic.of( pa, qa, mb, la, MetricDimension.OBSERVED_VALUE );
+        BoxplotStatistic bpf = BoxplotStatistic.of( pa, qa, mb, la, MetricDimension.OBSERVED_VALUE );
 
         assertThat( bpf, not( bpa ) );
 
         // Unequal linked values
-        BoxPlotStatistic bpg = BoxPlotStatistic.of( pa, qa, mb );
+        BoxplotStatistic bpg = BoxplotStatistic.of( pa, qa, mb );
         assertThat( bpg, not( bpa ) );
 
         // Unequal linked value type
-        BoxPlotStatistic bph = BoxPlotStatistic.of( pa, qa, mb, la, MetricDimension.FORECAST_VALUE );
+        BoxplotStatistic bph = BoxplotStatistic.of( pa, qa, mb, la, MetricDimension.FORECAST_VALUE );
         assertThat( bph, not( bpf ) );
 
         // Unequal value type
-        BoxPlotStatistic bpi =
-                BoxPlotStatistic.of( pa, qa, MetricDimension.ENSEMBLE_MEAN, mb, la, MetricDimension.FORECAST_VALUE );
+        BoxplotStatistic bpi =
+                BoxplotStatistic.of( pa, qa, MetricDimension.ENSEMBLE_MEAN, mb, la, MetricDimension.FORECAST_VALUE );
 
         assertThat( bph, not( bpi ) );
 
@@ -147,7 +147,7 @@ public final class BoxPlotStatisticTest
 
 
     /**
-     * Tests the {@link BoxPlotStatistic#hashCode()}.
+     * Tests the {@link BoxplotStatistic#hashCode()}.
      */
 
     @Test
@@ -170,7 +170,7 @@ public final class BoxPlotStatisticTest
         VectorOfDoubles pa = VectorOfDoubles.of( 0.0, 0.5, 1.0 );
         VectorOfDoubles qa = VectorOfDoubles.of( 1, 2, 3 );
         double la = 1;
-        BoxPlotStatistic bpb = BoxPlotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
+        BoxplotStatistic bpb = BoxplotStatistic.of( pa, qa, ma, la, MetricDimension.OBSERVED_VALUE );
 
         assertTrue( bpa.equals( bpb ) && bpb.equals( bpa ) && bpa.hashCode() == bpb.hashCode() );
 
@@ -183,7 +183,7 @@ public final class BoxPlotStatisticTest
     }
 
     /**
-     * Tests the {@link BoxPlotStatistic#hasLinkedValue()}
+     * Tests the {@link BoxplotStatistic#hasLinkedValue()}
      */
 
     @Test
@@ -191,7 +191,7 @@ public final class BoxPlotStatisticTest
     {
         assertTrue( bpa.hasLinkedValue() );
 
-        BoxPlotStatistic bpb = BoxPlotStatistic.of( VectorOfDoubles.of( 0.1, 0.9 ),
+        BoxplotStatistic bpb = BoxplotStatistic.of( VectorOfDoubles.of( 0.1, 0.9 ),
                                                     VectorOfDoubles.of( 1, 2 ),
                                                     StatisticMetadata.of( SampleMetadata.of(),
                                                                           10,
@@ -204,7 +204,7 @@ public final class BoxPlotStatisticTest
     }
 
     /**
-     * Tests the {@link BoxPlotStatistic#getLinkedValue()}
+     * Tests the {@link BoxplotStatistic#getLinkedValue()}
      */
 
     @Test
@@ -214,7 +214,7 @@ public final class BoxPlotStatisticTest
     }
 
     /**
-     * Tests the {@link BoxPlotStatistic#getLinkedValueType()}
+     * Tests the {@link BoxplotStatistic#getLinkedValueType()}
      */
 
     @Test
@@ -224,7 +224,7 @@ public final class BoxPlotStatisticTest
     }
 
     /**
-     * Tests the {@link BoxPlotStatistic#getValueType()}
+     * Tests the {@link BoxplotStatistic#getValueType()}
      */
 
     @Test
@@ -234,7 +234,7 @@ public final class BoxPlotStatisticTest
     }
 
     /**
-     * Tests the {@link BoxPlotStatistic#toString}
+     * Tests the {@link BoxplotStatistic#toString}
      */
 
     @Test
@@ -255,7 +255,7 @@ public final class BoxPlotStatisticTest
         exception.expect( StatisticException.class );
         exception.expectMessage( "One or more of the probabilities is out of bounds. Probabilities must be in [0,1]" );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( -0.1, 0.1 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( -0.1, 0.1 ),
                              VectorOfDoubles.of( 1, 2 ),
                              StatisticMetadata.of( SampleMetadata.of(),
                                                    10,
@@ -275,7 +275,7 @@ public final class BoxPlotStatisticTest
         exception.expect( StatisticException.class );
         exception.expectMessage( "One or more of the probabilities is out of bounds. Probabilities must be in [0,1]" );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 1.1 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 1.1 ),
                              VectorOfDoubles.of( 1, 2 ),
                              StatisticMetadata.of( SampleMetadata.of(),
                                                    10,
@@ -295,7 +295,7 @@ public final class BoxPlotStatisticTest
         exception.expect( StatisticException.class );
         exception.expectMessage( "The number of probabilities (3) does not match the number of quantiles (2)." );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.1, 0.2 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.1, 0.2 ),
                              VectorOfDoubles.of( 1, 2 ),
                              StatisticMetadata.of( SampleMetadata.of(),
                                                    10,
@@ -314,7 +314,7 @@ public final class BoxPlotStatisticTest
         exception.expect( StatisticException.class );
         exception.expectMessage( "The number of probabilities (2) does not match the number of quantiles (3)." );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.1 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.1 ),
                              VectorOfDoubles.of( 1, 2, 3 ),
                              StatisticMetadata.of( SampleMetadata.of(),
                                                    10,
@@ -333,7 +333,7 @@ public final class BoxPlotStatisticTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify non-null probabilities for the box plot statistic." );
 
-        BoxPlotStatistic.of( null,
+        BoxplotStatistic.of( null,
                              VectorOfDoubles.of( 1, 2, 3 ),
                              StatisticMetadata.of( SampleMetadata.of(),
                                                    10,
@@ -352,7 +352,7 @@ public final class BoxPlotStatisticTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify non-null quantiles for the box plot statistic." );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
                              null,
                              StatisticMetadata.of( SampleMetadata.of(),
                                                    10,
@@ -371,7 +371,7 @@ public final class BoxPlotStatisticTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify non-null metadata for the box plot statistic." );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
                              VectorOfDoubles.of( 1, 2 ),
                              null );
     }
@@ -386,7 +386,7 @@ public final class BoxPlotStatisticTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify a non-null value type for the box plot statistic." );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
                              VectorOfDoubles.of( 1, 2 ),
                              null,
                              StatisticMetadata.of( SampleMetadata.of(),
@@ -408,7 +408,7 @@ public final class BoxPlotStatisticTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify a non-null linked value type for the box plot statistic." );
 
-        BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
+        BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.9 ),
                              VectorOfDoubles.of( 1, 2 ),
                              MetricDimension.FORECAST_ERROR,
                              StatisticMetadata.of( SampleMetadata.of(),

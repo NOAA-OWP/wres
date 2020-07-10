@@ -14,7 +14,7 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -49,7 +49,7 @@ public final class DoubleErrorScoreTest
         final PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Check the results
-        final DoubleScoreStatistic actual = score.apply( input );
+        final DoubleScoreStatisticOuter actual = score.apply( input );
 
         //Check the parameters
         assertTrue( "Unexpected baseline identifier for the DoubleErrorScore.",
@@ -79,7 +79,7 @@ public final class DoubleErrorScoreTest
         {
             private ExceptionCheck()
             {
-                super( null );
+                super( null, MeanError.METRIC );
             }
 
             @Override
@@ -114,7 +114,7 @@ public final class DoubleErrorScoreTest
         {
             private ExceptionCheck()
             {
-                super( FunctionFactory.error(), null );
+                super( FunctionFactory.error(), null, MeanError.METRIC );
             }
 
             @Override
@@ -150,7 +150,7 @@ public final class DoubleErrorScoreTest
         {
             private ExceptionCheck()
             {
-                super( null, FunctionFactory.mean() );
+                super( null, FunctionFactory.mean(), MeanError.METRIC );
             }
 
             @Override

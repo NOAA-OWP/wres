@@ -10,8 +10,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
@@ -24,7 +24,7 @@ import wres.engine.statistics.metric.FunctionFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, BoxPlotStatistics>
+public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, BoxplotStatisticOuter>
 {
 
     /**
@@ -70,7 +70,7 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, BoxPl
     }
 
     @Override
-    public BoxPlotStatistics apply( final SampleData<Pair<Double, Double>> s )
+    public BoxplotStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -88,8 +88,8 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, BoxPl
         if ( s.getRawData().isEmpty() )
         {
             // Add an empty box: #62863
-            BoxPlotStatistic emptyBox = BoxPlotStatistic.of( DEFAULT_PROBABILITIES, EMPTY_BOX, metOut );
-            return BoxPlotStatistics.of( Collections.singletonList( emptyBox ), metOut );
+            BoxplotStatistic emptyBox = BoxplotStatistic.of( DEFAULT_PROBABILITIES, EMPTY_BOX, metOut );
+            return BoxplotStatisticOuter.of( Collections.singletonList( emptyBox ), metOut );
         }
 
         // Get the sorted errors
@@ -104,10 +104,10 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, BoxPl
                       .map( ROUNDER )
                       .toArray();
 
-        BoxPlotStatistic statistic = BoxPlotStatistic.of( this.getProbabilities(),
+        BoxplotStatistic statistic = BoxplotStatistic.of( this.getProbabilities(),
                                                           VectorOfDoubles.of( box ),
                                                           metOut );
-        return BoxPlotStatistics.of( Collections.singletonList( statistic ),
+        return BoxplotStatisticOuter.of( Collections.singletonList( statistic ),
                                      metOut );
     }
 

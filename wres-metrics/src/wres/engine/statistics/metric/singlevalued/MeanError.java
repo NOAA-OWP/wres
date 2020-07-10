@@ -4,6 +4,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
@@ -13,6 +17,20 @@ import wres.datamodel.sampledata.SampleData;
  */
 public class MeanError extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
 {
+    
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.MEAN_ERROR )
+                             .build();
     
     /**
      * Returns an instance.
@@ -49,7 +67,7 @@ public class MeanError extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
 
     private MeanError()
     {
-        super();
+        super( MeanError.METRIC );
     }
 
 }

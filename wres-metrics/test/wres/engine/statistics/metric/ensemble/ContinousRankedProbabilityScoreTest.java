@@ -22,9 +22,13 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.categorical.ThreatScore;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link ContinuousRankedProbabilityScore}.
@@ -74,8 +78,20 @@ public final class ContinousRankedProbabilityScoreTest
                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                            MetricConstants.MAIN );
         //Check the results       
-        final DoubleScoreStatistic actual = crps.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 7.63, m1 );
+        DoubleScoreStatisticOuter actual = this.crps.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 7.63 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -99,14 +115,27 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                     MetricConstants.MAIN );
+
         //Check the results       
-        DoubleScoreStatistic actual = crps.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 8.734401927437641, m1 );
+        DoubleScoreStatisticOuter actual = this.crps.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 8.734401927437641 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
 
     }
@@ -125,14 +154,26 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                     MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreStatistic actual = crps.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 13.36, m1 );
+        DoubleScoreStatisticOuter actual = this.crps.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 13.36 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -152,14 +193,26 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                     MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreStatistic actual = crps.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 4.56, m1 );
+        DoubleScoreStatisticOuter actual = this.crps.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 4.56 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -176,9 +229,9 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = crps.apply( input );
+        DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**

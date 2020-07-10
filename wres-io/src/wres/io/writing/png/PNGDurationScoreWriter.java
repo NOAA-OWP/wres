@@ -21,7 +21,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
@@ -29,13 +29,13 @@ import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link DurationScoreStatistic} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DurationScoreStatisticOuter} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDurationScoreWriter extends PNGWriter
-        implements Consumer<List<DurationScoreStatistic>>,
+        implements Consumer<List<DurationScoreStatisticOuter>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -72,7 +72,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final List<DurationScoreStatistic> output )
+    public void accept( final List<DurationScoreStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -87,15 +87,15 @@ public class PNGDurationScoreWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                List<DurationScoreStatistic> filtered = Slicer.filter( output, next );
+                List<DurationScoreStatisticOuter> filtered = Slicer.filter( output, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<DurationScoreStatistic>> groups =
+                Map<LeftOrRightOrBaseline, List<DurationScoreStatisticOuter>> groups =
                         WriterHelper.getStatisticsGroupedByContext( filtered );
 
-                for ( List<DurationScoreStatistic> nextGroup : groups.values() )
+                for ( List<DurationScoreStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
                             PNGDurationScoreWriter.writeScoreCharts( super.getSystemSettings(),
@@ -123,7 +123,7 @@ public class PNGDurationScoreWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link DurationScoreStatistic} for a single metric and time window,
+     * Writes a set of charts associated with {@link DurationScoreStatisticOuter} for a single metric and time window,
      * stored in a {@link List}.
      *
      * @param systemSettings The system settings to use.
@@ -140,7 +140,7 @@ public class PNGDurationScoreWriter extends PNGWriter
                                                Path outputDirectory,
                                                ProjectConfigPlus projectConfigPlus,
                                                DestinationConfig destinationConfig,
-                                               List<DurationScoreStatistic> output,
+                                               List<DurationScoreStatisticOuter> output,
                                                ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();

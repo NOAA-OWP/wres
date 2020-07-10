@@ -20,7 +20,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 
 /**
- * Tests the {@link DiagramStatistic}.
+ * Tests the {@link DiagramStatisticOuter}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
@@ -31,7 +31,7 @@ public final class DiagramStatisticTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Constructs a {@link DiagramStatistic} and tests for equality with another {@link DiagramStatistic}.
+     * Constructs a {@link DiagramStatisticOuter} and tests for equality with another {@link DiagramStatisticOuter}.
      */
 
     @Test
@@ -73,15 +73,15 @@ public final class DiagramStatisticTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
-        final DiagramStatistic s = DiagramStatistic.of( mva, m1 );
-        final DiagramStatistic t = DiagramStatistic.of( mvb, m1 );
+        final DiagramStatisticOuter s = DiagramStatisticOuter.of( mva, m1 );
+        final DiagramStatisticOuter t = DiagramStatisticOuter.of( mvb, m1 );
         assertTrue( s.equals( t ) );
         assertNotEquals( null, s );
         assertNotEquals( Double.valueOf( 1.0 ), s );
-        assertTrue( !s.equals( DiagramStatistic.of( mvc, m1 ) ) );
-        assertTrue( !s.equals( DiagramStatistic.of( mvc, m2 ) ) );
-        final DiagramStatistic q = DiagramStatistic.of( mva, m2 );
-        final DiagramStatistic r = DiagramStatistic.of( mvb, m3 );
+        assertTrue( !s.equals( DiagramStatisticOuter.of( mvc, m1 ) ) );
+        assertTrue( !s.equals( DiagramStatisticOuter.of( mvc, m2 ) ) );
+        final DiagramStatisticOuter q = DiagramStatisticOuter.of( mva, m2 );
+        final DiagramStatisticOuter r = DiagramStatisticOuter.of( mvb, m3 );
         assertTrue( q.equals( q ) );
         assertFalse( s.equals( q ) );
         assertFalse( q.equals( s ) );
@@ -89,7 +89,7 @@ public final class DiagramStatisticTest
     }
 
     /**
-     * Constructs a {@link DiagramStatistic} and checks the {@link DiagramStatistic#getMetadata()}.
+     * Constructs a {@link DiagramStatisticOuter} and checks the {@link DiagramStatisticOuter#getMetadata()}.
      */
 
     @Test
@@ -116,13 +116,13 @@ public final class DiagramStatisticTest
         Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
-        final DiagramStatistic q = DiagramStatistic.of( mva, m1 );
-        final DiagramStatistic r = DiagramStatistic.of( mva, m2 );
+        final DiagramStatisticOuter q = DiagramStatisticOuter.of( mva, m1 );
+        final DiagramStatisticOuter r = DiagramStatisticOuter.of( mva, m2 );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
     /**
-     * Constructs a {@link DiagramStatistic} and checks the {@link DiagramStatistic#hashCode()}.
+     * Constructs a {@link DiagramStatisticOuter} and checks the {@link DiagramStatisticOuter#hashCode()}.
      */
 
     @Test
@@ -165,15 +165,15 @@ public final class DiagramStatisticTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) );
-        final DiagramStatistic q = DiagramStatistic.of( mva, m1 );
-        final DiagramStatistic r = DiagramStatistic.of( mvb, m2 );
-        final DiagramStatistic s = DiagramStatistic.of( mvc, m3 );
+        final DiagramStatisticOuter q = DiagramStatisticOuter.of( mva, m1 );
+        final DiagramStatisticOuter r = DiagramStatisticOuter.of( mvb, m2 );
+        final DiagramStatisticOuter s = DiagramStatisticOuter.of( mvc, m3 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.", q.hashCode() != s.hashCode() );
     }
 
     /**
-     * Constructs a {@link DiagramStatistic} and checks the accessor methods for correct operation.
+     * Constructs a {@link DiagramStatisticOuter} and checks the accessor methods for correct operation.
      */
 
     @Test
@@ -191,7 +191,7 @@ public final class DiagramStatisticTest
         Map<MetricDimension, VectorOfDoubles> mva = new EnumMap<>( MetricDimension.class );
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( 0.1, 0.2, 0.3, 0.4 ) );
-        final DiagramStatistic s = DiagramStatistic.of( mva, m1 );
+        final DiagramStatisticOuter s = DiagramStatisticOuter.of( mva, m1 );
         assertTrue( "Expected a " + MetricDimension.PROBABILITY_OF_DETECTION
                     + ".",
                     s.containsKey( MetricDimension.PROBABILITY_OF_DETECTION ) );
@@ -222,7 +222,7 @@ public final class DiagramStatisticTest
 
         exception.expect( StatisticException.class );
 
-        DiagramStatistic.of( null, m1 );
+        DiagramStatisticOuter.of( null, m1 );
 
     }
 
@@ -238,7 +238,7 @@ public final class DiagramStatisticTest
 
         exception.expect( StatisticException.class );
 
-        DiagramStatistic.of( mva, null );
+        DiagramStatisticOuter.of( mva, null );
 
     }
 
@@ -258,7 +258,7 @@ public final class DiagramStatisticTest
 
         exception.expect( StatisticException.class );
 
-        DiagramStatistic.of( mva, m1 );
+        DiagramStatisticOuter.of( mva, m1 );
 
     }
 

@@ -9,7 +9,8 @@ import java.util.SortedSet;
 import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
@@ -23,7 +24,7 @@ import wres.util.TimeHelper;
  */
 
 public class ScoreOutputByThresholdAndLeadXYDataset extends
-        WRESAbstractXYDataset<List<List<DoubleScoreStatistic>>, List<DoubleScoreStatistic>>
+        WRESAbstractXYDataset<List<List<DoubleScoreComponentOuter>>, List<DoubleScoreComponentOuter>>
 {
     private static final long serialVersionUID = 1598160458133121056L;
 
@@ -41,7 +42,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      * @throws NullPointerException if any input is null
      */
 
-    public ScoreOutputByThresholdAndLeadXYDataset( final List<DoubleScoreStatistic> input,
+    public ScoreOutputByThresholdAndLeadXYDataset( final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
     {
         super( input );
@@ -70,13 +71,13 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
      * @param rawData the input data must be of type {@link List} with generic
-     *            {@link DoubleScoreStatistic}.
+     *            {@link DoubleScoreComponentOuter}.
      */
     @Override
-    protected void preparePlotData( final List<DoubleScoreStatistic> rawData )
+    protected void preparePlotData( final List<DoubleScoreComponentOuter> rawData )
     {
         //Cast the raw data input and check the size.
-        final List<List<DoubleScoreStatistic>> data = new ArrayList<>();
+        final List<List<DoubleScoreComponentOuter>> data = new ArrayList<>();
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( final TimeWindowOuter lead : timeWindows )
@@ -120,7 +121,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         {
             return null;
         }
-        return getPlotData().get(series).get(item).getData();
+        return getPlotData().get(series).get(item).getData().getValue();
     }
 
     @Override

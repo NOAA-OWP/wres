@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -21,9 +22,12 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link BrierSkillScore}.
@@ -57,7 +61,7 @@ public final class BrierSkillScoreTest
     public void testApplyWithSuppliedBaseline()
     {
         // Generate some data
-        SampleData<Pair<Probability,Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
+        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         // Metadata for the output
         StatisticMetadata m1 =
@@ -65,20 +69,28 @@ public final class BrierSkillScoreTest
                                                          DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                "SQIN",
                                                                                "HEFS",
-                                                                               "ESP") ),
+                                                                               "ESP" ) ),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.BRIER_SKILL_SCORE,
                                       MetricConstants.MAIN );
 
         // Check the results       
-        final DoubleScoreStatistic actual = brierSkillScore.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.11363636363636376, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.11363636363636376 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( BrierSkillScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -90,7 +102,7 @@ public final class BrierSkillScoreTest
     public void testApplyWithClimatologicalBaseline()
     {
         // Generate some data
-        SampleData<Pair<Probability,Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
+        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
         StatisticMetadata m1 =
@@ -104,13 +116,21 @@ public final class BrierSkillScoreTest
                                       MetricConstants.MAIN );
 
         // Check the results       
-        final DoubleScoreStatistic actual = brierSkillScore.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( -0.040000000000000036, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( -0.040000000000000036 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( BrierSkillScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
 
@@ -122,12 +142,12 @@ public final class BrierSkillScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Probability,Probability>> input =
+        SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = brierSkillScore.apply( input );
+        DoubleScoreStatisticOuter actual = brierSkillScore.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -212,8 +232,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testApplyNaNOutputWithNaNBaseline()
     {
-        assertTrue( "Expected NaN for a forecast with only non-occurrences as the baseline.",
-                    Double.isNaN( brierSkillScore.apply( MetricTestDataFactory.getDiscreteProbabilityPairsFour() )
-                                                 .getData() ) );
+        assertEquals( Double.NaN,  this.brierSkillScore.apply( MetricTestDataFactory.getDiscreteProbabilityPairsFour() )
+                      .getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 }

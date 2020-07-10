@@ -13,7 +13,7 @@ import wres.datamodel.statistics.ScoreStatistic;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,T>> extends Metric<S,T>
+public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,?>> extends Metric<S,T>
 {
 
     /**

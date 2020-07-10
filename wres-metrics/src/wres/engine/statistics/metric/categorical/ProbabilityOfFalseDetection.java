@@ -4,8 +4,14 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * The Probability of False Detection (PoD) measures the fraction of observed non-occurrences that were false alarms.
@@ -14,37 +20,64 @@ import wres.engine.statistics.metric.FunctionFactory;
  */
 public class ProbabilityOfFalseDetection extends ContingencyTableScore
 {
+    
+    /**
+     * Canonical description of the metric.
+     */
 
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.PROBABILITY_OF_FALSE_DETECTION )
+                             .build();
+    
     /**
      * Returns an instance.
      * 
      * @return an instance
      */
-    
+
     public static ProbabilityOfFalseDetection of()
     {
         return new ProbabilityOfFalseDetection();
     }
-    
+
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Boolean,Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Boolean, Boolean>> s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( final DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output )
     {
         this.is2x2ContingencyTable( output, this );
 
         double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
-                          .getData();
+                          .getData()
+                          .getValue();
 
         double tN = output.getComponent( MetricConstants.TRUE_NEGATIVES )
-                          .getData();
+                          .getData()
+                          .getValue();
 
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( fP / ( fP + tN ) );
-        return DoubleScoreStatistic.of( result, getMetadata( output ) );
+        
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ProbabilityOfFalseDetection.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, getMetadata( output ) );
     }
 
     @Override

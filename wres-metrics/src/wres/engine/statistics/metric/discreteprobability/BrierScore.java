@@ -9,11 +9,18 @@ import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.ProbabilityScore;
+import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>
@@ -30,8 +37,22 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
  * @author james.brown@hydrosolved.com
  */
 public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, Probability>>>
-        implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatistic>
+        implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
 {
+    
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.BRIER_SCORE )
+                             .build();
 
     /**
      * Returns an instance.
@@ -51,7 +72,7 @@ public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, P
     private final MeanSquareError mse;
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Probability, Probability>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -71,7 +92,23 @@ public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, P
                                   pair -> Pair.of( pair.getLeft().getProbability(),
                                                    pair.getRight().getProbability() ) );
 
-        return DoubleScoreStatistic.of( mse.apply( transformed ).getData(), metOut );
+
+        double result = this.mse.apply( transformed )
+                                .getComponent( MetricConstants.MAIN )
+                                .getData()
+                                .getValue();
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( BrierScore.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override
@@ -114,7 +151,7 @@ public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, P
     {
         super();
 
-        mse = MeanSquareError.of();
+        this.mse = MeanSquareError.of();
     }
 
 }

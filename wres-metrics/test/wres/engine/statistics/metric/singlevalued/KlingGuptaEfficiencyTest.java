@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -25,10 +26,13 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link KlingGuptaEfficiency}.
@@ -60,31 +64,38 @@ public final class KlingGuptaEfficiencyTest
 
         //Metadata for the output
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           Duration.ofHours( 24 ) );
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     Duration.ofHours( 24 ) );
         final TimeWindowOuter timeWindow = window;
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                       "QME",
-                                                                                                       "NVE" ) )
-                                                                 .setTimeWindow( timeWindow )
-                                                                 .build(),
+                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                         "QME",
+                                                                                         "NVE" ) )
+                                                   .setTimeWindow( timeWindow )
+                                                   .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.KLING_GUPTA_EFFICIENCY,
                                       MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = kge.apply( input );
+        DoubleScoreStatisticOuter actual = kge.apply( input );
 
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8921704394462281, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.8921704394462281 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( KlingGuptaEfficiency.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -92,21 +103,28 @@ public final class KlingGuptaEfficiencyTest
     {
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                                     MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = kge.apply( input );
+        DoubleScoreStatisticOuter actual = this.kge.apply( input );
 
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9432025316651065, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.9432025316651065 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( KlingGuptaEfficiency.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -116,9 +134,9 @@ public final class KlingGuptaEfficiencyTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = kge.apply( input );
+        DoubleScoreStatisticOuter actual = kge.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test

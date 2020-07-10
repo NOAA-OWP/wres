@@ -28,8 +28,8 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -98,18 +98,18 @@ public final class BoxPlotErrorByObservedTest
                                       MetricConstants.MAIN );
 
         //Compute normally
-        final BoxPlotStatistics actual = bpe.apply( input );
+        final BoxplotStatisticOuter actual = bpe.apply( input );
 
-        final BoxPlotStatistic expectedBox =
-                BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
+        final BoxplotStatistic expectedBox =
+                BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                      VectorOfDoubles.of( -50.0, -37.5, 0.0, 37.5, 50.0 ),
                                      m1,
                                      50.0,
                                      MetricDimension.OBSERVED_VALUE );
         
-        List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
+        List<BoxplotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
         
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
+        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBoxes, m1 );
 
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
@@ -128,7 +128,7 @@ public final class BoxPlotErrorByObservedTest
         SampleData<Pair<Double,Ensemble>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        BoxPlotStatistics actual = bpe.apply( input );
+        BoxplotStatisticOuter actual = bpe.apply( input );
 
         assertTrue( actual.getData().equals( Arrays.asList() ) );
     }

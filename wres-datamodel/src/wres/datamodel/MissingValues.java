@@ -22,6 +22,12 @@ public class MissingValues
      */
 
     public static final double DOUBLE = Double.NaN;
+    
+    /**
+     * Default missing string.
+     */
+    
+    public static final String STRING = "NA";
 
     /**
      * Do not construct.

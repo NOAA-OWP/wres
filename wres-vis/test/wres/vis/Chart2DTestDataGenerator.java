@@ -33,35 +33,44 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
+
 
 public abstract class Chart2DTestDataGenerator
 {
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the CRPSS for a
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for a
      * subset of thresholds and forecast lead times. Reads the input data from
      * {@link #getScalarMetricOutputMapByLeadThreshold()} and slices.
      *
      * @return an output map of verification scores
      */
 
-    public static List<DoubleScoreStatistic> getMetricOutputMapByLeadThresholdOne()
+    public static List<DoubleScoreStatisticOuter> getMetricOutputMapByLeadThresholdOne()
             throws IOException
     {
-        List<DoubleScoreStatistic> full = getScalarMetricOutputMapByLeadThreshold();
-        List<DoubleScoreStatistic> statistics = new ArrayList<>();
+        List<DoubleScoreStatisticOuter> full = getScalarMetricOutputMapByLeadThreshold();
+        List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
 
         double[][] allow =
                 new double[][] { { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY }, { 0.5, 2707.5 },
@@ -70,51 +79,53 @@ public abstract class Chart2DTestDataGenerator
         {
             OneOrTwoThresholds filter =
                     OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
-                                                                          OneOrTwoDoubles.of( next[0] ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT ) );
-            Slicer.filter( full, data -> data.getSampleMetadata().getThresholds().equals( filter ) ).forEach( statistics::add );
+                                                                               OneOrTwoDoubles.of( next[0] ),
+                                                                               Operator.GREATER,
+                                                                               ThresholdDataType.LEFT ) );
+            Slicer.filter( full, data -> data.getSampleMetadata().getThresholds().equals( filter ) )
+                  .forEach( statistics::add );
         }
 
         return Collections.unmodifiableList( statistics );
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the CRPSS for a
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for a
      * subset of thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
      * and slices.
      *
      * @return an output map of verification scores
      */
-    public static List<DoubleScoreStatistic> getMetricOutputMapByLeadThresholdTwo()
+    public static List<DoubleScoreStatisticOuter> getMetricOutputMapByLeadThresholdTwo()
             throws IOException
     {
-        List<DoubleScoreStatistic> full = getScalarMetricOutputMapByLeadThreshold();
-        List<DoubleScoreStatistic> statistics = new ArrayList<>();
+        List<DoubleScoreStatisticOuter> full = getScalarMetricOutputMapByLeadThreshold();
+        List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
 
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
             TimeWindowOuter filter = TimeWindowOuter.of( Instant.MIN,
-                                               Instant.MAX,
-                                               Duration.ofHours( next ) );
-            Slicer.filter( full, data -> data.getSampleMetadata().getTimeWindow().equals( filter ) ).forEach( statistics::add );
+                                                         Instant.MAX,
+                                                         Duration.ofHours( next ) );
+            Slicer.filter( full, data -> data.getSampleMetadata().getTimeWindow().equals( filter ) )
+                  .forEach( statistics::add );
         }
 
         return Collections.unmodifiableList( statistics );
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the CRPSS for various
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
-    static List<DoubleScoreStatistic> getScalarMetricOutputMapByLeadThreshold()
+    static List<DoubleScoreStatisticOuter> getScalarMetricOutputMapByLeadThreshold()
             throws IOException
     {
-        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
+        final List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -146,23 +157,33 @@ public abstract class Chart2DTestDataGenerator
                 final double[] probConstants = f.getParVal().getConstants();
                 final OneOrTwoThresholds q =
                         OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                              OneOrTwoDoubles.of( probConstants[0] ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                                   OneOrTwoDoubles.of( probConstants[0] ),
+                                                                                   Operator.GREATER,
+                                                                                   ThresholdDataType.LEFT ) );
                 TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                   Instant.MAX,
-                                                   Duration.ofHours( (long) leadTime ) );
+                                                             Instant.MAX,
+                                                             Duration.ofHours( (long) leadTime ) );
 
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
                 final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                final DoubleScoreStatistic value =
-                        DoubleScoreStatistic.of( res[0],
-                                                 StatisticMetadata.of( SampleMetadata.of( source, window, q ),
-                                                                       1000,
-                                                                       MeasurementUnit.of(),
-                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                       MetricConstants.MAIN ) );
+
+                DoubleScoreStatistic one =
+                        DoubleScoreStatistic.newBuilder()
+                                            .setMetric( DoubleScoreMetric.newBuilder()
+                                                                         .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
+                                            .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                         .setValue( res[0] )
+                                                                                         .setName( ComponentName.MAIN ) )
+                                            .build();
+
+                final DoubleScoreStatisticOuter value =
+                        DoubleScoreStatisticOuter.of( one,
+                                                      StatisticMetadata.of( SampleMetadata.of( source, window, q ),
+                                                                            1000,
+                                                                            MeasurementUnit.of(),
+                                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                            MetricConstants.MAIN ) );
 
                 //Append result
                 rawData.add( value );
@@ -173,16 +194,16 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the CRPSS for
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
-    static List<DoubleScoreStatistic> getScoreMetricOutputMapByLeadThreshold()
+    static List<DoubleScoreStatisticOuter> getScoreMetricOutputMapByLeadThreshold()
             throws IOException
     {
-        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
+        final List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -213,23 +234,33 @@ public abstract class Chart2DTestDataGenerator
                 final double[] probConstants = f.getParVal().getConstants();
                 final OneOrTwoThresholds q =
                         OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                              OneOrTwoDoubles.of( probConstants[0] ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ) );
+                                                                                   OneOrTwoDoubles.of( probConstants[0] ),
+                                                                                   Operator.GREATER,
+                                                                                   ThresholdDataType.LEFT ) );
                 TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                   Instant.MAX,
-                                                   Duration.ofHours( (long) leadTime ) );
+                                                             Instant.MAX,
+                                                             Duration.ofHours( (long) leadTime ) );
 
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
                 final double res = ( (DoubleMatrix1DResult) result ).getResult().toArray()[0];
-                final DoubleScoreStatistic value =
-                        DoubleScoreStatistic.of( res,
-                                                 StatisticMetadata.of( SampleMetadata.of( source, window, q ),
-                                                                       1000,
-                                                                       MeasurementUnit.of(),
-                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                       MetricConstants.MAIN ) );
+
+                DoubleScoreStatistic one =
+                        DoubleScoreStatistic.newBuilder()
+                                            .setMetric( DoubleScoreMetric.newBuilder()
+                                                                         .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
+                                            .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                         .setValue( res )
+                                                                                         .setName( ComponentName.MAIN ) )
+                                            .build();
+
+                final DoubleScoreStatisticOuter value =
+                        DoubleScoreStatisticOuter.of( one,
+                                                      StatisticMetadata.of( SampleMetadata.of( source, window, q ),
+                                                                            1000,
+                                                                            MeasurementUnit.of(),
+                                                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                            MetricConstants.MAIN ) );
 
                 //Append result
                 rawData.add( value );
@@ -240,17 +271,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DiagramStatistic} that contains the components of the
+     * Returns a {@link List} of {@link DiagramStatisticOuter} that contains the components of the
      * reliability diagram (forecast probabilities, observed given forecast probabilities, and sample sizes) for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml.
      *
      * @return an output map of reliability diagrams
      */
-    static List<DiagramStatistic> getReliabilityDiagramByLeadThreshold()
+    static List<DiagramStatisticOuter> getReliabilityDiagramByLeadThreshold()
             throws IOException
     {
-        final List<DiagramStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatisticOuter> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<ThresholdOuter> allowed = new ArrayList<>();
         final double[][] allow =
@@ -258,9 +289,9 @@ public abstract class Chart2DTestDataGenerator
         for ( final double[] next : allow )
         {
             allowed.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
-                                                        OneOrTwoDoubles.of( next[0] ),
-                                                        Operator.GREATER,
-                                                        ThresholdDataType.LEFT ) );
+                                                             OneOrTwoDoubles.of( next[0] ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT ) );
         }
 
         //Create the input file
@@ -301,15 +332,15 @@ public abstract class Chart2DTestDataGenerator
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final ThresholdOuter q = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                   OneOrTwoDoubles.of( probConstants[0] ),
-                                                                   Operator.GREATER,
-                                                                   ThresholdDataType.LEFT );
+                                                                             OneOrTwoDoubles.of( probConstants[0] ),
+                                                                             Operator.GREATER,
+                                                                             ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
                     TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                       Instant.MAX,
-                                                       Duration.ofHours( (long) leadTime ) );
+                                                                 Instant.MAX,
+                                                                 Duration.ofHours( (long) leadTime ) );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
@@ -338,15 +369,15 @@ public abstract class Chart2DTestDataGenerator
                     output.put( MetricDimension.FORECAST_PROBABILITY, VectorOfDoubles.of( res[0] ) ); //Forecast probabilities
                     output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( res[1] ) ); //Observed | forecast probabilities
                     output.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( res[2] ) ); //Observed | forecast probabilities
-                    final DiagramStatistic value =
-                            DiagramStatistic.of( output,
-                                                 StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                          window,
-                                                                                          OneOrTwoThresholds.of( q ) ),
-                                                                       1000,
-                                                                       MeasurementUnit.of(),
-                                                                       MetricConstants.RELIABILITY_DIAGRAM,
-                                                                       MetricConstants.MAIN ) );
+                    final DiagramStatisticOuter value =
+                            DiagramStatisticOuter.of( output,
+                                                      StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                               window,
+                                                                                               OneOrTwoThresholds.of( q ) ),
+                                                                            1000,
+                                                                            MeasurementUnit.of(),
+                                                                            MetricConstants.RELIABILITY_DIAGRAM,
+                                                                            MetricConstants.MAIN ) );
 
                     //Append result
                     rawData.add( value );
@@ -359,7 +390,7 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DiagramStatistic} that contains the components of the
+     * Returns a {@link List} of {@link DiagramStatisticOuter} that contains the components of the
      * Relative Operating Characteristic (ROC) diagram (probability of detection and probability of false detection) for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getROCDiagramByLeadThreshold.xml.
@@ -367,10 +398,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of ROC diagrams
      */
 
-    static List<DiagramStatistic> getROCDiagramByLeadThreshold()
+    static List<DiagramStatisticOuter> getROCDiagramByLeadThreshold()
             throws IOException
     {
-        final List<DiagramStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatisticOuter> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<ThresholdOuter> allowed = new ArrayList<>();
         final double[][] allow =
@@ -378,9 +409,9 @@ public abstract class Chart2DTestDataGenerator
         for ( final double[] next : allow )
         {
             allowed.add( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
-                                                        OneOrTwoDoubles.of( next[0] ),
-                                                        Operator.GREATER,
-                                                        ThresholdDataType.LEFT ) );
+                                                             OneOrTwoDoubles.of( next[0] ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT ) );
         }
 
         //Create the input file
@@ -411,15 +442,15 @@ public abstract class Chart2DTestDataGenerator
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final ThresholdOuter q = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                   OneOrTwoDoubles.of( probConstants[0] ),
-                                                                   Operator.GREATER,
-                                                                   ThresholdDataType.LEFT );
+                                                                             OneOrTwoDoubles.of( probConstants[0] ),
+                                                                             Operator.GREATER,
+                                                                             ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
                     TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                       Instant.MAX,
-                                                       Duration.ofHours( (long) leadTime ) );
+                                                                 Instant.MAX,
+                                                                 Duration.ofHours( (long) leadTime ) );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
@@ -440,15 +471,15 @@ public abstract class Chart2DTestDataGenerator
                     final Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
                     output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( roc[0] ) ); //PoFD
                     output.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( roc[1] ) ); //PoD
-                    final DiagramStatistic value =
-                            DiagramStatistic.of( output,
-                                                 StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                          window,
-                                                                                          OneOrTwoThresholds.of( q ) ),
-                                                                       1000,
-                                                                       MeasurementUnit.of(),
-                                                                       MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                                       MetricConstants.MAIN ) );
+                    final DiagramStatisticOuter value =
+                            DiagramStatisticOuter.of( output,
+                                                      StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                               window,
+                                                                                               OneOrTwoThresholds.of( q ) ),
+                                                                            1000,
+                                                                            MeasurementUnit.of(),
+                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                                            MetricConstants.MAIN ) );
 
                     //Append result
                     rawData.add( value );
@@ -461,7 +492,7 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DiagramStatistic} that contains the components of the
+     * Returns a {@link List} of {@link DiagramStatisticOuter} that contains the components of the
      * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and
      * the relative frequency of observations that fall within each gap. The results include various thresholds and
      * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
@@ -469,10 +500,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of rank histograms
      */
 
-    static List<DiagramStatistic> getRankHistogramByLeadThreshold()
+    static List<DiagramStatisticOuter> getRankHistogramByLeadThreshold()
             throws IOException
     {
-        final List<DiagramStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatisticOuter> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getRankHistogramByLeadThreshold.xml" );
@@ -509,12 +540,12 @@ public abstract class Chart2DTestDataGenerator
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final ThresholdOuter q = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                   OneOrTwoDoubles.of( probConstants[0] ),
-                                                                   Operator.GREATER,
-                                                                   ThresholdDataType.LEFT );
+                                                                             OneOrTwoDoubles.of( probConstants[0] ),
+                                                                             Operator.GREATER,
+                                                                             ThresholdDataType.LEFT );
                 TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                   Instant.MAX,
-                                                   Duration.ofHours( (long) leadTime ) );
+                                                             Instant.MAX,
+                                                             Duration.ofHours( (long) leadTime ) );
 
                 //Build the result
                 final MetricResult result = t.getResult( f );
@@ -535,15 +566,15 @@ public abstract class Chart2DTestDataGenerator
                 final Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
                 output.put( MetricDimension.RANK_ORDER, VectorOfDoubles.of( rh[0] ) );
                 output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( rh[1] ) );
-                final DiagramStatistic value =
-                        DiagramStatistic.of( output,
-                                             StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                      window,
-                                                                                      OneOrTwoThresholds.of( q ) ),
-                                                                   1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.RANK_HISTOGRAM,
-                                                                   MetricConstants.MAIN ) );
+                final DiagramStatisticOuter value =
+                        DiagramStatisticOuter.of( output,
+                                                  StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                           window,
+                                                                                           OneOrTwoThresholds.of( q ) ),
+                                                                        1000,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.RANK_HISTOGRAM,
+                                                                        MetricConstants.MAIN ) );
 
                 //Append result
                 rawData.add( value );
@@ -555,17 +586,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DiagramStatistic} that contains the components of the
+     * Returns a {@link List} of {@link DiagramStatisticOuter} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
      * times. Reads the input data from testinput/chart2DTest/getQQDiagramByLeadThreshold.xml.
      *
      * @return an output map of QQ diagrams
      */
 
-    static List<DiagramStatistic> getQQDiagramByLeadThreshold()
+    static List<DiagramStatisticOuter> getQQDiagramByLeadThreshold()
             throws IOException
     {
-        final List<DiagramStatistic> rawData = new ArrayList<>();
+        final List<DiagramStatisticOuter> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getQQDiagramByLeadThreshold.xml" );
@@ -575,26 +606,26 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         TimeWindowOuter windowMeta = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                               Instant.parse( "2015-12-31T11:59:59Z" ),
-                                               Duration.ofHours( 24 ),
-                                               Duration.ofHours( 120 ) );
+                                                         Instant.parse( "2015-12-31T11:59:59Z" ),
+                                                         Duration.ofHours( 24 ),
+                                                         Duration.ofHours( 120 ) );
         final TimeWindowOuter timeWindow = windowMeta;
-        
+
         //Source metadata
         final SampleMetadata source =
                 new Builder().setMeasurementUnit( MeasurementUnit.of( "MILLIMETER" ) )
-                                           .setIdentifier( DatasetIdentifier.of( Location.of( "WGCM8" ),
-                                                                                 "PRECIPITATION",
-                                                                                 "HEFS" ) )
-                                           .setTimeWindow( timeWindow )
-                                           .build();
+                             .setIdentifier( DatasetIdentifier.of( Location.of( "WGCM8" ),
+                                                                   "PRECIPITATION",
+                                                                   "HEFS" ) )
+                             .setTimeWindow( timeWindow )
+                             .build();
 
         //Single threshold
         final OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      Operator.GREATER,
-                                                                      ThresholdDataType.LEFT ) );
+                                                                           OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -603,8 +634,8 @@ public abstract class Chart2DTestDataGenerator
             //Set the lead time
             final double leadTime = (Double) d.next().getKey();
             TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                               Instant.parse( "2015-12-31T11:59:59Z" ),
-                                               Duration.ofHours( (long) leadTime ) );
+                                                         Instant.parse( "2015-12-31T11:59:59Z" ),
+                                                         Duration.ofHours( (long) leadTime ) );
 
             final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
             final double[][] qq = t.getResult().toArray();
@@ -612,15 +643,15 @@ public abstract class Chart2DTestDataGenerator
             final Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
             output.put( MetricDimension.PREDICTED_QUANTILES, VectorOfDoubles.of( qq[0] ) );
             output.put( MetricDimension.OBSERVED_QUANTILES, VectorOfDoubles.of( qq[1] ) );
-            final DiagramStatistic value =
-                    DiagramStatistic.of( output,
-                                         StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                  window,
-                                                                                  threshold ),
-                                                               1000,
-                                                               MeasurementUnit.of( "MILLIMETER" ),
-                                                               MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                               MetricConstants.MAIN ) );
+            final DiagramStatisticOuter value =
+                    DiagramStatisticOuter.of( output,
+                                              StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                       window,
+                                                                                       threshold ),
+                                                                    1000,
+                                                                    MeasurementUnit.of( "MILLIMETER" ),
+                                                                    MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                                                    MetricConstants.MAIN ) );
 
             //Append result
             rawData.add( value );
@@ -632,17 +663,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link BoxPlotStatistics} that contains a box plot of forecast
+     * Returns a {@link List} of {@link BoxplotStatisticOuter} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static List<BoxPlotStatistics> getBoxPlotErrorsByObservedAndLeadThreshold()
+    static List<BoxplotStatisticOuter> getBoxPlotErrorsByObservedAndLeadThreshold()
             throws IOException
     {
-        final List<BoxPlotStatistics> rawData = new ArrayList<>();
+        final List<BoxplotStatisticOuter> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml" );
@@ -659,9 +690,9 @@ public abstract class Chart2DTestDataGenerator
         //Single threshold
         final OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      Operator.GREATER,
-                                                                      ThresholdDataType.LEFT ) );
+                                                                           OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -669,15 +700,15 @@ public abstract class Chart2DTestDataGenerator
             //Set the lead time
             final double leadTime = (Double) d.next().getKey();
             TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                               Instant.MAX,
-                                               Duration.ofHours( (long) leadTime ) );
+                                                         Instant.MAX,
+                                                         Duration.ofHours( (long) leadTime ) );
 
             final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
             VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
-            final List<BoxPlotStatistic> output = new ArrayList<>();
+            final List<BoxplotStatistic> output = new ArrayList<>();
 
             StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( source,
                                                                               window,
@@ -691,16 +722,16 @@ public abstract class Chart2DTestDataGenerator
             {
                 if ( Double.compare( next[0], -999 ) != 0 )
                 {
-                    output.add( BoxPlotStatistic.of( probabilities,
+                    output.add( BoxplotStatistic.of( probabilities,
                                                      VectorOfDoubles.of( Arrays.copyOfRange( next, 1, next.length ) ),
                                                      meta,
                                                      next[0],
                                                      MetricDimension.OBSERVED_VALUE ) );
                 }
             }
-            
-            final BoxPlotStatistics out = BoxPlotStatistics.of( output,
-                                                                meta );
+
+            final BoxplotStatisticOuter out = BoxplotStatisticOuter.of( output,
+                                                                        meta );
 
             //Append result
             rawData.add( out );
@@ -711,17 +742,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link BoxPlotStatistics} that contains a box plot of forecast
+     * Returns a {@link List} of {@link BoxplotStatisticOuter} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static List<BoxPlotStatistics> getBoxPlotErrorsByForecastAndLeadThreshold()
+    static List<BoxplotStatisticOuter> getBoxPlotErrorsByForecastAndLeadThreshold()
             throws IOException
     {
-        final List<BoxPlotStatistics> rawData = new ArrayList<>();
+        final List<BoxplotStatisticOuter> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml" );
@@ -737,9 +768,9 @@ public abstract class Chart2DTestDataGenerator
         //Single threshold
         final OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      Operator.GREATER,
-                                                                      ThresholdDataType.LEFT ) );
+                                                                           OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -747,16 +778,16 @@ public abstract class Chart2DTestDataGenerator
             //Set the lead time
             final double leadTime = (Double) d.next().getKey();
             TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                               Instant.MAX,
-                                               Duration.ofHours( (long) leadTime ) );
+                                                         Instant.MAX,
+                                                         Duration.ofHours( (long) leadTime ) );
 
             final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
             VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
-            final List<BoxPlotStatistic> output = new ArrayList<>();
-            
+            final List<BoxplotStatistic> output = new ArrayList<>();
+
             StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( source,
                                                                               window,
                                                                               threshold ),
@@ -769,15 +800,15 @@ public abstract class Chart2DTestDataGenerator
             {
                 if ( Double.compare( next[0], -999 ) != 0 )
                 {
-                    output.add( BoxPlotStatistic.of( probabilities,
+                    output.add( BoxplotStatistic.of( probabilities,
                                                      VectorOfDoubles.of( Arrays.copyOfRange( next, 1, next.length ) ),
                                                      meta,
                                                      next[0],
                                                      MetricDimension.ENSEMBLE_MEAN ) );
                 }
             }
-            final BoxPlotStatistics out = BoxPlotStatistics.of( output,
-                                                                meta );
+            final BoxplotStatisticOuter out = BoxplotStatisticOuter.of( output,
+                                                                        meta );
 
             //Append result
             rawData.add( out );
@@ -788,28 +819,28 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the CRPSS for various
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for various
      * rolling time windows at one threshold (all data). Corresponds to the use case in Redmine ticket #40785.
      *
      * @return an output map of verification scores
      */
-    static List<DoubleScoreStatistic> getScoreOutputForPoolingWindowsFirst()
+    static List<DoubleScoreStatisticOuter> getScoreOutputForPoolingWindowsFirst()
     {
-        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
+        final List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
 
         // Threshold
         final OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      Operator.GREATER,
-                                                                      ThresholdDataType.LEFT ) );
+                                                                           OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT ) );
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          DatasetIdentifier.of( Location.of( "DOSC1" ),
                                                                                "STREAMFLOW",
                                                                                "HEFS",
-                                                                               "ESP"),
+                                                                               "ESP" ),
                                                          null,
                                                          threshold );
 
@@ -831,55 +862,95 @@ public abstract class Chart2DTestDataGenerator
             Instant end = begin.plus( period );
             //Add the 6h data
             TimeWindowOuter sixHourWindow = TimeWindowOuter.of( begin,
-                                                      end,
-                                                      Duration.ofHours( 6 ) );
-            DoubleScoreStatistic sixHourOutput =
-                    DoubleScoreStatistic.of( sixHourOutputs[i],
-                                             StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                      sixHourWindow ),
-                                                                   90,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                   MetricConstants.MAIN ) );
+                                                                end,
+                                                                Duration.ofHours( 6 ) );
+
+            DoubleScoreStatistic sixHour =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( sixHourOutputs[i] )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
+
+            DoubleScoreStatisticOuter sixHourOutput =
+                    DoubleScoreStatisticOuter.of( sixHour,
+                                                  StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                           sixHourWindow ),
+                                                                        90,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                        MetricConstants.MAIN ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
             TimeWindowOuter twelveHourWindow = TimeWindowOuter.of( begin,
-                                                         end,
-                                                         Duration.ofHours( 12 ) );
-            DoubleScoreStatistic twelveHourOutput =
-                    DoubleScoreStatistic.of( twelveHourOutputs[i],
-                                             StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                      twelveHourWindow ),
-                                                                   90,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                   MetricConstants.MAIN ) );
+                                                                   end,
+                                                                   Duration.ofHours( 12 ) );
+
+            DoubleScoreStatistic twelveHour =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( twelveHourOutputs[i] )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
+
+            DoubleScoreStatisticOuter twelveHourOutput =
+                    DoubleScoreStatisticOuter.of( twelveHour,
+                                                  StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                           twelveHourWindow ),
+                                                                        90,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                        MetricConstants.MAIN ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
             TimeWindowOuter eighteenHourWindow = TimeWindowOuter.of( begin,
-                                                           end,
-                                                           Duration.ofHours( 18 ) );
-            DoubleScoreStatistic eighteenHourOutput =
-                    DoubleScoreStatistic.of( eighteenHourOutputs[i],
-                                             StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                      eighteenHourWindow ),
-                                                                   90,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                   MetricConstants.MAIN ) );
+                                                                     end,
+                                                                     Duration.ofHours( 18 ) );
+
+            DoubleScoreStatistic eighteenHour =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( eighteenHourOutputs[i] )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
+
+            DoubleScoreStatisticOuter eighteenHourOutput =
+                    DoubleScoreStatisticOuter.of( eighteenHour,
+                                                  StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                           eighteenHourWindow ),
+                                                                        90,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                        MetricConstants.MAIN ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
             TimeWindowOuter twentyFourHourWindow = TimeWindowOuter.of( begin,
-                                                             end,
-                                                             Duration.ofHours( 24 ) );
-            DoubleScoreStatistic twentyFourHourOutput =
-                    DoubleScoreStatistic.of( twentyFourHourOutputs[i],
-                                             StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                      twentyFourHourWindow ),
-                                                                   90,
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                   MetricConstants.MAIN ) );
+                                                                       end,
+                                                                       Duration.ofHours( 24 ) );
+
+            DoubleScoreStatistic twentyFourHour =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( twentyFourHourOutputs[i] )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
+
+            DoubleScoreStatisticOuter twentyFourHourOutput =
+                    DoubleScoreStatisticOuter.of( twentyFourHour,
+                                                  StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                           twentyFourHourWindow ),
+                                                                        90,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                        MetricConstants.MAIN ) );
             rawData.add( twentyFourHourOutput );
         }
 
@@ -887,20 +958,20 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic} comprising the bias fraction
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the bias fraction
      * for various pooling windows at one threshold (all data). Corresponds to the use case in Redmine ticket #46461.
      *
      * @return an output map of verification scores
      */
-    static List<DoubleScoreStatistic> getScoreOutputForPoolingWindowsSecond()
+    static List<DoubleScoreStatisticOuter> getScoreOutputForPoolingWindowsSecond()
     {
-        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
+        final List<DoubleScoreStatisticOuter> rawData = new ArrayList<>();
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
-        
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
+
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          DatasetIdentifier.of( Location.of( "ABEC2" ),
@@ -941,24 +1012,33 @@ public abstract class Chart2DTestDataGenerator
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
 
             TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( nextDate ),
-                                                   Instant.parse( nextDate ),
-                                                   Duration.ofHours( 0 ),
-                                                   Duration.ofHours( 18 ) );
+                                                             Instant.parse( nextDate ),
+                                                             Duration.ofHours( 0 ),
+                                                             Duration.ofHours( 18 ) );
 
-            rawData.add( DoubleScoreStatistic.of( scores[i],
-                                                  StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                           timeWindow ),
-                                                                        18,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        MetricConstants.MAIN ) ) );
+            DoubleScoreStatistic one =
+                    DoubleScoreStatistic.newBuilder()
+                                        .setMetric( DoubleScoreMetric.newBuilder()
+                                                                     .setName( MetricName.BIAS_FRACTION ) )
+                                        .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                     .setValue( scores[i] )
+                                                                                     .setName( ComponentName.MAIN ) )
+                                        .build();
+
+            rawData.add( DoubleScoreStatisticOuter.of( one,
+                                                       StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                                timeWindow ),
+                                                                             18,
+                                                                             MeasurementUnit.of(),
+                                                                             MetricConstants.BIAS_FRACTION,
+                                                                             MetricConstants.MAIN ) ) );
         }
 
         return Collections.unmodifiableList( rawData );
     }
 
     /**
-     * Returns a {@link PairedStatistic} that comprises a {@link Duration} that represents a time-to-peak error against an
+     * Returns a {@link PairedStatisticOuter} that comprises a {@link Duration} that represents a time-to-peak error against an
      * {@link Instant} that represents the origin (basis time) of the time-series from which the timing error
      * originates. Contains results for forecasts issued at 12Z each day from 1985-01-01T12:00:00Z to
      * 1985-01-10T12:00:00Z and with a forecast horizon of 336h.
@@ -966,7 +1046,7 @@ public abstract class Chart2DTestDataGenerator
      * @return a paired output of timing errors by basis time
      */
 
-    public static List<PairedStatistic<Instant, Duration>> getTimeToPeakErrors()
+    public static List<PairedStatisticOuter<Instant, Duration>> getTimeToPeakErrors()
     {
         // Create a list of pairs
         List<Pair<Instant, Duration>> input = new ArrayList<>();
@@ -984,14 +1064,14 @@ public abstract class Chart2DTestDataGenerator
 
         // Create the metadata
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                           Instant.parse( "1985-01-10T00:00:00Z" ),
-                                           Duration.ofHours( 6 ),
-                                           Duration.ofHours( 336 ) );
+                                                     Instant.parse( "1985-01-10T00:00:00Z" ),
+                                                     Duration.ofHours( 6 ),
+                                                     Duration.ofHours( 336 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                           DatasetIdentifier.of( Location.of( "DRRC2" ),
@@ -1004,7 +1084,7 @@ public abstract class Chart2DTestDataGenerator
                                                        MetricConstants.TIME_TO_PEAK_ERROR,
                                                        MetricConstants.MAIN );
         // Build and return
-        return Arrays.asList( PairedStatistic.of( input, meta ) );
+        return Arrays.asList( PairedStatisticOuter.of( input, meta ) );
     }
 
     /**
@@ -1022,27 +1102,19 @@ public abstract class Chart2DTestDataGenerator
      * @return a set of summary statistics for time-to-peak errors
      */
 
-    public static List<DurationScoreStatistic> getTimeToPeakErrorStatistics()
+    public static List<DurationScoreStatisticOuter> getTimeToPeakErrorStatistics()
     {
-        // Create a list of pairs
-        Map<MetricConstants, Duration> returnMe = new HashMap<>();
-        returnMe.put( MetricConstants.MEAN, Duration.ofMinutes( 156 ) );
-        returnMe.put( MetricConstants.MEDIAN, Duration.ofHours( -1 ) );
-        returnMe.put( MetricConstants.STANDARD_DEVIATION, Duration.ofMillis( 48364615 ) );
-        returnMe.put( MetricConstants.MINIMUM, Duration.ofHours( -22 ) );
-        returnMe.put( MetricConstants.MAXIMUM, Duration.ofHours( 24 ) );
-        returnMe.put( MetricConstants.MEAN_ABSOLUTE, Duration.ofMinutes( 612 ) );
-
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                           Instant.parse( "1985-01-10T00:00:00Z" ),
-                                           Duration.ofHours( 6 ),
-                                           Duration.ofHours( 336 ) );
+                                                     Instant.parse( "1985-01-10T00:00:00Z" ),
+                                                     Duration.ofHours( 6 ),
+                                                     Duration.ofHours( 336 ) );
 
-        OneOrTwoThresholds threshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT ) );
-        
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
+
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                           DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                                 "Streamflow",
@@ -1054,7 +1126,36 @@ public abstract class Chart2DTestDataGenerator
                                                        MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                        MetricConstants.MAIN );
 
-        return Arrays.asList( DurationScoreStatistic.of( returnMe, meta ) );
+        DurationScoreStatistic score =
+                DurationScoreStatistic.newBuilder()
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 9360 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( -3600 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.STANDARD_DEVIATION )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 48_364 )
+                                                                                             .setNanos( 615_000_000 )) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MINIMUM )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( -79_200 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 86_400 ) ) )
+                                      .addStatistics( DurationScoreStatisticComponent.newBuilder()
+                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN_ABSOLUTE )
+                                                      .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                             .setSeconds( 36_720) ) )
+                                      .build();
+
+        return Arrays.asList( DurationScoreStatisticOuter.of( score, meta ) );
     }
 
 }

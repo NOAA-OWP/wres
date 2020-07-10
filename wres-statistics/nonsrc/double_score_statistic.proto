@@ -2,29 +2,28 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "score_metric.proto";
-import "threshold.proto";
+import "double_score_metric.proto";
 
 option java_package = "wres.statistics.generated";
-option java_outer_classname = "ScoreStatisticProto";
+option java_outer_classname = "DoubleScoreStatisticProto";
 option java_multiple_files = true;
 
-message ScoreStatistic
+message DoubleScoreStatistic
 {
     /*A message that encapsulates a score statistic, which is the product of 
     applying a score metric to a pool of pairs.*/
 
-    ScoreMetric metric = 1;
+    DoubleScoreMetric metric = 1;
     // The score metric.
 
-    repeated ScoreStatisticComponent statistics = 2;
+    repeated DoubleScoreStatisticComponent statistics = 2;
     // The score components.
     
-    message ScoreStatisticComponent
+    message DoubleScoreStatisticComponent
     {
         // A score component.
     
-        ScoreMetric.ScoreMetricComponent.ScoreComponentName name = 1;
+        DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName name = 1;
         // Metric component name.
         
         double value = 2;

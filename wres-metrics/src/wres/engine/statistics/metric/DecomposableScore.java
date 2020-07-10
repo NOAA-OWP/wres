@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 
 /**
  * A generic implementation of an error score that is decomposable.
@@ -12,7 +12,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class DecomposableScore<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreStatistic>
+public abstract class DecomposableScore<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreStatisticOuter>
 {
 
     /**

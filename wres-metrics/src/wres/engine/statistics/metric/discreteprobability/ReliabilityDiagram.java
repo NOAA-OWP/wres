@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 
@@ -38,7 +38,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatistic>
+public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
 {
 
     /**
@@ -65,7 +65,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
     }
 
     @Override
-    public DiagramStatistic apply( final SampleData<Pair<Probability, Probability>> s )
+    public DiagramStatisticOuter apply( final SampleData<Pair<Probability, Probability>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -129,7 +129,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                                       s.getRawData().size(),
                                       null );
 
-        return DiagramStatistic.of( output, metOut );
+        return DiagramStatisticOuter.of( output, metOut );
     }
 
     @Override

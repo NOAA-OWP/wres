@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -18,9 +19,12 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link CoefficientOfDetermination}.
@@ -29,10 +33,10 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class CoefficientOfDeterminationTest
 {
-    
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link CoefficientOfDetermination}.
      */
@@ -56,13 +60,21 @@ public final class CoefficientOfDeterminationTest
                                                      MetricConstants.MAIN );
 
         //Compute normally
-        DoubleScoreStatistic actual = cod.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( Math.pow( 0.9999999910148981, 2 ), m1 );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.cod.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.9999999820297963 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( CoefficientOfDetermination.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -71,58 +83,58 @@ public final class CoefficientOfDeterminationTest
         // Generate empty data
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
- 
-        DoubleScoreStatistic actual = cod.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        DoubleScoreStatisticOuter actual = this.cod.apply( input );
+
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test
     public void testGetName()
     {
-        assertTrue( cod.getName().equals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString() ) );
+        assertEquals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString(), this.cod.getName() );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( cod.isDecomposable() );
+        assertFalse( this.cod.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( cod.isSkillScore() );
+        assertFalse( this.cod.isSkillScore() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( cod.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.cod.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( cod.getCollectionOf().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) );
-    }    
+        assertTrue( this.cod.getCollectionOf().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) );
+    }
 
     @Test
     public void testApplyExceptionOnNullInput()
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'COEFFICIENT OF DETERMINATION'." );
-        
-        cod.apply( null );
-    }    
+
+        this.cod.apply( null );
+    }
 
     @Test
     public void testAggregateExceptionOnNullInput()
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'COEFFICIENT OF DETERMINATION'." );
-        
-        cod.aggregate( null );
+
+        this.cod.aggregate( null );
     }
-    
+
 }

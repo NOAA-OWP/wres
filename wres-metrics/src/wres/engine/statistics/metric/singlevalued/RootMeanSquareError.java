@@ -7,10 +7,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * As with the MSE, the Root Mean Square Error (RMSE) or Root Mean Square Deviation (RMSD) is a measure of accuracy.
@@ -20,8 +26,22 @@ import wres.engine.statistics.metric.FunctionFactory;
  * @author james.brown@hydrosolved.com
  */
 public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
-        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic>
+        implements Collectable<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( 0 )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
+                             .build();
 
     /**
      * Instance of {@link SumOfSquareError}.
@@ -39,9 +59,9 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     {
         return new RootMeanSquareError();
     }
-    
+
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> t )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> t )
     {
         return this.aggregate( this.getInputForAggregation( t ) );
     }
@@ -65,7 +85,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     }
 
     @Override
-    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
+    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
         // Set the output dimension
         StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
@@ -74,18 +94,36 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
                                                        this.hasRealUnits(),
                                                        output.getMetadata().getSampleSize(),
                                                        null );
+
+        double input = output.getComponent( MetricConstants.MAIN )
+                             .getData()
+                             .getValue();
+        double sampleSize = output.getMetadata().getSampleSize();
+
+        double result = Math.sqrt( input / sampleSize );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( RootMeanSquareError.METRIC )
+                                    .addStatistics( component )
+                                    .build();
         
-        return DoubleScoreStatistic.of( Math.sqrt( output.getData() / output.getMetadata().getSampleSize() ), meta );
+        return DoubleScoreStatisticOuter.of( score, meta );
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( SampleData<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getInputForAggregation( SampleData<Pair<Double, Double>> input )
     {
         if ( Objects.isNull( input ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         return sse.apply( input );
     }
 
@@ -101,9 +139,9 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
 
     RootMeanSquareError()
     {
-        super( FunctionFactory.squareError() );
+        super( FunctionFactory.squareError(), RootMeanSquareError.METRIC );
 
-        sse = SumOfSquareError.of();
+        this.sse = SumOfSquareError.of();
     }
 
 }

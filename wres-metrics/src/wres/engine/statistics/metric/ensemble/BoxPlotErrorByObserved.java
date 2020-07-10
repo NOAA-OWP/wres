@@ -7,7 +7,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
@@ -64,7 +64,7 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
      */
 
     @Override
-    BoxPlotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata )
+    BoxplotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
         double[] probs = probabilities.getDoubles();
@@ -73,7 +73,7 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return BoxPlotStatistic.of( this.probabilities,
+        return BoxplotStatistic.of( this.probabilities,
                                     VectorOfDoubles.of( box ),
                                     metadata,
                                     pair.getLeft(),

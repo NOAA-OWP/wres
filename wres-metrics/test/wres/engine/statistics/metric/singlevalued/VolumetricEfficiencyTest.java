@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -24,10 +25,13 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link VolumetricEfficiency}.
@@ -60,28 +64,36 @@ public final class VolumetricEfficiencyTest
 
         //Metadata for the output
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 Duration.ofHours( 24 ) );
+                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                           Duration.ofHours( 24 ) );
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                       "QME",
-                                                                                                       "NVE" ) )
-                                                                 .setTimeWindow( window )
-                                                                 .build(),
+                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                         "QME",
+                                                                                         "NVE" ) )
+                                                   .setTimeWindow( window )
+                                                   .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.VOLUMETRIC_EFFICIENCY,
                                       MetricConstants.MAIN );
         //Check the results
-        DoubleScoreStatistic actual = ve.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.657420176533252, m1 );
-        assertTrue( "Actual: " + actual.getData().doubleValue()
-                    + ". Expected: "
-                    + expected.getData().doubleValue()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.ve.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.657420176533252 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( VolumetricEfficiency.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -91,9 +103,9 @@ public final class VolumetricEfficiencyTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = ve.apply( input );
+        DoubleScoreStatisticOuter actual = ve.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test

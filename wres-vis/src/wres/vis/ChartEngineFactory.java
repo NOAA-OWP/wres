@@ -46,11 +46,12 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -237,17 +238,17 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * For diagrams only, which use {@link DiagramStatistic}.
+     * For diagrams only, which use {@link DiagramStatisticOuter}.
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param input The input from which to draw the data.
      * @param usedPlotType The plot type.
      * @return A single input slice for use in drawing the diagram.
      */
-    private static List<DiagramStatistic> sliceInputForDiagram( Object inputKeyInstance,
-                                                                               final List<DiagramStatistic> input,
+    private static List<DiagramStatisticOuter> sliceInputForDiagram( Object inputKeyInstance,
+                                                                               final List<DiagramStatisticOuter> input,
                                                                                OutputTypeSelection usedPlotType )
     {
-        List<DiagramStatistic> inputSlice;
+        List<DiagramStatisticOuter> inputSlice;
         if ( usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
         {
             inputSlice =
@@ -267,7 +268,7 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * For diagrams only, which use {@link DiagramStatistic}.
+     * For diagrams only, which use {@link DiagramStatisticOuter}.
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param inputSlice The input slice from which to draw the data.
      * @param usedPlotType The plot type.
@@ -275,7 +276,7 @@ public abstract class ChartEngineFactory
      * @return the argument processor
      */
     private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
-                                                                    List<DiagramStatistic> inputSlice,
+                                                                    List<DiagramStatisticOuter> inputSlice,
                                                                     ChartType usedPlotType,
                                                                     ChronoUnit durationUnits )
     {
@@ -313,7 +314,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processReliabilityDiagram( Object inputKeyInstance,
-                                       List<DiagramStatistic> input,
+                                       List<DiagramStatisticOuter> input,
                                        ChartType usedPlotType,
                                        String templateName,
                                        String overrideParametersStr,
@@ -324,7 +325,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final List<DiagramStatistic> inputSlice =
+        final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -381,7 +382,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processROCDiagram(
                                Object inputKeyInstance,
-                               List<DiagramStatistic> input,
+                               List<DiagramStatisticOuter> input,
                                ChartType usedPlotType,
                                String templateName,
                                String overrideParametersStr,
@@ -392,7 +393,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final List<DiagramStatistic> inputSlice =
+        final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -438,7 +439,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processQQDiagram( Object inputKeyInstance,
-                              List<DiagramStatistic> input,
+                              List<DiagramStatisticOuter> input,
                               ChartType usedPlotType,
                               String templateName,
                               String overrideParametersStr,
@@ -449,7 +450,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final List<DiagramStatistic> inputSlice =
+        final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -497,7 +498,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processRankHistogram( Object inputKeyInstance,
-                                  List<DiagramStatistic> input,
+                                  List<DiagramStatisticOuter> input,
                                   ChartType usedPlotType,
                                   String templateName,
                                   String overrideParametersStr,
@@ -508,7 +509,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final List<DiagramStatistic> inputSlice =
+        final List<DiagramStatisticOuter> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments =
                 constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
@@ -553,7 +554,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final ProjectConfig config, 
-                                               final List<DiagramStatistic> input,
+                                               final List<DiagramStatisticOuter> input,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr,
@@ -647,7 +648,7 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
-            processBoxPlotErrorsDiagram( BoxPlotStatistics input,
+            processBoxPlotErrorsDiagram( BoxplotStatisticOuter input,
                                          String templateName,
                                          String overrideParametersStr,
                                          ChronoUnit durationUnits )
@@ -686,7 +687,7 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * Builds a box plot for each {@link BoxPlotStatistics} in the input.
+     * Builds a box plot for each {@link BoxplotStatisticOuter} in the input.
      * @param config The project configuration.
      * @param input The metric output to plot.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
@@ -700,7 +701,7 @@ public abstract class ChartEngineFactory
      */
     public static Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEnginePerPool( final ProjectConfig config,
-                                            final List<BoxPlotStatistics> input,
+                                            final List<BoxplotStatisticOuter> input,
                                             final String userSpecifiedTemplateResourceName,
                                             final String overrideParametersStr,
                                             final ChronoUnit durationUnits )
@@ -722,7 +723,7 @@ public abstract class ChartEngineFactory
         }
 
         //For each input in the list, create a chart
-        for ( BoxPlotStatistics next : input )
+        for ( BoxplotStatisticOuter next : input )
         {
             // Skip empty outputs: #65503
             if ( !next.getData().isEmpty() )
@@ -762,7 +763,7 @@ public abstract class ChartEngineFactory
      * @throws IllegalArgumentException if no box plots are available
      */
     public static ChartEngine buildBoxPlotChartEngine( ProjectConfig config,
-                                                       BoxPlotStatistics input,
+                                                       BoxplotStatisticOuter input,
                                                        String userSpecifiedTemplateResourceName,
                                                        String overrideParametersStr,
                                                        ChronoUnit durationUnits )
@@ -818,7 +819,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
             buildScoreOutputChartEngine( final ProjectConfig config, 
-                                         final List<DoubleScoreStatistic> input,
+                                         final List<DoubleScoreStatisticOuter> input,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr,
@@ -827,9 +828,9 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        final Map<MetricConstants, List<DoubleScoreStatistic>> slicedInput =
+        final Map<MetricConstants, List<DoubleScoreComponentOuter>> slicedInput =
                 Slicer.filterByMetricComponent( input );
-        for ( final Map.Entry<MetricConstants, List<DoubleScoreStatistic>> entry : slicedInput.entrySet() )
+        for ( final Map.Entry<MetricConstants, List<DoubleScoreComponentOuter>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildScoreOutputChartEngineForOneComponent( config,
                                                                                    entry.getValue(),
@@ -861,7 +862,7 @@ public abstract class ChartEngineFactory
      */
     private static ChartEngine
             buildScoreOutputChartEngineForOneComponent( final ProjectConfig config,
-                                                        final List<DoubleScoreStatistic> input,
+                                                        final List<DoubleScoreComponentOuter> input,
                                                         final OutputTypeSelection userSpecifiedPlotType,
                                                         final String userSpecifiedTemplateResourceName,
                                                         final String overrideParametersStr,
@@ -931,7 +932,7 @@ public abstract class ChartEngineFactory
 
 
     /**
-     * Only usable with {@link PairedStatistic} in which the left is {@link Instant} and the right is {@link Duration}.
+     * Only usable with {@link PairedStatisticOuter} in which the left is {@link Instant} and the right is {@link Duration}.
      * @param config The project configuration.
      * @param input The input from which to build the plot.
      * @param userSpecifiedTemplateResourceName Template resource name, or null to use default.
@@ -943,7 +944,7 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildPairedInstantDurationChartEngine( final ProjectConfig config,
-                                                   final List<PairedStatistic<Instant, Duration>> input,
+                                                   final List<PairedStatisticOuter<Instant, Duration>> input,
                                                    final String userSpecifiedTemplateResourceName,
                                                    final String overrideParametersStr,
                                                    final ChronoUnit durationUnits )
@@ -1001,7 +1002,7 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildCategoricalDurationScoreChartEngine( final ProjectConfig config,
-                                                      List<DurationScoreStatistic> input,
+                                                      List<DurationScoreStatisticOuter> input,
                                                       final String userSpecifiedTemplateResourceName,
                                                       final String overrideParametersStr,
                                                       final ChronoUnit durationUnits )

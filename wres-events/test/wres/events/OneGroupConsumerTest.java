@@ -11,9 +11,9 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
-import wres.statistics.generated.ScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.Statistics;
-import wres.statistics.generated.ScoreStatistic.ScoreStatisticComponent;
 
 /**
  * Tests the {@link OneGroupConsumer}.
@@ -60,16 +60,18 @@ public class OneGroupConsumerTest
 
         // Add two statistics and accept them
         Statistics.Builder one = Statistics.newBuilder();
-        ScoreStatisticComponent.Builder componentBuilder = ScoreStatisticComponent.newBuilder().setValue( 3 );
-        ScoreStatistic.Builder scoreBuilder = ScoreStatistic.newBuilder().addStatistics( componentBuilder );
+        DoubleScoreStatisticComponent.Builder componentBuilder =
+                DoubleScoreStatisticComponent.newBuilder().setValue( 3 );
+        DoubleScoreStatistic.Builder scoreBuilder = DoubleScoreStatistic.newBuilder().addStatistics( componentBuilder );
         one.addScores( scoreBuilder );
 
         group.accept( one.build() );
 
         Statistics.Builder another = Statistics.newBuilder();
-        ScoreStatisticComponent.Builder anotherComponentBuilder = ScoreStatisticComponent.newBuilder().setValue( 7 );
-        ScoreStatistic.Builder anotherScoreBuilder =
-                ScoreStatistic.newBuilder().addStatistics( anotherComponentBuilder );
+        DoubleScoreStatisticComponent.Builder anotherComponentBuilder =
+                DoubleScoreStatisticComponent.newBuilder().setValue( 7 );
+        DoubleScoreStatistic.Builder anotherScoreBuilder =
+                DoubleScoreStatistic.newBuilder().addStatistics( anotherComponentBuilder );
         another.addScores( anotherScoreBuilder );
 
         group.accept( another.build() );

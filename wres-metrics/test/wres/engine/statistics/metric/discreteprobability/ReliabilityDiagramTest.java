@@ -25,7 +25,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -75,7 +75,7 @@ public final class ReliabilityDiagramTest
                                       MetricConstants.MAIN );
 
         //Check the results       
-        final DiagramStatistic actual = rel.apply( input );
+        final DiagramStatisticOuter actual = rel.apply( input );
         VectorOfDoubles expectedFProb = VectorOfDoubles.of( 0.05490196078431369,
                                                             0.19999999999999984,
                                                             0.3000000000000002,
@@ -104,7 +104,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final DiagramStatistic expected = DiagramStatistic.of( output, m1 );
+        final DiagramStatisticOuter expected = DiagramStatisticOuter.of( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -165,7 +165,7 @@ public final class ReliabilityDiagramTest
                                                            MetricConstants.MAIN );
 
         //Check the results       
-        final DiagramStatistic actual = rel.apply( input );
+        final DiagramStatisticOuter actual = rel.apply( input );
         VectorOfDoubles expectedFProb = VectorOfDoubles.of( 0.013605442176870748,
                                                             0.11224489795918367,
                                                             0.22448979591836735,
@@ -185,7 +185,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final DiagramStatistic expected = DiagramStatistic.of( output, m1 );
+        final DiagramStatisticOuter expected = DiagramStatisticOuter.of( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -201,7 +201,7 @@ public final class ReliabilityDiagramTest
         SampleData<Pair<Probability, Probability>>  input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DiagramStatistic actual = rel.apply( input );
+        DiagramStatisticOuter actual = rel.apply( input );
 
         double[] source = new double[10];
         double[] sourceSample = new double[10];

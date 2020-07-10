@@ -27,8 +27,8 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -97,17 +97,17 @@ public final class BoxPlotErrorByForecastTest
                                       MetricConstants.MAIN );
 
         //Compute normally
-        final BoxPlotStatistics actual = bpe.apply( input );
-        final BoxPlotStatistic expectedBox =
-                BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
+        final BoxplotStatisticOuter actual = bpe.apply( input );
+        final BoxplotStatistic expectedBox =
+                BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                      VectorOfDoubles.of( 0.0, 10, 30.0, 75.0, 100.0 ),
                                      m1,
                                      40.0,
                                      MetricDimension.ENSEMBLE_MEAN );
         
-        List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
+        List<BoxplotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
         
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
+        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBoxes, m1 );
         
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
@@ -155,17 +155,17 @@ public final class BoxPlotErrorByForecastTest
                                                                  VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) );
 
         //Compute normally
-        final BoxPlotStatistics actual = bpef.apply( input );
-        final BoxPlotStatistic expectedBox =
-                BoxPlotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
+        final BoxplotStatisticOuter actual = bpef.apply( input );
+        final BoxplotStatistic expectedBox =
+                BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                      VectorOfDoubles.of( 0.0, 10, 30.0, 75.0, 100.0 ),
                                      m1,
                                      30.0,
                                      MetricDimension.ENSEMBLE_MEDIAN );
         
-        List<BoxPlotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
+        List<BoxplotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
         
-        BoxPlotStatistics expected = BoxPlotStatistics.of( expectedBoxes, m1 );
+        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBoxes, m1 );
 
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
@@ -184,7 +184,7 @@ public final class BoxPlotErrorByForecastTest
         SampleData<Pair<Double,Ensemble>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        BoxPlotStatistics actual = bpe.apply( input );
+        BoxplotStatisticOuter actual = bpe.apply( input );
 
         assertTrue( actual.getData().equals( Arrays.asList() ) );
     }

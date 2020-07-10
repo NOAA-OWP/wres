@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -21,9 +22,13 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.engine.statistics.metric.categorical.ThreatScore;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link BrierScore}.
@@ -56,7 +61,7 @@ public final class BrierScoreTest
     public void testApply()
     {
         // Generate some data
-        SampleData<Pair<Probability,Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
+        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
         StatisticMetadata m1 =
@@ -70,13 +75,21 @@ public final class BrierScoreTest
                                       MetricConstants.MAIN );
 
         // Check the results       
-        DoubleScoreStatistic actual = brierScore.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.26, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticOuter actual = this.brierScore.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.26 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( BrierScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -87,12 +100,12 @@ public final class BrierScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Probability,Probability>> input =
+        SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = brierScore.apply( input );
+        DoubleScoreStatisticOuter actual = brierScore.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -102,7 +115,7 @@ public final class BrierScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( brierScore.getName().equals( MetricConstants.BRIER_SCORE.toString() ) );
+        assertTrue( this.brierScore.getName().equals( MetricConstants.BRIER_SCORE.toString() ) );
     }
 
     /**

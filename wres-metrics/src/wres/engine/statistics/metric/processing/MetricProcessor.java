@@ -21,13 +21,13 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -115,27 +115,27 @@ public abstract class MetricProcessor<S extends SampleData<?>>
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce {@link ScoreStatistic}.
      */
 
-    final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatistic, DoubleScoreStatistic> singleValuedScore;
+    final MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> singleValuedScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce 
-     * {@link DiagramStatistic}.
+     * {@link DiagramStatisticOuter}.
      */
 
-    final MetricCollection<SampleData<Pair<Double, Double>>, DiagramStatistic, DiagramStatistic> singleValuedMultiVector;
+    final MetricCollection<SampleData<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> singleValuedMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce
-     * {@link BoxPlotStatistics}.
+     * {@link BoxplotStatisticOuter}.
      */
 
-    final MetricCollection<SampleData<Pair<Double, Double>>, BoxPlotStatistics, BoxPlotStatistics> singleValuedBoxPlot;
+    final MetricCollection<SampleData<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> singleValuedBoxPlot;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link ScoreStatistic}.
      */
 
-    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic> dichotomousScalar;
+    final MetricCollection<SampleData<Pair<Boolean,Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> dichotomousScalar;
 
     /**
      * The set of metrics associated with the verification project.

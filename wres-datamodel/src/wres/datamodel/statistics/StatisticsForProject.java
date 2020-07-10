@@ -31,119 +31,119 @@ public class StatisticsForProject
 {
 
     /**
-     * Thread safe map for {@link DoubleScoreStatistic}.
+     * Thread safe map for {@link DoubleScoreStatisticOuter}.
      */
 
-    private final List<Future<List<DoubleScoreStatistic>>> doubleScores = new ArrayList<>();
+    private final List<Future<List<DoubleScoreStatisticOuter>>> doubleScores = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link DurationScoreStatistic}.
+     * Thread safe map for {@link DurationScoreStatisticOuter}.
      */
 
-    private final List<Future<List<DurationScoreStatistic>>> durationScores = new ArrayList<>();
+    private final List<Future<List<DurationScoreStatisticOuter>>> durationScores = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link DiagramStatistic}.
+     * Thread safe map for {@link DiagramStatisticOuter}.
      */
 
-    private final List<Future<List<DiagramStatistic>>> diagrams = new ArrayList<>();
+    private final List<Future<List<DiagramStatisticOuter>>> diagrams = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link BoxPlotStatistics} for each pair within a pool.
+     * Thread safe map for {@link BoxplotStatisticOuter} for each pair within a pool.
      */
 
-    private final List<Future<List<BoxPlotStatistics>>> boxplotPerPair = new ArrayList<>();
+    private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPair = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link BoxPlotStatistics} for each pool.
+     * Thread safe map for {@link BoxplotStatisticOuter} for each pool.
      */
 
-    private final List<Future<List<BoxPlotStatistics>>> boxplotPerPool = new ArrayList<>();
+    private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPool = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link PairedStatistic}.
+     * Thread safe map for {@link PairedStatisticOuter}.
      */
 
-    private final List<Future<List<PairedStatistic<Instant, Duration>>>> paired = new ArrayList<>();
+    private final List<Future<List<PairedStatisticOuter<Instant, Duration>>>> paired = new ArrayList<>();
 
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatistic}.
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter}.
      * 
      * @return the double score output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<DoubleScoreStatistic> getDoubleScoreStatistics()
+    public List<DoubleScoreStatisticOuter> getDoubleScoreStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.DOUBLE_SCORE, this.doubleScores );
     }
 
     /**
-     * Returns a {@link List} of {@link DurationScoreStatistic}.
+     * Returns a {@link List} of {@link DurationScoreStatisticOuter}.
      * 
      * @return the duration score output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<DurationScoreStatistic> getDurationScoreStatistics()
+    public List<DurationScoreStatisticOuter> getDurationScoreStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.DURATION_SCORE, this.durationScores );
     }
 
     /**
-     * Returns a {@link List} of {@link DiagramStatistic}.
+     * Returns a {@link List} of {@link DiagramStatisticOuter}.
      * 
      * @return the diagram output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<DiagramStatistic> getDiagramStatistics()
+    public List<DiagramStatisticOuter> getDiagramStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.DIAGRAM, this.diagrams );
     }
 
     /**
-     * Returns a {@link List} of {@link BoxPlotStatistics} per pair.
+     * Returns a {@link List} of {@link BoxplotStatisticOuter} per pair.
      * 
      * @return the box plot output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<BoxPlotStatistics> getBoxPlotStatisticsPerPair() throws InterruptedException
+    public List<BoxplotStatisticOuter> getBoxPlotStatisticsPerPair() throws InterruptedException
     {
         return this.unwrap( StatisticType.BOXPLOT_PER_PAIR, this.boxplotPerPair );
     }
 
     /**
-     * Returns a {@link List} of {@link BoxPlotStatistics} for each pool.
+     * Returns a {@link List} of {@link BoxplotStatisticOuter} for each pool.
      * 
      * @return the box plot output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<BoxPlotStatistics> getBoxPlotStatisticsPerPool() throws InterruptedException
+    public List<BoxplotStatisticOuter> getBoxPlotStatisticsPerPool() throws InterruptedException
     {
         return this.unwrap( StatisticType.BOXPLOT_PER_POOL, this.boxplotPerPool );
     }
 
     /**
-     * Returns a {@link List} of {@link PairedStatistic}.
+     * Returns a {@link List} of {@link PairedStatisticOuter}.
      * 
      * @return the paired output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<PairedStatistic<Instant, Duration>> getInstantDurationPairStatistics()
+    public List<PairedStatisticOuter<Instant, Duration>> getInstantDurationPairStatistics()
             throws InterruptedException
     {
         return this.unwrap( StatisticType.PAIRED, this.paired );
@@ -228,49 +228,49 @@ public class StatisticsForProject
     {
 
         /**
-         * Thread safe map for {@link DoubleScoreStatistic}.
+         * Thread safe map for {@link DoubleScoreStatisticOuter}.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DoubleScoreStatistic>>> doubleScoreInternal =
+        private final ConcurrentLinkedQueue<Future<List<DoubleScoreStatisticOuter>>> doubleScoreInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link DurationScoreStatistic}.
+         * Thread safe map for {@link DurationScoreStatisticOuter}.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DurationScoreStatistic>>> durationScoreInternal =
+        private final ConcurrentLinkedQueue<Future<List<DurationScoreStatisticOuter>>> durationScoreInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link DiagramStatistic}.
+         * Thread safe map for {@link DiagramStatisticOuter}.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DiagramStatistic>>> diagramsInternal =
+        private final ConcurrentLinkedQueue<Future<List<DiagramStatisticOuter>>> diagramsInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link BoxPlotStatistics} for each pair.
+         * Thread safe map for {@link BoxplotStatisticOuter} for each pair.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<BoxPlotStatistics>>> boxplotPerPairInternal =
+        private final ConcurrentLinkedQueue<Future<List<BoxplotStatisticOuter>>> boxplotPerPairInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link BoxPlotStatistics} for each pool.
+         * Thread safe map for {@link BoxplotStatisticOuter} for each pool.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<BoxPlotStatistics>>> boxplotPerPoolInternal =
+        private final ConcurrentLinkedQueue<Future<List<BoxplotStatisticOuter>>> boxplotPerPoolInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link PairedStatistic}.
+         * Thread safe map for {@link PairedStatisticOuter}.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<PairedStatistic<Instant, Duration>>>> pairedInternal =
+        private final ConcurrentLinkedQueue<Future<List<PairedStatisticOuter<Instant, Duration>>>> pairedInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Adds a new {@link DoubleScoreStatistic} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link DoubleScoreStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param result the result
@@ -278,7 +278,7 @@ public class StatisticsForProject
          */
 
         public Builder
-                addDoubleScoreStatistics( Future<List<DoubleScoreStatistic>> result )
+                addDoubleScoreStatistics( Future<List<DoubleScoreStatisticOuter>> result )
         {
             this.doubleScoreInternal.add( result );
 
@@ -286,7 +286,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link DurationScoreStatistic} for a collection of metrics to the internal store, merging with 
+         * Adds a new {@link DurationScoreStatisticOuter} for a collection of metrics to the internal store, merging with 
          * existing items that share the same key, as required.
          * 
          * @param result the result
@@ -294,7 +294,7 @@ public class StatisticsForProject
          */
 
         public Builder
-                addDurationScoreStatistics( Future<List<DurationScoreStatistic>> result )
+                addDurationScoreStatistics( Future<List<DurationScoreStatisticOuter>> result )
         {
             this.durationScoreInternal.add( result );
 
@@ -302,7 +302,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link DiagramStatistic} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link DiagramStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param result the result
@@ -310,7 +310,7 @@ public class StatisticsForProject
          */
 
         public Builder
-                addDiagramStatistics( Future<List<DiagramStatistic>> result )
+                addDiagramStatistics( Future<List<DiagramStatisticOuter>> result )
         {
             this.diagramsInternal.add( result );
 
@@ -318,7 +318,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link BoxPlotStatistics} per pair for a collection of metrics to the internal store, 
+         * Adds a new {@link BoxplotStatisticOuter} per pair for a collection of metrics to the internal store, 
          * merging with existing items that share the same key, as required.
          * 
          * @param result the result
@@ -326,7 +326,7 @@ public class StatisticsForProject
          */
 
         public Builder
-                addBoxPlotStatisticsPerPair( Future<List<BoxPlotStatistics>> result )
+                addBoxPlotStatisticsPerPair( Future<List<BoxplotStatisticOuter>> result )
         {
             this.boxplotPerPairInternal.add( result );
 
@@ -334,7 +334,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link BoxPlotStatistics} per pool for a collection of metrics to the internal store, 
+         * Adds a new {@link BoxplotStatisticOuter} per pool for a collection of metrics to the internal store, 
          * merging with existing items that share the same key, as required.
          * 
          * @param result the result
@@ -342,7 +342,7 @@ public class StatisticsForProject
          */
 
         public Builder
-                addBoxPlotStatisticsPerPool( Future<List<BoxPlotStatistics>> result )
+                addBoxPlotStatisticsPerPool( Future<List<BoxplotStatisticOuter>> result )
         {
             this.boxplotPerPoolInternal.add( result );
 
@@ -350,7 +350,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link PairedStatistic} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link PairedStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param result the result
@@ -358,7 +358,7 @@ public class StatisticsForProject
          */
 
         public Builder
-                addInstantDurationPairStatistics( Future<List<PairedStatistic<Instant, Duration>>> result )
+                addInstantDurationPairStatistics( Future<List<PairedStatisticOuter<Instant, Duration>>> result )
         {
             this.pairedInternal.add( result );
 

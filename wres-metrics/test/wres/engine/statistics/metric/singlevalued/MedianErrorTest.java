@@ -21,9 +21,12 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MedianError}.
@@ -61,8 +64,19 @@ public final class MedianErrorTest
                                                      MetricConstants.MEDIAN_ERROR,
                                                      MetricConstants.MAIN );
         //Check the results
-        DoubleScoreStatistic actual = this.medianError.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 1.0, m1 );
+        DoubleScoreStatisticOuter actual = this.medianError.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 1 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MedianError.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
         assertEquals( expected, actual );
     }
@@ -82,8 +96,19 @@ public final class MedianErrorTest
                                                      MetricConstants.MEDIAN_ERROR,
                                                      MetricConstants.MAIN );
         //Check the results
-        DoubleScoreStatistic actual = this.medianError.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 3, m1 );
+        DoubleScoreStatisticOuter actual = this.medianError.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 3 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MedianError.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
         assertEquals( expected, actual );
     }
@@ -95,7 +120,7 @@ public final class MedianErrorTest
         List<Pair<Double, Double>> pairs = Arrays.asList( Pair.of( 0.0, 99999.0 ),
                                                           Pair.of( 12345.6789, 0.0 ),
                                                           Pair.of( 99999.0, 0.0 ) );
-        
+
         SampleData<Pair<Double, Double>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
@@ -105,8 +130,19 @@ public final class MedianErrorTest
                                                      MetricConstants.MEDIAN_ERROR,
                                                      MetricConstants.MAIN );
         //Check the results
-        DoubleScoreStatistic actual = this.medianError.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( -12345.6789, m1 );
+        DoubleScoreStatisticOuter actual = this.medianError.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( -12345.6789 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MedianError.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
         assertEquals( expected, actual );
     }
@@ -118,9 +154,9 @@ public final class MedianErrorTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = this.medianError.apply( input );
+        DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test

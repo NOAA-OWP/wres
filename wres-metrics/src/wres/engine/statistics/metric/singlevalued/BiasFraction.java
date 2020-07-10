@@ -9,10 +9,16 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value.
@@ -21,6 +27,20 @@ import wres.engine.statistics.metric.FunctionFactory;
  */
 public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                       .setOptimum( 0 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.BIAS_FRACTION )
+                             .build();
 
     /**
      * Returns an instance.
@@ -34,7 +54,7 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
     }
 
     @Override
-    public DoubleScoreStatistic apply( SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -55,12 +75,25 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
             right.add( pair.getLeft() );
         } );
         double result = left.sum() / right.sum();
+
         //Set NaN if not finite
         if ( !Double.isFinite( result ) )
         {
             result = Double.NaN;
         }
-        return DoubleScoreStatistic.of( result, metOut );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( BiasFraction.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override
@@ -99,7 +132,7 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
 
     private BiasFraction()
     {
-        super();
+        super( BiasFraction.METRIC );
     }
 
 }

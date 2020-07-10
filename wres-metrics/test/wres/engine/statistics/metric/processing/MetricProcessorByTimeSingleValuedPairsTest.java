@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Precision;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,6 +39,7 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
@@ -47,10 +49,10 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.statistics.BoxPlotStatistics;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.*;
@@ -63,6 +65,15 @@ import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.engine.statistics.metric.categorical.ContingencyTable;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationScoreMetric;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 
 /**
  * Tests the {@link MetricProcessorByTimeSingleValuedPairs}.
@@ -126,37 +137,52 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                        ThresholdsGenerator.getThresholdsFromConfig(config),
+                                                                     ThresholdsGenerator.getThresholdsFromConfig( config ),
                                                                      Executors.newSingleThreadExecutor(),
                                                                      Executors.newSingleThreadExecutor(),
                                                                      null );
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         StatisticsForProject results = processor.apply( pairs );
-        List<DoubleScoreStatistic> bias =
+        List<DoubleScoreStatisticOuter> bias =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION );
-        List<DoubleScoreStatistic> cod =
+        List<DoubleScoreStatisticOuter> cod =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        List<DoubleScoreStatistic> rho =
+        List<DoubleScoreStatisticOuter> rho =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        List<DoubleScoreStatistic> mae =
+        List<DoubleScoreStatisticOuter> mae =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.MEAN_ABSOLUTE_ERROR );
-        List<DoubleScoreStatistic> me =
+        List<DoubleScoreStatisticOuter> me =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.MEAN_ERROR );
-        List<DoubleScoreStatistic> rmse =
+        List<DoubleScoreStatisticOuter> rmse =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        List<DoubleScoreStatistic> ve =
+        List<DoubleScoreStatisticOuter> ve =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.VOLUMETRIC_EFFICIENCY );
-        List<BoxPlotStatistics> bpe =
+        List<BoxplotStatisticOuter> bpe =
                 Slicer.filter( results.getBoxPlotStatisticsPerPool(), MetricConstants.BOX_PLOT_OF_ERRORS );
 
         //Test contents
-        assertEquals( Double.valueOf( 1.6666666666666667 ), bias.get( 0 ).getData() );
-        assertEquals( Double.valueOf( 1.0 ), cod.get( 0 ).getData() );
-        assertEquals( Double.valueOf( 1.0 ), rho.get( 0 ).getData() );
-        assertEquals( Double.valueOf( 5.0 ), mae.get( 0 ).getData() );
-        assertEquals( Double.valueOf( 5.0 ), me.get( 0 ).getData() );
-        assertEquals( Double.valueOf( 5.0 ), rmse.get( 0 ).getData() );
-        assertEquals( Double.valueOf( -0.6666666666666666 ), ve.get( 0 ).getData() );
+        assertEquals( 1.6666666666666667,
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        
+        assertEquals( 1.0,
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 1.0,
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 5.0,
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 5.0,
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 5.0,
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.6666666666666666,
+                      ve.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
         assertEquals( VectorOfDoubles.of( 5, 5, 5, 5, 5 ), bpe.get( 0 ).getData().get( 0 ).getData() );
     }
 
@@ -174,14 +200,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         for ( int i = 1; i < 11; i++ )
         {
             final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                     Instant.MAX,
-                                                     Duration.ofHours( i ) );
+                                                               Instant.MAX,
+                                                               Duration.ofHours( i ) );
             final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                                         "SQIN",
-                                                                                                         "HEFS" ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                           "SQIN",
+                                                                                           "HEFS" ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
 
             PoolOfPairs<Double, Double> next =
                     new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
@@ -202,13 +228,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         // Expected result
         final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ofHours( 1 ) );
+                                                                   Instant.MAX,
+                                                                   Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                                          Operator.GREATER,
-                                                                                          ThresholdDataType.LEFT,
-                                                                                          MeasurementUnit.of( "CMS" ) ) );
+        final OneOrTwoThresholds expectedThreshold =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT,
+                                                          MeasurementUnit.of( "CMS" ) ) );
 
         StatisticMetadata expectedMeta =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -222,23 +249,34 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                       MetricConstants.CONTINGENCY_TABLE,
                                       null );
 
-        Map<MetricConstants, Double> elements = new HashMap<>();
-        elements.put( MetricConstants.TRUE_POSITIVES, 400.0 );
-        elements.put( MetricConstants.TRUE_NEGATIVES, 0.0 );
-        elements.put( MetricConstants.FALSE_POSITIVES, 100.0 );
-        elements.put( MetricConstants.FALSE_NEGATIVES, 0.0 );
+        DoubleScoreStatistic table =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 400 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 100 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 0 ) )
+                                    .build();
 
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( elements, expectedMeta );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
 
-        DoubleScoreStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                                     meta -> meta.getSampleMetadata()
-                                                                 .getThresholds()
-                                                                 .equals( expectedThreshold )
-                                                             && meta.getSampleMetadata()
-                                                                    .getTimeWindow()
-                                                                    .equals( expectedWindow )
-                                                             && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
-                                            .get( 0 );
+        DoubleScoreStatisticOuter actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                                          meta -> meta.getSampleMetadata()
+                                                                      .getThresholds()
+                                                                      .equals( expectedThreshold )
+                                                                  && meta.getSampleMetadata()
+                                                                         .getTimeWindow()
+                                                                         .equals( expectedWindow )
+                                                                  && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                                 .get( 0 );
 
         assertEquals( expected, actual );
     }
@@ -290,7 +328,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate the outputs
         //Compare the errors against the benchmark
-        List<PairedStatistic<Instant, Duration>> actual =
+        List<PairedStatisticOuter<Instant, Duration>> actual =
                 processor.getCachedMetricOutput().getInstantDurationPairStatistics();
 
         //Build the expected output
@@ -300,18 +338,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         expectedSecond.add( Pair.of( Instant.parse( SECOND_DATE ), Duration.ofHours( 12 ) ) );
         // Metadata for the output
         TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( FIRST_DATE ),
-                                                Instant.parse( FIRST_DATE ),
-                                                Duration.ofHours( 6 ),
-                                                Duration.ofHours( 18 ) );
+                                                          Instant.parse( FIRST_DATE ),
+                                                          Duration.ofHours( 6 ),
+                                                          Duration.ofHours( 18 ) );
         TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( SECOND_DATE ),
-                                                 Instant.parse( SECOND_DATE ),
-                                                 Duration.ofHours( 6 ),
-                                                 Duration.ofHours( 18 ) );
+                                                           Instant.parse( SECOND_DATE ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
 
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                         DatasetIdentifier.of( Location.of( "A" ),
@@ -333,9 +371,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      MetricConstants.TIME_TO_PEAK_ERROR,
                                                      MetricConstants.MAIN );
 
-        List<PairedStatistic<Instant, Duration>> expected = new ArrayList<>();
-        expected.add( PairedStatistic.of( expectedFirst, m1 ) );
-        expected.add( PairedStatistic.of( expectedSecond, m2 ) );
+        List<PairedStatisticOuter<Instant, Duration>> expected = new ArrayList<>();
+        expected.add( PairedStatisticOuter.of( expectedFirst, m1 ) );
+        expected.add( PairedStatisticOuter.of( expectedSecond, m2 ) );
 
         assertEquals( expected, actual );
     }
@@ -377,7 +415,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate the outputs
         //Compare the errors against the benchmark
-        List<PairedStatistic<Instant, Duration>> actual =
+        List<PairedStatisticOuter<Instant, Duration>> actual =
                 processor.getCachedMetricOutput().getInstantDurationPairStatistics();
 
         //Build the expected output
@@ -388,63 +426,63 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         // Metadata for the output
         TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( FIRST_DATE ),
-                                                Instant.parse( FIRST_DATE ),
-                                                Duration.ofHours( 6 ),
-                                                Duration.ofHours( 18 ) );
+                                                          Instant.parse( FIRST_DATE ),
+                                                          Duration.ofHours( 6 ),
+                                                          Duration.ofHours( 18 ) );
         TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( SECOND_DATE ),
-                                                 Instant.parse( SECOND_DATE ),
-                                                 Duration.ofHours( 6 ),
-                                                 Duration.ofHours( 18 ) );
+                                                           Instant.parse( SECOND_DATE ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds firstThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
         OneOrTwoThresholds secondThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                                                       Operator.GREATER,
+                                                                                       ThresholdDataType.LEFT_AND_RIGHT ) );
 
         SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                    DatasetIdentifier.of( Location.of( "A" ),
                                                                          STREAMFLOW ) );
 
-        List<PairedStatistic<Instant, Duration>> expected = new ArrayList<>();
+        List<PairedStatisticOuter<Instant, Duration>> expected = new ArrayList<>();
 
-        expected.add( PairedStatistic.of( expectedFirst,
-                                          StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                   firstWindow,
-                                                                                   firstThreshold ),
-                                                                1,
-                                                                MeasurementUnit.of( DURATION ),
-                                                                MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                MetricConstants.MAIN ) ) );
+        expected.add( PairedStatisticOuter.of( expectedFirst,
+                                               StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                        firstWindow,
+                                                                                        firstThreshold ),
+                                                                     1,
+                                                                     MeasurementUnit.of( DURATION ),
+                                                                     MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                     MetricConstants.MAIN ) ) );
 
-        expected.add( PairedStatistic.of( Arrays.asList(),
-                                          StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                   firstWindow,
-                                                                                   secondThreshold ),
-                                                                0,
-                                                                MeasurementUnit.of( DURATION ),
-                                                                MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                MetricConstants.MAIN ) ) );
+        expected.add( PairedStatisticOuter.of( Arrays.asList(),
+                                               StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                        firstWindow,
+                                                                                        secondThreshold ),
+                                                                     0,
+                                                                     MeasurementUnit.of( DURATION ),
+                                                                     MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                     MetricConstants.MAIN ) ) );
 
-        expected.add( PairedStatistic.of( expectedSecond,
-                                          StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                   secondWindow,
-                                                                                   firstThreshold ),
-                                                                1,
-                                                                MeasurementUnit.of( DURATION ),
-                                                                MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                MetricConstants.MAIN ) ) );
+        expected.add( PairedStatisticOuter.of( expectedSecond,
+                                               StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                        secondWindow,
+                                                                                        firstThreshold ),
+                                                                     1,
+                                                                     MeasurementUnit.of( DURATION ),
+                                                                     MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                     MetricConstants.MAIN ) ) );
 
-        expected.add( PairedStatistic.of( expectedSecond,
-                                          StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                   secondWindow,
-                                                                                   secondThreshold ),
-                                                                1,
-                                                                MeasurementUnit.of( DURATION ),
-                                                                MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                MetricConstants.MAIN ) ) );
+        expected.add( PairedStatisticOuter.of( expectedSecond,
+                                               StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                        secondWindow,
+                                                                                        secondThreshold ),
+                                                                     1,
+                                                                     MeasurementUnit.of( DURATION ),
+                                                                     MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                     MetricConstants.MAIN ) ) );
 
         assertEquals( expected, actual );
     }
@@ -471,7 +509,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate the outputs
         //Compare the errors against the benchmark
-        List<DurationScoreStatistic> actualScores =
+        List<DurationScoreStatisticOuter> actualScores =
                 processor.getCachedMetricOutput().getDurationScoreStatistics();
 
         //Build the expected statistics
@@ -484,15 +522,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Metadata
         TimeWindowOuter combinedWindow = TimeWindowOuter.of( Instant.parse( FIRST_DATE ),
-                                                   Instant.parse( SECOND_DATE ),
-                                                   Duration.ofHours( 6 ),
-                                                   Duration.ofHours( 18 ) );
+                                                             Instant.parse( SECOND_DATE ),
+                                                             Duration.ofHours( 6 ),
+                                                             Duration.ofHours( 18 ) );
         final TimeWindowOuter timeWindow = combinedWindow;
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
 
         StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                                DatasetIdentifier.of( Location.of( "A" ),
@@ -504,8 +542,75 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                             null );
 
-        DurationScoreStatistic expectedScoresSource = DurationScoreStatistic.of( expectedSource, scoreMeta );
-        List<DurationScoreStatistic> expectedScores = new ArrayList<>();
+        com.google.protobuf.Duration expectedMean = MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMedian = MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMin = MessageFactory.parse( Duration.ofHours( -6 ) );
+        com.google.protobuf.Duration expectedMax = MessageFactory.parse( Duration.ofHours( 12 ) );
+        com.google.protobuf.Duration expectedMeanAbs = MessageFactory.parse( Duration.ofHours( 9 ) );
+
+        DurationScoreStatisticComponent meanComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                       .setName( ComponentName.MEAN )
+                                                                                       .setValue( expectedMean )
+                                                                                       .build();
+
+        DurationScoreStatisticComponent medianComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                         .setName( ComponentName.MEDIAN )
+                                                                                         .setValue( expectedMedian )
+                                                                                         .build();
+
+        DurationScoreStatisticComponent minComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                      .setName( ComponentName.MINIMUM )
+                                                                                      .setValue( expectedMin )
+                                                                                      .build();
+
+        DurationScoreStatisticComponent maxComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                      .setName( ComponentName.MAXIMUM )
+                                                                                      .setValue( expectedMax )
+                                                                                      .build();
+
+        DurationScoreStatisticComponent meanAbsComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                          .setName( ComponentName.MEAN_ABSOLUTE )
+                                                                                          .setValue( expectedMeanAbs )
+                                                                                          .build();
+
+        DurationScoreMetricComponent meanMetricComponent = DurationScoreMetricComponent.newBuilder()
+                                                                                       .setName( ComponentName.MEAN )
+                                                                                       .build();
+
+        DurationScoreMetricComponent medianMetricComponent = DurationScoreMetricComponent.newBuilder()
+                                                                                         .setName( ComponentName.MEDIAN )
+                                                                                         .build();
+
+        DurationScoreMetricComponent minMetricComponent = DurationScoreMetricComponent.newBuilder()
+                                                                                      .setName( ComponentName.MINIMUM )
+                                                                                      .build();
+
+        DurationScoreMetricComponent maxMetricComponent = DurationScoreMetricComponent.newBuilder()
+                                                                                      .setName( ComponentName.MAXIMUM )
+                                                                                      .build();
+
+        DurationScoreMetricComponent meanAbsMetricComponent = DurationScoreMetricComponent.newBuilder()
+                                                                                          .setName( ComponentName.MEAN_ABSOLUTE )
+                                                                                          .build();
+
+        DurationScoreMetric metric = DurationScoreMetric.newBuilder()
+                                                        .addComponents( meanMetricComponent )
+                                                        .addComponents( medianMetricComponent )
+                                                        .addComponents( minMetricComponent )
+                                                        .addComponents( maxMetricComponent )
+                                                        .addComponents( meanAbsMetricComponent )
+                                                        .build();
+        DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
+                                                             .setMetric( metric )
+                                                             .addStatistics( meanComponent )
+                                                             .addStatistics( medianComponent )
+                                                             .addStatistics( minComponent )
+                                                             .addStatistics( maxComponent )
+                                                             .addStatistics( meanAbsComponent )
+                                                             .build();
+
+        DurationScoreStatisticOuter expectedScoresSource = DurationScoreStatisticOuter.of( score, scoreMeta );
+        List<DurationScoreStatisticOuter> expectedScores = new ArrayList<>();
         expectedScores.add( expectedScoresSource );
 
         assertEquals( expectedScores, actualScores );
@@ -523,8 +628,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         Set<ThresholdOuter> thresholds =
                 new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                                            Operator.GREATER_EQUAL,
-                                                            ThresholdDataType.LEFT ) ) );
+                                                                 Operator.GREATER_EQUAL,
+                                                                 ThresholdDataType.LEFT ) ) );
 
         ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
@@ -546,7 +651,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
 
         // Ensure that the entire set of thresholds is assembled to be passed to the processor
-        thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig(config).unionWithThisStore(thresholdsByMetric);
+        thresholdsByMetric =
+                ThresholdsGenerator.getThresholdsFromConfig( config ).unionWithThisStore( thresholdsByMetric );
         MetricProcessor<PoolOfPairs<Double, Double>> processor =
                 MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                      thresholdsByMetric,
@@ -558,14 +664,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         for ( int i = 1; i < 11; i++ )
         {
             final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                     Instant.MAX,
-                                                     Duration.ofHours( i ) );
+                                                               Instant.MAX,
+                                                               Duration.ofHours( i ) );
             final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                                         "SQIN",
-                                                                                                         "HEFS" ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                           "SQIN",
+                                                                                           "HEFS" ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
             PoolOfPairs<Double, Double> next =
                     new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
 
@@ -585,12 +691,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         // Expected result
         final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ofHours( 1 ) );
+                                                                   Instant.MAX,
+                                                                   Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                                                                          Operator.GREATER_EQUAL,
-                                                                                          ThresholdDataType.LEFT ) );
+        final OneOrTwoThresholds expectedThreshold =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
+                                                          Operator.GREATER_EQUAL,
+                                                          ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                                   DatasetIdentifier.of( Location.of( DRRC2 ),
@@ -603,23 +710,35 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                MetricConstants.CONTINGENCY_TABLE,
                                                                null );
 
-        Map<MetricConstants, Double> elements = new HashMap<>();
-        elements.put( MetricConstants.TRUE_POSITIVES, 500.0 );
-        elements.put( MetricConstants.TRUE_NEGATIVES, 0.0 );
-        elements.put( MetricConstants.FALSE_POSITIVES, 0.0 );
-        elements.put( MetricConstants.FALSE_NEGATIVES, 0.0 );
+        DoubleScoreStatistic table =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 500 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 0 ) )
+                                    .build();
 
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( elements, expectedMeta );
 
-        DoubleScoreStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                                     meta -> meta.getSampleMetadata()
-                                                                 .getThresholds()
-                                                                 .equals( expectedThreshold )
-                                                             && meta.getSampleMetadata()
-                                                                    .getTimeWindow()
-                                                                    .equals( expectedWindow )
-                                                             && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
-                                            .get( 0 );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
+
+        DoubleScoreStatisticOuter actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                                          meta -> meta.getSampleMetadata()
+                                                                      .getThresholds()
+                                                                      .equals( expectedThreshold )
+                                                                  && meta.getSampleMetadata()
+                                                                         .getTimeWindow()
+                                                                         .equals( expectedWindow )
+                                                                  && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                                 .get( 0 );
 
         assertEquals( expected, actual );
     }
@@ -638,14 +757,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         for ( int i = 1; i < 11; i++ )
         {
             final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                     Instant.MAX,
-                                                     Duration.ofHours( i ) );
+                                                               Instant.MAX,
+                                                               Duration.ofHours( i ) );
             final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                                         "SQIN",
-                                                                                                         "HEFS" ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                           "SQIN",
+                                                                                           "HEFS" ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
 
             PoolOfPairs<Double, Double> next =
                     new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
@@ -666,13 +785,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         // Expected result
         final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ofHours( 1 ) );
+                                                                   Instant.MAX,
+                                                                   Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                                          Operator.GREATER,
-                                                                                          ThresholdDataType.LEFT,
-                                                                                          MeasurementUnit.of( "CMS" ) ) );
+        final OneOrTwoThresholds expectedThreshold =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT,
+                                                          MeasurementUnit.of( "CMS" ) ) );
 
         StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                                   DatasetIdentifier.of( Location.of( DRRC2 ),
@@ -685,23 +805,34 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                MetricConstants.CONTINGENCY_TABLE,
                                                                null );
 
-        Map<MetricConstants, Double> elements = new HashMap<>();
-        elements.put( MetricConstants.TRUE_POSITIVES, 0.0 );
-        elements.put( MetricConstants.TRUE_NEGATIVES, 0.0 );
-        elements.put( MetricConstants.FALSE_POSITIVES, 0.0 );
-        elements.put( MetricConstants.FALSE_NEGATIVES, 0.0 );
+        DoubleScoreStatistic table =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 0 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 0 ) )
+                                    .build();
 
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( elements, expectedMeta );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
 
-        DoubleScoreStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                                     meta -> meta.getSampleMetadata()
-                                                                 .getThresholds()
-                                                                 .equals( expectedThreshold )
-                                                             && meta.getSampleMetadata()
-                                                                    .getTimeWindow()
-                                                                    .equals( expectedWindow )
-                                                             && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
-                                            .get( 0 );
+        DoubleScoreStatisticOuter actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                                          meta -> meta.getSampleMetadata()
+                                                                      .getThresholds()
+                                                                      .equals( expectedThreshold )
+                                                                  && meta.getSampleMetadata()
+                                                                         .getTimeWindow()
+                                                                         .equals( expectedWindow )
+                                                                  && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                                 .get( 0 );
 
         assertEquals( expected, actual );
     }
@@ -725,26 +856,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         processor.apply( pairs );
 
         //Validate the outputs
-        List<DurationScoreStatistic> actualScores =
+        List<DurationScoreStatisticOuter> actualScores =
                 processor.getCachedMetricOutput().getDurationScoreStatistics();
-
-        //Build the expected statistics
-        Map<MetricConstants, Duration> expectedSource = new EnumMap<>( MetricConstants.class );
-        expectedSource.put( MetricConstants.MEAN, null );
-        expectedSource.put( MetricConstants.MEDIAN, null );
-        expectedSource.put( MetricConstants.MINIMUM, null );
-        expectedSource.put( MetricConstants.MAXIMUM, null );
-        expectedSource.put( MetricConstants.MEAN_ABSOLUTE, null );
 
         //Metadata
         TimeWindowOuter combinedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                   Instant.MAX );
+                                                             Instant.MAX );
         final TimeWindowOuter timeWindow = combinedWindow;
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
 
         StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                                DatasetIdentifier.of( Location.of( "A" ),
@@ -756,8 +879,35 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                             null );
 
-        DurationScoreStatistic expectedScoresSource = DurationScoreStatistic.of( expectedSource, scoreMeta );
-        List<DurationScoreStatistic> expectedScores = new ArrayList<>();
+        DurationScoreMetricComponent mean = DurationScoreMetricComponent.newBuilder()
+                                                                        .setName( ComponentName.MEAN )
+                                                                        .build();
+        DurationScoreMetricComponent median = DurationScoreMetricComponent.newBuilder()
+                                                                          .setName( ComponentName.MEDIAN )
+                                                                          .build();
+        DurationScoreMetricComponent minimum = DurationScoreMetricComponent.newBuilder()
+                                                                           .setName( ComponentName.MINIMUM )
+                                                                           .build();
+        DurationScoreMetricComponent maximum = DurationScoreMetricComponent.newBuilder()
+                                                                           .setName( ComponentName.MAXIMUM )
+                                                                           .build();
+        DurationScoreMetricComponent meanAbsolute = DurationScoreMetricComponent.newBuilder()
+                                                                                .setName( ComponentName.MEAN_ABSOLUTE )
+                                                                                .build();
+
+        DurationScoreMetric metric = DurationScoreMetric.newBuilder()
+                                                        .addComponents( mean )
+                                                        .addComponents( median )
+                                                        .addComponents( minimum )
+                                                        .addComponents( maximum )
+                                                        .addComponents( meanAbsolute )
+                                                        .build();
+        DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
+                                                             .setMetric( metric )
+                                                             .build();
+
+        DurationScoreStatisticOuter expectedScoresSource = DurationScoreStatisticOuter.of( score, scoreMeta );
+        List<DurationScoreStatisticOuter> expectedScores = new ArrayList<>();
         expectedScores.add( expectedScoresSource );
 
         assertEquals( expectedScores, actualScores );
@@ -775,30 +925,32 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         // Generate results
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                 Instant.MAX,
-                                                 Duration.ZERO );
+                                                           Instant.MAX,
+                                                           Duration.ZERO );
         final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                                     "SQIN",
-                                                                                                     "AHPS" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
+                                                 .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                       "SQIN",
+                                                                                       "AHPS" ) )
+                                                 .setTimeWindow( window )
+                                                 .build();
         PoolOfPairs<Double, Double> next =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
 
         processor.apply( next );
 
         // Check the sample size
-        Double size = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+        double size = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                      sampleMeta -> sampleMeta.getMetricID() == MetricConstants.SAMPLE_SIZE
                                                    && !sampleMeta.getSampleMetadata()
                                                                  .getThresholds()
                                                                  .first()
                                                                  .isFinite() )
                             .get( 0 )
-                            .getData();
+                            .getComponent( MetricConstants.MAIN )
+                            .getData()
+                            .getValue();
 
-        assertTrue( FunctionFactory.doubleEquals().test( 10.0, size ) );
+        assertEquals( 10.0, size, Precision.EPSILON );
     }
 
     @Test

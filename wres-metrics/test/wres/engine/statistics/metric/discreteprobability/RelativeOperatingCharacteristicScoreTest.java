@@ -27,12 +27,15 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link RelativeOperatingCharacteristicScore}.
@@ -83,19 +86,31 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) );
 
-        final SampleData<Pair<Probability, Probability>> input =
+        SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                     MetricConstants.MAIN );
 
         //Check the results       
-        final DoubleScoreStatistic actual = rocScore.apply( input );
-        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.6785714285714286, m1 );
+        DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.6785714285714286 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -135,15 +150,40 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                            MetricConstants.MAIN );
 
         //Check the results       
-        DoubleScoreStatistic actual = rocScore.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.75, m1 );
+        DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.75 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
+
 
         assertEquals( expected, actual );
 
         //Check against a baseline
         SampleData<Pair<Probability, Probability>> inputBase = SampleDataBasic.of( values, meta, values, meta, null );
-        DoubleScoreStatistic actualBase = rocScore.apply( inputBase );
-        DoubleScoreStatistic expectedBase = DoubleScoreStatistic.of( 0.0, m1 );
+        DoubleScoreStatisticOuter actualBase = this.rocScore.apply( inputBase );
+
+        DoubleScoreStatisticComponent componentBase = DoubleScoreStatisticComponent.newBuilder()
+                                                                                   .setName( ComponentName.MAIN )
+                                                                                   .setValue( 0.0 )
+                                                                                   .build();
+
+        DoubleScoreStatistic scoreBase = DoubleScoreStatistic.newBuilder()
+                                                             .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                             .addStatistics( componentBase )
+                                                             .build();
+
+        DoubleScoreStatisticOuter expectedBase = DoubleScoreStatisticOuter.of( scoreBase, m1 );
 
         assertEquals( expectedBase, actualBase );
     }
@@ -185,8 +225,19 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                            MetricConstants.MAIN );
 
         //Check the results       
-        DoubleScoreStatistic actual = rocScore.apply( input );
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( Double.NaN, m1 );
+        DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( Double.NaN )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
         assertEquals( expected, actual );
     }
@@ -203,9 +254,9 @@ public final class RelativeOperatingCharacteristicScoreTest
         SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = rocScore.apply( input );
+        DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     /**
@@ -216,7 +267,8 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( rocScore.getName().equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString() ) );
+        assertTrue( this.rocScore.getName()
+                                 .equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString() ) );
     }
 
     /**
@@ -226,7 +278,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( rocScore.isDecomposable() );
+        assertFalse( this.rocScore.isDecomposable() );
     }
 
     /**
@@ -236,7 +288,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testIsSkillScore()
     {
-        assertTrue( rocScore.isSkillScore() );
+        assertTrue( this.rocScore.isSkillScore() );
     }
 
     /**
@@ -247,7 +299,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( rocScore.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.rocScore.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -257,7 +309,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testIsProper()
     {
-        assertFalse( rocScore.isProper() );
+        assertFalse( this.rocScore.isProper() );
     }
 
     /**
@@ -267,7 +319,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testIsStrictlyProper()
     {
-        assertFalse( rocScore.isStrictlyProper() );
+        assertFalse( this.rocScore.isStrictlyProper() );
     }
 
     /**
@@ -281,20 +333,20 @@ public final class RelativeOperatingCharacteristicScoreTest
         SampleData<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                            Operator.GREATER,
-                                            ThresholdDataType.LEFT );
+                                                      Operator.GREATER,
+                                                      ThresholdDataType.LEFT );
 
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
         SampleData<Pair<Probability, Probability>> transPairs = Slicer.transform( pairs, mapper );
 
-        assertTrue( rocScore.apply( transPairs )
-                            .getMetadata()
-                            .getSampleMetadata()
-                            .getIdentifier()
-                            .getScenarioNameForBaseline()
-                            .equals( "ESP" ) );
+        assertTrue( this.rocScore.apply( transPairs )
+                                 .getMetadata()
+                                 .getSampleMetadata()
+                                 .getIdentifier()
+                                 .getScenarioNameForBaseline()
+                                 .equals( "ESP" ) );
     }
 
     /**
@@ -308,7 +360,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'RELATIVE OPERATING CHARACTERISTIC SCORE'." );
 
-        rocScore.apply( null );
+        this.rocScore.apply( null );
     }
 
 }

@@ -9,11 +9,17 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * <p>Computes the Kling-Gupta Efficiency (KGE) and associated decomposition into correlation, bias and variability.</p>
@@ -33,6 +39,20 @@ import wres.engine.statistics.metric.FunctionFactory;
  */
 public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Double, Double>>>
 {
+
+    /**
+     * Canonical description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC =
+            DoubleScoreMetric.newBuilder()
+                             .addComponents( DoubleScoreMetricComponent.newBuilder()
+                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                       .setMaximum( 1 )
+                                                                       .setOptimum( 1 )
+                                                                       .setName( ComponentName.MAIN ) )
+                             .setName( MetricName.KLING_GUPTA_EFFICIENCY )
+                             .build();
 
     /**
      * Default weighting for the correlation term.
@@ -88,7 +108,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
     }
 
     @Override
-    public DoubleScoreStatistic apply( final SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -102,7 +122,11 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
         // Compute the components
         VectorOfDoubles leftValues = VectorOfDoubles.of( Slicer.getLeftSide( s ) );
         VectorOfDoubles rightValues = VectorOfDoubles.of( Slicer.getRightSide( s ) );
-        double rhoVal = rho.apply( s ).getData();
+        double rhoVal = rho.apply( s )
+                           .getComponent( MetricConstants.MAIN )
+                           .getData()
+                           .getValue();
+        
         // Check for finite correlation
         if ( Double.isFinite( rhoVal ) )
         {
@@ -124,7 +148,19 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
                                                                this.hasRealUnits(),
                                                                s.getRawData().size(),
                                                                null );
-        return DoubleScoreStatistic.of( result, metOut );
+
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( result )
+                                                                               .build();
+
+        DoubleScoreStatistic score =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( KlingGuptaEfficiency.METRIC )
+                                    .addStatistics( component )
+                                    .build();
+
+        return DoubleScoreStatisticOuter.of( score, metOut );
     }
 
     @Override

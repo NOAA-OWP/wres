@@ -21,7 +21,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -79,11 +79,11 @@ public final class TimeToPeakErrorTest
                     ttp.getName().equals( MetricConstants.TIME_TO_PEAK_ERROR.toString() ) );
 
         // Check the results
-        PairedStatistic<Instant, Duration> actual = ttp.apply( input );
+        PairedStatisticOuter<Instant, Duration> actual = ttp.apply( input );
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
-        PairedStatistic<Instant, Duration> expected = PairedStatistic.of( expectedSource, m1 );
+        PairedStatisticOuter<Instant, Duration> expected = PairedStatisticOuter.of( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

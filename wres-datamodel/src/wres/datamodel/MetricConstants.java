@@ -11,11 +11,11 @@ import java.time.Duration;
 
 import wres.datamodel.time.TimeWindowOuter;
 
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatistic;
-import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.DiagramStatistic;
+import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.statistics.generated.BoxplotStatistic;
 
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
@@ -864,19 +864,19 @@ public enum MetricConstants
         DIAGRAM,
 
         /**
-         * Metrics that produce a {@link BoxPlotStatistic} for each pair within a pool.
+         * Metrics that produce a {@link BoxplotStatistic} for each pair within a pool.
          */
 
         BOXPLOT_PER_PAIR,
 
         /**
-         * Metrics that produce a {@link BoxPlotStatistic} for each pool of pairs.
+         * Metrics that produce a {@link BoxplotStatistic} for each pool of pairs.
          */
 
         BOXPLOT_PER_POOL,
 
         /**
-         * Metrics that produce a {@link PairedStatistic}.
+         * Metrics that produce a {@link PairedStatisticOuter}.
          */
 
         PAIRED,

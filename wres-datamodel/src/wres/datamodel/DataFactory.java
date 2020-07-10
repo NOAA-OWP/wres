@@ -28,7 +28,7 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
@@ -362,18 +362,18 @@ public final class DataFactory
     }
 
     /**
-     * Forms the union of the {@link PairedStatistic}, returning a {@link PairedStatistic} that contains all of the 
+     * Forms the union of the {@link PairedStatisticOuter}, returning a {@link PairedStatisticOuter} that contains all of the 
      * pairs in the inputs.
      * 
      * @param <S> the left side of the paired output
      * @param <T> the right side of the paired output
      * @param collection the list of inputs
-     * @return a combined {@link PairedStatistic}
+     * @return a combined {@link PairedStatisticOuter}
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the input is empty
      */
 
-    public static <S, T> PairedStatistic<S, T> unionOf( Collection<PairedStatistic<S, T>> collection )
+    public static <S, T> PairedStatisticOuter<S, T> unionOf( Collection<PairedStatisticOuter<S, T>> collection )
     {
         Objects.requireNonNull( collection );
         
@@ -385,7 +385,7 @@ public final class DataFactory
         List<Pair<S, T>> combined = new ArrayList<>();
         List<TimeWindowOuter> combinedWindows = new ArrayList<>();
         StatisticMetadata sourceMeta = null;
-        for ( PairedStatistic<S, T> next : collection )
+        for ( PairedStatisticOuter<S, T> next : collection )
         {
             combined.addAll( next.getData() );
             if ( Objects.isNull( sourceMeta ) )
@@ -413,7 +413,7 @@ public final class DataFactory
                                       sourceMeta.getMetricID(),
                                       sourceMeta.getMetricComponentID() );
         
-        return PairedStatistic.of( combined, combinedMeta );
+        return PairedStatisticOuter.of( combined, combinedMeta );
     }
 
     /**

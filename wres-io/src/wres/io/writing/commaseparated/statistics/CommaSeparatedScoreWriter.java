@@ -2,7 +2,6 @@ package wres.io.writing.commaseparated.statistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.text.Format;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +15,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import wres.config.ProjectConfigException;
@@ -24,10 +24,10 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ScoreStatistic;
+import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -39,11 +39,13 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 /**
  * Helps write scores comprising {@link ScoreStatistic} to a file of Comma Separated Values (CSV).
  * 
- * @param <T> the score component type
+ * @param <S>  the score component type
+ * @param <T> the score type
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends CommaSeparatedStatisticsWriter
+public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>>
+        extends CommaSeparatedStatisticsWriter
         implements Consumer<List<T>>, Supplier<Set<Path>>
 {
     /**
@@ -52,26 +54,36 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
     private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
+     * Mapper that provides a string representation of the score.
+     */
+
+    private final Function<S, String> mapper;
+
+    /**
      * Returns an instance of a writer.
      * 
-     * @param <T> the score component type
+     * @param <S>  the score component type
+     * @param <T> the score type
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
+     * @param mapper a mapper function that provides a string representation of the score
      * @return a writer
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static <T extends ScoreStatistic<?, T>> CommaSeparatedScoreWriter<T> of( ProjectConfig projectConfig,
-                                                                                    ChronoUnit durationUnits,
-                                                                                    Path outputDirectory )
+    public static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> CommaSeparatedScoreWriter<S, T>
+            of( ProjectConfig projectConfig,
+                ChronoUnit durationUnits,
+                Path outputDirectory,
+                Function<S, String> mapper )
     {
-        return new CommaSeparatedScoreWriter<>( projectConfig, durationUnits, outputDirectory );
+        return new CommaSeparatedScoreWriter<>( projectConfig, durationUnits, outputDirectory, mapper );
     }
 
     /**
-     * Writes all output for one box plot type.
+     * Writes all output for one score type.
      *
      * @param output the score output
      * @throws NullPointerException if the input is null
@@ -90,18 +102,6 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                 ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
-
-            // Formatter required?
-            Format formatter = null;
-            if ( !output.isEmpty()
-                 && output.get( 0 )
-                          .getMetadata()
-                          .getMetricID()
-                          .isInGroup( StatisticType.DOUBLE_SCORE ) )
-            {
-                formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
-            }
-
             // Write per time-window
             try
             {
@@ -117,8 +117,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                             CommaSeparatedScoreWriter.writeOneScoreOutputType( super.getOutputDirectory(),
                                                                                destinationConfig,
                                                                                nextGroup,
-                                                                               formatter,
-                                                                               this.getDurationUnits() );
+                                                                               this.getDurationUnits(),
+                                                                               this.mapper );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
@@ -144,22 +144,23 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
     /**
      * Writes all output for one score type.
      *
-     * @param <T> the score component type
+     * @param <S>  the score component type
+     * @param <T> the score type
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the score output to iterate through
-     * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
+     * @param mapper a mapper function that provides a string representation of the score
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
 
-    private static <T extends ScoreStatistic<?, T>> Set<Path>
+    private static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> Set<Path>
             writeOneScoreOutputType( Path outputDirectory,
                                      DestinationConfig destinationConfig,
                                      List<T> output,
-                                     Format formatter,
-                                     ChronoUnit durationUnits )
+                                     ChronoUnit durationUnits,
+                                     Function<S, String> mapper )
                     throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
@@ -212,8 +213,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                         CommaSeparatedScoreWriter.getRowsForOneScore( m,
                                                                       nextOutput,
                                                                       headerRow,
-                                                                      formatter,
-                                                                      durationUnits );
+                                                                      durationUnits,
+                                                                      mapper );
 
                 // Add the header row
                 rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
@@ -251,29 +252,30 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
     /**
      * Returns the results for one score output.
      *
-     * @param <T> the score component type
+     * @param <S>  the score component type
+     * @param <T> the score type
      * @param scoreName the score name
      * @param output the score output
      * @param headerRow the header row
-     * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
+     * @param mapper a mapper function that provides a string representation of the score
      * @return the rows to write
      */
 
-    private static <T extends ScoreStatistic<?, T>> List<RowCompareByLeft>
+    private static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> List<RowCompareByLeft>
             getRowsForOneScore( MetricConstants scoreName,
                                 List<T> output,
                                 StringJoiner headerRow,
-                                Format formatter,
-                                ChronoUnit durationUnits )
+                                ChronoUnit durationUnits,
+                                Function<S, String> mapper )
     {
         // Slice score by components
-        Map<MetricConstants, List<T>> helper = Slicer.filterByMetricComponent( output );
+        Map<MetricConstants, List<S>> helper = Slicer.filterByMetricComponent( output );
 
         String outerName = scoreName.toString();
         List<RowCompareByLeft> returnMe = new ArrayList<>();
         // Loop across components
-        for ( Entry<MetricConstants, List<T>> e : helper.entrySet() )
+        for ( Entry<MetricConstants, List<S>> e : helper.entrySet() )
         {
             // Add the component name unless there is only one component named "MAIN"
             String name = outerName;
@@ -285,8 +287,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                                                                    e.getValue(),
                                                                    headerRow,
                                                                    returnMe,
-                                                                   formatter,
-                                                                   durationUnits );
+                                                                   durationUnits,
+                                                                   mapper );
         }
         return returnMe;
     }
@@ -299,16 +301,17 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param component the score component results
      * @param headerRow the header row
      * @param rows the data rows
-     * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
+     * @param mapper a mapper function that provides a string representation of the score
      */
 
-    private static <T extends ScoreStatistic<?, T>> void addRowsForOneScoreComponent( String name,
-                                                                                      List<T> component,
-                                                                                      StringJoiner headerRow,
-                                                                                      List<RowCompareByLeft> rows,
-                                                                                      Format formatter,
-                                                                                      ChronoUnit durationUnits )
+    private static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> void
+            addRowsForOneScoreComponent( String name,
+                                         List<S> component,
+                                         StringJoiner headerRow,
+                                         List<RowCompareByLeft> rows,
+                                         ChronoUnit durationUnits,
+                                         Function<S, String> mapper )
     {
 
         // Discover the time windows and thresholds
@@ -328,7 +331,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             for ( TimeWindowOuter timeWindow : timeWindows )
             {
                 // Find the next score
-                List<T> nextScore = Slicer.filter( component,
+                List<S> nextScore = Slicer.filter( component,
                                                    next -> next.getSampleMetadata()
                                                                .getThresholds()
                                                                .equals( t )
@@ -337,13 +340,15 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                                                                   .equals( timeWindow ) );
                 if ( !nextScore.isEmpty() )
                 {
+                    S score = nextScore.get( 0 );
+                    String stringScore = mapper.apply( score );
+
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                                   nextScore.get( 0 )
                                                                            .getMetadata()
                                                                            .getSampleMetadata(),
-                                                                  Arrays.asList( nextScore.get( 0 )
-                                                                                          .getData() ),
-                                                                  formatter,
+                                                                  Arrays.asList( stringScore ),
+                                                                  null,
                                                                   true,
                                                                   durationUnits );
                 }
@@ -353,7 +358,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                                   SampleMetadata.of( metadata, timeWindow ),
                                                                   Arrays.asList( (Object) null ),
-                                                                  formatter,
+                                                                  null,
                                                                   true,
                                                                   durationUnits );
                 }
@@ -376,15 +381,21 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
+     * @param mapper a mapper function that provides a string representation of the score
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
     private CommaSeparatedScoreWriter( ProjectConfig projectConfig,
                                        ChronoUnit durationUnits,
-                                       Path outputDirectory )
+                                       Path outputDirectory,
+                                       Function<S, String> mapper )
     {
         super( projectConfig, durationUnits, outputDirectory );
+
+        Objects.requireNonNull( mapper );
+
+        this.mapper = mapper;
     }
 
 }

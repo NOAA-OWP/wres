@@ -898,7 +898,7 @@ public class ConfigHelper
      * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
      * 
      * @param destinationConfig the destination configuration
-     * @return a decimal formatter or null.
+     * @return a decimal formatter or null
      */
 
     public static DecimalFormat getDecimalFormatter( DestinationConfig destinationConfig )

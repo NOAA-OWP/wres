@@ -9,7 +9,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
@@ -21,8 +21,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic>
-        implements Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatistic, DoubleScoreStatistic>
+abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>
+        implements Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
 
     /**
@@ -44,7 +44,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation( final SampleData<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter getInputForAggregation( final SampleData<Pair<Boolean, Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -78,7 +78,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * @return the {@link StatisticMetadata}
      */
 
-    StatisticMetadata getMetadata( final DoubleScoreStatistic output )
+    StatisticMetadata getMetadata( final DoubleScoreStatisticOuter output )
     {
         return StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
                                      this.getID(),
@@ -97,7 +97,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * @throws SampleDataException if the output is not a valid input for an intermediate calculation
      */
 
-    void isContingencyTable( final DoubleScoreStatistic output, final Metric<?, ?> metric )
+    void isContingencyTable( final DoubleScoreStatisticOuter output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
@@ -134,7 +134,7 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
      * @throws SampleDataException if the output is not a valid input for an intermediate calculation
      */
 
-    void is2x2ContingencyTable( final DoubleScoreStatistic output, final Metric<?, ?> metric )
+    void is2x2ContingencyTable( final DoubleScoreStatisticOuter output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {

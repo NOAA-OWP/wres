@@ -10,7 +10,7 @@ import wres.datamodel.statistics.ScoreStatistic;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class OrdinaryScore<S extends SampleData<?>, T extends ScoreStatistic<?,T>> implements Score<S, T>
+public abstract class OrdinaryScore<S extends SampleData<?>, T extends ScoreStatistic<?,?>> implements Score<S, T>
 {
 
     @Override

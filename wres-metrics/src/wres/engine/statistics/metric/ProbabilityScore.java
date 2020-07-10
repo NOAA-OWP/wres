@@ -26,7 +26,7 @@ import wres.datamodel.statistics.ScoreStatistic;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface ProbabilityScore<S extends SampleData<?>, T extends ScoreStatistic<?,T>> extends Score<S,T>
+public interface ProbabilityScore<S extends SampleData<?>, T extends ScoreStatistic<?,?>> extends Score<S,T>
 {
 
     /**

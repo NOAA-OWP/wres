@@ -11,13 +11,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.BiPredicate;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Precision;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -45,7 +43,7 @@ import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -53,11 +51,14 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.engine.statistics.metric.categorical.ContingencyTable;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MetricProcessorByTimeEnsemblePairs}.
@@ -82,32 +83,32 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                   condition,
-                                                                                                   ThresholdDataType.LEFT ) ) );
+                                                                                                        condition,
+                                                                                                        ThresholdDataType.LEFT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                   condition,
-                                                                                                   ThresholdDataType.RIGHT ) ) );
+                                                                                                        condition,
+                                                                                                        ThresholdDataType.RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                   condition,
-                                                                                                   ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                                                        condition,
+                                                                                                        ThresholdDataType.LEFT_AND_RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                   condition,
-                                                                                                   ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
+                                                                                                        condition,
+                                                                                                        ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                   condition,
-                                                                                                   ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
+                                                                                                        condition,
+                                                                                                        ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                   condition,
-                                                                                                   ThresholdDataType.ANY_RIGHT ) ) );
+                                                                                                        condition,
+                                                                                                        ThresholdDataType.ANY_RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                   condition,
-                                                                                                   ThresholdDataType.RIGHT_MEAN ) ) );
+                                                                                                        condition,
+                                                                                                        ThresholdDataType.RIGHT_MEAN ) ) );
         // Check that average works        
         Pair<Double, Ensemble> pair = Pair.of( 1.0, Ensemble.of( 1.5, 2.0 ) );
 
         assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                condition,
-                                                                                                ThresholdDataType.RIGHT_MEAN ) )
+                                                                                                     condition,
+                                                                                                     ThresholdDataType.RIGHT_MEAN ) )
                                                       .test( pair ) );
     }
 
@@ -121,34 +122,47 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                  null );
         StatisticsForProject results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
-        DoubleScoreStatistic bias =
+        DoubleScoreStatisticOuter bias =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION ).get( 0 );
-        DoubleScoreStatistic cod =
+        DoubleScoreStatisticOuter cod =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.COEFFICIENT_OF_DETERMINATION )
                       .get( 0 );
-        DoubleScoreStatistic rho =
+        DoubleScoreStatisticOuter rho =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
                       .get( 0 );
-        DoubleScoreStatistic mae =
+        DoubleScoreStatisticOuter mae =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.MEAN_ABSOLUTE_ERROR )
                       .get( 0 );
-        DoubleScoreStatistic me =
+        DoubleScoreStatisticOuter me =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.MEAN_ERROR ).get( 0 );
-        DoubleScoreStatistic rmse =
+        DoubleScoreStatisticOuter rmse =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.ROOT_MEAN_SQUARE_ERROR )
                       .get( 0 );
-        DoubleScoreStatistic crps =
+        DoubleScoreStatisticOuter crps =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE )
                       .get( 0 );
 
-        //Test contents
-        assertTrue( bias.getData().equals( -0.032093836077598345 ) );
-        assertTrue( cod.getData().equals( 0.7873367083297588 ) );
-        assertTrue( rho.getData().equals( 0.8873199582618204 ) );
-        assertTrue( mae.getData().equals( 11.009512537315405 ) );
-        assertTrue( me.getData().equals( -1.157869354367079 ) );
-        assertTrue( rmse.getData().equals( 41.01563032408479 ) );
-        assertTrue( Double.compare( crps.getData(), 9.076475676968208 ) == 0 );
+        assertEquals( bias.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      -0.032093836077598345,
+                      Precision.EPSILON );
+        assertEquals( cod.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      0.7873367083297588,
+                      Precision.EPSILON );
+        assertEquals( rho.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      0.8873199582618204,
+                      Precision.EPSILON );
+        assertEquals( mae.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      11.009512537315405,
+                      Precision.EPSILON );
+        assertEquals( me.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      -1.157869354367079,
+                      Precision.EPSILON );
+        assertEquals( rmse.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      41.01563032408479,
+                      Precision.EPSILON );
+        assertEquals( crps.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      9.076475676968208,
+                      Precision.EPSILON );
     }
 
     @Test
@@ -164,66 +178,147 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Validate bias
-        List<DoubleScoreStatistic> bias = Slicer.filter( processor.getCachedMetricOutput()
-                                                                  .getDoubleScoreStatistics(),
-                                                         MetricConstants.BIAS_FRACTION );
-        assertTrue( bias.get( 0 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( bias.get( 1 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( bias.get( 2 ).getData().equals( -0.0365931379807274 ) );
-        assertTrue( bias.get( 3 ).getData().equals( -0.039706682985140816 ) );
-        assertTrue( bias.get( 4 ).getData().equals( -0.0505708024162773 ) );
-        assertTrue( bias.get( 5 ).getData().equals( -0.056658160809530816 ) );
-        //Validate CoD
-        List<DoubleScoreStatistic> cod = Slicer.filter( processor.getCachedMetricOutput()
-                                                                 .getDoubleScoreStatistics(),
-                                                        MetricConstants.COEFFICIENT_OF_DETERMINATION );
+        List<DoubleScoreStatisticOuter> bias = Slicer.filter( processor.getCachedMetricOutput()
+                                                                       .getDoubleScoreStatistics(),
+                                                              MetricConstants.BIAS_FRACTION );       
+        assertEquals( -0.032093836077598345,
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.032093836077598345,
+                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.0365931379807274,
+                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.039706682985140816,
+                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.0505708024162773,
+                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.056658160809530816,
+                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );        
 
-        assertTrue( cod.get( 0 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( cod.get( 1 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( cod.get( 2 ).getData().equals( 0.7653639626077698 ) );
-        assertTrue( cod.get( 3 ).getData().equals( 0.76063213080129 ) );
-        assertTrue( cod.get( 4 ).getData().equals( 0.7542039364210298 ) );
-        assertTrue( cod.get( 5 ).getData().equals( 0.7492338765733539 ) );
+        //Validate CoD
+        List<DoubleScoreStatisticOuter> cod = Slicer.filter( processor.getCachedMetricOutput()
+                                                                      .getDoubleScoreStatistics(),
+                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION );
+
+        assertEquals( 0.7873367083297588,
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7873367083297588,
+                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7653639626077698,
+                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.76063213080129,
+                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7542039364210298,
+                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7492338765733539,
+                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate rho
-        List<DoubleScoreStatistic> rho = Slicer.filter( processor.getCachedMetricOutput()
-                                                                 .getDoubleScoreStatistics(),
-                                                        MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        assertTrue( rho.get( 0 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( rho.get( 1 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( rho.get( 2 ).getData().equals( 0.8748508230594344 ) );
-        assertTrue( rho.get( 3 ).getData().equals( 0.8721422652304439 ) );
-        assertTrue( rho.get( 4 ).getData().equals( 0.868449155921652 ) );
-        assertTrue( rho.get( 5 ).getData().equals( 0.8655829692024641 ) );
+        List<DoubleScoreStatisticOuter> rho = Slicer.filter( processor.getCachedMetricOutput()
+                                                                      .getDoubleScoreStatistics(),
+                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        
+        assertEquals( 0.8873199582618204,
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8873199582618204,
+                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8748508230594344,
+                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8721422652304439,
+                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.868449155921652,
+                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8655829692024641,
+                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate mae
-        List<DoubleScoreStatistic> mae = Slicer.filter( processor.getCachedMetricOutput()
-                                                                 .getDoubleScoreStatistics(),
-                                                        MetricConstants.MEAN_ABSOLUTE_ERROR );
-        assertTrue( mae.get( 0 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( mae.get( 1 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( mae.get( 2 ).getData().equals( 17.675554578575642 ) );
-        assertTrue( mae.get( 3 ).getData().equals( 18.997815872635968 ) );
-        assertTrue( mae.get( 4 ).getData().equals( 20.625668563442147 ) );
-        assertTrue( mae.get( 5 ).getData().equals( 22.094227646773568 ) );
+        List<DoubleScoreStatisticOuter> mae = Slicer.filter( processor.getCachedMetricOutput()
+                                                                      .getDoubleScoreStatistics(),
+                                                             MetricConstants.MEAN_ABSOLUTE_ERROR );
+        
+        assertEquals( 11.009512537315405,
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 11.009512537315405,
+                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 17.675554578575642,
+                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 18.997815872635968,
+                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 20.625668563442147,
+                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 22.094227646773568,
+                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate me
-        List<DoubleScoreStatistic> me = Slicer.filter( processor.getCachedMetricOutput()
-                                                                .getDoubleScoreStatistics(),
-                                                       MetricConstants.MEAN_ERROR );
-        assertTrue( me.get( 0 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( me.get( 1 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
-        assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
-        assertTrue( me.get( 4 ).getData().equals( -3.4840043925326936 ) );
-        assertTrue( me.get( 5 ).getData().equals( -4.2185439080739515 ) );
+        List<DoubleScoreStatisticOuter> me = Slicer.filter( processor.getCachedMetricOutput()
+                                                                     .getDoubleScoreStatistics(),
+                                                            MetricConstants.MEAN_ERROR );
+        
+        assertEquals( -1.157869354367079,
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -1.157869354367079,
+                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -2.1250409720950105,
+                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -2.4855770739425846,
+                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -3.4840043925326936,
+                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -4.2185439080739515,
+                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate rmse
-        List<DoubleScoreStatistic> rmse = Slicer.filter( processor.getCachedMetricOutput()
-                                                                  .getDoubleScoreStatistics(),
-                                                         MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348335 ) );
-        assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
-        assertTrue( rmse.get( 4 ).getData().equals( 58.12352988180837 ) );
-        assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( processor.getCachedMetricOutput()
+                                                                       .getDoubleScoreStatistics(),
+                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+
+        assertEquals( 41.01563032408479,
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 41.01563032408479,
+                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 52.55361580348335,
+                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 54.82426155439095,
+                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 58.12352988180837,
+                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 61.12163959516186,
+                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
     }
 
     @Test
@@ -261,18 +356,24 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         // Obtain the results
-        List<DoubleScoreStatistic> actual = processor.getCachedMetricOutput()
-                                                     .getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> actual = processor.getCachedMetricOutput()
+                                                          .getDoubleScoreStatistics();
 
-        // Check for equality
-        BiPredicate<Double, Double> testEqual = FunctionFactory.doubleEquals();
+        assertEquals( Slicer.filter( actual, MetricConstants.THREAT_SCORE )
+                            .get( 0 )
+                            .getComponent( MetricConstants.MAIN )
+                            .getData()
+                            .getValue(),
+                      0.9160756501182034,
+                      Precision.EPSILON );
 
-        assertTrue( testEqual.test( Slicer.filter( actual, MetricConstants.THREAT_SCORE ).get( 0 ).getData(),
-                                    0.9160756501182034 ) );
-        assertTrue( testEqual.test( Slicer.filter( actual, MetricConstants.PEIRCE_SKILL_SCORE )
-                                          .get( 0 )
-                                          .getData(),
-                                    -0.0012886597938144284 ) );
+        assertEquals( Slicer.filter( actual, MetricConstants.PEIRCE_SKILL_SCORE )
+                            .get( 0 )
+                            .getComponent( MetricConstants.MAIN )
+                            .getData()
+                            .getValue(),
+                      -0.0012886597938144284,
+                      Precision.EPSILON );
     }
 
     @Test
@@ -288,61 +389,141 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Obtain the results
-        List<DoubleScoreStatistic> results = processor.getCachedMetricOutput()
-                                                      .getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput()
+                                                           .getDoubleScoreStatistics();
 
         //Validate a selection of the outputs only
 
         //Validate bias
-        List<DoubleScoreStatistic> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
-        assertTrue( bias.get( 0 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( bias.get( 1 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( bias.get( 2 ).getData().equals( -0.0365931379807274 ) );
-        assertTrue( bias.get( 3 ).getData().equals( -0.039706682985140816 ) );
-        assertTrue( bias.get( 4 ).getData().equals( -0.05090288343061958 ) );
-        assertTrue( bias.get( 5 ).getData().equals( -0.056658160809530816 ) );
+        List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
+        assertEquals( -0.032093836077598345,
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.032093836077598345,
+                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.0365931379807274,
+                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.039706682985140816,
+                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.05090288343061958,
+                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.056658160809530816,
+                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate CoD
-        List<DoubleScoreStatistic> cod =
+        List<DoubleScoreStatisticOuter> cod =
                 Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        assertTrue( cod.get( 0 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( cod.get( 1 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( cod.get( 2 ).getData().equals( 0.7653639626077698 ) );
-        assertTrue( cod.get( 3 ).getData().equals( 0.76063213080129 ) );
-        assertTrue( cod.get( 4 ).getData().equals( 0.7540690263086123 ) );
-        assertTrue( cod.get( 5 ).getData().equals( 0.7492338765733539 ) );
+        assertEquals( 0.7873367083297588,
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7873367083297588,
+                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7653639626077698,
+                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.76063213080129,
+                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7540690263086123,
+                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7492338765733539,
+                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate rho
-        List<DoubleScoreStatistic> rho =
+        List<DoubleScoreStatisticOuter> rho =
                 Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        assertTrue( rho.get( 0 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( rho.get( 1 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( rho.get( 2 ).getData().equals( 0.8748508230594344 ) );
-        assertTrue( rho.get( 3 ).getData().equals( 0.8721422652304439 ) );
-        assertTrue( rho.get( 4 ).getData().equals( 0.8683714794421868 ) );
-        assertTrue( rho.get( 5 ).getData().equals( 0.8655829692024641 ) );
+        
+        assertEquals( 0.8873199582618204,
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8873199582618204,
+                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8748508230594344,
+                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8721422652304439,
+                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8683714794421868,
+                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8655829692024641,
+                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        
         //Validate mae
-        List<DoubleScoreStatistic> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
-        assertTrue( mae.get( 0 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( mae.get( 1 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( mae.get( 2 ).getData().equals( 17.675554578575642 ) );
-        assertTrue( mae.get( 3 ).getData().equals( 18.997815872635968 ) );
-        assertTrue( mae.get( 4 ).getData().equals( 20.653785159500924 ) );
-        assertTrue( mae.get( 5 ).getData().equals( 22.094227646773568 ) );
+        List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
+        
+        assertEquals( 11.009512537315405,
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 11.009512537315405,
+                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 17.675554578575642,
+                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 18.997815872635968,
+                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 20.653785159500924 ,
+                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 22.094227646773568,
+                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate me
-        List<DoubleScoreStatistic> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
-        assertTrue( me.get( 0 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( me.get( 1 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
-        assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
-        assertTrue( me.get( 4 ).getData().equals( -3.5134287820490364 ) );
-        assertTrue( me.get( 5 ).getData().equals( -4.2185439080739515 ) );
+        List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
+        
+        assertEquals( -1.157869354367079,
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -1.157869354367079,
+                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -2.1250409720950105,
+                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -2.4855770739425846,
+                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -3.5134287820490364,
+                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -4.2185439080739515,
+                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate rmse
-        List<DoubleScoreStatistic> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348335 ) );
-        assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
-        assertTrue( rmse.get( 4 ).getData().equals( 58.191244125990046 ) );
-        assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ); 
+        assertEquals( 41.01563032408479,
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 41.01563032408479,
+                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 52.55361580348335,
+                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 54.82426155439095,
+                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 58.191244125990046,
+                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 61.12163959516186,
+                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
     }
 
     @Test
@@ -540,59 +721,139 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
 
         //Obtain the results
-        List<DoubleScoreStatistic> results = processor.getCachedMetricOutput()
-                                                      .getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput()
+                                                           .getDoubleScoreStatistics();
+        
         //Validate bias
-        List<DoubleScoreStatistic> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
+        List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
+        assertEquals( -0.032093836077598345,
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.032093836077598345,
+                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.0365931379807274,
+                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.039706682985140816,
+                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.0505708024162773,
+                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -0.056658160809530816,
+                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
 
-        assertTrue( bias.get( 0 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( bias.get( 1 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( bias.get( 2 ).getData().equals( -0.0365931379807274 ) );
-        assertTrue( bias.get( 3 ).getData().equals( -0.039706682985140816 ) );
-        assertTrue( bias.get( 4 ).getData().equals( -0.0505708024162773 ) );
-        assertTrue( bias.get( 5 ).getData().equals( -0.056658160809530816 ) );
         //Validate CoD
-        List<DoubleScoreStatistic> cod =
+        List<DoubleScoreStatisticOuter> cod =
                 Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        assertTrue( cod.get( 0 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( cod.get( 1 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( cod.get( 2 ).getData().equals( 0.7653639626077698 ) );
-        assertTrue( cod.get( 3 ).getData().equals( 0.76063213080129 ) );
-        assertTrue( cod.get( 4 ).getData().equals( 0.7542039364210298 ) );
-        assertTrue( cod.get( 5 ).getData().equals( 0.7492338765733539 ) );
+        assertEquals( 0.7873367083297588,
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7873367083297588,
+                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7653639626077698,
+                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.76063213080129,
+                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7542039364210298,
+                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.7492338765733539,
+                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate rho
-        List<DoubleScoreStatistic> rho =
+        List<DoubleScoreStatisticOuter> rho =
                 Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        assertTrue( rho.get( 0 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( rho.get( 1 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( rho.get( 2 ).getData().equals( 0.8748508230594344 ) );
-        assertTrue( rho.get( 3 ).getData().equals( 0.8721422652304439 ) );
-        assertTrue( rho.get( 4 ).getData().equals( 0.868449155921652 ) );
-        assertTrue( rho.get( 5 ).getData().equals( 0.8655829692024641 ) );
+        
+        assertEquals( 0.8873199582618204,
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8873199582618204,
+                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8748508230594344,
+                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8721422652304439,
+                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.868449155921652,
+                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 0.8655829692024641,
+                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        
         //Validate mae
-        List<DoubleScoreStatistic> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
-        assertTrue( mae.get( 0 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( mae.get( 1 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( mae.get( 2 ).getData().equals( 17.675554578575642 ) );
-        assertTrue( mae.get( 3 ).getData().equals( 18.997815872635968 ) );
-        assertTrue( mae.get( 4 ).getData().equals( 20.625668563442147 ) );
-        assertTrue( mae.get( 5 ).getData().equals( 22.094227646773568 ) );
+        List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
+        
+        assertEquals( 11.009512537315405,
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 11.009512537315405,
+                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 17.675554578575642,
+                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 18.997815872635968,
+                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 20.625668563442147,
+                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 22.094227646773568,
+                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate me
-        List<DoubleScoreStatistic> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
-        assertTrue( me.get( 0 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( me.get( 1 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
-        assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
-        assertTrue( me.get( 4 ).getData().equals( -3.4840043925326936 ) );
-        assertTrue( me.get( 5 ).getData().equals( -4.2185439080739515 ) );
+        List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
+        
+        assertEquals( -1.157869354367079,
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -1.157869354367079,
+                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -2.1250409720950105,
+                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -2.4855770739425846,
+                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -3.4840043925326936,
+                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( -4.2185439080739515,
+                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+
         //Validate rmse
-        List<DoubleScoreStatistic> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348335 ) );
-        assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
-        assertTrue( rmse.get( 4 ).getData().equals( 58.12352988180837 ) );
-        assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ); 
+        assertEquals( 41.01563032408479,
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 41.01563032408479,
+                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 52.55361580348335,
+                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 54.82426155439095,
+                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 58.12352988180837,
+                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );
+        assertEquals( 61.12163959516186,
+                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      Precision.EPSILON );        
     }
 
     @Test
@@ -608,8 +869,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         // Expected result
         final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                         Duration.ofHours( 24 ) );
+                                                                   Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                                   Duration.ofHours( 24 ) );
 
         SampleMetadata expectedSampleMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( Location.of( "DRRC2" ),
@@ -619,24 +880,35 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                null );
 
         //Obtain the results
-        List<DoubleScoreStatistic> results =
+        List<DoubleScoreStatisticOuter> results =
                 Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                meta -> meta.getMetricID().equals( MetricConstants.CONTINGENCY_TABLE )
                                        && meta.getSampleMetadata().getTimeWindow().equals( expectedWindow ) );
 
         // Exceeds 50.0 with occurrences > 0.05
-        Map<MetricConstants, Double> expectedFirstElements = new HashMap<>();
-        expectedFirstElements.put( MetricConstants.TRUE_POSITIVES, 40.0 );
-        expectedFirstElements.put( MetricConstants.TRUE_NEGATIVES, 91.0 );
-        expectedFirstElements.put( MetricConstants.FALSE_POSITIVES, 32.0 );
-        expectedFirstElements.put( MetricConstants.FALSE_NEGATIVES, 2.0 );
+        DoubleScoreStatistic firstTable =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 40 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 32 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 2 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 91 ) )
+                                    .build();
 
         OneOrTwoThresholds first = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdDataType.LEFT ),
+                                                                             Operator.GREATER,
+                                                                             ThresholdDataType.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdDataType.LEFT ) );
+                                                                                                 Operator.GREATER,
+                                                                                                 ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMetaFirst = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, first ),
                                                                     165,
@@ -644,27 +916,39 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     MetricConstants.CONTINGENCY_TABLE,
                                                                     null );
 
-        DoubleScoreStatistic expectedFirst = DoubleScoreStatistic.of( expectedFirstElements, expectedMetaFirst );
+        DoubleScoreStatisticOuter expectedFirst =
+                DoubleScoreStatisticOuter.of( firstTable, expectedMetaFirst );
 
-        DoubleScoreStatistic actualFirst =
+        DoubleScoreStatisticOuter actualFirst =
                 Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( first ) )
                       .get( 0 );
 
         assertEquals( expectedFirst, actualFirst );
 
         // Exceeds 50.0 with occurrences > 0.25
-        Map<MetricConstants, Double> expectedSecondElements = new HashMap<>();
-        expectedSecondElements.put( MetricConstants.TRUE_POSITIVES, 39.0 );
-        expectedSecondElements.put( MetricConstants.TRUE_NEGATIVES, 106.0 );
-        expectedSecondElements.put( MetricConstants.FALSE_POSITIVES, 17.0 );
-        expectedSecondElements.put( MetricConstants.FALSE_NEGATIVES, 3.0 );
+        DoubleScoreStatistic secondTable =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 39 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 17 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 3 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 106 ) )
+                                    .build();
 
         OneOrTwoThresholds second = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ),
                                                            ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
-                                                                                             Operator.GREATER,
-                                                                                             ThresholdDataType.LEFT ) );
+                                                                                                  Operator.GREATER,
+                                                                                                  ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMetaSecond = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, second ),
                                                                      165,
@@ -672,27 +956,39 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                      MetricConstants.CONTINGENCY_TABLE,
                                                                      null );
 
-        DoubleScoreStatistic expectedSecond = DoubleScoreStatistic.of( expectedSecondElements, expectedMetaSecond );
+        DoubleScoreStatisticOuter expectedSecond =
+                DoubleScoreStatisticOuter.of( secondTable, expectedMetaSecond );
 
-        DoubleScoreStatistic actualSecond =
+        DoubleScoreStatisticOuter actualSecond =
                 Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( second ) )
                       .get( 0 );
 
         assertEquals( expectedSecond, actualSecond );
 
         // Exceeds 50.0 with occurrences > 0.5
-        Map<MetricConstants, Double> expectedThirdElements = new HashMap<>();
-        expectedThirdElements.put( MetricConstants.TRUE_POSITIVES, 39.0 );
-        expectedThirdElements.put( MetricConstants.TRUE_NEGATIVES, 108.0 );
-        expectedThirdElements.put( MetricConstants.FALSE_POSITIVES, 15.0 );
-        expectedThirdElements.put( MetricConstants.FALSE_NEGATIVES, 3.0 );
+        DoubleScoreStatistic thirdTable =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 39 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 15 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 3 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 108 ) )
+                                    .build();
 
         OneOrTwoThresholds third = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdDataType.LEFT ),
+                                                                             Operator.GREATER,
+                                                                             ThresholdDataType.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdDataType.LEFT ) );
+                                                                                                 Operator.GREATER,
+                                                                                                 ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMetaThird = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, third ),
                                                                     165,
@@ -700,27 +996,39 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     MetricConstants.CONTINGENCY_TABLE,
                                                                     null );
 
-        DoubleScoreStatistic expectedThird = DoubleScoreStatistic.of( expectedThirdElements, expectedMetaThird );
+        DoubleScoreStatisticOuter expectedThird =
+                DoubleScoreStatisticOuter.of( thirdTable, expectedMetaThird );
 
-        DoubleScoreStatistic actualThird =
+        DoubleScoreStatisticOuter actualThird =
                 Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( third ) )
                       .get( 0 );
 
         assertEquals( expectedThird, actualThird );
 
         // Exceeds 50.0 with occurrences > 0.75
-        Map<MetricConstants, Double> expectedFourthElements = new HashMap<>();
-        expectedFourthElements.put( MetricConstants.TRUE_POSITIVES, 37.0 );
-        expectedFourthElements.put( MetricConstants.TRUE_NEGATIVES, 109.0 );
-        expectedFourthElements.put( MetricConstants.FALSE_POSITIVES, 14.0 );
-        expectedFourthElements.put( MetricConstants.FALSE_NEGATIVES, 5.0 );
+        DoubleScoreStatistic fourthTable =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 37 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 14 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 5 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 109 ) )
+                                    .build();
 
         OneOrTwoThresholds fourth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ),
                                                            ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
-                                                                                             Operator.GREATER,
-                                                                                             ThresholdDataType.LEFT ) );
+                                                                                                  Operator.GREATER,
+                                                                                                  ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMetaFourth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, fourth ),
                                                                      165,
@@ -728,26 +1036,38 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                      MetricConstants.CONTINGENCY_TABLE,
                                                                      null );
 
-        DoubleScoreStatistic expectedFourth = DoubleScoreStatistic.of( expectedFourthElements, expectedMetaFourth );
-        DoubleScoreStatistic actualFourth =
+        DoubleScoreStatisticOuter expectedFourth =
+                DoubleScoreStatisticOuter.of( fourthTable, expectedMetaFourth );
+        DoubleScoreStatisticOuter actualFourth =
                 Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fourth ) )
                       .get( 0 );
 
         assertEquals( expectedFourth, actualFourth );
 
         // Exceeds 50.0 with occurrences > 0.9
-        Map<MetricConstants, Double> expectedFifthElements = new HashMap<>();
-        expectedFifthElements.put( MetricConstants.TRUE_POSITIVES, 37.0 );
-        expectedFifthElements.put( MetricConstants.TRUE_NEGATIVES, 112.0 );
-        expectedFifthElements.put( MetricConstants.FALSE_POSITIVES, 11.0 );
-        expectedFifthElements.put( MetricConstants.FALSE_NEGATIVES, 5.0 );
+        DoubleScoreStatistic fifthTable =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 37 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 11 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 5 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 112 ) )
+                                    .build();
 
         OneOrTwoThresholds fifth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdDataType.LEFT ),
+                                                                             Operator.GREATER,
+                                                                             ThresholdDataType.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdDataType.LEFT ) );
+                                                                                                 Operator.GREATER,
+                                                                                                 ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMetaFifth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, fifth ),
                                                                     165,
@@ -755,27 +1075,39 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     MetricConstants.CONTINGENCY_TABLE,
                                                                     null );
 
-        DoubleScoreStatistic expectedFifth = DoubleScoreStatistic.of( expectedFifthElements, expectedMetaFifth );
+        DoubleScoreStatisticOuter expectedFifth =
+                DoubleScoreStatisticOuter.of( fifthTable, expectedMetaFifth );
 
-        DoubleScoreStatistic actualFifth =
+        DoubleScoreStatisticOuter actualFifth =
                 Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fifth ) )
                       .get( 0 );
 
         assertEquals( expectedFifth, actualFifth );
 
         // Exceeds 50.0 with occurrences > 0.95
-        Map<MetricConstants, Double> expectedSixthElements = new HashMap<>();
-        expectedSixthElements.put( MetricConstants.TRUE_POSITIVES, 36.0 );
-        expectedSixthElements.put( MetricConstants.TRUE_NEGATIVES, 113.0 );
-        expectedSixthElements.put( MetricConstants.FALSE_POSITIVES, 10.0 );
-        expectedSixthElements.put( MetricConstants.FALSE_NEGATIVES, 6.0 );
+        DoubleScoreStatistic sixthTable =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( ContingencyTable.METRIC )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setValue( 36 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setValue( 10 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setValue( 6 ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setValue( 113 ) )
+                                    .build();
 
         OneOrTwoThresholds sixth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdDataType.LEFT ),
+                                                                             Operator.GREATER,
+                                                                             ThresholdDataType.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdDataType.LEFT ) );
+                                                                                                 Operator.GREATER,
+                                                                                                 ThresholdDataType.LEFT ) );
 
         StatisticMetadata expectedMetaSixth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, sixth ),
                                                                     165,
@@ -783,9 +1115,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     MetricConstants.CONTINGENCY_TABLE,
                                                                     null );
 
-        DoubleScoreStatistic expectedSixth = DoubleScoreStatistic.of( expectedSixthElements, expectedMetaSixth );
+        DoubleScoreStatisticOuter expectedSixth =
+                DoubleScoreStatisticOuter.of( sixthTable, expectedMetaSixth );
 
-        DoubleScoreStatistic actualSixth =
+        DoubleScoreStatisticOuter actualSixth =
                 Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( sixth ) )
                       .get( 0 );
 
@@ -805,14 +1138,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
         //Obtain the results
-        List<DoubleScoreStatistic> results = processor.getCachedMetricOutput().getDoubleScoreStatistics();
+        List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput().getDoubleScoreStatistics();
 
         //Validate the score outputs
-        for ( DoubleScoreStatistic nextMetric : results )
+        for ( DoubleScoreStatisticOuter nextMetric : results )
         {
             if ( nextMetric.getMetadata().getMetricID() != MetricConstants.SAMPLE_SIZE )
             {
-                assertTrue( nextMetric.getData().isNaN() );
+                assertEquals( Double.NaN, nextMetric.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
             }
         }
     }

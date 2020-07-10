@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -24,10 +25,13 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link IndexOfAgreement}.
@@ -58,31 +62,38 @@ public final class IndexOfAgreementTest
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
         //Metadata for the output
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     Duration.ofHours( 24 ) );
 
-        final StatisticMetadata m1 =
+        StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                       "QME",
-                                                                                                       "NVE" ) )
-                                                                 .setTimeWindow( window )
-                                                                 .build(),
+                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                         "QME",
+                                                                                         "NVE" ) )
+                                                   .setTimeWindow( window )
+                                                   .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.INDEX_OF_AGREEMENT,
                                       MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreStatistic actual = ioa.apply( input );
+        DoubleScoreStatisticOuter actual = this.ioa.apply( input );
 
-        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8221179993380173, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 0.8221179993380173 )
+                                                                               .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( IndexOfAgreement.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -92,9 +103,9 @@ public final class IndexOfAgreementTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatistic actual = ioa.apply( input );
+        DoubleScoreStatisticOuter actual = ioa.apply( input );
 
-        assertTrue( actual.getData().isNaN() );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
 
     @Test
@@ -114,7 +125,7 @@ public final class IndexOfAgreementTest
     {
         assertFalse( ioa.isSkillScore() );
     }
-    
+
     @Test
     public void testhasRealUnits()
     {

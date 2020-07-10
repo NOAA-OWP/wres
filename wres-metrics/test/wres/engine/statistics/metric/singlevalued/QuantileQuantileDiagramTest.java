@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.DiagramStatistic;
+import wres.datamodel.statistics.DiagramStatisticOuter;
 
 /**
  * Tests the {@link QuantileQuantileDiagram}.
@@ -58,7 +58,7 @@ public final class QuantileQuantileDiagramTest
         SampleDataBasic<Pair<Double, Double>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Check the results       
-        final DiagramStatistic actual = qqd.apply( input );
+        final DiagramStatisticOuter actual = qqd.apply( input );
         double[] actualObs = actual.get( MetricDimension.OBSERVED_QUANTILES ).getDoubles();
         double[] actualPred = actual.get( MetricDimension.PREDICTED_QUANTILES ).getDoubles();
 
@@ -101,7 +101,7 @@ public final class QuantileQuantileDiagramTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DiagramStatistic actual = qqd.apply( input );
+        DiagramStatisticOuter actual = qqd.apply( input );
 
         double[] source = new double[1000];
 

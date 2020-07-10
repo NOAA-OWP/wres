@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.timeseries;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,22 +15,29 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.DurationScoreStatistic;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.PairedStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.DurationScoreMetric;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 
 /**
  * A collection of summary statistics that operate on the outputs from {@link TimingError} and are expressed as 
- * {@link DurationScoreStatistic}.
+ * {@link DurationScoreStatisticOuter}.
  * 
  * TODO: consider implementing an API for summary statistics that works directly with {@link Duration}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class TimingErrorDurationStatistics implements Function<PairedStatistic<Instant, Duration>, DurationScoreStatistic>
+public class TimingErrorDurationStatistics
+        implements Function<PairedStatisticOuter<Instant, Duration>, DurationScoreStatisticOuter>
 {
 
     /**
@@ -43,6 +51,12 @@ public class TimingErrorDurationStatistics implements Function<PairedStatistic<I
      */
 
     private final MetricConstants identifier;
+
+    /**
+     * A map of score metric components by name.
+     */
+
+    private final Map<MetricConstants, DurationScoreMetricComponent> components;
 
     /**
      * Returns an instance.
@@ -61,7 +75,7 @@ public class TimingErrorDurationStatistics implements Function<PairedStatistic<I
 
 
     @Override
-    public DurationScoreStatistic apply( PairedStatistic<Instant, Duration> pairs )
+    public DurationScoreStatisticOuter apply( PairedStatisticOuter<Instant, Duration> pairs )
     {
         if ( Objects.isNull( pairs ) )
         {
@@ -69,29 +83,35 @@ public class TimingErrorDurationStatistics implements Function<PairedStatistic<I
         }
 
         // Map of outputs
-        Map<MetricConstants, Duration> returnMe = new TreeMap<>();
+        DurationScoreMetric.Builder metricBuilder = DurationScoreMetric.newBuilder();
+        DurationScoreStatistic.Builder scoreBuilder = DurationScoreStatistic.newBuilder();
 
         // Iterate through the statistics
         MetricConstants nextIdentifier = null;
-        for ( Entry<MetricConstants, ToDoubleFunction<VectorOfDoubles>> next : statistics.entrySet() )
+        for ( Entry<MetricConstants, ToDoubleFunction<VectorOfDoubles>> next : this.statistics.entrySet() )
         {
             nextIdentifier = next.getKey();
 
-            // Some data available
+            // Add the metric component
+            metricBuilder.addComponents( this.components.get( nextIdentifier ) );
+
+            // Data available
             if ( !pairs.getData().isEmpty() )
             {
                 // Convert the input to double ms
                 double[] input = pairs.getData().stream().mapToDouble( a -> a.getValue().toMillis() ).toArray();
 
                 // Some loss of precision here, not consequential
-                returnMe.put( nextIdentifier,
-                              Duration.ofMillis( Math.round( statistics.get( nextIdentifier )
-                                                                       .applyAsDouble( VectorOfDoubles.of( input ) ) ) ) );
-            }
-            // No data available
-            else
-            {
-                returnMe.put( nextIdentifier, MissingValues.DURATION );
+                Duration duration = Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
+                                                                                  .applyAsDouble( VectorOfDoubles.of( input ) ) ) );
+
+                // Add statistic component
+                DurationScoreStatisticComponent.Builder builder = DurationScoreStatisticComponent.newBuilder()
+                                                                                                 .setName( ComponentName.valueOf( nextIdentifier.name() ) );
+
+                builder.setValue( MessageFactory.parse( duration ) );
+
+                scoreBuilder.addStatistics( builder );
             }
         }
 
@@ -100,14 +120,19 @@ public class TimingErrorDurationStatistics implements Function<PairedStatistic<I
         MetricConstants singleIdentifier = null;
 
         // If the metric is defined with only one summary statistic, list this component in the metadata
-        if ( statistics.size() == 1 )
+        if ( this.statistics.size() == 1 )
         {
             singleIdentifier = nextIdentifier;
         }
-        final MetricConstants componentID = singleIdentifier;
-        
+
+        MetricConstants componentID = singleIdentifier;
+
         StatisticMetadata meta = StatisticMetadata.of( in, this.getID(), componentID );
-        return DurationScoreStatistic.of( returnMe, meta );
+
+        DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder )
+                                                   .build();
+
+        return DurationScoreStatisticOuter.of( score, meta );
     }
 
     /**
@@ -144,6 +169,7 @@ public class TimingErrorDurationStatistics implements Function<PairedStatistic<I
         }
 
         this.statistics = new TreeMap<>();
+        this.components = new HashMap<>();
 
         // Set and validate the copy
         for ( MetricConstants next : input )
@@ -153,8 +179,12 @@ public class TimingErrorDurationStatistics implements Function<PairedStatistic<I
                 throw new MetricParameterException( "Cannot build the metric with a null statistic." );
             }
             this.statistics.put( next, FunctionFactory.ofStatistic( next ) );
-        }
 
+            DurationScoreMetricComponent component = DurationScoreMetricComponent.newBuilder()
+                                                                                 .setName( ComponentName.valueOf( next.name() ) )
+                                                                                 .build();
+            this.components.put( next, component );
+        }
     }
 
     /**

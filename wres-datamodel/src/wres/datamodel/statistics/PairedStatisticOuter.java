@@ -14,7 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * @author james.brown@hydrosolved.com
  */
 
-public class PairedStatistic<S, T> implements Statistic<List<Pair<S, T>>>, Iterable<Pair<S, T>>
+public class PairedStatisticOuter<S, T> implements Statistic<List<Pair<S, T>>>, Iterable<Pair<S, T>>
 {
     /**
      * Line separator for printing.
@@ -45,9 +45,9 @@ public class PairedStatistic<S, T> implements Statistic<List<Pair<S, T>>>, Itera
      * @return an instance of the output
      */
 
-    public static <S, T> PairedStatistic<S, T> of( final List<Pair<S, T>> statistic, final StatisticMetadata meta )
+    public static <S, T> PairedStatisticOuter<S, T> of( final List<Pair<S, T>> statistic, final StatisticMetadata meta )
     {
-        return new PairedStatistic<>( statistic, meta );
+        return new PairedStatisticOuter<>( statistic, meta );
     }
 
     @Override
@@ -59,11 +59,11 @@ public class PairedStatistic<S, T> implements Statistic<List<Pair<S, T>>>, Itera
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof PairedStatistic ) )
+        if ( ! ( o instanceof PairedStatisticOuter ) )
         {
             return false;
         }
-        final PairedStatistic<?, ?> v = (PairedStatistic<?, ?>) o;
+        final PairedStatisticOuter<?, ?> v = (PairedStatisticOuter<?, ?>) o;
         boolean start = meta.equals( v.getMetadata() );
         start = start && v.statistic.equals( statistic );
         return start;
@@ -103,7 +103,7 @@ public class PairedStatistic<S, T> implements Statistic<List<Pair<S, T>>>, Itera
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private PairedStatistic( final List<Pair<S, T>> statistic, final StatisticMetadata meta )
+    private PairedStatisticOuter( final List<Pair<S, T>> statistic, final StatisticMetadata meta )
     {
         //Validate
         if ( Objects.isNull( statistic ) )

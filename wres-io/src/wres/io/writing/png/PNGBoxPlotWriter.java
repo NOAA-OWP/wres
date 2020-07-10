@@ -26,8 +26,8 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.BoxPlotStatistics;
+import wres.datamodel.statistics.BoxplotStatistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
@@ -37,13 +37,13 @@ import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link BoxPlotStatistics} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link BoxplotStatisticOuter} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGBoxPlotWriter extends PNGWriter
-        implements Consumer<List<BoxPlotStatistics>>,
+        implements Consumer<List<BoxplotStatisticOuter>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -77,7 +77,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final List<BoxPlotStatistics> output )
+    public void accept( final List<BoxplotStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -93,7 +93,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws PNGWriteException if the output cannot be written
      */
 
-    private void writeBoxPlotsPerPair( List<BoxPlotStatistics> output )
+    private void writeBoxPlotsPerPair( List<BoxplotStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -106,22 +106,22 @@ public class PNGBoxPlotWriter extends PNGWriter
         {
 
             // Iterate through types per pair
-            List<BoxPlotStatistics> perPair =
+            List<BoxplotStatisticOuter> perPair =
                     Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR ) );
 
             SortedSet<MetricConstants> metricsPerPair =
                     Slicer.discover( perPair, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metricsPerPair )
             {
-                List<BoxPlotStatistics> filtered = Slicer.filter( perPair, next );
+                List<BoxplotStatisticOuter> filtered = Slicer.filter( perPair, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<BoxPlotStatistics>> groups =
+                Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
                         WriterHelper.getStatisticsGroupedByContext( filtered );
 
-                for ( List<BoxPlotStatistics> nextGroup : groups.values() )
+                for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
                             PNGBoxPlotWriter.writeOneBoxPlotChartPerMetricAndPool( super.getSystemSettings(),
@@ -144,7 +144,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws PNGWriteException if the output cannot be written
      */
 
-    private void writeBoxPlotsPerPool( List<BoxPlotStatistics> output )
+    private void writeBoxPlotsPerPool( List<BoxplotStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -157,22 +157,22 @@ public class PNGBoxPlotWriter extends PNGWriter
         {
 
             // Iterate through the pool types
-            List<BoxPlotStatistics> perPool =
+            List<BoxplotStatisticOuter> perPool =
                     Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) );
 
             SortedSet<MetricConstants> metricsPerPool =
                     Slicer.discover( perPool, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metricsPerPool )
             {
-                List<BoxPlotStatistics> filtered = Slicer.filter( perPool, next );
+                List<BoxplotStatisticOuter> filtered = Slicer.filter( perPool, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<BoxPlotStatistics>> groups =
+                Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
                         WriterHelper.getStatisticsGroupedByContext( filtered );
 
-                for ( List<BoxPlotStatistics> nextGroup : groups.values() )
+                for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
                             PNGBoxPlotWriter.writeOneBoxPlotChartPerMetric( super.getSystemSettings(),
@@ -201,8 +201,8 @@ public class PNGBoxPlotWriter extends PNGWriter
     }
 
     /**
-     * Writes a separate box plot chart for each {@link BoxPlotStatistics} in the {@link List}
-     * provided. Each {@link BoxPlotStatistics} represents one metric result for one pool or 
+     * Writes a separate box plot chart for each {@link BoxplotStatisticOuter} in the {@link List}
+     * provided. Each {@link BoxplotStatisticOuter} represents one metric result for one pool or 
      * {@link TimeWindowOuter}.
      *
      * @param outputDirectory the directory into which to write
@@ -218,7 +218,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                    Path outputDirectory,
                                                                    ProjectConfigPlus projectConfigPlus,
                                                                    DestinationConfig destinationConfig,
-                                                                   List<BoxPlotStatistics> output,
+                                                                   List<BoxplotStatisticOuter> output,
                                                                    ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -260,7 +260,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     }
 
     /**
-     * Writes a single box plot chart for all {@link BoxPlotStatistics} in the {@link List}
+     * Writes a single box plot chart for all {@link BoxplotStatisticOuter} in the {@link List}
      * provided.
      *
      * @param outputDirectory the directory into which to write
@@ -276,7 +276,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                             Path outputDirectory,
                                                             ProjectConfigPlus projectConfigPlus,
                                                             DestinationConfig destinationConfig,
-                                                            List<BoxPlotStatistics> output,
+                                                            List<BoxplotStatisticOuter> output,
                                                             ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -289,9 +289,9 @@ public class PNGBoxPlotWriter extends PNGWriter
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metadata.getMetricID() );
 
             // Pool the output
-            List<BoxPlotStatistic> pool = new ArrayList<>();
+            List<BoxplotStatistic> pool = new ArrayList<>();
             output.forEach( next -> pool.addAll( next.getData() ) );
-            BoxPlotStatistics pooled = BoxPlotStatistics.of( pool, metadata );
+            BoxplotStatisticOuter pooled = BoxplotStatisticOuter.of( pool, metadata );
 
             // Build the chart engine
             ChartEngine engine =

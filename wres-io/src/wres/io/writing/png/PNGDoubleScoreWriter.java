@@ -28,7 +28,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.config.ConfigHelper;
@@ -37,13 +37,13 @@ import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link DoubleScoreStatistic} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DoubleScoreStatisticOuter} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDoubleScoreWriter extends PNGWriter
-        implements Consumer<List<DoubleScoreStatistic>>,
+        implements Consumer<List<DoubleScoreStatisticOuter>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -79,7 +79,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final List<DoubleScoreStatistic> output )
+    public void accept( final List<DoubleScoreStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -101,15 +101,15 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 }
                 else
                 {
-                    List<DoubleScoreStatistic> filtered = Slicer.filter( output, next );
+                    List<DoubleScoreStatisticOuter> filtered = Slicer.filter( output, next );
 
                     // Group the statistics by the LRB context in which they appear. There will be one path written
                     // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                     // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                    Map<LeftOrRightOrBaseline, List<DoubleScoreStatistic>> groups =
+                    Map<LeftOrRightOrBaseline, List<DoubleScoreStatisticOuter>> groups =
                             WriterHelper.getStatisticsGroupedByContext( filtered );
 
-                    for ( List<DoubleScoreStatistic> nextGroup : groups.values() )
+                    for ( List<DoubleScoreStatisticOuter> nextGroup : groups.values() )
                     {
                         Set<Path> innerPathsWrittenTo =
                                 PNGDoubleScoreWriter.writeScoreCharts( super.getSystemSettings(),
@@ -138,7 +138,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link DoubleScoreStatistic} for a single metric and time window,
+     * Writes a set of charts associated with {@link DoubleScoreStatisticOuter} for a single metric and time window,
      * stored in a {@link List}.
      *
      * @param systemSettings The system settings to use.
@@ -155,7 +155,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
                                                Path outputDirectory,
                                                ProjectConfigPlus projectConfigPlus,
                                                DestinationConfig destinationConfig,
-                                               List<DoubleScoreStatistic> output,
+                                               List<DoubleScoreStatisticOuter> output,
                                                ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -169,7 +169,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-            List<List<DoubleScoreStatistic>> allOutputs = new ArrayList<>();
+            List<List<DoubleScoreStatisticOuter>> allOutputs = new ArrayList<>();
 
             SortedSet<ThresholdOuter> secondThreshold =
                     Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
@@ -189,7 +189,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 allOutputs.add( output );
             }
 
-            for ( List<DoubleScoreStatistic> nextOutput : allOutputs )
+            for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
             {
                 ConcurrentMap<MetricConstants, ChartEngine> engines =
                         ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),

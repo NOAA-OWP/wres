@@ -18,9 +18,12 @@ import org.junit.Test;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link MetricTask}.
@@ -57,13 +60,13 @@ public final class MetricTaskTest
         final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final Metric<SampleData<Pair<Double, Double>>, DoubleScoreStatistic> m = MeanError.of();
+        final Metric<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> m = MeanError.of();
 
         // Wrap an input in a future
         final FutureTask<SampleData<Pair<Double, Double>>> futureInput =
                 new FutureTask<>( () -> input );
 
-        final MetricTask<SampleData<Pair<Double, Double>>, DoubleScoreStatistic> task =
+        final MetricTask<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> task =
                 new MetricTask<>( m, futureInput );
 
         // Compute the pairs
@@ -75,10 +78,19 @@ public final class MetricTaskTest
                                                                 MeasurementUnit.of(),
                                                                 MetricConstants.MEAN_ERROR,
                                                                 MetricConstants.MAIN );
-        DoubleScoreStatistic benchmark = DoubleScoreStatistic.of( 200.55, benchmarkMeta );
 
-        assertTrue( benchmark.equals( task.call() ) );
+        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
+                                                                               .setName( ComponentName.MAIN )
+                                                                               .setValue( 200.55 )
+                                                                               .build();
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( MeanError.METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
 
+        DoubleScoreStatisticOuter benchmark = DoubleScoreStatisticOuter.of( score, benchmarkMeta );
+
+        assertEquals( benchmark, task.call() );
     }
 
     /**
@@ -95,7 +107,7 @@ public final class MetricTaskTest
     {
 
         // Add some appropriate metrics to the collection
-        final Metric<SampleData<Pair<Double, Double>>, DoubleScoreStatistic> m = MeanError.of();
+        final Metric<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> m = MeanError.of();
 
         final FutureTask<SampleData<Pair<Double, Double>>> futureInputNull =
                 new FutureTask<>( () -> null );
@@ -104,7 +116,7 @@ public final class MetricTaskTest
         pairPool.submit( futureInputNull );
 
         // Exceptional case
-        MetricTask<SampleData<Pair<Double, Double>>, DoubleScoreStatistic> task2 =
+        MetricTask<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter> task2 =
                 new MetricTask<>( m, futureInputNull );
 
         // Unrecognized metric
