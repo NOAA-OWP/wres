@@ -1,27 +1,25 @@
 package wres.datamodel.statistics;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
-import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
-import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.datamodel.statistics.BasicScoreStatistic.BasicScoreComponent;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 
 /**
- * An immutable statistic that comprises one or more {@link Duration} components.
+ * An immutable score statistic that wraps a {@link DurationScoreStatistic}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
+@Immutable
 public class DurationScoreStatisticOuter
         extends BasicScoreStatistic<DurationScoreStatistic, DurationScoreComponentOuter>
 {

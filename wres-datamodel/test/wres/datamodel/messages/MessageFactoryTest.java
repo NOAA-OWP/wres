@@ -15,7 +15,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,6 +69,11 @@ import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
@@ -522,15 +526,55 @@ public class MessageFactoryTest
                                       MetricConstants.RELIABILITY_DIAGRAM,
                                       null );
 
-        Map<MetricDimension, VectorOfDoubles> fakeOutputs = new EnumMap<>( MetricDimension.class );
-        fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
-                         VectorOfDoubles.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) );
-        fakeOutputs.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                         VectorOfDoubles.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) );
-        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
+        DiagramMetricComponent forecastComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                      .build();
+
+        DiagramMetricComponent observedComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                      .build();
+
+        DiagramMetricComponent sampleComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.SAMPLE_SIZE )
+                                      .build();
+
+        DiagramMetric metric = DiagramMetric.newBuilder()
+                                            .addComponents( forecastComponent )
+                                            .addComponents( observedComponent )
+                                            .addComponents( sampleComponent )
+                                            .setName( MetricName.RELIABILITY_DIAGRAM )
+                                            .build();
+
+        DiagramStatisticComponent forecastProbability =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .addAllValues( List.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) )
+                                         .build();
+
+        DiagramStatisticComponent observedFrequency =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( List.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) )
+                                         .build();
+
+        DiagramStatisticComponent sampleSize =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .addAllValues( List.of( 5926.0, 371.0, 540.0, 650.0, 1501.0 ) )
+                                         .build();
+
+        DiagramStatistic statistic = DiagramStatistic.newBuilder()
+                                                     .addStatistics( forecastProbability )
+                                                     .addStatistics( observedFrequency )
+                                                     .addStatistics( sampleSize )
+                                                     .setMetric( metric )
+                                                     .build();
 
         // Fake output wrapper.
-        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( fakeOutputs, fakeMetadata ) ) );
+        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( statistic, fakeMetadata ) ) );
     }
 
     /**
@@ -695,17 +739,17 @@ public class MessageFactoryTest
         DurationScoreStatistic score =
                 DurationScoreStatistic.newBuilder()
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 3_600 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 3_600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 7_200 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 7_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 10_800 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 10_800 ) ) )
                                       .build();
 
         return Collections.singletonList( DurationScoreStatisticOuter.of( score, fakeMetadata ) );

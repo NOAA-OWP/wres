@@ -332,72 +332,6 @@ public class MessageFactory
     }
 
     /**
-     * Returns a {@link Evaluation} from the closest approximation at present, namely a {@link SampleMetadata}. 
-     * See #61388.
-     * 
-     * TODO: need a better abstraction of an evaluation within the software. See #61388. For now, use the message
-     * representation and fill in any missing blanks that can be filled from the statistics metadata.
-     * 
-     * @param evaluation the broad outlines of an evaluation
-     * @param metadata the metadata
-     * @return an evaluation message
-     */
-
-    public static Evaluation parse( Evaluation evaluation, SampleMetadata metadata )
-    {
-        Objects.requireNonNull( metadata );
-
-        // Create an evaluation with as much data as possible
-        // TODO: need a better abstraction of an evaluation within the software. See #61388
-        // For now, hints like a job identifier and start/end time will need to come from the 
-        // message instance provided.
-        Evaluation.Builder evaluationPlus = Evaluation.newBuilder( evaluation );
-
-        evaluationPlus.setMeasurementUnit( metadata.getMeasurementUnit().getUnit() );
-
-        if ( metadata.hasTimeScale() )
-        {
-            evaluationPlus.setTimeScale( MessageFactory.parse( metadata.getTimeScale() ) );
-        }
-
-        if ( metadata.hasIdentifier() )
-        {
-            DatasetIdentifier identifier = metadata.getIdentifier();
-            if ( identifier.hasVariableName() )
-            {
-                evaluationPlus.setVariableName( identifier.getVariableName() );
-            }
-            if ( identifier.hasScenarioName() )
-            {
-                evaluationPlus.setRightSourceName( identifier.getScenarioName() );
-            }
-            if ( identifier.hasScenarioNameForBaseline() )
-            {
-                evaluationPlus.setBaselineSourceName( identifier.getScenarioNameForBaseline() );
-            }
-        }
-
-        // Set the season and value filters from the project declaration
-        if ( metadata.hasProjectConfig() )
-        {
-            // Season
-            ProjectConfig project = metadata.getProjectConfig();
-            if ( Objects.nonNull( project.getPair().getSeason() ) )
-            {
-                evaluationPlus.setSeason( MessageFactory.parse( project.getPair().getSeason() ) );
-            }
-
-            if ( Objects.nonNull( project.getPair().getValues() ) )
-            {
-                evaluationPlus.setValueFilter( MessageFactory.parse( project.getPair().getValues() ) );
-            }
-
-        }
-
-        return evaluationPlus.build();
-    }
-
-    /**
      * Creates a {@link EvaluationStatus} message from a list of {@link EvaluationEvent} and other metadata.
      * 
      * @param startTime the evaluation start time
@@ -607,31 +541,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        DiagramMetric.Builder metricBuilder = DiagramMetric.newBuilder();
-        DiagramStatistic.Builder diagramBuilder = DiagramStatistic.newBuilder();
-
-        // Set the diagram components and values
-        for ( Map.Entry<MetricDimension, VectorOfDoubles> nextDimension : statistic.getData().entrySet() )
-        {
-            DiagramComponentName componentName = DiagramComponentName.valueOf( nextDimension.getKey()
-                                                                                            .name() );
-
-            metricBuilder.addComponents( DiagramMetricComponent.newBuilder()
-                                                               .setName( componentName ) );
-            DiagramStatisticComponent.Builder statisticComponent = DiagramStatisticComponent.newBuilder();
-            statisticComponent.addAllValues( Arrays.stream( nextDimension.getValue()
-                                                                         .getDoubles() )
-                                                   .boxed()
-                                                   .collect( Collectors.toList() ) )
-                              .setName( componentName );
-            diagramBuilder.addStatistics( statisticComponent );
-        }
-
-        // Set the metric
-        metricBuilder.setName( MetricName.valueOf( statistic.getMetadata().getMetricID().name() ) );
-        diagramBuilder.setMetric( metricBuilder );
-
-        return diagramBuilder.build();
+        return statistic.getData();
     }
 
     /**

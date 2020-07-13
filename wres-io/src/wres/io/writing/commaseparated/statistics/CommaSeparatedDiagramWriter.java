@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -17,6 +16,7 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -35,6 +35,8 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Helps write box plots comprising {@link DiagramStatisticOuter} to a file of Comma Separated Values (CSV).
@@ -237,7 +239,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter, durationUnits );
 
             // Add the header row
-            rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
+            rows.add( RowCompareByLeft.of( HEADER_INDEX,
+                                           CommaSeparatedDiagramWriter.getDiagramHeader( next,
+                                                                                         headerRow ) ) );
 
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
@@ -349,13 +353,13 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             {
                 // One output per time window and threshold
                 DiagramStatisticOuter nextOutput = Slicer.filter( output,
-                                                             data -> data.getSampleMetadata()
-                                                                         .getThresholds()
-                                                                         .equals( threshold )
-                                                                     && data.getSampleMetadata()
-                                                                            .getTimeWindow()
-                                                                            .equals( timeWindow ) )
-                                                    .get( 0 );
+                                                                  data -> data.getSampleMetadata()
+                                                                              .getThresholds()
+                                                                              .equals( threshold )
+                                                                          && data.getSampleMetadata()
+                                                                                 .getTimeWindow()
+                                                                                 .equals( timeWindow ) )
+                                                         .get( 0 );
                 CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( nextOutput, merge );
             }
             // Add the merged rows
@@ -393,9 +397,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
             // In practice, all should be the same length
             int maxRows = output.getData()
-                                .values()
+                                .getStatisticsList()
                                 .stream()
-                                .mapToInt( VectorOfDoubles::size )
+                                .mapToInt( DiagramStatisticComponent::getValuesCount )
                                 .max()
                                 .orElse( 0 );
 
@@ -417,7 +421,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     }
 
     /**
-     * Returns the row from the diagram from the input data at a specified threshold and row index.
+     * Returns the row from the diagram at a specified  row index.
      * 
      * @param next the data
      * @param row the row index to generate
@@ -427,14 +431,19 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     private static List<Double> getOneRowForOneDiagram( DiagramStatisticOuter next, int row )
     {
         List<Double> valuesToAdd = new ArrayList<>();
-        for ( Entry<MetricDimension, VectorOfDoubles> nextColumn : next.getData().entrySet() )
+
+        SortedSet<MetricDimension> dimensions = next.getComponentNames();
+        for ( MetricDimension nextDimension : dimensions )
         {
+            VectorOfDoubles doubles = next.getComponent( nextDimension );
+
             // Populate the values
             Double addMe = Double.NaN;
-            if ( row < nextColumn.getValue().size() )
+            if ( row < doubles.size() )
             {
-                addMe = nextColumn.getValue().getDoubles()[row];
+                addMe = doubles.getDoubles()[row];
             }
+
             valuesToAdd.add( addMe );
         }
         return valuesToAdd;
@@ -453,15 +462,15 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
-        
+
         returnMe.add( "FEATURE DESCRIPTION" );
-        
+
         returnMe.merge( headerRow );
         // Discover first item to help
         DiagramStatisticOuter data = output.get( 0 );
         String metricName = data.getMetadata().getMetricID().toString();
 
-        Set<MetricDimension> dimensions = data.getData().keySet();
+        SortedSet<MetricDimension> dimensions = data.getComponentNames();
         //Add the metric name, dimension, and threshold for each column-vector
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );

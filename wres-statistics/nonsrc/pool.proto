@@ -30,10 +30,19 @@ message Pool
     of flooding at which to issue a flood warning. This is used to transform 
     probabilistic dichotomous data to single-valued dichitomous data to which 
     dichotomous statistics may be applied, such as the equitable threat score.*/
+
+    bool is_baseline_pool = 5;
+    // Is true when the pool contains statistics for the baseline pairs *only*, 
+    // false when it contains statistics for the right pairs, whether absolute 
+    // statistics or statistics relative to a baseline (skill). When an 
+    // evaluation contains the same metrics for both the right pairs and 
+    // baseline pairs, this allows the resulting statistics to be discriminated 
+    // between.
     
-    Pairs pairs = 5;
+    Pairs pairs = 6;
     // The paired values that form the pool.
         
-    Pairs baseline_pairs = 6;
-    // The pairs for the baseline source, where applicable.
+    Pairs baseline_pairs = 7;
+    // The pairs for the baseline source, where applicable. The baseline source
+    // applies when the pool contains measures of skill relative to a baseline.
 }

@@ -12,6 +12,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.util.TimeHelper;
 
 /**
@@ -22,16 +23,16 @@ import wres.util.TimeHelper;
 public class DiagramStatisticXYDataset
         extends WRESAbstractXYDataset<List<DiagramStatisticOuter>, List<DiagramStatisticOuter>>
 {
-    private static final long serialVersionUID = 4254109136599641286L;
-    private final MetricDimension xConstant;
-    private final MetricDimension yConstant;
+    private static long serialVersionUID = 4254109136599641286L;
+    private final DiagramComponentName xConstant;
+    private final DiagramComponentName yConstant;
 
     /**
      * The duration units.
      */
-    
+
     private final ChronoUnit durationUnits;
-    
+
     /**
      * Build a new diagram.
      * 
@@ -43,27 +44,27 @@ public class DiagramStatisticXYDataset
      */
 
     public DiagramStatisticXYDataset( final List<DiagramStatisticOuter> input,
-                                              final MetricDimension xConstant,
-                                              final MetricDimension yConstant,
-                                              final ChronoUnit durationUnits )
+                                      final MetricDimension xConstant,
+                                      final MetricDimension yConstant,
+                                      final ChronoUnit durationUnits )
     {
         super( input );
-        
+
         Objects.requireNonNull( input, "Specify non-null input." );
-        
+
         Objects.requireNonNull( xConstant, "Specify a non-null domain axis dimension." );
-        
+
         Objects.requireNonNull( yConstant, "Specify a non-null range axis dimension." );
-        
+
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
-        this.xConstant = xConstant;
-        this.yConstant = yConstant;
+
+        this.xConstant = DiagramComponentName.valueOf( xConstant.name() );
+        this.yConstant = DiagramComponentName.valueOf( yConstant.name() );
         this.durationUnits = durationUnits;
     }
 
     @Override
-    void preparePlotData(final List<DiagramStatisticOuter> rawData)
+    void preparePlotData( final List<DiagramStatisticOuter> rawData )
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if ( rawData.isEmpty() )
@@ -71,34 +72,46 @@ public class DiagramStatisticXYDataset
             throw new IllegalArgumentException( "Specify non-empty input." );
         }
 
-        setPlotData(rawData);
+        setPlotData( rawData );
     }
 
     @Override
-    public int getItemCount(final int series)
+    public int getItemCount( final int series )
     {
-        return getPlotData().get(series)
+        return getPlotData().get( series )
                             .getData()
-                            .get(xConstant)
-                            .getDoubles().length;
+                            .getStatisticsList()
+                            .stream()
+                            .filter( next -> this.xConstant == next.getName() )
+                            .findFirst()
+                            .get()
+                            .getValuesCount();
     }
 
     @Override
-    public Number getX(final int series, final int item)
+    public Number getX( final int series, final int item )
     {
-        return getPlotData().get(series)
+        return getPlotData().get( series )
                             .getData()
-                            .get(xConstant)
-                            .getDoubles()[item];
+                            .getStatisticsList()
+                            .stream()
+                            .filter( next -> this.xConstant == next.getName() )
+                            .findFirst()
+                            .get()
+                            .getValues( item );
     }
 
     @Override
-    public Number getY(final int series, final int item)
+    public Number getY( final int series, final int item )
     {
-        return getPlotData().get(series)
+        return getPlotData().get( series )
                             .getData()
-                            .get(yConstant)
-                            .getDoubles()[item];
+                            .getStatisticsList()
+                            .stream()
+                            .filter( next -> this.yConstant == next.getName() )
+                            .findFirst()
+                            .get()
+                            .getValues( item );
     }
 
     @Override
@@ -108,13 +121,13 @@ public class DiagramStatisticXYDataset
     }
 
     @Override
-    public Comparable<String> getSeriesKey(final int series)
+    public Comparable<String> getSeriesKey( final int series )
     {
-        if (isLegendNameOverridden(series))
+        if ( isLegendNameOverridden( series ) )
         {
-            return getOverrideLegendName(series);
+            return getOverrideLegendName( series );
         }
-        
+
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( getPlotData(), meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
         SortedSet<OneOrTwoThresholds> thresholds =
