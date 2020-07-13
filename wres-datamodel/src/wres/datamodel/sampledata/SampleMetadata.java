@@ -47,24 +47,15 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     private final Pool pool;
 
     /**
-     * The optional {@link ProjectConfig}, may be null. TODO: eliminate this, as the evaluation description should be
-     * sufficient.
-     */
-    @Deprecated
-    private final ProjectConfig projectConfig;
-
-    /**
-     * TODO: eliminate this glue. Replace the {@link Location} inside the {@link DatasetIdentifier} with a canonical 
-     * {@link Geometry}. The {@link location} is only needed because it maps inadequately to a canonical 
-     * {@link Geometry}. In order for wrappers like {@SampleMetadata} to work when canonical forms are sent on the wire, 
-     * they must wrap canonical forms 1:1 - they cannot wrap local abstractions, such as {@link Location} or whatever 
-     * replaces {@link Location} after #72747. Eventually, remove all options to build instances of this class from 
-     * non-canonical forms, such as the {@link DatasetIdentifier}. The only reason that has not been done upfront is to 
-     * stage the refactoring. The first stage is to ensure this class wraps only an {@link Evaluation} and a 
-     * {@link Pool}, nothing else (in this first stage, the {@link Geometry} will be obtained from the 
-     * {@link DatasetIdentifier}). The second stage is to ensure it can only be constructed only from an 
-     * {@link Evaluation} and a {@link Pool}, nothing else (in this stage, the {@link Geometry} is contained in the 
-     * supplied {@link Pool} itself).
+     * TODO: eliminate this glue. The {@link location} is only needed because it maps inadequately to a canonical 
+     * {@link Geometry}. In order for wrappers like {@link SampleMetadata} to work when canonical forms are sent on the 
+     * wire they must wrap canonical forms 1:1 - they cannot wrap local abstractions, such as {@link Location} or 
+     * whatever replaces {@link Location} after #72747, otherwise the canonical information sent on the wire would not 
+     * be sufficient to build a {@link SampleMetadata}. Changes are needed in two steps. In the first step, eliminate 
+     * this glue and include a {@link Geometry} within a {@link DatasetIdentifier}, which used on construction of a 
+     * {@link SampleMetadata}. In the second step, do not allow for construction of a {@link SampleMetadata} from 
+     * non-canonical forms, such as {@link DatasetIdentifier}, rather from an {@link Evaluation} plus a {@link Pool}, 
+     * nothing else.
      */
     @Deprecated
     private final Location location;
@@ -295,15 +286,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
         // Check the thresholds
         Comparator<OneOrTwoThresholds> compareThresholds = Comparator.nullsFirst( Comparator.naturalOrder() );
-        returnMe = Objects.compare( this.getThresholds(), input.getThresholds(), compareThresholds );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        // Check the project configuration
-        Comparator<ProjectConfig> compareProjects = Comparator.nullsFirst( Comparator.naturalOrder() );
-        return Objects.compare( this.getProjectConfig(), input.getProjectConfig(), compareProjects );
+        return Objects.compare( this.getThresholds(), input.getThresholds(), compareThresholds );
     }
 
     @Override
@@ -375,16 +358,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Returns <code>true</code> if {@link #getProjectConfig()} returns non-null, otherwise <code>false</code>.
-     * 
-     * @return true if {@link #getProjectConfig()} returns non-null, false otherwise.
-     */
-    public boolean hasProjectConfig()
-    {
-        return Objects.nonNull( this.getProjectConfig() );
-    }
-
-    /**
      * Returns <code>true</code> if {@link #getTimeScale()} returns non-null, otherwise <code>false</code>.
      * 
      * @return true if {@link #getTimeScale()} returns non-null, false otherwise.
@@ -410,7 +383,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         boolean returnMe =
                 input.getMeasurementUnit().equals( this.getMeasurementUnit() )
                            && this.hasIdentifier() == input.hasIdentifier()
-                           && this.hasProjectConfig() == input.hasProjectConfig()
                            && this.hasTimeScale() == input.hasTimeScale();
 
         // The following tests apply where both the existing and input attributes are non-null,
@@ -418,11 +390,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         if ( this.hasIdentifier() )
         {
             returnMe = returnMe && this.getIdentifier().equals( input.getIdentifier() );
-        }
-
-        if ( this.hasProjectConfig() )
-        {
-            returnMe = returnMe && this.getProjectConfig().equals( input.getProjectConfig() );
         }
 
         if ( this.hasTimeScale() )
@@ -539,17 +506,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Returns a {@link ProjectConfig} associated with the metadata or null.
-     * 
-     * @return the project declaration or null
-     */
-
-    public ProjectConfig getProjectConfig()
-    {
-        return this.projectConfig;
-    }
-
-    /**
      * Returns a {@link TimeScaleOuter} associated with the metadata or null.
      * 
      * @return the time scale or null
@@ -589,9 +545,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Builder.
+     * Builder. TODO: remove this builder and allow for construction from canonical forms only, specifically an
+     * {@link Evaluation} and a {@link Pool}, nothing more, and both non-null.
      */
 
+    @Deprecated
     public static class Builder
     {
 
@@ -783,7 +741,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             this.evaluation = sampleMetadata.evaluation;
             this.pool = sampleMetadata.pool;
             this.location = sampleMetadata.location;
-            this.projectConfig = sampleMetadata.projectConfig;
         }
 
     }
@@ -841,7 +798,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
         this.evaluation = this.getEvaluation( evaluationBuilder, unit, identifier, timeScale, localProjectConfig );
         this.pool = this.getPool( poolBuilder, timeWindow, thresholds );
-        this.projectConfig = localProjectConfig;
         this.location = localLocation;
 
         this.validate();

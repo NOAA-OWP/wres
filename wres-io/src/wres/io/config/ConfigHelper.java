@@ -17,26 +17,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
-import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
@@ -49,6 +42,8 @@ import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.utilities.NoDataException;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -1130,12 +1125,8 @@ public class ConfigHelper
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
         DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
-        ProjectConfig projectConfig = meta.getSampleMetadata().getProjectConfig();
-        Inputs inputs = null;
-        if( Objects.nonNull( projectConfig ) )
-        {
-            inputs = projectConfig.getInputs();
-        }
+        Evaluation evaluation = meta.getSampleMetadata().getEvaluation();
+        Pool pool = meta.getSampleMetadata().getPool();
         
         joinElements.add( identifier.getLocation().toString() )
                     .add( identifier.getVariableName() );
@@ -1143,15 +1134,14 @@ public class ConfigHelper
         // Baseline scenarioId
         String configuredScenarioId = null;
         String configuredBaselineScenarioId = null;
-        if( Objects.nonNull( inputs ) )
+        if( !evaluation.getRightSourceName().isBlank() )
         {
-            configuredScenarioId = inputs.getRight().getLabel();
+            configuredScenarioId = evaluation.getRightSourceName();
         }
         
-        boolean baseline = Objects.nonNull( inputs ) && Objects.nonNull( inputs.getBaseline() );
-        if( baseline )
+        if( !evaluation.getBaselineSourceName().isBlank() )
         {
-            configuredBaselineScenarioId = inputs.getBaseline().getLabel();
+            configuredBaselineScenarioId = evaluation.getBaselineSourceName();
         }
         
         // Add optional scenario identifier unless the configured identifiers cannot discriminate between 
@@ -1162,8 +1152,7 @@ public class ConfigHelper
         }
         // If there are metrics for both the RIGHT and BASELINE, then additionally qualify the context
         else if ( identifier.hasLeftOrRightOrBaseline()
-                  && baseline
-                  && inputs.getBaseline().isSeparateMetrics() )
+                  && pool.getIsBaselinePool() )
         {
             joinElements.add( identifier.getLeftOrRightOrBaseline().toString() );
         }
