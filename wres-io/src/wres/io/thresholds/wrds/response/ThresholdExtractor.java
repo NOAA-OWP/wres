@@ -112,7 +112,7 @@ public class ThresholdExtractor {
                 .stream()
                 .filter(
                         (ThresholdDefinition definition) -> definition.getThresholdProvider().equals(this.provider) &&
-                                definition.getRatingProvider().equals(this.ratingProvider)
+                                (this.ratingProvider == null || definition.getRatingProvider().equals(this.ratingProvider))
                 )
                 .parallel()
                 .map(

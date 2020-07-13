@@ -77,7 +77,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getLowFlow(boolean getCalculated, UnitMapper unitMapper) {
         Double flow;
 
-        if (getCalculated || this.getOriginal_values().getLow_flow() == null) {
+        if (getCalculated && this.getCalculated_values().getLow_flow() != null) {
             flow = this.getCalculated_values().getLow_flow();
         }
         else {
@@ -94,7 +94,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getLowStage(boolean getCalculated, UnitMapper unitMapper) {
         Double stage;
 
-        if (getCalculated || this.getOriginal_values().getLow_stage() == null) {
+        if (getCalculated && this.getCalculated_values().getLow_stage() != null) {
             stage = this.getCalculated_values().getLow_stage();
         }
         else {
@@ -111,7 +111,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getActionFlow(boolean getCalculated, UnitMapper unitMapper) {
         Double flow;
 
-        if (getCalculated || this.getOriginal_values().getAction_flow() == null) {
+        if (getCalculated && this.getCalculated_values().getAction_flow() != null) {
             flow = this.getCalculated_values().getAction_flow();
         }
         else {
@@ -128,7 +128,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getActionStage(boolean getCalculated, UnitMapper unitMapper) {
         Double stage;
 
-        if (getCalculated || this.getOriginal_values().getAction_stage() == null) {
+        if (getCalculated && this.getCalculated_values().getAction_stage() != null) {
             stage = this.getCalculated_values().getAction_stage();
         }
         else {
@@ -145,7 +145,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getMinorFlow(boolean getCalculated, UnitMapper unitMapper) {
         Double flow;
 
-        if (getCalculated || this.getOriginal_values().getMinor_flow() == null) {
+        if (getCalculated && this.getCalculated_values().getMinor_flow() != null) {
             flow = this.getCalculated_values().getMinor_flow();
         }
         else {
@@ -162,7 +162,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getMinorStage(boolean getCalculated, UnitMapper unitMapper) {
         Double stage;
 
-        if (getCalculated || this.getOriginal_values().getMinor_stage() == null) {
+        if (getCalculated && this.getCalculated_values().getMinor_stage() != null) {
             stage = this.getCalculated_values().getMinor_stage();
         }
         else {
@@ -179,7 +179,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getModerateFlow(boolean getCalculated, UnitMapper unitMapper) {
         Double flow;
 
-        if (getCalculated || this.getOriginal_values().getModerate_flow() == null) {
+        if (getCalculated && this.getCalculated_values().getModerate_flow() != null)  {
             flow = this.getCalculated_values().getModerate_flow();
         }
         else {
@@ -196,7 +196,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getModerateStage(boolean getCalculated, UnitMapper unitMapper) {
         Double stage;
 
-        if (getCalculated || this.getOriginal_values().getModerate_stage() == null) {
+        if (getCalculated && this.getCalculated_values().getModerate_stage() != null) {
             stage = this.getCalculated_values().getModerate_stage();
         }
         else {
@@ -213,7 +213,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getMajorFlow(boolean getCalculated, UnitMapper unitMapper) {
         Double flow;
 
-        if (getCalculated || this.getOriginal_values().getMajor_flow() == null) {
+        if (getCalculated && this.getCalculated_values().getMajor_flow() != null) {
             flow = this.getCalculated_values().getMajor_flow();
         }
         else {
@@ -230,7 +230,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getMajorStage(boolean getCalculated, UnitMapper unitMapper) {
         Double stage;
 
-        if (getCalculated || this.getOriginal_values().getMajor_stage() == null) {
+        if (getCalculated && this.getCalculated_values().getMajor_stage() != null) {
             stage = this.getCalculated_values().getMajor_stage();
         }
         else {
@@ -247,7 +247,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getBankfulFlow(boolean getCalculated, UnitMapper unitMapper) {
         Double flow;
 
-        if (getCalculated || this.getOriginal_values().getBankfull_flow() == null) {
+        if (getCalculated && this.getCalculated_values().getBankfull_flow() != null) {
             flow = this.getCalculated_values().getBankfull_flow();
         }
         else {
@@ -264,7 +264,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getBankfulStage(boolean getCalculated, UnitMapper unitMapper) {
         Double stage;
 
-        if (getCalculated || this.getOriginal_values().getBankfull_stage() == null) {
+        if (getCalculated && this.getCalculated_values().getBankfull_stage() != null) {
             stage = this.getCalculated_values().getBankfull_stage();
         }
         else {
@@ -281,7 +281,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getRecordFlow(boolean getCalculated, UnitMapper unitMapper) {
         Double flow;
 
-        if (getCalculated || this.getOriginal_values().getRecord_flow() == null) {
+        if (getCalculated && this.getCalculated_values().getRecord_flow() != null) {
             flow = this.getCalculated_values().getRecord_flow();
         }
         else {
@@ -298,7 +298,7 @@ public class ThresholdDefinition implements Serializable {
     public Double getRecordStage(boolean getCalculated, UnitMapper unitMapper) {
         Double stage;
 
-        if (getCalculated || this.getOriginal_values().getRecord_stage() == null) {
+        if (getCalculated && this.getCalculated_values().getRecord_stage() != null) {
             stage = this.getCalculated_values().getRecord_stage();
         }
         else {
