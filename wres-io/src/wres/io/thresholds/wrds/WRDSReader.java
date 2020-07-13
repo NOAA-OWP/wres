@@ -45,7 +45,8 @@ public final class WRDSReader {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
 
         List<String> addresses = new ArrayList<>();
-        if (source.getValue().getScheme().toLowerCase().equals("file")) {
+
+        if (source.getValue().getScheme() == null || source.getValue().getScheme().toLowerCase().equals("file")) {
             Path resolvedPath = systemSettings.getDataDirectory().resolve(source.getValue().getPath());
             addresses.add(resolvedPath.toString());
         }
@@ -78,8 +79,17 @@ public final class WRDSReader {
     static Map<FeaturePlus, Set<ThresholdOuter>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource();
-        ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.valueOf(config.getApplyTo().name());
-        ThresholdConstants.Operator operator = DataFactory.getThresholdOperator(config);
+        ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
+
+        if (Objects.nonNull(config.getApplyTo())) {
+            side = ThresholdConstants.ThresholdDataType.valueOf(config.getApplyTo().name());
+        }
+
+        ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
+
+        if (Objects.nonNull(config.getOperator())) {
+            operator = DataFactory.getThresholdOperator(config);
+        }
 
         ThresholdExtractor extractor = new ThresholdExtractor(response)
                 .from(source.getProvider())
@@ -128,9 +138,16 @@ public final class WRDSReader {
     private static ThresholdResponse getResponse(final String inputAddress) throws StreamIOException {
         URI address = URI.create(inputAddress);
         try {
-            if (address.getScheme().toLowerCase().equals("file")) {
-                Path forecastPath = Paths.get(address);
-                try (InputStream data = new FileInputStream(forecastPath.toFile())) {
+            if (address.getScheme() == null || address.getScheme().toLowerCase().equals("file")) {
+                Path thresholdPath;
+
+                if (address.getScheme() == null) {
+                    thresholdPath = Paths.get(inputAddress);
+                }
+                else {
+                    thresholdPath = Paths.get(address);
+                }
+                try (InputStream data = new FileInputStream(thresholdPath.toFile())) {
                     byte[] rawForecast = IOUtils.toByteArray(data);
                     return JSON_OBJECT_MAPPER.readValue(rawForecast, ThresholdResponse.class);
                 }
