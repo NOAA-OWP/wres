@@ -1,5 +1,6 @@
 package wres.io.writing.commaseparated.statistics;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class CommaSeparatedPairedWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "FTSC1_SQIN_TIME_TO_PEAK_ERROR.csv" ) );
+        assertEquals( "FTSC1_SQIN_HEFS_TIME_TO_PEAK_ERROR.csv", pathToFile.toFile().getName() );
 
         List<String> result = Files.readAllLines( pathToFile );
 

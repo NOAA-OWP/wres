@@ -9,6 +9,7 @@ import java.util.StringJoiner;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -420,9 +421,20 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
                                            + "]" );
         }
 
-        if ( Objects.nonNull( baseline ) && baseline.contains( null ) )
+        if ( Objects.nonNull( this.baseline ) && this.baseline.contains( null ) )
         {
             throw new SampleDataException( "One or more of the baseline time-series is null." );
+        }
+
+        if ( Objects.nonNull( this.baseline ) && this.baselineMeta.hasIdentifier()
+             && this.baselineMeta.getIdentifier().hasLeftOrRightOrBaseline()
+             && this.baselineMeta.getIdentifier().getLeftOrRightOrBaseline() != LeftOrRightOrBaseline.BASELINE )
+        {
+            throw new SampleDataException( "Unexpected context for baseline metadata of '"
+                                           + this.baselineMeta.getIdentifier().getLeftOrRightOrBaseline()
+                                           + "'. Expected: '"
+                                           + LeftOrRightOrBaseline.BASELINE
+                                           + "'." );
         }
     }
 

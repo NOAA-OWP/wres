@@ -413,10 +413,10 @@ public class PoolFactory
             Pool.Builder poolBuilder = Pool.newBuilder( pool );
             // Identify this as a baseline pool
             poolBuilder.setIsBaselinePool( true );
-            SampleMetadata.Builder finalBuilder = new SampleMetadata.Builder( evaluation, pool );
+            SampleMetadata.Builder finalBuilder = new SampleMetadata.Builder( evaluation, poolBuilder.build() );
             metadata = finalBuilder.setIdentifier( identifier )
                                    .setProjectConfig( projectConfig )
-                                   .build();
+                                   .build();      
         }
         
         return metadata;
