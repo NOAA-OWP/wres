@@ -19,8 +19,6 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
-import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
@@ -131,7 +129,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test4";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
@@ -176,7 +175,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test5";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
@@ -252,7 +252,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test7";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
@@ -289,7 +290,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test8";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
@@ -325,7 +327,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test9";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
@@ -361,7 +364,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test10";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
@@ -396,7 +400,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test11";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
@@ -434,7 +439,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test12";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
@@ -733,50 +739,6 @@ public class Chart2DTestOutput
                                             engine.values().iterator().next().buildChart(),
                                             800,
                                             600 );
-    }
-
-    /**
-     * The comparison sensitivity.
-     */
-    private static int IMAGE_COMPARISON_SENSITIVITY = 2;
-
-    /**
-     * Comparison debug output
-     */
-    private static boolean IMAGE_COMPARISON_DEBUG_OUTPUT = false;
-
-    /**
-     * Main line compares images with benchmarks.
-     *
-     * @param args
-     */
-    public static void main( final String[] args )
-    {
-        System.out.println( "####>> COMPARING GENERATED UNIT TEST IMAGES..." );
-        for ( final File file : FileTools.listFilesWithSuffix( new File( "testoutput/chart2DTest/" ), ".png" ) )
-        {
-            final File benchmarkFile = new File( "testinput/chart2DTest/benchmark." + file.getName() );
-
-            try
-            {
-                System.out.println( "" );
-                System.out.println( "####>> Comparing " + file.getName()
-                                    + " ================================================" );
-                System.out.println( "" );
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark( file,
-                                                                           benchmarkFile,
-                                                                           IMAGE_COMPARISON_SENSITIVITY,
-                                                                           true,
-                                                                           IMAGE_COMPARISON_DEBUG_OUTPUT );
-            }
-            catch ( final Exception e )
-            {
-                System.err.println( "####>> Comparison failed for " + file.getName()
-                                    + " and "
-                                    + benchmarkFile.getName()
-                                    + ". Dissimilarity file was created; see debug information for the difference numbers computed." );
-            }
-        }
     }
 
 }
