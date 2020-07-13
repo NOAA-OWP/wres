@@ -84,7 +84,8 @@ import wres.system.SystemSettings;
     Scenario720.class,
     Scenario721.class,
     Scenario750.class,
-    Scenario801.class
+    Scenario801.class,
+	Scenario802.class
 } )
 
 /**
