@@ -640,7 +640,7 @@ public class SampleMetadataTest
                                            .build();
 
         assertEquals( "SampleMetadata[datasetIdentifier=DatasetIdentifier[location=A,variableId=B,"
-                      + "scenarioId=<null>,baselineScenarioId=<null>,pairContext=<null>],"
+                      + "scenarioId=<null>,baselineScenarioId=<null>,pairContext=RIGHT],"
                       + "timeWindow=[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,"
                       + "2000-02-02T00:00:00Z,PT0S,PT0S],thresholds== 1.0,timeScale=[PT24H,MEAN],"
                       + "measurementUnit=DIMENSIONLESS]",

@@ -50,6 +50,8 @@ import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -395,11 +397,29 @@ public class PoolFactory
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( measurementUnitString );
 
-        return new Builder().setIdentifier( identifier )
-                                          .setProjectConfig( projectConfig )
-                                          .setMeasurementUnit( measurementUnit )
-                                          .setTimeScale( desiredTimeScale )
-                                          .build();
+        SampleMetadata metadata = new Builder().setIdentifier( identifier )
+                                               .setProjectConfig( projectConfig )
+                                               .setMeasurementUnit( measurementUnit )
+                                               .setTimeScale( desiredTimeScale )
+                                               .build();
+        
+        // TODO: instantiate directly with an Evaluation and Pool rather than using non-canonical forms and then
+        // acquiring and editing the canonical form. These shenanigans are a temporary bridge until the description of
+        // statistics is supported via canonical forms only.
+        if ( leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE )
+        {
+            Evaluation evaluation = metadata.getEvaluation();
+            Pool pool = metadata.getPool();
+            Pool.Builder poolBuilder = Pool.newBuilder( pool );
+            // Identify this as a baseline pool
+            poolBuilder.setIsBaselinePool( true );
+            SampleMetadata.Builder finalBuilder = new SampleMetadata.Builder( evaluation, pool );
+            metadata = finalBuilder.setIdentifier( identifier )
+                                   .setProjectConfig( projectConfig )
+                                   .build();
+        }
+        
+        return metadata;
     }
 
     /**

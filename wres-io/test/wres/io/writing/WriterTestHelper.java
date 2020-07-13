@@ -5,9 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DestinationConfig;
@@ -37,10 +35,15 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
@@ -143,14 +146,14 @@ public class WriterTestHelper
         // Create fake outputs
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 24 ),
+                                    Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -177,9 +180,9 @@ public class WriterTestHelper
 
         TimeWindowOuter timeTwo =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 48 ),
-                               Duration.ofHours( 48 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 48 ),
+                                    Duration.ofHours( 48 ) );
 
         StatisticMetadata fakeMetadataTwo =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -202,9 +205,9 @@ public class WriterTestHelper
         // Fake output wrapper.
         List<BoxplotStatisticOuter> fakeOutputData =
                 Arrays.asList( BoxplotStatisticOuter.of( fakeOutputsOne,
-                                                     fakeMetadataOne ),
+                                                         fakeMetadataOne ),
                                BoxplotStatisticOuter.of( fakeOutputsTwo,
-                                                     fakeMetadataTwo ) );
+                                                         fakeMetadataTwo ) );
         return fakeOutputData;
     }
 
@@ -222,14 +225,14 @@ public class WriterTestHelper
         // Create fake outputs
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 24 ),
+                                    Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -269,7 +272,7 @@ public class WriterTestHelper
         // Fake output wrapper.
         List<BoxplotStatisticOuter> fakeOutputData =
                 Collections.singletonList( BoxplotStatisticOuter.of( fakeOutputs,
-                                                                 fakeMetadata ) );
+                                                                     fakeMetadata ) );
 
         return fakeOutputData;
     }
@@ -289,15 +292,15 @@ public class WriterTestHelper
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 24 ),
+                                    Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                      OneOrTwoDoubles.of( 0.9 ),
-                                                                      Operator.GREATER_EQUAL,
-                                                                      ThresholdDataType.LEFT ) );
+                                                                           OneOrTwoDoubles.of( 0.9 ),
+                                                                           Operator.GREATER_EQUAL,
+                                                                           ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -315,16 +318,56 @@ public class WriterTestHelper
                                       MetricConstants.RELIABILITY_DIAGRAM,
                                       null );
 
-        Map<MetricDimension, VectorOfDoubles> fakeOutputs = new HashMap<>();
-        fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
-                         VectorOfDoubles.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) );
-        fakeOutputs.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                         VectorOfDoubles.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) );
-        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
+        DiagramMetricComponent forecastComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                      .build();
+
+        DiagramMetricComponent observedComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                      .build();
+
+        DiagramMetricComponent sampleComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.SAMPLE_SIZE )
+                                      .build();
+
+        DiagramMetric metric = DiagramMetric.newBuilder()
+                                            .addComponents( forecastComponent )
+                                            .addComponents( observedComponent )
+                                            .addComponents( sampleComponent )
+                                            .setName( MetricName.RELIABILITY_DIAGRAM )
+                                            .build();
+
+        DiagramStatisticComponent forecastProbability =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .addAllValues( List.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) )
+                                         .build();
+
+        DiagramStatisticComponent observedFrequency =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( List.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) )
+                                         .build();
+
+        DiagramStatisticComponent sampleSize =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .addAllValues( List.of( 5926.0, 371.0, 540.0, 650.0, 1501.0 ) )
+                                         .build();
+
+        DiagramStatistic statistic = DiagramStatistic.newBuilder()
+                                                     .addStatistics( forecastProbability )
+                                                     .addStatistics( observedFrequency )
+                                                     .addStatistics( sampleSize )
+                                                     .setMetric( metric )
+                                                     .build();
 
         // Fake output wrapper.
         List<DiagramStatisticOuter> fakeOutputData =
-                Collections.singletonList( DiagramStatisticOuter.of( fakeOutputs, fakeMetadata ) );
+                Collections.singletonList( DiagramStatisticOuter.of( statistic, fakeMetadata ) );
 
         return fakeOutputData;
     }
@@ -344,14 +387,14 @@ public class WriterTestHelper
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 1 ),
+                                    Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -395,8 +438,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
@@ -454,7 +497,7 @@ public class WriterTestHelper
                                                                                  .setValue( 3.0 )
                                                                                  .setName( ComponentName.MAIN ) )
                                     .build();
-        
+
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadataA ) );
         fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadataB ) );
@@ -478,14 +521,14 @@ public class WriterTestHelper
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 1 ),
+                                    Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
@@ -503,17 +546,17 @@ public class WriterTestHelper
         DurationScoreStatistic score =
                 DurationScoreStatistic.newBuilder()
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 3_600 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 3_600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 7_200 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 7_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 10_800 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 10_800 ) ) )
                                       .build();
 
         // Fake output wrapper.
@@ -538,8 +581,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
@@ -553,7 +596,7 @@ public class WriterTestHelper
                                       MeasurementUnit.of(),
                                       MetricConstants.MEAN_SQUARE_ERROR,
                                       MetricConstants.MAIN );
-        
+
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
@@ -567,8 +610,8 @@ public class WriterTestHelper
         // Add the data for another threshold at the same time
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         StatisticMetadata fakeMetadataB =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),

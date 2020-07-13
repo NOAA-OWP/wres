@@ -39,6 +39,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
@@ -108,6 +109,7 @@ public final class MetricFuturesByTimeTest
                             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) ) );
+        
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
 
         // Add a boxplot future
@@ -120,45 +122,17 @@ public final class MetricFuturesByTimeTest
 
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
 
-        // Add a double score future
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
-                                                                               .setValue( 1 )
-                                                                               .build();
-
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanError.METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
-
         StatisticMetadata doubleScoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                                   1,
                                                                   MeasurementUnit.of(),
                                                                   MetricConstants.MEAN_ERROR,
                                                                   MetricConstants.MAIN );
 
-        this.doubleScore = Collections.singletonList( DoubleScoreStatisticOuter.of( score, doubleScoreMeta ) );
+        this.doubleScore =
+                Collections.singletonList( DoubleScoreStatisticOuter.of( DoubleScoreStatistic.getDefaultInstance(),
+                                                                         doubleScoreMeta ) );
 
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
-
-        com.google.protobuf.Duration duration = MessageFactory.parse( Duration.ofDays( 1 ) );
-        DurationScoreStatisticComponent durationComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                           .setName( DurationScoreMetricComponent.ComponentName.MEAN )
-                                                                                           .setValue( duration )
-                                                                                           .build();
-
-        DurationScoreMetricComponent metricComponent = DurationScoreMetricComponent.newBuilder()
-                                                                                   .setName( DurationScoreMetricComponent.ComponentName.MEAN )
-                                                                                   .build();
-
-        DurationScoreMetric metric = DurationScoreMetric.newBuilder()
-                                                        .addComponents( metricComponent )
-                                                        .build();
-
-        DurationScoreStatistic dScore = DurationScoreStatistic.newBuilder()
-                                                              .setMetric( metric )
-                                                              .addStatistics( durationComponent )
-                                                              .build();
 
         StatisticMetadata dScoreMetadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                                  1,
@@ -167,14 +141,15 @@ public final class MetricFuturesByTimeTest
                                                                  MetricConstants.MEAN );
 
         // Add a duration score future
-        this.durationScore = Collections.singletonList( DurationScoreStatisticOuter.of( dScore, dScoreMetadata ) );
+        this.durationScore =
+                Collections.singletonList( DurationScoreStatisticOuter.of( DurationScoreStatistic.getDefaultInstance(),
+                                                                           dScoreMetadata ) );
 
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
 
         // Add multi-vector output
         this.multivector =
-                Collections.singletonList( DiagramStatisticOuter.of( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
-                                                                                               VectorOfDoubles.of( 1 ) ),
+                Collections.singletonList( DiagramStatisticOuter.of( DiagramStatistic.getDefaultInstance(),
                                                                      StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                                                            1,
                                                                                            MeasurementUnit.of(),
@@ -191,7 +166,7 @@ public final class MetricFuturesByTimeTest
                                                                                                 MetricConstants.CONTINGENCY_TABLE,
                                                                                                 MetricConstants.MAIN ) ) );
 
-        builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
+        builder.addPairedOutput( CompletableFuture.completedFuture( this.paired ) );
 
         this.futures = builder.build();
     }

@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.singlevalued;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,16 +10,16 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Tests the {@link QuantileQuantileDiagram}.
@@ -27,10 +28,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
  */
 public final class QuantileQuantileDiagramTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
+    
     /**
      * Default instance of a {@link QuantileQuantileDiagram}.
      */
@@ -40,15 +38,15 @@ public final class QuantileQuantileDiagramTest
     @Before
     public void setupBeforeEachTest()
     {
-        this.qqd = QuantileQuantileDiagram.of();
+        this.qqd = QuantileQuantileDiagram.of( 10 );
     }
 
     @Test
     public void testApply()
     {
         //Generate some data
-        final List<Pair<Double,Double>> values = new ArrayList<>();
-        for ( int i = 1; i < 1001; i++ )
+        final List<Pair<Double, Double>> values = new ArrayList<>();
+        for ( int i = 1; i < 11; i++ )
         {
             double left = i;
             double right = left;
@@ -57,41 +55,38 @@ public final class QuantileQuantileDiagramTest
 
         SampleDataBasic<Pair<Double, Double>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
-        //Check the results       
-        final DiagramStatisticOuter actual = qqd.apply( input );
-        double[] actualObs = actual.get( MetricDimension.OBSERVED_QUANTILES ).getDoubles();
-        double[] actualPred = actual.get( MetricDimension.PREDICTED_QUANTILES ).getDoubles();
+        //Check the results        
+        DiagramStatisticOuter actual = this.qqd.apply( input );
 
-        //Check the first pair of quantiles, which should map to the first entry, since the lower bound is unknown
-        assertTrue( "Difference between actual and expected quantiles of observations [" + 1.0
-                    + ", "
-                    + actualObs[0]
-                    + "].",
-                    Double.compare( actualObs[0], 1.0 ) == 0 );
-        assertTrue( "Difference between actual and expected quantiles of predictions [" + 1.0
-                    + ", "
-                    + actualPred[0]
-                    + "].",
-                    Double.compare( actualPred[0], 1.0 ) == 0 );
+        List<Double> observedQ = new ArrayList<>();
+        List<Double> predictedQ = new ArrayList<>();
 
-        //Expected values
-        for ( int i = 1; i < 1000; i++ )
+        for ( int i = 1; i < 11; i++ )
         {
-            double expectedObserved = i + 1.0;
-            double expectedPredicted = i + 1.0;
-            double actualObserved = Precision.round( actualObs[i], 5 );
-            double actualPredicted = Precision.round( actualPred[i], 5 );
-            assertTrue( "Difference between actual and expected quantiles of observations [" + expectedObserved
-                        + ", "
-                        + actualObserved
-                        + "].",
-                        Double.compare( actualObserved, expectedObserved ) == 0 );
-            assertTrue( "Difference between actual and expected quantiles of predictions [" + expectedPredicted
-                        + ", "
-                        + actualPredicted
-                        + "].",
-                        Double.compare( actualPredicted, expectedPredicted ) == 0 );
+            double next = Precision.round( i, 1 );
+            observedQ.add( next );
+            predictedQ.add( next );
         }
+
+        DiagramStatisticComponent oqs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                         .addAllValues( observedQ )
+                                         .build();
+
+        DiagramStatisticComponent pqs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                         .addAllValues( predictedQ )
+                                         .build();
+
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( oqs )
+                                                    .addStatistics( pqs )
+                                                    .setMetric( QuantileQuantileDiagram.METRIC )
+                                                    .build();
+
+        assertEquals( expected, actual.getData() );
     }
 
     @Test
@@ -101,30 +96,47 @@ public final class QuantileQuantileDiagramTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DiagramStatisticOuter actual = qqd.apply( input );
+        DiagramStatisticOuter actual = this.qqd.apply( input );
 
-        double[] source = new double[1000];
+        List<Double> source = new ArrayList<>();
+        for(int i = 0; i < 10; i ++ )
+        {
+            source.add( Double.NaN );
+        }
 
-        Arrays.fill( source, Double.NaN );
+        DiagramStatisticComponent oqs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                         .addAllValues( source )
+                                         .build();
 
-        assertTrue( Arrays.equals( actual.getData().get( MetricDimension.PREDICTED_QUANTILES ).getDoubles(), source ) );
+        DiagramStatisticComponent pqs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                         .addAllValues( source )
+                                         .build();
 
-        assertTrue( Arrays.equals( actual.getData().get( MetricDimension.OBSERVED_QUANTILES ).getDoubles(), source ) );
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( oqs )
+                                                    .addStatistics( pqs )
+                                                    .setMetric( QuantileQuantileDiagram.METRIC )
+                                                    .build();
+
+        assertEquals( expected, actual.getData() );
     }
 
     @Test
     public void testGetName()
     {
-        assertTrue( qqd.getName().equals( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.toString() ) );
+        assertEquals( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.toString(), this.qqd.getName() );
     }
 
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'QUANTILE QUANTILE DIAGRAM'." );
-
-        qqd.apply( null );
+        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.qqd.apply( null ) );
+        
+        assertEquals( "Specify non-null input to the 'QUANTILE QUANTILE DIAGRAM'.", expected.getMessage() );
     }
 
 }

@@ -13,7 +13,7 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
- * An immutable score statistic that comprises one or more {@link Double} components.
+ * An immutable score statistic that wraps a {@link DoubleScoreStatistic}.
  * 
  * @author james.brown@hydrosolved.com
  */
