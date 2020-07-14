@@ -39,6 +39,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreMetric;
@@ -113,7 +114,7 @@ public final class MetricFuturesByTimeTest
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
 
         // Add a boxplot future
-        this.boxplot = Collections.singletonList( BoxplotStatisticOuter.of( Arrays.asList(),
+        this.boxplot = Collections.singletonList( BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(),
                                                                             StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
                                                                                                   1,
                                                                                                   MeasurementUnit.of(),

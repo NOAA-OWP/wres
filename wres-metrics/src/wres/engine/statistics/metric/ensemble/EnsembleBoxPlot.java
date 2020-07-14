@@ -15,12 +15,14 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * An abstract base class for plotting (the errors associated with) ensemble forecasts as a box. Each pair generates
@@ -39,20 +41,13 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * Default probabilities.
      */
 
-    static final VectorOfDoubles DEFAULT_PROBABILITIES =
-            VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+    static final List<Double> DEFAULT_PROBABILITIES = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
     /**
      * Function that orders boxes.
      */
 
-    private static final Comparator<? super BoxplotStatistic> BOX_COMPARATOR = EnsembleBoxPlot.getBoxComparator();
-
-    /**
-     * A vector of probabilities that define the quantiles to plot.
-     */
-
-    final VectorOfDoubles probabilities;
+    private static final Comparator<? super Box> BOX_COMPARATOR = EnsembleBoxPlot.getBoxComparator();
 
     /**
      * Creates a box from an ensemble pair.
@@ -63,7 +58,15 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract BoxplotStatistic getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata );
+    abstract Box getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata );
+
+    /**
+     * Returns the metric definition.
+     * 
+     * @return the metric definition
+     */
+
+    abstract BoxplotMetric getMetric();
 
     @Override
     public BoxplotStatisticOuter apply( final SampleData<Pair<Double, Ensemble>> s )
@@ -73,7 +76,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        List<BoxplotStatistic> boxes = new ArrayList<>();
+        List<Box> boxes = new ArrayList<>();
 
         StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                          this.getID(),
@@ -91,7 +94,12 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         // Sort the boxes by value: #70986
         boxes.sort( BOX_COMPARATOR );
 
-        return BoxplotStatisticOuter.of( boxes, metOut );
+        BoxplotStatistic statistic = BoxplotStatistic.newBuilder()
+                                                     .setMetric( this.getMetric() )
+                                                     .addAllStatistics( boxes )
+                                                     .build();
+
+        return BoxplotStatisticOuter.of( statistic, metOut );
     }
 
     @Override
@@ -107,21 +115,17 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
     EnsembleBoxPlot()
     {
         super();
-
-        this.probabilities = DEFAULT_PROBABILITIES;
     }
 
     /**
-     * Hidden constructor.
+     * Validates the probabilities
      * 
      * @param probabilities the probabilities
      * @throws MetricParameterException if one or more parameters are invalid
      */
 
-    EnsembleBoxPlot( VectorOfDoubles probabilities ) throws MetricParameterException
+    void validateProbabilities( VectorOfDoubles probabilities ) throws MetricParameterException
     {
-        super();
-
         //Validate the probabilities
         if ( probabilities.size() < 2 )
         {
@@ -148,9 +152,6 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
             }
             check.add( next );
         }
-
-        this.probabilities = probabilities;
-
     }
 
     /**
@@ -159,7 +160,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * @return a function that orders boxes
      */
 
-    private static Comparator<? super BoxplotStatistic> getBoxComparator()
+    private static Comparator<? super Box> getBoxComparator()
     {
         return ( first, second ) -> {
             int returnMe = Double.compare( first.getLinkedValue(), second.getLinkedValue() );
@@ -169,7 +170,12 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
                 return returnMe;
             }
 
-            return Arrays.compare( first.getData().getDoubles(), second.getData().getDoubles() );
+            List<Double> one = first.getQuantilesList();
+            List<Double> two = second.getQuantilesList();
+
+            return Arrays.compare( one.toArray( new Double[one.size()] ),
+                                   two.toArray( new Double[two.size()] ),
+                                   Double::compare );
         };
     }
 

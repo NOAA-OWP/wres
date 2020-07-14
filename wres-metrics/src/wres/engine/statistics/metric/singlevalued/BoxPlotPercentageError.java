@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric.singlevalued;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -11,14 +11,17 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * A box plot of the errors associated with a pool of single-valued pairs where each error is expressed as a 
@@ -34,14 +37,13 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
      * Default probabilities.
      */
 
-    private static final VectorOfDoubles DEFAULT_PROBABILITIES = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+    private static final List<Double> DEFAULT_PROBABILITIES = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
     /**
      * Empty box.
      */
 
-    private static final VectorOfDoubles EMPTY_BOX =
-            VectorOfDoubles.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN );
+    private static final List<Double> EMPTY_BOX = List.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN );
 
     /**
      * Function for rounding the errors.
@@ -50,10 +52,10 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
     private static final DoubleUnaryOperator ROUNDER = v -> FunctionFactory.round().apply( v, 8 );
 
     /**
-     * The probabilities.
+     * The canonical representation of the metric.
      */
 
-    private final VectorOfDoubles probabilities;
+    private final BoxplotMetric metric;
 
     /**
      * Returns an instance.
@@ -73,7 +75,7 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
     }
 
     @Override
-    public BoxplotStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
+    public BoxplotStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -86,15 +88,21 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
                                                          this.getID(),
                                                          MetricConstants.MAIN );
 
+
+        BoxplotStatistic.Builder builder = BoxplotStatistic.newBuilder()
+                                                           .setMetric( this.getMetric() );
+
         // Empty output for empty input
         if ( s.getRawData().isEmpty() )
         {
             // Add an empty box: #62863
-            BoxplotStatistic emptyBox = BoxplotStatistic.of( DEFAULT_PROBABILITIES, EMPTY_BOX, metOut );
-            return BoxplotStatisticOuter.of( Collections.singletonList( emptyBox ), metOut );
+            builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotPercentageError.EMPTY_BOX ) );
+
+            return BoxplotStatisticOuter.of( builder.build(), metOut );
         }
 
-        // Get the sorted percentage errors
+        // Get the sorted errors
+        List<Double> probs = this.getMetric().getQuantilesList();
         double[] sortedPercentageErrors =
                 s.getRawData()
                  .stream()
@@ -103,19 +111,19 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
                  .toArray();
 
         // Compute the quantiles of the errors at a rounded precision
-        double[] box =
-                Arrays.stream( this.getProbabilities().getDoubles() )
-                      .map( Slicer.getQuantileFunction( sortedPercentageErrors ) )
-                      .map( ROUNDER )
-                      .toArray();
+        List<Double> box = probs.stream()
+                                .mapToDouble( Double::doubleValue )
+                                .map( Slicer.getQuantileFunction( sortedPercentageErrors ) )
+                                .map( BoxPlotPercentageError.ROUNDER )
+                                .boxed()
+                                .collect( Collectors.toList() );
 
-        BoxplotStatistic statistic = BoxplotStatistic.of( this.getProbabilities(),
-                                                          VectorOfDoubles.of( box ),
-                                                          MetricDimension.ERROR_PERCENT_OF_VERIFYING_VALUE,
-                                                          metOut );
+        BoxplotStatistic statistic = BoxplotStatistic.newBuilder()
+                                                     .setMetric( this.getMetric() )
+                                                     .addStatistics( Box.newBuilder().addAllQuantiles( box ) )
+                                                     .build();
 
-        return BoxplotStatisticOuter.of( Collections.singletonList( statistic ),
-                                     metOut );
+        return BoxplotStatisticOuter.of( statistic, metOut );
     }
 
     @Override
@@ -125,14 +133,14 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
     }
 
     /**
-     * Returns the probabilities.
+     * Returns the metric.
      * 
-     * @return the probabilities
+     * @return the metric
      */
 
-    private VectorOfDoubles getProbabilities()
+    private BoxplotMetric getMetric()
     {
-        return this.probabilities;
+        return this.metric;
     }
 
     /**
@@ -141,7 +149,15 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
 
     private BoxPlotPercentageError()
     {
-        this.probabilities = DEFAULT_PROBABILITIES;
+        super();
+        this.metric = BoxplotMetric.newBuilder()
+                                   .setName( MetricName.BOX_PLOT_OF_PERCENTAGE_ERRORS )
+                                   .setLinkedValueType( LinkedValueType.NONE )
+                                   .setQuantileValueType( QuantileValueType.ERROR_PERCENT_OF_VERIFYING_VALUE )
+                                   .addAllQuantiles( BoxPlotPercentageError.DEFAULT_PROBABILITIES )
+                                   .setMinimum( Double.NEGATIVE_INFINITY )
+                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                   .build();
     }
 
 }

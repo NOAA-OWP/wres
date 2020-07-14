@@ -19,9 +19,7 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
@@ -138,19 +136,16 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         // See #65503
         String probabilities = "none defined";
-        if( ! displayPlotInput.getData().isEmpty() )
+        if( displayPlotInput.getData().getStatisticsCount() != 0 )
         {
-             List<BoxplotStatistic> stats = displayPlotInput.getData();
-             BoxplotStatistic first = stats.get( 0 );
-             VectorOfDoubles probsWrapped = first.getProbabilities();
-             double[] probs = probsWrapped.getDoubles();
-             probabilities = Arrays.toString( probs );
+             List<Double> probs = displayPlotInput.getData().getMetric().getQuantilesList();
+             probabilities = Arrays.toString( probs.toArray() );
              
              // Pretty print
              probabilities = probabilities.replaceAll( "0.0,", "min," );
              probabilities = probabilities.replaceAll( "1.0", "max" );
              probabilities = probabilities.replace( "[", "" );
-             probabilities = probabilities.replace( "]", "" );             
+             probabilities = probabilities.replace( "]", "" );
         }
         
         this.addArgument( "probabilities", probabilities );

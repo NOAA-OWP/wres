@@ -245,8 +245,8 @@ public abstract class ChartEngineFactory
      * @return A single input slice for use in drawing the diagram.
      */
     private static List<DiagramStatisticOuter> sliceInputForDiagram( Object inputKeyInstance,
-                                                                               final List<DiagramStatisticOuter> input,
-                                                                               OutputTypeSelection usedPlotType )
+                                                                     final List<DiagramStatisticOuter> input,
+                                                                     OutputTypeSelection usedPlotType )
     {
         List<DiagramStatisticOuter> inputSlice;
         if ( usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
@@ -553,7 +553,7 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     public static ConcurrentMap<Object, ChartEngine>
-            buildMultiVectorOutputChartEngine( final ProjectConfig config, 
+            buildMultiVectorOutputChartEngine( final ProjectConfig config,
                                                final List<DiagramStatisticOuter> input,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
@@ -565,10 +565,10 @@ public abstract class ChartEngineFactory
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
-        
+
         // Find the metadata for the first element, which is sufficient here
         StatisticMetadata meta = input.get( 0 ).getMetadata();
-        
+
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -648,7 +648,7 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
-            processBoxPlotErrorsDiagram( BoxplotStatisticOuter input,
+            processBoxPlotErrorsDiagram( List<BoxplotStatisticOuter> input,
                                          String templateName,
                                          String overrideParametersStr,
                                          ChronoUnit durationUnits )
@@ -659,20 +659,22 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        if ( !input.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR )
-             && !input.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
+        StatisticMetadata metadata = input.get( 0 ).getMetadata();
+        
+        if ( !metadata.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+             && !metadata.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            throw new IllegalArgumentException( "Unrecognized data type for metric " + input.getMetadata().getMetricID()
+            throw new IllegalArgumentException( "Unrecognized data type for metric " + metadata.getMetricID()
                                                 + ". Expected one of "
                                                 + StatisticType.BOXPLOT_PER_PAIR
                                                 + " or "
                                                 + StatisticType.BOXPLOT_PER_POOL
                                                 + ", but got "
-                                                + input.getMetadata().getMetricID().getMetricOutputGroup()
+                                                + metadata.getMetricID().getMetricOutputGroup()
                                                 + "." );
         }
 
-        arguments = new WRESArgumentProcessor( input, durationUnits );
+        arguments = new WRESArgumentProcessor( input.get( 0 ), durationUnits );
 
         //Add the data source
         dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null, durationUnits ) );
@@ -726,9 +728,9 @@ public abstract class ChartEngineFactory
         for ( BoxplotStatisticOuter next : input )
         {
             // Skip empty outputs: #65503
-            if ( !next.getData().isEmpty() )
+            if ( next.getData().getStatisticsCount() != 0 )
             {
-                ChartEngine engine = ChartEngineFactory.processBoxPlotErrorsDiagram( next,
+                ChartEngine engine = ChartEngineFactory.processBoxPlotErrorsDiagram( List.of( next ),
                                                                                      templateName,
                                                                                      overrideParametersStr,
                                                                                      durationUnits );
@@ -742,7 +744,7 @@ public abstract class ChartEngineFactory
                               next.getMetadata() );
             }
         }
-        
+
         return Collections.unmodifiableMap( results );
     }
 
@@ -763,7 +765,7 @@ public abstract class ChartEngineFactory
      * @throws IllegalArgumentException if no box plots are available
      */
     public static ChartEngine buildBoxPlotChartEngine( ProjectConfig config,
-                                                       BoxplotStatisticOuter input,
+                                                       List<BoxplotStatisticOuter> input,
                                                        String userSpecifiedTemplateResourceName,
                                                        String overrideParametersStr,
                                                        ChronoUnit durationUnits )
@@ -775,18 +777,17 @@ public abstract class ChartEngineFactory
 
         Objects.requireNonNull( durationUnits );
 
-        if ( input.getData().isEmpty() )
+        if ( input.isEmpty() )
         {
-            throw new IllegalArgumentException( "Cannot generate box plot graphics for dataset with metadata '"
-                                                + input.getMetadata()
-                                                + "' because no box plots statistics were available." );
+            throw new IllegalArgumentException( "Cannot generate box plot graphics because no box plots statistics "
+                                                + "were available." );
         }
-        
-        //Determine the output type
-        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, List.of( input ), null );
 
+        //Determine the output type
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.get( 0 ).getMetadata();       
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, input, null );
+
 
         String templateName = determineTemplate( meta.getMetricID(), usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -799,7 +800,7 @@ public abstract class ChartEngineFactory
                                                                overrideParametersStr,
                                                                durationUnits );
     }
-    
+
 
     /**
      * Builds a {@link ChartEngine} for each component of a score.
@@ -818,7 +819,7 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
-            buildScoreOutputChartEngine( final ProjectConfig config, 
+            buildScoreOutputChartEngine( final ProjectConfig config,
                                          final List<DoubleScoreStatisticOuter> input,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
@@ -871,10 +872,10 @@ public abstract class ChartEngineFactory
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
-        
+
         // Find the metadata for the first element, which is sufficient here
         StatisticMetadata meta = input.get( 0 ).getMetadata();
-        
+
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -952,10 +953,10 @@ public abstract class ChartEngineFactory
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
-        
+
         // Find the metadata for the first element, which is sufficient here
         StatisticMetadata meta = input.get( 0 ).getMetadata();
-        
+
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -1010,10 +1011,10 @@ public abstract class ChartEngineFactory
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
-        
+
         // Find the metadata for the first element, which is sufficient here
         StatisticMetadata meta = input.get( 0 ).getMetadata();
-        
+
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -1064,7 +1065,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading or parsing the template fails.
      */
-    public static ChartEngine buildSingleValuedPairsChartEngine( final SampleData<Pair<Double,Double>> input,
+    public static ChartEngine buildSingleValuedPairsChartEngine( final SampleData<Pair<Double, Double>> input,
                                                                  final String userSpecifiedTemplateResourceName,
                                                                  final String overrideParametersStr,
                                                                  final ChronoUnit durationUnits )
@@ -1206,7 +1207,9 @@ public abstract class ChartEngineFactory
         catch ( GenericXMLReadingHandlerException e )
         {
             throw new WRESVisXMLReadingException( "Unable to load default chart drawing parameters from resource or file with name '"
-                                                  + templateName + "': ", e );
+                                                  + templateName
+                                                  + "': ",
+                                                  e );
         }
         finally
         {
@@ -1220,7 +1223,8 @@ public abstract class ChartEngineFactory
                 {
                     // Failure to close should not affect primary outputs.
                     LOGGER.warn( "Failed to close template stream {}",
-                                 templateStream, ioe );
+                                 templateStream,
+                                 ioe );
                 }
             }
         }

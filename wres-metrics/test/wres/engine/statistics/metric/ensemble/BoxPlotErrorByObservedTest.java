@@ -1,25 +1,23 @@
 package wres.engine.statistics.metric.ensemble;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -28,11 +26,16 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * Tests the {@link BoxPlotErrorByObserved}.
@@ -46,9 +49,6 @@ public final class BoxPlotErrorByObservedTest
      */
 
     private static final String MM_DAY = "MM/DAY";
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link BoxPlotErrorByObserved}.
@@ -70,51 +70,57 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testApply()
     {
-        List<Pair<Double,Ensemble>> values = new ArrayList<>();
+        List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 50.0, Ensemble.of( 0.0, 25.0, 50.0, 75.0, 100.0 ) ) );
 
         TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                           Instant.MAX,
-                                           Duration.ofHours( 24 ) );
-        final TimeWindowOuter timeWindow1 = window;
+                                                     Instant.MAX,
+                                                     Duration.ofHours( 24 ) );
+        TimeWindowOuter timeWindow1 = window;
         SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                         .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                               "MAP" ) )
-                                                         .setTimeWindow( timeWindow1 )
-                                                         .build();
+                                           .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "MAP" ) )
+                                           .setTimeWindow( timeWindow1 )
+                                           .build();
 
-        SampleData<Pair<Double,Ensemble>> input = SampleDataBasic.of( values, meta );
-        final TimeWindowOuter timeWindow = window;
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, meta );
+        TimeWindowOuter timeWindow = window;
 
-        final StatisticMetadata m1 =
+        StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                       "MAP" ) )
-                                                                 .setTimeWindow( timeWindow )
-                                                                 .build(),
+                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                         "MAP" ) )
+                                                   .setTimeWindow( timeWindow )
+                                                   .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of( MM_DAY ),
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       MetricConstants.MAIN );
 
-        //Compute normally
-        final BoxplotStatisticOuter actual = bpe.apply( input );
+        BoxplotStatisticOuter actual = this.bpe.apply( input );
 
-        final BoxplotStatistic expectedBox =
-                BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
-                                     VectorOfDoubles.of( -50.0, -37.5, 0.0, 37.5, 50.0 ),
-                                     m1,
-                                     50.0,
-                                     MetricDimension.OBSERVED_VALUE );
-        
-        List<BoxplotStatistic> expectedBoxes = Collections.singletonList( expectedBox );
-        
-        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBoxes, m1 );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
+                                            .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
 
-        //Check the results
-        assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
-                    + "expected output.",
-                    actual.equals( expected ) );
+        Box box = Box.newBuilder()
+                     .addAllQuantiles( List.of( -50.0, -37.5, 0.0, 37.5, 50.0 ) )
+                     .setLinkedValue( 50.0 )
+                     .build();
+
+        BoxplotStatistic expectedBox = BoxplotStatistic.newBuilder()
+                                                       .setMetric( metric )
+                                                       .addStatistics( box )
+                                                       .build();
+
+        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBox, m1 );
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -125,12 +131,25 @@ public final class BoxPlotErrorByObservedTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Double,Ensemble>> input =
+        SampleData<Pair<Double, Ensemble>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
         BoxplotStatisticOuter actual = bpe.apply( input );
 
-        assertTrue( actual.getData().equals( Arrays.asList() ) );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
+                                            .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( EnsembleBoxPlot.DEFAULT_PROBABILITIES )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
+
+        BoxplotStatistic expected = BoxplotStatistic.newBuilder()
+                                                    .setMetric( metric )
+                                                    .build();
+
+        assertEquals( expected, actual.getData() );
     }
 
     /**
@@ -141,7 +160,7 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testGetName()
     {
-        assertTrue( bpe.getName().equals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE.toString() ) );
+        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE.toString(), this.bpe.getName() );
     }
 
     /**
@@ -151,7 +170,7 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testHasRealUnits()
     {
-        assertTrue( bpe.hasRealUnits() );
+        assertTrue( this.bpe.hasRealUnits() );
     }
 
     /**
@@ -165,18 +184,12 @@ public final class BoxPlotErrorByObservedTest
         assertTrue( Objects.nonNull( BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 1.0 ) ) ) );
     }
 
-    /**
-     * Tests for an expected exception on calling 
-     * {@link BoxPlotErrorByObserved#apply(SampleData)} with null input.
-     */
-
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'BOX PLOT OF ERRORS BY OBSERVED VALUE'." );
+        SampleDataException expected = assertThrows( SampleDataException.class, () -> this.bpe.apply( null ) );
 
-        bpe.apply( null );
+        assertEquals( "Specify non-null input to the 'BOX PLOT OF ERRORS BY OBSERVED VALUE'.", expected.getMessage() );
     }
 
     /**
@@ -186,10 +199,11 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnTooFewProbabilities() throws MetricParameterException
     {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify at least two probabilities for the verification box plot." );
+        MetricParameterException expected =
+                assertThrows( MetricParameterException.class,
+                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.1 ) ) );
 
-        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.1 ) );
+        assertEquals( "Specify at least two probabilities for the verification box plot.", expected.getMessage() );
     }
 
     /**
@@ -199,10 +213,12 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnNegativeProbabilities() throws MetricParameterException
     {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify only valid probabilities within [0,1] from which to construct the box plot." );
+        MetricParameterException expected =
+                assertThrows( MetricParameterException.class,
+                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( -0.1, 0.0, 0.5 ) ) );
 
-        BoxPlotErrorByObserved.of( VectorOfDoubles.of( -0.1, 0.0, 0.5 ) );
+        assertEquals( "Specify only valid probabilities within [0,1] from which to construct the box plot.",
+                      expected.getMessage() );
     }
 
     /**
@@ -212,10 +228,12 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnProbabilitiesGreaterThanOne() throws MetricParameterException
     {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify only valid probabilities within [0,1] from which to construct the box plot." );
+        MetricParameterException expected =
+                assertThrows( MetricParameterException.class,
+                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.5, 1.5 ) ) );
 
-        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.5, 1.5 ) );
+        assertEquals( "Specify only valid probabilities within [0,1] from which to construct the box plot.",
+                      expected.getMessage() );
     }
 
     /**
@@ -225,10 +243,12 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnDuplicateProbabilities() throws MetricParameterException
     {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify only non-unique probabilities from which to construct the box plot." );
+        MetricParameterException expected =
+                assertThrows( MetricParameterException.class,
+                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.0, 1.0 ) ) );
 
-        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.0, 1.0 ) );
+        assertEquals( "Specify only non-unique probabilities from which to construct the box plot.",
+                      expected.getMessage() );
     }
 
     /**
@@ -238,10 +258,12 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testForExceptionOnEvenNumberOfProbabilities() throws MetricParameterException
     {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify an odd number of probabilities for the verification box plot." );
+        MetricParameterException expected =
+                assertThrows( MetricParameterException.class,
+                              () -> BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 1.0 ) ) );
 
-        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 1.0 ) );
+        assertEquals( "Specify an odd number of probabilities for the verification box plot.",
+                      expected.getMessage() );
     }
 
 }

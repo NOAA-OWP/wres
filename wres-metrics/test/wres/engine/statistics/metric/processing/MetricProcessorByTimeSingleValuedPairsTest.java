@@ -164,7 +164,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( 1.6666666666666667,
                       bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        
+
         assertEquals( 1.0,
                       cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -183,7 +183,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertEquals( -0.6666666666666666,
                       ve.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( VectorOfDoubles.of( 5, 5, 5, 5, 5 ), bpe.get( 0 ).getData().get( 0 ).getData() );
+
+        assertEquals( List.of( 5.0, 5.0, 5.0, 5.0, 5.0 ),
+                      bpe.get( 0 ).getData().getStatistics( 0 ).getQuantilesList() );
     }
 
     @Test

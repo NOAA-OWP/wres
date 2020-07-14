@@ -3,18 +3,21 @@ package wres.vis;
 import static org.junit.Assert.assertEquals;
 
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
+import java.util.List;
 
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * Tests the {@link WresArgumentProcessor}.
@@ -43,7 +46,8 @@ public class WRESArgumentProcessorTest
     @Test( expected = Test.None.class /* no exception expected */ )
     public void testConstructionDoesNotThrowIOOBExceptionWhenInputIsEmpty()
     {
-        new WRESArgumentProcessor( BoxplotStatisticOuter.of( Collections.emptyList(), this.meta ), ChronoUnit.SECONDS );
+        new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(), this.meta ),
+                                   ChronoUnit.SECONDS );
     }
 
     /**
@@ -54,7 +58,7 @@ public class WRESArgumentProcessorTest
     public void testConstructionProducesExpectedProbabilitiesWhenInputIsEmpty()
     {
         WRESArgumentProcessor processor =
-                new WRESArgumentProcessor( BoxplotStatisticOuter.of( Collections.emptyList(), this.meta ),
+                new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(), this.meta ),
                                            ChronoUnit.SECONDS );
 
         String probs = processor.getArgument( "probabilities" ).getValue();
@@ -69,19 +73,30 @@ public class WRESArgumentProcessorTest
     @Test
     public void testConstructionProducesExpectedProbabilitiesWhenInputIsFull()
     {
-        BoxplotStatistic box =
-                BoxplotStatistic.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
-                                     VectorOfDoubles.of( 1, 2, 3, 4, 5 ),
-                                     meta );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
+
+        Box box = Box.newBuilder()
+                     .addAllQuantiles( List.of( 1.0, 2.0, 3.0, 4.0, 5.0 ) )
+                     .build();
+
+        BoxplotStatistic aBox = BoxplotStatistic.newBuilder()
+                                                .setMetric( metric )
+                                                .addStatistics( box )
+                                                .build();
 
         WRESArgumentProcessor processor =
-                new WRESArgumentProcessor( BoxplotStatisticOuter.of( Collections.singletonList( box ), this.meta ),
+                new WRESArgumentProcessor( BoxplotStatisticOuter.of( aBox, this.meta ),
                                            ChronoUnit.SECONDS );
 
         String probs = processor.getArgument( "probabilities" ).getValue();
 
         assertEquals( "min, 0.25, 0.5, 0.75, max", probs );
     }
-
 
 }

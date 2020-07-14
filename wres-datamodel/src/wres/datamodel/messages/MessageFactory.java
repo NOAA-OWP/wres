@@ -638,47 +638,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        BoxplotMetric.Builder metricBuilder = BoxplotMetric.newBuilder();
-        BoxplotStatistic.Builder statisticBuilder = BoxplotStatistic.newBuilder();
-
-        if ( !statistic.getData().isEmpty() )
-        {
-            StatisticMetadata meta = statistic.getMetadata();
-
-            // Add the quantiles, which are common to all boxes
-            wres.datamodel.statistics.BoxplotStatistic first = statistic.getData().get( 0 );
-            double[] quantiles = first.getProbabilities().getDoubles();
-            Arrays.stream( quantiles ).forEach( metricBuilder::addQuantiles );
-
-            MetricConstants metricName = meta.getMetricID();
-            if ( first.hasLinkedValue() )
-            {
-                MetricDimension dimension = first.getLinkedValueType();
-                LinkedValueType valueType = LinkedValueType.valueOf( dimension.name() );
-                metricBuilder.setLinkedValueType( valueType );
-            }
-
-            metricBuilder.setName( MetricName.valueOf( metricName.name() ) )
-                         .setUnits( meta.getSampleMetadata().getMeasurementUnit().toString() )
-                         .setMinimum( (Double) metricName.getMinimum() )
-                         .setMaximum( (Double) metricName.getMaximum() )
-                         .setOptimum( (Double) metricName.getOptimum() );
-
-            // Set the individual boxes
-            for ( wres.datamodel.statistics.BoxplotStatistic next : statistic.getData() )
-            {
-                double[] doubles = next.getData().getDoubles();
-                BoxplotStatistic.Box.Builder box = BoxplotStatistic.Box.newBuilder();
-                Arrays.stream( doubles ).forEach( box::addQuantiles );
-                if ( next.hasLinkedValue() )
-                {
-                    box.setLinkedValue( next.getLinkedValue() );
-                }
-                statisticBuilder.addStatistics( box );
-            }
-        }
-
-        return statisticBuilder.setMetric( metricBuilder ).build();
+        return statistic.getData();
     }
 
     /**

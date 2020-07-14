@@ -18,12 +18,9 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -35,12 +32,17 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.BoxplotStatistic.Box;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
@@ -171,12 +173,25 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputsOne = new ArrayList<>();
-        VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS )
+                                            .setLinkedValueType( LinkedValueType.NONE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
 
-        fakeOutputsOne.add( BoxplotStatistic.of( probs,
-                                                 VectorOfDoubles.of( 1, 3, 5, 7, 9 ),
-                                                 fakeMetadataOne ) );
+        Box box = Box.newBuilder()
+                     .addAllQuantiles( List.of( 1.0, 3.0, 5.0, 7.0, 9.0 ) )
+                     .build();
+
+        BoxplotStatistic boxOne = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( box )
+                                                  .build();
+
+        BoxplotStatisticOuter fakeOutputsOne = BoxplotStatisticOuter.of( boxOne, fakeMetadataOne );
 
         TimeWindowOuter timeTwo =
                 TimeWindowOuter.of( Instant.MIN,
@@ -194,21 +209,18 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputsTwo = Collections.singletonList( BoxplotStatistic.of( probs,
-                                                                                                VectorOfDoubles.of( 11,
-                                                                                                                    33,
-                                                                                                                    55,
-                                                                                                                    77,
-                                                                                                                    99 ),
-                                                                                                fakeMetadataTwo ) );
+        Box anotherBox = Box.newBuilder()
+                            .addAllQuantiles( List.of( 11.0, 33.0, 55.0, 77.0, 99.0 ) )
+                            .build();
 
-        // Fake output wrapper.
-        List<BoxplotStatisticOuter> fakeOutputData =
-                Arrays.asList( BoxplotStatisticOuter.of( fakeOutputsOne,
-                                                         fakeMetadataOne ),
-                               BoxplotStatisticOuter.of( fakeOutputsTwo,
-                                                         fakeMetadataTwo ) );
-        return fakeOutputData;
+        BoxplotStatistic boxTwo = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( anotherBox )
+                                                  .build();
+
+        BoxplotStatisticOuter fakeOutputsTwo = BoxplotStatisticOuter.of( boxTwo, fakeMetadataTwo );
+
+        return List.of( fakeOutputsOne, fakeOutputsTwo );
     }
 
     /**
@@ -250,31 +262,39 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputs = new ArrayList<>();
-        VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
+                                            .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
 
-        fakeOutputs.add( BoxplotStatistic.of( probs,
-                                              VectorOfDoubles.of( 2, 3, 4, 5, 6 ),
-                                              fakeMetadata,
-                                              1,
-                                              MetricDimension.OBSERVED_VALUE ) );
-        fakeOutputs.add( BoxplotStatistic.of( probs,
-                                              VectorOfDoubles.of( 7, 9, 11, 13, 15 ),
-                                              fakeMetadata,
-                                              3,
-                                              MetricDimension.OBSERVED_VALUE ) );
-        fakeOutputs.add( BoxplotStatistic.of( probs,
-                                              VectorOfDoubles.of( 21, 24, 27, 30, 33 ),
-                                              fakeMetadata,
-                                              5,
-                                              MetricDimension.OBSERVED_VALUE ) );
+        Box first = Box.newBuilder()
+                       .addAllQuantiles( List.of( 2.0, 3.0, 4.0, 5.0, 6.0 ) )
+                       .setLinkedValue( 1.0 )
+                       .build();
 
-        // Fake output wrapper.
-        List<BoxplotStatisticOuter> fakeOutputData =
-                Collections.singletonList( BoxplotStatisticOuter.of( fakeOutputs,
-                                                                     fakeMetadata ) );
+        Box second = Box.newBuilder()
+                        .addAllQuantiles( List.of( 7.0, 9.0, 11.0, 13.0, 15.0 ) )
+                        .setLinkedValue( 3.0 )
+                        .build();
 
-        return fakeOutputData;
+        Box third = Box.newBuilder()
+                       .addAllQuantiles( List.of( 21.0, 24.0, 27.0, 30.0, 33.0 ) )
+                       .setLinkedValue( 5.0 )
+                       .build();
+
+        BoxplotStatistic boxOne = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( first )
+                                                  .addStatistics( second )
+                                                  .addStatistics( third )
+                                                  .build();
+
+
+        return List.of( BoxplotStatisticOuter.of( boxOne, fakeMetadata ) );
     }
 
     /**

@@ -1,15 +1,18 @@
 package wres.datamodel.statistics;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
+import wres.statistics.generated.BoxplotStatistic;
 
 /**
  * Immutable store of several box plot statistics.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BoxplotStatisticOuter implements Statistic<List<BoxplotStatistic>>
+public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
 {
 
     /**
@@ -17,33 +20,33 @@ public class BoxplotStatisticOuter implements Statistic<List<BoxplotStatistic>>
      */
 
     private final StatisticMetadata metadata;
-    
+
     /**
      * The statistics.
      */
 
-    private final List<BoxplotStatistic> statistics;
-    
+    private final BoxplotStatistic statistic;
+
     /**
      * Returns an instance from the inputs.
      * 
-     * @param statistics the box plot data
+     * @param statistic the box plot data
      * @param metadata the metadata
      * @throws StatisticException if any of the inputs is invalid
      * @throws NullPointerException if any of the inputs is null
      * @return an instance of the output
      */
 
-    public static BoxplotStatisticOuter of( List<BoxplotStatistic> statistics,
-                                        StatisticMetadata metadata )
+    public static BoxplotStatisticOuter of( BoxplotStatistic statistic,
+                                            StatisticMetadata metadata )
     {
-        return new BoxplotStatisticOuter( statistics, metadata );
+        return new BoxplotStatisticOuter( statistic, metadata );
     }
 
     @Override
     public StatisticMetadata getMetadata()
     {
-        return metadata;
+        return this.metadata;
     }
 
     @Override
@@ -54,14 +57,14 @@ public class BoxplotStatisticOuter implements Statistic<List<BoxplotStatistic>>
             return false;
         }
 
-        if( o == this )
+        if ( o == this )
         {
             return true;
         }
 
         BoxplotStatisticOuter p = (BoxplotStatisticOuter) o;
 
-        if ( !this.statistics.equals( p.statistics ) )
+        if ( !this.getData().equals( p.getData() ) )
         {
             return false;
         }
@@ -72,36 +75,50 @@ public class BoxplotStatisticOuter implements Statistic<List<BoxplotStatistic>>
     @Override
     public int hashCode()
     {
-        return Objects.hash( statistics, metadata );
+        return Objects.hash( this.getData(), this.getMetadata() );
+    }
+    
+    @Override
+    public String toString()
+    {
+        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
+
+        builder.append( "metric name", this.getData().getMetric().getName() );
+        builder.append( "linked value type", this.getData().getMetric().getLinkedValueType() );
+        builder.append( "quantile value type", this.getData().getMetric().getQuantileValueType() );
+        
+        this.getData()
+            .getStatisticsList()
+            .forEach( component -> builder.append( "linked value:", component.getLinkedValue() )
+                                          .append( "box:", component.getQuantilesList() ) );
+
+        builder.append( "metadata", this.getMetadata() );
+        
+        return builder.toString();
+    }
+    
+    @Override
+    public BoxplotStatistic getData()
+    {
+        return this.statistic; // Rendered immutable on construction
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param statistics the box plot data
+     * @param statistic the box plot data
      * @param metadata the metadata
      * @throws NullPointerException if any input is null
      */
 
-    private BoxplotStatisticOuter( List<BoxplotStatistic> statistics,
-                               StatisticMetadata metadata )
+    private BoxplotStatisticOuter( BoxplotStatistic statistic,
+                                   StatisticMetadata metadata )
     {
         Objects.requireNonNull( metadata );
-        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( statistic );
 
         this.metadata = metadata;
-        this.statistics = Collections.unmodifiableList( statistics );
-        
-        if ( this.statistics.contains( (BoxplotStatistic) null ) )
-        {
-            throw new StatisticException( "Cannot build a list of box plot statistics with one or more null entries." );
-        }
-    }
-
-    @Override
-    public List<BoxplotStatistic> getData()
-    {
-        return this.statistics; // Rendered immutable on construction
+        this.statistic = statistic;
     }
 
 }
