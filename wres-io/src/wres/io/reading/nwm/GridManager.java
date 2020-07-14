@@ -384,7 +384,12 @@ class GridManager
                         this.addX(builder, xCoordinates, xIndex);
                         this.addY(builder, yCoordinates, yIndex);
 
-                        builder.set( "geographic_coordinate", "(" + point.getLongitude() + "," + point.getLatitude() + ")");
+                        // TODO resolve #55348 to allow full precision. Cast is
+                        // a workaround to allow progress on #72747 and allow
+                        // scenario65x to pass as they have before #72747.
+                        float truncatedLongitude = (float) point.getLongitude();
+                        float truncatedLatitude = (float) point.getLatitude();
+                        builder.set( "geographic_coordinate", "(" + truncatedLongitude + "," + truncatedLatitude + ")");
                         SystemSettings systemSettings = this.getSystemSettings();
                         final int MAX_COPIES = systemSettings.getMaximumCopies();
 

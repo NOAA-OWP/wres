@@ -815,6 +815,8 @@ public class Database {
 		builder.append("TRUNCATE wres.Project RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ProjectSource RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append( "TRUNCATE wres.Feature RESTART IDENTITY CASCADE;" ).append( NEWLINE );
+        builder.append( "TRUNCATE wres.NetcdfCoordinate CASCADE;" ).append( NEWLINE );
+        builder.append( "TRUNCATE wres.GridProjection RESTART IDENTITY CASCADE;" ).append( NEWLINE );
 
 		try
         {
