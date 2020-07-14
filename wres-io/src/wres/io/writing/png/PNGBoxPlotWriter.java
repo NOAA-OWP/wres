@@ -3,7 +3,6 @@ package wres.io.writing.png;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +25,6 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -288,15 +286,10 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metadata.getMetricID() );
 
-            // Pool the output
-            List<BoxplotStatistic> pool = new ArrayList<>();
-            output.forEach( next -> pool.addAll( next.getData() ) );
-            BoxplotStatisticOuter pooled = BoxplotStatisticOuter.of( pool, metadata );
-
             // Build the chart engine
             ChartEngine engine =
                     ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                pooled,
+                                                                output,
                                                                 helper.getTemplateResourceName(),
                                                                 helper.getGraphicsString(),
                                                                 durationUnits );

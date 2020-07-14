@@ -43,7 +43,6 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -71,6 +70,10 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.BoxplotStatistic.Box;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
@@ -614,32 +617,37 @@ public class MessageFactoryTest
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputs = new ArrayList<>();
+        List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
-        VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .addAllQuantiles( probabilities )
+                                            .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                            .build();
 
-        BoxplotStatistic one = BoxplotStatistic.of( probabilities,
-                                                    VectorOfDoubles.of( 1, 2, 3, 4, 5 ),
-                                                    fakeMetadata,
-                                                    11,
-                                                    MetricDimension.OBSERVED_VALUE );
-
-        BoxplotStatistic two = BoxplotStatistic.of( probabilities,
-                                                    VectorOfDoubles.of( 6, 7, 8, 9, 10 ),
-                                                    fakeMetadata,
-                                                    22,
-                                                    MetricDimension.OBSERVED_VALUE );
-
-        BoxplotStatistic three = BoxplotStatistic.of( probabilities,
-                                                      VectorOfDoubles.of( 11, 12, 13, 14, 15 ),
-                                                      fakeMetadata,
-                                                      33,
-                                                      MetricDimension.OBSERVED_VALUE );
-
-
-        fakeOutputs.add( one );
-        fakeOutputs.add( two );
-        fakeOutputs.add( three );
+        BoxplotStatistic boxplotOne = BoxplotStatistic.newBuilder()
+                                                      .setMetric( metric )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 1.0,
+                                                                                                    2.0,
+                                                                                                    3.0,
+                                                                                                    4.0,
+                                                                                                    5.0 ) )
+                                                                         .setLinkedValue( 11.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 6.0,
+                                                                                                    7.0,
+                                                                                                    8.0,
+                                                                                                    9.0,
+                                                                                                    10.0 ) )
+                                                                         .setLinkedValue( 22.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 11.0,
+                                                                                                    12.0,
+                                                                                                    13.0,
+                                                                                                    14.0,
+                                                                                                    15.0 ) )
+                                                                         .setLinkedValue( 33.0 ) )
+                                                      .build();
 
         StatisticMetadata fakeMetadataTwo =
                 StatisticMetadata.of( metadata,
@@ -648,33 +656,39 @@ public class MessageFactoryTest
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputsTwo = new ArrayList<>();
+        BoxplotMetric metricTwo = BoxplotMetric.newBuilder()
+                                               .addAllQuantiles( probabilities )
+                                               .setLinkedValueType( LinkedValueType.ENSEMBLE_MEAN )
+                                               .build();
 
-        BoxplotStatistic four = BoxplotStatistic.of( probabilities,
-                                                     VectorOfDoubles.of( 16, 17, 18, 19, 20 ),
-                                                     fakeMetadataTwo,
-                                                     73,
-                                                     MetricDimension.ENSEMBLE_MEAN );
-
-        BoxplotStatistic five = BoxplotStatistic.of( probabilities,
-                                                     VectorOfDoubles.of( 21, 22, 23, 24, 25 ),
-                                                     fakeMetadataTwo,
-                                                     92,
-                                                     MetricDimension.ENSEMBLE_MEAN );
-
-        BoxplotStatistic six = BoxplotStatistic.of( probabilities,
-                                                    VectorOfDoubles.of( 26, 27, 28, 29, 30 ),
-                                                    fakeMetadataTwo,
-                                                    111,
-                                                    MetricDimension.ENSEMBLE_MEAN );
-
-        fakeOutputsTwo.add( four );
-        fakeOutputsTwo.add( five );
-        fakeOutputsTwo.add( six );
+        BoxplotStatistic boxplotTwo = BoxplotStatistic.newBuilder()
+                                                      .setMetric( metricTwo )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 16.0,
+                                                                                                    17.0,
+                                                                                                    18.0,
+                                                                                                    19.0,
+                                                                                                    20.0 ) )
+                                                                         .setLinkedValue( 73.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 21.0,
+                                                                                                    22.0,
+                                                                                                    23.0,
+                                                                                                    24.0,
+                                                                                                    25.0 ) )
+                                                                         .setLinkedValue( 92.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 26.0,
+                                                                                                    27.0,
+                                                                                                    28.0,
+                                                                                                    29.0,
+                                                                                                    30.0 ) )
+                                                                         .setLinkedValue( 111.0 ) )
+                                                      .build();
 
         // Fake output wrapper.
-        return List.of( BoxplotStatisticOuter.of( fakeOutputs, fakeMetadata ),
-                        BoxplotStatisticOuter.of( fakeOutputsTwo, fakeMetadataTwo ) );
+        return List.of( BoxplotStatisticOuter.of( boxplotOne, fakeMetadata ),
+                        BoxplotStatisticOuter.of( boxplotTwo, fakeMetadataTwo ) );
     }
 
     private PoolOfPairs<Double, Ensemble> getPoolOfEnsemblePairs()

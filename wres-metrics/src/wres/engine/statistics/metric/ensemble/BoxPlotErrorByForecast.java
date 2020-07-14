@@ -1,21 +1,27 @@
 package wres.engine.statistics.metric.ensemble;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.MetricName;
 
 /**
  * An concrete implementation of a {@link EnsembleBoxPlot} that plots the ensemble forecast errors (right - left) against 
@@ -30,13 +36,19 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
 {
 
     /**
+     * The canonical representation of the metric.
+     */
+
+    private final BoxplotMetric metric;
+
+    /**
      * Default dimension for the domain.
      */
 
     private static final MetricDimension DEFAULT_DOMAIN_DIMENSION = MetricDimension.ENSEMBLE_MEAN;
 
     /**
-     * Default domain mappoer function.
+     * Default domain mapper function.
      */
 
     private static final ToDoubleFunction<VectorOfDoubles> DEFAULT_DOMAIN_MAPPER = FunctionFactory.mean();
@@ -86,6 +98,12 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
         return MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE;
     }
 
+    @Override
+    BoxplotMetric getMetric()
+    {
+        return this.metric;
+    }
+
     /**
      * Creates a box from an ensemble pair.
      * 
@@ -96,22 +114,30 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      */
 
     @Override
-    BoxplotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata )
+    Box getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
-        double[] probs = this.probabilities.getDoubles();
+        List<Double> probs = this.getMetric().getQuantilesList();
         double[] sorted = pair.getRight().getMembers();
         Arrays.sort( sorted );
-        double[] sortedErrors = Arrays.stream( sorted ).map( x -> x - pair.getLeft() ).toArray();
+        double[] sortedErrors = Arrays.stream( sorted )
+                                      .map( x -> x - pair.getLeft() )
+                                      .toArray();
 
         //Compute the quantiles
-        double[] box =
-                Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return BoxplotStatistic.of( this.probabilities,
-                                    VectorOfDoubles.of( box ),
-                                    metadata,
-                                    domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ),
-                                    this.domainDimension );
+        List<Double> box = probs.stream()
+                                .mapToDouble( Double::doubleValue )
+                                .map( Slicer.getQuantileFunction( sortedErrors ) )
+                                .boxed()
+                                .collect( Collectors.toList() );
+
+        VectorOfDoubles domain = VectorOfDoubles.of( sorted );
+        double linkedValue = this.domainMapper.applyAsDouble( domain );
+
+        return Box.newBuilder()
+                  .setLinkedValue( linkedValue )
+                  .addAllQuantiles( box )
+                  .build();
     }
 
     /**
@@ -126,8 +152,16 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
         super();
 
         this.domainDimension = DEFAULT_DOMAIN_DIMENSION;
-
         this.domainMapper = DEFAULT_DOMAIN_MAPPER;
+
+        this.metric = BoxplotMetric.newBuilder()
+                                   .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
+                                   .setLinkedValueType( LinkedValueType.valueOf( this.domainDimension.name() ) )
+                                   .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                   .addAllQuantiles( EnsembleBoxPlot.DEFAULT_PROBABILITIES )
+                                   .setMinimum( Double.NEGATIVE_INFINITY )
+                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                   .build();
     }
 
     /**
@@ -141,7 +175,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
     private BoxPlotErrorByForecast( VectorOfDoubles probabilities, MetricDimension domainDimension )
             throws MetricParameterException
     {
-        super( probabilities );
+        this.validateProbabilities( probabilities );
 
         if ( Objects.isNull( domainDimension ) )
         {
@@ -154,10 +188,10 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
         switch ( domainDimension )
         {
             case ENSEMBLE_MEAN:
-                domainMapper = FunctionFactory.mean();
+                this.domainMapper = FunctionFactory.mean();
                 break;
             case ENSEMBLE_MEDIAN:
-                domainMapper =
+                this.domainMapper =
                         a -> Slicer.getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
                 break;
             default:
@@ -166,6 +200,17 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
                                                     + domainDimension
                                                     + "'." );
         }
+
+        LinkedValueType linkedValueType = LinkedValueType.valueOf( this.domainDimension.name() );
+        BoxplotMetric.Builder builder = BoxplotMetric.newBuilder()
+                                                     .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
+                                                     .setLinkedValueType( linkedValueType )
+                                                     .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                                     .setMinimum( Double.NEGATIVE_INFINITY )
+                                                     .setMaximum( Double.POSITIVE_INFINITY );
+
+        Arrays.stream( probabilities.getDoubles() ).forEach( builder::addQuantiles );
+        this.metric = builder.build();
     }
 
 }

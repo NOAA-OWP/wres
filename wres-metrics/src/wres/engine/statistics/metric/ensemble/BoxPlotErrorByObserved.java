@@ -1,18 +1,22 @@
 package wres.engine.statistics.metric.ensemble;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * An concrete implementation of a {@link EnsembleBoxPlot} that plots the ensemble forecast errors (right - left) against 
@@ -24,6 +28,12 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 public class BoxPlotErrorByObserved extends EnsembleBoxPlot
 {
+
+    /**
+     * The canonical representation of the metric.
+     */
+
+    private final BoxplotMetric metric;
 
     /**
      * Returns an instance.
@@ -55,29 +65,34 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
         return MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE;
     }
 
-    /**
-     * Creates a box from an ensemble pair.
-     * 
-     * @param metadata the box metadata
-     * @return a box
-     * @throws MetricCalculationException if the box cannot be constructed
-     */
-
     @Override
-    BoxplotStatistic getBox( Pair<Double,Ensemble> pair, StatisticMetadata metadata )
+    Box getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata )
     {
         //Get the sorted errors
-        double[] probs = probabilities.getDoubles();
+        List<Double> probs = this.getMetric().getQuantilesList();
         double[] sortedErrors =
-                Arrays.stream( pair.getRight().getMembers() ).map( x -> x - pair.getLeft() ).sorted().toArray();
+                Arrays.stream( pair.getRight().getMembers() )
+                      .map( x -> x - pair.getLeft() )
+                      .sorted()
+                      .toArray();
+
         //Compute the quantiles
-        double[] box =
-                Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return BoxplotStatistic.of( this.probabilities,
-                                    VectorOfDoubles.of( box ),
-                                    metadata,
-                                    pair.getLeft(),
-                                    MetricDimension.OBSERVED_VALUE );
+        List<Double> box = probs.stream()
+                                .mapToDouble( Double::doubleValue )
+                                .map( Slicer.getQuantileFunction( sortedErrors ) )
+                                .boxed()
+                                .collect( Collectors.toList() );
+
+        return Box.newBuilder()
+                  .setLinkedValue( pair.getLeft() )
+                  .addAllQuantiles( box )
+                  .build();
+    }
+
+    @Override
+    BoxplotMetric getMetric()
+    {
+        return this.metric;
     }
 
     /**
@@ -87,6 +102,15 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
     private BoxPlotErrorByObserved()
     {
         super();
+
+        this.metric = BoxplotMetric.newBuilder()
+                                   .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
+                                   .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                   .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                   .addAllQuantiles( EnsembleBoxPlot.DEFAULT_PROBABILITIES )
+                                   .setMinimum( Double.NEGATIVE_INFINITY )
+                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                   .build();
     }
 
     /**
@@ -98,7 +122,17 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
 
     private BoxPlotErrorByObserved( VectorOfDoubles probabilities ) throws MetricParameterException
     {
-        super( probabilities );
+        this.validateProbabilities( probabilities );
+
+        BoxplotMetric.Builder builder = BoxplotMetric.newBuilder()
+                                                     .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
+                                                     .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                                     .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                                     .setMinimum( Double.NEGATIVE_INFINITY )
+                                                     .setMaximum( Double.POSITIVE_INFINITY );
+
+        Arrays.stream( probabilities.getDoubles() ).forEach( builder::addQuantiles );
+        this.metric = builder.build();
     }
 
 }

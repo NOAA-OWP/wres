@@ -17,7 +17,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -29,6 +28,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -289,14 +289,14 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        List<BoxplotStatistic> output = new ArrayList<>();
+        BoxplotStatistic boxplot = BoxplotStatistic.getDefaultInstance();
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
                                                        1000,
                                                        MeasurementUnit.of( "INCH" ),
                                                        MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                        MetricConstants.MAIN );
 
-        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( output, meta );
+        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, meta );
 
         //Append result
         rawData.add( out );
@@ -319,14 +319,14 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        List<BoxplotStatistic> output = new ArrayList<>();
+        BoxplotStatistic boxplot = BoxplotStatistic.getDefaultInstance();
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
                                                        1000,
                                                        MeasurementUnit.of( "INCH" ),
                                                        MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                        MetricConstants.MAIN );
 
-        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( output, meta );
+        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, meta );
 
         //Append result
         rawData.add( out );

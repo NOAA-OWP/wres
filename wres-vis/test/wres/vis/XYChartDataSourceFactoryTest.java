@@ -2,6 +2,7 @@ package wres.vis;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -11,6 +12,7 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.BoxplotStatistic;
 
 /**
  * Tests the {@link XYChartDataSourceFactory}.
@@ -39,9 +41,9 @@ public class XYChartDataSourceFactoryTest
     @Test( expected = Test.None.class /* no exception expected */ )
     public void testOfBoxPlotOutputDoesNotThrowIOOBExceptionWhenInputIsEmpty()
     {
-        BoxplotStatisticOuter input = BoxplotStatisticOuter.of( Collections.emptyList(), this.meta );
-        
-        XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null, ChronoUnit.SECONDS );
+        BoxplotStatisticOuter input = BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(), this.meta );
+
+        XYChartDataSourceFactory.ofBoxPlotOutput( 0, List.of( input ), null, ChronoUnit.SECONDS );
     }
 
 

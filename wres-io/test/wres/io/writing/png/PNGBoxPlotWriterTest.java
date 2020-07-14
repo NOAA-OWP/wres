@@ -28,7 +28,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -37,6 +36,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriterTestHelper;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.system.SystemSettings;
 
 /**
@@ -62,7 +62,8 @@ public class PNGBoxPlotWriterTest
 
     private static final String LOCATION_ID = "JUNP1";
 
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
 
     /**
      * Tests the writing of {@link BoxplotStatisticOuter} to file.
@@ -164,8 +165,8 @@ public class PNGBoxPlotWriterTest
         TimeWindowOuter timeOne = TimeWindowOuter.of();
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( PNGBoxPlotWriterTest.LOCATION_ID ), "SQIN" );
@@ -190,11 +191,8 @@ public class PNGBoxPlotWriterTest
         Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
 
         // Construct the nothing data
-        BoxplotStatisticOuter emptyFakeStatistics =
-                BoxplotStatisticOuter.of( Collections.singletonList( BoxplotStatistic.of( VectorOfDoubles.of(),
-                                                                                      VectorOfDoubles.of(),
-                                                                                      fakeMetadata ) ),
-                                      fakeMetadata );
+        BoxplotStatisticOuter emptyFakeStatistics = BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(),
+                                                                              fakeMetadata );
         List<BoxplotStatisticOuter> fakeStatistics = Collections.singletonList( emptyFakeStatistics );
 
         // Begin the actual test now that we have the dependencies.
@@ -216,7 +214,7 @@ public class PNGBoxPlotWriterTest
 
         // Check the expected path: #61841
         assertTrue( pathToFile.endsWith( "JUNP1_SQIN_BOX_PLOT_OF_ERRORS.png" ) );
-        
+
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
     }

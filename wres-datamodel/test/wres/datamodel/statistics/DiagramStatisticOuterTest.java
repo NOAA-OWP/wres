@@ -34,7 +34,7 @@ import wres.statistics.generated.MetricName;
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class DiagramStatisticTest
+public final class DiagramStatisticOuterTest
 {
 
     @Rule
