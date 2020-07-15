@@ -301,7 +301,7 @@ public final class MetricConfigHelper
         // Always cache ordinary scores and paired output for timing error metrics
         Set<StatisticType> returnMe = new TreeSet<>();
         returnMe.add( StatisticType.DOUBLE_SCORE );
-        returnMe.add( StatisticType.PAIRED );
+        returnMe.add( StatisticType.DURATION_DIAGRAM );
         
         // Always cache box plot outputs for pooled predictions
         returnMe.add( StatisticType.BOXPLOT_PER_POOL );

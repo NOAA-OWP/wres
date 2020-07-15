@@ -2,6 +2,9 @@ package wres.vis;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -16,8 +19,6 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
-import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
@@ -28,7 +29,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -74,10 +75,15 @@ public class Chart2DTestOutput
                                                                                                          ChronoUnit.HOURS );
 
         //Generate the output file.
-        ChartTools.generateOutputImageFile( outputImageFile,
-                                            engine.values().iterator().next().buildChart(),
-                                            800,
-                                            600 );
+        // If we ever make meaningful assertions, remove this conditional
+        // see #58348
+        if ( !engine.isEmpty() )
+        {
+            ChartTools.generateOutputImageFile( outputImageFile,
+                                                engine.values().iterator().next().buildChart(),
+                                                800,
+                                                600 );
+        }
     }
 
     /**
@@ -102,12 +108,15 @@ public class Chart2DTestOutput
                                                                                                          null,
                                                                                                          null,
                                                                                                          ChronoUnit.HOURS );
-
-        //Generate the output file.
-        ChartTools.generateOutputImageFile( outputImageFile,
-                                            engine.values().iterator().next().buildChart(),
-                                            800,
-                                            600 );
+        // If we ever make meaningful assertions, remove this conditional
+        // see #58348
+        if ( !engine.isEmpty() )
+        {
+            ChartTools.generateOutputImageFile( outputImageFile,
+                                                engine.values().iterator().next().buildChart(),
+                                                800,
+                                                600 );
+        }
     }
 
     /**
@@ -120,7 +129,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test4";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
@@ -144,7 +154,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( (TimeWindowOuter) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -165,7 +175,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test5";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
@@ -202,8 +213,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test6";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
-
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         //Construct some single-valued pairs
         final List<DoubleScoreStatisticOuter> input =
@@ -241,7 +252,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test7";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
@@ -257,7 +269,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( (TimeWindowOuter) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -278,7 +290,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test8";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
@@ -314,7 +327,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test9";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
@@ -330,7 +344,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( (TimeWindowOuter) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -350,7 +364,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test10";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
@@ -385,7 +400,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test11";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
@@ -401,7 +417,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindowOuter ) lead ).getLatestLeadDuration().toHours();
+            Object key = ( (TimeWindowOuter) lead ).getLatestLeadDuration().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -423,7 +439,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test12";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DiagramStatisticOuter> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
@@ -438,8 +455,8 @@ public class Chart2DTestOutput
 
         for ( final Object thresh : engineMap.keySet() )
         {
-            String thresholdString = ( ( ( OneOrTwoThresholds ) thresh ).first().getValues().first() ).toString();
-            if ( ! ( ( OneOrTwoThresholds ) thresh ).first().isFinite() )
+            String thresholdString = ( ( (OneOrTwoThresholds) thresh ).first().getValues().first() ).toString();
+            if ( ! ( (OneOrTwoThresholds) thresh ).first().isFinite() )
             {
                 thresholdString = "alldata";
             }
@@ -465,7 +482,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test13";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<BoxplotStatisticOuter> results =
                 Chart2DTestDataGenerator.getBoxPlotErrorsByObservedAndLeadThreshold();
@@ -476,10 +494,10 @@ public class Chart2DTestOutput
         //Call the factory.
         final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engineMap =
                 ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
-                                                            results,
-                                                            null,
-                                                            null,
-                                                            ChronoUnit.HOURS );
+                                                                   results,
+                                                                   null,
+                                                                   null,
+                                                                   ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Pair<TimeWindowOuter, OneOrTwoThresholds> key : engineMap.keySet() )
@@ -489,7 +507,7 @@ public class Chart2DTestOutput
             OneOrTwoThresholds thresh = key.getRight();
 
             String thresholdString = ( thresh.first().getValues().first() ).toString();
-            if ( ! thresh.first().isFinite() )
+            if ( !thresh.first().isFinite() )
             {
                 thresholdString = "alldata";
             }
@@ -516,7 +534,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test14";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<BoxplotStatisticOuter> results =
                 Chart2DTestDataGenerator.getBoxPlotErrorsByForecastAndLeadThreshold();
@@ -527,10 +546,10 @@ public class Chart2DTestOutput
         //Call the factory.
         final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engineMap =
                 ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
-                                                            results,
-                                                            null,
-                                                            null,
-                                                            ChronoUnit.HOURS );
+                                                                   results,
+                                                                   null,
+                                                                   null,
+                                                                   ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Pair<TimeWindowOuter, OneOrTwoThresholds> key : engineMap.keySet() )
@@ -539,7 +558,7 @@ public class Chart2DTestOutput
             OneOrTwoThresholds thresh = key.getRight();
 
             String thresholdString = ( thresh.first().getValues().first() ).toString();
-            if ( ! thresh.first().isFinite() )
+            if ( !thresh.first().isFinite() )
             {
                 thresholdString = "alldata";
             }
@@ -617,9 +636,10 @@ public class Chart2DTestOutput
         final String scenarioName = "test16";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
-        final List<PairedStatisticOuter<Instant, Duration>> input =
+        final List<DurationDiagramStatisticOuter> input =
                 Chart2DTestDataGenerator.getTimeToPeakErrors();
 
         //Call the factory.
@@ -647,7 +667,8 @@ public class Chart2DTestOutput
         final String scenarioName = "test17";
         final String outputImageFileSuffix = scenarioName + "_output.png";
 
-        FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
+        Files.deleteIfExists( pathToDelete );
 
         final List<DurationScoreStatisticOuter> input =
                 Chart2DTestDataGenerator.getTimeToPeakErrorStatistics();
@@ -718,50 +739,6 @@ public class Chart2DTestOutput
                                             engine.values().iterator().next().buildChart(),
                                             800,
                                             600 );
-    }
-
-    /**
-     * The comparison sensitivity.
-     */
-    private static int IMAGE_COMPARISON_SENSITIVITY = 2;
-
-    /**
-     * Comparison debug output
-     */
-    private static boolean IMAGE_COMPARISON_DEBUG_OUTPUT = false;
-
-    /**
-     * Main line compares images with benchmarks.
-     *
-     * @param args
-     */
-    public static void main( final String[] args )
-    {
-        System.out.println( "####>> COMPARING GENERATED UNIT TEST IMAGES..." );
-        for ( final File file : FileTools.listFilesWithSuffix( new File( "testoutput/chart2DTest/" ), ".png" ) )
-        {
-            final File benchmarkFile = new File( "testinput/chart2DTest/benchmark." + file.getName() );
-
-            try
-            {
-                System.out.println( "" );
-                System.out.println( "####>> Comparing " + file.getName()
-                                    + " ================================================" );
-                System.out.println( "" );
-                FileComparisonUtilities.assertImageFileSimilarToBenchmark( file,
-                                                                           benchmarkFile,
-                                                                           IMAGE_COMPARISON_SENSITIVITY,
-                                                                           true,
-                                                                           IMAGE_COMPARISON_DEBUG_OUTPUT );
-            }
-            catch ( final Exception e )
-            {
-                System.err.println( "####>> Comparison failed for " + file.getName()
-                                    + " and "
-                                    + benchmarkFile.getName()
-                                    + ". Dissimilarity file was created; see debug information for the difference numbers computed." );
-            }
-        }
     }
 
 }

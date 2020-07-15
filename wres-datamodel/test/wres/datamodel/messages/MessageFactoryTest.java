@@ -15,7 +15,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +26,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.protobuf.Timestamp;
+
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
@@ -34,8 +35,6 @@ import wres.datamodel.EvaluationEvent;
 import wres.datamodel.EvaluationEvent.EventType;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -44,12 +43,11 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -64,12 +62,24 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
@@ -128,7 +138,7 @@ public class MessageFactoryTest
      * Duration scores to serialize.
      */
 
-    private List<PairedStatisticOuter<Instant, Duration>> durationDiagrams = null;
+    private List<DurationDiagramStatisticOuter> durationDiagrams = null;
 
     /**
      * Diagrams to serialize.
@@ -522,15 +532,55 @@ public class MessageFactoryTest
                                       MetricConstants.RELIABILITY_DIAGRAM,
                                       null );
 
-        Map<MetricDimension, VectorOfDoubles> fakeOutputs = new EnumMap<>( MetricDimension.class );
-        fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
-                         VectorOfDoubles.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) );
-        fakeOutputs.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                         VectorOfDoubles.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) );
-        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
+        DiagramMetricComponent forecastComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                      .build();
+
+        DiagramMetricComponent observedComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                      .build();
+
+        DiagramMetricComponent sampleComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.SAMPLE_SIZE )
+                                      .build();
+
+        DiagramMetric metric = DiagramMetric.newBuilder()
+                                            .addComponents( forecastComponent )
+                                            .addComponents( observedComponent )
+                                            .addComponents( sampleComponent )
+                                            .setName( MetricName.RELIABILITY_DIAGRAM )
+                                            .build();
+
+        DiagramStatisticComponent forecastProbability =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .addAllValues( List.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) )
+                                         .build();
+
+        DiagramStatisticComponent observedFrequency =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( List.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) )
+                                         .build();
+
+        DiagramStatisticComponent sampleSize =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .addAllValues( List.of( 5926.0, 371.0, 540.0, 650.0, 1501.0 ) )
+                                         .build();
+
+        DiagramStatistic statistic = DiagramStatistic.newBuilder()
+                                                     .addStatistics( forecastProbability )
+                                                     .addStatistics( observedFrequency )
+                                                     .addStatistics( sampleSize )
+                                                     .setMetric( metric )
+                                                     .build();
 
         // Fake output wrapper.
-        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( fakeOutputs, fakeMetadata ) ) );
+        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( statistic, fakeMetadata ) ) );
     }
 
     /**
@@ -570,32 +620,37 @@ public class MessageFactoryTest
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputs = new ArrayList<>();
+        List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
-        VectorOfDoubles probabilities = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .addAllQuantiles( probabilities )
+                                            .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                            .build();
 
-        BoxplotStatistic one = BoxplotStatistic.of( probabilities,
-                                                    VectorOfDoubles.of( 1, 2, 3, 4, 5 ),
-                                                    fakeMetadata,
-                                                    11,
-                                                    MetricDimension.OBSERVED_VALUE );
-
-        BoxplotStatistic two = BoxplotStatistic.of( probabilities,
-                                                    VectorOfDoubles.of( 6, 7, 8, 9, 10 ),
-                                                    fakeMetadata,
-                                                    22,
-                                                    MetricDimension.OBSERVED_VALUE );
-
-        BoxplotStatistic three = BoxplotStatistic.of( probabilities,
-                                                      VectorOfDoubles.of( 11, 12, 13, 14, 15 ),
-                                                      fakeMetadata,
-                                                      33,
-                                                      MetricDimension.OBSERVED_VALUE );
-
-
-        fakeOutputs.add( one );
-        fakeOutputs.add( two );
-        fakeOutputs.add( three );
+        BoxplotStatistic boxplotOne = BoxplotStatistic.newBuilder()
+                                                      .setMetric( metric )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 1.0,
+                                                                                                    2.0,
+                                                                                                    3.0,
+                                                                                                    4.0,
+                                                                                                    5.0 ) )
+                                                                         .setLinkedValue( 11.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 6.0,
+                                                                                                    7.0,
+                                                                                                    8.0,
+                                                                                                    9.0,
+                                                                                                    10.0 ) )
+                                                                         .setLinkedValue( 22.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 11.0,
+                                                                                                    12.0,
+                                                                                                    13.0,
+                                                                                                    14.0,
+                                                                                                    15.0 ) )
+                                                                         .setLinkedValue( 33.0 ) )
+                                                      .build();
 
         StatisticMetadata fakeMetadataTwo =
                 StatisticMetadata.of( metadata,
@@ -604,33 +659,39 @@ public class MessageFactoryTest
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputsTwo = new ArrayList<>();
+        BoxplotMetric metricTwo = BoxplotMetric.newBuilder()
+                                               .addAllQuantiles( probabilities )
+                                               .setLinkedValueType( LinkedValueType.ENSEMBLE_MEAN )
+                                               .build();
 
-        BoxplotStatistic four = BoxplotStatistic.of( probabilities,
-                                                     VectorOfDoubles.of( 16, 17, 18, 19, 20 ),
-                                                     fakeMetadataTwo,
-                                                     73,
-                                                     MetricDimension.ENSEMBLE_MEAN );
-
-        BoxplotStatistic five = BoxplotStatistic.of( probabilities,
-                                                     VectorOfDoubles.of( 21, 22, 23, 24, 25 ),
-                                                     fakeMetadataTwo,
-                                                     92,
-                                                     MetricDimension.ENSEMBLE_MEAN );
-
-        BoxplotStatistic six = BoxplotStatistic.of( probabilities,
-                                                    VectorOfDoubles.of( 26, 27, 28, 29, 30 ),
-                                                    fakeMetadataTwo,
-                                                    111,
-                                                    MetricDimension.ENSEMBLE_MEAN );
-
-        fakeOutputsTwo.add( four );
-        fakeOutputsTwo.add( five );
-        fakeOutputsTwo.add( six );
+        BoxplotStatistic boxplotTwo = BoxplotStatistic.newBuilder()
+                                                      .setMetric( metricTwo )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 16.0,
+                                                                                                    17.0,
+                                                                                                    18.0,
+                                                                                                    19.0,
+                                                                                                    20.0 ) )
+                                                                         .setLinkedValue( 73.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 21.0,
+                                                                                                    22.0,
+                                                                                                    23.0,
+                                                                                                    24.0,
+                                                                                                    25.0 ) )
+                                                                         .setLinkedValue( 92.0 ) )
+                                                      .addStatistics( Box.newBuilder()
+                                                                         .addAllQuantiles( List.of( 26.0,
+                                                                                                    27.0,
+                                                                                                    28.0,
+                                                                                                    29.0,
+                                                                                                    30.0 ) )
+                                                                         .setLinkedValue( 111.0 ) )
+                                                      .build();
 
         // Fake output wrapper.
-        return List.of( BoxplotStatisticOuter.of( fakeOutputs, fakeMetadata ),
-                        BoxplotStatisticOuter.of( fakeOutputsTwo, fakeMetadataTwo ) );
+        return List.of( BoxplotStatisticOuter.of( boxplotOne, fakeMetadata ),
+                        BoxplotStatisticOuter.of( boxplotTwo, fakeMetadataTwo ) );
     }
 
     private PoolOfPairs<Double, Ensemble> getPoolOfEnsemblePairs()
@@ -695,23 +756,23 @@ public class MessageFactoryTest
         DurationScoreStatistic score =
                 DurationScoreStatistic.newBuilder()
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 3_600 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 3_600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 7_200 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 7_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 10_800 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 10_800 ) ) )
                                       .build();
 
         return Collections.singletonList( DurationScoreStatisticOuter.of( score, fakeMetadata ) );
     }
 
-    private List<PairedStatisticOuter<Instant, Duration>> getDurationDiagramStatisticsForOnePool()
+    private List<DurationDiagramStatisticOuter> getDurationDiagramStatisticsForOnePool()
     {
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( FIRST_TIME,
@@ -741,14 +802,60 @@ public class MessageFactoryTest
                                       MetricConstants.TIME_TO_PEAK_ERROR,
                                       null );
 
-        List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( Pair.of( FIRST_TIME, Duration.ofHours( -2 ) ) );
-        fakeOutputs.add( Pair.of( SECOND_TIME, Duration.ofHours( -1 ) ) );
-        fakeOutputs.add( Pair.of( THIRD_TIME, Duration.ofHours( 0 ) ) );
-        fakeOutputs.add( Pair.of( FOURTH_TIME, Duration.ofHours( 1 ) ) );
-        fakeOutputs.add( Pair.of( FIFTH_TIME, Duration.ofHours( 2 ) ) );
+        DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
+                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                            .build();
 
-        return Collections.singletonList( PairedStatisticOuter.of( fakeOutputs, fakeMetadata ) );
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( FIRST_TIME.getEpochSecond() )
+                                                                                  .setNanos( FIRST_TIME.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -7200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( SECOND_TIME.getEpochSecond() )
+                                                                                  .setNanos( SECOND_TIME.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -3600 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( THIRD_TIME.getEpochSecond() )
+                                                                                    .setNanos( THIRD_TIME.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( 0 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration four = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( FOURTH_TIME.getEpochSecond() )
+                                                                                   .setNanos( FOURTH_TIME.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 3600 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration five = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( FIFTH_TIME.getEpochSecond() )
+                                                                                   .setNanos( FIFTH_TIME.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 7200 ) )
+                                                                .build();
+
+        DurationDiagramStatistic statistic = DurationDiagramStatistic.newBuilder()
+                                                                     .setMetric( metric )
+                                                                     .addStatistics( one )
+                                                                     .addStatistics( two )
+                                                                     .addStatistics( three )
+                                                                     .addStatistics( four )
+                                                                     .addStatistics( five )
+                                                                     .build();
+
+        return Collections.singletonList( DurationDiagramStatisticOuter.of( statistic, fakeMetadata ) );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0, Instant t1 )

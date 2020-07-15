@@ -37,6 +37,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Pool;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -201,7 +202,8 @@ public final class MetricTestDataFactory
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
-                                              events ) ).setMetadata( SampleMetadata.of() );
+                                              events ) )
+               .setMetadata( SampleMetadata.of() );
 
         return builder.build();
     }
@@ -242,14 +244,18 @@ public final class MetricTestDataFactory
         baseline.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.1, 13.0 ) ) );
         baseline.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.2, 94.8 ) ) );
 
-        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
-        final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "ESP" ) );
+        SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                 DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                       "SQIN",
+                                                                       "HEFS" ) );
+
+        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
+        SampleMetadata base = new SampleMetadata.Builder( null, pool )
+                                                                      .setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                      .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                                            "SQIN",
+                                                                                                            "ESP" ) )
+                                                                      .build();
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -323,14 +329,14 @@ public final class MetricTestDataFactory
         }
 
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 1 ) );
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 1 ) );
         final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
+                                                 .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                       "SQIN",
+                                                                                       "HEFS" ) )
+                                                 .setTimeWindow( window )
+                                                 .build();
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -376,14 +382,14 @@ public final class MetricTestDataFactory
         }
 
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 24 ) );
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
         final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "103.1" ),
-                                                                                                     "QME",
-                                                                                                     "NVE" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
+                                                 .setIdentifier( DatasetIdentifier.of( getLocation( "103.1" ),
+                                                                                       "QME",
+                                                                                       "NVE" ) )
+                                                 .setTimeWindow( window )
+                                                 .build();
         return SampleDataBasic.of( values, meta );
     }
 
@@ -402,13 +408,13 @@ public final class MetricTestDataFactory
         List<Event<Pair<Double, Double>>> values = new ArrayList<>();
         values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                           Instant.parse( SECOND_TIME ),
-                                           Duration.ofHours( 24 ) );
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
         SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                         .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                               "MAP" ) )
-                                                         .setTimeWindow( window )
-                                                         .build();
+                                           .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                 "MAP" ) )
+                                           .setTimeWindow( window )
+                                           .build();
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -430,10 +436,13 @@ public final class MetricTestDataFactory
                                                  DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                        "SQIN",
                                                                        "HEFS" ) );
-        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                 DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                       "SQIN",
-                                                                       "ESP" ) );
+        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
+        SampleMetadata base = new SampleMetadata.Builder( null, pool )
+                                                                      .setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                      .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                                            "SQIN",
+                                                                                                            "ESP" ) )
+                                                                      .build();
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -600,15 +609,15 @@ public final class MetricTestDataFactory
                               Pair.of( 840.33, 311.00 ) ) );
 
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "2551-03-17T00:00:00Z" ),
-                                                 Instant.parse( "2551-03-20T00:00:00Z" ),
-                                                 Duration.ofSeconds( 10800 ),
-                                                 Duration.ofSeconds( 118800 ) );
+                                                           Instant.parse( "2551-03-20T00:00:00Z" ),
+                                                           Duration.ofSeconds( 10800 ),
+                                                           Duration.ofSeconds( 118800 ) );
 
         SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                             .setIdentifier( DatasetIdentifier.of( getLocation( "FAKE2" ),
-                                                                                                   "DISCHARGE" ) )
-                                                             .setTimeWindow( window )
-                                                             .build();
+                                               .setIdentifier( DatasetIdentifier.of( getLocation( "FAKE2" ),
+                                                                                     "DISCHARGE" ) )
+                                               .setTimeWindow( window )
+                                               .build();
 
         tsBuilder.setMetadata( metaData );
 
@@ -630,7 +639,7 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Ensemble> getEnsemblePairsOne() throws IOException
     {
         //Construct some ensemble pairs
-        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
         List<Double> climatology = new ArrayList<>();
@@ -654,21 +663,22 @@ public final class MetricTestDataFactory
             }
         }
 
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
-        final SampleMetadata baseMeta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                         "SQIN",
-                                                                                                         "ESP" ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
+        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                 "SQIN",
+                                                                                 "HEFS" ) )
+                                           .setTimeWindow( window )
+                                           .build();
+        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
+        SampleMetadata baseMeta = new Builder( null, pool ).setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                                 "SQIN",
+                                                                                                 "ESP" ) )
+                                                           .setTimeWindow( window )
+                                                           .build();
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -726,22 +736,23 @@ public final class MetricTestDataFactory
                               Pair.of( Double.NaN,
                                        Ensemble.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN ) ) ) );
 
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
+                                                     Instant.parse( SECOND_TIME ),
+                                                     Duration.ofHours( 24 ) );
+        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                 "SQIN",
+                                                                                 "HEFS" ) )
+                                           .setTimeWindow( window )
+                                           .build();
 
-        final SampleMetadata baseMeta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                         "SQIN",
-                                                                                                         "ESP" ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
+        SampleMetadata baseMeta = new Builder( null, pool ).setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                                 "SQIN",
+                                                                                                 "ESP" ) )
+                                                           .setTimeWindow( window )
+                                                           .build();
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -794,14 +805,14 @@ public final class MetricTestDataFactory
         }
 
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 24 ) );
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
         final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
+                                                 .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                       "SQIN",
+                                                                                       "HEFS" ) )
+                                                 .setTimeWindow( window )
+                                                 .build();
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
@@ -827,13 +838,13 @@ public final class MetricTestDataFactory
         values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
 
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 24 ) );
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
         final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                     "MAP" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
+                                                 .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                       "MAP" ) )
+                                                 .setTimeWindow( window )
+                                                 .build();
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -852,13 +863,20 @@ public final class MetricTestDataFactory
     {
         //Construct some ensemble pairs
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( SECOND_TIME ),
-                                                 Duration.ofHours( 24 ) );
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
         final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                               .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                     "MAP" ) )
-                                                               .setTimeWindow( window )
-                                                               .build();
+                                                 .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                       "MAP" ) )
+                                                 .setTimeWindow( window )
+                                                 .build();
+
+        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
+        SampleMetadata base = new SampleMetadata.Builder( null, pool )
+                                                                      .setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                                      .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                                            "MAP" ) )
+                                                                      .build();
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
@@ -867,7 +885,7 @@ public final class MetricTestDataFactory
                       .setMetadata( meta )
                       .addTimeSeriesForBaseline( TimeSeries.of( getBoilerplateMetadata(),
                                                                 Collections.emptySortedSet() ) )
-                      .setMetadataForBaseline( meta )
+                      .setMetadataForBaseline( base )
                       .build();
     }
 
@@ -1468,14 +1486,14 @@ public final class MetricTestDataFactory
 
         // Create some default metadata for the time-series
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( THIRD_TIME ),
-                                                 Duration.ofHours( 6 ),
-                                                 Duration.ofHours( 18 ) );
+                                                           Instant.parse( THIRD_TIME ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         STREAMFLOW ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                           STREAMFLOW ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
                                                      firstValues ) )
@@ -1506,14 +1524,14 @@ public final class MetricTestDataFactory
 
         // Create some default metadata for the time-series
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
-                                                 Instant.parse( FIRST_TIME ),
-                                                 Duration.ofHours( 6 ),
-                                                 Duration.ofHours( 18 ) );
+                                                           Instant.parse( FIRST_TIME ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         STREAMFLOW ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                           STREAMFLOW ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
                                                      firstValues ) )
@@ -1545,15 +1563,15 @@ public final class MetricTestDataFactory
 
         // Create some default metadata for the time-series
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( THIRD_TIME ),
-                                                 Instant.parse( THIRD_TIME ),
-                                                 Duration.ofHours( 6 ),
-                                                 Duration.ofHours( 18 ) );
+                                                           Instant.parse( THIRD_TIME ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 18 ) );
 
         final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         STREAMFLOW ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                           STREAMFLOW ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )
@@ -1576,12 +1594,12 @@ public final class MetricTestDataFactory
 
         // Create some default metadata for the time-series
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                 Instant.MAX );
+                                                           Instant.MAX );
         final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         STREAMFLOW ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                           STREAMFLOW ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
         // Build the time-series
         return builder.setMetadata( metaData ).build();
     }
@@ -1613,14 +1631,14 @@ public final class MetricTestDataFactory
 
         // Create some default metadata for the time-series
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( THIRD_TIME ),
-                                                 Instant.parse( THIRD_TIME ),
-                                                 Duration.ofHours( 6 ),
-                                                 Duration.ofHours( 30 ) );
+                                                           Instant.parse( THIRD_TIME ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 30 ) );
         final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                         STREAMFLOW ) )
-                                                                   .setTimeWindow( window )
-                                                                   .build();
+                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                           STREAMFLOW ) )
+                                                     .setTimeWindow( window )
+                                                     .build();
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )

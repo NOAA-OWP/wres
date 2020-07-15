@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric.timeseries;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -13,12 +12,11 @@ import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -37,7 +35,7 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
  * @author james.brown@hydrosolved.com
  */
 public class TimingErrorDurationStatistics
-        implements Function<PairedStatisticOuter<Instant, Duration>, DurationScoreStatisticOuter>
+        implements Function<DurationDiagramStatisticOuter, DurationScoreStatisticOuter>
 {
 
     /**
@@ -75,7 +73,7 @@ public class TimingErrorDurationStatistics
 
 
     @Override
-    public DurationScoreStatisticOuter apply( PairedStatisticOuter<Instant, Duration> pairs )
+    public DurationScoreStatisticOuter apply( DurationDiagramStatisticOuter pairs )
     {
         if ( Objects.isNull( pairs ) )
         {
@@ -96,10 +94,19 @@ public class TimingErrorDurationStatistics
             metricBuilder.addComponents( this.components.get( nextIdentifier ) );
 
             // Data available
-            if ( !pairs.getData().isEmpty() )
+            if ( pairs.getData().getStatisticsCount() != 0 )
             {
                 // Convert the input to double ms
-                double[] input = pairs.getData().stream().mapToDouble( a -> a.getValue().toMillis() ).toArray();
+                double[] input = pairs.getData()
+                                      .getStatisticsList()
+                                      .stream()
+                                      .mapToDouble( a -> ( a.getDuration()
+                                                            .getSeconds()
+                                                           * 1000 )
+                                                         + ( a.getDuration()
+                                                              .getNanos()
+                                                             / 1_000_000 ) )
+                                      .toArray();
 
                 // Some loss of precision here, not consequential
                 Duration duration = Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )

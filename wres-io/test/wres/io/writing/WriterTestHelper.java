@@ -5,10 +5,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
+
+import com.google.protobuf.Timestamp;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -20,29 +20,39 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 
@@ -143,14 +153,14 @@ public class WriterTestHelper
         // Create fake outputs
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 24 ),
+                                    Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -168,18 +178,31 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputsOne = new ArrayList<>();
-        VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS )
+                                            .setLinkedValueType( LinkedValueType.NONE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
 
-        fakeOutputsOne.add( BoxplotStatistic.of( probs,
-                                                 VectorOfDoubles.of( 1, 3, 5, 7, 9 ),
-                                                 fakeMetadataOne ) );
+        Box box = Box.newBuilder()
+                     .addAllQuantiles( List.of( 1.0, 3.0, 5.0, 7.0, 9.0 ) )
+                     .build();
+
+        BoxplotStatistic boxOne = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( box )
+                                                  .build();
+
+        BoxplotStatisticOuter fakeOutputsOne = BoxplotStatisticOuter.of( boxOne, fakeMetadataOne );
 
         TimeWindowOuter timeTwo =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 48 ),
-                               Duration.ofHours( 48 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 48 ),
+                                    Duration.ofHours( 48 ) );
 
         StatisticMetadata fakeMetadataTwo =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -191,21 +214,18 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputsTwo = Collections.singletonList( BoxplotStatistic.of( probs,
-                                                                                                VectorOfDoubles.of( 11,
-                                                                                                                    33,
-                                                                                                                    55,
-                                                                                                                    77,
-                                                                                                                    99 ),
-                                                                                                fakeMetadataTwo ) );
+        Box anotherBox = Box.newBuilder()
+                            .addAllQuantiles( List.of( 11.0, 33.0, 55.0, 77.0, 99.0 ) )
+                            .build();
 
-        // Fake output wrapper.
-        List<BoxplotStatisticOuter> fakeOutputData =
-                Arrays.asList( BoxplotStatisticOuter.of( fakeOutputsOne,
-                                                     fakeMetadataOne ),
-                               BoxplotStatisticOuter.of( fakeOutputsTwo,
-                                                     fakeMetadataTwo ) );
-        return fakeOutputData;
+        BoxplotStatistic boxTwo = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( anotherBox )
+                                                  .build();
+
+        BoxplotStatisticOuter fakeOutputsTwo = BoxplotStatisticOuter.of( boxTwo, fakeMetadataTwo );
+
+        return List.of( fakeOutputsOne, fakeOutputsTwo );
     }
 
     /**
@@ -222,14 +242,14 @@ public class WriterTestHelper
         // Create fake outputs
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 24 ),
+                                    Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -247,31 +267,39 @@ public class WriterTestHelper
                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                       null );
 
-        List<BoxplotStatistic> fakeOutputs = new ArrayList<>();
-        VectorOfDoubles probs = VectorOfDoubles.of( 0, 0.25, 0.5, 0.75, 1.0 );
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
+                                            .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
+                                            .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                            .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
 
-        fakeOutputs.add( BoxplotStatistic.of( probs,
-                                              VectorOfDoubles.of( 2, 3, 4, 5, 6 ),
-                                              fakeMetadata,
-                                              1,
-                                              MetricDimension.OBSERVED_VALUE ) );
-        fakeOutputs.add( BoxplotStatistic.of( probs,
-                                              VectorOfDoubles.of( 7, 9, 11, 13, 15 ),
-                                              fakeMetadata,
-                                              3,
-                                              MetricDimension.OBSERVED_VALUE ) );
-        fakeOutputs.add( BoxplotStatistic.of( probs,
-                                              VectorOfDoubles.of( 21, 24, 27, 30, 33 ),
-                                              fakeMetadata,
-                                              5,
-                                              MetricDimension.OBSERVED_VALUE ) );
+        Box first = Box.newBuilder()
+                       .addAllQuantiles( List.of( 2.0, 3.0, 4.0, 5.0, 6.0 ) )
+                       .setLinkedValue( 1.0 )
+                       .build();
 
-        // Fake output wrapper.
-        List<BoxplotStatisticOuter> fakeOutputData =
-                Collections.singletonList( BoxplotStatisticOuter.of( fakeOutputs,
-                                                                 fakeMetadata ) );
+        Box second = Box.newBuilder()
+                        .addAllQuantiles( List.of( 7.0, 9.0, 11.0, 13.0, 15.0 ) )
+                        .setLinkedValue( 3.0 )
+                        .build();
 
-        return fakeOutputData;
+        Box third = Box.newBuilder()
+                       .addAllQuantiles( List.of( 21.0, 24.0, 27.0, 30.0, 33.0 ) )
+                       .setLinkedValue( 5.0 )
+                       .build();
+
+        BoxplotStatistic boxOne = BoxplotStatistic.newBuilder()
+                                                  .setMetric( metric )
+                                                  .addStatistics( first )
+                                                  .addStatistics( second )
+                                                  .addStatistics( third )
+                                                  .build();
+
+
+        return List.of( BoxplotStatisticOuter.of( boxOne, fakeMetadata ) );
     }
 
     /**
@@ -289,15 +317,15 @@ public class WriterTestHelper
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 24 ),
-                               Duration.ofHours( 24 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 24 ),
+                                    Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                      OneOrTwoDoubles.of( 0.9 ),
-                                                                      Operator.GREATER_EQUAL,
-                                                                      ThresholdDataType.LEFT ) );
+                                                                           OneOrTwoDoubles.of( 0.9 ),
+                                                                           Operator.GREATER_EQUAL,
+                                                                           ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -315,28 +343,68 @@ public class WriterTestHelper
                                       MetricConstants.RELIABILITY_DIAGRAM,
                                       null );
 
-        Map<MetricDimension, VectorOfDoubles> fakeOutputs = new HashMap<>();
-        fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
-                         VectorOfDoubles.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) );
-        fakeOutputs.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                         VectorOfDoubles.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) );
-        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( 5926, 371, 540, 650, 1501 ) );
+        DiagramMetricComponent forecastComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                      .build();
+
+        DiagramMetricComponent observedComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                      .build();
+
+        DiagramMetricComponent sampleComponent =
+                DiagramMetricComponent.newBuilder()
+                                      .setName( DiagramComponentName.SAMPLE_SIZE )
+                                      .build();
+
+        DiagramMetric metric = DiagramMetric.newBuilder()
+                                            .addComponents( forecastComponent )
+                                            .addComponents( observedComponent )
+                                            .addComponents( sampleComponent )
+                                            .setName( MetricName.RELIABILITY_DIAGRAM )
+                                            .build();
+
+        DiagramStatisticComponent forecastProbability =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .addAllValues( List.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) )
+                                         .build();
+
+        DiagramStatisticComponent observedFrequency =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( List.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) )
+                                         .build();
+
+        DiagramStatisticComponent sampleSize =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .addAllValues( List.of( 5926.0, 371.0, 540.0, 650.0, 1501.0 ) )
+                                         .build();
+
+        DiagramStatistic statistic = DiagramStatistic.newBuilder()
+                                                     .addStatistics( forecastProbability )
+                                                     .addStatistics( observedFrequency )
+                                                     .addStatistics( sampleSize )
+                                                     .setMetric( metric )
+                                                     .build();
 
         // Fake output wrapper.
         List<DiagramStatisticOuter> fakeOutputData =
-                Collections.singletonList( DiagramStatisticOuter.of( fakeOutputs, fakeMetadata ) );
+                Collections.singletonList( DiagramStatisticOuter.of( statistic, fakeMetadata ) );
 
         return fakeOutputData;
     }
 
     /**
-     * Returns a {@link List} containing a {@link PairedStatisticOuter} that 
+     * Returns a {@link List} containing a {@link DurationDiagramStatisticOuter} that 
      * represents the output of time-to-peak error for each pair in a pool.
      * 
      * @return time time-to-peak errors for one pool
      */
 
-    public static List<PairedStatisticOuter<Instant, Duration>> getTimeToPeakErrorsForOnePool()
+    public static List<DurationDiagramStatisticOuter> getTimeToPeakErrorsForOnePool()
     {
 
         // location id
@@ -344,14 +412,14 @@ public class WriterTestHelper
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 1 ),
+                                    Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -369,13 +437,54 @@ public class WriterTestHelper
                                       MetricConstants.TIME_TO_PEAK_ERROR,
                                       null );
 
-        List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
+        Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant thirdInstant = Instant.parse( "1985-01-03T00:00:00Z" );
 
-        // Fake output wrapper.
-        return Collections.singletonList( PairedStatisticOuter.of( fakeOutputs, fakeMetadata ) );
+        DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
+                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE )
+                                                                                                     .setNanos( 999_999_999 ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( 0 ) )
+                                                            .build();
+
+
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( firstInstant.getEpochSecond() )
+                                                                                  .setNanos( firstInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 3600 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( secondInstant.getEpochSecond() )
+                                                                                  .setNanos( secondInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 7200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                    .setNanos( thirdInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( 10800 ) )
+                                                                 .build();
+
+        DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
+                                                                          .setMetric( metric )
+                                                                          .addStatistics( one )
+                                                                          .addStatistics( two )
+                                                                          .addStatistics( three )
+                                                                          .build();
+
+        return Collections.singletonList( DurationDiagramStatisticOuter.of( expectedSource, fakeMetadata ) );
     }
 
     /**
@@ -395,8 +504,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
@@ -454,7 +563,7 @@ public class WriterTestHelper
                                                                                  .setValue( 3.0 )
                                                                                  .setName( ComponentName.MAIN ) )
                                     .build();
-        
+
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadataA ) );
         fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadataB ) );
@@ -478,14 +587,14 @@ public class WriterTestHelper
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
-                               Instant.MAX,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
+                                    Instant.MAX,
+                                    Duration.ofHours( 1 ),
+                                    Duration.ofHours( 18 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
@@ -503,17 +612,17 @@ public class WriterTestHelper
         DurationScoreStatistic score =
                 DurationScoreStatistic.newBuilder()
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 3_600 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 3_600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 7_200 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 7_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                      .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
-                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                             .setSeconds( 10_800 ) ) )
+                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                                                     .setValue( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 10_800 ) ) )
                                       .build();
 
         // Fake output wrapper.
@@ -538,8 +647,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
@@ -553,7 +662,7 @@ public class WriterTestHelper
                                       MeasurementUnit.of(),
                                       MetricConstants.MEAN_SQUARE_ERROR,
                                       MetricConstants.MAIN );
-        
+
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
@@ -567,8 +676,8 @@ public class WriterTestHelper
         // Add the data for another threshold at the same time
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
 
         StatisticMetadata fakeMetadataB =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),

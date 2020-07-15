@@ -2,25 +2,28 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * <p>
@@ -40,6 +43,26 @@ import wres.engine.statistics.metric.Diagram;
 
 public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
 {
+
+    /**
+     * Canonical representation of the metric.
+     */
+
+    public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                                                                                  .setMinimum( 0 )
+                                                                                                  .setMaximum( 1 ) )
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                                                  .setMinimum( 0 )
+                                                                                                  .setMaximum( 1 ) )
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.SAMPLE_SIZE )
+                                                                                                  .setMinimum( 0 )
+                                                                                                  .setMaximum( 1 ) )
+                                                            .setName( MetricName.RELIABILITY_DIAGRAM )
+                                                            .build();
 
     /**
      * Default number of bins.
@@ -115,11 +138,36 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
             Arrays.fill( oProb, MissingValues.DOUBLE );
         }
 
-        // Set the results
-        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.FORECAST_PROBABILITY, VectorOfDoubles.of( fProb ) );
-        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( oProb ) );
-        output.put( MetricDimension.SAMPLE_SIZE, VectorOfDoubles.of( samples ) );
+        DiagramStatisticComponent forecastProbability =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .addAllValues( Arrays.stream( fProb )
+                                                              .boxed()
+                                                              .collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatisticComponent observedFrequency =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( Arrays.stream( oProb )
+                                                              .boxed()
+                                                              .collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatisticComponent sampleSize =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .addAllValues( Arrays.stream( samples )
+                                                              .boxed()
+                                                              .collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatistic statistic = DiagramStatistic.newBuilder()
+                                                     .addStatistics( forecastProbability )
+                                                     .addStatistics( observedFrequency )
+                                                     .addStatistics( sampleSize )
+                                                     .setMetric( ReliabilityDiagram.METRIC )
+                                                     .build();
 
         StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
@@ -129,7 +177,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                                       s.getRawData().size(),
                                       null );
 
-        return DiagramStatisticOuter.of( output, metOut );
+        return DiagramStatisticOuter.of( statistic, metOut );
     }
 
     @Override

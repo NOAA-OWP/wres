@@ -1,47 +1,59 @@
 package wres.datamodel.statistics;
 
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
+import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
- * An abstraction of a verification diagram with one or more vectors that are explicitly mapped to elements in 
- * {@link MetricDimension}.
+ * A wrapping for a {@link DiagramStatistic}.
  * 
  * @author james.brown@hydrosolved.com
  */
-
-public class DiagramStatisticOuter implements Statistic<Map<MetricDimension, VectorOfDoubles>>
+@Immutable
+public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 {
     /**
-     * The statistic.
+     * The diagram.
      */
 
-    private final EnumMap<MetricDimension, VectorOfDoubles> statistic;
+    private final DiagramStatistic diagram;
+
+    /**
+     * Local set of component names from the canonical {@link diagram}.
+     */
+
+    private final SortedSet<MetricDimension> componentNames;
 
     /**
      * The metadata associated with the statistic.
      */
 
-    private final StatisticMetadata meta;
+    private final StatisticMetadata metadata;
 
     /**
-     * Construct the statistic.
+     * Construct the diagram.
      * 
-     * @param statistic the verification statistic
+     * @param diagram the verification diagram
      * @param meta the metadata
      * @throws StatisticException if any of the inputs are invalid
      * @return an instance of the output
      */
 
-    public static DiagramStatisticOuter of( Map<MetricDimension, VectorOfDoubles> statistic,
-                                       StatisticMetadata meta )
+    public static DiagramStatisticOuter of( DiagramStatistic diagram,
+                                            StatisticMetadata meta )
     {
-        return new DiagramStatisticOuter( statistic, meta );
+        return new DiagramStatisticOuter( diagram, meta );
     }
 
     /**
@@ -51,9 +63,24 @@ public class DiagramStatisticOuter implements Statistic<Map<MetricDimension, Vec
      * @return a vector or null
      */
 
-    public VectorOfDoubles get( MetricDimension identifier )
+    public VectorOfDoubles getComponent( MetricDimension identifier )
     {
-        return statistic.get( identifier );
+        VectorOfDoubles returnMe = null;
+
+        if ( this.hasComponent( identifier ) )
+        {
+            for ( DiagramStatisticComponent next : this.getData()
+                                                       .getStatisticsList() )
+            {
+                if ( identifier.name().equals( next.getName().name() ) )
+                {
+                    List<Double> values = next.getValuesList();
+                    returnMe = VectorOfDoubles.of( values.toArray( new Double[values.size()] ) );
+                }
+            }
+        }
+
+        return returnMe;
     }
 
     /**
@@ -63,21 +90,32 @@ public class DiagramStatisticOuter implements Statistic<Map<MetricDimension, Vec
      * @return true if the mapping exists, false otherwise
      */
 
-    public boolean containsKey( MetricDimension identifier )
+    public boolean hasComponent( MetricDimension identifier )
     {
-        return statistic.containsKey( identifier );
+        return this.componentNames.contains( identifier );
+    }
+
+    /**
+     * Returns the diagram component names.
+     * 
+     * @return the component names
+     */
+
+    public SortedSet<MetricDimension> getComponentNames()
+    {
+        return this.componentNames; // Immutable on construction.
     }
 
     @Override
     public StatisticMetadata getMetadata()
     {
-        return meta;
+        return this.metadata;
     }
 
     @Override
-    public Map<MetricDimension, VectorOfDoubles> getData()
+    public DiagramStatistic getData()
     {
-        return new EnumMap<>( statistic );
+        return this.diagram;
     }
 
     @Override
@@ -88,34 +126,41 @@ public class DiagramStatisticOuter implements Statistic<Map<MetricDimension, Vec
             return false;
         }
         final DiagramStatisticOuter v = (DiagramStatisticOuter) o;
-        return meta.equals( v.getMetadata() ) && statistic.equals( v.statistic );
+        return this.getMetadata().equals( v.getMetadata() ) && this.getData().equals( v.getData() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( meta, statistic );
+        return Objects.hash( this.getMetadata(), this.getData() );
     }
 
     @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
-        statistic.forEach( ( key, value ) -> joiner.add( key + ": " + value ) );
-        return joiner.toString();
+        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
+
+        builder.append( "metric name", this.getData().getMetric().getName() );
+
+        this.getData()
+            .getStatisticsList()
+            .forEach( component -> builder.append( "component name", component.getName() )
+                                          .append( "component values", component.getValuesList() ) );
+
+        return builder.toString();
     }
 
     /**
      * Construct the statistic.
      * 
-     * @param statistic the verification statistic
+     * @param diagram the verification diagram
      * @param meta the metadata
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DiagramStatisticOuter( final Map<MetricDimension, VectorOfDoubles> statistic, final StatisticMetadata meta )
+    private DiagramStatisticOuter( DiagramStatistic diagram, StatisticMetadata meta )
     {
-        if ( Objects.isNull( statistic ) )
+        if ( Objects.isNull( diagram ) )
         {
             throw new StatisticException( "Specify a non-null output." );
         }
@@ -123,14 +168,18 @@ public class DiagramStatisticOuter implements Statistic<Map<MetricDimension, Vec
         {
             throw new StatisticException( "Specify non-null metadata." );
         }
-        if ( statistic.isEmpty() )
+
+        this.diagram = diagram;
+        this.metadata = meta;
+
+        SortedSet<MetricDimension> componentNames = new TreeSet<>();
+
+        for ( DiagramStatisticComponent next : this.getData().getStatisticsList() )
         {
-            throw new StatisticException( "Specify one or more outputs to store." );
+            componentNames.add( MetricDimension.valueOf( next.getName().name() ) );
         }
 
-        this.statistic = new EnumMap<>( MetricDimension.class );
-        this.statistic.putAll( statistic );
-        this.meta = meta;
+        this.componentNames = Collections.unmodifiableSortedSet( componentNames );
     }
 
 }

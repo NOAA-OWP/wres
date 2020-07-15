@@ -411,49 +411,36 @@ public class SampleMetadataTest
         SampleMetadata metaTwo = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                               .build();
 
-        SampleMetadata metaThree = new Builder().setMeasurementUnit( MeasurementUnit.of() )
-                                                .setProjectConfig( new ProjectConfig( null,
-                                                                                      null,
-                                                                                      null,
-                                                                                      null,
-                                                                                      null,
-                                                                                      "A" ) )
-                                                .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
-                                                                                  TimeScaleFunction.MAXIMUM ) )
-                                                .build();
-
         assertTrue( metaOne.equalsWithoutTimeWindowOrThresholds( metaOne ) );
 
         assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaTwo ) );
 
-        assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaThree ) );
-
-        SampleMetadata metaFour = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metaThree = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
                                                                                  TimeScaleFunction.MEAN ) )
                                                .build();
 
-        SampleMetadata metaFive = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metaFour = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                .setTimeScale( TimeScaleOuter.of( Duration.ofDays( 1 ),
                                                                                  TimeScaleFunction.MAXIMUM ) )
                                                .build();
 
-        SampleMetadata metaSix = new Builder().setMeasurementUnit( MeasurementUnit.of() )
+        SampleMetadata metaFive = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                               .setProjectConfig( new ProjectConfig( null,
                                                                                     null,
                                                                                     null,
                                                                                     null,
                                                                                     null,
-                                                                                    "A" ) )
+                                                                                    null ) )
                                               .build();
 
-        assertFalse( metaFour.equalsWithoutTimeWindowOrThresholds( metaOne ) );
+        assertFalse( metaThree.equalsWithoutTimeWindowOrThresholds( metaOne ) );
 
-        assertTrue( metaFour.equalsWithoutTimeWindowOrThresholds( metaFour ) );
+        assertTrue( metaThree.equalsWithoutTimeWindowOrThresholds( metaThree ) );
 
-        assertFalse( metaFour.equalsWithoutTimeWindowOrThresholds( metaFive ) );
+        assertFalse( metaThree.equalsWithoutTimeWindowOrThresholds( metaFour ) );
 
-        assertFalse( metaSix.equalsWithoutTimeWindowOrThresholds( metaOne ) );
+        assertFalse( metaFive.equalsWithoutTimeWindowOrThresholds( metaOne ) );
     }
 
     /**
@@ -640,7 +627,7 @@ public class SampleMetadataTest
                                            .build();
 
         assertEquals( "SampleMetadata[datasetIdentifier=DatasetIdentifier[location=A,variableId=B,"
-                      + "scenarioId=<null>,baselineScenarioId=<null>,pairContext=<null>],"
+                      + "scenarioId=<null>,baselineScenarioId=<null>,pairContext=RIGHT],"
                       + "timeWindow=[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,"
                       + "2000-02-02T00:00:00Z,PT0S,PT0S],thresholds== 1.0,timeScale=[PT24H,MEAN],"
                       + "measurementUnit=DIMENSIONLESS]",

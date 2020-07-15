@@ -1,8 +1,12 @@
 package wres.vis;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.jfree.data.xy.XYDataset;
 
 import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * The {@link XYDataset} for use in building a box plot.
@@ -10,24 +14,42 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
  * @author Hank.Herr
  */
 public class BoxPlotDiagramXYDataset extends
-        WRESAbstractXYDataset<BoxplotStatisticOuter, BoxplotStatisticOuter>
+        WRESAbstractXYDataset<List<BoxplotStatisticOuter>, List<BoxplotStatisticOuter>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
 
-    public BoxPlotDiagramXYDataset( final BoxplotStatisticOuter input)
+    private final int itemCount;
+
+    private final int seriesCount;
+
+    private final List<Box> boxes;
+
+    public BoxPlotDiagramXYDataset( final List<BoxplotStatisticOuter> input )
     {
         super( input );
+
+        this.itemCount = this.getPlotData()
+                             .stream()
+                             .mapToInt( next -> next.getData().getStatisticsCount() )
+                             .sum();
+
+        this.seriesCount = this.getPlotData()
+                               .get( 0 )
+                               .getData()
+                               .getStatisticsList()
+                               .get( 0 )
+                               .getQuantilesCount();
+
+        this.boxes = this.getPlotData()
+                         .stream()
+                         .map( next -> next.getData().getStatisticsList() )
+                         .flatMap( List::stream )
+                         .collect( Collectors.toList() );
     }
 
     @Override
-    protected void preparePlotData( BoxplotStatisticOuter rawData )
+    protected void preparePlotData( List<BoxplotStatisticOuter> rawData )
     {
-        //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
-        if (rawData.getData().isEmpty())
-        {
-            throw new IllegalStateException( "The box-plot data provided is empty." );
-        }
-
         //Check the series counts.
         setPlotData( rawData );
     }
@@ -35,32 +57,38 @@ public class BoxPlotDiagramXYDataset extends
     @Override
     public int getItemCount( final int series )
     {
-        return getPlotData().getData().size();
+        return this.itemCount;
     }
 
     @Override
     public Number getX( final int series, final int item )
     {
-        return getPlotData().getData().get( item ).getLinkedValue();
+        return this.boxes.get( item )
+                         .getLinkedValue();
     }
 
     @Override
     public Number getY( final int series, final int item )
     {
-        return getPlotData().getData().get( item ).getData().getDoubles()[series];
+        return this.boxes.get( item )
+                         .getQuantiles( series );
     }
 
     @Override
     public int getSeriesCount()
     {
         //The prepare method will fail if the data is empty.  So there must be at least one item; hence hard coded 0.
-        return getPlotData().getData().get( 0 ).getData().getDoubles().length;
+        return this.seriesCount;
     }
 
     @Override
     public Comparable<String> getSeriesKey( final int series )
     {
-        return "Probability " + getPlotData().getData().get( 0 ).getProbabilities().getDoubles()[series];
+        return "Probability " + this.getPlotData()
+                                    .get( 0 )
+                                    .getData()
+                                    .getMetric()
+                                    .getQuantiles( series );
     }
 
 }

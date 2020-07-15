@@ -1,22 +1,26 @@
 package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Compares the quantiles of two samples at a prescribed number (<code>N</code>) of (evenly-spaced) probabilities on the
@@ -28,6 +32,22 @@ import wres.engine.statistics.metric.Diagram;
 
 public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Double>>, DiagramStatisticOuter>
 {
+
+    /**
+     * Canonical representation of the metric.
+     */
+
+    public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                                                                                  .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                                  .setMaximum( Double.POSITIVE_INFINITY ) )
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                                                                                  .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                                  .setMaximum( Double.POSITIVE_INFINITY ) )
+                                                            .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM )
+                                                            .build();
 
     /**
      * The default number of probabilities at which to compute the order statistics.
@@ -52,6 +72,19 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
         return new QuantileQuantileDiagram();
     }
 
+    /**
+     * Returns an instance.
+     * 
+     * @param probCount the number of quantiles in the diagram
+     * @return an instance
+     * @throws IllegalArgumentException if the probCount is less than ot equal to zero
+     */
+
+    public static QuantileQuantileDiagram of( int probCount )
+    {
+        return new QuantileQuantileDiagram( probCount );
+    }
+
     @Override
     public DiagramStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
@@ -61,8 +94,8 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
         }
 
         //Determine the number of order statistics to compute
-        double[] observedQ = new double[probCount];
-        double[] predictedQ = new double[probCount];
+        double[] observedQ = new double[this.probCount];
+        double[] predictedQ = new double[this.probCount];
 
         //Get the ordered data
         double[] sortedLeft = Slicer.getLeftSide( s );
@@ -73,17 +106,35 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
         DoubleUnaryOperator qRight = Slicer.getQuantileFunction( sortedRight );
 
         //Compute the order statistics
-        for ( int i = 0; i < probCount; i++ )
+        for ( int i = 0; i < this.probCount; i++ )
         {
-            double prob = ( i + 1.0 ) / ( probCount + 1.0 );
+            double prob = ( i + 1.0 ) / ( this.probCount + 1.0 );
             observedQ[i] = qLeft.applyAsDouble( prob );
             predictedQ[i] = qRight.applyAsDouble( prob );
         }
 
-        //Set and return the results
-        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.OBSERVED_QUANTILES, VectorOfDoubles.of( observedQ ) );
-        output.put( MetricDimension.PREDICTED_QUANTILES, VectorOfDoubles.of( predictedQ ) );
+        DiagramStatisticComponent oqs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                         .addAllValues( Arrays.stream( observedQ )
+                                                              .boxed()
+                                                              .collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatisticComponent pqs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                         .addAllValues( Arrays.stream( predictedQ )
+                                                              .boxed()
+                                                              .collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatistic qqDiagram = DiagramStatistic.newBuilder()
+                                                     .addStatistics( oqs )
+                                                     .addStatistics( pqs )
+                                                     .setMetric( QuantileQuantileDiagram.METRIC )
+                                                     .build();
+
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
                                       this.getID(),
@@ -91,7 +142,7 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
-        return DiagramStatisticOuter.of( output, metOut );
+        return DiagramStatisticOuter.of( qqDiagram, metOut );
     }
 
     @Override
@@ -115,6 +166,24 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
         super();
 
         this.probCount = DEFAULT_PROBABILITY_COUNT;
+    }
+
+    /**
+     * Hidden constructor.
+     * @param probCount the number of quantiles in the diagram
+     * @throws IllegalArgumentException if the probCount is less than ot equal to zero
+     */
+
+    private QuantileQuantileDiagram( int probCount )
+    {
+        super();
+
+        if ( probCount <= 0 )
+        {
+            throw new IllegalArgumentException( "The number of quantiles in the diagram must exceed zero." );
+        }
+
+        this.probCount = probCount;
     }
 
 }

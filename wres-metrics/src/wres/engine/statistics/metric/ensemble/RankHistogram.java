@@ -2,28 +2,32 @@ package wres.engine.statistics.metric.ensemble;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * <p>Computes the probability (as a relative fraction) that the observation falls between any two ranked ensemble 
@@ -40,6 +44,22 @@ import wres.engine.statistics.metric.Diagram;
 
 public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, DiagramStatisticOuter>
 {
+
+    /**
+     * Canonical representation of the metric.
+     */
+
+    public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.RANK_ORDER )
+                                                                                                  .setMinimum( 1 )
+                                                                                                  .setMaximum( Double.POSITIVE_INFINITY ) )
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                                                  .setMinimum( 0 )
+                                                                                                  .setMaximum( 1 ) )
+                                                            .setName( MetricName.RANK_HISTOGRAM )
+                                                            .build();
 
     /**
      * A random number generator, used to assign ties randomly.
@@ -86,10 +106,10 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
         {
 
             //Acquire subsets in case of missing data
-            Map<Integer, List<Pair<Double,Ensemble>>> sliced =
+            Map<Integer, List<Pair<Double, Ensemble>>> sliced =
                     Slicer.filterByRightSize( s.getRawData() );
             //Find the subset with the most elements
-            Optional<List<Pair<Double,Ensemble>>> useMe =
+            Optional<List<Pair<Double, Ensemble>>> useMe =
                     sliced.values().stream().max( Comparator.comparingInt( List::size ) );
 
             if ( useMe.isPresent() )
@@ -99,7 +119,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
                 double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
                 //Compute the sum of ranks
-                BiConsumer<Pair<Double,Ensemble>, double[]> ranker = RankHistogram.rankWithTies( rng );
+                BiConsumer<Pair<Double, Ensemble>, double[]> ranker = RankHistogram.rankWithTies( rng );
                 useMe.get().forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
                 //Compute relative frequencies
@@ -107,10 +127,28 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
             }
         }
 
-        //Set and return the results
-        Map<MetricDimension, VectorOfDoubles> statistic = new EnumMap<>( MetricDimension.class );
-        statistic.put( MetricDimension.RANK_ORDER, VectorOfDoubles.of( ranks ) );
-        statistic.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, VectorOfDoubles.of( relativeFrequencies ) );
+        DiagramStatisticComponent ro =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .addAllValues( Arrays.stream( ranks )
+                                                              .boxed()
+                                                              .collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatisticComponent obs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( Arrays.stream( relativeFrequencies )
+                                                              .boxed()
+                                                              .collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatistic histogram = DiagramStatistic.newBuilder()
+                                                     .addStatistics( ro )
+                                                     .addStatistics( obs )
+                                                     .setMetric( RankHistogram.METRIC )
+                                                     .build();
+
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
                                       this.getID(),
@@ -118,7 +156,8 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
-        return DiagramStatisticOuter.of( statistic, metOut );
+
+        return DiagramStatisticOuter.of( histogram, metOut );
     }
 
     @Override
@@ -172,7 +211,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
      * @return a function that increments the second argument based on the rank position of the observation within the ensemble
      */
 
-    private static BiConsumer<Pair<Double,Ensemble>, double[]> rankWithTies( Random rng )
+    private static BiConsumer<Pair<Double, Ensemble>, double[]> rankWithTies( Random rng )
     {
         final TriConsumer<double[], Double, double[]> containedRanker = getContainedRanker( rng );
         return ( pair, sumRanks ) -> {

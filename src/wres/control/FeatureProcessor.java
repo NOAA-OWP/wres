@@ -277,7 +277,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // 3. Produce outputs from the statistics 
                 final CompletableFuture<Set<Path>> statisticsTasks =
                         CompletableFuture.supplyAsync( nextInput, this.executors.getPairExecutor() )
-                                         .thenApplyAsync( this.getStatisticsProcessingTask( processor ),
+                                         .thenApplyAsync( this.getStatisticsProcessingTask( processor, projectConfig ),
                                                           this.executors.getPairExecutor() )
                                          .thenApplyAsync( metricOutputs -> {
                                              ProduceOutputsFromStatistics outputProcessor =
@@ -402,11 +402,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param <L> the left data type
      * @param <R> the right data type
      * @param processor the metric processor
+     * @param projectConfig the project declaration
      * @return a function that consumes a pool and produces statistics
      */
 
     private <L, R> Function<PoolOfPairs<L, R>, StatisticsForProject>
-            getStatisticsProcessingTask( MetricProcessor<PoolOfPairs<L, R>> processor )
+            getStatisticsProcessingTask( MetricProcessor<PoolOfPairs<L, R>> processor,
+                                         ProjectConfig projectConfig )
     {
         return pool -> {
             Objects.requireNonNull( pool );
@@ -426,8 +428,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             StatisticsForProject statistics = processor.apply( pool );
 
             // Compute separate statistics for the baseline?
-            if ( pool.hasBaseline()
-                 && pool.getMetadata().getProjectConfig().getInputs().getBaseline().isSeparateMetrics() )
+            if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
             {
                 LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
                               pool.getMetadata() );
@@ -437,8 +438,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 try
                 {
                     statistics = new Builder().addStatistics( statistics )
-                                                                  .addStatistics( baselineStatistics )
-                                                                  .build();
+                                              .addStatistics( baselineStatistics )
+                                              .build();
                 }
                 catch ( InterruptedException e )
                 {

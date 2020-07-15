@@ -38,7 +38,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
@@ -65,9 +65,10 @@ public abstract class XYChartDataSourceFactory
      * @param subPlotIndex 0 for bottom, 1 for the one above, etc.
      * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
+     * @throws IllegalArgumentException if the input is empty
      */
     public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
-                                                            final BoxplotStatisticOuter input,
+                                                            List<BoxplotStatisticOuter> input,
                                                             Integer subPlotIndex,
                                                             ChronoUnit durationUnits )
     {
@@ -75,8 +76,19 @@ public abstract class XYChartDataSourceFactory
 
         Objects.requireNonNull( durationUnits );
 
+        if( input.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot generate box plot output with empty input." );
+        }
+        
         // One box per pool? See #62374
-        boolean pooledInput = input.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL );
+        boolean pooledInput = input.get(0).getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL );
+        
+        // Should be one dataset only if it is not per-pool
+        if( ! pooledInput && input.size() > 1 )
+        {
+            throw new IllegalArgumentException( "Cannot generate box plot output per pool with more than one dataset." );
+        }
 
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -104,9 +116,9 @@ public abstract class XYChartDataSourceFactory
 
         int seriesCount = 0;
 
-        if ( !input.getData().isEmpty() )
+        if ( input.get( 0 ).getData().getStatisticsCount() != 0 )
         {
-            seriesCount = input.getData().get( 0 ).getData().size();
+            seriesCount = input.get( 0 ).getData().getMetric().getQuantilesCount();
         }
 
         XYChartDataSourceFactory.buildInitialParameters( source,
@@ -123,10 +135,10 @@ public abstract class XYChartDataSourceFactory
             // See #65503 - need a default in case the input is empty
             String inputUnits = "unknown";
 
-            if ( !input.getData().isEmpty() )
+            if ( input.get( 0 ).getData().getStatisticsCount() != 0 )
             {
-                inputUnits = input.getData().get( 0 ).getLinkedValueType().toString();
-
+                inputUnits = input.get( 0 ).getData().getMetric().getLinkedValueType().toString();
+                inputUnits = inputUnits.replace( "_",  " " );
             }
 
             source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -136,9 +148,10 @@ public abstract class XYChartDataSourceFactory
         // See #65503 - need a default in case the input is empty
         String outputUnits = "unknown";
 
-        if ( !input.getData().isEmpty() )
+        if ( input.get( 0 ).getData().getStatisticsCount() != 0 )
         {
-            outputUnits = input.getData().get( 0 ).getValueType().toString();
+            outputUnits = input.get( 0 ).getData().getMetric().getQuantileValueType().toString();
+            outputUnits = outputUnits.replace( "_", " " );
         }
 
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -197,7 +210,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofPairedOutputInstantDuration( int orderIndex,
-                                           final List<PairedStatisticOuter<Instant, Duration>> input )
+                                           final List<DurationDiagramStatisticOuter> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -224,7 +237,7 @@ public abstract class XYChartDataSourceFactory
                     TimeSeries next =
                             new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
 
-                    List<PairedStatisticOuter<Instant, Duration>> filtered =
+                    List<DurationDiagramStatisticOuter> filtered =
                             Slicer.filter( input,
                                            data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
                     
@@ -233,9 +246,9 @@ public abstract class XYChartDataSourceFactory
                     Set<Instant> instants = new HashSet<>();
 
                     // Create the series
-                    for ( PairedStatisticOuter<Instant, Duration> nextSet : filtered )
+                    for ( DurationDiagramStatisticOuter nextSet : filtered )
                     {
-                        for ( Pair<Instant, Duration> oneValue : nextSet )
+                        for ( Pair<Instant, Duration> oneValue : nextSet.getPairs() )
                         {
                             if ( !instants.contains( oneValue.getKey() ) )
                             {

@@ -2,7 +2,6 @@ package wres.datamodel.messages;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -19,61 +17,40 @@ import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
 import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.statistics.generated.BoxplotMetric;
-import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
-import wres.statistics.generated.DiagramMetric;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
-import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
-import wres.statistics.generated.DoubleScoreMetric;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
-import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
-import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
-import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreStatistic;
-import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Season;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Threshold;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pairs;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 import wres.statistics.generated.TimeScale;
-import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ValueFilter;
 
@@ -170,9 +147,9 @@ public class MessageFactory
         }
 
         // Box plots statistics per pool
-        if ( project.hasStatistic( StatisticType.PAIRED ) )
+        if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
-            List<PairedStatisticOuter<Instant, java.time.Duration>> statistics =
+            List<DurationDiagramStatisticOuter> statistics =
                     project.getInstantDurationPairStatistics();
             MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
@@ -261,9 +238,9 @@ public class MessageFactory
         }
 
         // Add the duration diagrams with instant/duration pairs
-        if ( project.hasStatistic( StatisticType.PAIRED ) )
+        if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
-            List<wres.datamodel.statistics.PairedStatisticOuter<Instant, java.time.Duration>> durationDiagrams =
+            List<wres.datamodel.statistics.DurationDiagramStatisticOuter> durationDiagrams =
                     project.getInstantDurationPairStatistics();
             durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
             metadata = durationDiagrams.get( 0 ).getMetadata().getSampleMetadata();
@@ -329,72 +306,6 @@ public class MessageFactory
         }
 
         return statistics.build();
-    }
-
-    /**
-     * Returns a {@link Evaluation} from the closest approximation at present, namely a {@link SampleMetadata}. 
-     * See #61388.
-     * 
-     * TODO: need a better abstraction of an evaluation within the software. See #61388. For now, use the message
-     * representation and fill in any missing blanks that can be filled from the statistics metadata.
-     * 
-     * @param evaluation the broad outlines of an evaluation
-     * @param metadata the metadata
-     * @return an evaluation message
-     */
-
-    public static Evaluation parse( Evaluation evaluation, SampleMetadata metadata )
-    {
-        Objects.requireNonNull( metadata );
-
-        // Create an evaluation with as much data as possible
-        // TODO: need a better abstraction of an evaluation within the software. See #61388
-        // For now, hints like a job identifier and start/end time will need to come from the 
-        // message instance provided.
-        Evaluation.Builder evaluationPlus = Evaluation.newBuilder( evaluation );
-
-        evaluationPlus.setMeasurementUnit( metadata.getMeasurementUnit().getUnit() );
-
-        if ( metadata.hasTimeScale() )
-        {
-            evaluationPlus.setTimeScale( MessageFactory.parse( metadata.getTimeScale() ) );
-        }
-
-        if ( metadata.hasIdentifier() )
-        {
-            DatasetIdentifier identifier = metadata.getIdentifier();
-            if ( identifier.hasVariableName() )
-            {
-                evaluationPlus.setVariableName( identifier.getVariableName() );
-            }
-            if ( identifier.hasScenarioName() )
-            {
-                evaluationPlus.setRightSourceName( identifier.getScenarioName() );
-            }
-            if ( identifier.hasScenarioNameForBaseline() )
-            {
-                evaluationPlus.setBaselineSourceName( identifier.getScenarioNameForBaseline() );
-            }
-        }
-
-        // Set the season and value filters from the project declaration
-        if ( metadata.hasProjectConfig() )
-        {
-            // Season
-            ProjectConfig project = metadata.getProjectConfig();
-            if ( Objects.nonNull( project.getPair().getSeason() ) )
-            {
-                evaluationPlus.setSeason( MessageFactory.parse( project.getPair().getSeason() ) );
-            }
-
-            if ( Objects.nonNull( project.getPair().getValues() ) )
-            {
-                evaluationPlus.setValueFilter( MessageFactory.parse( project.getPair().getValues() ) );
-            }
-
-        }
-
-        return evaluationPlus.build();
     }
 
     /**
@@ -607,113 +518,23 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        DiagramMetric.Builder metricBuilder = DiagramMetric.newBuilder();
-        DiagramStatistic.Builder diagramBuilder = DiagramStatistic.newBuilder();
-
-        // Set the diagram components and values
-        for ( Map.Entry<MetricDimension, VectorOfDoubles> nextDimension : statistic.getData().entrySet() )
-        {
-            DiagramComponentName componentName = DiagramComponentName.valueOf( nextDimension.getKey()
-                                                                                            .name() );
-
-            metricBuilder.addComponents( DiagramMetricComponent.newBuilder()
-                                                               .setName( componentName ) );
-            DiagramStatisticComponent.Builder statisticComponent = DiagramStatisticComponent.newBuilder();
-            statisticComponent.addAllValues( Arrays.stream( nextDimension.getValue()
-                                                                         .getDoubles() )
-                                                   .boxed()
-                                                   .collect( Collectors.toList() ) )
-                              .setName( componentName );
-            diagramBuilder.addStatistics( statisticComponent );
-        }
-
-        // Set the metric
-        metricBuilder.setName( MetricName.valueOf( statistic.getMetadata().getMetricID().name() ) );
-        diagramBuilder.setMetric( metricBuilder );
-
-        return diagramBuilder.build();
+        return statistic.getData();
     }
 
     /**
      * Creates a {@link wres.statistics.generated.DurationDiagramStatistic} from a 
-     * {@link wres.datamodel.statistics.PairedStatisticOuter} composed of timing 
+     * {@link wres.datamodel.statistics.DurationDiagramStatisticOuter} composed of timing 
      * errors.
      * 
      * @param statistic the statistic from which to create a message
      * @return the message
      */
 
-    public static DurationDiagramStatistic
-            parse( wres.datamodel.statistics.PairedStatisticOuter<Instant, java.time.Duration> statistic )
+    public static DurationDiagramStatistic parse( wres.datamodel.statistics.DurationDiagramStatisticOuter statistic )
     {
         Objects.requireNonNull( statistic );
 
-        DurationDiagramMetric.Builder metricBuilder = DurationDiagramMetric.newBuilder();
-        MetricConstants name = statistic.getMetadata().getMetricID();
-        metricBuilder.setName( MetricName.valueOf( name.name() ) );
-
-        // Set the limits for the diagram where available
-        if ( name.hasLimits() )
-        {
-            java.time.Duration minimum = (java.time.Duration) name.getMinimum();
-            java.time.Duration maximum = (java.time.Duration) name.getMaximum();
-            java.time.Duration optimum = (java.time.Duration) name.getOptimum();
-
-            if ( Objects.nonNull( minimum ) )
-            {
-                Duration minimimProto = Duration.newBuilder()
-                                                .setSeconds( minimum.getSeconds() )
-                                                .setNanos( minimum.getNano() )
-                                                .build();
-                metricBuilder.setMinimum( minimimProto );
-            }
-
-            if ( Objects.nonNull( maximum ) )
-            {
-                Duration maximumProto = Duration.newBuilder()
-                                                .setSeconds( maximum.getSeconds() )
-                                                .setNanos( maximum.getNano() )
-                                                .build();
-                metricBuilder.setMaximum( maximumProto );
-            }
-
-            if ( Objects.nonNull( optimum ) )
-            {
-                Duration optimumProto = Duration.newBuilder()
-                                                .setSeconds( optimum.getSeconds() )
-                                                .setNanos( optimum.getNano() )
-                                                .build();
-                metricBuilder.setOptimum( optimumProto );
-            }
-        }
-
-        DurationDiagramStatistic.Builder diagramBuilder = DurationDiagramStatistic.newBuilder();
-
-        // Set the diagram components and values
-        for ( Pair<Instant, java.time.Duration> nextPair : statistic.getData() )
-        {
-            Instant nextInstant = nextPair.getLeft();
-            java.time.Duration nextDuration = nextPair.getRight();
-
-            Timestamp stamp = Timestamp.newBuilder()
-                                       .setSeconds( nextInstant.getEpochSecond() )
-                                       .setNanos( nextInstant.getNano() )
-                                       .build();
-
-            Duration duration = Duration.newBuilder()
-                                        .setSeconds( nextDuration.getSeconds() )
-                                        .setNanos( nextDuration.getNano() )
-                                        .build();
-
-            PairOfInstantAndDuration.Builder builder = PairOfInstantAndDuration.newBuilder();
-            builder.setTime( stamp ).setDuration( duration );
-            diagramBuilder.addStatistics( builder );
-        }
-
-        // Set the metric
-        diagramBuilder.setMetric( metricBuilder );
-
-        return diagramBuilder.build();
+        return statistic.getData();
     }
 
     /**
@@ -728,47 +549,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        BoxplotMetric.Builder metricBuilder = BoxplotMetric.newBuilder();
-        BoxplotStatistic.Builder statisticBuilder = BoxplotStatistic.newBuilder();
-
-        if ( !statistic.getData().isEmpty() )
-        {
-            StatisticMetadata meta = statistic.getMetadata();
-
-            // Add the quantiles, which are common to all boxes
-            wres.datamodel.statistics.BoxplotStatistic first = statistic.getData().get( 0 );
-            double[] quantiles = first.getProbabilities().getDoubles();
-            Arrays.stream( quantiles ).forEach( metricBuilder::addQuantiles );
-
-            MetricConstants metricName = meta.getMetricID();
-            if ( first.hasLinkedValue() )
-            {
-                MetricDimension dimension = first.getLinkedValueType();
-                LinkedValueType valueType = LinkedValueType.valueOf( dimension.name() );
-                metricBuilder.setLinkedValueType( valueType );
-            }
-
-            metricBuilder.setName( MetricName.valueOf( metricName.name() ) )
-                         .setUnits( meta.getSampleMetadata().getMeasurementUnit().toString() )
-                         .setMinimum( (Double) metricName.getMinimum() )
-                         .setMaximum( (Double) metricName.getMaximum() )
-                         .setOptimum( (Double) metricName.getOptimum() );
-
-            // Set the individual boxes
-            for ( wres.datamodel.statistics.BoxplotStatistic next : statistic.getData() )
-            {
-                double[] doubles = next.getData().getDoubles();
-                BoxplotStatistic.Box.Builder box = BoxplotStatistic.Box.newBuilder();
-                Arrays.stream( doubles ).forEach( box::addQuantiles );
-                if ( next.hasLinkedValue() )
-                {
-                    box.setLinkedValue( next.getLinkedValue() );
-                }
-                statisticBuilder.addStatistics( box );
-            }
-        }
-
-        return statisticBuilder.setMetric( metricBuilder ).build();
+        return statistic.getData();
     }
 
     /**
@@ -1105,12 +886,12 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addPairedStatisticsToPool( List<PairedStatisticOuter<Instant, java.time.Duration>> statistics,
+    private static void addPairedStatisticsToPool( List<DurationDiagramStatisticOuter> statistics,
                                                    Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
-        for ( PairedStatisticOuter<Instant, java.time.Duration> next : statistics )
+        for ( DurationDiagramStatisticOuter next : statistics )
         {
             SampleMetadata metadata = next.getMetadata().getSampleMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
@@ -1123,7 +904,7 @@ public class MessageFactory
                 mappedStatistics.put( poolBoundaries, another );
             }
 
-            Future<List<PairedStatisticOuter<Instant, java.time.Duration>>> future =
+            Future<List<DurationDiagramStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addInstantDurationPairStatistics( future );
         }

@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.ensemble;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -16,13 +17,15 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Tests the {@link RankHistogram}.
@@ -62,7 +65,7 @@ public final class RankHistogramTest
     @Test
     public void testApplyWithoutTies()
     {
-        List<Pair<Double,Ensemble>> values = new ArrayList<>();
+        List<Pair<Double, Ensemble>> values = new ArrayList<>();
         for ( int i = 0; i < 10000; i++ )
         {
             double left = rng.nextDouble();
@@ -77,18 +80,48 @@ public final class RankHistogramTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Check the results       
-        DiagramStatisticOuter actual = rh.apply( input );
-        double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
-        double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
-        double[] expectedRanks = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-        double[] expectedRFreqs =
-                new double[] { 0.0995, 0.1041, 0.0976, 0.1041, 0.0993, 0.1044, 0.1014, 0.0952, 0.0972, 0.0972 };
+        DiagramStatisticOuter actual = this.rh.apply( input );
 
-        //Check the first pair of quantiles, which should map to the first entry, since the lower bound is unknown
-        assertTrue( "Difference between actual and expected rank positions.",
-                    Arrays.equals( actualRanks, expectedRanks ) );
-        assertTrue( "Difference between actual and expected relative frequencies.",
-                    Arrays.equals( actualRFreqs, expectedRFreqs ) );
+        List<Double> expectedRanks = List.of( 1.0,
+                                              2.0,
+                                              3.0,
+                                              4.0,
+                                              5.0,
+                                              6.0,
+                                              7.0,
+                                              8.0,
+                                              9.0,
+                                              10.0 );
+        List<Double> expectedRFreqs = List.of( 0.0995,
+                                               0.1041,
+                                               0.0976,
+                                               0.1041,
+                                               0.0993,
+                                               0.1044,
+                                               0.1014,
+                                               0.0952,
+                                               0.0972,
+                                               0.0972 );
+
+        DiagramStatisticComponent ro =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .addAllValues( expectedRanks )
+                                         .build();
+
+        DiagramStatisticComponent obs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( expectedRFreqs )
+                                         .build();
+
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( ro )
+                                                    .addStatistics( obs )
+                                                    .setMetric( RankHistogram.METRIC )
+                                                    .build();
+
+        assertEquals( expected, actual.getData() );
     }
 
     /**
@@ -100,24 +133,54 @@ public final class RankHistogramTest
     public void testApplyWithTies()
     {
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
-        List<Pair<Double,Ensemble>> values = new ArrayList<>();
+        List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 2.0, Ensemble.of( 1, 2, 2, 2, 4, 5, 6, 7, 8 ) ) );
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Check the results       
-        DiagramStatisticOuter actual = rh.apply( input );
+        DiagramStatisticOuter actual = this.rh.apply( input );
 
-        double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
-        double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
-        double[] expectedRanks = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-        double[] expectedRFreqs =
-                new double[] { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0 };
 
-        //Check the first pair of quantiles, which should map to the first entry, since the lower bound is unknown
-        assertTrue( "Difference between actual and expected rank positions.",
-                    Arrays.equals( actualRanks, expectedRanks ) );
-        assertTrue( "Difference between actual and expected relative frequencies.",
-                    Arrays.equals( actualRFreqs, expectedRFreqs ) );
+        List<Double> expectedRanks = List.of( 1.0,
+                                              2.0,
+                                              3.0,
+                                              4.0,
+                                              5.0,
+                                              6.0,
+                                              7.0,
+                                              8.0,
+                                              9.0,
+                                              10.0 );
+        List<Double> expectedRFreqs = List.of( 0.0,
+                                               0.0,
+                                               0.0,
+                                               1.0,
+                                               0.0,
+                                               0.0,
+                                               0.0,
+                                               0.0,
+                                               0.0,
+                                               0.0 );
+
+        DiagramStatisticComponent ro =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .addAllValues( expectedRanks )
+                                         .build();
+
+        DiagramStatisticComponent obs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( expectedRFreqs )
+                                         .build();
+
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( ro )
+                                                    .addStatistics( obs )
+                                                    .setMetric( RankHistogram.METRIC )
+                                                    .build();
+
+        assertEquals( expected, actual.getData() );
     }
 
 
@@ -133,21 +196,29 @@ public final class RankHistogramTest
         SampleData<Pair<Double, Ensemble>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DiagramStatisticOuter actual = rh.apply( input );
+        DiagramStatisticOuter actual = this.rh.apply( input );
 
-        double[] source = new double[1];
+        List<Double> source = List.of( Double.NaN );
 
-        Arrays.fill( source, Double.NaN );
+        DiagramStatisticComponent ro =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .addAllValues( source )
+                                         .build();
 
-        assertTrue( Arrays.equals( actual.getData()
-                                         .get( MetricDimension.RANK_ORDER )
-                                         .getDoubles(),
-                                   source ) );
+        DiagramStatisticComponent obs =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .addAllValues( source )
+                                         .build();
 
-        assertTrue( Arrays.equals( actual.getData()
-                                         .get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY )
-                                         .getDoubles(),
-                                   source ) );
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( ro )
+                                                    .addStatistics( obs )
+                                                    .setMetric( RankHistogram.METRIC )
+                                                    .build();
+
+        assertEquals( expected, actual.getData() );
     }
 
     /**

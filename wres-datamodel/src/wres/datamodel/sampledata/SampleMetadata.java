@@ -47,30 +47,18 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     private final Pool pool;
 
     /**
-     * The optional {@link ProjectConfig}, may be null. TODO: eliminate this, as the evaluation description should be
-     * sufficient.
+     * TODO: eliminate this glue. The {@link location} is only needed because it maps inadequately to a canonical 
+     * {@link Geometry}. In order for wrappers like {@link SampleMetadata} to work when canonical forms are sent on the 
+     * wire they must wrap canonical forms 1:1 - they cannot wrap local abstractions, such as {@link Location} or 
+     * whatever replaces {@link Location} after #72747, otherwise the canonical information sent on the wire would not 
+     * be sufficient to build a {@link SampleMetadata}. Changes are needed in two steps. In the first step, eliminate 
+     * this glue and include a {@link Geometry} within a {@link DatasetIdentifier}, which used on construction of a 
+     * {@link SampleMetadata}. In the second step, do not allow for construction of a {@link SampleMetadata} from 
+     * non-canonical forms, such as {@link DatasetIdentifier}, rather from an {@link Evaluation} plus a {@link Pool}, 
+     * nothing else.
      */
-
-    private final ProjectConfig projectConfig;
-
-    /**
-     * TODO: eliminate this glue. It is currently needed because there is a poor mapping between a {@link Location} and
-     * a canonical {@link Geometry}. After #72747, remove this variable and replace by mapping between whatever new 
-     * geometry abstraction is recorded in the {@link DatasetIdentifier} and the {@link Geometry} contained in the 
-     * {@link Pool}. Eventually, remove options to build instances of this class from non-canonical forms.
-     */
-
+    @Deprecated
     private final Location location;
-
-    /**
-     * TODO: eliminate this glue. It is currently needed to distinguish between statistics that were computed for 
-     * left and baseline data when the declaration requests separate statistics for left/right and left/baseline. There
-     * is currently no mapping for this in either {@link Evaluation} or {@link Pool}, yet there is a dependency on this
-     * aspect of the {@link SampleMetadata} that must persist until it is resolved. Resolved means that is is either
-     * integrated into {@link Evaluation} or {@link Pool} or supplied in another context, such as each statistic. 
-     */
-
-    private final LeftOrRightOrBaseline context;
 
     /**
      * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit}.
@@ -90,20 +78,21 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @return a {@link SampleMetadata} object
      */
 
-    public static SampleMetadata of( final MeasurementUnit unit )
+    public static SampleMetadata of( MeasurementUnit unit )
     {
         return new Builder().setMeasurementUnit( unit ).build();
     }
 
     /**
-     * Build a {@link SampleMetadata} object with a prescribed {@link MeasurementUnit} and an optional {@link DatasetIdentifier}.
+     * Build a {@link SampleMetadata} object with a prescribed {@link MeasurementUnit} and an optional 
+     * {@link DatasetIdentifier}.
      * 
      * @param unit the required measurement unit
      * @param identifier an optional dataset identifier (may be null)
      * @return a {@link SampleMetadata} object
      */
 
-    public static SampleMetadata of( final MeasurementUnit unit, final DatasetIdentifier identifier )
+    public static SampleMetadata of( MeasurementUnit unit, DatasetIdentifier identifier )
     {
         return new Builder().setMeasurementUnit( unit ).setIdentifier( identifier ).build();
     }
@@ -119,10 +108,10 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @return a metadata instance
      */
 
-    public static SampleMetadata of( final MeasurementUnit unit,
-                                     final DatasetIdentifier identifier,
-                                     final TimeWindowOuter timeWindow,
-                                     final OneOrTwoThresholds thresholds )
+    public static SampleMetadata of( MeasurementUnit unit,
+                                     DatasetIdentifier identifier,
+                                     TimeWindowOuter timeWindow,
+                                     OneOrTwoThresholds thresholds )
     {
         return new Builder().setMeasurementUnit( unit )
                             .setIdentifier( identifier )
@@ -140,7 +129,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( final SampleMetadata input, final OneOrTwoThresholds thresholds )
+    public static SampleMetadata of( SampleMetadata input, OneOrTwoThresholds thresholds )
     {
         return new Builder( input ).setThresholds( thresholds ).build();
     }
@@ -154,7 +143,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( final SampleMetadata input, final TimeWindowOuter timeWindow )
+    public static SampleMetadata of( SampleMetadata input, TimeWindowOuter timeWindow )
     {
         return new Builder( input ).setTimeWindow( timeWindow ).build();
     }
@@ -168,7 +157,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( final SampleMetadata input, final TimeScaleOuter timeScale )
+    public static SampleMetadata of( SampleMetadata input, TimeScaleOuter timeScale )
     {
         return new Builder( input ).setTimeScale( timeScale ).build();
     }
@@ -184,9 +173,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( final SampleMetadata input,
-                                     final TimeWindowOuter timeWindow,
-                                     final TimeScaleOuter timeScale )
+    public static SampleMetadata of( SampleMetadata input,
+                                     TimeWindowOuter timeWindow,
+                                     TimeScaleOuter timeScale )
     {
         return new Builder( input ).setTimeWindow( timeWindow )
                                    .setTimeScale( timeScale )
@@ -204,9 +193,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @throws NullPointerException if the input is null
      */
 
-    public static SampleMetadata of( final SampleMetadata input,
-                                     final TimeWindowOuter timeWindow,
-                                     final OneOrTwoThresholds thresholds )
+    public static SampleMetadata of( SampleMetadata input,
+                                     TimeWindowOuter timeWindow,
+                                     OneOrTwoThresholds thresholds )
     {
         return new Builder( input ).setThresholds( thresholds )
                                    .setTimeWindow( timeWindow )
@@ -297,15 +286,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
         // Check the thresholds
         Comparator<OneOrTwoThresholds> compareThresholds = Comparator.nullsFirst( Comparator.naturalOrder() );
-        returnMe = Objects.compare( this.getThresholds(), input.getThresholds(), compareThresholds );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        // Check the project configuration
-        Comparator<ProjectConfig> compareProjects = Comparator.nullsFirst( Comparator.naturalOrder() );
-        return Objects.compare( this.getProjectConfig(), input.getProjectConfig(), compareProjects );
+        return Objects.compare( this.getThresholds(), input.getThresholds(), compareThresholds );
     }
 
     @Override
@@ -377,16 +358,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Returns <code>true</code> if {@link #getProjectConfig()} returns non-null, otherwise <code>false</code>.
-     * 
-     * @return true if {@link #getProjectConfig()} returns non-null, false otherwise.
-     */
-    public boolean hasProjectConfig()
-    {
-        return Objects.nonNull( this.getProjectConfig() );
-    }
-
-    /**
      * Returns <code>true</code> if {@link #getTimeScale()} returns non-null, otherwise <code>false</code>.
      * 
      * @return true if {@link #getTimeScale()} returns non-null, false otherwise.
@@ -412,7 +383,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         boolean returnMe =
                 input.getMeasurementUnit().equals( this.getMeasurementUnit() )
                            && this.hasIdentifier() == input.hasIdentifier()
-                           && this.hasProjectConfig() == input.hasProjectConfig()
                            && this.hasTimeScale() == input.hasTimeScale();
 
         // The following tests apply where both the existing and input attributes are non-null,
@@ -420,11 +390,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         if ( this.hasIdentifier() )
         {
             returnMe = returnMe && this.getIdentifier().equals( input.getIdentifier() );
-        }
-
-        if ( this.hasProjectConfig() )
-        {
-            returnMe = returnMe && this.getProjectConfig().equals( input.getProjectConfig() );
         }
 
         if ( this.hasTimeScale() )
@@ -458,7 +423,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         DatasetIdentifier returnMe = null;
 
         Location localLocation = this.location;
-        LeftOrRightOrBaseline localContext = this.context;
+        LeftOrRightOrBaseline localContext = LeftOrRightOrBaseline.RIGHT;
         String variableName = null;
         String scenario = null;
         String baselineScenario = null;
@@ -476,6 +441,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         if ( !this.getEvaluation().getBaselineSourceName().isBlank() )
         {
             baselineScenario = this.getEvaluation().getBaselineSourceName();
+        }
+
+        if ( this.getPool().getIsBaselinePool() )
+        {
+            localContext = LeftOrRightOrBaseline.BASELINE;
         }
 
         if ( Objects.nonNull( localLocation ) || Objects.nonNull( variableName )
@@ -536,17 +506,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Returns a {@link ProjectConfig} associated with the metadata or null.
-     * 
-     * @return the project declaration or null
-     */
-
-    public ProjectConfig getProjectConfig()
-    {
-        return this.projectConfig;
-    }
-
-    /**
      * Returns a {@link TimeScaleOuter} associated with the metadata or null.
      * 
      * @return the time scale or null
@@ -586,9 +545,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * Builder.
+     * Builder. TODO: remove this builder and allow for construction from canonical forms only, specifically an
+     * {@link Evaluation} and a {@link Pool}, nothing more, and both non-null.
      */
 
+    @Deprecated
     public static class Builder
     {
 
@@ -647,21 +608,14 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         private Pool pool;
 
         /**
-         * TODO: remove this glue. Replace with mapping between whatever new abstraction is recorded in the
-         * {@link DatasetIdentifier} after #72747 and, eventually, remove options to build from non-canonical forms.
+         * TODO: eliminate this glue. Replace the {@link Location} inside the {@link DatasetIdentifier} with a canonical 
+         * {@link Geometry}. It is currently needed because there is a poor mapping between a {@link Location} and
+         * a canonical {@link Geometry}. Eventually, remove all options to build instances of this class from 
+         * non-canonical forms, such as the {@link DatasetIdentifier}. The only reason that has not been done upfront is 
+         * to stage the refactoring.
          */
 
         private Location location;
-
-        /**
-         * TODO: remove this glue. It is currently needed to distinguish between statistics that were computed for 
-         * left and baseline data when the declaration requests separate statistics for left/right and left/baseline. There
-         * is currently no mapping for this in either {@link Evaluation} or {@link Pool}, yet there is a dependency on this
-         * aspect of the {@link SampleMetadata} that must persist until it is resolved. Resolved means that is is either
-         * integrated into {@link Evaluation} or {@link Pool} or supplied in another context, such as each statistic. 
-         */
-
-        private LeftOrRightOrBaseline context;
 
         /**
          * Sets the measurement unit.
@@ -787,8 +741,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             this.evaluation = sampleMetadata.evaluation;
             this.pool = sampleMetadata.pool;
             this.location = sampleMetadata.location;
-            this.projectConfig = sampleMetadata.projectConfig;
-            this.context = sampleMetadata.context;
         }
 
     }
@@ -815,7 +767,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         Evaluation.Builder evaluationBuilder = null;
         Pool.Builder poolBuilder = null;
         Location localLocation = builder.location;
-        LeftOrRightOrBaseline localContext = builder.context;
 
         if ( Objects.isNull( localEvaluation ) )
         {
@@ -845,22 +796,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                           localLocation );
         }
 
-        // TODO: remove the dependence on an out-of-band l/r/b context to distinguish statistics that were computed
-        // for left and baseline. This should be inline to the pool or an individual statistic.
-        if ( Objects.nonNull( identifier ) && identifier.hasLeftOrRightOrBaseline() )
-        {
-            localContext = identifier.getLeftOrRightOrBaseline();
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a left/right/baseline "
-                          + "context of {}.",
-                          localContext );
-        }
-
         this.evaluation = this.getEvaluation( evaluationBuilder, unit, identifier, timeScale, localProjectConfig );
         this.pool = this.getPool( poolBuilder, timeWindow, thresholds );
-        this.projectConfig = localProjectConfig;
         this.location = localLocation;
-        this.context = localContext;
 
         this.validate();
     }
