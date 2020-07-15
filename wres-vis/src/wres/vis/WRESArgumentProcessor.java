@@ -179,7 +179,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         extractStandardArgumentsFromMetadata( meta );
 
         // Assemble a collection of smaller time windows where necessary
-        if ( plotType == ChartType.POOLING_WINDOW || meta.getMetricID().isInGroup( StatisticType.PAIRED ) )
+        if ( plotType == ChartType.POOLING_WINDOW || meta.getMetricID().isInGroup( StatisticType.DURATION_DIAGRAM ) )
         {
             SortedSet<TimeWindowOuter> timeWindows =
                     Slicer.discover( displayedPlotInput,

@@ -38,7 +38,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
@@ -210,7 +210,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofPairedOutputInstantDuration( int orderIndex,
-                                           final List<PairedStatisticOuter<Instant, Duration>> input )
+                                           final List<DurationDiagramStatisticOuter> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -237,7 +237,7 @@ public abstract class XYChartDataSourceFactory
                     TimeSeries next =
                             new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
 
-                    List<PairedStatisticOuter<Instant, Duration>> filtered =
+                    List<DurationDiagramStatisticOuter> filtered =
                             Slicer.filter( input,
                                            data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
                     
@@ -246,9 +246,9 @@ public abstract class XYChartDataSourceFactory
                     Set<Instant> instants = new HashSet<>();
 
                     // Create the series
-                    for ( PairedStatisticOuter<Instant, Duration> nextSet : filtered )
+                    for ( DurationDiagramStatisticOuter nextSet : filtered )
                     {
-                        for ( Pair<Instant, Duration> oneValue : nextSet )
+                        for ( Pair<Instant, Duration> oneValue : nextSet.getPairs() )
                         {
                             if ( !instants.contains( oneValue.getKey() ) )
                             {

@@ -3,6 +3,8 @@ package wres.io.writing.commaseparated.statistics;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +28,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
@@ -34,15 +36,13 @@ import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
- * Helps write paired output comprising {@link PairedStatisticOuter} to a file of Comma Separated Values (CSV).
+ * Helps write paired output comprising {@link DurationDiagramStatisticOuter} to a file of Comma Separated Values (CSV).
  * 
- * @param <S> the left side of the paired output type
- * @param <T> the right side if the paired output type
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWriter
-        implements Consumer<List<PairedStatisticOuter<S, T>>>, Supplier<Set<Path>>
+public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatisticsWriter
+        implements Consumer<List<DurationDiagramStatisticOuter>>, Supplier<Set<Path>>
 {
 
     /**
@@ -54,8 +54,6 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
     /**
      * Returns an instance of a writer.
      * 
-     * @param <S> the left side of the paired output type
-     * @param <T> the right side if the paired output type
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -64,11 +62,11 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static <S, T> CommaSeparatedPairedWriter<S, T> of( ProjectConfig projectConfig,
-                                                              ChronoUnit durationUnits,
-                                                              Path outputDirectory )
+    public static CommaSeparatedDurationDiagramWriter of( ProjectConfig projectConfig,
+                                                                 ChronoUnit durationUnits,
+                                                                 Path outputDirectory )
     {
-        return new CommaSeparatedPairedWriter<>( projectConfig, durationUnits, outputDirectory );
+        return new CommaSeparatedDurationDiagramWriter( projectConfig, durationUnits, outputDirectory );
     }
 
     /**
@@ -80,7 +78,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
      */
 
     @Override
-    public void accept( final List<PairedStatisticOuter<S, T>> output )
+    public void accept( final List<DurationDiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -101,17 +99,17 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<PairedStatisticOuter<S, T>>> groups =
+                Map<LeftOrRightOrBaseline, List<DurationDiagramStatisticOuter>> groups =
                         WriterHelper.getStatisticsGroupedByContext( output );
 
-                for ( List<PairedStatisticOuter<S, T>> nextGroup : groups.values() )
+                for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            CommaSeparatedPairedWriter.writeOnePairedOutputType( super.getOutputDirectory(),
-                                                                                 destinationConfig,
-                                                                                 nextGroup,
-                                                                                 formatter,
-                                                                                 super.getDurationUnits() );
+                            CommaSeparatedDurationDiagramWriter.writeOnePairedOutputType( super.getOutputDirectory(),
+                                                                                          destinationConfig,
+                                                                                          nextGroup,
+                                                                                          formatter,
+                                                                                          super.getDurationUnits() );
 
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
@@ -140,8 +138,6 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
     /**
      * Writes all output for one paired type.
      *
-     * @param <S> the left side of the paired output type
-     * @param <T> the right side if the paired output type
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the paired output to iterate through
@@ -151,9 +147,9 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
      * @return set of paths actually written to
      */
 
-    private static <S, T> Set<Path> writeOnePairedOutputType( Path outputDirectory,
+    private static Set<Path> writeOnePairedOutputType( Path outputDirectory,
                                                               DestinationConfig destinationConfig,
-                                                              List<PairedStatisticOuter<S, T>> output,
+                                                              List<DurationDiagramStatisticOuter> output,
                                                               Format formatter,
                                                               ChronoUnit durationUnits )
             throws IOException
@@ -175,14 +171,14 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
                                                                                    durationUnits );
             headerRow.merge( timeWindowHeader );
 
-            List<PairedStatisticOuter<S, T>> nextOutput = Slicer.filter( output, m );
+            List<DurationDiagramStatisticOuter> nextOutput = Slicer.filter( output, m );
 
             List<RowCompareByLeft> rows =
-                    CommaSeparatedPairedWriter.getRowsForOnePairedOutput( m,
-                                                                          nextOutput,
-                                                                          headerRow,
-                                                                          formatter,
-                                                                          durationUnits );
+                    CommaSeparatedDurationDiagramWriter.getRowsForOnePairedOutput( m,
+                                                                                   nextOutput,
+                                                                                   headerRow,
+                                                                                   formatter,
+                                                                                   durationUnits );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
@@ -208,8 +204,6 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
     /**
      * Returns the results for one paired output.
      *
-     * @param <S> the left side of the paired output type
-     * @param <T> the right side if the paired output type
      * @param metricName the score name
      * @param output the paired output
      * @param headerRow the header row
@@ -218,9 +212,9 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
      * @return the rows to write
      */
 
-    private static <S, T> List<RowCompareByLeft>
+    private static List<RowCompareByLeft>
             getRowsForOnePairedOutput( MetricConstants metricName,
-                                       List<PairedStatisticOuter<S, T>> output,
+                                       List<DurationDiagramStatisticOuter> output,
                                        StringJoiner headerRow,
                                        Format formatter,
                                        ChronoUnit durationUnits )
@@ -243,16 +237,16 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
             headerRow.add( outerName + "DURATION" + HEADER_DELIMITER + t );
 
             // Slice by threshold
-            List<PairedStatisticOuter<S, T>> sliced = Slicer.filter( output,
-                                                                data -> data.getSampleMetadata()
-                                                                            .getThresholds()
-                                                                            .equals( t ) );
+            List<DurationDiagramStatisticOuter> sliced = Slicer.filter( output,
+                                                                        data -> data.getSampleMetadata()
+                                                                                    .getThresholds()
+                                                                                    .equals( t ) );
 
             // Loop across the outputs
-            for ( PairedStatisticOuter<S, T> next : sliced )
+            for ( DurationDiagramStatisticOuter next : sliced )
             {
                 // Loop across the pairs
-                for ( Pair<S, T> nextPair : next )
+                for ( Pair<Instant, Duration> nextPair : next.getPairs() )
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                                   SampleMetadata.of( metadata,
@@ -295,9 +289,9 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWr
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedPairedWriter( ProjectConfig projectConfig,
-                                        ChronoUnit durationUnits,
-                                        Path outputDirectory )
+    private CommaSeparatedDurationDiagramWriter( ProjectConfig projectConfig,
+                                                 ChronoUnit durationUnits,
+                                                 Path outputDirectory )
     {
         super( projectConfig, durationUnits, outputDirectory );
     }

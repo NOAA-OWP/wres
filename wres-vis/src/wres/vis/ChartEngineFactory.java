@@ -51,7 +51,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -134,7 +134,7 @@ public abstract class ChartEngineFactory
         metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DURATION_SCORE, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DIAGRAM, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.PAIRED, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticType.DURATION_DIAGRAM, ChartType.UNIQUE );
     }
 
     /**
@@ -933,7 +933,7 @@ public abstract class ChartEngineFactory
 
 
     /**
-     * Only usable with {@link PairedStatisticOuter} in which the left is {@link Instant} and the right is {@link Duration}.
+     * Only usable with {@link DurationDiagramStatisticOuter} in which the left is {@link Instant} and the right is {@link Duration}.
      * @param config The project configuration.
      * @param input The input from which to build the plot.
      * @param userSpecifiedTemplateResourceName Template resource name, or null to use default.
@@ -945,7 +945,7 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildPairedInstantDurationChartEngine( final ProjectConfig config,
-                                                   final List<PairedStatisticOuter<Instant, Duration>> input,
+                                                   final List<DurationDiagramStatisticOuter> input,
                                                    final String userSpecifiedTemplateResourceName,
                                                    final String overrideParametersStr,
                                                    final ChronoUnit durationUnits )

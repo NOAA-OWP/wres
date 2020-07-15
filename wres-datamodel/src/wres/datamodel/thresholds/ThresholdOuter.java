@@ -314,7 +314,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     public ThresholdDataType getDataType()
     {
         Threshold threshold = this.getThreshold();
-        wres.statistics.generated.Threshold.ThresholdDataType type = threshold.getDataType();
+        Threshold.ThresholdDataType type = threshold.getDataType();
         return ThresholdDataType.valueOf( type.name() );
     }
 
@@ -912,8 +912,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         if ( Objects.nonNull( dataType ) )
         {
-            wres.statistics.generated.Threshold.ThresholdDataType aDataType =
-                    wres.statistics.generated.Threshold.ThresholdDataType.valueOf( dataType.name() );
+            Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.name() );
             thresholdBuilder.setDataType( aDataType );
         }
 
@@ -951,7 +950,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
             throw new IllegalArgumentException( "Specify a recognized threshold operator." );
         }
 
-        if ( this.threshold.getDataType() == wres.statistics.generated.Threshold.ThresholdDataType.UNRECOGNIZED )
+        if ( this.threshold.getDataType() == Threshold.ThresholdDataType.UNRECOGNIZED )
         {
             throw new IllegalArgumentException( "Specify a recognized threshold data type." );
         }

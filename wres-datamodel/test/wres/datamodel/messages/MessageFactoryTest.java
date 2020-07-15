@@ -26,6 +26,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.protobuf.Timestamp;
+
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
@@ -33,8 +35,6 @@ import wres.datamodel.EvaluationEvent;
 import wres.datamodel.EvaluationEvent.EventType;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -47,7 +47,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -62,6 +62,9 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
@@ -135,7 +138,7 @@ public class MessageFactoryTest
      * Duration scores to serialize.
      */
 
-    private List<PairedStatisticOuter<Instant, Duration>> durationDiagrams = null;
+    private List<DurationDiagramStatisticOuter> durationDiagrams = null;
 
     /**
      * Diagrams to serialize.
@@ -769,7 +772,7 @@ public class MessageFactoryTest
         return Collections.singletonList( DurationScoreStatisticOuter.of( score, fakeMetadata ) );
     }
 
-    private List<PairedStatisticOuter<Instant, Duration>> getDurationDiagramStatisticsForOnePool()
+    private List<DurationDiagramStatisticOuter> getDurationDiagramStatisticsForOnePool()
     {
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( FIRST_TIME,
@@ -799,14 +802,60 @@ public class MessageFactoryTest
                                       MetricConstants.TIME_TO_PEAK_ERROR,
                                       null );
 
-        List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( Pair.of( FIRST_TIME, Duration.ofHours( -2 ) ) );
-        fakeOutputs.add( Pair.of( SECOND_TIME, Duration.ofHours( -1 ) ) );
-        fakeOutputs.add( Pair.of( THIRD_TIME, Duration.ofHours( 0 ) ) );
-        fakeOutputs.add( Pair.of( FOURTH_TIME, Duration.ofHours( 1 ) ) );
-        fakeOutputs.add( Pair.of( FIFTH_TIME, Duration.ofHours( 2 ) ) );
+        DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
+                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                            .build();
 
-        return Collections.singletonList( PairedStatisticOuter.of( fakeOutputs, fakeMetadata ) );
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( FIRST_TIME.getEpochSecond() )
+                                                                                  .setNanos( FIRST_TIME.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -7200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( SECOND_TIME.getEpochSecond() )
+                                                                                  .setNanos( SECOND_TIME.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -3600 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( THIRD_TIME.getEpochSecond() )
+                                                                                    .setNanos( THIRD_TIME.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( 0 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration four = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( FOURTH_TIME.getEpochSecond() )
+                                                                                   .setNanos( FOURTH_TIME.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 3600 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration five = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( FIFTH_TIME.getEpochSecond() )
+                                                                                   .setNanos( FIFTH_TIME.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 7200 ) )
+                                                                .build();
+
+        DurationDiagramStatistic statistic = DurationDiagramStatistic.newBuilder()
+                                                                     .setMetric( metric )
+                                                                     .addStatistics( one )
+                                                                     .addStatistics( two )
+                                                                     .addStatistics( three )
+                                                                     .addStatistics( four )
+                                                                     .addStatistics( five )
+                                                                     .build();
+
+        return Collections.singletonList( DurationDiagramStatisticOuter.of( statistic, fakeMetadata ) );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0, Instant t1 )
