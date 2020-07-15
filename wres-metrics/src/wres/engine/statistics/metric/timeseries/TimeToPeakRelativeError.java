@@ -16,11 +16,9 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
@@ -100,9 +98,8 @@ public class TimeToPeakRelativeError extends TimingError
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
         DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder()
-                                                                           .setMetric( TimeToPeakError.METRIC );
+                                                                           .setMetric( TimeToPeakRelativeError.METRIC );
 
-        int sampleSize = 0;
         for ( TimeSeries<Pair<Double, Double>> next : s.get() )
         {
             // Some events?
@@ -165,23 +162,14 @@ public class TimeToPeakRelativeError extends TimingError
 
                     builder.addStatistics( pair );
                 }
-
-                sampleSize++;
             }
         }
 
-        // Create output metadata with the identifier of the statistic as the component identifier
-        StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
-                                                       sampleSize,
-                                                       MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
-                                                       this.getID(),
-                                                       MetricConstants.MAIN );
-
-        return DurationDiagramStatisticOuter.of( builder.build(), meta );
+        return DurationDiagramStatisticOuter.of( builder.build(), s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR;
     }

@@ -17,7 +17,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
@@ -164,19 +163,11 @@ public class RelativeOperatingCharacteristicDiagram
                                                       .setMetric( RelativeOperatingCharacteristicDiagram.METRIC )
                                                       .build();
 
-        StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      null );
-
-        return DiagramStatisticOuter.of( rocDiagram, metOut );
+        return DiagramStatisticOuter.of( rocDiagram, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM;
     }

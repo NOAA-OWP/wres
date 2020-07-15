@@ -22,14 +22,11 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -172,15 +169,10 @@ public class PNGBoxPlotWriterTest
                 DatasetIdentifier.of( Location.of( PNGBoxPlotWriterTest.LOCATION_ID ), "SQIN" );
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( "CMS" );
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( measurementUnit,
+        SampleMetadata fakeMetadata = SampleMetadata.of( measurementUnit,
                                                          datasetIdentifier,
                                                          timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS,
-                                      MetricConstants.MAIN );
+                                                         threshold );
 
         // Construct the fake declaration
         Feature feature = WriterTestHelper.getMockedFeature( PNGBoxPlotWriterTest.LOCATION_ID );

@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -15,11 +14,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -72,13 +68,6 @@ public final class MetricTaskTest
         // Compute the pairs
         pairPool.submit( futureInput );
 
-        //Should not throw an exception
-        StatisticMetadata benchmarkMeta = StatisticMetadata.of( input.getMetadata(),
-                                                                10,
-                                                                MeasurementUnit.of(),
-                                                                MetricConstants.MEAN_ERROR,
-                                                                MetricConstants.MAIN );
-
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
                                                                                .setValue( 200.55 )
@@ -88,7 +77,7 @@ public final class MetricTaskTest
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter benchmark = DoubleScoreStatisticOuter.of( score, benchmarkMeta );
+        DoubleScoreStatisticOuter benchmark = DoubleScoreStatisticOuter.of( score, input.getMetadata() );
 
         assertEquals( benchmark, task.call() );
     }

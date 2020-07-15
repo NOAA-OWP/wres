@@ -33,7 +33,6 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.EvaluationEvent.EventType;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -48,7 +47,6 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -63,6 +61,7 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
+import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
@@ -440,26 +439,6 @@ public class MessageFactoryTest
                                                .setIdentifier( datasetIdentifier )
                                                .build();
 
-        StatisticMetadata fakeMetadataA =
-                StatisticMetadata.of( metadata,
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
-
-        StatisticMetadata fakeMetadataB =
-                StatisticMetadata.of( metadata,
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_ERROR,
-                                      MetricConstants.MAIN );
-        StatisticMetadata fakeMetadataC =
-                StatisticMetadata.of( metadata,
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                      MetricConstants.MAIN );
-
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
 
         DoubleScoreStatistic one =
@@ -487,9 +466,9 @@ public class MessageFactoryTest
                                                                                  .setName( ComponentName.MAIN ) )
                                     .build();
 
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadataA ) );
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadataB ) );
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( three, fakeMetadataC ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( one, metadata ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( two, metadata ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( three, metadata ) );
 
         return Collections.unmodifiableList( fakeOutputs );
     }
@@ -524,13 +503,6 @@ public class MessageFactoryTest
                                                .setThresholds( threshold )
                                                .setIdentifier( datasetIdentifier )
                                                .build();
-
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( metadata,
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.RELIABILITY_DIAGRAM,
-                                      null );
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
@@ -580,7 +552,7 @@ public class MessageFactoryTest
                                                      .build();
 
         // Fake output wrapper.
-        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( statistic, fakeMetadata ) ) );
+        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( statistic, metadata ) ) );
     }
 
     /**
@@ -613,16 +585,10 @@ public class MessageFactoryTest
                                                .setIdentifier( datasetIdentifier )
                                                .build();
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( metadata,
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                      null );
-
         List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
                                             .addAllQuantiles( probabilities )
                                             .setLinkedValueType( LinkedValueType.OBSERVED_VALUE )
                                             .build();
@@ -652,14 +618,8 @@ public class MessageFactoryTest
                                                                          .setLinkedValue( 33.0 ) )
                                                       .build();
 
-        StatisticMetadata fakeMetadataTwo =
-                StatisticMetadata.of( metadata,
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                      null );
-
         BoxplotMetric metricTwo = BoxplotMetric.newBuilder()
+                                               .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
                                                .addAllQuantiles( probabilities )
                                                .setLinkedValueType( LinkedValueType.ENSEMBLE_MEAN )
                                                .build();
@@ -690,8 +650,8 @@ public class MessageFactoryTest
                                                       .build();
 
         // Fake output wrapper.
-        return List.of( BoxplotStatisticOuter.of( boxplotOne, fakeMetadata ),
-                        BoxplotStatisticOuter.of( boxplotTwo, fakeMetadataTwo ) );
+        return List.of( BoxplotStatisticOuter.of( boxplotOne, metadata ),
+                        BoxplotStatisticOuter.of( boxplotTwo, metadata ) );
     }
 
     private PoolOfPairs<Double, Ensemble> getPoolOfEnsemblePairs()
@@ -743,18 +703,18 @@ public class MessageFactoryTest
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( CMS,
+        SampleMetadata fakeMetadata = SampleMetadata.of( CMS,
                                                          datasetIdentifier,
                                                          timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                      null );
+                                                         threshold );
+
+        DurationScoreMetric metric = DurationScoreMetric.newBuilder()
+                                                        .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                        .build();
 
         DurationScoreStatistic score =
                 DurationScoreStatistic.newBuilder()
+                                      .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
                                                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
@@ -792,15 +752,10 @@ public class MessageFactoryTest
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( CMS,
+        SampleMetadata fakeMetadata = SampleMetadata.of( CMS,
                                                          datasetIdentifier,
                                                          timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.TIME_TO_PEAK_ERROR,
-                                      null );
+                                                         threshold );
 
         DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
                                                             .setName( MetricName.TIME_TO_PEAK_ERROR )

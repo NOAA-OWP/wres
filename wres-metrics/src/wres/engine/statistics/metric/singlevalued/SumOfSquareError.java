@@ -10,7 +10,6 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -75,7 +74,7 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.SUM_OF_SQUARE_ERROR;
     }
@@ -102,14 +101,6 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
                             .sum();
         }
 
-        //Metadata
-        StatisticMetadata metOut = StatisticMetadata.of( input.getMetadata(),
-                                                         MetricConstants.SUM_OF_SQUARE_ERROR,
-                                                         MetricConstants.MAIN,
-                                                         this.hasRealUnits(),
-                                                         input.getRawData().size(),
-                                                         null );
-
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
                                                                                .setValue( returnMe )
@@ -119,9 +110,10 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( METRIC )
                                     .addStatistics( component )
+                                    .setSampleSize( input.getRawData().size() )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, input.getMetadata() );
     }
 
     @Override
@@ -132,15 +124,7 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        // Set the output dimension
-        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
-                                                       this.getID(),
-                                                       MetricConstants.MAIN,
-                                                       this.hasRealUnits(),
-                                                       output.getMetadata().getSampleSize(),
-                                                       null );
-
-        return DoubleScoreStatisticOuter.of( output.getData(), meta );
+        return DoubleScoreStatisticOuter.of( output.getData(), output.getMetadata() );
     }
 
     @Override

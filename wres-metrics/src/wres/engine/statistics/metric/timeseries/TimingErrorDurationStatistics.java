@@ -17,7 +17,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.DurationScoreMetric;
@@ -25,6 +24,7 @@ import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponen
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
+import wres.statistics.generated.MetricName;
 
 /**
  * A collection of summary statistics that operate on the outputs from {@link TimingError} and are expressed as 
@@ -45,16 +45,16 @@ public class TimingErrorDurationStatistics
     private final Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> statistics;
 
     /**
-     * The unique identifier associated with these summary statistics.
-     */
-
-    private final MetricConstants identifier;
-
-    /**
      * A map of score metric components by name.
      */
 
     private final Map<MetricConstants, DurationScoreMetricComponent> components;
+
+    /**
+     * The metric name.
+     */
+
+    private final MetricConstants identifier;
 
     /**
      * Returns an instance.
@@ -81,7 +81,8 @@ public class TimingErrorDurationStatistics
         }
 
         // Map of outputs
-        DurationScoreMetric.Builder metricBuilder = DurationScoreMetric.newBuilder();
+        DurationScoreMetric.Builder metricBuilder =
+                DurationScoreMetric.newBuilder().setName( MetricName.valueOf( this.identifier.name() ) );
         DurationScoreStatistic.Builder scoreBuilder = DurationScoreStatistic.newBuilder();
 
         // Iterate through the statistics
@@ -122,24 +123,9 @@ public class TimingErrorDurationStatistics
             }
         }
 
-        // Create output metadata with the identifier of the statistic as the component identifier
-        StatisticMetadata in = pairs.getMetadata();
-        MetricConstants singleIdentifier = null;
+        DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder ).build();
 
-        // If the metric is defined with only one summary statistic, list this component in the metadata
-        if ( this.statistics.size() == 1 )
-        {
-            singleIdentifier = nextIdentifier;
-        }
-
-        MetricConstants componentID = singleIdentifier;
-
-        StatisticMetadata meta = StatisticMetadata.of( in, this.getID(), componentID );
-
-        DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder )
-                                                   .build();
-
-        return DurationScoreStatisticOuter.of( score, meta );
+        return DurationScoreStatisticOuter.of( score, pairs.getMetadata() );
     }
 
     /**
@@ -163,8 +149,6 @@ public class TimingErrorDurationStatistics
         {
             throw new MetricParameterException( "Specify a non-null container of summary statistics." );
         }
-
-        this.identifier = identifier;
 
         // Copy locally
         Set<MetricConstants> input = new HashSet<>( statistics );
@@ -192,17 +176,8 @@ public class TimingErrorDurationStatistics
                                                                                  .build();
             this.components.put( next, component );
         }
-    }
 
-    /**
-     * Returns the unique identifier associated with these statistics.
-     * 
-     * @return the unique identifier
-     */
-
-    private MetricConstants getID()
-    {
-        return this.identifier;
+        this.identifier = identifier;
     }
 
 }

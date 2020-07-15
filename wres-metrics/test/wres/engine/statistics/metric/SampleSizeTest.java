@@ -9,13 +9,10 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
-import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -41,13 +38,6 @@ public final class SampleSizeTest
         //Generate some data
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of(),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of( "COUNT" ),
-                                                     MetricConstants.SAMPLE_SIZE,
-                                                     MetricConstants.MAIN );
-
         //Build the metric
         SampleSize<SampleData<Pair<Double, Double>>> ss = SampleSize.of();
 
@@ -64,7 +54,7 @@ public final class SampleSizeTest
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, SampleMetadata.of() );
 
         assertEquals( expected, actual );
 

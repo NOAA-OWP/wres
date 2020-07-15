@@ -11,7 +11,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -90,14 +89,6 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
             returnMe = Math.sqrt( mse ) / stdevValue;
         }
 
-        //Metadata
-        StatisticMetadata metOut = StatisticMetadata.of( t.getMetadata(),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN,
-                                                         this.hasRealUnits(),
-                                                         t.getRawData().size(),
-                                                         null );
-
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
                                                                                .setValue( returnMe )
@@ -109,11 +100,11 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, t.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED;
     }

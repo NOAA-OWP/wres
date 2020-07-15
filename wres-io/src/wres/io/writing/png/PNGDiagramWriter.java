@@ -22,8 +22,8 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
@@ -39,7 +39,7 @@ import wres.vis.ChartEngineFactory;
 
 public class PNGDiagramWriter extends PNGWriter
         implements Consumer<List<DiagramStatisticOuter>>,
-                   Supplier<Set<Path>>
+        Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -84,7 +84,7 @@ public class PNGDiagramWriter extends PNGWriter
         for ( DestinationConfig destinationConfig : destinations )
         {
             // Iterate through each metric 
-            SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, DiagramStatisticOuter::getMetricName );
             for ( MetricConstants next : metrics )
             {
                 List<DiagramStatisticOuter> filtered = Slicer.filter( output, next );
@@ -147,9 +147,10 @@ public class PNGDiagramWriter extends PNGWriter
         // Build charts
         try
         {
-            StatisticMetadata meta = output.get( 0 ).getMetadata();
+            MetricConstants metricName = output.get( 0 ).getMetricName();
+            SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
 
             final Map<Object, ChartEngine> engines =
                     ChartEngineFactory.buildMultiVectorOutputChartEngine( projectConfigPlus.getProjectConfig(),
@@ -169,16 +170,20 @@ public class PNGDiagramWriter extends PNGWriter
                 {
                     outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                      destinationConfig,
-                                                                     meta,
+                                                                     metadata,
                                                                      (TimeWindowOuter) append,
-                                                                     durationUnits );
+                                                                     durationUnits,
+                                                                     metricName,
+                                                                     null );
                 }
                 else if ( append instanceof OneOrTwoThresholds )
                 {
                     outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                      destinationConfig,
-                                                                     meta,
-                                                                     (OneOrTwoThresholds) append );
+                                                                     metadata,
+                                                                     (OneOrTwoThresholds) append,
+                                                                     metricName,
+                                                                     null );
                 }
                 else
                 {

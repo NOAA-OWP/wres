@@ -9,7 +9,6 @@ import java.util.SortedSet;
 import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -57,7 +56,7 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
         //The data is processed into a list based on the key that must appear in the legend.
         int seriesIndex = 0;
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
         for ( final OneOrTwoThresholds key : thresholds )
         {
             setOverrideLegendName( seriesIndex, key.toStringWithoutUnits() );
@@ -77,10 +76,10 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
     {
         final List<List<DoubleScoreComponentOuter>> data = new ArrayList<>();
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( rawData, next -> next.getMetadata().getThresholds() );
         for ( final OneOrTwoThresholds key : thresholds )
         {
-            data.add( Slicer.filter( rawData, next -> next.getSampleMetadata().getThresholds().equals( key ) ) );
+            data.add( Slicer.filter( rawData, next -> next.getMetadata().getThresholds().equals( key ) ) );
         }
         setPlotData( data );
     }
@@ -98,7 +97,6 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
                                                    .get( series )
                                                    .get( item )
                                                    .getMetadata()
-                                                   .getSampleMetadata()
                                                    .getTimeWindow()
                                                    .getLatestLeadDuration(),
                                                this.durationUnits );

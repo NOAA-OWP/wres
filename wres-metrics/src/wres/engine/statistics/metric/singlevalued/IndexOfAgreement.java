@@ -9,7 +9,6 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -94,14 +93,6 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, D
             returnMe = FunctionFactory.skill().applyAsDouble( numerator, denominator );
         }
 
-        //Metadata
-        final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                               this.getID(),
-                                                               MetricConstants.MAIN,
-                                                               this.hasRealUnits(),
-                                                               s.getRawData().size(),
-                                                               null );
-
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
                                                                                .setValue( returnMe )
@@ -113,7 +104,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, D
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
@@ -123,7 +114,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, D
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.INDEX_OF_AGREEMENT;
     }

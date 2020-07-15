@@ -11,7 +11,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
@@ -39,7 +41,13 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      * The metadata associated with the statistic.
      */
 
-    private final StatisticMetadata metadata;
+    private final SampleMetadata metadata;
+    
+    /**
+     * The metric name.
+     */
+
+    private final MetricConstants metricName;
 
     /**
      * Construct the diagram.
@@ -51,7 +59,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      */
 
     public static DiagramStatisticOuter of( DiagramStatistic diagram,
-                                            StatisticMetadata meta )
+                                            SampleMetadata meta )
     {
         return new DiagramStatisticOuter( diagram, meta );
     }
@@ -95,6 +103,12 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         return this.componentNames.contains( identifier );
     }
 
+    @Override
+    public MetricConstants getMetricName()
+    {
+        return this.metricName;
+    }
+    
     /**
      * Returns the diagram component names.
      * 
@@ -107,7 +121,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     }
 
     @Override
-    public StatisticMetadata getMetadata()
+    public SampleMetadata getMetadata()
     {
         return this.metadata;
     }
@@ -158,7 +172,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DiagramStatisticOuter( DiagramStatistic diagram, StatisticMetadata meta )
+    private DiagramStatisticOuter( DiagramStatistic diagram, SampleMetadata meta )
     {
         if ( Objects.isNull( diagram ) )
         {
@@ -180,6 +194,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         }
 
         this.componentNames = Collections.unmodifiableSortedSet( componentNames );
+        this.metricName = MetricConstants.valueOf( diagram.getMetric().getName().name() );
     }
 
 }

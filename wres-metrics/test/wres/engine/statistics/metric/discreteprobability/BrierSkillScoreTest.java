@@ -23,7 +23,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -64,16 +63,11 @@ public final class BrierSkillScoreTest
         SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         // Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                               "SQIN",
-                                                                               "HEFS",
-                                                                               "ESP" ) ),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BRIER_SKILL_SCORE,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
+                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                     "SQIN",
+                                                                     "HEFS",
+                                                                     "ESP" ) );
 
         // Check the results       
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
@@ -105,15 +99,10 @@ public final class BrierSkillScoreTest
         SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                               "SQIN",
-                                                                               "HEFS" ) ),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BRIER_SKILL_SCORE,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
+                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                     "SQIN",
+                                                                     "HEFS" ) );
 
         // Check the results       
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
@@ -232,7 +221,11 @@ public final class BrierSkillScoreTest
     @Test
     public void testApplyNaNOutputWithNaNBaseline()
     {
-        assertEquals( Double.NaN,  this.brierSkillScore.apply( MetricTestDataFactory.getDiscreteProbabilityPairsFour() )
-                      .getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN,
+                      this.brierSkillScore.apply( MetricTestDataFactory.getDiscreteProbabilityPairsFour() )
+                                          .getComponent( MetricConstants.MAIN )
+                                          .getData()
+                                          .getValue(),
+                      0.0 );
     }
 }

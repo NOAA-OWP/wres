@@ -794,8 +794,8 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
                           + "at time window {}.",
                           positionString,
                           type,
-                          output.get( 0 ).getMetadata().getSampleMetadata().getIdentifier(),
-                          output.get( 0 ).getMetadata().getSampleMetadata().getTimeWindow() );
+                          output.get( 0 ).getMetadata().getIdentifier(),
+                          output.get( 0 ).getMetadata().getTimeWindow() );
         }
         else
         {
@@ -939,7 +939,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         // Filter suppressed types
         if ( Objects.nonNull( suppress ) )
         {
-            return Slicer.filter( statistics, next -> !suppress.contains( next.getMetricID() ) );
+            return Slicer.filter( statistics, next -> !suppress.contains( next.getMetricName() ) );
         }
 
         // Nothing filtered

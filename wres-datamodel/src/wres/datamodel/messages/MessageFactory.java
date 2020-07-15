@@ -19,14 +19,12 @@ import com.google.protobuf.Timestamp;
 import wres.config.generated.DoubleBoundsType;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
@@ -39,7 +37,6 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -206,7 +203,7 @@ public class MessageFactory
         {
             List<wres.datamodel.statistics.DoubleScoreStatisticOuter> doubleScores = project.getDoubleScoreStatistics();
             doubleScores.forEach( next -> statistics.addScores( MessageFactory.parse( next ) ) );
-            metadata = doubleScores.get( 0 ).getMetadata().getSampleMetadata();
+            metadata = doubleScores.get( 0 ).getMetadata();
         }
 
         // Add the diagrams
@@ -214,7 +211,7 @@ public class MessageFactory
         {
             List<wres.datamodel.statistics.DiagramStatisticOuter> diagrams = project.getDiagramStatistics();
             diagrams.forEach( next -> statistics.addDiagrams( MessageFactory.parse( next ) ) );
-            metadata = diagrams.get( 0 ).getMetadata().getSampleMetadata();
+            metadata = diagrams.get( 0 ).getMetadata();
         }
 
         // Add the boxplots
@@ -225,7 +222,7 @@ public class MessageFactory
                     new ArrayList<>( project.getBoxPlotStatisticsPerPair() );
             boxplots.addAll( project.getBoxPlotStatisticsPerPool() );
             boxplots.forEach( next -> statistics.addBoxplots( MessageFactory.parse( next ) ) );
-            metadata = boxplots.get( 0 ).getMetadata().getSampleMetadata();
+            metadata = boxplots.get( 0 ).getMetadata();
         }
 
         // Add the duration scores
@@ -234,7 +231,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.DurationScoreStatisticOuter> durationScores =
                     project.getDurationScoreStatistics();
             durationScores.forEach( next -> statistics.addDurationScores( MessageFactory.parse( next ) ) );
-            metadata = durationScores.get( 0 ).getMetadata().getSampleMetadata();
+            metadata = durationScores.get( 0 ).getMetadata();
         }
 
         // Add the duration diagrams with instant/duration pairs
@@ -243,7 +240,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.DurationDiagramStatisticOuter> durationDiagrams =
                     project.getInstantDurationPairStatistics();
             durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
-            metadata = durationDiagrams.get( 0 ).getMetadata().getSampleMetadata();
+            metadata = durationDiagrams.get( 0 ).getMetadata();
         }
 
         Pool.Builder sample = Pool.newBuilder();
@@ -637,64 +634,6 @@ public class MessageFactory
     }
 
     /**
-     * Adds the boundaries to timing error statistics. 
-     * 
-     * TODO: add these boundaries directly to the {@link MetricConstants}, which will require a separate enumeration for the 
-     * {@link MetricGroup#UNIVARIATE_STATISTIC} that apply to timing errors.
-     * 
-     * @param builder the builder
-     * @param name the metric name whose boundaries are required
-     * @throws NullPointerException if either input is null
-     */
-
-    private static void addLimitsToTimingStatistic( DurationScoreMetricComponent.Builder builder, MetricConstants name )
-    {
-        Objects.requireNonNull( builder );
-        Objects.requireNonNull( name );
-
-        Duration minimum = Duration.newBuilder()
-                                   .setSeconds( wres.datamodel.time.TimeWindowOuter.DURATION_MIN.getSeconds() )
-                                   .setNanos( wres.datamodel.time.TimeWindowOuter.DURATION_MIN.getNano() )
-                                   .build();
-
-        Duration maximum = Duration.newBuilder()
-                                   .setSeconds( wres.datamodel.time.TimeWindowOuter.DURATION_MAX.getSeconds() )
-                                   .setNanos( wres.datamodel.time.TimeWindowOuter.DURATION_MAX.getNano() )
-                                   .build();
-
-        Duration zero = Duration.newBuilder()
-                                .setSeconds( java.time.Duration.ZERO.getSeconds() )
-                                .setNanos( java.time.Duration.ZERO.getNano() )
-                                .build();
-
-        switch ( name )
-        {
-            case MEAN:
-                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
-                break;
-            case MEDIAN:
-                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
-                break;
-            case MINIMUM:
-                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
-                break;
-            case MAXIMUM:
-                builder.setMinimum( minimum ).setMaximum( maximum ).setOptimum( zero );
-                break;
-            case STANDARD_DEVIATION:
-                builder.setMinimum( zero ).setMaximum( maximum ).setOptimum( zero );
-                break;
-            case MEAN_ABSOLUTE:
-                builder.setMinimum( zero ).setMaximum( maximum ).setOptimum( zero );
-                break;
-            default:
-                throw new IllegalArgumentException( "Unrecognized univariate statistic for serializing timing errors to "
-                                                    + "protobuf." );
-        }
-
-    }
-
-    /**
      * Class the helps to organize statistics by pool boundaries within a map.
      * 
      * @author james.brown@hydrosolved.com
@@ -756,7 +695,7 @@ public class MessageFactory
 
         for ( DoubleScoreStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata().getSampleMetadata();
+            SampleMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -788,7 +727,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.DurationScoreStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata().getSampleMetadata();
+            SampleMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -822,7 +761,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.BoxplotStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata().getSampleMetadata();
+            SampleMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -861,7 +800,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.DiagramStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata().getSampleMetadata();
+            SampleMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );
@@ -893,7 +832,7 @@ public class MessageFactory
 
         for ( DurationDiagramStatisticOuter next : statistics )
         {
-            SampleMetadata metadata = next.getMetadata().getSampleMetadata();
+            SampleMetadata metadata = next.getMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsForProject.Builder another = mappedStatistics.get( poolBoundaries );

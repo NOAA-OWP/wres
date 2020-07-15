@@ -10,9 +10,7 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection;
@@ -74,15 +72,6 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        // Get the metadata
-        SampleMetadata metIn = s.getMetadata();
-        StatisticMetadata meta = StatisticMetadata.of( metIn,
-                                                       MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                       MetricConstants.MAIN,
-                                                       this.hasRealUnits(),
-                                                       s.getRawData().size(),
-                                                       null );
-
         double returnMe = Double.NaN;
 
         // Minimum sample size of 1
@@ -104,7 +93,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, meta );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
@@ -114,7 +103,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
     }

@@ -8,7 +8,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -57,7 +56,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.COEFFICIENT_OF_DETERMINATION;
     }
@@ -69,13 +68,6 @@ public class CoefficientOfDetermination extends CorrelationPearsons
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-
-        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
-                                                       MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                       MetricConstants.MAIN,
-                                                       this.hasRealUnits(),
-                                                       output.getMetadata().getSampleSize(),
-                                                       null );
 
         double input = output.getComponent( MetricConstants.MAIN )
                              .getData()
@@ -94,7 +86,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, meta );
+        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 
     @Override

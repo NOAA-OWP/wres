@@ -11,6 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -22,12 +23,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements ScoreStatistic<S, T>
 {
-
-    /**
-     * Line separator for printing.
-     */
-
-    private static final String NEWLINE = System.lineSeparator();
 
     /**
      * Null output message.
@@ -57,12 +52,12 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
      * The metadata associated with the statistic.
      */
 
-    private final StatisticMetadata meta;
+    private final SampleMetadata metadata;
 
     @Override
-    public StatisticMetadata getMetadata()
+    public SampleMetadata getMetadata()
     {
-        return this.meta;
+        return this.metadata;
     }
 
     @Override
@@ -125,16 +120,6 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         return this.internal.get( component );
     }
 
-    @Override
-    public String toString()
-    {
-        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
-
-        this.internal.forEach( ( key, value ) -> builder.append( "value", value ) );
-
-        return builder.toString();
-    }
-
     /**
      * A wrapper for a {@link DoubleScoreStatisticComponent}.
      * 
@@ -160,7 +145,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
          * The metadata.
          */
 
-        private final StatisticMetadata metadata;
+        private final SampleMetadata metadata;
         
         /**
          * Mapper to a pretty string.
@@ -185,7 +170,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
 
         BasicScoreComponent( MetricConstants name,
                              S component,
-                             StatisticMetadata metadata,
+                             SampleMetadata metadata,
                              Function<S,String> mapper )
         {
             Objects.requireNonNull( name );
@@ -206,7 +191,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         }
 
         @Override
-        public StatisticMetadata getMetadata()
+        public SampleMetadata getMetadata()
         {
             return this.metadata;
         }
@@ -249,6 +234,17 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
     }
 
     /**
+     * Returns the component mapping for building a friendly string representation of the score.
+     * 
+     * @return the component mapping
+     */
+    
+    Map<MetricConstants, T> getInternalMapping()
+    {
+        return this.internal;
+    }
+    
+    /**
      * Construct the output.
      * 
      * @param score the verification score
@@ -256,14 +252,14 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
      * @param metadata the metadata
      */
 
-    BasicScoreStatistic( S score, Map<MetricConstants, T> internal, StatisticMetadata metadata )
+    BasicScoreStatistic( S score, Map<MetricConstants, T> internal, SampleMetadata metadata )
     {
         Objects.requireNonNull( metadata, NULL_METADATA_MESSAGE );
         Objects.requireNonNull( score, NULL_OUTPUT_MESSAGE );
 
         this.score = score;
-        this.meta = metadata;
-        this.internal = internal;
+        this.metadata = metadata;
+        this.internal = Collections.unmodifiableMap( internal );
     }
 
 }

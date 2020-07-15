@@ -16,7 +16,7 @@ public abstract class OrdinaryScore<S extends SampleData<?>, T extends ScoreStat
     @Override
     public String toString()
     {
-        return getID().toString();
+        return getMetricName().toString();
     }
 
 }

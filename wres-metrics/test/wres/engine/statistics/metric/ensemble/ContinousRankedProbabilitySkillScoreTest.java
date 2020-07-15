@@ -24,7 +24,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -85,11 +84,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                                                        null );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                           MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crpss.apply( input );
 
@@ -204,7 +200,6 @@ public final class ContinousRankedProbabilitySkillScoreTest
 
         assertTrue( this.crpss.apply( pairs )
                               .getMetadata()
-                              .getSampleMetadata()
                               .getIdentifier()
                               .getScenarioNameForBaseline()
                               .equals( "ESP" ) );
