@@ -1,14 +1,10 @@
 package wres.datamodel.statistics;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -16,9 +12,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -40,19 +33,15 @@ public final class DiagramStatisticOuterTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private StatisticMetadata metadata;
+    private SampleMetadata metadata;
 
     @Before
     public void runBeforeEachTest()
     {
-        this.metadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                 DatasetIdentifier.of( Location.of( "A" ),
-                                                                                       "B",
-                                                                                       "C" ) ),
-                                              10,
-                                              MeasurementUnit.of(),
-                                              MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                              MetricConstants.MAIN );
+        this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                           DatasetIdentifier.of( Location.of( "A" ),
+                                                                 "B",
+                                                                 "C" ) );
     }
 
     /**
@@ -63,23 +52,15 @@ public final class DiagramStatisticOuterTest
     public void testEquals()
     {
         Location l2 = Location.of( "A" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     11,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l2,
+                                                                     "B",
+                                                                     "C" ) );
         Location l3 = Location.of( "B" );
-        StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l3,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l3,
+                                                                     "B",
+                                                                     "C" ) );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()
@@ -162,8 +143,8 @@ public final class DiagramStatisticOuterTest
         DiagramStatisticOuter q = DiagramStatisticOuter.of( rocOne, m2 );
         DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, m3 );
         assertEquals( q, q );
-        assertNotEquals( s, q );
-        assertNotEquals( q, s );
+        assertNotEquals( s, r );
+        assertNotEquals( r, s );
         assertNotEquals( q, r );
     }
 
@@ -175,14 +156,10 @@ public final class DiagramStatisticOuterTest
     public void testGetMetadata()
     {
         Location l2 = Location.of( "B" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l2,
+                                                                     "B",
+                                                                     "C" ) );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()

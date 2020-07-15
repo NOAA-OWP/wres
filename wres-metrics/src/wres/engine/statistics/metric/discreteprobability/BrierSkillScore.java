@@ -4,14 +4,12 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -71,20 +69,6 @@ public class BrierSkillScore extends BrierScore
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        DatasetIdentifier baselineIdentifier = null;
-        if ( s.hasBaseline() )
-        {
-            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
-        }
-
-        StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      baselineIdentifier );
-
         // Transform probabilities to double values
         SampleData<Pair<Double, Double>> transformed =
                 Slicer.transform( s,
@@ -106,11 +90,11 @@ public class BrierSkillScore extends BrierScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.BRIER_SKILL_SCORE;
     }

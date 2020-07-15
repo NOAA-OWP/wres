@@ -21,8 +21,8 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.system.SystemSettings;
@@ -84,7 +84,7 @@ public class PNGDurationScoreWriter extends PNGWriter
         for ( DestinationConfig destinationConfig : destinations )
         {
             // Iterate through each metric 
-            SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, DurationScoreStatisticOuter::getMetricName );
             for ( MetricConstants next : metrics )
             {
                 List<DurationScoreStatisticOuter> filtered = Slicer.filter( output, next );
@@ -148,9 +148,10 @@ public class PNGDurationScoreWriter extends PNGWriter
         // Build charts
         try
         {
-            StatisticMetadata meta = output.get( 0 ).getMetadata();
+            MetricConstants metricName = output.get( 0 ).getMetricName();
+            SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
 
             ChartEngine engine =
                     ChartEngineFactory.buildCategoricalDurationScoreChartEngine( projectConfigPlus.getProjectConfig(),
@@ -163,7 +164,9 @@ public class PNGDurationScoreWriter extends PNGWriter
             // Build the output file name
             Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                   destinationConfig,
-                                                                  meta );
+                                                                  metadata,
+                                                                  metricName,
+                                                                  null );
 
             PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written

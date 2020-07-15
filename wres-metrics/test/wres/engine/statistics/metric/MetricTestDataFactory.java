@@ -247,7 +247,8 @@ public final class MetricTestDataFactory
         SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                  DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                        "SQIN",
-                                                                       "HEFS" ) );
+                                                                       "HEFS",
+                                                                       "ESP" ) );
 
         Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
         SampleMetadata base = new SampleMetadata.Builder( null, pool )
@@ -666,19 +667,21 @@ public final class MetricTestDataFactory
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
-        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                 "SQIN",
-                                                                                 "HEFS" ) )
-                                           .setTimeWindow( window )
-                                           .build();
+        SampleMetadata meta = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                          .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                                "SQIN",
+                                                                                                "HEFS",
+                                                                                                "ESP" ) )
+                                                          .setTimeWindow( window )
+                                                          .build();
         Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
-        SampleMetadata baseMeta = new Builder( null, pool ).setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                 "SQIN",
-                                                                                                 "ESP" ) )
-                                                           .setTimeWindow( window )
-                                                           .build();
+        SampleMetadata baseMeta =
+                new SampleMetadata.Builder( null, pool ).setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                        .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
+                                                                                              "SQIN",
+                                                                                              "ESP" ) )
+                                                        .setTimeWindow( window )
+                                                        .build();
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -1051,7 +1054,8 @@ public final class MetricTestDataFactory
         final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",
-                                                                             "HEFS" ) );
+                                                                             "HEFS",
+                                                                             "ESP" ) );
         final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of(),
                                                        DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                              "SQIN",

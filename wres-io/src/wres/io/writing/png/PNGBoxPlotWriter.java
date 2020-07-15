@@ -24,9 +24,9 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
@@ -105,10 +105,10 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             // Iterate through types per pair
             List<BoxplotStatisticOuter> perPair =
-                    Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR ) );
+                    Slicer.filter( output, next -> next.getMetricName().isInGroup( StatisticType.BOXPLOT_PER_PAIR ) );
 
             SortedSet<MetricConstants> metricsPerPair =
-                    Slicer.discover( perPair, meta -> meta.getMetadata().getMetricID() );
+                    Slicer.discover( perPair, BoxplotStatisticOuter::getMetricName );
             for ( MetricConstants next : metricsPerPair )
             {
                 List<BoxplotStatisticOuter> filtered = Slicer.filter( perPair, next );
@@ -156,10 +156,10 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             // Iterate through the pool types
             List<BoxplotStatisticOuter> perPool =
-                    Slicer.filter( output, meta -> meta.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) );
+                    Slicer.filter( output, next -> next.getMetricName().isInGroup( StatisticType.BOXPLOT_PER_POOL ) );
 
             SortedSet<MetricConstants> metricsPerPool =
-                    Slicer.discover( perPool, meta -> meta.getMetadata().getMetricID() );
+                    Slicer.discover( perPool, BoxplotStatisticOuter::getMetricName );
             for ( MetricConstants next : metricsPerPool )
             {
                 List<BoxplotStatisticOuter> filtered = Slicer.filter( perPool, next );
@@ -224,9 +224,10 @@ public class PNGBoxPlotWriter extends PNGWriter
         // Build charts
         try
         {
-            StatisticMetadata meta = output.get( 0 ).getMetadata();
+            MetricConstants metricName = output.get( 0 ).getMetricName();
+            SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
 
             Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engines =
                     ChartEngineFactory.buildBoxPlotChartEnginePerPool( projectConfigPlus.getProjectConfig(),
@@ -240,9 +241,11 @@ public class PNGBoxPlotWriter extends PNGWriter
             {
                 Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                       destinationConfig,
-                                                                      meta,
+                                                                      metadata,
                                                                       nextEntry.getKey().getLeft(),
-                                                                      durationUnits );
+                                                                      durationUnits,
+                                                                      metricName,
+                                                                      null );
 
                 PNGWriter.writeChart( systemSettings, outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
@@ -282,9 +285,10 @@ public class PNGBoxPlotWriter extends PNGWriter
         // Build chart
         try
         {
-            StatisticMetadata metadata = output.get( 0 ).getMetadata();
+            MetricConstants metricName = output.get( 0 ).getMetricName();
+            SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metadata.getMetricID() );
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
 
             // Build the chart engine
             ChartEngine engine =
@@ -296,7 +300,9 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                   destinationConfig,
-                                                                  metadata );
+                                                                  metadata,
+                                                                  metricName,
+                                                                  null );
 
             PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
 

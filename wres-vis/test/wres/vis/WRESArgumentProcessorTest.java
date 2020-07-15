@@ -7,11 +7,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
@@ -32,12 +30,8 @@ public class WRESArgumentProcessorTest
      * Metadata to assist in testing.
      */
 
-    private final StatisticMetadata meta =
-            StatisticMetadata.of( SampleMetadata.of( SampleMetadata.of( MeasurementUnit.of() ), TimeWindowOuter.of() ),
-                                  0,
-                                  MeasurementUnit.of(),
-                                  MetricConstants.BOX_PLOT_OF_ERRORS,
-                                  MetricConstants.MAIN );
+    private final SampleMetadata meta = SampleMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           TimeWindowOuter.of() );
 
     /**
      * Do not throw an IndexOutOfBoundsException when the input is empty. See #65503.
@@ -46,7 +40,11 @@ public class WRESArgumentProcessorTest
     @Test( expected = Test.None.class /* no exception expected */ )
     public void testConstructionDoesNotThrowIOOBExceptionWhenInputIsEmpty()
     {
-        new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(), this.meta ),
+        new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.newBuilder()
+                                                                             .setMetric( BoxplotMetric.newBuilder()
+                                                                                                      .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
+                                                                             .build(),
+                                                             this.meta ),
                                    ChronoUnit.SECONDS );
     }
 
@@ -58,7 +56,11 @@ public class WRESArgumentProcessorTest
     public void testConstructionProducesExpectedProbabilitiesWhenInputIsEmpty()
     {
         WRESArgumentProcessor processor =
-                new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(), this.meta ),
+                new WRESArgumentProcessor( BoxplotStatisticOuter.of( BoxplotStatistic.newBuilder()
+                                                                                     .setMetric( BoxplotMetric.newBuilder()
+                                                                                                              .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
+                                                                                     .build(),
+                                                                     this.meta ),
                                            ChronoUnit.SECONDS );
 
         String probs = processor.getArgument( "probabilities" ).getValue();

@@ -5,18 +5,14 @@ import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -65,20 +61,6 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        //Metadata
-        DatasetIdentifier id = null;
-        if ( s.hasBaseline() )
-        {
-            id = s.getBaselineData().getMetadata().getIdentifier();
-        }
-        final StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      id );
-
         //Compute the atomic errors in a stream
         double doubleScore = MissingValues.DOUBLE;
         if ( !s.getRawData().isEmpty() )
@@ -99,7 +81,7 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override

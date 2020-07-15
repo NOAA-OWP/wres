@@ -47,7 +47,6 @@ public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
         return TimeHelper.durationToLongUnits( this.getPlotData()
                                                    .get( item )
                                                    .getMetadata()
-                                                   .getSampleMetadata()
                                                    .getTimeWindow()
                                                    .getLatestLeadDuration(),
                                                this.durationUnits );

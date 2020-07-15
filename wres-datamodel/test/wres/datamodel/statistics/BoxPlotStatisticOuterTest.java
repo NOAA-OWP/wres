@@ -12,12 +12,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
@@ -40,12 +40,13 @@ public final class BoxPlotStatisticOuterTest
      * Basic metadata.
      */
 
-    private StatisticMetadata metadata = null;
+    private SampleMetadata metadata = null;
 
     @Before
     public void runBeforeEachClass()
     {
         BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
                                             .addAllQuantiles( List.of( 0.0,
                                                                        0.5,
                                                                        1.0 ) )
@@ -67,14 +68,10 @@ public final class BoxPlotStatisticOuterTest
 
         this.basic = boxplotOne.build();
         Location l2 = Location.of( "A" );
-        this.metadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                 DatasetIdentifier.of( l2,
-                                                                                       "B",
-                                                                                       "C" ) ),
-                                              10,
-                                              MeasurementUnit.of(),
-                                              MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                              MetricConstants.MAIN );
+        this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                           DatasetIdentifier.of( l2,
+                                                                 "B",
+                                                                 "C" ) );
     }
 
     /**
@@ -86,36 +83,24 @@ public final class BoxPlotStatisticOuterTest
     {
 
         //Build datasets
-        final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                           MetricConstants.MAIN );
-        final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l2,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           12,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                           MetricConstants.MAIN );
-        final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l3,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                           MetricConstants.MAIN );
-
+        Location l1 = Location.of( "A" );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l1,
+                                                                     "B",
+                                                                     "C" ) );
+        Location l2 = Location.of( "A" );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l2,
+                                                                     "B",
+                                                                     "C" ) );
+        Location l3 = Location.of( "B" );
+        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l3,
+                                                                     "B",
+                                                                     "C" ) );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
                                             .addAllQuantiles( List.of( 0.0,
                                                                        0.25,
                                                                        0.5,
@@ -165,6 +150,7 @@ public final class BoxPlotStatisticOuterTest
         }
 
         BoxplotMetric metricTwo = BoxplotMetric.newBuilder()
+                                               .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
                                                .addAllQuantiles( List.of( 0.0,
                                                                           0.25,
                                                                           0.5,
@@ -188,6 +174,7 @@ public final class BoxPlotStatisticOuterTest
         }
 
         BoxplotMetric metricThree = BoxplotMetric.newBuilder()
+                                                 .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
                                                  .addAllQuantiles( List.of( 0.0,
                                                                             0.25,
                                                                             0.5,
@@ -242,8 +229,8 @@ public final class BoxPlotStatisticOuterTest
         assertThat( w, not( y ) );
         assertThat( w, not( z ) );
         assertThat( q, is( q ) );
-        assertThat( s, not( q ) );
-        assertThat( q, not( s ) );
+        assertThat( s, not( r ) );
+        assertThat( r, not( s ) );
         assertThat( q, not( r ) );
     }
 
@@ -259,16 +246,13 @@ public final class BoxPlotStatisticOuterTest
 
         // Consistent with equals
         Location l2 = Location.of( "A" );
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l2,
+                                                                     "B",
+                                                                     "C" ) );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
                                             .addAllQuantiles( List.of( 0.0,
                                                                        0.5,
                                                                        1.0 ) )
@@ -311,14 +295,10 @@ public final class BoxPlotStatisticOuterTest
     {
         BoxplotStatisticOuter outer = BoxplotStatisticOuter.of( this.basic, this.metadata );
         Location l1 = Location.of( "A" );
-        StatisticMetadata expected = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( l1,
-                                                                                                    "B",
-                                                                                                    "C" ) ),
-                                                           10,
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                           MetricConstants.MAIN );
+        SampleMetadata expected = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                     DatasetIdentifier.of( l1,
+                                                                           "B",
+                                                                           "C" ) );
 
         assertEquals( expected, outer.getMetadata() );
     }

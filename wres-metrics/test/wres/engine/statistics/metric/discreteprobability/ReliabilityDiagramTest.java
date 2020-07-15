@@ -23,7 +23,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
@@ -64,15 +63,10 @@ public final class ReliabilityDiagramTest
         SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
-        final StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( Location.of( "Tampere" ),
                                                                                "MAP",
-                                                                               "FMI" ) ),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.RELIABILITY_DIAGRAM,
-                                      MetricConstants.MAIN );
+                                                                               "FMI" ) );
 
         //Check the results       
         final DiagramStatisticOuter actual = rel.apply( input );
@@ -187,11 +181,7 @@ public final class ReliabilityDiagramTest
                                                        identifier ) );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(), identifier ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.RELIABILITY_DIAGRAM,
-                                                           MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(), identifier );
 
         //Check the results       
         DiagramStatisticOuter actual = rel.apply( input );

@@ -18,10 +18,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
@@ -59,18 +59,13 @@ public final class TimeToPeakErrorTest
                                                      Instant.parse( "1985-01-02T00:00:00Z" ),
                                                      Duration.ofHours( 6 ),
                                                      Duration.ofHours( 18 ) );
-        final TimeWindowOuter timeWindow = window;
+        TimeWindowOuter timeWindow = window;
 
-        StatisticMetadata m1 =
-                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                         "Streamflow" ) )
-                                                   .setTimeWindow( timeWindow )
-                                                   .build(),
-                                      input.get().size(),
-                                      MeasurementUnit.of( "DURATION" ),
-                                      MetricConstants.TIME_TO_PEAK_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                        .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                              "Streamflow" ) )
+                                                        .setTimeWindow( timeWindow )
+                                                        .build();
 
         DurationDiagramStatisticOuter actual = this.ttp.apply( input );
 

@@ -29,7 +29,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
@@ -63,8 +62,8 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
      */
 
     public static CommaSeparatedDurationDiagramWriter of( ProjectConfig projectConfig,
-                                                                 ChronoUnit durationUnits,
-                                                                 Path outputDirectory )
+                                                          ChronoUnit durationUnits,
+                                                          Path outputDirectory )
     {
         return new CommaSeparatedDurationDiagramWriter( projectConfig, durationUnits, outputDirectory );
     }
@@ -148,16 +147,16 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
      */
 
     private static Set<Path> writeOnePairedOutputType( Path outputDirectory,
-                                                              DestinationConfig destinationConfig,
-                                                              List<DurationDiagramStatisticOuter> output,
-                                                              Format formatter,
-                                                              ChronoUnit durationUnits )
+                                                       DestinationConfig destinationConfig,
+                                                       List<DurationDiagramStatisticOuter> output,
+                                                       Format formatter,
+                                                       ChronoUnit durationUnits )
             throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
         // Loop across metrics
-        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, DurationDiagramStatisticOuter::getMetricName );
         for ( MetricConstants m : metrics )
         {
             StringJoiner headerRow = new StringJoiner( "," );
@@ -166,8 +165,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
             StringJoiner timeWindowHeader =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
-                                                                                         .getMetadata()
-                                                                                         .getSampleMetadata(),
+                                                                                         .getMetadata(),
                                                                                    durationUnits );
             headerRow.merge( timeWindowHeader );
 
@@ -184,11 +182,14 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
             // Write the output
-            StatisticMetadata meta = nextOutput.get( 0 ).getMetadata();
+            SampleMetadata meta = nextOutput.get( 0 ).getMetadata();
+            MetricConstants metricName = nextOutput.get( 0 ).getMetricName();
 
             Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                  destinationConfig,
-                                                                 meta );
+                                                                 meta,
+                                                                 metricName,
+                                                                 null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -224,7 +225,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
 
         SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
@@ -238,7 +239,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
             // Slice by threshold
             List<DurationDiagramStatisticOuter> sliced = Slicer.filter( output,
-                                                                        data -> data.getSampleMetadata()
+                                                                        data -> data.getMetadata()
                                                                                     .getThresholds()
                                                                                     .equals( t ) );
 
@@ -251,7 +252,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                                   SampleMetadata.of( metadata,
                                                                                      next.getMetadata()
-                                                                                         .getSampleMetadata()
                                                                                          .getTimeWindow() ),
                                                                   Arrays.asList( nextPair.getLeft(),
                                                                                  nextPair.getRight() ),

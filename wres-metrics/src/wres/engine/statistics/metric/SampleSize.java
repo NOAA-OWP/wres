@@ -7,11 +7,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -43,7 +41,8 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
                                                                        .setMinimum( Double.NEGATIVE_INFINITY )
                                                                        .setMaximum( Double.POSITIVE_INFINITY )
                                                                        .setOptimum( 0.0 )
-                                                                       .setName( ComponentName.MAIN ) )
+                                                                       .setName( ComponentName.MAIN )
+                                                                       .setUnits( "COUNT" ) )
                              .setName( MetricName.SAMPLE_SIZE )
                              .build();
 
@@ -81,12 +80,7 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
                                                                                                       .size() ) )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score,
-                                             StatisticMetadata.of( s.getMetadata(),
-                                                                   s.getRawData().size(),
-                                                                   MeasurementUnit.of( "COUNT" ),
-                                                                   this.getID(),
-                                                                   MetricConstants.MAIN ) );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
@@ -96,7 +90,7 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.SAMPLE_SIZE;
     }

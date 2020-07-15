@@ -10,7 +10,6 @@ import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -64,14 +63,10 @@ public final class DurationDiagramStatisticOuterTest
      * Metadata for testing.
      */
 
-    private final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  DatasetIdentifier.of( l1,
-                                                                                                        "B",
-                                                                                                        "C" ) ),
-                                                               10,
-                                                               MeasurementUnit.of(),
-                                                               MetricConstants.TIME_TO_PEAK_ERROR,
-                                                               MetricConstants.MAIN );
+    private final SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( l1,
+                                                                               "B",
+                                                                               "C" ) );
 
     /**
      * Constructs a {@link DurationDiagramStatisticOuter} and tests for equality with another 
@@ -82,23 +77,15 @@ public final class DurationDiagramStatisticOuterTest
     public void testEquals()
     {
         Location l2 = Location.of( "A" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     11,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.TIME_TO_PEAK_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l2,
+                                                                     "B",
+                                                                     "C" ) );
         Location l3 = Location.of( "B" );
-        StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l3,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.TIME_TO_PEAK_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l3,
+                                                                     "B",
+                                                                     "C" ) );
 
         DurationDiagramStatisticOuter one = DurationDiagramStatisticOuter.of( this.defaultInstance, m2 );
 
@@ -164,7 +151,7 @@ public final class DurationDiagramStatisticOuterTest
                           + "[(1970-01-02T10:17:36.000000789Z,PT13S)],metadata=SampleMetadata[datasetIdentifier="
                           + "DatasetIdentifier[location=A,variableId=B,scenarioId=C,baselineScenarioId=<null>,"
                           + "pairContext=RIGHT],timeWindow=<null>,thresholds=<null>,timeScale=<null>,"
-                          + "measurementUnit=CMS,DIMENSIONLESS,10,TIME TO PEAK ERROR,MAIN)]";
+                          + "measurementUnit=CMS]]";
 
         assertEquals( expected, DurationDiagramStatisticOuter.of( this.defaultInstance, this.m1 ).toString() );
     }
@@ -178,14 +165,10 @@ public final class DurationDiagramStatisticOuterTest
     {
 
         Location l2 = Location.of( "B" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.TIME_TO_PEAK_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l2,
+                                                                     "B",
+                                                                     "C" ) );
 
         assertEquals( m2, DurationDiagramStatisticOuter.of( this.defaultInstance, m2 ).getMetadata() );
     }
@@ -198,14 +181,10 @@ public final class DurationDiagramStatisticOuterTest
     public void testHashCode()
     {
         Location l2 = Location.of( "A" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.TIME_TO_PEAK_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( l2,
+                                                                     "B",
+                                                                     "C" ) );
 
         DurationDiagramStatisticOuter anInstance = DurationDiagramStatisticOuter.of( this.defaultInstance, m2 );
 

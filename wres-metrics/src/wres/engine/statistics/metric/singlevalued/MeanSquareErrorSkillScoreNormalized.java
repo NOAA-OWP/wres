@@ -9,7 +9,6 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -66,7 +65,7 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED;
     }
@@ -91,14 +90,6 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
-                                                       MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
-                                                       MetricConstants.MAIN,
-                                                       this.hasRealUnits(),
-                                                       output.getMetadata().getSampleSize(),
-                                                       null );
-
-
         double input = output.getComponent( MetricConstants.MAIN )
                              .getData()
                              .getValue();
@@ -116,7 +107,7 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, meta );
+        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 
     @Override

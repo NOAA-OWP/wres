@@ -4,7 +4,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticMetadata;
 
 /**
  * An interface that allows for a final metric output to be derived from an intermediate output, thereby
@@ -36,8 +35,8 @@ public interface Collectable<S extends SampleData<?>, T extends Statistic<?>, U 
 
     /**
      * Returns the intermediate metric result for input to {@link #aggregate(Statistic)}. Ensure that the 
-     * {@link Metric#getID()} associated with the {@link StatisticMetadata} of the output corresponds to that of 
-     * the implementing class and not the caller.
+     * {@link Metric#getMetricName()} associated with the output corresponds to that of the implementing class and not the 
+     * caller.
      * 
      * @param input the metric input
      * @return the intermediate output that forms the input to metrics within this collection
@@ -48,10 +47,10 @@ public interface Collectable<S extends SampleData<?>, T extends Statistic<?>, U 
     T getInputForAggregation( S input );
 
     /**
-     * Returns the {@link Metric#getID()} of the metric whose output forms the input to this metric. Metrics with common
+     * Returns the {@link Metric#getMetricName()} of the metric whose output forms the input to this metric. Metrics with common
      * intermediate inputs are collected by the name of the metric that produces the intermediate input.
      * 
-     * @return the {@link Metric#getID()} of the metric whose output forms the input to this metric
+     * @return the {@link Metric#getMetricName()} of the metric whose output forms the input to this metric
      */
 
     MetricConstants getCollectionOf();

@@ -9,7 +9,6 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -56,7 +55,7 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         switch ( this.getScoreOutputGroup() )
         {
@@ -78,7 +77,7 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_SQUARE_ERROR;
     }
@@ -91,19 +90,12 @@ public class MeanSquareError extends SumOfSquareError
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
-                                                       this.getID(),
-                                                       MetricConstants.MAIN,
-                                                       this.hasRealUnits(),
-                                                       output.getMetadata().getSampleSize(),
-                                                       null );
-
         double input = output.getComponent( MetricConstants.MAIN )
                              .getData()
                              .getValue();
 
         double mse = FunctionFactory.finiteOrMissing()
-                                    .applyAsDouble( input / output.getMetadata().getSampleSize() );
+                                    .applyAsDouble( input / output.getData().getSampleSize() );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
@@ -116,7 +108,7 @@ public class MeanSquareError extends SumOfSquareError
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, meta );
+        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 
     /**

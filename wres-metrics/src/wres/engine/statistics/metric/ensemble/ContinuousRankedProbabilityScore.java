@@ -17,7 +17,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -130,15 +129,6 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
 
-        //Metadata
-        final StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      null );
-
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
                                                                                .setValue( crps[0] )
@@ -149,11 +139,11 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE;
     }

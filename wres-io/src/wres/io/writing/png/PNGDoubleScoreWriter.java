@@ -28,8 +28,8 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
@@ -79,7 +79,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final List<DoubleScoreStatisticOuter> output )
+    public void accept( List<DoubleScoreStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -92,7 +92,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
         {
 
             // Iterate through each metric 
-            SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, DoubleScoreStatisticOuter::getMetricName );
             for ( MetricConstants next : metrics )
             {
                 if ( next == MetricConstants.CONTINGENCY_TABLE )
@@ -163,23 +163,24 @@ public class PNGDoubleScoreWriter extends PNGWriter
         // Build charts
         try
         {
-            StatisticMetadata meta = output.get( 0 ).getMetadata();
+            MetricConstants metricName = output.get( 0 ).getMetricName();
+            SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
             List<List<DoubleScoreStatisticOuter>> allOutputs = new ArrayList<>();
 
             SortedSet<ThresholdOuter> secondThreshold =
-                    Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
+                    Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
 
             if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
                  && !secondThreshold.isEmpty() )
             {
                 // Slice by the second threshold
                 secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( output,
-                                                                                value -> next.equals( value.getSampleMetadata()
+                                                                                value -> next.equals( value.getMetadata()
                                                                                                            .getThresholds()
                                                                                                            .second() ) ) ) );
             }
@@ -204,7 +205,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 // Secondary threshold? If yes, only, one as this was sliced above
                 SortedSet<ThresholdOuter> second =
                         Slicer.discover( nextOutput,
-                                         next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
+                                         next -> next.getMetadata().getThresholds().second() );
                 if ( !second.isEmpty() )
                 {
                     append = second.iterator().next().toStringSafe();
@@ -217,8 +218,10 @@ public class PNGDoubleScoreWriter extends PNGWriter
                     // Build the output file name
                     Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                           destinationConfig,
-                                                                          meta,
-                                                                          append );
+                                                                          metadata,
+                                                                          append,
+                                                                          metricName,
+                                                                          null );
 
                     PNGWriter.writeChart( systemSettings, outputImage, nextEntry.getValue(), destinationConfig );
                     // Only if writeChart succeeded do we assume that it was written
