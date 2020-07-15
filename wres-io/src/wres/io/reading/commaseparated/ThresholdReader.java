@@ -149,8 +149,7 @@ public class ThresholdReader
      * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link ThresholdOuter}. 
      * 
      * @param commaSeparated the path to the comma separated values
-     * @param operator the threshold condition
-     * @param dataType the threshold data types
+     * @param dataTypes the threshold data types
      * @param missingValue an optional missing value identifier to ignore (may be null)
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units 
@@ -328,7 +327,6 @@ public class ThresholdReader
      * @throws NullPointerException if the featureThresholds is null
      * @throws LabelInconsistencyException if the number of labels is inconsistent with the number of thresholds
      * @throws NumberFormatException if one of the thresholds was not a number
-     * @throws AllMissingThresholdsException if all thresholds matched the missing value
      * @return the thresholds for one feature
      */
 
@@ -590,7 +588,7 @@ public class ThresholdReader
 
         /**
          * Create an instance.
-         * @param existingUnit the existing measurement unit
+         * @param existingUnits the existing measurement unit
          * @param desiredUnitMapper a mapper to create desired measurement units
          * @return an inner mapper
          */
@@ -614,7 +612,7 @@ public class ThresholdReader
          * Maps an input value in the existing measurement units to the desired units. If the existing units are
          * unknown, the input value is returned.
          * 
-         * @param thresholdValue a threshold value in existing units
+         * @param valueInExistingUnits a threshold value in existing units
          * @return the thresholds value in desired units
          */
 
@@ -632,7 +630,7 @@ public class ThresholdReader
         /**
          * Create an instance.
          * @param existingUnit the existing measurement unit
-         * @param desiredUnitMapper a mapper to create desired measurement units
+         * @param generalUnitMapper a mapper to create desired measurement units
          */
 
         private InnerUnitMapper( MeasurementUnit existingUnit, UnitMapper generalUnitMapper )

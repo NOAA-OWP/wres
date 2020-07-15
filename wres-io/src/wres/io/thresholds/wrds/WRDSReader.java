@@ -33,7 +33,7 @@ public final class WRDSReader {
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
-    private static final int LOCATION_REQUEST_COUNT = 20;
+    public static final int LOCATION_REQUEST_COUNT = 20;
 
     public static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds(
             final SystemSettings systemSettings,
@@ -76,7 +76,7 @@ public final class WRDSReader {
         }
     }
 
-    static Map<FeaturePlus, Set<ThresholdOuter>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
+    public static Map<FeaturePlus, Set<ThresholdOuter>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource();
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
@@ -112,7 +112,7 @@ public final class WRDSReader {
         return extractor.extract();
     }
 
-    static Collection<String> groupLocations(Collection<FeaturePlus> features) {
+    public static Collection<String> groupLocations(Collection<FeaturePlus> features) {
         List<String> locationGroups = new ArrayList<>();
         StringJoiner locationJoiner = new StringJoiner(",");
         int counter = 0;
@@ -135,7 +135,7 @@ public final class WRDSReader {
         return locationGroups;
     }
 
-    private static ThresholdResponse getResponse(final String inputAddress) throws StreamIOException {
+    public static ThresholdResponse getResponse(final String inputAddress) throws StreamIOException {
         URI address = URI.create(inputAddress);
         try {
             if (address.getScheme() == null || address.getScheme().toLowerCase().equals("file")) {
