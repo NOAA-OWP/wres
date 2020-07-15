@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.text.Format;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -26,8 +24,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -35,6 +31,9 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * Helps write box plots comprising {@link BoxplotStatisticOuter} to a file of Comma Separated Values (CSV).
@@ -331,27 +330,28 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             for ( TimeWindowOuter timeWindow : timeWindows )
             {
                 BoxplotStatisticOuter nextValues = Slicer.filter( output,
-                                                              next -> next.getSampleMetadata()
-                                                                          .getThresholds()
-                                                                          .equals( t )
-                                                                      && next.getSampleMetadata()
-                                                                             .getTimeWindow()
-                                                                             .equals( timeWindow ) )
-                                                     .get( 0 );
+                                                                  next -> next.getSampleMetadata()
+                                                                              .getThresholds()
+                                                                              .equals( t )
+                                                                          && next.getSampleMetadata()
+                                                                                 .getTimeWindow()
+                                                                                 .equals( timeWindow ) )
+                                                         .get( 0 );
+
+                boolean hasLinkedValue = nextValues.getData().getMetric().getLinkedValueType() != LinkedValueType.NONE;
+
                 // Add each box
-                for ( BoxplotStatistic nextBox : nextValues.getData() )
+                for ( Box nextBox : nextValues.getData().getStatisticsList() )
                 {
                     List<Double> data = new ArrayList<>();
 
                     // Add linked value if available
-                    if ( nextBox.hasLinkedValue() )
+                    if ( hasLinkedValue )
                     {
                         data.add( nextBox.getLinkedValue() );
                     }
 
-                    data.addAll( Arrays.stream( nextBox.getData().getDoubles() )
-                                       .boxed()
-                                       .collect( Collectors.toList() ) );
+                    data.addAll( nextBox.getQuantilesList() );
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                                   SampleMetadata.of( metadata, timeWindow ),
                                                                   data,
@@ -378,9 +378,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
-        
+
         returnMe.add( "FEATURE DESCRIPTION" );
-        
+
         returnMe.merge( headerRow );
 
         // Discover the first item and use this to help
@@ -388,25 +388,28 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds() );
 
-        if ( !nextValues.getData().isEmpty() )
+        LinkedValueType linkedValueType = nextValues.getData().getMetric().getLinkedValueType();
+        QuantileValueType quantileValueType = nextValues.getData().getMetric().getQuantileValueType();
+        List<Double> headerProbabilities = nextValues.getData().getMetric().getQuantilesList();
+        String lType = linkedValueType.toString().replace( "_", " " );
+        String qType = quantileValueType.toString().replace( "_", " " );
+
+        if ( nextValues.getData().getStatisticsCount() != 0 )
         {
             for ( OneOrTwoThresholds nextThreshold : thresholds )
             {
-                BoxplotStatistic statistic = nextValues.getData().get( 0 );
-
+                
                 // Probabilities and types are fixed for all boxes in the collection
-                if ( nextValues.getData().get( 0 ).hasLinkedValue() )
+                if ( linkedValueType != LinkedValueType.NONE )
                 {
-                    returnMe.add( HEADER_DELIMITER + statistic.getLinkedValueType()
+                    returnMe.add( HEADER_DELIMITER + lType
                                   + HEADER_DELIMITER
                                   + nextThreshold );
                 }
 
-                VectorOfDoubles headerProbabilities = statistic.getProbabilities();
-
-                for ( double nextProb : headerProbabilities.getDoubles() )
+                for ( double nextProb : headerProbabilities )
                 {
-                    returnMe.add( HEADER_DELIMITER + statistic.getValueType()
+                    returnMe.add( HEADER_DELIMITER + qType
                                   + HEADER_DELIMITER
                                   + nextThreshold
                                   + HEADER_DELIMITER
@@ -415,6 +418,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                 }
             }
         }
+        
         return returnMe;
     }
 

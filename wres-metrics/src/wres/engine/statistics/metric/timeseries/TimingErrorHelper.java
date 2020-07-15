@@ -29,7 +29,7 @@ class TimingErrorHelper
      * @throws NullPointerException if the input is null
      */
 
-    static Pair<Instant, Instant> getTimeToPeak( final TimeSeries<Pair<Double,Double>> timeSeries, final Random rng )
+    static Pair<Instant, Instant> getTimeToPeak( TimeSeries<Pair<Double,Double>> timeSeries, final Random rng )
     {
         Objects.requireNonNull( timeSeries, "Specify a non-null time-series whose time-to-peak error is required." );
 

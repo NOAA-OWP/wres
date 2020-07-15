@@ -229,8 +229,6 @@ project(':wres-util')
         // super-duper mocking help (mocking static, private methods)
         testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
         testCompile 'org.powermock:powermock-module-junit4:2.0.7'
-
-        testCompile files('../libs/external/EVS.jar')
     }
 }
 
@@ -740,21 +738,12 @@ project(':wres-vis')
         compile files('../libs/external/ohdcommonchps.jar')
 
         testCompile project (':wres-datamodel')
+        testRuntime group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.8.0-beta4'
+        
+        testCompile files('../libs/external/jfreechart-1.0.9.jar')
         testCompile files('../libs/external/ohdcommonchps.jar')
         testCompile 'junit:junit:4.13'
-        //Must load jfreechart explicitly before EVS.jar to avoid conflicting versions
-        testCompile files('../libs/external/jfreechart-1.0.9.jar')
-        testCompile files('../libs/external/EVS.jar')
         testRuntime files('dist/lib/conf')
-    }
-
-    configurations
-    {
-        testCompile
-        {
-            // to prevent the testCompile and testRuntime from inheriting this:
-            exclude group: 'org.slf4j', module: 'log4j-over-slf4j'
-        }
     }
 }
 

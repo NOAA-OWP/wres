@@ -4,8 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +40,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
@@ -50,13 +48,13 @@ import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
-import wres.io.writing.commaseparated.statistics.CommaSeparatedPairedWriter;
+import wres.io.writing.commaseparated.statistics.CommaSeparatedDurationDiagramWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedScoreWriter;
 import wres.io.writing.png.PNGBoxPlotWriter;
 import wres.io.writing.png.PNGDiagramWriter;
 import wres.io.writing.png.PNGDoubleScoreWriter;
 import wres.io.writing.png.PNGDurationScoreWriter;
-import wres.io.writing.png.PNGPairedWriter;
+import wres.io.writing.png.PNGDurationDiagramWriter;
 import wres.system.SystemSettings;
 
 /**
@@ -144,10 +142,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link PairedStatisticOuter} by {@link DestinationType} format.
+     * Store of consumers for processing {@link DiagramDiagramStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<PairedStatisticOuter<Instant, Duration>>>> pairedConsumers =
+    private final Map<DestinationType, Consumer<List<DurationDiagramStatisticOuter>>> pairedConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -239,9 +237,9 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             }
 
             // Paired metric output available
-            if ( input.hasStatistic( StatisticType.PAIRED ) )
+            if ( input.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
             {
-                this.processPairedOutputByInstantDuration( input.getInstantDurationPairStatistics() );
+                this.processDurationDiagramStatistic( input.getInstantDurationPairStatistics() );
             }
         }
         catch ( InterruptedException e )
@@ -356,13 +354,13 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.PAIRED, DestinationType.CSV ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.CSV ) )
         {
             // Add the paths for the paired writer: #61841
-            CommaSeparatedPairedWriter<Instant, Duration> pairedWriter =
-                    CommaSeparatedPairedWriter.of( projectConfig,
-                                                   this.getDurationUnits(),
-                                                   outputDirectory );
+            CommaSeparatedDurationDiagramWriter pairedWriter =
+                    CommaSeparatedDurationDiagramWriter.of( projectConfig,
+                                                            this.getDurationUnits(),
+                                                            outputDirectory );
             this.pairedConsumers.put( DestinationType.CSV, pairedWriter );
             this.writersToPaths.add( pairedWriter );
         }
@@ -370,17 +368,16 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.CSV ) )
         {
             // Format
-            Format formatter = this.getDecimalFormatter();           
-            Function<DoubleScoreComponentOuter, String> mapper = next -> 
-            {
-                if(Objects.nonNull( formatter ) )
+            Format formatter = this.getDecimalFormatter();
+            Function<DoubleScoreComponentOuter, String> mapper = next -> {
+                if ( Objects.nonNull( formatter ) )
                 {
                     return formatter.format( next.getData().getValue() );
                 }
-                
+
                 return Double.toString( next.getData().getValue() );
             };
-            
+
             CommaSeparatedScoreWriter<DoubleScoreComponentOuter, DoubleScoreStatisticOuter> doubleScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
                                                   this.getDurationUnits(),
@@ -410,20 +407,20 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
      * 
      * @return a formatter or null
      */
-    
+
     private Format getDecimalFormatter()
     {
-        for( DestinationConfig next : this.getProjectConfig().getOutputs().getDestination() )
+        for ( DestinationConfig next : this.getProjectConfig().getOutputs().getDestination() )
         {
-            if( next.getType() == DestinationType.CSV || next.getType() == DestinationType.NUMERIC )
+            if ( next.getType() == DestinationType.CSV || next.getType() == DestinationType.NUMERIC )
             {
                 return ConfigHelper.getDecimalFormatter( next );
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Builds a set of consumers for writing files in Portable Network Graphics (PNG) format.
      *
@@ -469,12 +466,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.PAIRED, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.PNG ) )
         {
-            PNGPairedWriter pairedWriter = PNGPairedWriter.of( this.getSystemSettings(),
-                                                               projectConfigPlus,
-                                                               this.getDurationUnits(),
-                                                               outputDirectory );
+            PNGDurationDiagramWriter pairedWriter = PNGDurationDiagramWriter.of( this.getSystemSettings(),
+                                                                                 projectConfigPlus,
+                                                                                 this.getDurationUnits(),
+                                                                                 outputDirectory );
             this.pairedConsumers.put( DestinationType.PNG,
                                       pairedWriter );
             this.writersToPaths.add( pairedWriter );
@@ -684,26 +681,25 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
     }
 
     /**
-     * Processes {@link PairedStatisticOuter}.
+     * Processes {@link DiagramDiagramStatisticOuter}.
      * 
      * @param outputs the output to consume
      * @throws NullPointerException if the input is null
      */
 
-    private void
-            processPairedOutputByInstantDuration( List<PairedStatisticOuter<Instant, Duration>> outputs )
+    private void processDurationDiagramStatistic( List<DurationDiagramStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<PairedStatisticOuter<Instant, Duration>>>> next : this.pairedConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<List<DurationDiagramStatisticOuter>>> next : this.pairedConsumers.entrySet() )
         {
             // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.PAIRED, next.getKey() ) )
+            if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, next.getKey() ) )
             {
                 log( outputs, next.getKey(), true );
 
-                List<PairedStatisticOuter<Instant, Duration>> filtered =
+                List<DurationDiagramStatisticOuter> filtered =
                         this.getFilteredStatisticsForThisDestinationType( outputs, next.getKey() );
 
                 // Consume the output

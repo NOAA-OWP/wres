@@ -61,12 +61,12 @@ public class CommaSeparatedDiagramOutputTest
         assertTrue( pathsToFile.size() == 1 );
 
         Path pathToFile = pathsToFile.iterator().next();
-
+        
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "CREC1_SQIN_RELIABILITY_DIAGRAM_86400_SECONDS.csv" ) );
+        assertEquals( "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv", pathToFile.toFile().getName() );
 
         List<String> result = Files.readAllLines( pathToFile );
-
+        
         assertTrue( result.get( 0 ).contains( "," ) );
         assertTrue( result.get( 0 ).contains( "FORECAST PROBABILITY" ) );
         assertEquals( "CREC1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
@@ -89,7 +89,7 @@ public class CommaSeparatedDiagramOutputTest
                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                       + "0.92682,0.93937,1501.0",
                       result.get( 5 ) );
-        
+
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
     }

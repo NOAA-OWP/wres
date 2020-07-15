@@ -4,8 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -15,8 +14,6 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Probability;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -28,6 +25,9 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Tests the {@link RelativeOperatingCharacteristicDiagram}.
@@ -61,7 +61,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     public void testApply()
     {
         //Generate some data
-        SampleData<Pair<Probability,Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
         final StatisticMetadata m1 =
@@ -76,35 +76,50 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         //Check the results       
         DiagramStatisticOuter actual = this.roc.apply( input );
-        
-        VectorOfDoubles expectedPoD = VectorOfDoubles.of( 0.0,
-                                                          0.13580246913580246,
-                                                          0.2345679012345679,
-                                                          0.43209876543209874,
-                                                          0.6296296296296297,
-                                                          0.7037037037037037,
-                                                          0.8024691358024691,
-                                                          0.8518518518518519,
-                                                          0.9135802469135802,
-                                                          0.9753086419753086,
-                                                          1.0 );
-        VectorOfDoubles expectedPoFD = VectorOfDoubles.of( 0.0,
-                                                           0.007518796992481203,
-                                                           0.018796992481203006,
-                                                           0.04887218045112782,
-                                                           0.11654135338345864,
-                                                           0.17669172932330826,
-                                                           0.22932330827067668,
-                                                           0.2857142857142857,
-                                                           0.42105263157894735,
-                                                           0.6240601503759399,
-                                                           1.0 );
-        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPoD );
-        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPoFD );
-        
-        DiagramStatisticOuter expected = DiagramStatisticOuter.of( output, m1 );
-        
+
+        List<Double> expectedPoD = List.of( 0.0,
+                                            0.13580246913580246,
+                                            0.2345679012345679,
+                                            0.43209876543209874,
+                                            0.6296296296296297,
+                                            0.7037037037037037,
+                                            0.8024691358024691,
+                                            0.8518518518518519,
+                                            0.9135802469135802,
+                                            0.9753086419753086,
+                                            1.0 );
+        List<Double> expectedPoFD = List.of( 0.0,
+                                             0.007518796992481203,
+                                             0.018796992481203006,
+                                             0.04887218045112782,
+                                             0.11654135338345864,
+                                             0.17669172932330826,
+                                             0.22932330827067668,
+                                             0.2857142857142857,
+                                             0.42105263157894735,
+                                             0.6240601503759399,
+                                             1.0 );
+
+        DiagramStatisticComponent pod =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .addAllValues( expectedPoD )
+                                         .build();
+
+        DiagramStatisticComponent pofd =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .addAllValues( expectedPoFD )
+                                         .build();
+
+        DiagramStatistic rocDiagram = DiagramStatistic.newBuilder()
+                                                      .addStatistics( pod )
+                                                      .addStatistics( pofd )
+                                                      .setMetric( RelativeOperatingCharacteristicDiagram.METRIC )
+                                                      .build();
+
+        DiagramStatisticOuter expected = DiagramStatisticOuter.of( rocDiagram, m1 );
+
         assertEquals( expected, actual );
     }
 
@@ -117,24 +132,42 @@ public final class RelativeOperatingCharacteristicDiagramTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        SampleData<Pair<Probability,Probability>> input =
+        SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DiagramStatisticOuter actual = roc.apply( input );
+        DiagramStatisticOuter actual = this.roc.apply( input );
 
-        double[] source = new double[11];
+        List<Double> source = List.of( Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN,
+                                       Double.NaN );
 
-        Arrays.fill( source, Double.NaN );
+        DiagramStatisticComponent pod =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .addAllValues( source )
+                                         .build();
 
-        assertTrue( Arrays.equals( actual.getData()
-                                         .get( MetricDimension.PROBABILITY_OF_DETECTION )
-                                         .getDoubles(),
-                                   source ) );
+        DiagramStatisticComponent pofd =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .addAllValues( source )
+                                         .build();
 
-        assertTrue( Arrays.equals( actual.getData()
-                                         .get( MetricDimension.PROBABILITY_OF_FALSE_DETECTION )
-                                         .getDoubles(),
-                                   source ) );
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( pod )
+                                                    .addStatistics( pofd )
+                                                    .setMetric( RelativeOperatingCharacteristicDiagram.METRIC )
+                                                    .build();
+
+        assertEquals( expected, actual.getData() );
     }
 
     /**

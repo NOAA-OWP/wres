@@ -1,22 +1,26 @@
 package wres.engine.statistics.metric.singlevalued;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.statistics.BoxplotStatistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotMetric.LinkedValueType;
+import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.MetricName;
 
 /**
  * A box plot of the errors associated with a pool of single-valued pairs.
@@ -24,33 +28,32 @@ import wres.engine.statistics.metric.FunctionFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, BoxplotStatisticOuter>
+public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, BoxplotStatisticOuter>
 {
 
     /**
      * Default probabilities.
      */
 
-    private static final VectorOfDoubles DEFAULT_PROBABILITIES = VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
-    
+    private static final List<Double> DEFAULT_PROBABILITIES = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+
     /**
      * Empty box.
      */
 
-    private static final VectorOfDoubles EMPTY_BOX =
-            VectorOfDoubles.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN );
+    private static final List<Double> EMPTY_BOX = List.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN );
 
     /**
      * Function for rounding the errors.
      */
-    
+
     private static final DoubleUnaryOperator ROUNDER = v -> FunctionFactory.round().apply( v, 8 );
-    
+
     /**
-     * The probabilities.
+     * The canonical representation of the metric.
      */
 
-    private final VectorOfDoubles probabilities;
+    private final BoxplotMetric metric;
 
     /**
      * Returns an instance.
@@ -84,31 +87,40 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, Boxpl
                                                          s.getRawData().size(),
                                                          null );
 
+        BoxplotStatistic.Builder builder = BoxplotStatistic.newBuilder()
+                                                           .setMetric( this.getMetric() );
+
         // Empty output for empty input
         if ( s.getRawData().isEmpty() )
         {
             // Add an empty box: #62863
-            BoxplotStatistic emptyBox = BoxplotStatistic.of( DEFAULT_PROBABILITIES, EMPTY_BOX, metOut );
-            return BoxplotStatisticOuter.of( Collections.singletonList( emptyBox ), metOut );
+            builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotError.EMPTY_BOX ) );
+
+            return BoxplotStatisticOuter.of( builder.build(), metOut );
         }
 
         // Get the sorted errors
-        double[] probs = this.getProbabilities().getDoubles();
-        double[] sortedErrors =
-                s.getRawData().stream().mapToDouble( a -> a.getRight() - a.getLeft() ).sorted().toArray();
+        List<Double> probs = this.getMetric().getQuantilesList();
+        double[] sortedErrors = s.getRawData()
+                                 .stream()
+                                 .mapToDouble( a -> a.getRight() - a.getLeft() )
+                                 .sorted()
+                                 .toArray();
 
         // Compute the quantiles of the errors at a rounded precision
-        double[] box =
-                Arrays.stream( probs )
-                      .map( Slicer.getQuantileFunction( sortedErrors ) )
-                      .map( ROUNDER )
-                      .toArray();
+        List<Double> box = probs.stream()
+                                .mapToDouble( Double::doubleValue )
+                                .map( Slicer.getQuantileFunction( sortedErrors ) )
+                                .map( BoxPlotError.ROUNDER )
+                                .boxed()
+                                .collect( Collectors.toList() );
 
-        BoxplotStatistic statistic = BoxplotStatistic.of( this.getProbabilities(),
-                                                          VectorOfDoubles.of( box ),
-                                                          metOut );
-        return BoxplotStatisticOuter.of( Collections.singletonList( statistic ),
-                                     metOut );
+        BoxplotStatistic statistic = BoxplotStatistic.newBuilder()
+                                                     .setMetric( this.getMetric() )
+                                                     .addStatistics( Box.newBuilder().addAllQuantiles( box ) )
+                                                     .build();
+
+        return BoxplotStatisticOuter.of( statistic, metOut );
     }
 
     @Override
@@ -118,14 +130,14 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, Boxpl
     }
 
     /**
-     * Returns the probabilities.
+     * Returns the metric.
      * 
-     * @return the probabilities
+     * @return the metric
      */
 
-    private VectorOfDoubles getProbabilities()
+    private BoxplotMetric getMetric()
     {
-        return this.probabilities;
+        return this.metric;
     }
 
     /**
@@ -134,7 +146,15 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double,Double>>, Boxpl
 
     private BoxPlotError()
     {
-        this.probabilities = DEFAULT_PROBABILITIES;
+        super();
+        this.metric = BoxplotMetric.newBuilder()
+                                   .setName( MetricName.BOX_PLOT_OF_ERRORS )
+                                   .setLinkedValueType( LinkedValueType.NONE )
+                                   .setQuantileValueType( QuantileValueType.FORECAST_ERROR )
+                                   .addAllQuantiles( BoxPlotError.DEFAULT_PROBABILITIES )
+                                   .setMinimum( Double.NEGATIVE_INFINITY )
+                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                   .build();
     }
 
 }

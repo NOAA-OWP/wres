@@ -51,6 +51,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.NoSuchUnitConversionException;
+import wres.statistics.generated.Pool;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 
@@ -306,7 +307,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         TimeScaleOuter desiredTimeScaleToUse = this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
 
         // Set the metadata, adjusted to include the desired time scale
-        builder.setMetadata( SampleMetadata.of( this.metadata, desiredTimeScaleToUse ) );
+        SampleMetadata sampleMetadata = SampleMetadata.of( this.metadata, desiredTimeScaleToUse );
+        builder.setMetadata( sampleMetadata );
 
         // The left data is most likely to contain a large set of observations, such as climatology
         // Snipping a large observation-like dataset helps with performance and does not affect accuracy
@@ -330,7 +332,10 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Create the baseline pairs
         if ( this.hasBaseline() )
         {
-            builder.setMetadataForBaseline( SampleMetadata.of( this.baselineMetadata, desiredTimeScaleToUse ) );
+            SampleMetadata baselineSampleMetadata = SampleMetadata.of( this.baselineMetadata, 
+                                                                       desiredTimeScaleToUse );
+            
+            builder.setMetadataForBaseline( baselineSampleMetadata );
 
             LOGGER.debug( "Adding pairs for baseline to pool {}, which have metadata {}.",
                           this.metadata,

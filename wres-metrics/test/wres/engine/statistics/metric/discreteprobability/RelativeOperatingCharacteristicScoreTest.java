@@ -341,12 +341,11 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         SampleData<Pair<Probability, Probability>> transPairs = Slicer.transform( pairs, mapper );
 
-        assertTrue( this.rocScore.apply( transPairs )
+        assertEquals( "ESP", this.rocScore.apply( transPairs )
                                  .getMetadata()
                                  .getSampleMetadata()
                                  .getIdentifier()
-                                 .getScenarioNameForBaseline()
-                                 .equals( "ESP" ) );
+                                 .getScenarioNameForBaseline() );
     }
 
     /**

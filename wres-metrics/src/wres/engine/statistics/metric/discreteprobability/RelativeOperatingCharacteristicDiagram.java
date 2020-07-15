@@ -1,21 +1,18 @@
 package wres.engine.statistics.metric.discreteprobability;
 
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -25,6 +22,12 @@ import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
+import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Computes the Relative Operating Characteristic (ROC; also known as the Receiver Operating Characteristic), which
@@ -38,6 +41,22 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class RelativeOperatingCharacteristicDiagram
         extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
 {
+
+    /**
+     * Canonical representation of the metric.
+     */
+
+    public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                                                                                  .setMinimum( 0 )
+                                                                                                  .setMaximum( 1 ) )
+                                                            .addComponents( DiagramMetricComponent.newBuilder()
+                                                                                                  .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                                                                                  .setMinimum( 0 )
+                                                                                                  .setMaximum( 1 ) )
+                                                            .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
+                                                            .build();
 
     /**
      * Default number of points in the diagram.
@@ -80,9 +99,9 @@ public class RelativeOperatingCharacteristicDiagram
         //Determine the empirical ROC. 
         //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
         //2x2 contingency table, using a metric collection to compute the table only once
-        double constant = 1.0 / points;
-        double[] pOD = new double[points + 1];
-        double[] pOFD = new double[points + 1];
+        double constant = 1.0 / this.points;
+        double[] pOD = new double[this.points + 1];
+        double[] pOFD = new double[this.points + 1];
 
         // Initialize arrays
         Arrays.fill( pOD, MissingValues.DOUBLE );
@@ -123,22 +142,37 @@ public class RelativeOperatingCharacteristicDiagram
             //Set the lower and upper margins to (0.0, 0.0) and (1.0, 1.0), respectively            
             pOD[0] = 0.0;
             pOFD[0] = 0.0;
-            pOD[points] = 1.0;
-            pOFD[points] = 1.0;
+            pOD[this.points] = 1.0;
+            pOFD[this.points] = 1.0;
         }
 
-        //Set the results
-        Map<MetricDimension, VectorOfDoubles> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.PROBABILITY_OF_DETECTION, VectorOfDoubles.of( pOD ) );
-        output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, VectorOfDoubles.of( pOFD ) );
-        final StatisticMetadata metOut =
+        DiagramStatisticComponent pod =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .addAllValues( Arrays.stream( pOD ).boxed().collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatisticComponent pofd =
+                DiagramStatisticComponent.newBuilder()
+                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .addAllValues( Arrays.stream( pOFD ).boxed().collect( Collectors.toList() ) )
+                                         .build();
+
+        DiagramStatistic rocDiagram = DiagramStatistic.newBuilder()
+                                                      .addStatistics( pod )
+                                                      .addStatistics( pofd )
+                                                      .setMetric( RelativeOperatingCharacteristicDiagram.METRIC )
+                                                      .build();
+
+        StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),
                                       this.getID(),
                                       MetricConstants.MAIN,
                                       this.hasRealUnits(),
                                       s.getRawData().size(),
                                       null );
-        return DiagramStatisticOuter.of( output, metOut );
+
+        return DiagramStatisticOuter.of( rocDiagram, metOut );
     }
 
     @Override

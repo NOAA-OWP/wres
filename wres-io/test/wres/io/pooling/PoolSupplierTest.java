@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
@@ -33,6 +34,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.pooling.PoolSupplier.PoolOfPairsSupplierBuilder;
 import wres.io.retrieval.CachingRetriever;
+import wres.statistics.generated.Pool;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
@@ -245,7 +247,7 @@ public class PoolSupplierTest
 
         // Observations: 25510317T00_FAKE2_observations.xml
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithTimeScale( TimeScaleOuter.of( Duration.ofHours( 1 ),
-                                                                                         TimeScaleFunction.MEAN ) );
+                                                                                              TimeScaleFunction.MEAN ) );
         this.observations =
                 new TimeSeriesBuilder<Double>().setMetadata( metadata )
                                                .addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
@@ -442,9 +444,9 @@ public class PoolSupplierTest
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
         TimeWindowOuter poolOneWindow = TimeWindowOuter.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
-                                                  T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
-                                                  Duration.ofHours( 0 ),
-                                                  Duration.ofHours( 23 ) );
+                                                            T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                            Duration.ofHours( 0 ),
+                                                            Duration.ofHours( 23 ) );
 
         SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata,
                                                             poolOneWindow,
@@ -521,14 +523,28 @@ public class PoolSupplierTest
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
         TimeWindowOuter poolOneWindow = TimeWindowOuter.of( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
-                                                  T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
-                                                  Duration.ofHours( 0 ),
-                                                  Duration.ofHours( 23 ) );
+                                                            T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                            Duration.ofHours( 0 ),
+                                                            Duration.ofHours( 23 ) );
 
         SampleMetadata poolOneMetadata = SampleMetadata.of( this.metadata,
                                                             poolOneWindow,
                                                             this.desiredTimeScale );
 
+        
+        Pool.Builder baselinePoolBuilder = poolOneMetadata.getPool().toBuilder();
+        baselinePoolBuilder.setIsBaselinePool( true );
+        SampleMetadata.Builder poolOneMetadataBaselineBuilder =
+                new SampleMetadata.Builder( poolOneMetadata.getEvaluation(), baselinePoolBuilder.build() );
+        poolOneMetadataBaselineBuilder.setIdentifier( DatasetIdentifier.of( poolOneMetadata.getIdentifier().getLocation(),
+                                                                     poolOneMetadata.getIdentifier().getVariableName(),
+                                                                     poolOneMetadata.getIdentifier().getScenarioName(),
+                                                                     poolOneMetadata.getIdentifier()
+                                                                                    .getScenarioNameForBaseline(),
+                                                                     LeftOrRightOrBaseline.BASELINE ) );
+        
+        SampleMetadata poolOneMetadataBaseline = poolOneMetadataBaselineBuilder.build();
+        
         Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
                 new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                                 .setRight( forcSupplierOne )
@@ -538,7 +554,7 @@ public class PoolSupplierTest
                                                                 .setPairer( this.pairer )
                                                                 .setDesiredTimeScale( this.desiredTimeScale )
                                                                 .setMetadata( poolOneMetadata )
-                                                                .setBaselineMetadata( poolOneMetadata )
+                                                                .setBaselineMetadata( poolOneMetadataBaseline )
                                                                 .build();
 
         // Acquire the pools for the baseline
@@ -574,16 +590,16 @@ public class PoolSupplierTest
                                                              .build();
 
         double[] climatologyArray = this.observations.getEvents()
-                                                .stream()
-                                                .mapToDouble( Event::getValue )
-                                                .toArray();
-        
+                                                     .stream()
+                                                     .mapToDouble( Event::getValue )
+                                                     .toArray();
+
         VectorOfDoubles expectedClimatology = VectorOfDoubles.of( climatologyArray );
 
         PoolOfPairs<Double, Double> poolOneExpected =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneSeries )
                                                         .setClimatology( expectedClimatology )
-                                                        .setMetadata( poolOneMetadata )
+                                                        .setMetadata( poolOneMetadataBaseline )
                                                         .build();
 
         assertEquals( poolOneExpected, poolOneActual );
@@ -607,9 +623,9 @@ public class PoolSupplierTest
         Supplier<Stream<TimeSeries<Double>>> forcSupplierEleven = CachingRetriever.of( this.forecastRetriever );
 
         TimeWindowOuter poolElevenWindow = TimeWindowOuter.of( T2551_03_18T11_00_00Z, //2551-03-18T11:00:00Z
-                                                     T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
-                                                     Duration.ofHours( 0 ),
-                                                     Duration.ofHours( 23 ) );
+                                                               T2551_03_19T00_00_00Z, //2551-03-19T00:00:00Z
+                                                               Duration.ofHours( 0 ),
+                                                               Duration.ofHours( 23 ) );
 
         SampleMetadata poolElevenMetadata = SampleMetadata.of( this.metadata,
                                                                poolElevenWindow,
@@ -708,9 +724,9 @@ public class PoolSupplierTest
         Supplier<Stream<TimeSeries<Double>>> forcSupplierEighteen = CachingRetriever.of( this.forecastRetriever );
 
         TimeWindowOuter poolEighteenWindow = TimeWindowOuter.of( T2551_03_19T08_00_00Z, //2551-03-19T08:00:00Z
-                                                       T2551_03_19T21_00_00Z, //2551-03-19T21:00:00Z
-                                                       Duration.ofHours( 17 ),
-                                                       Duration.ofHours( 40 ) );
+                                                                 T2551_03_19T21_00_00Z, //2551-03-19T21:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) );
 
         SampleMetadata poolEighteenMetadata = SampleMetadata.of( this.metadata,
                                                                  poolEighteenWindow,

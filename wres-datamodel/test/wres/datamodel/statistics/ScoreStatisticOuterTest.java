@@ -23,7 +23,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class ScoreStatisticTest
+public final class ScoreStatisticOuterTest
 {
 
     /**

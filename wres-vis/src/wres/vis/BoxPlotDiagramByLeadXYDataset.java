@@ -1,6 +1,7 @@
 package wres.vis;
 
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 
 import org.jfree.data.xy.XYDataset;
@@ -15,12 +16,12 @@ public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
 {
 
     private static final long serialVersionUID = 2818742289181492762L;
-    
+
     /**
      * The duration units.
      */
-    
-    private final ChronoUnit durationUnits;    
+
+    private final ChronoUnit durationUnits;
 
     /**
      * Build the data type with an input source and the type of duration units.
@@ -29,14 +30,14 @@ public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
      * @param durationUnits the duration units
      * @throws NullPointerException if either input is null
      */
-    
-    public BoxPlotDiagramByLeadXYDataset( BoxplotStatisticOuter input, ChronoUnit durationUnits )
+
+    public BoxPlotDiagramByLeadXYDataset( List<BoxplotStatisticOuter> input, ChronoUnit durationUnits )
     {
         super( input );
-        
+
         Objects.requireNonNull( durationUnits );
 
-        this.durationUnits = durationUnits;    
+        this.durationUnits = durationUnits;
     }
 
     @Override
@@ -44,13 +45,12 @@ public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
     {
         // Time in prescribed units for the specified item number of the single dataset        
         return TimeHelper.durationToLongUnits( this.getPlotData()
-                                               .getData()
-                                               .get( item )
-                                               .getMetadata()
-                                               .getSampleMetadata()
-                                               .getTimeWindow()
-                                               .getLatestLeadDuration(),
-                                           this.durationUnits );
+                                                   .get( item )
+                                                   .getMetadata()
+                                                   .getSampleMetadata()
+                                                   .getTimeWindow()
+                                                   .getLatestLeadDuration(),
+                                               this.durationUnits );
     }
 
 }
