@@ -51,8 +51,8 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * The current implementation adopts the following simplifying assumptions:
  * </p>
  * <ol>
- * <li>That a global set of {@link ThresholdOuter} is defined for all {@link Metric} within a {@link ProjectConfig} and hence
- * {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
+ * <li>That a global set of {@link ThresholdOuter} is defined for all {@link Metric} within a {@link ProjectConfig} and 
+ * hence {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
  * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
  * <li>If the {@link ThresholdOuter#hasProbabilities()}, the corresponding quantiles are derived from the 
  * observations associated with the {@link SampleData} at runtime, i.e. upon calling

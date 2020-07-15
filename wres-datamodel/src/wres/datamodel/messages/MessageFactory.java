@@ -2,7 +2,6 @@ package wres.datamodel.messages;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -19,61 +17,40 @@ import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
 import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.statistics.generated.BoxplotMetric;
-import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
-import wres.statistics.generated.DiagramMetric;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
-import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
-import wres.statistics.generated.DoubleScoreMetric;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
-import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
-import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
-import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreStatistic;
-import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Season;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Threshold;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pairs;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 import wres.statistics.generated.TimeScale;
-import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ValueFilter;
 
@@ -170,9 +147,9 @@ public class MessageFactory
         }
 
         // Box plots statistics per pool
-        if ( project.hasStatistic( StatisticType.PAIRED ) )
+        if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
-            List<PairedStatisticOuter<Instant, java.time.Duration>> statistics =
+            List<DurationDiagramStatisticOuter> statistics =
                     project.getInstantDurationPairStatistics();
             MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
@@ -261,9 +238,9 @@ public class MessageFactory
         }
 
         // Add the duration diagrams with instant/duration pairs
-        if ( project.hasStatistic( StatisticType.PAIRED ) )
+        if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
-            List<wres.datamodel.statistics.PairedStatisticOuter<Instant, java.time.Duration>> durationDiagrams =
+            List<wres.datamodel.statistics.DurationDiagramStatisticOuter> durationDiagrams =
                     project.getInstantDurationPairStatistics();
             durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
             metadata = durationDiagrams.get( 0 ).getMetadata().getSampleMetadata();
@@ -546,84 +523,18 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.DurationDiagramStatistic} from a 
-     * {@link wres.datamodel.statistics.PairedStatisticOuter} composed of timing 
+     * {@link wres.datamodel.statistics.DurationDiagramStatisticOuter} composed of timing 
      * errors.
      * 
      * @param statistic the statistic from which to create a message
      * @return the message
      */
 
-    public static DurationDiagramStatistic
-            parse( wres.datamodel.statistics.PairedStatisticOuter<Instant, java.time.Duration> statistic )
+    public static DurationDiagramStatistic parse( wres.datamodel.statistics.DurationDiagramStatisticOuter statistic )
     {
         Objects.requireNonNull( statistic );
 
-        DurationDiagramMetric.Builder metricBuilder = DurationDiagramMetric.newBuilder();
-        MetricConstants name = statistic.getMetadata().getMetricID();
-        metricBuilder.setName( MetricName.valueOf( name.name() ) );
-
-        // Set the limits for the diagram where available
-        if ( name.hasLimits() )
-        {
-            java.time.Duration minimum = (java.time.Duration) name.getMinimum();
-            java.time.Duration maximum = (java.time.Duration) name.getMaximum();
-            java.time.Duration optimum = (java.time.Duration) name.getOptimum();
-
-            if ( Objects.nonNull( minimum ) )
-            {
-                Duration minimimProto = Duration.newBuilder()
-                                                .setSeconds( minimum.getSeconds() )
-                                                .setNanos( minimum.getNano() )
-                                                .build();
-                metricBuilder.setMinimum( minimimProto );
-            }
-
-            if ( Objects.nonNull( maximum ) )
-            {
-                Duration maximumProto = Duration.newBuilder()
-                                                .setSeconds( maximum.getSeconds() )
-                                                .setNanos( maximum.getNano() )
-                                                .build();
-                metricBuilder.setMaximum( maximumProto );
-            }
-
-            if ( Objects.nonNull( optimum ) )
-            {
-                Duration optimumProto = Duration.newBuilder()
-                                                .setSeconds( optimum.getSeconds() )
-                                                .setNanos( optimum.getNano() )
-                                                .build();
-                metricBuilder.setOptimum( optimumProto );
-            }
-        }
-
-        DurationDiagramStatistic.Builder diagramBuilder = DurationDiagramStatistic.newBuilder();
-
-        // Set the diagram components and values
-        for ( Pair<Instant, java.time.Duration> nextPair : statistic.getData() )
-        {
-            Instant nextInstant = nextPair.getLeft();
-            java.time.Duration nextDuration = nextPair.getRight();
-
-            Timestamp stamp = Timestamp.newBuilder()
-                                       .setSeconds( nextInstant.getEpochSecond() )
-                                       .setNanos( nextInstant.getNano() )
-                                       .build();
-
-            Duration duration = Duration.newBuilder()
-                                        .setSeconds( nextDuration.getSeconds() )
-                                        .setNanos( nextDuration.getNano() )
-                                        .build();
-
-            PairOfInstantAndDuration.Builder builder = PairOfInstantAndDuration.newBuilder();
-            builder.setTime( stamp ).setDuration( duration );
-            diagramBuilder.addStatistics( builder );
-        }
-
-        // Set the metric
-        diagramBuilder.setMetric( metricBuilder );
-
-        return diagramBuilder.build();
+        return statistic.getData();
     }
 
     /**
@@ -975,12 +886,12 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addPairedStatisticsToPool( List<PairedStatisticOuter<Instant, java.time.Duration>> statistics,
+    private static void addPairedStatisticsToPool( List<DurationDiagramStatisticOuter> statistics,
                                                    Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
-        for ( PairedStatisticOuter<Instant, java.time.Duration> next : statistics )
+        for ( DurationDiagramStatisticOuter next : statistics )
         {
             SampleMetadata metadata = next.getMetadata().getSampleMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
@@ -993,7 +904,7 @@ public class MessageFactory
                 mappedStatistics.put( poolBoundaries, another );
             }
 
-            Future<List<PairedStatisticOuter<Instant, java.time.Duration>>> future =
+            Future<List<DurationDiagramStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addInstantDurationPairStatistics( future );
         }

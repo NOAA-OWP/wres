@@ -14,7 +14,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DiagramStatistic;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.statistics.generated.BoxplotStatistic;
 
 /**
@@ -276,7 +276,7 @@ public enum MetricConstants
      * Identifier for the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED, TimeWindowOuter.DURATION_MIN,
+    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM, TimeWindowOuter.DURATION_MIN,
             TimeWindowOuter.DURATION_MAX, Duration.ZERO ),
 
     /**
@@ -291,7 +291,7 @@ public enum MetricConstants
      * Identifier for the Time-to-Peak Relative Error.
      */
 
-    TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED,
+    TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM,
             TimeWindowOuter.DURATION_MIN, TimeWindowOuter.DURATION_MAX,
             Duration.ZERO ),
 
@@ -876,10 +876,10 @@ public enum MetricConstants
         BOXPLOT_PER_POOL,
 
         /**
-         * Metrics that produce a {@link PairedStatisticOuter}.
+         * Metrics that produce a {@link DurationDiagramStatisticOuter}.
          */
 
-        PAIRED,
+        DURATION_DIAGRAM,
 
         /**
          * Metrics that produce a {@link DoubleScoreStatistic}.

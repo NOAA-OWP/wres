@@ -23,7 +23,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
@@ -31,13 +31,13 @@ import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link PairedStatisticOuter} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DurationDiagramStatisticOuter} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class PNGPairedWriter extends PNGWriter
-        implements Consumer<List<PairedStatisticOuter<Instant, Duration>>>,
+public class PNGDurationDiagramWriter extends PNGWriter
+        implements Consumer<List<DurationDiagramStatisticOuter>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
@@ -54,12 +54,12 @@ public class PNGPairedWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGPairedWriter of( SystemSettings systemSettings,
-                                      ProjectConfigPlus projectConfigPlus,
-                                      ChronoUnit durationUnits,
-                                      Path outputDirectory )
+    public static PNGDurationDiagramWriter of( SystemSettings systemSettings,
+                                               ProjectConfigPlus projectConfigPlus,
+                                               ChronoUnit durationUnits,
+                                               Path outputDirectory )
     {
-        return new PNGPairedWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
+        return new PNGDurationDiagramWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -71,7 +71,7 @@ public class PNGPairedWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final List<PairedStatisticOuter<Instant, Duration>> output )
+    public void accept( final List<DurationDiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -87,23 +87,23 @@ public class PNGPairedWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                List<PairedStatisticOuter<Instant, Duration>> filtered = Slicer.filter( output, next );
+                List<DurationDiagramStatisticOuter> filtered = Slicer.filter( output, next );
 
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<PairedStatisticOuter<Instant, Duration>>> groups =
+                Map<LeftOrRightOrBaseline, List<DurationDiagramStatisticOuter>> groups =
                         WriterHelper.getStatisticsGroupedByContext( filtered );
 
-                for ( List<PairedStatisticOuter<Instant, Duration>> nextGroup : groups.values() )
+                for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGPairedWriter.writePairedOutputByInstantDurationCharts( super.getSystemSettings(),
-                                                                                      super.getOutputDirectory(),
-                                                                                      super.getProjectConfigPlus(),
-                                                                                      destinationConfig,
-                                                                                      nextGroup,
-                                                                                      super.getDurationUnits() );
+                            PNGDurationDiagramWriter.writePairedOutputByInstantDurationCharts( super.getSystemSettings(),
+                                                                                               super.getOutputDirectory(),
+                                                                                               super.getProjectConfigPlus(),
+                                                                                               destinationConfig,
+                                                                                               nextGroup,
+                                                                                               super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
@@ -124,7 +124,7 @@ public class PNGPairedWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link PairedStatisticOuter} for a single metric and time window,
+     * Writes a set of charts associated with {@link DurationDiagramStatisticOuter} for a single metric and time window,
      * stored in a {@link List}.
      *
      * @param systemSettings The system settings to use.
@@ -141,7 +141,7 @@ public class PNGPairedWriter extends PNGWriter
                                                                        Path outputDirectory,
                                                                        ProjectConfigPlus projectConfigPlus,
                                                                        DestinationConfig destinationConfig,
-                                                                       List<PairedStatisticOuter<Instant, Duration>> output,
+                                                                       List<DurationDiagramStatisticOuter> output,
                                                                        ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -187,10 +187,10 @@ public class PNGPairedWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGPairedWriter( SystemSettings systemSettings,
-                             ProjectConfigPlus projectConfigPlus,
-                             ChronoUnit durationUnits,
-                             Path outputDirectory )
+    private PNGDurationDiagramWriter( SystemSettings systemSettings,
+                                      ProjectConfigPlus projectConfigPlus,
+                                      ChronoUnit durationUnits,
+                                      Path outputDirectory )
     {
         super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
     }

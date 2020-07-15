@@ -29,7 +29,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -42,6 +42,7 @@ import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -94,7 +95,7 @@ public final class MetricFuturesByTimeTest
      * Default paired output.
      */
 
-    private List<PairedStatisticOuter<Instant, Duration>> paired;
+    private List<DurationDiagramStatisticOuter> paired;
 
     /**
      * A key used to store output.
@@ -110,7 +111,7 @@ public final class MetricFuturesByTimeTest
                             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) ) );
-        
+
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
 
         // Add a boxplot future
@@ -160,12 +161,13 @@ public final class MetricFuturesByTimeTest
         builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
 
         // Add paired output
-        this.paired = Collections.singletonList( PairedStatisticOuter.of( Arrays.asList(),
-                                                                          StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                                                                1,
-                                                                                                MeasurementUnit.of(),
-                                                                                                MetricConstants.CONTINGENCY_TABLE,
-                                                                                                MetricConstants.MAIN ) ) );
+        this.paired =
+                Collections.singletonList( DurationDiagramStatisticOuter.of( DurationDiagramStatistic.getDefaultInstance(),
+                                                                             StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                   1,
+                                                                                                   MeasurementUnit.of(),
+                                                                                                   MetricConstants.CONTINGENCY_TABLE,
+                                                                                                   MetricConstants.MAIN ) ) );
 
         builder.addPairedOutput( CompletableFuture.completedFuture( this.paired ) );
 
@@ -184,7 +186,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( this.futures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( this.futures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
         assertTrue( this.futures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
-        assertTrue( this.futures.getOutputTypes().contains( StatisticType.PAIRED ) );
+        assertTrue( this.futures.getOutputTypes().contains( StatisticType.DURATION_DIAGRAM ) );
 
         // Check with none present
         MetricFuturesByTime emptyFutures = new MetricFuturesByTimeBuilder().build();
@@ -192,7 +194,7 @@ public final class MetricFuturesByTimeTest
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DURATION_DIAGRAM ) );
     }
 
     /**
@@ -248,7 +250,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_DIAGRAM ) );
     }
 
     /**
@@ -273,7 +275,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DIAGRAM ) );
-        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.PAIRED ) );
+        assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_DIAGRAM ) );
     }
 
 }

@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.protobuf.Timestamp;
+
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
@@ -25,7 +27,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -37,6 +39,8 @@ import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
@@ -48,6 +52,7 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramCom
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 
@@ -393,13 +398,13 @@ public class WriterTestHelper
     }
 
     /**
-     * Returns a {@link List} containing a {@link PairedStatisticOuter} that 
+     * Returns a {@link List} containing a {@link DurationDiagramStatisticOuter} that 
      * represents the output of time-to-peak error for each pair in a pool.
      * 
      * @return time time-to-peak errors for one pool
      */
 
-    public static List<PairedStatisticOuter<Instant, Duration>> getTimeToPeakErrorsForOnePool()
+    public static List<DurationDiagramStatisticOuter> getTimeToPeakErrorsForOnePool()
     {
 
         // location id
@@ -432,13 +437,54 @@ public class WriterTestHelper
                                       MetricConstants.TIME_TO_PEAK_ERROR,
                                       null );
 
-        List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
+        Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant thirdInstant = Instant.parse( "1985-01-03T00:00:00Z" );
 
-        // Fake output wrapper.
-        return Collections.singletonList( PairedStatisticOuter.of( fakeOutputs, fakeMetadata ) );
+        DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
+                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE )
+                                                                                                     .setNanos( 999_999_999 ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( 0 ) )
+                                                            .build();
+
+
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( firstInstant.getEpochSecond() )
+                                                                                  .setNanos( firstInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 3600 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( secondInstant.getEpochSecond() )
+                                                                                  .setNanos( secondInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 7200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                    .setNanos( thirdInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( 10800 ) )
+                                                                 .build();
+
+        DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
+                                                                          .setMetric( metric )
+                                                                          .addStatistics( one )
+                                                                          .addStatistics( two )
+                                                                          .addStatistics( three )
+                                                                          .build();
+
+        return Collections.singletonList( DurationDiagramStatisticOuter.of( expectedSource, fakeMetadata ) );
     }
 
     /**

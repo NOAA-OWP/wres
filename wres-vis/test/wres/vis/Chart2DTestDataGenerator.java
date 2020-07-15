@@ -10,6 +10,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.protobuf.Timestamp;
+
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
@@ -21,7 +23,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -32,10 +34,13 @@ import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 
@@ -555,7 +560,7 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link PairedStatisticOuter} that comprises a {@link Duration} that represents a time-to-peak error against an
+     * Returns a {@link DurationDiagramStatisticOuter} that comprises a {@link Duration} that represents a time-to-peak error against an
      * {@link Instant} that represents the origin (basis time) of the time-series from which the timing error
      * originates. Contains results for forecasts issued at 12Z each day from 1985-01-01T12:00:00Z to
      * 1985-01-10T12:00:00Z and with a forecast horizon of 336h.
@@ -563,8 +568,32 @@ public abstract class Chart2DTestDataGenerator
      * @return a paired output of timing errors by basis time
      */
 
-    public static List<PairedStatisticOuter<Instant, Duration>> getTimeToPeakErrors()
+    public static List<DurationDiagramStatisticOuter> getTimeToPeakErrors()
     {
+
+        Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant thirdInstant = Instant.parse( "1985-01-03T00:00:00Z" );
+        Instant fourthInstant = Instant.parse( "1985-01-04T00:00:00Z" );
+        Instant fifthInstant = Instant.parse( "1985-01-05T00:00:00Z" );
+        Instant sixthInstant = Instant.parse( "1985-01-06T00:00:00Z" );
+        Instant seventhInstant = Instant.parse( "1985-01-07T00:00:00Z" );
+        Instant eighthInstant = Instant.parse( "1985-01-08T00:00:00Z" );
+        Instant ninthInstant = Instant.parse( "1985-01-09T00:00:00Z" );
+        Instant tenthInstant = Instant.parse( "1985-01-10T00:00:00Z" );
+
+        DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
+                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE )
+                                                                                                     .setNanos( 999_999_999 ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( 0 ) )
+                                                            .build();
+        
+
         // Create a list of pairs
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         // Add some fake time-to-peak errors to the list
@@ -578,6 +607,102 @@ public abstract class Chart2DTestDataGenerator
         input.add( Pair.of( Instant.parse( "1985-01-08T12:00:00Z" ), Duration.ofHours( -22 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-09T12:00:00Z" ), Duration.ofHours( 0 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-10T12:00:00Z" ), Duration.ofHours( 24 ) ) );
+        
+        
+
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( firstInstant.getEpochSecond() )
+                                                                                  .setNanos( firstInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -43200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( secondInstant.getEpochSecond() )
+                                                                                  .setNanos( secondInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -7200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                    .setNanos( thirdInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( 7200 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration four = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                   .setNanos( thirdInstant.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 14400 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration five = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                   .setNanos( thirdInstant.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 28800 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration six = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                  .setNanos( thirdInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -43200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration seven = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                    .setNanos( thirdInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( -57600 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration eight = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                    .setNanos( thirdInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( -79200 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration nine = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                   .setNanos( thirdInstant.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 0 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration ten = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                  .setNanos( thirdInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 86400 ) )
+                                                               .build();
+
+        DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
+                                                                          .setMetric( metric )
+                                                                          .addStatistics( one )
+                                                                          .addStatistics( two )
+                                                                          .addStatistics( three )
+                                                                          .addStatistics( four )
+                                                                          .addStatistics( five )
+                                                                          .addStatistics( six )
+                                                                          .addStatistics( seven )
+                                                                          .addStatistics( eight )
+                                                                          .addStatistics( nine )
+                                                                          .addStatistics( ten )
+                                                                          .build();
 
         // Create the metadata
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -600,8 +725,8 @@ public abstract class Chart2DTestDataGenerator
                                                        MeasurementUnit.of( "DURATION" ),
                                                        MetricConstants.TIME_TO_PEAK_ERROR,
                                                        MetricConstants.MAIN );
-        // Build and return
-        return Arrays.asList( PairedStatisticOuter.of( input, meta ) );
+
+        return Arrays.asList( DurationDiagramStatisticOuter.of( expectedSource, meta ) );
     }
 
     /**
