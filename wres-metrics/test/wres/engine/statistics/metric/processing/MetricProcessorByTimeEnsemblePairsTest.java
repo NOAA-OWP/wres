@@ -44,7 +44,6 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -882,8 +881,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         //Obtain the results
         List<DoubleScoreStatisticOuter> results =
                 Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                               meta -> meta.getMetricID().equals( MetricConstants.CONTINGENCY_TABLE )
-                                       && meta.getSampleMetadata().getTimeWindow().equals( expectedWindow ) );
+                               meta -> meta.getMetricName().equals( MetricConstants.CONTINGENCY_TABLE )
+                                       && meta.getMetadata().getTimeWindow().equals( expectedWindow ) );
 
         // Exceeds 50.0 with occurrences > 0.05
         DoubleScoreStatistic firstTable =
@@ -910,17 +909,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        StatisticMetadata expectedMetaFirst = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, first ),
-                                                                    165,
-                                                                    MeasurementUnit.of(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    null );
+        SampleMetadata expectedMetaFirst = SampleMetadata.of( expectedSampleMeta, first );
 
         DoubleScoreStatisticOuter expectedFirst =
                 DoubleScoreStatisticOuter.of( firstTable, expectedMetaFirst );
 
         DoubleScoreStatisticOuter actualFirst =
-                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( first ) )
+                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( first ) )
                       .get( 0 );
 
         assertEquals( expectedFirst, actualFirst );
@@ -950,17 +945,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                   Operator.GREATER,
                                                                                                   ThresholdDataType.LEFT ) );
 
-        StatisticMetadata expectedMetaSecond = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, second ),
-                                                                     165,
-                                                                     MeasurementUnit.of(),
-                                                                     MetricConstants.CONTINGENCY_TABLE,
-                                                                     null );
+        SampleMetadata expectedMetaSecond = SampleMetadata.of( expectedSampleMeta, second );
 
         DoubleScoreStatisticOuter expectedSecond =
                 DoubleScoreStatisticOuter.of( secondTable, expectedMetaSecond );
 
         DoubleScoreStatisticOuter actualSecond =
-                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( second ) )
+                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( second ) )
                       .get( 0 );
 
         assertEquals( expectedSecond, actualSecond );
@@ -990,17 +981,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        StatisticMetadata expectedMetaThird = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, third ),
-                                                                    165,
-                                                                    MeasurementUnit.of(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    null );
+        SampleMetadata expectedMetaThird = SampleMetadata.of( expectedSampleMeta, third );
 
         DoubleScoreStatisticOuter expectedThird =
                 DoubleScoreStatisticOuter.of( thirdTable, expectedMetaThird );
 
         DoubleScoreStatisticOuter actualThird =
-                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( third ) )
+                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( third ) )
                       .get( 0 );
 
         assertEquals( expectedThird, actualThird );
@@ -1030,16 +1017,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                   Operator.GREATER,
                                                                                                   ThresholdDataType.LEFT ) );
 
-        StatisticMetadata expectedMetaFourth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, fourth ),
-                                                                     165,
-                                                                     MeasurementUnit.of(),
-                                                                     MetricConstants.CONTINGENCY_TABLE,
-                                                                     null );
+        SampleMetadata expectedMetaFourth = SampleMetadata.of( expectedSampleMeta, fourth );
 
         DoubleScoreStatisticOuter expectedFourth =
                 DoubleScoreStatisticOuter.of( fourthTable, expectedMetaFourth );
         DoubleScoreStatisticOuter actualFourth =
-                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fourth ) )
+                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( fourth ) )
                       .get( 0 );
 
         assertEquals( expectedFourth, actualFourth );
@@ -1069,17 +1052,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        StatisticMetadata expectedMetaFifth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, fifth ),
-                                                                    165,
-                                                                    MeasurementUnit.of(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    null );
+        SampleMetadata expectedMetaFifth = SampleMetadata.of( expectedSampleMeta, fifth );
 
         DoubleScoreStatisticOuter expectedFifth =
                 DoubleScoreStatisticOuter.of( fifthTable, expectedMetaFifth );
 
         DoubleScoreStatisticOuter actualFifth =
-                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( fifth ) )
+                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( fifth ) )
                       .get( 0 );
 
         assertEquals( expectedFifth, actualFifth );
@@ -1109,17 +1088,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) );
 
-        StatisticMetadata expectedMetaSixth = StatisticMetadata.of( SampleMetadata.of( expectedSampleMeta, sixth ),
-                                                                    165,
-                                                                    MeasurementUnit.of(),
-                                                                    MetricConstants.CONTINGENCY_TABLE,
-                                                                    null );
+        SampleMetadata expectedMetaSixth = SampleMetadata.of( expectedSampleMeta, sixth );
 
         DoubleScoreStatisticOuter expectedSixth =
                 DoubleScoreStatisticOuter.of( sixthTable, expectedMetaSixth );
 
         DoubleScoreStatisticOuter actualSixth =
-                Slicer.filter( results, meta -> meta.getSampleMetadata().getThresholds().equals( sixth ) )
+                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( sixth ) )
                       .get( 0 );
 
         assertEquals( expectedSixth, actualSixth );
@@ -1143,7 +1118,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         //Validate the score outputs
         for ( DoubleScoreStatisticOuter nextMetric : results )
         {
-            if ( nextMetric.getMetadata().getMetricID() != MetricConstants.SAMPLE_SIZE )
+            if ( nextMetric.getMetricName() != MetricConstants.SAMPLE_SIZE )
             {
                 assertEquals( Double.NaN, nextMetric.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
             }

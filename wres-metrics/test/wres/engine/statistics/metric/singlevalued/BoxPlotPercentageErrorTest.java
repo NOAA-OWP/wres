@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -17,9 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -27,7 +23,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -66,13 +61,6 @@ public final class BoxPlotPercentageErrorTest
         //Generate some data
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Metadata for the output
-        StatisticMetadata meta = StatisticMetadata.of( input.getMetadata(),
-                                                       input.getRawData().size(),
-                                                       MeasurementUnit.of( "%" ),
-                                                       MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS,
-                                                       MetricConstants.MAIN );
-
         BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
@@ -93,7 +81,7 @@ public final class BoxPlotPercentageErrorTest
                                                        .addStatistics( box )
                                                        .build();
 
-        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBox, meta );
+        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBox, input.getMetadata() );
 
         assertEquals( expected, actual );
     }
@@ -270,11 +258,7 @@ public final class BoxPlotPercentageErrorTest
 
         BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
 
-        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
-                                                       0,
-                                                       MeasurementUnit.of( "%" ),
-                                                       MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS,
-                                                       MetricConstants.MAIN );
+        SampleMetadata meta = SampleMetadata.of();
 
         List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
         List<Double> quantiles = List.of( Double.NaN,

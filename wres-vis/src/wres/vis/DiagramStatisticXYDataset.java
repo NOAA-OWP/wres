@@ -23,7 +23,7 @@ import wres.util.TimeHelper;
 public class DiagramStatisticXYDataset
         extends WRESAbstractXYDataset<List<DiagramStatisticOuter>, List<DiagramStatisticOuter>>
 {
-    private static long serialVersionUID = 4254109136599641286L;
+    private static final long serialVersionUID = 4741283362664043745L;
     private final DiagramComponentName xConstant;
     private final DiagramComponentName yConstant;
 
@@ -129,9 +129,9 @@ public class DiagramStatisticXYDataset
         }
 
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getTimeWindow() );
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getThresholds() );
 
         if ( ( timeWindows.size() == 1 ) && ( thresholds.size() == 1 ) )
         {
@@ -141,7 +141,6 @@ public class DiagramStatisticXYDataset
         {
             return Long.toString( TimeHelper.durationToLongUnits( getPlotData().get( series )
                                                                                .getMetadata()
-                                                                               .getSampleMetadata()
                                                                                .getTimeWindow()
                                                                                .getLatestLeadDuration(),
                                                                   this.durationUnits ) );
@@ -150,7 +149,6 @@ public class DiagramStatisticXYDataset
         {
             return getPlotData().get( series )
                                 .getMetadata()
-                                .getSampleMetadata()
                                 .getThresholds()
                                 .toStringWithoutUnits();
         }

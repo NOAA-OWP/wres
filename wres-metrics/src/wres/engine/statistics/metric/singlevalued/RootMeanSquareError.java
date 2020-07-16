@@ -8,7 +8,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -67,7 +66,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.ROOT_MEAN_SQUARE_ERROR;
     }
@@ -87,18 +86,11 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     @Override
     public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
-        // Set the output dimension
-        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
-                                                       this.getID(),
-                                                       MetricConstants.MAIN,
-                                                       this.hasRealUnits(),
-                                                       output.getMetadata().getSampleSize(),
-                                                       null );
-
         double input = output.getComponent( MetricConstants.MAIN )
                              .getData()
                              .getValue();
-        double sampleSize = output.getMetadata().getSampleSize();
+        
+        double sampleSize = output.getData().getSampleSize();
 
         double result = Math.sqrt( input / sampleSize );
 
@@ -113,7 +105,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
                                     .addStatistics( component )
                                     .build();
         
-        return DoubleScoreStatisticOuter.of( score, meta );
+        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 
     @Override

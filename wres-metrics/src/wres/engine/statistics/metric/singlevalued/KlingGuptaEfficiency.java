@@ -10,7 +10,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -141,13 +140,6 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
             double right = Math.pow( biasWeight * ( beta - 1.0 ), 2 );
             result = FunctionFactory.finiteOrMissing().applyAsDouble( 1.0 - Math.sqrt( left + middle + right ) );
         }
-        //Metadata
-        final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                               this.getID(),
-                                                               MetricConstants.MAIN,
-                                                               this.hasRealUnits(),
-                                                               s.getRawData().size(),
-                                                               null );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
@@ -160,11 +152,11 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.KLING_GUPTA_EFFICIENCY;
     }

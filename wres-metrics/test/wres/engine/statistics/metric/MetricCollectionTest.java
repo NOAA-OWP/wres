@@ -32,7 +32,6 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
@@ -546,7 +545,7 @@ public class MetricCollectionTest
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         MeanError meanError = Mockito.mock( MeanError.class );
-        Mockito.when( meanError.getID() ).thenReturn( MetricConstants.MEAN_ERROR );
+        Mockito.when( meanError.getMetricName() ).thenReturn( MetricConstants.MEAN_ERROR );
         Mockito.when( meanError.apply( input ) ).thenThrow( IllegalArgumentException.class );
 
         MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> failed =
@@ -658,13 +657,8 @@ public class MetricCollectionTest
         //Compute them, ignoring two metrics
         Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
-        final List<DoubleScoreStatisticOuter> actual = collection.apply( input, ignore );
-        StatisticMetadata outM =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                      10,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                      MetricConstants.MAIN );
+        List<DoubleScoreStatisticOuter> actual = collection.apply( input, ignore );
+        SampleMetadata outM = SampleMetadata.of( MeasurementUnit.of() );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )

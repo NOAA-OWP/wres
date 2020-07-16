@@ -1,7 +1,6 @@
 package wres.engine.statistics.metric.processing;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -11,14 +10,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +41,6 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -55,14 +51,12 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.*;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -70,17 +64,16 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
+import wres.statistics.generated.MetricName;
 
 /**
  * Tests the {@link MetricProcessorByTimeSingleValuedPairs}.
@@ -208,15 +201,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
-            final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Duration.ofHours( i ) );
-            final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                           "SQIN",
-                                                                                           "HEFS" ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
+            TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
+                                                         Instant.MAX,
+                                                         Duration.ofHours( i ) );
+            SampleMetadata meta = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                              .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                                    "SQIN",
+                                                                                                    "HEFS" ) )
+                                                              .setTimeWindow( window )
+                                                              .build();
 
             PoolOfPairs<Double, Double> next =
                     new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
@@ -232,7 +225,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         assertEquals( 20 * 8 + 10,
                       Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                     metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
+                                     metric -> metric.getMetricName() != MetricConstants.THREAT_SCORE )
                             .size() );
 
         // Expected result
@@ -240,23 +233,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                    Instant.MAX,
                                                                    Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold =
+        OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        StatisticMetadata expectedMeta =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+        SampleMetadata expectedMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          DatasetIdentifier.of( Location.of( DRRC2 ),
                                                                                "SQIN",
                                                                                "HEFS" ),
                                                          expectedWindow,
-                                                         expectedThreshold ),
-                                      500,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.CONTINGENCY_TABLE,
-                                      null );
+                                                         expectedThreshold );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -278,13 +266,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
 
         DoubleScoreStatisticOuter actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                                          meta -> meta.getSampleMetadata()
+                                                          meta -> meta.getMetadata()
                                                                       .getThresholds()
                                                                       .equals( expectedThreshold )
-                                                                  && meta.getSampleMetadata()
+                                                                  && meta.getMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
-                                                                  && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                                                  && meta.getMetricName() == MetricConstants.CONTINGENCY_TABLE )
                                                  .get( 0 );
 
         assertEquals( expected, actual );
@@ -356,25 +344,17 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                              STREAMFLOW ),
-                                                                        firstWindow,
-                                                                        thresholds ),
-                                                     1,
-                                                     MeasurementUnit.of( DURATION ),
-                                                     MetricConstants.TIME_TO_PEAK_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( Location.of( "A" ),
+                                                                     STREAMFLOW ),
+                                               firstWindow,
+                                               thresholds );
 
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                              STREAMFLOW ),
-                                                                        secondWindow,
-                                                                        thresholds ),
-                                                     1,
-                                                     MeasurementUnit.of( DURATION ),
-                                                     MetricConstants.TIME_TO_PEAK_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( Location.of( "A" ),
+                                                                     STREAMFLOW ),
+                                               secondWindow,
+                                               thresholds );
 
         PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
                                                                .setTime( Timestamp.newBuilder()
@@ -501,42 +481,26 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                           .build();
 
         expected.add( DurationDiagramStatisticOuter.of( expectedFirst,
-                                                        StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                 firstWindow,
-                                                                                                 firstThreshold ),
-                                                                              1,
-                                                                              MeasurementUnit.of( DURATION ),
-                                                                              MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                              MetricConstants.MAIN ) ) );
+                                                        SampleMetadata.of( source,
+                                                                           firstWindow,
+                                                                           firstThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( DurationDiagramStatistic.newBuilder()
                                                                                 .setMetric( TimeToPeakError.METRIC )
                                                                                 .build(),
-                                                        StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                 firstWindow,
-                                                                                                 secondThreshold ),
-                                                                              0,
-                                                                              MeasurementUnit.of( DURATION ),
-                                                                              MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                              MetricConstants.MAIN ) ) );
+                                                        SampleMetadata.of( source,
+                                                                           firstWindow,
+                                                                           secondThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( expectedSecond,
-                                                        StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                 secondWindow,
-                                                                                                 firstThreshold ),
-                                                                              1,
-                                                                              MeasurementUnit.of( DURATION ),
-                                                                              MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                              MetricConstants.MAIN ) ) );
+                                                        SampleMetadata.of( source,
+                                                                           secondWindow,
+                                                                           firstThreshold ) ) );
 
         expected.add( DurationDiagramStatisticOuter.of( expectedSecond,
-                                                        StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                 secondWindow,
-                                                                                                 secondThreshold ),
-                                                                              1,
-                                                                              MeasurementUnit.of( DURATION ),
-                                                                              MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                              MetricConstants.MAIN ) ) );
+                                                        SampleMetadata.of( source,
+                                                                           secondWindow,
+                                                                           secondThreshold ) ) );
 
         assertEquals( expected, actual );
     }
@@ -586,15 +550,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                               DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                     STREAMFLOW ),
-                                                                               timeWindow,
-                                                                               thresholds ),
-                                                            2,
-                                                            MeasurementUnit.of( DURATION ),
-                                                            MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                            null );
+        SampleMetadata scoreMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( Location.of( "A" ),
+                                                                            STREAMFLOW ),
+                                                      timeWindow,
+                                                      thresholds );
 
         com.google.protobuf.Duration expectedMean = MessageFactory.parse( Duration.ofHours( 3 ) );
         com.google.protobuf.Duration expectedMedian = MessageFactory.parse( Duration.ofHours( 3 ) );
@@ -648,6 +608,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           .build();
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
+                                                        .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
                                                         .addComponents( meanMetricComponent )
                                                         .addComponents( medianMetricComponent )
                                                         .addComponents( minMetricComponent )
@@ -717,15 +678,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Generate results for 20 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
-            final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Duration.ofHours( i ) );
-            final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                           "SQIN",
-                                                                                           "HEFS" ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
+            TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
+                                                         Instant.MAX,
+                                                         Duration.ofHours( i ) );
+            SampleMetadata meta = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                              .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                                    "SQIN",
+                                                                                                    "HEFS" ) )
+                                                              .setTimeWindow( window )
+                                                              .build();
             PoolOfPairs<Double, Double> next =
                     new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
 
@@ -740,29 +701,25 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         assertEquals( 30 * 8 + 20,
                       Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                     metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
+                                     metric -> metric.getMetricName() != MetricConstants.THREAT_SCORE )
                             .size() );
 
         // Expected result
-        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                                   Instant.MAX,
-                                                                   Duration.ofHours( 1 ) );
+        TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
+                                                             Instant.MAX,
+                                                             Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold =
+        OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
                                                           Operator.GREATER_EQUAL,
                                                           ThresholdDataType.LEFT ) );
 
-        StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                                        "SQIN",
-                                                                                                        "HEFS" ),
-                                                                                  expectedWindow,
-                                                                                  expectedThreshold ),
-                                                               500,
-                                                               MeasurementUnit.of(),
-                                                               MetricConstants.CONTINGENCY_TABLE,
-                                                               null );
+        SampleMetadata expectedMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                               "SQIN",
+                                                                               "HEFS" ),
+                                                         expectedWindow,
+                                                         expectedThreshold );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -785,13 +742,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
 
         DoubleScoreStatisticOuter actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                                          meta -> meta.getSampleMetadata()
+                                                          meta -> meta.getMetadata()
                                                                       .getThresholds()
                                                                       .equals( expectedThreshold )
-                                                                  && meta.getSampleMetadata()
+                                                                  && meta.getMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
-                                                                  && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                                                  && meta.getMetricName() == MetricConstants.CONTINGENCY_TABLE )
                                                  .get( 0 );
 
         assertEquals( expected, actual );
@@ -810,15 +767,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
-            final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Duration.ofHours( i ) );
-            final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                           "SQIN",
-                                                                                           "HEFS" ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
+            TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
+                                                         Instant.MAX,
+                                                         Duration.ofHours( i ) );
+            SampleMetadata meta = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                              .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                                    "SQIN",
+                                                                                                    "HEFS" ) )
+                                                              .setTimeWindow( window )
+                                                              .build();
 
             PoolOfPairs<Double, Double> next =
                     new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
@@ -834,30 +791,26 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         assertEquals( 20 * 8 + 10,
                       Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                     metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
+                                     metric -> metric.getMetricName() != MetricConstants.THREAT_SCORE )
                             .size() );
 
         // Expected result
-        final TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
-                                                                   Instant.MAX,
-                                                                   Duration.ofHours( 1 ) );
+        TimeWindowOuter expectedWindow = TimeWindowOuter.of( Instant.MIN,
+                                                             Instant.MAX,
+                                                             Duration.ofHours( 1 ) );
 
-        final OneOrTwoThresholds expectedThreshold =
+        OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        StatisticMetadata expectedMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                                  DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                                        "SQIN",
-                                                                                                        "HEFS" ),
-                                                                                  expectedWindow,
-                                                                                  expectedThreshold ),
-                                                               0,
-                                                               MeasurementUnit.of(),
-                                                               MetricConstants.CONTINGENCY_TABLE,
-                                                               null );
+        SampleMetadata expectedMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                               "SQIN",
+                                                                               "HEFS" ),
+                                                         expectedWindow,
+                                                         expectedThreshold );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -879,13 +832,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
 
         DoubleScoreStatisticOuter actual = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                                          meta -> meta.getSampleMetadata()
+                                                          meta -> meta.getMetadata()
                                                                       .getThresholds()
                                                                       .equals( expectedThreshold )
-                                                                  && meta.getSampleMetadata()
+                                                                  && meta.getMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
-                                                                  && meta.getMetricID() == MetricConstants.CONTINGENCY_TABLE )
+                                                                  && meta.getMetricName() == MetricConstants.CONTINGENCY_TABLE )
                                                  .get( 0 );
 
         assertEquals( expected, actual );
@@ -923,15 +876,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        StatisticMetadata scoreMeta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                               DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                     STREAMFLOW ),
-                                                                               timeWindow,
-                                                                               thresholds ),
-                                                            0,
-                                                            MeasurementUnit.of( DURATION ),
-                                                            MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                            null );
+        SampleMetadata scoreMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( Location.of( "A" ),
+                                                                            STREAMFLOW ),
+                                                      timeWindow,
+                                                      thresholds );
 
         DurationScoreMetricComponent mean = DurationScoreMetricComponent.newBuilder()
                                                                         .setName( ComponentName.MEAN )
@@ -950,6 +899,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                 .build();
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
+                                                        .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
                                                         .addComponents( mean )
                                                         .addComponents( median )
                                                         .addComponents( minimum )
@@ -978,15 +928,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         PoolOfPairs<Double, Double> pairs = MetricTestDataFactory.getSingleValuedPairsEight();
 
         // Generate results
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                           Instant.MAX,
-                                                           Duration.ZERO );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                 .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
-                                                                                       "SQIN",
-                                                                                       "AHPS" ) )
-                                                 .setTimeWindow( window )
-                                                 .build();
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
+                                                     Instant.MAX,
+                                                     Duration.ZERO );
+        SampleMetadata meta = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                          .setIdentifier( DatasetIdentifier.of( Location.of( DRRC2 ),
+                                                                                                "SQIN",
+                                                                                                "AHPS" ) )
+                                                          .setTimeWindow( window )
+                                                          .build();
         PoolOfPairs<Double, Double> next =
                 new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
 
@@ -994,8 +944,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         // Check the sample size
         double size = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
-                                     sampleMeta -> sampleMeta.getMetricID() == MetricConstants.SAMPLE_SIZE
-                                                   && !sampleMeta.getSampleMetadata()
+                                     sampleMeta -> sampleMeta.getMetricName() == MetricConstants.SAMPLE_SIZE
+                                                   && !sampleMeta.getMetadata()
                                                                  .getThresholds()
                                                                  .first()
                                                                  .isFinite() )

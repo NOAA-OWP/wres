@@ -46,6 +46,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
@@ -53,7 +54,6 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -185,12 +185,13 @@ public abstract class ChartEngineFactory
 
     /**
      * @param config The project configuration.
+     * @param metricName the metric name.
      * @param input The input provided for charting, which is the metric output.
      * @param userSpecifiedOutputType A user specified plot type; null means the user did not provide one.
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
      */
     private static <T extends Statistic<?>> ChartType determineChartType( ProjectConfig config,
-                                                                          List<T> input,
+                                                                          MetricConstants metricName,
                                                                           OutputTypeSelection userSpecifiedOutputType )
     {
         //Pooling window case.
@@ -204,10 +205,7 @@ public abstract class ChartEngineFactory
         //specified type.
         if ( ( userSpecifiedOutputType == null ) || ( userSpecifiedOutputType == OutputTypeSelection.DEFAULT ) )
         {
-            return metricOutputGroupToDefaultChartTypeMap.get( input.get( 0 )
-                                                                    .getMetadata()
-                                                                    .getMetricID()
-                                                                    .getMetricOutputGroup() );
+            return metricOutputGroupToDefaultChartTypeMap.get( metricName.getMetricOutputGroup() );
         }
         return ChartType.fromOutputTypeSelection( userSpecifiedOutputType );
     }
@@ -252,12 +250,12 @@ public abstract class ChartEngineFactory
         if ( usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
         {
             inputSlice =
-                    Slicer.filter( input, next -> next.getSampleMetadata().getTimeWindow().equals( inputKeyInstance ) );
+                    Slicer.filter( input, next -> next.getMetadata().getTimeWindow().equals( inputKeyInstance ) );
         }
         else if ( usedPlotType == OutputTypeSelection.THRESHOLD_LEAD )
         {
             inputSlice =
-                    Slicer.filter( input, next -> next.getSampleMetadata().getThresholds().equals( inputKeyInstance ) );
+                    Slicer.filter( input, next -> next.getMetadata().getThresholds().equals( inputKeyInstance ) );
         }
         else
         {
@@ -280,7 +278,11 @@ public abstract class ChartEngineFactory
                                                                     ChartType usedPlotType,
                                                                     ChronoUnit durationUnits )
     {
-        WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice, usedPlotType, durationUnits );
+        WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice.get( 0 ).getMetricName(),
+                                                                null,
+                                                                inputSlice,
+                                                                usedPlotType,
+                                                                durationUnits );
         if ( usedPlotType.equals( ChartType.LEAD_THRESHOLD ) )
         {
             args.addLeadThresholdArguments( inputSlice, (TimeWindowOuter) inputKeyInstance );
@@ -563,13 +565,13 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
-
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.get( 0 ).getMetadata();
+        MetricConstants metricName = input.get( 0 ).getMetricName();
 
-        String templateName = determineTemplate( meta.getMetricID(),
+        //Determine the output type, converting DEFAULT accordingly, and template name.
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, metricName, userSpecifiedPlotType );
+
+        String templateName = ChartEngineFactory.determineTemplate( metricName,
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
@@ -578,17 +580,17 @@ public abstract class ChartEngineFactory
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
         Set<Object> keySetValues =
-                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
         if ( usedPlotType.isFor( OutputTypeSelection.THRESHOLD_LEAD ) )
         {
-            keySetValues = Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+            keySetValues = Slicer.discover( input, next -> next.getMetadata().getThresholds() );
         }
 
         //For each key instance, do the following....
         for ( final Object keyInstance : keySetValues )
         {
             ChartEngine engine;
-            switch ( meta.getMetricID() )
+            switch ( metricName )
             {
                 case RELIABILITY_DIAGRAM:
                     engine =
@@ -627,7 +629,7 @@ public abstract class ChartEngineFactory
                                                   durationUnits );
                     break;
                 default:
-                    throw new IllegalArgumentException( "Unrecognized plot type of " + meta.getMetricID()
+                    throw new IllegalArgumentException( "Unrecognized plot type of " + metricName
                                                         + " specified in the metric information." );
             }
             results.put( keyInstance, engine );
@@ -659,18 +661,19 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        StatisticMetadata metadata = input.get( 0 ).getMetadata();
-        
-        if ( !metadata.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_PAIR )
-             && !metadata.getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
+
+        MetricConstants metricName = input.get( 0 ).getMetricName();
+
+        if ( !metricName.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+             && !metricName.isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            throw new IllegalArgumentException( "Unrecognized data type for metric " + metadata.getMetricID()
+            throw new IllegalArgumentException( "Unrecognized data type for metric " + metricName
                                                 + ". Expected one of "
                                                 + StatisticType.BOXPLOT_PER_PAIR
                                                 + " or "
                                                 + StatisticType.BOXPLOT_PER_POOL
                                                 + ", but got "
-                                                + metadata.getMetricID().getMetricOutputGroup()
+                                                + metricName.getMetricOutputGroup()
                                                 + "." );
         }
 
@@ -711,13 +714,13 @@ public abstract class ChartEngineFactory
     {
         final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( config, input, null );
-
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.get( 0 ).getMetadata();
+        MetricConstants metricName = input.get( 0 ).getMetricName();
 
-        String templateName = determineTemplate( meta.getMetricID(),
+        //Determine the output type, converting DEFAULT accordingly, and template name.
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, metricName, null );
+        
+        String templateName = ChartEngineFactory.determineTemplate( metricName,
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
@@ -734,8 +737,8 @@ public abstract class ChartEngineFactory
                                                                                      templateName,
                                                                                      overrideParametersStr,
                                                                                      durationUnits );
-                results.put( Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
-                                      next.getMetadata().getSampleMetadata().getThresholds() ),
+                results.put( Pair.of( next.getMetadata().getTimeWindow(),
+                                      next.getMetadata().getThresholds() ),
                              engine );
             }
             else
@@ -785,11 +788,11 @@ public abstract class ChartEngineFactory
 
         //Determine the output type
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.get( 0 ).getMetadata();       
-        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, input, null );
+        MetricConstants metricName = input.get( 0 ).getMetricName();
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, metricName, null );
 
 
-        String templateName = determineTemplate( meta.getMetricID(), usedPlotType );
+        String templateName = ChartEngineFactory.determineTemplate( metricName, usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;
@@ -834,6 +837,7 @@ public abstract class ChartEngineFactory
         for ( final Map.Entry<MetricConstants, List<DoubleScoreComponentOuter>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildScoreOutputChartEngineForOneComponent( config,
+                                                                                   input.get( 0 ).getMetricName(),
                                                                                    entry.getValue(),
                                                                                    userSpecifiedPlotType,
                                                                                    userSpecifiedTemplateResourceName,
@@ -863,6 +867,7 @@ public abstract class ChartEngineFactory
      */
     private static ChartEngine
             buildScoreOutputChartEngineForOneComponent( final ProjectConfig config,
+                                                        final MetricConstants metricName,
                                                         final List<DoubleScoreComponentOuter> input,
                                                         final OutputTypeSelection userSpecifiedPlotType,
                                                         final String userSpecifiedTemplateResourceName,
@@ -870,13 +875,17 @@ public abstract class ChartEngineFactory
                                                         final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
-        //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
-
+        
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.get( 0 ).getMetadata();
+        SampleMetadata metadata = input.get( 0 ).getMetadata();
 
-        String templateName = determineTemplate( meta.getMetricID(),
+        // Component name
+        MetricConstants metricComponentName = input.get( 0 ).getMetricName();
+        
+        //Determine the output type, converting DEFAULT accordingly, and template name.
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, metricName, userSpecifiedPlotType );
+
+        String templateName = ChartEngineFactory.determineTemplate( metricName,
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
@@ -884,10 +893,14 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, usedPlotType, durationUnits );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( metricName,
+                                                                           metricComponentName,
+                                                                           input,
+                                                                           usedPlotType,
+                                                                           durationUnits );
 
         //Setup plot specific arguments.
-        arguments.addBaselineArguments( meta );
+        arguments.addBaselineArguments( metadata );
 
         //Build the source.
         XYChartDataSource source = null;
@@ -944,20 +957,21 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails
      */
     public static ChartEngine
-            buildPairedInstantDurationChartEngine( final ProjectConfig config,
-                                                   final List<DurationDiagramStatisticOuter> input,
-                                                   final String userSpecifiedTemplateResourceName,
-                                                   final String overrideParametersStr,
-                                                   final ChronoUnit durationUnits )
+            buildDurationDiagramChartEngine( final ProjectConfig config,
+                                             final List<DurationDiagramStatisticOuter> input,
+                                             final String userSpecifiedTemplateResourceName,
+                                             final String overrideParametersStr,
+                                             final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
-        //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( config, input, null );
-
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.get( 0 ).getMetadata();
+        SampleMetadata metadata = input.get( 0 ).getMetadata();
+        MetricConstants metricName = input.get( 0 ).getMetricName();
 
-        String templateName = determineTemplate( meta.getMetricID(),
+        //Determine the output type, converting DEFAULT accordingly, and template name.
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, metricName, null );
+        
+        String templateName = ChartEngineFactory.determineTemplate( metricName,
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
@@ -965,10 +979,11 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null, durationUnits );
+        final WRESArgumentProcessor arguments =
+                new WRESArgumentProcessor( metricName, null, input, null, durationUnits );
 
         //Setup plot specific arguments.
-        arguments.addBaselineArguments( meta );
+        arguments.addBaselineArguments( metadata );
         arguments.addDurationMetricArguments();
         arguments.addTimeToPeakArguments( input );
 
@@ -1009,13 +1024,14 @@ public abstract class ChartEngineFactory
                                                       final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
-        //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( config, input, null );
-
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = input.get( 0 ).getMetadata();
+        SampleMetadata metadata = input.get( 0 ).getMetadata();
+        MetricConstants metricName = input.get( 0 ).getMetricName();
 
-        String templateName = determineTemplate( meta.getMetricID(),
+        //Determine the output type, converting DEFAULT accordingly, and template name.
+        ChartType usedPlotType = ChartEngineFactory.determineChartType( config, metricName, null );
+
+        String templateName = ChartEngineFactory.determineTemplate( metricName,
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
@@ -1023,10 +1039,11 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null, durationUnits );
+        final WRESArgumentProcessor arguments =
+                new WRESArgumentProcessor( metricName, null, input, null, durationUnits );
 
         //Setup plot specific arguments.
-        arguments.addBaselineArguments( meta );
+        arguments.addBaselineArguments( metadata );
         arguments.addDurationMetricArguments();
         arguments.addTimeToPeakArguments( input );
 

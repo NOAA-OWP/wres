@@ -10,10 +10,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.ProbabilityScore;
-import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -79,13 +77,6 @@ public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, P
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN,
-                                                         this.hasRealUnits(),
-                                                         s.getRawData().size(),
-                                                         null );
-
         // Transform probabilities to double values
         SampleData<Pair<Double, Double>> transformed =
                 Slicer.transform( s,
@@ -108,11 +99,11 @@ public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, P
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.BRIER_SCORE;
     }

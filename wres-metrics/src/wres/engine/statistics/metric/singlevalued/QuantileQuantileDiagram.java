@@ -6,14 +6,12 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
@@ -135,18 +133,11 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
                                                      .setMetric( QuantileQuantileDiagram.METRIC )
                                                      .build();
 
-        final StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      null );
-        return DiagramStatisticOuter.of( qqDiagram, metOut );
+        return DiagramStatisticOuter.of( qqDiagram, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.QUANTILE_QUANTILE_DIAGRAM;
     }

@@ -9,7 +9,6 @@ import java.util.SortedSet;
 import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.time.TimeWindowOuter;
@@ -56,7 +55,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         int seriesIndex = 0;
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
         for ( final TimeWindowOuter lead : timeWindows )
         {
             setOverrideLegendName( seriesIndex,
@@ -79,10 +78,10 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         //Cast the raw data input and check the size.
         final List<List<DoubleScoreComponentOuter>> data = new ArrayList<>();
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( rawData, next -> next.getMetadata().getTimeWindow() );
         for ( final TimeWindowOuter lead : timeWindows )
         {
-            data.add( Slicer.filter( rawData, next -> next.getSampleMetadata().getTimeWindow().equals( lead ) ) );
+            data.add( Slicer.filter( rawData, next -> next.getMetadata().getTimeWindow().equals( lead ) ) );
         }
         setPlotData( data );
     }
@@ -100,7 +99,6 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         final double test = getPlotData().get( series )
                                          .get( item )
                                          .getMetadata()
-                                         .getSampleMetadata()
                                          .getThresholds()
                                          .first()
                                          .getValues()

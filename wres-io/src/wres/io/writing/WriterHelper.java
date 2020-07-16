@@ -57,7 +57,6 @@ public class WriterHelper
         Map<LeftOrRightOrBaseline, List<T>> groups =
                 input.stream()
                      .collect( Collectors.groupingBy( a -> a.getMetadata()
-                                                            .getSampleMetadata()
                                                             .getIdentifier()
                                                             .getLeftOrRightOrBaseline() ) );
 
