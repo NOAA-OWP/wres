@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -136,9 +137,13 @@ public final class WRDSReader {
     }
 
     public static ThresholdResponse getResponse(final String inputAddress) throws StreamIOException {
-        URI address = URI.create(inputAddress);
         try {
-            if (address.getScheme() == null || address.getScheme().toLowerCase().equals("file")) {
+            URI address = new URI(inputAddress);
+
+            if (address.getScheme() != null && address.getScheme().toLowerCase().startsWith("http")) {
+                return getRemoteResponse(inputAddress);
+            }
+            else {
                 Path thresholdPath;
 
                 if (address.getScheme() == null) {
@@ -151,15 +156,11 @@ public final class WRDSReader {
                     byte[] rawForecast = IOUtils.toByteArray(data);
                     return JSON_OBJECT_MAPPER.readValue(rawForecast, ThresholdResponse.class);
                 }
-            } else if (address.getScheme().toLowerCase().startsWith("http")) {
-                return getRemoteResponse(inputAddress);
             }
         }
-        catch (IOException ioe) {
+        catch (IOException | URISyntaxException ioe) {
             throw new StreamIOException("Error encountered while requesting WRDS threshold data", ioe);
         }
-
-        throw new IllegalArgumentException("Only files or web addresses may be used to retrieve thresholds");
     }
 
     private static ThresholdResponse getRemoteResponse(String inputAddress) throws IOException {
