@@ -7,10 +7,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import java.time.Duration;
-
-import wres.datamodel.time.TimeWindowOuter;
-
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DiagramStatistic;
@@ -31,72 +27,61 @@ public enum MetricConstants
      * Identifier for fractional bias or relative mean error.
      */
 
-    BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Brier Score.
      */
 
-    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 0.0 ),
+    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Brier Skill Score.
      */
 
-    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1.0,
-            1.0 ),
+    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a box plot of errors by observed value.
      */
 
-    BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR,
-            Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ),
 
     /**
      * Identifier for a box plot of errors by forecast value.
      */
 
-    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR,
-            Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ),
 
     /**
      * Identifier for a box plot of errors.
      */
 
-    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
     /**
      * Identifier for a box plot of errors as a percentage of the left value.
      */
 
-    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL,
-            Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
     /**
      * Identifier for coefficient of determination.
      */
 
-    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
+    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, 0.0,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Skill Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE,
-            Double.NEGATIVE_INFINITY, 1.0, 1.0 ),
+    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Contingency Table.
@@ -110,98 +95,92 @@ public enum MetricConstants
      * Identifier for Pearson's product-moment correlation coefficient.
      */
 
-    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, -1.0, 1.0, 1.0 ),
+    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Threat Score.
      */
 
-    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
+    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for an Equitable Threat Score.
      */
 
-    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, -1.0 / 3.0, 1.0, 1.0 ),
+    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Frequency Bias.
      */
 
-    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0, Double.POSITIVE_INFINITY, 1.0 ),
+    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for an Index of Agreement.
      */
 
-    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
+    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Kling-Gupta Efficiency index.
      */
 
-    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1.0,
-            1.0 ),
+    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Absolute Error.
      */
 
-    MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, Double.POSITIVE_INFINITY,
-            0.0 ),
+    MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Error.
      */
 
-    MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Square Error.
      */
 
-    MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, Double.POSITIVE_INFINITY, 0.0 ),
+    MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Square Error Skill Score.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY,
-            1.0, 1.0 ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Mean Square Error Skill Score, normalized.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, 1.0,
-            1.0 ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Median Error.
      */
 
-    MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Peirce Skill Score.
      */
 
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE, -1.0, 1.0, 1.0 ),
+            StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Probability Of Detection.
      */
 
-    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 1.0 ),
+    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Probability Of False Detection.
      */
 
-    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, 0.0, 1.0, 0.0 ),
+    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Quantile-quantile diagram.
@@ -225,9 +204,7 @@ public enum MetricConstants
      * Identifier for the Relative Operating Characteristic Score.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, -1.0,
-            1.0,
-            1.0 ),
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Reliability Diagram.
@@ -239,16 +216,14 @@ public enum MetricConstants
      * Identifier for a Root Mean Square Error.
      */
 
-    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, Double.POSITIVE_INFINITY,
-            0.0 ),
+    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Root Mean Square Error normalized by the standard deviation of
      * the left values.
      */
 
-    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0,
-            Double.POSITIVE_INFINITY, 0.0 ),
+    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the sample size.
@@ -262,45 +237,37 @@ public enum MetricConstants
      * Identifier for a Sum of Square Error.
      */
 
-    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, 0.0, Double.POSITIVE_INFINITY,
-            0.0 ),
+    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Volumetric Efficiency.
      */
 
-    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, Double.NEGATIVE_INFINITY, 1.0,
-            1.0 ),
+    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM, TimeWindowOuter.DURATION_MIN,
-            TimeWindowOuter.DURATION_MAX, Duration.ZERO ),
+    TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ),
 
     /**
      * Identifier for a statistic derived from the Time-to-Peak Error.
      */
 
-    TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            TimeWindowOuter.DURATION_MIN, TimeWindowOuter.DURATION_MAX,
-            Duration.ZERO ),
+    TIME_TO_PEAK_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
     /**
      * Identifier for the Time-to-Peak Relative Error.
      */
 
-    TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM,
-            TimeWindowOuter.DURATION_MIN, TimeWindowOuter.DURATION_MAX,
-            Duration.ZERO ),
+    TIME_TO_PEAK_RELATIVE_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ),
 
     /**
      * Identifier for a statistic derived from the Time-to-Peak Relative Error.
      */
 
-    TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            TimeWindowOuter.DURATION_MIN, TimeWindowOuter.DURATION_MAX, Duration.ZERO ),
+    TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
     /**
      * Mean statistic.
@@ -445,7 +412,7 @@ public enum MetricConstants
      * The {@link SampleDataGroup} or null if the {@link MetricConstants} does not belong to a group.
      */
 
-    private final SampleDataGroup[] inGroup;
+    private final SampleDataGroup[] inGroups;
 
     /**
      * The {@link StatisticType} or null if the {@link MetricConstants} does not belong to a group.
@@ -454,29 +421,11 @@ public enum MetricConstants
     private final StatisticType outGroup;
 
     /**
-     * The {@link MetricGroup} to which this {@link MetricConstants} belongs or null if the
+     * The array of {@link MetricGroup} to which this {@link MetricConstants} belongs or null if the
      * {@link MetricConstants} does not belong to a {@link MetricGroup}.
      */
 
-    private final MetricGroup[] metricGroup;
-
-    /**
-     * The minimum value of the metric in metric-appropriate units.
-     */
-
-    private final Object minimum;
-
-    /**
-     * The maximum value of the metric in metric-appropriate units.
-     */
-
-    private final Object maximum;
-
-    /**
-     * The optimum value of the metric in metric-appropriate units.
-     */
-
-    private final Object optimum;
+    private final MetricGroup[] metricGroups;
 
     /**
      * Default constructor
@@ -484,12 +433,9 @@ public enum MetricConstants
 
     private MetricConstants()
     {
-        this.inGroup = null;
+        this.inGroups = null;
         this.outGroup = null;
-        this.metricGroup = null;
-        this.minimum = null;
-        this.maximum = null;
-        this.optimum = null;
+        this.metricGroups = null;
     }
 
     /**
@@ -501,26 +447,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, null, null, null, (MetricGroup[]) null );
-    }
-
-    /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticType}.
-     * 
-     * @param inputGroup the input group
-     * @param outputGroup the output group
-     * @param the minimum metric value
-     * @param the maximum metric value
-     * @param the optimum metric value
-     */
-
-    private MetricConstants( SampleDataGroup inGroup,
-                             StatisticType outGroup,
-                             Object minimum,
-                             Object maximum,
-                             Object optimum )
-    {
-        this( new SampleDataGroup[] { inGroup }, outGroup, minimum, maximum, optimum, (MetricGroup[]) null );
+        this( new SampleDataGroup[] { inGroup }, outGroup, (MetricGroup[]) null );
     }
 
     /**
@@ -533,7 +460,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, null, null, null, metricGroup );
+        this( new SampleDataGroup[] { inGroup }, outGroup, metricGroup );
     }
 
     /**
@@ -548,33 +475,9 @@ public enum MetricConstants
                              StatisticType outGroup,
                              MetricGroup... metricGroup )
     {
-        this( inGroups, outGroup, null, null, null, metricGroup );
-    }
-
-    /**
-     * Construct with multiple {@link SampleDataGroup} and a {@link StatisticType}.
-     * 
-     * @param inGroups the input groups
-     * @param outGroup the output group
-     * @param the minimum metric value
-     * @param the maximum metric value
-     * @param the optimum metric value
-     * @param metricGroup the metric group
-     */
-
-    private MetricConstants( SampleDataGroup[] inGroups,
-                             StatisticType outGroup,
-                             Object minimum,
-                             Object maximum,
-                             Object optimum,
-                             MetricGroup... metricGroup )
-    {
-        this.inGroup = inGroups;
+        this.inGroups = inGroups;
         this.outGroup = outGroup;
-        this.minimum = minimum;
-        this.maximum = maximum;
-        this.optimum = optimum;
-        this.metricGroup = metricGroup;
+        this.metricGroups = metricGroup;
     }
 
     /**
@@ -585,12 +488,9 @@ public enum MetricConstants
 
     private MetricConstants( MetricGroup... decGroup )
     {
-        this.metricGroup = decGroup;
-        this.inGroup = null;
+        this.metricGroups = decGroup;
+        this.inGroups = null;
         this.outGroup = null;
-        this.minimum = null;
-        this.maximum = null;
-        this.optimum = null;
     }
 
     /**
@@ -602,7 +502,7 @@ public enum MetricConstants
 
     public boolean isInGroup( SampleDataGroup inGroup )
     {
-        return Arrays.asList( this.inGroup ).contains( inGroup );
+        return Arrays.asList( this.inGroups ).contains( inGroup );
     }
 
     /**
@@ -627,7 +527,7 @@ public enum MetricConstants
 
     public boolean isInGroup( MetricGroup inGroup )
     {
-        return Arrays.asList( this.metricGroup ).contains( inGroup );
+        return Arrays.asList( this.metricGroups ).contains( inGroup );
     }
 
     /**
@@ -665,12 +565,12 @@ public enum MetricConstants
 
     public Set<MetricConstants> getAllComponents()
     {
-        if ( Objects.isNull( this.metricGroup ) || this.metricGroup.length == 0 )
+        if ( Objects.isNull( this.metricGroups ) || this.metricGroups.length == 0 )
         {
             return Collections.emptySet();
         }
 
-        return this.metricGroup[0].getAllComponents();
+        return this.metricGroups[0].getAllComponents();
     }
 
     /**
@@ -685,7 +585,7 @@ public enum MetricConstants
     public static Set<MetricConstants> getMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
-        all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( inGroup )
+        all.removeIf( a -> Objects.isNull( a.inGroups ) || !Arrays.asList( a.inGroups ).contains( inGroup )
                            || a.outGroup != outGroup );
         return Collections.unmodifiableSet( all );
     }
@@ -700,7 +600,7 @@ public enum MetricConstants
     public static Set<MetricConstants> getMetrics( SampleDataGroup inGroup )
     {
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
-        all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( inGroup ) );
+        all.removeIf( a -> Objects.isNull( a.inGroups ) || !Arrays.asList( a.inGroups ).contains( inGroup ) );
         return Collections.unmodifiableSet( all );
     }
 
@@ -728,45 +628,6 @@ public enum MetricConstants
     public String toString()
     {
         return name().replaceAll( "_", " " );
-    }
-
-    /**
-     * @return the minimum value of the metric.
-     */
-
-    public Object getMinimum()
-    {
-        return this.minimum;
-    }
-
-    /**
-     * @return the maximum value of the metric.
-     */
-
-    public Object getMaximum()
-    {
-        return this.maximum;
-    }
-
-    /**
-     * @return the optimum value of the metric.
-     */
-
-    public Object getOptimum()
-    {
-        return this.optimum;
-    }
-
-    /**
-     * Returns <code>true</code> if the limits have been defined for this metric, otherwise <code>false</code>.
-     * 
-     * @return true if the limits rae defined, otherwise false
-     */
-
-    public boolean hasLimits()
-    {
-        return ! ( Objects.isNull( this.getMaximum() ) && Objects.isNull( this.getMinimum() )
-                   && Objects.isNull( this.getOptimum() ) );
     }
 
     /**
@@ -821,7 +682,7 @@ public enum MetricConstants
         public Set<MetricConstants> getMetrics()
         {
             Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
-            all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( this ) );
+            all.removeIf( a -> Objects.isNull( a.inGroups ) || !Arrays.asList( a.inGroups ).contains( this ) );
             return all;
         }
 
@@ -995,8 +856,8 @@ public enum MetricConstants
             Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
 
             //Remove metrics that don't match
-            all.removeIf( a -> Objects.isNull( a.metricGroup ) || a.name().equals( name() )
-                               || !Arrays.asList( a.metricGroup ).contains( this ) );
+            all.removeIf( a -> Objects.isNull( a.metricGroups ) || a.name().equals( name() )
+                               || !Arrays.asList( a.metricGroups ).contains( this ) );
 
             return all;
         }

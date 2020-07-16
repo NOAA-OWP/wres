@@ -41,8 +41,4 @@ message Pool
     
     Pairs pairs = 6;
     // The paired values that form the pool.
-        
-    Pairs baseline_pairs = 7;
-    // The pairs for the baseline source, where applicable. The baseline source
-    // applies when the pool contains measures of skill relative to a baseline.
 }

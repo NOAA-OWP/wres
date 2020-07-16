@@ -485,5 +485,4 @@ public class StatisticsForProject
         return Collections.unmodifiableList( returnMe );
     }
 
-
 }
