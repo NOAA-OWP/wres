@@ -25,7 +25,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -59,15 +58,11 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                              "SQIN",
-                                                                                              "HEFS",
-                                                                                              "ESP" ) ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                     "SQIN",
+                                                                     "HEFS",
+                                                                     "ESP" ) );
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.msessn.apply( input );
@@ -97,19 +92,14 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
                                                      Duration.ofHours( 24 ) );
-        final TimeWindowOuter timeWindow = window;
+        TimeWindowOuter timeWindow = window;
 
-        final StatisticMetadata m1 =
-                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                         "QME",
-                                                                                         "NVE" ) )
-                                                   .setTimeWindow( timeWindow )
-                                                   .build(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                        .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                              "QME",
+                                                                                              "NVE" ) )
+                                                        .setTimeWindow( timeWindow )
+                                                        .build();
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.msessn.apply( input );
@@ -136,11 +126,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.msessn.apply( input );

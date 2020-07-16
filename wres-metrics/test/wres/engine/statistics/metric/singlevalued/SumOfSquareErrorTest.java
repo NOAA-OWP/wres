@@ -22,7 +22,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -58,17 +57,14 @@ public final class SumOfSquareErrorTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                                    "SQIN",
-                                                                                                    "HEFS" ) ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of( "CMS" ),
-                                                           MetricConstants.SUM_OF_SQUARE_ERROR,
-                                                           MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                     "SQIN",
+                                                                     "HEFS",
+                                                                     "ESP" ) );
 
         //Check the results
-        DoubleScoreStatisticOuter actual = sse.apply( input );
+        DoubleScoreStatisticOuter actual = this.sse.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
@@ -78,11 +74,12 @@ public final class SumOfSquareErrorTest
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( SumOfSquareError.METRIC )
                                                          .addStatistics( component )
+                                                         .setSampleSize( 10 )
                                                          .build();
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
-        assertEquals( expected, actual );
+        assertEquals( expected.getData(), actual.getData() );
     }
 
     @Test

@@ -89,11 +89,11 @@ public class EquitableThreatScore extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, this.getMetadata( output ) );
+        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.EQUITABLE_THREAT_SCORE;
     }

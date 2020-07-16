@@ -50,7 +50,7 @@ public class MeanError extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_ERROR;
     }

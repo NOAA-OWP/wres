@@ -77,11 +77,11 @@ public class ProbabilityOfDetection extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, getMetadata( output ) );
+        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.PROBABILITY_OF_DETECTION;
     }

@@ -9,14 +9,12 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -88,25 +86,17 @@ public class RelativeOperatingCharacteristicScore
         }
         //Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
-        DatasetIdentifier baselineIdentifier = null;
+
         if ( s.hasBaseline() )
         {
             double rocMain = getAUCMasonGraham( s );
             double rocBase = getAUCMasonGraham( s.getBaselineData() );
             rocScore = ( rocMain - rocBase ) / ( 1.0 - rocBase );
-            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
         else
         {
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
-        final StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      baselineIdentifier );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
@@ -118,11 +108,11 @@ public class RelativeOperatingCharacteristicScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE;
     }

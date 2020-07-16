@@ -22,7 +22,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -58,11 +57,8 @@ public final class MedianErrorTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEDIAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
@@ -90,11 +86,8 @@ public final class MedianErrorTest
         SampleData<Pair<Double, Double>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEDIAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
@@ -124,11 +117,7 @@ public final class MedianErrorTest
         SampleData<Pair<Double, Double>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEDIAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 

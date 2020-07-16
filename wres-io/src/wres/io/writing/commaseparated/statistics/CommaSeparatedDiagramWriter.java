@@ -16,7 +16,6 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -29,13 +28,11 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -161,13 +158,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
         // Loop across diagrams
-        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, DiagramStatisticOuter::getMetricName );
         for ( MetricConstants m : metrics )
         {
             StringJoiner headerRow =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
-                                                                                         .getMetadata()
-                                                                                         .getSampleMetadata(),
+                                                                                         .getMetadata(),
                                                                                    durationUnits );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
@@ -228,13 +224,14 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         // Loop across time windows
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
         for ( TimeWindowOuter timeWindow : timeWindows )
         {
             List<DiagramStatisticOuter> next =
-                    Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( timeWindow ) );
+                    Slicer.filter( output, data -> data.getMetadata().getTimeWindow().equals( timeWindow ) );
 
-            StatisticMetadata meta = next.get( 0 ).getMetadata();
+            MetricConstants metricName = next.get( 0 ).getMetricName();
+            SampleMetadata meta = next.get( 0 ).getMetadata();
 
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter, durationUnits );
 
@@ -248,7 +245,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                  destinationConfig,
                                                                  meta,
                                                                  timeWindow,
-                                                                 durationUnits );
+                                                                 durationUnits,
+                                                                 metricName,
+                                                                 null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -287,14 +286,15 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         // Loop across thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
         for ( OneOrTwoThresholds threshold : thresholds )
         {
 
             List<DiagramStatisticOuter> next =
-                    Slicer.filter( output, data -> data.getSampleMetadata().getThresholds().equals( threshold ) );
+                    Slicer.filter( output, data -> data.getMetadata().getThresholds().equals( threshold ) );
 
-            StatisticMetadata meta = next.get( 0 ).getMetadata();
+            MetricConstants metricName = next.get( 0 ).getMetricName();
+            SampleMetadata meta = next.get( 0 ).getMetadata();
 
             List<RowCompareByLeft> rows =
                     CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter, durationUnits );
@@ -307,7 +307,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                  destinationConfig,
                                                                  meta,
-                                                                 threshold );
+                                                                 threshold,
+                                                                 metricName,
+                                                                 null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -338,9 +340,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         // Discover the time windows and thresholds to loop
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
 
         SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
@@ -353,10 +355,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             {
                 // One output per time window and threshold
                 DiagramStatisticOuter nextOutput = Slicer.filter( output,
-                                                                  data -> data.getSampleMetadata()
+                                                                  data -> data.getMetadata()
                                                                               .getThresholds()
                                                                               .equals( threshold )
-                                                                          && data.getSampleMetadata()
+                                                                          && data.getMetadata()
                                                                                  .getTimeWindow()
                                                                                  .equals( timeWindow ) )
                                                          .get( 0 );
@@ -468,12 +470,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         returnMe.merge( headerRow );
         // Discover first item to help
         DiagramStatisticOuter data = output.get( 0 );
-        String metricName = data.getMetadata().getMetricID().toString();
+        String metricName = data.getMetricName().toString();
 
         SortedSet<MetricDimension> dimensions = data.getComponentNames();
         //Add the metric name, dimension, and threshold for each column-vector
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             for ( MetricDimension nextDimension : dimensions )

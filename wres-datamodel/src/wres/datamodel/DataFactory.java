@@ -29,7 +29,6 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -386,7 +385,8 @@ public final class DataFactory
         DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder();
         builder.setMetric( collection.iterator().next().getData().getMetric() );
         List<TimeWindowOuter> combinedWindows = new ArrayList<>();
-        StatisticMetadata sourceMeta = null;
+        SampleMetadata sourceMeta = null;
+
         for ( DurationDiagramStatisticOuter next : collection )
         {
             builder.addAllStatistics( next.getData().getStatisticsList() );
@@ -395,7 +395,7 @@ public final class DataFactory
             {
                 sourceMeta = next.getMetadata();
             }
-            combinedWindows.add( next.getMetadata().getSampleMetadata().getTimeWindow() );
+            combinedWindows.add( next.getMetadata().getTimeWindow() );
         }
 
         if ( Objects.isNull( sourceMeta ) )
@@ -411,14 +411,7 @@ public final class DataFactory
 
         DurationDiagramStatistic statistic = builder.build();
 
-        StatisticMetadata combinedMeta =
-                StatisticMetadata.of( SampleMetadata.of( sourceMeta.getSampleMetadata(), unionWindow ),
-                                      statistic.getStatisticsCount(),
-                                      sourceMeta.getMeasurementUnit(),
-                                      sourceMeta.getMetricID(),
-                                      sourceMeta.getMetricComponentID() );
-
-        return DurationDiagramStatisticOuter.of( statistic, combinedMeta );
+        return DurationDiagramStatisticOuter.of( statistic, SampleMetadata.of( sourceMeta, unionWindow ) );
     }
 
     /**

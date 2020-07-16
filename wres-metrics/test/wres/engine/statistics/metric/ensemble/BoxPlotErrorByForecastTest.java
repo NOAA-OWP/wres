@@ -27,7 +27,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.BoxplotMetric;
@@ -78,24 +77,19 @@ public final class BoxPlotErrorByForecastTest
                                                      Instant.MAX,
                                                      Duration.ofHours( 24 ) );
         TimeWindowOuter timeWindow1 = window;
-        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                           .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                 "MAP" ) )
-                                           .setTimeWindow( timeWindow1 )
-                                           .build();
+        SampleMetadata meta = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                          .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                                "MAP" ) )
+                                                          .setTimeWindow( timeWindow1 )
+                                                          .build();
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, meta );
         TimeWindowOuter timeWindow = window;
 
-        StatisticMetadata m1 =
-                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                         "MAP" ) )
-                                                   .setTimeWindow( timeWindow )
-                                                   .build(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of( MM_DAY ),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                        .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                              "MAP" ) )
+                                                        .setTimeWindow( timeWindow )
+                                                        .build();
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 
@@ -138,25 +132,20 @@ public final class BoxPlotErrorByForecastTest
         TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                      Instant.MAX,
                                                      Duration.ofHours( 24 ) );
-        final TimeWindowOuter timeWindow1 = window;
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                       "MAP" ) )
-                                                 .setTimeWindow( timeWindow1 )
-                                                 .build();
+        TimeWindowOuter timeWindow1 = window;
+        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                           .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "MAP" ) )
+                                           .setTimeWindow( timeWindow1 )
+                                           .build();
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, meta );
-        final TimeWindowOuter timeWindow = window;
+        TimeWindowOuter timeWindow = window;
 
-        final StatisticMetadata m1 =
-                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                         "MAP" ) )
-                                                   .setTimeWindow( timeWindow )
-                                                   .build(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of( MM_DAY ),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
+                                                        .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                              "MAP" ) )
+                                                        .setTimeWindow( timeWindow )
+                                                        .build();
 
         //Build the metric
         BoxPlotErrorByForecast bpef = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,

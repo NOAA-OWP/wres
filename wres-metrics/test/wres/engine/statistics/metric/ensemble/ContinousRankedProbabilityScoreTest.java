@@ -23,9 +23,7 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -72,11 +70,8 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                           MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
@@ -115,11 +110,7 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
@@ -154,11 +145,8 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
@@ -193,11 +181,8 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 

@@ -6,15 +6,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.DatasetIdentifier;
@@ -22,10 +16,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DurationDiagramStatistic;
@@ -58,21 +52,17 @@ public final class TimeToPeakRelativeErrorTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                           Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                           Duration.ofHours( 6 ),
-                                                           Duration.ofHours( 18 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                     Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                     Duration.ofHours( 6 ),
+                                                     Duration.ofHours( 18 ) );
 
-        StatisticMetadata m1 =
-                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
-                                                                                         "Streamflow" ) )
-                                                   .setTimeWindow( window )
-                                                   .build(),
-                                      input.get().size(),
-                                      MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
-                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 =
+                new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                            .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                  "Streamflow" ) )
+                                            .setTimeWindow( window )
+                                            .build();
 
         DurationDiagramStatisticOuter actual = ttp.apply( input );
 
@@ -96,7 +86,7 @@ public final class TimeToPeakRelativeErrorTest
                                                                .build();
 
         DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
-                                                                          .setMetric( TimeToPeakError.METRIC )
+                                                                          .setMetric( TimeToPeakRelativeError.METRIC )
                                                                           .addStatistics( one )
                                                                           .addStatistics( two )
                                                                           .build();

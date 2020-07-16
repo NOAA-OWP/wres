@@ -643,7 +643,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getTimeToPeakErrors();
 
         //Call the factory.
-        final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( null,
+        final ChartEngine engine = ChartEngineFactory.buildDurationDiagramChartEngine( null,
                                                                                              input,
                                                                                              null,
                                                                                              null,

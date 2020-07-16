@@ -16,7 +16,6 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
@@ -169,19 +168,11 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                                                      .setMetric( ReliabilityDiagram.METRIC )
                                                      .build();
 
-        StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      null );
-
-        return DiagramStatisticOuter.of( statistic, metOut );
+        return DiagramStatisticOuter.of( statistic, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.RELIABILITY_DIAGRAM;
     }

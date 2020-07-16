@@ -22,12 +22,10 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
-import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -53,20 +51,16 @@ public final class EquitableThreatScoreTest
      * Metadata used for testing.
      */
 
-    private StatisticMetadata meta;
+    private SampleMetadata meta;
 
     @Before
     public void setUpBeforeEachTest()
     {
         ets = EquitableThreatScore.of();
-        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                              "SQIN",
-                                                                              "HEFS" ) ),
-                                     365,
-                                     MeasurementUnit.of(),
-                                     MetricConstants.EQUITABLE_THREAT_SCORE,
-                                     MetricConstants.MAIN );
+        meta = SampleMetadata.of( MeasurementUnit.of(),
+                                  DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                        "SQIN",
+                                                        "HEFS" ) );
     }
 
     /**

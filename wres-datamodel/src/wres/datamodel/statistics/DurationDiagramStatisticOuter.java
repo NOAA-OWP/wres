@@ -10,6 +10,9 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
 
+import net.jcip.annotations.Immutable;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.DurationDiagramStatistic;
 
 /**
@@ -18,6 +21,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
  * @author james.brown@hydrosolved.com
  */
 
+@Immutable
 public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramStatistic>
 {
 
@@ -31,7 +35,13 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
      * The metadata associated with the statistic.
      */
 
-    private final StatisticMetadata metadata;
+    private final SampleMetadata metadata;
+    
+    /**
+     * The metric name.
+     */
+
+    private final MetricConstants metricName;
 
     /**
      * Construct the statistic.
@@ -43,13 +53,13 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
      */
 
     public static DurationDiagramStatisticOuter of( DurationDiagramStatistic statistic,
-                                                    final StatisticMetadata metadata )
+                                                    SampleMetadata metadata )
     {
         return new DurationDiagramStatisticOuter( statistic, metadata );
     }
 
     @Override
-    public StatisticMetadata getMetadata()
+    public SampleMetadata getMetadata()
     {
         return metadata;
     }
@@ -82,6 +92,12 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
     public DurationDiagramStatistic getData()
     {
         return statistic;
+    }
+    
+    @Override
+    public MetricConstants getMetricName()
+    {
+        return this.metricName;
     }
 
     /**
@@ -124,7 +140,7 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DurationDiagramStatisticOuter( DurationDiagramStatistic statistic, StatisticMetadata metadata )
+    private DurationDiagramStatisticOuter( DurationDiagramStatistic statistic, SampleMetadata metadata )
     {
         //Validate
         if ( Objects.isNull( statistic ) )
@@ -139,6 +155,7 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
         //Set content
         this.statistic = statistic;
         this.metadata = metadata;
+        this.metricName = MetricConstants.valueOf( statistic.getMetric().getName().name() );
     }
 
 }

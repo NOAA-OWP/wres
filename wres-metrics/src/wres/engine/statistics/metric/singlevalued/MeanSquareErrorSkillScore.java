@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
@@ -12,7 +11,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -112,21 +110,6 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
             result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
         }
 
-        // Metadata
-        DatasetIdentifier baselineIdentifier = null;
-        if ( s.hasBaseline() )
-        {
-            baselineIdentifier = s.getBaselineData()
-                                  .getMetadata()
-                                  .getIdentifier();
-        }
-        final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                               this.getID(),
-                                                               MetricConstants.MAIN,
-                                                               this.hasRealUnits(),
-                                                               s.getRawData().size(),
-                                                               baselineIdentifier );
-
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
                                                                                .setValue( result )
@@ -138,11 +121,11 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE;
     }
