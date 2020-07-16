@@ -17,7 +17,7 @@
 
     <pair label="Pairs by location and lead time">
         <unit>CMS</unit>
-        <feature locationId="DRRC2" />
+        <feature left="DRRC2" right="DRRC2HSF" />
         <leadHours minimum="43" maximum="43" />
         <desiredTimeScale>
             <function>mean</function>

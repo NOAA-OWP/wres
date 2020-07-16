@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Remove wres.Feature v1/v2 table if it exists."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Feature" schemaName="wres" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="comid" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="lid" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="gage_id" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="region" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="state" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="huc" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="feature_name" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="latitude" />
+            <columnExists tableName="Feature" schemaName="wres"
+                          columnName="longitude" />
+        </preConditions>
+        <comment>
+            Remove wres.Feature table to be replaced with new version.
+        </comment>
+        <dropTable tableName="Feature" schemaName="wres"
+                   cascadeConstraints="true" />
+    </changeSet>
+    <changeSet id="wres.Feature - Create Feature table v3 for most dbmses."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="Feature" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="Feature" schemaName="wres">
+            <column name="feature_id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" />
+            </column>
+            <column name="name" type="varchar"
+                    remarks="The identifying name within a dataset to distinguish a geographic location.">
+                <constraints nullable="false" />
+            </column>
+            <column name="description" type="varchar"
+                    remarks="An optional longer name within a dataset describing a geographic location.">
+                <constraints nullable="true" />
+            </column>
+            <column name="srid" type="int"
+                    remarks="An optional Spatial Reference System Identifier within a dataset to be combined with the wkt (Well Known Text) to locate a geographic location.">
+                <constraints nullable="true" />
+            </column>
+            <column name="wkt" type="varchar"
+                    remarks="An optional Well Known Text within a dataset to be combined with the srid (Spatial Reference System Identifier) to locate a geographic location.">
+                <constraints nullable="true" />
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="Feature" schemaName="wres"
+                             constraintName="feature_name_description_srid_wkt_key"
+                             columnNames="name,description,srid,wkt" />
+    </changeSet>
+</databaseChangeLog>

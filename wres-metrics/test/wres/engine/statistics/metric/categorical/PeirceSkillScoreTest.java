@@ -16,7 +16,6 @@ import org.junit.Test;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -24,6 +23,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -57,10 +57,7 @@ public final class PeirceSkillScoreTest
     public void setUpBeforeEachTest()
     {
         this.pss = PeirceSkillScore.of();
-        this.meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                   "SQIN",
-                                                                                   "HEFS" ) ),
+        this.meta = StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                           365,
                                           MeasurementUnit.of(),
                                           MetricConstants.PEIRCE_SKILL_SCORE,

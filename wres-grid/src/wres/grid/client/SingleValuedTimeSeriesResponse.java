@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import wres.config.FeaturePlus;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -36,7 +36,7 @@ public class SingleValuedTimeSeriesResponse implements Response<Double>
      * The time-series per feature.
      */
 
-    private final Map<FeaturePlus, Stream<TimeSeries<Double>>> timeSeriesPerFeature;
+    private final Map<FeatureKey, Stream<TimeSeries<Double>>> timeSeriesPerFeature;
 
     @Override
     public String getVariableName()
@@ -45,7 +45,7 @@ public class SingleValuedTimeSeriesResponse implements Response<Double>
     }
 
     @Override
-    public Map<FeaturePlus, Stream<TimeSeries<Double>>> getTimeSeries()
+    public Map<FeatureKey, Stream<TimeSeries<Double>>> getTimeSeries()
     {
         return this.timeSeriesPerFeature; // Rendered immutable on construction
     }
@@ -66,7 +66,7 @@ public class SingleValuedTimeSeriesResponse implements Response<Double>
      * @throws NullPointerException if any input is null
      */
 
-    public static SingleValuedTimeSeriesResponse of( Map<FeaturePlus, Stream<TimeSeries<Double>>> timeSeriesPerFeature,
+    public static SingleValuedTimeSeriesResponse of( Map<FeatureKey, Stream<TimeSeries<Double>>> timeSeriesPerFeature,
                                                      String variableName,
                                                      String measurementUnits )
     {
@@ -82,7 +82,7 @@ public class SingleValuedTimeSeriesResponse implements Response<Double>
      * @throws NullPointerException if any input is null
      */
 
-    private SingleValuedTimeSeriesResponse( Map<FeaturePlus, Stream<TimeSeries<Double>>> timeSeriesPerFeature,
+    private SingleValuedTimeSeriesResponse( Map<FeatureKey, Stream<TimeSeries<Double>>> timeSeriesPerFeature,
                                             String variableName,
                                             String measurementUnits )
     {

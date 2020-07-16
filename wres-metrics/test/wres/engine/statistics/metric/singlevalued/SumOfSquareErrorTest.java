@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Precision;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,7 +16,6 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -59,7 +59,7 @@ public final class SumOfSquareErrorTest
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                              DatasetIdentifier.of( MetricTestDataFactory.getLocation( "DRRC2" ),
                                                                                                     "SQIN",
                                                                                                     "HEFS" ) ),
                                                            input.getRawData().size(),
@@ -82,7 +82,7 @@ public final class SumOfSquareErrorTest
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
-        assertEquals( expected, actual );
+        assertEquals( expected.getData(), actual.getData() );
     }
 
     @Test

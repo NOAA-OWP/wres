@@ -20,7 +20,7 @@
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>kcfs</unit>
-        <feature locationId="KCDM7"/>
+        <feature left="06893000" right="KCDM7"/>
         <leadHours minimum="0" maximum="120"/>
         <dates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T13:00:00Z" />
         <issuedDates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T13:00:00Z" /> 

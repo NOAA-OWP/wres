@@ -7,9 +7,10 @@ import java.util.Collections;
 import java.util.List;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -43,6 +44,9 @@ public final class DataModelTestDataFactory
 
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
+    private static final FeatureKey DRRC2 = FeatureKey.of( "DRRC2" );
+    private static final FeatureTuple DRRC2_TUPLE = new FeatureTuple( DRRC2, DRRC2, DRRC2 );
+
     /**
      * Returns a {@link List} of {@link ScoreStatistic} comprising the MAE for selected
      * thresholds and forecast lead times using fake data.
@@ -57,7 +61,7 @@ public final class DataModelTestDataFactory
 
         //Fake metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                         DatasetIdentifier.of( DRRC2_TUPLE,
                                                                                "SQIN",
                                                                                "HEFS",
                                                                                "ESP" ) );

@@ -13,13 +13,13 @@ import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -60,11 +60,8 @@ public final class ContingencyTableTest
         SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        StatisticMetadata meta =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                               "SQIN",
-                                                                               "HEFS" ) ),
+        final StatisticMetadata meta =
+                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.CONTINGENCY_TABLE,

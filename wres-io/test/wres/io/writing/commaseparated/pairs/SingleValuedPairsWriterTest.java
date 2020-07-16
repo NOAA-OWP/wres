@@ -23,11 +23,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
@@ -68,15 +71,17 @@ public final class SingleValuedPairsWriterTest
     private static PoolOfPairs<Double, Double> pairsThree = null;
 
     private static final String VARIABLE_NAME = "ARMS";
-    private static final String FEATURE_NAME = "FRUIT";
+    private static final FeatureKey FEATURE = FeatureKey.of( "FRUIT" );
     private static final String UNIT = "SCOOBIES";
+
+    private Path tempDir = null;
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -85,7 +90,7 @@ public final class SingleValuedPairsWriterTest
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -95,7 +100,7 @@ public final class SingleValuedPairsWriterTest
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       timeScale,
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -105,7 +110,7 @@ public final class SingleValuedPairsWriterTest
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       timeScale,
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       UNIT );
     }
 
@@ -125,7 +130,8 @@ public final class SingleValuedPairsWriterTest
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PLUM" ), FeatureKey.of( "PLUM" ), null ),
+                                                         "RIFLE" ) );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -145,7 +151,8 @@ public final class SingleValuedPairsWriterTest
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "ORANGE" ), FeatureKey.of( "ORANGE" ), null ),
+                                                         "PISTOL" ) );
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
@@ -166,12 +173,19 @@ public final class SingleValuedPairsWriterTest
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "BANANA" ), FeatureKey.of( "BANANA" ), null ),
+                                                         "GRENADE" ) );
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
 
         pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree ).setMetadata( metaThree ).build();
+    }
+
+    @Before
+    public void setup() throws IOException
+    {
+        this.tempDir = Files.createTempDirectory( "wres_temp" );
     }
 
     /**
@@ -184,7 +198,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptWithEmptyPairs() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -195,8 +209,10 @@ public final class SingleValuedPairsWriterTest
             // Set the measurement units and time scale
             SampleMetadata meta =
                     new Builder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
-                                                                                     "MORTARS" ) )
+                                 .setIdentifier( DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
+                                                                                         FeatureKey.of( "PINEAPPLE" ),
+                                                                                         null ),
+                                                                       "MORTARS" ) )
                                                .setTimeScale( TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
                                                                             TimeScaleFunction.MEAN ) )
                                                .build();
@@ -228,7 +244,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForOneSetOfPairs() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -257,7 +273,7 @@ public final class SingleValuedPairsWriterTest
     }
 
     /**
-     * Builds a {@link SingleValuedPairsWriter} whose {@link SampleMetadata} includes a {@link TimeWindowOuter}, 
+     * Builds a {@link SingleValuedPairsWriter} whose {@link SampleMetadata} includes a {@link TimeWindowOuter},
      * writes some pairs, and checks that the written output matches the expected output.
      * @throws IOException if the writing or removal of the paired file fails
      */
@@ -266,7 +282,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForOneSetOfPairsWithTimeWindow() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -339,7 +355,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForTwoSetsOfPairsWrittenSync() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -384,7 +400,7 @@ public final class SingleValuedPairsWriterTest
     public void testAcceptForThreeSetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
@@ -438,7 +454,7 @@ public final class SingleValuedPairsWriterTest
     public void testSuppliedPath() throws IOException
     {
         // Create the path
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+        Path pathToFile = Paths.get( this.tempDir.toString(), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
@@ -455,4 +471,9 @@ public final class SingleValuedPairsWriterTest
         }
     }
 
+    @After
+    public void tearDown() throws IOException
+    {
+        Files.deleteIfExists( this.tempDir );
+    }
 }

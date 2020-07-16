@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -31,12 +32,13 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -54,7 +56,6 @@ import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
-import wres.io.data.details.VariableDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
@@ -82,12 +83,6 @@ public class EnsembleRetrieverFactoryTest
     private static final Integer PROJECT_ID = 1;
 
     /**
-     * A variablefeature_id for testing.
-     */
-
-    private Integer variableFeatureId;
-
-    /**
      * The measurement units for testing.
      */
 
@@ -97,7 +92,7 @@ public class EnsembleRetrieverFactoryTest
      * The feature name.
      */
 
-    private static final String FAKE_FEATURE = "FAKE";
+    private static final FeatureKey FAKE_FEATURE = FeatureKey.of( "FAKE" );
 
     /**
      * The variable name.
@@ -182,8 +177,8 @@ public class EnsembleRetrieverFactoryTest
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
                                        TimeScaleOuter.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       STREAMFLOW,
+                                       FAKE_FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeries =
@@ -225,8 +220,8 @@ public class EnsembleRetrieverFactoryTest
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesMetadata.of( Collections.emptyMap(),
                                        TimeScaleOuter.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       STREAMFLOW,
+                                       FAKE_FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
         TimeSeries<Double> expectedSeries =
@@ -266,8 +261,8 @@ public class EnsembleRetrieverFactoryTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
                                        TimeScaleOuter.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       STREAMFLOW,
+                                       FAKE_FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         TimeSeries<Ensemble> expectedSeries =
@@ -305,8 +300,8 @@ public class EnsembleRetrieverFactoryTest
                 TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                Instant.parse( T2023_04_01T00_00_00Z ) ),
                                        TimeScaleOuter.of(),
-                                       String.valueOf( this.variableFeatureId ),
-                                       String.valueOf( this.variableFeatureId ),
+                                       STREAMFLOW,
+                                       FAKE_FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         TimeSeries<Ensemble> expectedSeries =
@@ -363,9 +358,7 @@ public class EnsembleRetrieverFactoryTest
         this.testDatabase.createSourceTable( liquibaseDatabase );
         this.testDatabase.createProjectTable( liquibaseDatabase );
         this.testDatabase.createProjectSourceTable( liquibaseDatabase );
-        this.testDatabase.createVariableTable( liquibaseDatabase );
         this.testDatabase.createFeatureTable( liquibaseDatabase );
-        this.testDatabase.createVariableFeatureTable( liquibaseDatabase );
         this.testDatabase.createEnsembleTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesTable( liquibaseDatabase );
         this.testDatabase.createTimeSeriesValueTable( liquibaseDatabase );
@@ -403,12 +396,13 @@ public class EnsembleRetrieverFactoryTest
                                                  null,
                                                  null,
                                                  null,
+                                                 null,
                                                  null );
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
                                                       sourceList,
-                                                      new Variable( STREAMFLOW, null, null ),
+                                                      new Variable( STREAMFLOW, null ),
                                                       null,
                                                       null,
                                                       null,
@@ -420,7 +414,7 @@ public class EnsembleRetrieverFactoryTest
         DataSourceBaselineConfig rightAndBaseline =
                 new DataSourceBaselineConfig( DatasourceType.fromValue( "ensemble forecasts" ),
                                               sourceList,
-                                              new Variable( STREAMFLOW, null, null ),
+                                              new Variable( STREAMFLOW, null ),
                                               null,
                                               null,
                                               null,
@@ -435,24 +429,22 @@ public class EnsembleRetrieverFactoryTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        Feature feature =
-                new Feature( null, null, null, null, null, FAKE_FEATURE, null, null, null, null, null, null, null );
-
+        FeatureTuple featureTuple = new FeatureTuple( FAKE_FEATURE, FAKE_FEATURE, FAKE_FEATURE );
+        Set<FeatureTuple> allFeatures = Set.of( featureTuple );
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
-        Mockito.when( project.getVariableFeatureId( STREAMFLOW, feature ) )
-               .thenReturn( 1 );
-        Mockito.when( project.getLeftVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
-        Mockito.when( project.getRightVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
-        Mockito.when( project.getBaselineVariableFeatureId( feature ) ).thenReturn( this.variableFeatureId );
+        Mockito.when( project.getFeatures() ).thenReturn( allFeatures );
+        Mockito.when( project.getLeftVariableName() ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
+        Mockito.when( project.getBaselineVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
-        this.factoryToTest = EnsembleRetrieverFactory.of( this.wresDatabase, project, feature, unitMapper );
+        this.factoryToTest = EnsembleRetrieverFactory.of( this.wresDatabase, featuresCache, project, featureTuple, unitMapper );
     }
 
     /**
@@ -523,24 +515,10 @@ public class EnsembleRetrieverFactoryTest
         assertEquals( 1, rowsBaseline );
 
         // Add a feature
-        FeatureDetails feature = new FeatureDetails();
-        feature.setLid( FAKE_FEATURE );
+        FeatureDetails feature = new FeatureDetails( FAKE_FEATURE );
         feature.save( this.wresDatabase );
 
         assertNotNull( feature.getId() );
-
-        // Add a variable
-        VariableDetails variable = new VariableDetails();
-        variable.setVariableName( STREAMFLOW );
-        variable.save( this.wresDatabase );
-
-        assertNotNull( variable.getId() );
-
-        // Get (and add) a variablefeature
-        // There is no wres abstraction to help with this, but there is a static helper
-        this.variableFeatureId = this.featuresCache.getVariableFeatureByFeature( feature, variable.getId() );
-
-        assertNotNull( this.variableFeatureId );
 
         // Get the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -590,80 +568,45 @@ public class EnsembleRetrieverFactoryTest
 
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
-        String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
-                                  + "ensemble_id,"
-                                  + "measurementunit_id,"
-                                  + "initialization_date,"
-                                  + "scale_period,"
-                                  + "scale_function,"
-                                  + "source_id ) "
-                                  + "VALUES (?,"
-                                  + "?,"
-                                  + "?,"
-                                  + "(?)::timestamp without time zone,"
-                                  + "?,"
-                                  + "?,"
-                                  + "? )";
+        wres.io.data.details.TimeSeries firstTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     firstMemberId,
+                                                     measurementUnitId,
+                                                     referenceTime,
+                                                     sourceId,
+                                                     STREAMFLOW,
+                                                     feature.getId() );
+        firstTraceRow.setTimeScale( timeScale );
+        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
-        // First member
-        DataScripter memberOneScript = new DataScripter( this.wresDatabase,
-                                                         timeSeriesInsert );
+        // Successfully added row
+        assertTrue( firstTraceRowId > 0 );
 
-        int rowAdded = memberOneScript.execute( this.variableFeatureId,
-                                                firstMemberId,
-                                                measurementUnitId,
-                                                referenceTime.toString(),
-                                                timeScale.getPeriod().toMinutesPart(),
-                                                timeScale.getFunction().name(),
-                                                sourceId );
+        wres.io.data.details.TimeSeries secondTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     secondMemberId,
+                                                     measurementUnitId,
+                                                     referenceTime,
+                                                     sourceId,
+                                                     STREAMFLOW,
+                                                     feature.getId() );
+        secondTraceRow.setTimeScale( timeScale );
+        int secondTraceRowId = secondTraceRow.getTimeSeriesID();
 
-        // One row added
-        assertEquals( 1, rowAdded );
-
-        assertNotNull( memberOneScript.getInsertedIds() );
-        assertEquals( 1, memberOneScript.getInsertedIds().size() );
-
-        Integer firstSeriesId = memberOneScript.getInsertedIds().get( 0 ).intValue();
-
-        // Second member
-        DataScripter memberTwoScript = new DataScripter( this.wresDatabase,
-                                                         timeSeriesInsert );
-
-        int rowAddedTwo = memberTwoScript.execute( this.variableFeatureId,
-                                                   secondMemberId,
-                                                   measurementUnitId,
-                                                   referenceTime.toString(),
-                                                   timeScale.getPeriod().toMinutesPart(),
-                                                   timeScale.getFunction().name(),
-                                                   sourceId );
-
-        // One row added
-        assertEquals( 1, rowAddedTwo );
-
-        assertNotNull( memberTwoScript.getInsertedIds() );
-        assertEquals( 1, memberTwoScript.getInsertedIds().size() );
-
-        Integer secondSeriesId = memberTwoScript.getInsertedIds().get( 0 ).intValue();
+        assertTrue( secondTraceRowId > 0 );
 
         // Third member
-        DataScripter memberThreeScript = new DataScripter( this.wresDatabase,
-                                                           timeSeriesInsert );
+        wres.io.data.details.TimeSeries thirdTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     thirdMemberId,
+                                                     measurementUnitId,
+                                                     referenceTime,
+                                                     sourceId,
+                                                     STREAMFLOW,
+                                                     feature.getId() );
+        thirdTraceRow.setTimeScale( timeScale );
+        int thirdTraceRowId = thirdTraceRow.getTimeSeriesID();
 
-        int rowAddedThree = memberThreeScript.execute( this.variableFeatureId,
-                                                       thirdMemberId,
-                                                       measurementUnitId,
-                                                       referenceTime.toString(),
-                                                       timeScale.getPeriod().toMinutesPart(),
-                                                       timeScale.getFunction().name(),
-                                                       sourceId );
-
-        // One row added
-        assertEquals( 1, rowAddedThree );
-
-        assertNotNull( memberThreeScript.getInsertedIds() );
-        assertEquals( 1, memberThreeScript.getInsertedIds().size() );
-
-        Integer thirdSeriesId = memberThreeScript.getInsertedIds().get( 0 ).intValue();
 
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );
@@ -678,9 +621,9 @@ public class EnsembleRetrieverFactoryTest
         // Insert the ensemble members into the db
         double forecastValue = valueStart;
         Map<Integer, Instant> series = new TreeMap<>();
-        series.put( firstSeriesId, referenceTime );
-        series.put( secondSeriesId, referenceTime );
-        series.put( thirdSeriesId, referenceTime );
+        series.put( firstTraceRowId, referenceTime );
+        series.put( secondTraceRowId, referenceTime );
+        series.put( thirdTraceRowId, referenceTime );
 
         // Iterate and add the series values
         for ( Map.Entry<Integer, Instant> nextSeries : series.entrySet() )
@@ -769,42 +712,23 @@ public class EnsembleRetrieverFactoryTest
 
         assertNotNull( ensembleId );
 
+        FeatureDetails details = new FeatureDetails( FAKE_FEATURE );
+        details.save( this.wresDatabase );
+        int featureId = details.getId();
         Instant latestObsDatetime = Instant.parse( "2023-04-01T10:00:00Z" );
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
-        String timeSeriesInsert = "INSERT INTO wres.TimeSeries (variablefeature_id,"
-                                  + "ensemble_id,"
-                                  + "measurementunit_id,"
-                                  + "initialization_date,"
-                                  + "scale_period,"
-                                  + "scale_function,"
-                                  + "source_id ) "
-                                  + "VALUES (?,"
-                                  + "?,"
-                                  + "?,"
-                                  + "(?)::timestamp without time zone,"
-                                  + "?,"
-                                  + "?,"
-                                  + "? )";
+        wres.io.data.details.TimeSeries firstTraceRow =
+                new wres.io.data.details.TimeSeries( this.wresDatabase,
+                                                     ensembleId,
+                                                     measurementUnitId,
+                                                     latestObsDatetime,
+                                                     sourceId,
+                                                     STREAMFLOW,
+                                                     featureId );
+        firstTraceRow.setTimeScale( timeScale );
+        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
-        DataScripter seriesOneScript = new DataScripter( this.wresDatabase,
-                                                         timeSeriesInsert );
-
-        int rowAdded = seriesOneScript.execute( this.variableFeatureId,
-                                                ensembleId,
-                                                measurementUnitId,
-                                                latestObsDatetime.toString(),
-                                                timeScale.getPeriod().toMinutesPart(),
-                                                timeScale.getFunction().name(),
-                                                sourceId );
-
-        // One row added
-        assertEquals( 1, rowAdded );
-
-        assertNotNull( seriesOneScript.getInsertedIds() );
-        assertEquals( 1, seriesOneScript.getInsertedIds().size() );
-
-        Integer firstSeriesId = seriesOneScript.getInsertedIds().get( 0 ).intValue();
 
         // Add some observations
         // There is no wres abstraction to help with this
@@ -828,7 +752,7 @@ public class EnsembleRetrieverFactoryTest
 
             // Insert
             String insert = MessageFormat.format( observationInsert,
-                                                  firstSeriesId,
+                                                  firstTraceRowId,
                                                   Duration.between( latestObsDatetime,
                                                                     observationTime )
                                                           .toMinutes(),

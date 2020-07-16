@@ -6,32 +6,23 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <include file="wres.measurementunit_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.variable_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.source_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.project_v1.xml" relativeToChangelogFile="true" />
     <include file="operating_member_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.projectsource_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.feature_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.variablefeature_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.ensemble_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.unitconversion_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.timeseriesvalue_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.gridprojection_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.usgsparameter_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.forecasts_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.variablebyfeature_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.conversions_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.conversions_v1.xml" relativeToChangelogFile="true" />
     <include file="Obsolete_tables_v1.xml" relativeToChangelogFile="true" />
     <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_kcfs.xml" relativeToChangelogFile="true" />
     <include file="wres.source_v2.xml" relativeToChangelogFile="true" />
-    <include file="wres.forecasts_v2.xml" relativeToChangelogFile="true" />
-    <include file="variablefeature_pk_set.xml" relativeToChangelogFile="true" />
     <include file="add_identity_conversions.xml" relativeToChangelogFile="true" />
-    <include file="variablefeature_pk_set_2.xml" relativeToChangelogFile="true" />
     <include file="fix_null_conversions.xml" relativeToChangelogFile="true" />
     <include file="set_default_unitconversion_values.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_add_grid_projection.xml" relativeToChangelogFile="true" />
@@ -47,11 +38,15 @@
     <include file="wres.VariableFeature_v2.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_in_per_hour.xml" relativeToChangelogFile="true" />
     <include file="add_daily_flow_measurementunits.xml" relativeToChangelogFile="true" />
-    <include file="update_stock_features.xml" relativeToChangelogFile="true" />
-    <include file="widen_feature_coordinates.xml" relativeToChangelogFile="true" />
     <include file="wres.project_v2.xml" relativeToChangelogFile="true" />
-    <include file="update_lsno2_and_hdga4_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.Observation_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.IndexQueue_v2.xml" relativeToChangelogFile="true" />
+    <include file="wres.USGSParameter_v2.xml" relativeToChangelogFile="true" />
+    <include file="wres.Forecasts_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.VariableFeature_v4.xml" relativeToChangelogFile="true" />
+    <include file="wres.TimeSeries_v6.xml" relativeToChangelogFile="true" />
+    <include file="wres.Variable_v5.xml" relativeToChangelogFile="true" />
+    <include file="wres.Feature_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.TimeSeries_v7.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

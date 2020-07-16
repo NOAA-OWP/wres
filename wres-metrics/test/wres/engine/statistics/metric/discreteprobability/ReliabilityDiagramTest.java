@@ -14,9 +14,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -24,6 +25,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
@@ -61,14 +63,11 @@ public final class ReliabilityDiagramTest
     public void testApply()
     {
         //Generate some data
-        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        SampleData<Pair<Probability, Probability>>  input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
         final StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "Tampere" ),
-                                                                               "MAP",
-                                                                               "FMI" ) ),
+                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.RELIABILITY_DIAGRAM,
@@ -178,8 +177,10 @@ public final class ReliabilityDiagramTest
         data.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
         data.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
 
+        FeatureKey fake = FeatureKey.of( "FAKE" );
+        FeatureTuple fakeTuple = new FeatureTuple( fake, fake, fake );
         DatasetIdentifier identifier =
-                DatasetIdentifier.of( Location.of( "FAKE" ), "MAP", "FK" );
+                DatasetIdentifier.of( fakeTuple, "MAP", "FK" );
 
         SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( data,

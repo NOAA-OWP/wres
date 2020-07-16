@@ -1,6 +1,5 @@
 package wres.io.reading.datacard;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 
 import java.io.IOException;
@@ -121,18 +120,15 @@ public class DataCardSourceTest
         DataSourceConfig.Source confSource = new Source(current,
                                                         null,
                                                         format,
-                                                        "DRRC2",
                                                         "EST",
                                                         "-999.0",
-                                                        "",
-                                                        null,
                                                         null);
 
         sourceList.add(confSource);
 
         DataSourceConfig config = new DataSourceConfig(DatasourceType.fromValue("observations"),
                                                        sourceList,
-                                                       new Variable("QINE", "test", "IN"),
+                                                       new Variable("QINE", "test" ),
                                                        null,
                                                        null,
                                                        null,
@@ -144,24 +140,15 @@ public class DataCardSourceTest
                                                                 config,
                                                                 null );
 
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( "FAKELID",
                                              "FAKELID",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
                                              null );
 
         List<Feature> features = new ArrayList<>();
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -231,18 +218,15 @@ public class DataCardSourceTest
         DataSourceConfig.Source confSource = new Source(current,
                                                         null,
                                                         format,
-                                                        "DRRC2",
                                                         "EST",
                                                         "-997",
-                                                        "",
-                                                        null,
                                                         null);
 
         sourceList.add(confSource);
 
         DataSourceConfig config = new DataSourceConfig(DatasourceType.fromValue("observations"),
                                                        sourceList,
-                                                       new Variable("QINE", "test", "IN"),
+                                                       new Variable("QINE", "test" ),
                                                        null,
                                                        null,
                                                        null,
@@ -253,24 +237,15 @@ public class DataCardSourceTest
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( config,
                                                                 config,
                                                                 null );
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( "FAKELID",
                                              "FAKELID",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null);
+                                             null );
 
         List<Feature> features = new ArrayList<>();
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,

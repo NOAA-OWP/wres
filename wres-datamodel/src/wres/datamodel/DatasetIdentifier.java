@@ -6,7 +6,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.Statistic;
 
@@ -21,7 +20,7 @@ public class DatasetIdentifier
     /**
      * Geospatial identifier.
      */
-    final Location location;
+    final FeatureTuple location;
 
     /**
      * variable identifier.
@@ -56,7 +55,7 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialId, variableId and scenarioId are all null
      */
 
-    public static DatasetIdentifier of( Location location,
+    public static DatasetIdentifier of( FeatureTuple location,
                                         String variableId,
                                         String scenarioId,
                                         String baselineScenarioId,
@@ -76,7 +75,7 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialId, variableId and scenarioId are all null
      */
 
-    public static DatasetIdentifier of( Location location,
+    public static DatasetIdentifier of( FeatureTuple location,
                                         String variableId,
                                         String scenarioId,
                                         String baselineScenarioId )
@@ -110,7 +109,7 @@ public class DatasetIdentifier
      * @return a dataset identifier
      */
 
-    public static DatasetIdentifier of( final Location location,
+    public static DatasetIdentifier of( final FeatureTuple location,
                                         final String variableId,
                                         final String scenarioId )
     {
@@ -125,7 +124,7 @@ public class DatasetIdentifier
      * @return a dataset identifier
      */
 
-    public static DatasetIdentifier of( final Location location, final String variableId )
+    public static DatasetIdentifier of( final FeatureTuple location, final String variableId )
     {
         return DatasetIdentifier.of( location, variableId, null, null );
     }
@@ -136,7 +135,7 @@ public class DatasetIdentifier
      * @return the location or null
      */
 
-    public Location getLocation()
+    public FeatureTuple getLocation()
     {
         return this.location;
     }
@@ -302,7 +301,7 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
      */
 
-    private DatasetIdentifier( Location geospatialID,
+    private DatasetIdentifier( FeatureTuple geospatialID,
                                String variableID,
                                String scenarioID,
                                String baselineScenarioID,

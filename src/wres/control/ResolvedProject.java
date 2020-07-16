@@ -7,12 +7,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -33,17 +32,16 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  */
 class ResolvedProject
 {
-    
     private final ProjectConfigPlus projectConfigPlus;
-    private final Set<FeaturePlus> decomposedFeatures;
+    private final Set<FeatureTuple> decomposedFeatures;
     private final String projectIdentifier;
-    private final Map<Feature, ThresholdsByMetric> thresholds;
+    private final Map<FeatureTuple, ThresholdsByMetric> thresholds;
     private final Path outputDirectory;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
-                             Set<FeaturePlus> decomposedFeatures,
+                             Set<FeatureTuple> decomposedFeatures,
                              String projectIdentifier,
-                             Map<Feature, ThresholdsByMetric> thresholds,
+                             Map<FeatureTuple, ThresholdsByMetric> thresholds,
                              Path outputDirectory )
     {
         this.projectConfigPlus = projectConfigPlus;
@@ -54,9 +52,9 @@ class ResolvedProject
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
-                               Set<FeaturePlus> decomposedFeatures,
+                               Set<FeatureTuple> decomposedFeatures,
                                String projectIdentifier,
-                               Map<Feature, ThresholdsByMetric> thresholds,
+                               Map<FeatureTuple, ThresholdsByMetric> thresholds,
                                Path outputDirectory )
     {
         return new ResolvedProject( projectConfigPlus,
@@ -97,7 +95,7 @@ class ResolvedProject
      * @return a Set of features resolved from the project
      */
 
-    Set<FeaturePlus> getDecomposedFeatures()
+    Set<FeatureTuple> getDecomposedFeatures()
     {
         return this.decomposedFeatures;
     }
@@ -138,14 +136,14 @@ class ResolvedProject
                    .getGraphicsStrings();
     }
 
-    private Map<Feature, ThresholdsByMetric> getThresholds()
+    private Map<FeatureTuple, ThresholdsByMetric> getThresholds()
     {
         return this.thresholds;
     }
 
-    ThresholdsByMetric getThresholdForFeature( Feature feature )
+    ThresholdsByMetric getThresholdForFeature( FeatureTuple featureTuple )
     {
-        return this.getThresholds().get( feature );
+        return this.getThresholds().get( featureTuple );
     }
     
     /**

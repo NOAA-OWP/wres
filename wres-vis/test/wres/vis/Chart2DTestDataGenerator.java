@@ -11,10 +11,12 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -42,6 +44,11 @@ import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponen
 
 public abstract class Chart2DTestDataGenerator
 {
+
+    private static final FeatureKey NWS_FEATURE = new FeatureKey( "DRRC2", null, null, null );
+    private static final FeatureKey USGS_FEATURE = new FeatureKey( "09165000", "DOLORES RIVER BELOW RICO, CO.", 4326, "POINT ( -108.0603517 37.63888428 )");
+    private static final FeatureKey NWM_FEATURE = new FeatureKey( "18384141", null, null, null );
+    private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE );
 
     /**
      * Returns a {@link List} of {@link DoubleScoreStatisticOuter} comprising the CRPSS for a
@@ -101,7 +108,7 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatisticOuter}. TODO: add some proper data if we ever make 
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter}. TODO: add some proper data if we ever make
      * assertions about images. See #58348.
      *
      * @return an output map of verification scores
@@ -129,7 +136,7 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link List} of {@link DoubleScoreStatisticOuter}. TODO: add some proper data if we ever make 
+     * Returns a {@link List} of {@link DoubleScoreStatisticOuter}. TODO: add some proper data if we ever make
      * assertions about images. See #58348.
      *
      * @return an output map of verification scores
@@ -354,7 +361,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( Location.of( "DOSC1" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "HEFS",
                                                                                "ESP" ),
@@ -491,7 +498,7 @@ public abstract class Chart2DTestDataGenerator
 
         //Source metadata
         final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( Location.of( "ABEC2" ),
+                                                         DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                "STREAMFLOW",
                                                                                "NWM" ),
                                                          null,
@@ -591,7 +598,7 @@ public abstract class Chart2DTestDataGenerator
                                                           ThresholdDataType.LEFT ) );
 
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                          DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                          DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                                 "Streamflow",
                                                                                                 "HEFS" ),
                                                                           window,
@@ -633,7 +640,7 @@ public abstract class Chart2DTestDataGenerator
                                                           ThresholdDataType.LEFT ) );
 
         StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                          DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                          DatasetIdentifier.of( FEATURE_TUPLE,
                                                                                                 "Streamflow",
                                                                                                 "HEFS" ),
                                                                           window,

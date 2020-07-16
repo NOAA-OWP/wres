@@ -18,7 +18,7 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>MM</unit>
-        <feature locationId="LGNN5" />
+        <feature left="LGNN5" right="LGNN5" />
         <leadHours minimum="6" maximum="48" />
         <values minimum="0.00001"/><!-- I think this results in only positive values for both obs and fcst-->
         <desiredTimeScale>

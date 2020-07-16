@@ -2,7 +2,6 @@ package wres.io.thresholds.csv;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
 import wres.config.generated.*;
 import wres.datamodel.DataFactory;
@@ -40,7 +39,7 @@ public class CSVThresholdReader
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
-     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
+     * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
      *
      * @param systemSettings the system settings used to help resolve a path to thresholds
      * @param threshold the threshold configuration
@@ -55,7 +54,7 @@ public class CSVThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds).
      */
 
-    public static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds( SystemSettings systemSettings,
+    public static Map<String, Set<ThresholdOuter>> readThresholds( SystemSettings systemSettings,
                                                                    ThresholdsConfig threshold,
                                                                    MeasurementUnit units,
                                                                    UnitMapper unitMapper )
@@ -129,15 +128,15 @@ public class CSVThresholdReader
         ThresholdDataTypes dataTypes = new ThresholdDataTypes( dataType, featureType, threshold.getType(), operator );
 
         return CSVThresholdReader.readThresholds( commaSeparated,
-                                               dataTypes,
-                                               missingValue,
-                                               units,
-                                               unitMapper );
+                                                  dataTypes,
+                                                  missingValue,
+                                                  units,
+                                                  unitMapper );
     }
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
-     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
+     * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
      *
      * @param commaSeparated the path to the comma separated values
      * @param dataTypes the threshold data types
@@ -153,14 +152,14 @@ public class CSVThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds).
      */
 
-    private static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds( Path commaSeparated,
+    private static Map<String, Set<ThresholdOuter>> readThresholds( Path commaSeparated,
                                                                     ThresholdDataTypes dataTypes,
                                                                     Double missingValue,
                                                                     MeasurementUnit units,
                                                                     UnitMapper unitMapper )
             throws IOException
     {
-        Map<FeaturePlus, Set<ThresholdOuter>> returnMe = new TreeMap<>();
+        Map<String, Set<ThresholdOuter>> returnMe = new TreeMap<>();
 
         // Rather than drip-feeding failures, collect all expected failure types, which
         // are IllegalArgumentException and NumberFormatException and propagate at the end.
@@ -212,9 +211,7 @@ public class CSVThresholdReader
 
                 String[] featureThresholds = nextLine.split( "\\s*(,)\\s*" );
 
-                String locationId = featureThresholds[0];
-
-                FeaturePlus nextFeature = CSVThresholdReader.getFeature( locationId, dataTypes.getFeatureType() );
+                String nextFeature = featureThresholds[0];
 
                 try
                 {
@@ -228,19 +225,19 @@ public class CSVThresholdReader
                 // Catch expected exceptions and propagate finally to avoid drip-feeding
                 catch ( LabelInconsistencyException e )
                 {
-                    featuresThatFailedWithLabelInconsistency.add( locationId );
+                    featuresThatFailedWithLabelInconsistency.add( nextFeature );
                 }
                 catch ( AllThresholdsMissingException e )
                 {
-                    featuresThatFailedWithAllThresholdsMissing.add( locationId );
+                    featuresThatFailedWithAllThresholdsMissing.add( nextFeature );
                 }
                 catch ( NumberFormatException e )
                 {
-                    featuresThatFailedWithNonNumericInput.add( locationId );
+                    featuresThatFailedWithNonNumericInput.add( nextFeature );
                 }
                 catch ( IllegalArgumentException e )
                 {
-                    featuresThatFailedWithOtherWrongInput.add( locationId );
+                    featuresThatFailedWithOtherWrongInput.add( nextFeature );
                 }
 
                 // Move to next line
@@ -260,51 +257,6 @@ public class CSVThresholdReader
                                                          featuresThatFailedWithOtherWrongInput );
 
         return returnMe;
-    }
-
-    /**
-     * Returns a feature from the input.
-     *
-     * @param name the feature name
-     * @param type the type of feature name
-     * @return a feature
-     */
-
-    private static FeaturePlus getFeature( String name, FeatureType type )
-    {
-        switch ( type )
-        {
-            case NWS_ID:
-                return FeaturePlus.of( new Feature( null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    name,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null ) );
-            case USGS_ID:
-                return FeaturePlus.of( new Feature( null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    name,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null ) );
-            default:
-                throw new IllegalArgumentException( "Unsupported feature type '" + type + "'." );
-        }
     }
 
     /**

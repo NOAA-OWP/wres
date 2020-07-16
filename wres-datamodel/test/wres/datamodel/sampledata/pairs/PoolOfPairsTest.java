@@ -17,6 +17,7 @@ import java.util.stream.StreamSupport;
 
 import org.junit.Test;
 
+import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -49,7 +50,7 @@ public final class PoolOfPairsTest
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
     private static final String VARIABLE_NAME = "Fruit";
-    private static final String FEATURE_NAME = "Tropics";
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )

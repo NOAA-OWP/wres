@@ -18,18 +18,6 @@ import wres.io.config.ConfigHelper;
  */
 public abstract class BasicSource
 {
-
-    /**
-        System agnostic newline character used to make created scripts easier
-        to read
-     */
-    protected static final String NEWLINE = System.lineSeparator();
-
-    /**
-     * Epsilon value used to test floating point equivalency
-     */
-    protected static final double EPSILON = 0.0000001;
-
     protected final ProjectConfig projectConfig;
     protected final DataSource dataSource;
 
@@ -139,25 +127,6 @@ public abstract class BasicSource
         if ( variable != null )
         {
             return variable.getValue();
-        }
-
-        return null;
-    }
-
-    /**
-     * @return The specific location ID given by the source tag within the
-     * data source configuration. This should be ignored in data sources that
-     * define their own locations.
-     * null if not found.
-     */
-    protected String getSpecifiedLocationID()
-    {
-        DataSourceConfig.Source source  = this.getDataSource()
-                                              .getSource();
-
-        if ( source.getLocationId() != null && !source.getLocationId().isEmpty() )
-        {
-            return source.getLocationId();
         }
 
         return null;

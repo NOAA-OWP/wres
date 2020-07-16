@@ -35,6 +35,7 @@ import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -61,6 +62,9 @@ public class CSVSource extends BasicSource
     // It's probably worth making this configurable
     private static final String DELIMITER = ",";
     private static final String REFERENCE_DATETIME_COLUMN = "start_date";
+    private static final String FEATURE_DESCRIPTION_COLUMN = "location_description";
+    private static final String FEATURE_SRID_COLUMN = "location_srid";
+    private static final String FEATURE_WKT_COLUMN = "location_wkt";
 
     private static final String DEFAULT_ENSEMBLE_NAME = "default";
 
@@ -237,12 +241,37 @@ public class CSVSource extends BasicSource
 
             String variableName = data.getString( "variable_name" );
             String locationName = data.getString( "location" );
+            String locationDescription = null;
+
+            if ( data.hasColumn( FEATURE_DESCRIPTION_COLUMN ) )
+            {
+                locationDescription = data.getString( "location_description" );
+            }
+
+            Integer locationSrid = null;
+
+            if ( data.hasColumn( FEATURE_SRID_COLUMN ) )
+            {
+                locationSrid = data.getInt( "location_srid" );
+            }
+
+            String locationWkt = null;
+
+            if ( data.hasColumn( FEATURE_WKT_COLUMN ) )
+            {
+                locationWkt = data.getString( "location_wkt" );
+            }
+
             String unitName = data.getString( "measurement_unit" );
+            FeatureKey location = new FeatureKey( locationName,
+                                                  locationDescription,
+                                                  locationSrid,
+                                                  locationWkt );
             currentTimeSeriesMetadata =
                     TimeSeriesMetadata.of( Map.of( UNKNOWN, referenceDatetime ),
                                            null,
                                            variableName,
-                                           locationName,
+                                           location,
                                            unitName );
             String ensembleName = this.getEnsembleName( data );
             Instant valueDate = data.getInstant( "value_date" );
@@ -380,7 +409,7 @@ public class CSVSource extends BasicSource
             metadata = TimeSeriesMetadata.of( Map.of( LATEST_OBSERVATION, latestDatetime ),
                                               lastTimeSeriesMetadata.getTimeScale(),
                                               lastTimeSeriesMetadata.getVariableName(),
-                                              lastTimeSeriesMetadata.getFeatureName(),
+                                              lastTimeSeriesMetadata.getFeature(),
                                               lastTimeSeriesMetadata.getUnit() );
         }
         else
@@ -845,7 +874,6 @@ public class CSVSource extends BasicSource
                                       projectConfig,
                                       dataSource,
                                       lockManager,
-                                      timeSeries,
-                                      TimeSeriesIngester.GEO_ID_TYPE.LID );
+                                      timeSeries );
     }
 }

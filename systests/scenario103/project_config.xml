@@ -49,8 +49,7 @@
         <unit>CMS</unit>
         
         <!-- The location id associated with the evaluation; in this case a handbook5 id. -->
-        <feature locationId="LGNN5" />
-        
+
         <!-- The evaluation is restricted to pairs that have a lead time of 42h. In general, 
              it may be more useful to evaluate a longer period of lead durations, setting 
              minimum to be "0" hours and maximum to be "120", "240", or even longer depending

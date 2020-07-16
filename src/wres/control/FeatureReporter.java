@@ -16,7 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.Feature;
+import wres.datamodel.FeatureTuple;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Features;
 
 /**
  * <p>A {@link Consumer} that records information about the completion state of a {@link Feature}. The 
@@ -45,7 +47,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
      * List of successful features.
      */
 
-    private final ConcurrentLinkedQueue<Feature> successfulFeatures;
+    private final ConcurrentLinkedQueue<FeatureTuple> successfulFeatures;
 
     /**
      * Set of paths modified by this feature.
@@ -114,13 +116,15 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // Increment the feature count
         int currentFeature = this.processed.getAndIncrement();
 
-        if ( !result.hasStatistics() )
+        if ( !result.hasStatistics() && LOGGER.isWarnEnabled() )
         {
             LOGGER.warn( "[{}/{}] Completed feature '{}', but no statistics were produced. "
                          + "This probably occurred because no pools contained valid pairs.",
                          currentFeature,
                          this.totalFeatures,
-                         ConfigHelper.getFeatureDescription( result.getFeature() ) );
+                         result.getFeature()
+                               .getRight()
+                               .getName() );
         }
         else
         {
@@ -128,10 +132,15 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
             this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
 
-            LOGGER.info( "[{}/{}] Completed feature '{}'",
-                         currentFeature,
-                         this.totalFeatures,
-                         ConfigHelper.getFeatureDescription( result.getFeature() ) );
+            if ( LOGGER.isInfoEnabled() )
+            {
+                LOGGER.info( "[{}/{}] Completed feature '{}'",
+                             currentFeature,
+                             this.totalFeatures,
+                             result.getFeature()
+                                   .getRight()
+                                   .getName() );
+            }
         }
     }
 
@@ -144,8 +153,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
     void report()
     {
         // Finalize results
-        List<Feature> successfulFeaturesToReport =
-                Collections.unmodifiableList( new ArrayList<>( successfulFeatures ) );
+        List<FeatureTuple> successfulFeaturesToReport = List.copyOf( successfulFeatures );
 
         // Detailed report
         if ( LOGGER.isInfoEnabled() &&
@@ -154,7 +162,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
              !successfulFeaturesToReport.isEmpty() )
         {
             LOGGER.info( "The following features succeeded: {}",
-                         ConfigHelper.getFeaturesDescription( successfulFeaturesToReport ) );
+                         Features.getFeaturesDescription( successfulFeaturesToReport ) );
         }
 
         // Exception after detailed report: in practice, this should be handled earlier

@@ -7,8 +7,9 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
@@ -45,27 +46,27 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testEquals()
     {
-        Location l1 = Location.of( "A" );
+        FeatureKey l1 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l1,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
                                                      MeasurementUnit.of(),
                                                      MetricConstants.MEAN_ERROR,
                                                      MetricConstants.MAIN );
-        Location l2 = Location.of( "A" );
+        FeatureKey l2 = FeatureKey.of( "A" );
         StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      11,
                                                      MeasurementUnit.of(),
                                                      MetricConstants.MEAN_ERROR,
                                                      MetricConstants.MAIN );
-        Location l3 = Location.of( "B" );
+        FeatureKey l3 = FeatureKey.of( "B" );
         StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l3,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
@@ -107,9 +108,9 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testToString()
     {
-        Location l1 = Location.of( "A" );
+        FeatureKey l1 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l1,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
@@ -131,18 +132,18 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testGetMetadata()
     {
-        Location l1 = Location.of( "A" );
+        FeatureKey l1 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l1,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
                                                      MeasurementUnit.of(),
                                                      MetricConstants.MEAN_ERROR,
                                                      MetricConstants.MAIN );
-        Location l2 = Location.of( "B" );
+        FeatureKey l2 = FeatureKey.of( "B" );
         StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
@@ -164,27 +165,27 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testHashCode()
     {
-        Location l1 = Location.of( "A" );
+        FeatureKey l1 = FeatureKey.of( "A" );
         StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l1,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
                                                      MeasurementUnit.of(),
                                                      MetricConstants.MEAN_ERROR,
                                                      MetricConstants.MAIN );
-        Location l2 = Location.of( "A" );
+        FeatureKey l2 = FeatureKey.of( "A" );
         StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
                                                      MeasurementUnit.of(),
                                                      MetricConstants.MEAN_ERROR,
                                                      MetricConstants.MAIN );
-        Location l3 = Location.of( "B" );
+        FeatureKey l3 = FeatureKey.of( "B" );
         StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l3,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,

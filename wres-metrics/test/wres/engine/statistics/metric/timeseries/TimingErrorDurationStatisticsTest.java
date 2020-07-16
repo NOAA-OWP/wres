@@ -14,8 +14,8 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
@@ -69,7 +69,7 @@ public final class TimingErrorDurationStatisticsTest
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                          STREAMFLOW ) )
                                                    .setTimeWindow( timeWindow )
                                                    .build(),
@@ -100,7 +100,7 @@ public final class TimingErrorDurationStatisticsTest
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .addComponents( metricComponent )
                                                         .build();
-        
+
         DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
                                                              .setMetric( metric )
                                                              .addStatistics( component )
@@ -154,7 +154,7 @@ public final class TimingErrorDurationStatisticsTest
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                          STREAMFLOW ) )
                                                    .setTimeWindow( timeWindow )
                                                    .build(),
@@ -248,7 +248,7 @@ public final class TimingErrorDurationStatisticsTest
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
                                                                                          STREAMFLOW ) )
                                                    .setTimeWindow( timeWindow )
                                                    .build(),

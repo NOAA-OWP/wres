@@ -1,8 +1,10 @@
 package wres.io.thresholds;
 
-import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
-import wres.config.generated.*;
+import wres.config.generated.MetricsConfig;
+import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdFormat;
+import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -15,27 +17,35 @@ import wres.system.SystemSettings;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ExternalThresholdReader {
+    private final SystemSettings systemSettings;
+    private final ProjectConfig projectConfig;
+    private final Set<String> features;
+    private final UnitMapper desiredMeasurementUnitConverter;
+    private final ThresholdBuilderCollection sharedBuilders;
+    private final Set<String> recognizedFeatures = new HashSet<>();
+
     public ExternalThresholdReader(
             final SystemSettings systemSettings,
             final ProjectConfig projectConfig,
-            final Set<Feature> features,
+            final Set<String> features,
             final UnitMapper desiredMeasurementUnitConverter,
             final ThresholdBuilderCollection builders
     ) {
+        this.systemSettings = systemSettings;
         this.projectConfig = projectConfig;
         this.features = features;
-        this.systemSettings = systemSettings;
         this.desiredMeasurementUnitConverter = desiredMeasurementUnitConverter;
         this.sharedBuilders = builders;
     }
 
     public void read() {
-        for (MetricsConfig config : this.projectConfig.getMetrics()) {
-            for (ThresholdsConfig thresholdsConfig : this.getThresholds(config)) {
-                Set<Feature> readFeatures = this.readThreshold(
+        for ( MetricsConfig config : this.projectConfig.getMetrics() )
+        {
+            for ( ThresholdsConfig thresholdsConfig : this.getThresholds( config) )
+            {
+                Set<String> readFeatures = this.readThreshold(
                         thresholdsConfig,
                         DataFactory.getMetricsFromMetricsConfig(config, this.projectConfig)
                 );
@@ -44,8 +54,9 @@ public class ExternalThresholdReader {
         }
     }
 
-    public Collection<Feature> getRecognizedFeatures() {
-        return Collections.unmodifiableCollection(this.recognizedFeatures);
+    public Set<String> getRecognizedFeatures()
+    {
+        return Collections.unmodifiableSet( this.recognizedFeatures );
     }
 
     private Set<ThresholdsConfig> getThresholds(MetricsConfig metrics) {
@@ -62,7 +73,7 @@ public class ExternalThresholdReader {
 
     /**
      * Reads a {@link ThresholdsConfig} and returns a corresponding {@link Set} of external {@link ThresholdOuter}
-     * by {@link FeaturePlus}.
+     * by {@link String}.
      *
      * @param thresholdsConfig the threshold configuration
      * @param metrics the metrics to which the threshold applies
@@ -70,13 +81,14 @@ public class ExternalThresholdReader {
      * @throws NullPointerException if the threshold configuration is null or the metrics are null
      */
 
-    private Set<Feature> readThreshold(ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics)
+    private Set<String> readThreshold( ThresholdsConfig thresholdsConfig,
+                                       Set<MetricConstants> metrics )
     {
         Objects.requireNonNull( thresholdsConfig, "Specify non-null threshold configuration." );
 
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
 
-        Set<Feature> recognizedFeatures = new HashSet<>();
+        Set<String> recognizedFeatures = new HashSet<>();
 
         // Threshold type: default to probability
         final ThresholdConstants.ThresholdGroup thresholdGroup;
@@ -90,9 +102,9 @@ public class ExternalThresholdReader {
 
         try
         {
-            Map<FeaturePlus, Set<ThresholdOuter>> readThresholds;
-
-            ThresholdFormat format = ExternalThresholdReader.getThresholdFormat(thresholdsConfig);
+            Map<String, Set<ThresholdOuter>> readThresholds;
+            ThresholdFormat format =
+                    ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
 
             switch (format) {
                 case CSV:
@@ -108,7 +120,7 @@ public class ExternalThresholdReader {
                             this.systemSettings,
                             thresholdsConfig,
                             this.desiredMeasurementUnitConverter,
-                            this.features.parallelStream().map(FeaturePlus::of).collect(Collectors.toSet())
+                            this.features
                     );
                     break;
                 default:
@@ -117,15 +129,15 @@ public class ExternalThresholdReader {
             }
 
             // Add the thresholds for each feature
-            for ( Map.Entry<FeaturePlus, Set<ThresholdOuter>> thresholds : readThresholds.entrySet() )
+            for ( Map.Entry<String, Set<ThresholdOuter>> thresholds : readThresholds.entrySet() )
             {
-                recognizedFeatures.add(thresholds.getKey().getFeature());
+                recognizedFeatures.add( thresholds.getKey() );
 
                 for(MetricConstants metricName : metrics) {
                     for (ThresholdOuter threshold : thresholds.getValue()) {
                         // This employs the FeaturePlus; this will eventually devolve into just a Feature
                         this.sharedBuilders.addThreshold(
-                                thresholds.getKey().getFeature(),
+                                thresholds.getKey(),
                                 thresholdGroup,
                                 metricName,
                                 threshold
@@ -171,11 +183,4 @@ public class ExternalThresholdReader {
 
         return measurementUnit;
     }
-
-    private final ProjectConfig projectConfig;
-    private final SystemSettings systemSettings;
-    private final Set<Feature> features;
-    private final Set<Feature> recognizedFeatures = new HashSet<>();
-    private final UnitMapper desiredMeasurementUnitConverter;
-    private final ThresholdBuilderCollection sharedBuilders;
 }

@@ -31,11 +31,10 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.EvaluationEvent.EventType;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
@@ -109,6 +108,7 @@ public class MessageFactoryTest
 
     private static final String VARIABLE_NAME = "Streamflow";
     private static final String FEATURE_NAME = "DRRC2";
+    private static final FeatureKey FEATURE = FeatureKey.of( FEATURE_NAME );
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
 
     private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW =
@@ -425,10 +425,10 @@ public class MessageFactoryTest
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
 
-        Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
+        FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                .setTimeScale( timeScale )
@@ -510,10 +510,10 @@ public class MessageFactoryTest
                                                                                                      Operator.GREATER_EQUAL,
                                                                                                      ThresholdDataType.LEFT ) );
 
-        Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
+        FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                .setTimeScale( timeScale )
@@ -598,10 +598,10 @@ public class MessageFactoryTest
                                                                                                      Operator.GREATER_EQUAL,
                                                                                                      ThresholdDataType.LEFT ) );
 
-        Location location = Location.of( (Long) null, FEATURE_NAME, 23.45F, 56.21F, (String) null );
+        FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                .setTimeScale( timeScale )
@@ -735,10 +735,10 @@ public class MessageFactoryTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        Location location = Location.of( "DOLC2" );
+        FeatureKey location = FeatureKey.of( "DOLC2" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( CMS,
@@ -784,10 +784,10 @@ public class MessageFactoryTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        Location location = Location.of( "DOLC2" );
+        FeatureKey location = FeatureKey.of( "DOLC2" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( location, SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
 
         StatisticMetadata fakeMetadata =
                 StatisticMetadata.of( SampleMetadata.of( CMS,
@@ -818,7 +818,7 @@ public class MessageFactoryTest
         return TimeSeriesMetadata.of( times,
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FEATURE_NAME,
+                                      FEATURE,
                                       CMS.getUnit() );
     }
 

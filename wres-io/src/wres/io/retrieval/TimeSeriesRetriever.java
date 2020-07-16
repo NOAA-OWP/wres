@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.FeatureKey;import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -29,6 +29,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
+import wres.io.data.caching.Features;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -48,7 +49,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      */
 
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
-                                                               + "with variablefeature_id '{}' "
                                                                + "and data type {}, ";
 
     /**
@@ -72,6 +72,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final Database database;
 
     /**
+     * Features cache/orm to allow "get db id from a FeatureKey."
+     */
+    private final Features featuresCache;
+
+    /**
      * Time window filter.
      */
 
@@ -90,14 +95,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     private final Integer projectId;
 
-    /**
-     * TODO: replace this with a variable name and a list of features. Retrieval should support
-     * multiple features and separate them from variables.
-     * 
-     * The <code>wres.VariableFeature.variablefeature_id</code>.
-     */
-
-    private final Integer variableFeatureId;
+    private final FeatureKey feature;
+    private final String variableName;
 
     /**
      * The data type.
@@ -142,16 +141,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     private final String leadDurationColumn;
 
-    /**
-     * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. The need
-     * for this distinction persists while ingest is not time-series-shaped, rather event-shaped. For example, one 
-     * consequence is the need to group by <code>source_id</code>, in general, but not when individual time-series were 
-     * distributed across multiple different sources. See #65216.
-     * 
-     * TODO: please remove me when ingest is time-series-shaped.
-     */
-
-    private final boolean hasMultipleSourcesPerSeries;
     
     /**
      * Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
@@ -172,6 +161,21 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     protected Database getDatabase()
     {
         return this.database;
+    }
+
+    protected Features getFeaturesCache()
+    {
+        return this.featuresCache;
+    }
+
+    FeatureKey getFeature()
+    {
+        return this.feature;
+    }
+
+    String getVariableName()
+    {
+        return this.variableName;
     }
 
     /**
@@ -244,12 +248,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 TimeScaleOuter latestScale = this.checkAndGetLatestScale( lastScale, period, functionString, event );
 
-                // TODO use actual variable, feature in TimeSeriesMetadata.
                 TimeSeriesMetadata metadata =
                         TimeSeriesMetadata.of( referenceTimes,
                                                latestScale,
-                                               Integer.toString( this.variableFeatureId ),
-                                               Integer.toString( this.variableFeatureId ),
+                                               this.getVariableName(),
+                                               this.getFeature(),
                                                this.unitMapper.getDesiredMeasurementUnitName() );
                 builder.setMetadata( metadata );
                 lastScale = latestScale;
@@ -265,7 +268,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds a {@link TimeWindowOuter} constraint to the retrieval script, if available. All intervals are treated as 
+     * Adds a {@link TimeWindowOuter} constraint to the retrieval script, if available. All intervals are treated as
      * right-closed.
      * 
      * @param script the script to augment
@@ -381,8 +384,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Where available adds the clauses to the input script associated with {@link #getProjectId()}, 
-     * {@link #getVariableFeatureId()} and {@link #getLeftOrRightOrBaseline()}.
-     * 
+     *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
      */
@@ -392,17 +394,28 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // project_id
         if ( Objects.nonNull( this.getProjectId() ) )
         {
-            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = '", this.getProjectId(), "'" );
+            this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ", this.getProjectId() );
         }
-        // variablefeature_id
-        if ( Objects.nonNull( this.getVariableFeatureId() ) )
+
+        // variable name
+        if ( Objects.nonNull( this.getVariableName() ) )
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
-                                      "TS.variablefeature_id = '",
-                                      this.getVariableFeatureId(),
+                                      "TS.variable_name = '",
+                                      this.getVariableName(),
                                       "'" );
         }
+
+        // Feature id, can be null with no baseline.
+        if ( Objects.nonNull( this.getFeature() ) )
+        {
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      "TS.feature_id = ",
+                                      this.getFeatureId() );
+        }
+
         // member
         if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )
         {
@@ -459,17 +472,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Returns the <code>wres.VariableFeature.variablefeature_id</code>.
-     * 
-     * @return the <code>wres.VariableFeature.variablefeature_id</code>
-     */
-
-    Integer getVariableFeatureId()
-    {
-        return this.variableFeatureId;
-    }
-
-    /**
      * Returns the data type.
      * 
      * @return the data type
@@ -491,18 +493,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         return this.unitMapper;
     }
 
-    /**
-     * Gets the status of individual time-series as originating from several sources.
-     * 
-     * TODO: please remove me when ingest is time-series-shaped.
-     * 
-     * @return true if each series originates from multiple sources, otherwise false
-     */
-
-    boolean hasMultipleSourcesPerSeries()
-    {
-        return this.hasMultipleSourcesPerSeries;
-    }
 
     /**
      * Returns <code>true</code> if a seasonal constraint is defined, otherwise <code>false</code>.
@@ -603,13 +593,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                            + "cannot determine the time-series identifiers without a projectID." );
         }
 
-        if ( Objects.isNull( this.getVariableFeatureId() ) )
-        {
-            throw new DataAccessException( "There is no variableFeatureId associated with this Data Access "
-                                           + "Object: cannot determine the time-series identifiers without a "
-                                           + "variableFeatureId." );
-        }
-
         if ( Objects.isNull( this.getLeftOrRightOrBaseline() ) )
         {
             throw new DataAccessException( "There is no leftOrRightOrBaseline identifier associated with this Data "
@@ -634,7 +617,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
      * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
      * any declared time scale information attached to this instance on construction. In using an existing time scale 
-     * from the project declaration, the principle is to augment, but not override, because the source is canonical 
+     * from the project declaration, the principle is to augment, but not override, because the source is canonical
      * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be
      * overridden.
      * 
@@ -725,8 +708,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             throw new DataAccessException( "While processing a time-series for project_id '"
                                            + this.getProjectId()
-                                           + "' with variablefeature_id '"
-                                           + this.getVariableFeatureId()
                                            + "' and data type '"
                                            + this.getLeftOrRightOrBaseline()
                                            + "', encountered an error: ",
@@ -956,7 +937,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             LOGGER.debug( message,
                           this.getProjectId(),
-                          this.getVariableFeatureId(),
                           this.getLeftOrRightOrBaseline(),
                           lowerValidTime,
                           upperValidTime );
@@ -964,7 +944,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Helper that returns the lower valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the 
+     * Helper that returns the lower valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the
      * lower valid time from the forecast information present.
      * 
      * @param timeWindow the time window
@@ -1008,7 +988,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Helper that returns the upper valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the 
+     * Helper that returns the upper valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the
      * upper valid time from the forecast information present.
      * 
      * @param timeWindow the time window
@@ -1121,6 +1101,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private Database database;
 
         /**
+         * The cache/ORM to get feature data from.
+         */
+        private Features featuresCache;
+
+        /**
          * Time window filter.
          */
 
@@ -1132,11 +1117,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         private Integer projectId;
 
-        /**
-         * The <code>wres.VariableFeature.variablefeature_id</code>.
-         */
-
-        private Integer variableFeatureId;
+        private String variableName;
+        private FeatureKey feature;
 
         /**
          * The data type.
@@ -1175,15 +1157,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private MonthDay seasonEnd;
 
         /**
-         * Is <code>true</code> to retrieve values from time-series that were distributed across multiple sources. 
-         * See #65216.
-         * 
-         * TODO: please remove me when ingest is time-series-shaped.
-         */
-
-        private boolean hasMultipleSourcesPerSeries;
-
-        /**
          * The reference time type.
          */
         
@@ -1192,6 +1165,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         TimeSeriesRetrieverBuilder<S> setDatabase( Database database )
         {
             this.database = database;
+            return this;
+        }
+
+        TimeSeriesRetrieverBuilder<S> setFeaturesCache( Features featuresCache )
+        {
+            this.featuresCache = featuresCache;
             return this;
         }
 
@@ -1208,19 +1187,16 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             return this;
         }
 
-        /**
-         * Sets the <code>wres.VariableFeature.variablefeature_id</code>.
-         * 
-         * TODO: replace this with a variable name and a list of features. Retrieval should support
-         * multiple features and separate them from variables.
-         * 
-         * @param variableFeatureId the <code>wres.VariableFeature.variablefeature_id</code>
-         * @return the builder
-         */
 
-        TimeSeriesRetrieverBuilder<S> setVariableFeatureId( int variableFeatureId )
+        TimeSeriesRetrieverBuilder<S> setVariableName( String variableName )
         {
-            this.variableFeatureId = variableFeatureId;
+            this.variableName = variableName;
+            return this;
+        }
+
+        TimeSeriesRetrieverBuilder<S> setFeature( FeatureKey feature )
+        {
+            this.feature = feature;
             return this;
         }
 
@@ -1275,21 +1251,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         TimeSeriesRetrieverBuilder<S> setDeclaredExistingTimeScale( TimeScaleOuter declaredExistingTimeScale )
         {
             this.declaredExistingTimeScale = declaredExistingTimeScale;
-            return this;
-        }
-
-        /**
-         * Sets the status of individual time-series as originating from several sources.
-         * 
-         * TODO: please remove me when ingest is time-series-shaped.
-         * 
-         * @param hasMultipleSourcesPerSeries is true if each series originates from multiple sources
-         * @return the builder
-         */
-
-        TimeSeriesRetrieverBuilder<S> setHasMultipleSourcesPerSeries( boolean hasMultipleSourcesPerSeries )
-        {
-            this.hasMultipleSourcesPerSeries = hasMultipleSourcesPerSeries;
             return this;
         }
 
@@ -1362,14 +1323,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Objects.requireNonNull( builder );
 
         this.database = builder.database;
+        this.featuresCache = builder.featuresCache;
         this.projectId = builder.projectId;
-        this.variableFeatureId = builder.variableFeatureId;
+        this.variableName = builder.variableName;
+        this.feature = builder.feature;
         this.lrb = builder.lrb;
         this.timeWindow = builder.timeWindow;
         this.desiredTimeScale = builder.desiredTimeScale;
         this.declaredExistingTimeScale = builder.declaredExistingTimeScale;
         this.unitMapper = builder.unitMapper;
-        this.hasMultipleSourcesPerSeries = builder.hasMultipleSourcesPerSeries;
         this.seasonStart = builder.seasonStart;
         this.seasonEnd = builder.seasonEnd;
         this.referenceTimeType = builder.referenceTimeType;
@@ -1407,7 +1369,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 LOGGER.debug( start,
                               this.projectId,
-                              this.variableFeatureId,
                               this.lrb,
                               "the time window was null: the retrieval will be unconditional in time." );
             }
@@ -1416,7 +1377,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 LOGGER.debug( start,
                               this.projectId,
-                              this.variableFeatureId,
                               this.lrb,
                               "the desired time scale was null: the retrieval will not be adjusted to account "
                                         + "for the desired time scale." );
@@ -1429,7 +1389,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 LOGGER.debug( message,
                               this.projectId,
-                              this.variableFeatureId,
                               this.lrb,
                               this.timeWindow,
                               this.desiredTimeScale );
@@ -1439,7 +1398,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 LOGGER.debug( start,
                               this.projectId,
-                              this.variableFeatureId,
                               this.lrb,
                               "the supplied lead duration column was null." );
             }
@@ -1447,4 +1405,22 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     }
 
+
+    /**
+     * Use the features cache to get a db id for the feature associated.
+     * @return the db row id for the feature.
+     */
+
+    protected int getFeatureId()
+    {
+        try
+        {
+            return this.featuresCache.getFeatureID( this.getFeature() );
+        }
+        catch ( SQLException se )
+        {
+            throw new DataAccessException( "Unable to find feature id for "
+                                           + this.getFeature() );
+        }
+    }
 }

@@ -16,7 +16,6 @@ import org.junit.Test;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -33,7 +32,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
- * Tests the {@link MeanSquareErrorSkillScoreSkillScoreNormalized}.
+ * Tests the {@link MeanSquareErrorSkillScoreNormalized}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -59,15 +58,15 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                              "SQIN",
-                                                                                              "HEFS",
-                                                                                              "ESP" ) ),
-                                                     input.getRawData().size(),
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
-                                                     MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( MetricTestDataFactory.getLocation( "DRRC2" ),
+                                                                                                    "SQIN",
+                                                                                                    "HEFS",
+                                                                                                    "ESP" ) ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,
+                                                           MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreStatisticOuter actual = this.msessn.apply( input );
@@ -84,7 +83,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
-        assertEquals( expected, actual );
+        assertEquals( expected.getData(), actual.getData() );
     }
 
     @Test
@@ -101,11 +100,11 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         final StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                         "QME",
-                                                                                         "NVE" ) )
-                                                   .setTimeWindow( timeWindow )
-                                                   .build(),
+                                                                 .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "103.1" ),
+                                                                                                       "QME",
+                                                                                                       "NVE" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED,

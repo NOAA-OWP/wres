@@ -45,6 +45,7 @@ import ucar.nc2.Variable;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -482,11 +483,15 @@ class NWMTimeSeries implements Closeable
                 sortedEvents.add( ensembleEvent );
             }
 
+            FeatureKey feature = new FeatureKey( entriesForOne.getKey()
+                                                              .toString(),
+                                                 null,
+                                                 null,
+                                                 null );
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
                                                                  null,
                                                                  variableName,
-                                                                 entriesForOne.getKey()
-                                                                              .toString(),
+                                                                 feature,
                                                                  unitName );
             // Create the TimeSeries for the current Feature
             TimeSeries<?> timeSeries = TimeSeries.of( metadata,
@@ -847,11 +852,15 @@ class NWMTimeSeries implements Closeable
             // TODO: use the reference datetime from actual data, not args.
             // The datetimes seem to be synchronized but this is not true for
             // analyses.
+            FeatureKey feature = new FeatureKey( series.getKey()
+                                                       .toString(),
+                                                 null,
+                                                 null,
+                                                 null );
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, this.getReferenceDatetime() ),
                                                                  null,
                                                                  variableName,
-                                                                 series.getKey()
-                                                                       .toString(),
+                                                                 feature,
                                                                  unitName );
             TimeSeries<Double> timeSeries = TimeSeries.of( metadata,
                                                            series.getValue() );

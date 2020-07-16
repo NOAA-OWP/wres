@@ -177,6 +177,7 @@ subprojects
     {
         maxHeapSize = "2180m"
         testLogging.showStandardStreams = true
+        systemProperties += [ 'user.timezone': 'UTC' ]
     }
 
     jar
@@ -264,7 +265,7 @@ project(':wres-system')
     test
     {
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties = [ "mockserver.maxSocketTimeout": 120000 ]
+        systemProperties += [ "mockserver.maxSocketTimeout": 120000 ]
     }
 }
 
@@ -360,7 +361,7 @@ project(':wres-io')
     test
     {
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties = [ "mockserver.maxSocketTimeout": 120000,
+        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
                              "ucar.unidata.io.http.httpBufferSize": 200000 ]
     }
@@ -1219,6 +1220,7 @@ targetCompatibility = '11'
 
 applicationDefaultJvmArgs = ['-Xms2180m', '-Xmx2180m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
+                             '-Duser.timezone=UTC',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
                              '-Ducar.unidata.io.http.maxReadCacheSize=200000',
                              '-Ducar.unidata.io.http.httpBufferSize=200000' ]

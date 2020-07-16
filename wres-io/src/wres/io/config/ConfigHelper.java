@@ -11,12 +11,10 @@ import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,7 +27,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
@@ -38,13 +35,13 @@ import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.utilities.NoDataException;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
@@ -99,32 +96,6 @@ public class ConfigHelper
         // prevent construction
     }
 
-    public static boolean usesS3Data(ProjectConfig projectConfig)
-    {
-        boolean usesS3 = wres.util.Collections.exists(
-                projectConfig.getInputs().getLeft().getSource(),
-                source -> source.getFormat() != null &&
-                          source.getFormat().equals( Format.S_3 )
-        );
-
-        usesS3 = usesS3 || wres.util.Collections.exists(
-                projectConfig.getInputs().getRight().getSource(),
-                source -> source.getFormat() != null &&
-                          source.getFormat().equals( Format.S_3 )
-        );
-
-        if (!usesS3 && projectConfig.getInputs().getBaseline() != null)
-        {
-            usesS3 = wres.util.Collections.exists(
-                    projectConfig.getInputs().getBaseline().getSource(),
-                    source -> source.getFormat() != null &&
-                              source.getFormat().equals( Format.S_3 )
-            );
-        }
-
-        return usesS3;
-    }
-
     // TODO: Move to wres-config
     public static boolean usesNetCDFData( ProjectConfig projectConfig )
     {
@@ -151,91 +122,15 @@ public class ConfigHelper
 
         return usesNetcdf;
     }
-    
-    /**
-     * Returns true if the input declaration contains one or more source formats that distribute time-series across
-     * multiple sources. Currently returns true if any of {@link Format#NET_CDF} or {@link Format#S_3} is found.
-     * 
-     * TODO: Consider removing this helper when ingest becomes time-series-shaped and the way in which series are 
-     * attached to sources no longer matters. Currently, that is the context in which this helper is being used. See
-     * #65216. More generally, this helper is unlikely to have value, as source formats and their contents are 
-     * orthogonal things, in general, and especially for highly generic formats, like netCDF.
-     * 
-     * @param dataSourceConfig the data source declaration
-     * @return true if the declaration contains source formats that distribute time-series across sources
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean hasSourceFormatWithMultipleSourcesPerSeries( DataSourceConfig dataSourceConfig )
-    {
-        Objects.requireNonNull( dataSourceConfig );
-
-        return dataSourceConfig.getSource()
-                               .stream()
-                               .anyMatch( next -> next.getFormat() == Format.NET_CDF
-                                                  || next.getFormat() == Format.S_3 );
-
-    }
-
-    public static Comparator<Feature> getFeatureComparator()
-    {
-        return ( feature, t1 ) -> {
-
-            String featureDescription = getFeatureDescription( feature );
-            String t1Description = getFeatureDescription( t1 );
-
-            if ( Strings.hasValue( feature.getLocationId() ) &&
-                 Strings.hasValue( t1.getLocationId() ) )
-            {
-                return feature.getLocationId().compareTo( t1.getLocationId() );
-            }
-            else
-            {
-                LOGGER.trace( "Either {} and {} have the same location ids or "
-                              + ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE,
-                              featureDescription,
-                              t1Description );
-            }
-
-            if ( Strings.hasValue( feature.getGageId() ) &&
-                 Strings.hasValue( t1.getGageId() ) )
-            {
-                return feature.getGageId().compareTo( t1.getGageId() );
-            }
-            else
-            {
-                LOGGER.trace( "Either {} and {} have the same gage ids or "
-                              + ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE,
-                              featureDescription,
-                              t1Description );
-            }
-
-            if ( feature.getComid() != null &&
-                 t1.getComid() != null )
-            {
-                return feature.getComid().compareTo( t1.getComid() );
-            }
-            else
-            {
-                LOGGER.trace( "Either {} and {} have the same com ids or "
-                              + ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE,
-                              featureDescription,
-                              t1Description );
-            }
-
-            LOGGER.warn( "A proper comparison couldn't be made between {} and {}."
-                         + " Now saying that {} is greater than {}.",
-                         featureDescription,
-                         t1Description,
-                         featureDescription,
-                         t1Description );
-            return 1;
-        };
-    }
 
     /**
      * Creates a hash for the indicated project configuration based on its
      * specifications and the data it has ingested
+     *
+     * TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
+     * baseline separately, treat each as a dataset. Link dataset to project.
+     *
+     * TODO: store less collision-prone value, e.g. 128bit hash instead of int.
      * @param projectConfig The configuration for the project
      * @param leftHashesIngested A collection of the hashes for the left sided
      *                           source data
@@ -275,7 +170,6 @@ public class ConfigHelper
         }
 
         hashBuilder.append(left.getVariable().getValue());
-        hashBuilder.append(left.getVariable().getUnit());
 
         hashBuilder.append(right.getType().value());
 
@@ -296,7 +190,6 @@ public class ConfigHelper
         }
 
         hashBuilder.append(right.getVariable().getValue());
-        hashBuilder.append(right.getVariable().getUnit());
 
         if (baseline != null)
         {
@@ -321,13 +214,14 @@ public class ConfigHelper
             }
 
             hashBuilder.append(baseline.getVariable().getValue());
-            hashBuilder.append(baseline.getVariable().getUnit());
         }
 
         for ( Feature feature : projectConfig.getPair()
                                              .getFeature() )
         {
-            hashBuilder.append( ConfigHelper.getFeatureDescription( feature ) );
+            hashBuilder.append( feature.getLeft() );
+            hashBuilder.append( feature.getRight() );
+            hashBuilder.append( feature.getBaseline() );
         }
 
         return hashBuilder.toString().hashCode();
@@ -347,12 +241,6 @@ public class ConfigHelper
                || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS;
     }
 
-    public static boolean isSimulation( DataSourceConfig dataSourceConfig )
-    {
-        Objects.requireNonNull( dataSourceConfig );
-        
-        return dataSourceConfig.getType() == DatasourceType.SIMULATIONS;
-    }
 
     public static ProjectConfig read( final String path ) throws IOException
     {
@@ -361,256 +249,6 @@ public class ConfigHelper
         return configPlus.getProjectConfig();
     }
 
-    /**
-     * Returns the "earliest" datetime from given ProjectConfig Conditions
-     *
-     * TODO: Move to ProjectDetails since it is only used when project details are available
-     *
-     * @param config the project configuration
-     * @return the most narrow "earliest" date, null otherwise
-     */
-    public static Instant getEarliestDateTimeFromDataSources( ProjectConfig config )
-    {
-        if ( config.getPair() == null )
-        {
-            return null;
-        }
-
-        String earliest = "";
-
-        if ( config.getPair()
-                   .getDates() != null
-             && config.getPair()
-                      .getDates()
-                      .getEarliest() != null )
-        {
-            try
-            {
-                earliest = config.getPair()
-                                 .getDates()
-                                 .getEarliest();
-                return Instant.parse( earliest );
-            }
-            catch ( DateTimeParseException dtpe )
-            {
-                String messageId = "date_parse_exception_earliest_date";
-                if ( LOGGER.isWarnEnabled()
-                     && ConfigHelper.messageSendPutIfAbsent( config,
-                                                             messageId ) )
-                {
-                    LOGGER.warn( "Correct the date \"{}\" near line {} column "
-                                 + "{} to ISO8601 format such as "
-                                 + "\"2017-06-27T16:16:00Z\"",
-                                 earliest,
-                                 config.getPair()
-                                       .getDates()
-                                       .sourceLocation()
-                                       .getLineNumber(),
-                                 config.getPair()
-                                       .getDates()
-                                       .sourceLocation()
-                                       .getColumnNumber() );
-                }
-                return null;
-            }
-        }
-        else
-        {
-            String messageId = "no_earliest_date";
-            if ( LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent( config, messageId ) )
-            {
-                LOGGER.info( "No \"earliest\" date found in project. "
-                             + "Use <dates earliest=\"yyyy-mm-ddThh:mm:ssZ\" "
-                             + "latest=\"yyyy-mm-ddThh:mm:ssZ\" /> "
-                             + "under <pair> (near line {} column {} of "
-                             + "project file) to specify an earliest date.",
-                             config.getPair()
-                                   .sourceLocation()
-                                   .getLineNumber(),
-                             config.getPair()
-                                   .sourceLocation()
-                                   .getColumnNumber() );
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Returns the earlier of any "latest" date specified in left or right datasource.
-     * If only one date is specified, that one is returned.
-     * If no dates for "latest" are specified, null is returned.
-     *
-     * TODO: Move to ProjectDetails since it is only used when that is available
-     *
-     * @param config the project configuration
-     * @return the most narrow "latest" date, null otherwise.
-     */
-    public static Instant getLatestDateTimeFromDataSources( ProjectConfig config )
-    {
-        if ( config.getPair() == null )
-        {
-            return null;
-        }
-
-        String latest = "";
-
-        if ( config.getPair()
-                   .getDates() != null
-             && config.getPair()
-                      .getDates()
-                      .getLatest() != null )
-        {
-            try
-            {
-                latest = config.getPair()
-                               .getDates()
-                               .getLatest();
-                return Instant.parse( latest );
-            }
-            catch ( DateTimeParseException dtpe )
-            {
-                String messageId = "date_parse_exception_latest_date";
-                if ( LOGGER.isWarnEnabled()
-                     && ConfigHelper.messageSendPutIfAbsent( config,
-                                                             messageId ) )
-                {
-                    LOGGER.warn( "Correct the date \"{}\" after line {} col {} "
-                                 + "to ISO8601 format such as "
-                                 + "\"2017-06-27T16:16:00Z\"",
-                                 latest,
-                                 config.getPair()
-                                       .getDates()
-                                       .sourceLocation()
-                                       .getLineNumber(),
-                                 config.getPair()
-                                       .getDates()
-                                       .sourceLocation()
-                                       .getColumnNumber() );
-                }
-                return null;
-            }
-        }
-        else
-        {
-            String messageId = "no_latest_date";
-            if ( LOGGER.isTraceEnabled() && ConfigHelper.messageSendPutIfAbsent( config, messageId ) )
-            {
-                LOGGER.trace( "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" />  under <pair> (near line {} col {} of project file) to specify a latest date.",
-                             config.getPair()
-                                   .sourceLocation()
-                                   .getLineNumber(),
-                             config.getPair()
-                                   .sourceLocation()
-                                   .getColumnNumber() );
-
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Returns true if the caller is the one who should log a particular message.
-     *
-     * The exact message is not contained here, just an ad-hoc ID for it,
-     * created by the caller.
-     *
-     * May be too clever, may have a race condition. Rather have race condition
-     * than too much locking, this is just for messaging.
-     *
-     * The idea is that when only one message should appear for the user about
-     * a particular validation issue in the configuration (but multiple tasks
-     * are able to log this message), the caller first asks this method if it
-     * should be the one to log the validation message.
-     *
-     * @param projectConfig the configuration object to send a message about
-     * @param message the identifier for the message to send
-     * @return true if the caller should log
-     */
-    private static boolean messageSendPutIfAbsent( ProjectConfig projectConfig,
-                                                   String message )
-    {
-        // In case we are the first to call regarding a given config:
-        ConcurrentSkipListSet<String> possiblyNewSet = new ConcurrentSkipListSet<>();
-        possiblyNewSet.add( message );
-
-        ConcurrentSkipListSet<String> theSet = messages.putIfAbsent( projectConfig,
-                                                                     possiblyNewSet );
-        if ( theSet == null )
-        {
-            // this call was first to put a set for this config, return true.
-            return true;
-        }
-        // this call was not the first to put a set for this config.
-        return theSet.add( message );
-    }
-
-    // TODO: Should this move to wres.io.data.caching.Features?
-    public static String getFeatureDescription( Feature feature )
-    {
-        String description = null;
-
-        if ( feature != null )
-        {
-            if ( feature.getLocationId() != null
-                 && !feature.getLocationId()
-                            .trim()
-                            .isEmpty() )
-            {
-                description = feature.getLocationId();
-            }
-            else if ( feature.getGageId() != null
-                      && !feature.getGageId()
-                                 .trim()
-                                 .isEmpty() )
-            {
-                description = feature.getGageId();
-            }
-            else if ( feature.getComid() != null )
-            {
-                description = String.valueOf( feature.getComid() );
-            }
-            else if ( Strings.hasValue( feature.getName() ) )
-            {
-                description = feature.getName();
-            }
-            else if (feature.getCoordinate() != null)
-            {
-                description = feature.getCoordinate().getLongitude() + " " +
-                              feature.getCoordinate().getLatitude();
-            }
-        }
-
-        return description;
-    }
-
-    public static String getFeatureDescription( FeaturePlus featurePlus )
-    {
-        return ConfigHelper.getFeatureDescription( featurePlus.getFeature() );
-    }
-
-
-    /**
-     * Get a comma separated description of a list of features.
-     *
-     * TODO: Should this move to wres.io.data.caching.Features?
-     *
-     * @param features the list of features to describe, nonnull
-     * @return a description of all features
-     * @throws NullPointerException when list of features is null
-     */
-    public static String getFeaturesDescription( List<Feature> features )
-    {
-        Objects.requireNonNull( features );
-        StringJoiner result = new StringJoiner( ", ", "( ", " )" );
-
-        for ( Feature feature : features )
-        {
-            String description = ConfigHelper.getFeatureDescription( feature );
-            result.add( description );
-        }
-
-        return result.toString();
-    }
 
     /**
      * Get all the destinations from a configuration for a particular type.
@@ -893,7 +531,7 @@ public class ConfigHelper
      * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
      * 
      * @param destinationConfig the destination configuration
-     * @return a decimal formatter or null
+     * @return a decimal formatter or null.
      */
 
     public static DecimalFormat getDecimalFormatter( DestinationConfig destinationConfig )
@@ -939,28 +577,28 @@ public class ConfigHelper
     }
 
     /**
-     * <p>Returns the variable identifier from the inputs configuration. The identifier is one of the following in 
+     * <p>Returns the variable identifier from the inputs configuration. The identifier is one of the following in
      * order of precedent:</p>
-     * 
+     *
      * <p>If the variable identifier is required for the left and right:</p>
      * <ol>
      * <li>The label associated with the variable in the left source.</li>
      * <li>The label associated with the variable in the right source.</li>
      * <li>The value associated with the left variable.</li>
      * </ol>
-     * 
+     *
      * <p>If the variable identifier is required for the baseline:</p>
      * <ol>
      * <li>The label associated with the variable in the baseline source.</li>
      * <li>The value associated with the baseline variable.</li>
      * </ol>
-     * 
+     *
      * <p>In both cases, the last declaration is always present.</p>
-     * 
+     *
      * @param inputs the inputs configuration
      * @param isBaseline is true if the variable name is required for the baseline
      * @return the variable identifier
-     * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain 
+     * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain
      *            a baseline source
      * @throws NullPointerException if the input is null
      */
@@ -968,7 +606,7 @@ public class ConfigHelper
     public static String getVariableIdFromProjectConfig( Inputs inputs, boolean isBaseline )
     {
         Objects.requireNonNull( inputs );
-        
+
         // Baseline required?
         if ( isBaseline )
         {
@@ -986,7 +624,7 @@ public class ConfigHelper
             throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
                                                 + "does not contain a baseline source." );
         }
-        // Has a left source with a label 
+        // Has a left source with a label
         if ( Objects.nonNull( inputs.getLeft().getVariable().getLabel() ) )
         {
             return inputs.getLeft().getVariable().getLabel();
@@ -1127,10 +765,31 @@ public class ConfigHelper
         DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
         Evaluation evaluation = meta.getSampleMetadata().getEvaluation();
         Pool pool = meta.getSampleMetadata().getPool();
-        
-        joinElements.add( identifier.getLocation().toString() )
-                    .add( identifier.getVariableName() );
-        
+
+        // Work-around to figure out if this is gridded data and if so to use
+        // something other than the feature name, use the description.
+        // When you make gridded benchmarks congruent, remove this.
+        if ( identifier.getLocation()
+                       .getRight()
+                       .getName()
+                       .matches( "^-?[0-9]+\\.[0-9]+ -?[0-9]+\\.[0-9]+$" ) )
+        {
+            LOGGER.debug( "Using ugly workaround for ugly gridded benchmarks: {}",
+                          identifier );
+            joinElements.add( identifier.getLocation()
+                                        .getRight()
+                                        .getDescription() );
+        }
+        else
+        {
+            joinElements.add( identifier.getLocation()
+                                        .getRight()
+                                        .getName() );
+        }
+
+        joinElements.add( identifier.getVariableName() );
+
+
         // Baseline scenarioId
         String configuredScenarioId = null;
         String configuredBaselineScenarioId = null;
@@ -1266,7 +925,7 @@ public class ConfigHelper
 
         return Paths.get( outputDirectory.toString(), safeName );
     }
-    
+
     /**
      * Returns <code>true</code> if a generated baseline is required, otherwise <code>false</code>.
      * 

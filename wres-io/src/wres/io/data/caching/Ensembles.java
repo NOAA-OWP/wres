@@ -144,44 +144,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 		return ids;
 	}
 
-    /**
-     * Gets the id of a single ensemble attached to the project
-     * <p>
-     *     Being able to query by a single ensemble speeds up queries where
-     *     information about each query is not neccessary
-     * </p>
-     * @param projectId The id of the project to check
-     * @param variableFeatureId The id of the variable and geospatial position
-     * @return An id of an ensemble for the project
-     * @throws SQLException Thrown if an ensemble could not be retrieved
-     */
-	public Integer getSingleEnsembleID( Integer projectId, Integer variableFeatureId )
-            throws SQLException
-    {
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
-        script.setHighPriority( true );
-
-        script.addLine("SELECT E.ensemble_id");
-        script.addLine("FROM wres.Ensemble E");
-        script.addLine("WHERE EXISTS (");
-        script.addTab().addLine("SELECT 1");
-        script.addTab().addLine("FROM wres.TimeSeries TS");
-        script.addTab().addLine("WHERE TS.variablefeature_id = ", variableFeatureId);
-        script.addTab(  2  ).addLine("AND TS.ensemble_id = E.ensemble_id");
-        script.addTab(  2  ).addLine("AND EXISTS (");
-        script.addTab(   3   ).addLine("SELECT 1");
-        script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(   3   ).addLine("WHERE PS.project_id = ", projectId);
-        script.addTab(    4    ).addLine("AND PS.member = 'right'");
-        script.addTab(    4    ).addLine("AND TS.source_id = PS.source_id");
-        script.addTab(  2  ).addLine(")");
-        script.addLine(")");
-        script.addLine("LIMIT 1;");
-
-        return script.retrieve( "ensemble_id" );
-    }
-	
 	/**
 	 * Returns the ID of an Ensemble from the global cache based on the combination of its name, member ID, and qualifier
 	 * @param name The name of the Ensemble to retrieve

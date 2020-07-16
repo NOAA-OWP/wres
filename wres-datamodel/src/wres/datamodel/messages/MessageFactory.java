@@ -2,7 +2,6 @@ package wres.datamodel.messages;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -19,41 +17,27 @@ import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
 import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.PairedStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.statistics.generated.BoxplotMetric;
-import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
-import wres.statistics.generated.DiagramMetric;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
-import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
-import wres.statistics.generated.DoubleScoreMetric;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
@@ -80,9 +64,9 @@ import wres.statistics.generated.ValueFilter;
 /**
  * Creates statistics messages in protobuf format from internal representations.
  * 
- * TODO: most of the helpers within this class will disappear when the containers in the {@link wres.datamodel} are 
+ * TODO: most of the helpers within this class will disappear when the containers in the {@link wres.datamodel} are
  * replaced with canonical abstractions from {@link wres.statistics.generated}.
- * 
+ *
  * @author james.brown@hydrosolved.com
  */
 
@@ -92,7 +76,7 @@ public class MessageFactory
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsForProject}.
-     * 
+     *
      * @param project the project statistics
      * @return the statistics message
      * @throws IllegalArgumentException if there are zero statistics in total
@@ -119,7 +103,7 @@ public class MessageFactory
 
     /**
      * Decomposes the input into pools. A pool contains a single set of space, time and threshold dimensions.
-     * 
+     *
      * @param project the project statistics
      * @return the decomposed statistics
      * @throws InterruptedException if the statistics could not be retrieved from the project
@@ -186,7 +170,7 @@ public class MessageFactory
 
     /**
      * Creates pool boundaries from metadata.
-     * 
+     *
      * @param metadata the metadata
      * @return the pool boundaries
      */
@@ -198,9 +182,8 @@ public class MessageFactory
         wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
-        // TODO: To be replaced by some other abstraction, probably a FeatureTuple
-        Location location = metadata.getIdentifier()
-                                    .getLocation();
+        FeatureTuple location = metadata.getIdentifier()
+                                        .getLocation();
 
         return new PoolBoundaries( location, window, thresholds );
     }
@@ -291,7 +274,7 @@ public class MessageFactory
 
         if ( metadata.hasIdentifier() && metadata.getIdentifier().hasLocation() )
         {
-            Location location = metadata.getIdentifier().getLocation();
+            FeatureTuple location = metadata.getIdentifier().getLocation();
             Geometry geometry = MessageFactory.parse( location );
             sample.addGeometries( geometry );
         }
@@ -455,7 +438,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link java.time.Duration} from a {@link Duration}.
-     * 
+     *
      * @param duration the duration to parse
      * @return the duration
      */
@@ -469,7 +452,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link java.time.Duration} from a {@link Duration}.
-     * 
+     *
      * @param duration the duration to parse
      * @return the duration
      */
@@ -500,7 +483,7 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.DoubleScoreStatistic} from a 
+     * Creates a {@link wres.statistics.generated.DoubleScoreStatistic} from a
      * {@link wres.datamodel.statistics.DoubleScoreStatisticOuter}.
      * 
      * @param statistic the statistic from which to create a message
@@ -546,7 +529,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.DurationDiagramStatistic} from a 
-     * {@link wres.datamodel.statistics.PairedStatisticOuter} composed of timing 
+     * {@link wres.datamodel.statistics.PairedStatisticOuter} composed of timing
      * errors.
      * 
      * @param statistic the statistic from which to create a message
@@ -643,34 +626,54 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.Geometry} from a 
-     * {@link wres.datamodel.sampledata.Location}.
-     * 
-     * TODO: map across the new FeatureTuple when it arrives and then delete this comment.
+     * {@link wres.datamodel.FeatureTuple}.
      * 
      * @param location the location from which to create a message
      * @return the message
      */
 
-    public static Geometry parse( wres.datamodel.sampledata.Location location )
+    public static Geometry parse( FeatureTuple location )
     {
         Objects.requireNonNull( location );
 
         Geometry.Builder builder = Geometry.newBuilder();
 
-        if ( location.hasLocationName() )
+        // TODO consider the right name the primary name because it is the right
+        // dataset that is being evaluated, the left and baseline are used for
+        // the purpose of evaluating the right. Or discover what makes most
+        // sense to users if they vehemently disagree with this idea.
+
+        if ( Objects.nonNull( location.getLeft()
+                                      .getName() ) )
         {
-            builder.setName( location.getLocationName() );
+            builder.setName( location.getLeft()
+                                     .getName() );
+        }
+        // Add the wkt, srid, description and right/baseline names, as available
+        if ( Objects.nonNull( location.getRight()
+                                      .getName() ) )
+        {
+            builder.setRightName( location.getRight()
+                                          .getName() );
         }
 
-        // Add the wkt, srid, description and right/baseline names, as available
+        FeatureKey baseline = location.getBaseline();
 
+        if ( Objects.nonNull( baseline )
+             && Objects.nonNull( baseline.getName() ) )
+        {
+            builder.setBaselineName( baseline.getName() );
+        }
+
+        // TODO: either add the other wkts, srids, descriptions or choose which
+        // one of the three to report. All should probably be included.
         return builder.build();
     }
 
     /**
      * Returns a {@link Pairs} from a {@link PoolOfPairs}.
      * 
-     * @param metadata the metadata
+     * @param pairs The pairs
      * @return a pairs message
      */
 
@@ -785,7 +788,7 @@ public class MessageFactory
 
     /**
      * Class the helps to organize statistics by pool boundaries within a map.
-     * 
+     *
      * @author james.brown@hydrosolved.com
      */
 
@@ -793,9 +796,9 @@ public class MessageFactory
     {
         private final OneOrTwoThresholds thresholds;
         private final wres.datamodel.time.TimeWindowOuter window;
-        private final wres.datamodel.sampledata.Location location;
+        private final wres.datamodel.FeatureTuple location;
 
-        private PoolBoundaries( wres.datamodel.sampledata.Location location,
+        private PoolBoundaries( wres.datamodel.FeatureTuple location,
                                 wres.datamodel.time.TimeWindowOuter window,
                                 OneOrTwoThresholds thresholds )
         {
@@ -832,7 +835,7 @@ public class MessageFactory
 
     /**
      * Adds the new statistics to the map.
-     * 
+     *
      * @param statistics the statistics to add
      * @param mappedStatistics the existing statistics which the new statistics should be added
      * @throws NullPointerException if the input is null
@@ -863,7 +866,7 @@ public class MessageFactory
 
     /**
      * Adds the new statistics to the map.
-     * 
+     *
      * @param statistics the statistics to add
      * @param mappedStatistics the existing statistics which the new statistics should be added
      * @throws NullPointerException if the input is null
@@ -896,7 +899,7 @@ public class MessageFactory
 
     /**
      * Adds the new statistics to the map.
-     * 
+     *
      * @param statistics the statistics to add
      * @param mappedStatistics the existing statistics which the new statistics should be added
      * @param perPool is true if the statistics are per pool, false for per pair (per pool)
@@ -937,7 +940,7 @@ public class MessageFactory
 
     /**
      * Adds the new statistics to the map.
-     * 
+     *
      * @param statistics the statistics to add
      * @param mappedStatistics the existing statistics which the new statistics should be added
      * @throws NullPointerException if the input is null
@@ -969,7 +972,7 @@ public class MessageFactory
 
     /**
      * Adds the new statistics to the map.
-     * 
+     *
      * @param statistics the statistics to add
      * @param mappedStatistics the existing statistics which the new statistics should be added
      * @throws NullPointerException if the input is null

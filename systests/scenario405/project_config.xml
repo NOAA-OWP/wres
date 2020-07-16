@@ -6,10 +6,10 @@
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" locationId="GLOO2">data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" locationId="ANTO2">data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" locationId="ARCT2">data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" locationId="BLUO2">data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST">data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST">data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST">data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST">data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
         </left>
         <right label="Operational Single-Valued Forecasts" >
@@ -21,11 +21,11 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
-        <feature locationId="GLOO2" />
-        <feature locationId="ANTO2" />
-        <feature locationId="ARCT2" />
-        <feature locationId="BLUO2" />
-        <feature locationId="BADID" />
+        <feature left="GLOO2X" right="GLOO2" />
+        <feature left="ANTO2X" right="ANTO2" />
+        <feature left="ARCT2X" right="ARCT2" />
+        <feature left="BLUO2X" right="BLUO2" />
+        <feature left="BADIDX" right="BADID" />
         <leadHours minimum="0" maximum="24" />
 
         <leadTimesPoolingWindow>

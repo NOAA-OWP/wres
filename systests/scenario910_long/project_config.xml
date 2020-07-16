@@ -23,7 +23,7 @@
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
-        <feature locationId="AMCK1" />
+        <feature left="AMCK1" right="AMCK1" />
         <leadHours minimum="42" maximum="714" />
         <desiredTimeScale>
             <function>mean</function>

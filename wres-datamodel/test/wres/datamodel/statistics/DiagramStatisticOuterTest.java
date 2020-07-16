@@ -1,14 +1,10 @@
 package wres.datamodel.statistics;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -16,10 +12,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.DiagramMetric;
@@ -45,8 +40,9 @@ public final class DiagramStatisticOuterTest
     @Before
     public void runBeforeEachTest()
     {
+        FeatureKey feature = FeatureKey.of( "A" );
         this.metadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                 DatasetIdentifier.of( Location.of( "A" ),
+                                                                 DatasetIdentifier.of( new FeatureTuple( feature, feature, feature) ,
                                                                                        "B",
                                                                                        "C" ) ),
                                               10,
@@ -62,18 +58,18 @@ public final class DiagramStatisticOuterTest
     @Test
     public void testEquals()
     {
-        Location l2 = Location.of( "A" );
+        FeatureKey l2 = FeatureKey.of( "A" );
         StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      11,
                                                      MeasurementUnit.of(),
                                                      MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                      MetricConstants.MAIN );
-        Location l3 = Location.of( "B" );
+        FeatureKey l3 = FeatureKey.of( "B" );
         StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l3,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,
@@ -174,9 +170,9 @@ public final class DiagramStatisticOuterTest
     @Test
     public void testGetMetadata()
     {
-        Location l2 = Location.of( "B" );
+        FeatureKey l2 = FeatureKey.of( "B" );
         StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( l2,
+                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
                                                                                               "B",
                                                                                               "C" ) ),
                                                      10,

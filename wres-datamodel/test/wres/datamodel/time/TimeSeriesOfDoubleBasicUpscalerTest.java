@@ -18,6 +18,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.datamodel.FeatureKey;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -33,7 +34,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 public class TimeSeriesOfDoubleBasicUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
-    private static final String FEATURE_NAME = "Tropics";
+    private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
