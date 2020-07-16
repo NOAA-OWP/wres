@@ -34,12 +34,13 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -51,6 +52,8 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.engine.statistics.metric.Boilerplate;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -180,7 +183,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         //Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( processor.getCachedMetricOutput()
                                                                        .getDoubleScoreStatistics(),
-                                                              MetricConstants.BIAS_FRACTION );       
+                                                              MetricConstants.BIAS_FRACTION );
         assertEquals( -0.032093836077598345,
                       bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -198,7 +201,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
         assertEquals( -0.056658160809530816,
                       bias.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      Precision.EPSILON );        
+                      Precision.EPSILON );
 
         //Validate CoD
         List<DoubleScoreStatisticOuter> cod = Slicer.filter( processor.getCachedMetricOutput()
@@ -228,7 +231,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         List<DoubleScoreStatisticOuter> rho = Slicer.filter( processor.getCachedMetricOutput()
                                                                       .getDoubleScoreStatistics(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        
+
         assertEquals( 0.8873199582618204,
                       rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -252,7 +255,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         List<DoubleScoreStatisticOuter> mae = Slicer.filter( processor.getCachedMetricOutput()
                                                                       .getDoubleScoreStatistics(),
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR );
-        
+
         assertEquals( 11.009512537315405,
                       mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -276,7 +279,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         List<DoubleScoreStatisticOuter> me = Slicer.filter( processor.getCachedMetricOutput()
                                                                      .getDoubleScoreStatistics(),
                                                             MetricConstants.MEAN_ERROR );
-        
+
         assertEquals( -1.157869354367079,
                       me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -440,7 +443,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         //Validate rho
         List<DoubleScoreStatisticOuter> rho =
                 Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        
+
         assertEquals( 0.8873199582618204,
                       rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -459,10 +462,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertEquals( 0.8655829692024641,
                       rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        
+
         //Validate mae
         List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
-        
+
         assertEquals( 11.009512537315405,
                       mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -484,7 +487,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         //Validate me
         List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
-        
+
         assertEquals( -1.157869354367079,
                       me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -505,7 +508,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
 
         //Validate rmse
-        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ); 
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         assertEquals( 41.01563032408479,
                       rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -723,7 +726,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         //Obtain the results
         List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput()
                                                            .getDoubleScoreStatistics();
-        
+
         //Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
         assertEquals( -0.032093836077598345,
@@ -770,7 +773,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         //Validate rho
         List<DoubleScoreStatisticOuter> rho =
                 Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        
+
         assertEquals( 0.8873199582618204,
                       rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -789,10 +792,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertEquals( 0.8655829692024641,
                       rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        
+
         //Validate mae
         List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
-        
+
         assertEquals( 11.009512537315405,
                       mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -814,7 +817,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         //Validate me
         List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
-        
+
         assertEquals( -1.157869354367079,
                       me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -835,7 +838,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
 
         //Validate rmse
-        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ); 
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         assertEquals( 41.01563032408479,
                       rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
@@ -853,7 +856,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                       Precision.EPSILON );
         assertEquals( 61.12163959516186,
                       rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
-                      Precision.EPSILON );        
+                      Precision.EPSILON );
     }
 
     @Test
@@ -872,8 +875,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                    Instant.parse( "2010-12-31T11:59:59Z" ),
                                                                    Duration.ofHours( 24 ) );
 
+        FeatureKey featureKey = FeatureKey.of( "DRRC2" );
+        FeatureTuple featureTuple = new FeatureTuple( featureKey, featureKey, featureKey );
         SampleMetadata expectedSampleMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                               DatasetIdentifier.of( featureTuple,
                                                                                      "SQIN",
                                                                                      "HEFS" ),
                                                                expectedWindow,

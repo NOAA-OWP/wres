@@ -1,8 +1,6 @@
 package wres.io.thresholds.wrds.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import wres.config.FeaturePlus;
-import wres.config.generated.Feature;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -323,30 +321,16 @@ public class ThresholdDefinition implements Serializable {
     OriginalThresholdValues original_values;
     CalculatedThresholdValues calculated_values;
 
-    public Map<FeaturePlus, Set<ThresholdOuter>> getThresholds(
+    public Map<String, Set<ThresholdOuter>> getThresholds(
             WRDSThresholdType thresholdType,
             ThresholdConstants.Operator thresholdOperator,
             ThresholdConstants.ThresholdDataType dataType,
             boolean getCalculated,
             UnitMapper desiredUnitMapper
     ) {
-        FeaturePlus feature = FeaturePlus.of(new Feature(
-                null,
-                null,
-                null,
-                null,
-                null,
-                this.getMetadata().getLocation_id(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-        ));
+        String featureName = this.getMetadata().getLocation_id();
 
-        Set<ThresholdOuter> thresholds = new HashSet<>();
+        Set<ThresholdOuter> thresholds;
 
         if (thresholdType.equals(WRDSThresholdType.FLOW)) {
             thresholds = this.getFlowThresholds(getCalculated, thresholdOperator, dataType, desiredUnitMapper);
@@ -354,7 +338,7 @@ public class ThresholdDefinition implements Serializable {
         else {
             thresholds = this.getStageThresholds(getCalculated, thresholdOperator, dataType, desiredUnitMapper);
         }
-        return Map.of(feature, thresholds);
+        return Map.of( featureName, thresholds );
     }
 
     private Set<ThresholdOuter> getFlowThresholds(

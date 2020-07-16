@@ -19,7 +19,6 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -29,6 +28,7 @@ import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
@@ -78,7 +78,7 @@ public final class BoxPlotErrorByObservedTest
                                                      Duration.ofHours( 24 ) );
         TimeWindowOuter timeWindow1 = window;
         SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                           .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                           .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
                                                                                  "MAP" ) )
                                            .setTimeWindow( timeWindow1 )
                                            .build();
@@ -88,7 +88,7 @@ public final class BoxPlotErrorByObservedTest
 
         StatisticMetadata m1 =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                   .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
                                                                                          "MAP" ) )
                                                    .setTimeWindow( timeWindow )
                                                    .build(),

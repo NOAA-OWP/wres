@@ -24,7 +24,7 @@
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>m</unit>
-        <feature>
+        <gridSelection>
             <polygon>
                 <point>
                     <latitude>50.45</latitude>
@@ -43,7 +43,7 @@
                     <longitude>-124.77</longitude>
                 </point>
             </polygon>
-        </feature>
+        </gridSelection>
         <leadHours minimum="2" maximum="18" />
         <desiredTimeScale>
             <function>mean</function>

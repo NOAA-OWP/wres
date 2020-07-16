@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import wres.config.generated.Feature;
-import wres.io.config.ConfigHelper;
+import wres.datamodel.FeatureTuple;
 
 /**
  * Records the completion of one {@link Feature}. 
@@ -16,7 +16,7 @@ import wres.io.config.ConfigHelper;
 
 class FeatureProcessingResult
 {
-    private final Feature feature;
+    private final FeatureTuple feature;
     private final Set<Path> pathsWrittenTo;
 
     /**
@@ -24,7 +24,7 @@ class FeatureProcessingResult
      */
     private final boolean hasStatistics;
 
-    FeatureProcessingResult( Feature feature,
+    FeatureProcessingResult( FeatureTuple feature,
                              Set<Path> pathsWrittenTo,
                              boolean hasStatistics )
     {
@@ -34,7 +34,7 @@ class FeatureProcessingResult
         this.hasStatistics = hasStatistics;
     }
 
-    Feature getFeature()
+    FeatureTuple getFeature()
     {
         return this.feature;
     }
@@ -59,7 +59,7 @@ class FeatureProcessingResult
     public String toString()
     {
         return "Feature "
-               + ConfigHelper.getFeatureDescription( this.getFeature() )
+               + this.getFeature()
                + " produced statistics: "
                + this.hasStatistics()
                + "; and created these paths: "

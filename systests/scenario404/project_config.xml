@@ -24,7 +24,7 @@
 
     <pair label="Pairs by location and lead time">
         <unit>CMS</unit>
-        <feature locationId="GLOO2" />
+        <feature left="GLOO2X" right="GLOO2" baseline="GLOO2X" />
         <leadHours minimum="0" maximum="24" />       
         <leadTimesPoolingWindow>
             <period>6</period>

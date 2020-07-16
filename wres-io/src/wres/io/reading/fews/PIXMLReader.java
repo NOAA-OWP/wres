@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -39,6 +40,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -74,6 +76,13 @@ public final class PIXMLReader extends XMLReader
     /** A placeholder reference datetime for timeseries without one. */
     private static final Instant PLACEHOLDER_REFERENCE_DATETIME = Instant.MIN;
     private static final String DEFAULT_ENSEMBLE_NAME = "default";
+
+    /**
+     * http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd
+     *
+     * See "missVal" documentation: "Defaults to NaN if left empty"
+     */
+    private static final double PIXML_DEFAULT_MISSING_VALUE = Double.NaN;
 
     private final SystemSettings systemSettings;
     private final Database database;
@@ -445,12 +454,10 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Interprets the information within PIXML "header" tags
 	 * @param reader The XML reader, positioned at a "header" tag
-	 * @throws SQLException Thrown if the XML could not be read or interpreted properly
 	 */
 
     private void parseHeader( XMLStreamReader reader )
 			throws XMLStreamException,
-			SQLException,
 			IngestException
     {
 		//	If the current tag is the header tag itself, move on to the next tag
@@ -470,7 +477,13 @@ public final class PIXMLReader extends XMLReader
         String traceName = DEFAULT_ENSEMBLE_NAME;
         String ensembleMemberId = null;
         String ensembleMemberIndex = null;
-        Double missingValue = null;
+        double missingValue = PIXML_DEFAULT_MISSING_VALUE;
+        String locationDescription = null;
+        Double latitude = null;
+        Double longitude = null;
+        Double x = null;
+        Double y = null;
+        Double z = null;
 
         //	Scrape all pertinent information from the header
 		while (reader.hasNext())
@@ -487,20 +500,8 @@ public final class PIXMLReader extends XMLReader
 
 				if (localName.equalsIgnoreCase("locationId"))
 				{
-				    // TODO: Set the LID on a FeatureDetails object; don't just store the LID
-					//	If we are at the tag for the location id, save it to the location metadata
+				    // Change for 5.0: just store location verbatim. No magic.
 					locationName = XMLHelper.getXMLText( reader);
-
-					if ( locationName.length() > 5 )
-					{
-					    String shortendID = locationName.substring(0, 5);
-					    Features features = this.getFeaturesCache();
-
-					    if ( features.lidExists( shortendID ) )
-						{
-							locationName = shortendID;
-						}
-					}
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
@@ -542,6 +543,36 @@ public final class PIXMLReader extends XMLReader
                 else if ( localName.equalsIgnoreCase("ensembleMemberIndex") )
                 {
                     ensembleMemberIndex = XMLHelper.getXMLText( reader );
+                }
+                else if ( localName.equalsIgnoreCase( "longName" ) )
+                {
+                    locationDescription = XMLHelper.getXMLText( reader );
+                }
+                else if ( localName.equalsIgnoreCase( "lat" ) )
+                {
+                    String rawLatitude = XMLHelper.getXMLText( reader );
+                    latitude = Double.parseDouble( rawLatitude );
+                }
+                else if ( localName.equalsIgnoreCase( "lon" ) )
+                {
+                    String rawLongitude = XMLHelper.getXMLText( reader );
+                    longitude = Double.parseDouble( rawLongitude );
+                }
+
+                else if ( localName.equalsIgnoreCase( "x" ) )
+                {
+                    String rawX = XMLHelper.getXMLText( reader );
+                    x = Double.parseDouble( rawX );
+                }
+                else if ( localName.equalsIgnoreCase( "y" ) )
+                {
+                    String rawY = XMLHelper.getXMLText( reader );
+                    y = Double.parseDouble( rawY );
+                }
+                else if ( localName.equalsIgnoreCase( "z" ) )
+                {
+                    String rawZ = XMLHelper.getXMLText( reader );
+                    z = Double.parseDouble( rawZ );
                 }
 			}
 
@@ -593,10 +624,42 @@ public final class PIXMLReader extends XMLReader
             basisDatetimes.put( UNKNOWN, PLACEHOLDER_REFERENCE_DATETIME );
         }
 
+        String locationWkt = null;
+
+        // When x and y are present, prefer those to lon, lat.
+        // Going to Double back to String seems frivolous but it validates data.
+        if ( Objects.nonNull( x ) && Objects.nonNull( y ) )
+        {
+            StringJoiner wktGeometry = new StringJoiner( " " );
+            wktGeometry.add( "POINT (");
+            wktGeometry.add( x.toString() );
+            wktGeometry.add( y.toString() );
+
+            if ( Objects.nonNull( z ) )
+            {
+                wktGeometry.add( z.toString() );
+            }
+            wktGeometry.add( ")" );
+            locationWkt = wktGeometry.toString();
+        }
+        else if ( Objects.nonNull( latitude ) && Objects.nonNull( longitude ) )
+        {
+            StringJoiner wktGeometry = new StringJoiner( " " );
+            wktGeometry.add( "POINT (" );
+            wktGeometry.add( longitude.toString() );
+            wktGeometry.add( latitude.toString() );
+            wktGeometry.add( ")" );
+            locationWkt = wktGeometry.toString();
+        }
+
+        FeatureKey feature = new FeatureKey( locationName,
+                                             locationDescription,
+                                             null,
+                                             locationWkt );
         TimeSeriesMetadata justParsed = TimeSeriesMetadata.of( basisDatetimes,
                                                                scale,
                                                                variableName,
-                                                               locationName,
+                                                               feature,
                                                                unitName );
 
         // If we encounter a new header, that means a previous timeseries trace
@@ -665,14 +728,12 @@ public final class PIXMLReader extends XMLReader
 
     /**
      * @return The value specifying a value that is missing from the data set
-     * originating from the data source configuration. While parsing the data,
-     * if this value is encountered, it indicates that the value should be
-     * ignored as it represents invalid data. This should be ignored in data
-     * sources that define their own missing value.
+     * originating from the data source configuration.
      */
-    protected Double getSpecifiedMissingValue()
+    protected double getSpecifiedMissingValue()
     {
-        if (missingValue == null && this.getDataSourceConfig() != null)
+        if ( missingValue == PIXML_DEFAULT_MISSING_VALUE
+             && this.getDataSourceConfig() != null)
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
@@ -709,8 +770,7 @@ public final class PIXMLReader extends XMLReader
         double val = MissingValues.DOUBLE;
 
         if (Strings.hasValue(value) &&
-			!value.equalsIgnoreCase( "null" ) &&
-            this.getSpecifiedMissingValue() != null)
+            !value.equalsIgnoreCase( "null" ) )
         {
             val = Double.parseDouble( value );
 
@@ -794,7 +854,7 @@ public final class PIXMLReader extends XMLReader
             metadata = TimeSeriesMetadata.of( Map.of( LATEST_OBSERVATION, latestDatetime ),
                                               lastTimeSeriesMetadata.getTimeScale(),
                                               lastTimeSeriesMetadata.getVariableName(),
-                                              lastTimeSeriesMetadata.getFeatureName(),
+                                              lastTimeSeriesMetadata.getFeature(),
                                               lastTimeSeriesMetadata.getUnit() );
         }
         else
@@ -1022,9 +1082,10 @@ public final class PIXMLReader extends XMLReader
     private ZoneOffset zoneOffset = null;
 
 	/**
-	 * The value which indicates a null or invalid value from the source
-	 */
-	private Double missingValue = null;
+	 * The value which indicates a null or invalid value from the source.
+     * PI-XML xsd says NaN is missing value if unspecified.
+     */
+    private double missingValue = PIXML_DEFAULT_MISSING_VALUE;
 
 	private DataSourceConfig getDataSourceConfig()
 	{
@@ -1065,7 +1126,6 @@ public final class PIXMLReader extends XMLReader
                                       projectConfig,
                                       dataSource,
                                       lockManager,
-                                      timeSeries,
-                                      TimeSeriesIngester.GEO_ID_TYPE.LID );
+                                      timeSeries );
     }
 }

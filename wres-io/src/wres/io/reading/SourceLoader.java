@@ -49,8 +49,6 @@ import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
-import static wres.io.concurrency.TimeSeriesIngester.GEO_ID_TYPE;
-
 /**
  * Evaluates datasources specified within a project configuration and determines
  * what data should be ingested. Asynchronous tasks for each file needed for
@@ -423,81 +421,6 @@ public class SourceLoader
         // TimeSeriesIngester instead.
         if ( Objects.nonNull( source.getTimeSeries() ) )
         {
-            GEO_ID_TYPE geoIdType = null;
-            String lowerCaseUri = source.getUri()
-                                        .toString()
-                                        .toLowerCase()
-                                        .strip();
-            Format format = source.getSource()
-                                  .getFormat();
-
-            // Use the interface to discover GEO_ID_TYPE.
-            if ( Objects.nonNull( source.getSource()
-                                        .getInterface() ) )
-            {
-                InterfaceShortHand shortHand = source.getSource()
-                                                     .getInterface();
-
-                if ( shortHand.toString()
-                              .toLowerCase()
-                              .startsWith( "nwm_" ) )
-                {
-                    geoIdType = GEO_ID_TYPE.COMID;
-                }
-                else if ( shortHand.equals( InterfaceShortHand.USGS_NWIS ) )
-                {
-                    geoIdType = GEO_ID_TYPE.GAGE_ID;
-                }
-                else if ( shortHand.equals( InterfaceShortHand.WRDS_NWM ) )
-                {
-                    geoIdType = GEO_ID_TYPE.COMID;
-                }
-            }
-            else if ( lowerCaseUri.contains( "usgs.gov" ) )
-            {
-                LOGGER.warn( "Deprecated USGS source found, please declare interface short-hand in {}.",
-                             source );
-                geoIdType = GEO_ID_TYPE.GAGE_ID;
-            }
-            else if ( lowerCaseUri.contains( "ahps" ) )
-            {
-                LOGGER.warn( "Deprecated AHPS source found, please declare interface short-hand in {}.",
-                             source );
-                geoIdType = GEO_ID_TYPE.LID;
-            }
-            else if ( lowerCaseUri.endsWith( ".csv" ) )
-            {
-                geoIdType = GEO_ID_TYPE.LID;
-            }
-            else if ( lowerCaseUri.endsWith( ".datacard" ) )
-            {
-                geoIdType = GEO_ID_TYPE.LID;
-            }
-            else if ( lowerCaseUri.endsWith( ".xml" ) )
-            {
-                geoIdType = GEO_ID_TYPE.LID;
-            }
-            else if ( Objects.nonNull( format )
-                      && format.equals( Format.CSV ) )
-            {
-                geoIdType = GEO_ID_TYPE.LID;
-            }
-            else if ( Objects.nonNull( format )
-                      && format.equals( Format.DATACARD ) )
-            {
-                geoIdType = GEO_ID_TYPE.LID;
-            }
-            else if ( Objects.nonNull( format )
-                      && format.equals( Format.PI_XML ) )
-            {
-                geoIdType = GEO_ID_TYPE.LID;
-            }
-            else
-            {
-                throw new IllegalStateException( "Unable to determine type of geographic ID for ingest of this timeseries: "
-                                                 + source.getTimeSeries() );
-            }
-
             TimeSeriesIngester ingester =
                     TimeSeriesIngester.of( this.getSystemSettings(),
                                            this.getDatabase(),
@@ -508,8 +431,7 @@ public class SourceLoader
                                            this.getProjectConfig(),
                                            source,
                                            this.getLockManager(),
-                                           source.getTimeSeries(),
-                                           geoIdType );
+                                           source.getTimeSeries() );
             task = executor.submit( ingester );
         }
         else if ( Objects.nonNull( hash ) )

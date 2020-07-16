@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
@@ -31,7 +32,7 @@ public class PersistenceGeneratorTest
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final String CMS = "CMS";
     private static final String DISCHARGE = "DISCHARGE";
-    private static final String FAKE2 = "FAKE2";
+    private static final FeatureKey FAKE2 = FeatureKey.of( "FAKE2" );
     
     // Times used    
     private static final Instant T2551_03_20T12_00_00Z = Instant.parse( "2551-03-20T12:00:00Z" );
@@ -164,7 +165,7 @@ public class PersistenceGeneratorTest
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                      T2551_03_17T12_00_00Z ),
                                                              TimeScaleOuter.of( Duration.ofHours( 1 ),
-                                                                           TimeScaleFunction.MEAN ),
+                                                                                TimeScaleFunction.MEAN ),
                                                              DISCHARGE,
                                                              FAKE2,
                                                              CMS );

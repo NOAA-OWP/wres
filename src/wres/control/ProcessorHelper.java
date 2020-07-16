@@ -16,16 +16,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
@@ -34,6 +34,7 @@ import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
@@ -102,40 +103,51 @@ class ProcessorHelper
 
         ProgressMonitor.setShowStepDescription( false );
 
-        Set<FeaturePlus> decomposedFeatures;
+        Set<FeatureTuple> decomposedFeatures;
 
         try
         {
-            decomposedFeatures = Operations.decomposeFeatures( project );
+            decomposedFeatures = project.getFeatures();
         }
         catch ( SQLException e )
         {
             throw new IOException( "Failed to retrieve the set of features.", e );
         }
 
-        //Add in logic to take the newly selected features into account
+        if ( decomposedFeatures.isEmpty() )
+        {
+            throw new NoDataException( "There were no data correlated by "
+                                       + " geographic features specified "
+                                       + "available for evaluation." );
+        }
 
         // Read external thresholds from the configuration, per feature
-        // Compare on locationId only. TODO: consider how better to transmit these thresholds
+        // Compare on left dataset's feature name only.
+        // TODO: consider how better to transmit these thresholds
         // to wres-metrics, given that they are resolved by project configuration that is
         // passed separately to wres-metrics. Options include moving MetricProcessor* to
         // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-        ThresholdReader thresholdReader = new ThresholdReader(
-                systemSettings,
-                projectConfig,
-                unitMapper,
-                decomposedFeatures.stream()
-                        .map(FeaturePlus::getFeature)
-                        .collect(Collectors.toSet())
-        );
+        ThresholdReader thresholdReader = new ThresholdReader( systemSettings,
+                                                               projectConfig,
+                                                               unitMapper,
+                                                               decomposedFeatures,
+                                                               LeftOrRightOrBaseline.LEFT );
+        Map<FeatureTuple, ThresholdsByMetric> thresholds = thresholdReader.read();
 
-        Map<Feature, ThresholdsByMetric> thresholds = thresholdReader.read();
+        // Features having thresholds as reported by the threshold reader.
+        Set<FeatureTuple> havingThresholds = thresholdReader.getEvaluatableFeatures();
 
-        // Following operations require FeaturePlus objects, not Feature, so make the conversion here
-        decomposedFeatures = thresholdReader.getEvaluatableFeatures()
-                .stream()
-                .map(FeaturePlus::of)
-                .collect(Collectors.toSet());
+        // If the left dataset name exists in thresholds, keep it in the set.
+        decomposedFeatures = Collections.unmodifiableSet( havingThresholds );
+
+        if ( decomposedFeatures.isEmpty() )
+        {
+            throw new NoDataException( "There were data correlated by "
+                                       + "geographic features specified " 
+                                       + "available for evaluation but "
+                                       + "there were no thresholds available "
+                                       + "for any of those features." );
+        }
 
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( project.getInputCode() );
@@ -220,7 +232,7 @@ class ProcessorHelper
                                                         sharedBaselineSampleWriters );
         
         // Create one task per feature
-        for ( FeaturePlus feature : decomposedFeatures )
+        for ( FeatureTuple feature : decomposedFeatures )
         {
             Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( feature,
                                                                                        resolvedProject,
@@ -384,34 +396,38 @@ class ProcessorHelper
      * @throws IllegalArgumentException if some expected thresholds are missing
      */
 
-    private static Map<FeaturePlus, ThresholdsByMetric>
-            reconcileFeaturesAndExternalThresholds( Map<FeaturePlus, ThresholdsByMetric> externalThresholds,
-                                                    Set<FeaturePlus> featuresToEvaluate )
+    private static Map<FeatureTuple, ThresholdsByMetric>
+            reconcileFeaturesAndExternalThresholds( Map<String, ThresholdsByMetric> externalThresholds,
+                                                    Set<FeatureTuple> featuresToEvaluate )
     {
-        
         LOGGER.debug( "Attempting to reconcile the {} features to evaluate with the {} features for which external "
                       + "thresholds are available.",
                       featuresToEvaluate.size(),
                       externalThresholds.size() );
-        
-        Map<FeaturePlus, ThresholdsByMetric> filteredFeatures = new TreeMap<>();
+        Map<FeatureTuple, ThresholdsByMetric> filteredFeatures = new TreeMap<>();
 
         // Get the thresholds indexed by canonical feature name only
-        Map<FeaturePlus, ThresholdsByMetric> externalThresholdsByKey =
+        Map<String, ThresholdsByMetric> externalThresholdsByKey =
                 ProcessorHelper.getThresholdsByCanonicalFeatureName( externalThresholds );
 
-        // Iterate the features to evaluate, filtering any for which external thresholds are not available
-        Set<FeaturePlus> missingThresholds = new HashSet<>();
 
-        for ( FeaturePlus featurePlus : featuresToEvaluate )
+        // Iterate the features to evaluate, filtering any for which external thresholds are not available
+        Set<FeatureTuple> missingThresholds = new HashSet<>();
+
+        for ( FeatureTuple featureTuple : featuresToEvaluate )
         {
-            if ( externalThresholdsByKey.containsKey( featurePlus ) )
+            // The right dataset is the one being evaluated, but the thresholds
+            // most commonly apply to the left dataset, so match on the left.
+            String featureName = featureTuple.getLeft()
+                                             .getName();
+
+            if ( externalThresholdsByKey.containsKey( featureName ) )
             {
-                filteredFeatures.put( featurePlus, externalThresholdsByKey.get( featurePlus ) );
+                filteredFeatures.put( featureTuple, externalThresholdsByKey.get( featureName ) );
             }
             else
             {
-                missingThresholds.add( featurePlus );
+                missingThresholds.add( featureTuple );
             }
         }
 
@@ -419,12 +435,15 @@ class ProcessorHelper
         {
             StringJoiner joiner = new StringJoiner( ", " );
 
-            for ( FeaturePlus featurePlus : missingThresholds )
+            for ( FeatureTuple feature : missingThresholds )
             {
-                String description = ConfigHelper.getFeatureDescription( featurePlus );
-                joiner.add( description );
+                joiner.add( feature.getLeft()
+                                   .getName() );
             }
 
+            LOGGER.debug( "featuresToEvaluate: {}", featuresToEvaluate );
+            LOGGER.debug( "externalThresholds: {}", externalThresholds );
+            LOGGER.debug( "missingThresholds: {}", missingThresholds );
             LOGGER.warn( "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
                          "While attempting to reconcile the features to ",
                          "evaluate with the features for which thresholds ",
@@ -457,27 +476,15 @@ class ProcessorHelper
      * @return a map of thresholds whose keys are partially matched by canonical name only
      */
 
-    private static Map<FeaturePlus, ThresholdsByMetric>
-            getThresholdsByCanonicalFeatureName( Map<FeaturePlus, ThresholdsByMetric> thresholds )
+    private static Map<String, ThresholdsByMetric>
+            getThresholdsByCanonicalFeatureName( Map<String, ThresholdsByMetric> thresholds )
     {
-        Map<FeaturePlus, ThresholdsByMetric> thresholdsByKey = null;
+        Map<String, ThresholdsByMetric> thresholdsByKey = null;
 
-        Optional<FeaturePlus> example = thresholds.keySet().stream().findAny();
-        if ( example.isPresent() && Objects.nonNull( example.get().getFeature().getLocationId() ) )
+        if ( !thresholds.isEmpty() )
         {
-            LOGGER.debug( "Discovered an external source of thresholds by feature. Used the {} to cross-correlate the "
-                          + "feature names.",
-                          FeatureType.NWS_ID );
-
-            thresholdsByKey = new TreeMap<>( FeaturePlus::compareByLocationId );
-        }
-        else if ( example.isPresent() && Objects.nonNull( example.get().getFeature().getGageId() ) )
-        {
-            LOGGER.debug( "Discovered an external source of thresholds by feature. Used the {} to cross-correlate the "
-                          + "feature names.",
-                          FeatureType.USGS_ID );
-
-            thresholdsByKey = new TreeMap<>( FeaturePlus::compareByGageId );
+            LOGGER.debug( "Discovered a source of thresholds by feature." );
+            thresholdsByKey = new TreeMap<>();
         }
         else
         {

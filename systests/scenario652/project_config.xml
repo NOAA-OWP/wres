@@ -14,7 +14,7 @@
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>kg m-2</unit>
-        <feature>
+        <gridSelection>
             <polygon>
                 <point>
                     <latitude>50.45</latitude>
@@ -33,7 +33,7 @@
                     <longitude>-124.77</longitude>
                 </point>
             </polygon>
-        </feature>
+        </gridSelection>
         <leadHours minimum = "1" maximum="4" />
         <issuedDates earliest="2018-05-26T00:00:00Z" latest="2018-05-28T00:00:00Z"/>
         <issuedDatesPoolingWindow>

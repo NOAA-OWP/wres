@@ -22,10 +22,11 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -169,7 +170,10 @@ public class PNGBoxPlotWriterTest
                                                           ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( Location.of( PNGBoxPlotWriterTest.LOCATION_ID ), "SQIN" );
+                DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
+                                                        FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
+                                                        null ),
+                                      "SQIN" );
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( "CMS" );
         StatisticMetadata fakeMetadata =

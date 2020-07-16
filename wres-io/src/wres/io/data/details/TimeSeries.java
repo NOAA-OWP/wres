@@ -2,9 +2,15 @@ package wres.io.data.details;
 
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
@@ -12,11 +18,12 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
 /**
- * Defines details about a forecasted time series
+ * Represents a row which in turn represents metadata for one timeseries trace
  * @author Christopher Tubbs
  */
 public class TimeSeries
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
 
     /**
      * The number of unique lead times contained within a partition within
@@ -36,17 +43,12 @@ public class TimeSeries
      * The ID of the ensemble for the time series. A time series without
      * an ensemble should be indicated as the "default" time series.
      */
-	private Integer ensembleID = null;
-
-    /**
-     * The ID of the cross section between a variable and its location
-     */
-	private Integer variableFeatureID = null;
+	private final int ensembleID;
 
     /**
      * The unit of measurement that values for the time series were taken in
      */
-	private Integer measurementUnitID = null;
+	private final int measurementUnitID;
 
     /**
      * The ID of the time series in the database
@@ -62,79 +64,42 @@ public class TimeSeries
     /**
      * The ID of the initial source of the data for the time series
      */
-    private final Integer sourceID;
+    private final int sourceID;
 
     /**
-     * The string representation of the date and time of when the forecast
-     * began. For instance, if a forecasted value for a time series at a lead
-     * time of 1 occured at '01-01-2017 13:00:00', the initialization date
-     * would be '01-01-2017 12:00:00'.
+     * The db ID of the feature associated with the time series.
      */
-    private final String initializationDate;
+    private final int featureID;
+
+    /**
+     * The variable name associated with the time series. For USGS data, this is
+     * a Physical Element code. For NWM, it's the variable.
+     */
+    private final String variableName;
+
+    private final Instant initializationDate;
 
     public TimeSeries( Database database,
-                       Integer sourceID,
-                       String initializationDate )
+                       int ensembleID,
+                       int measurementUnitID,
+                       Instant initializationDate,
+                       int sourceID,
+                       String variableName,
+                       int featureID )
     {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( initializationDate );
+        Objects.requireNonNull( variableName );
         this.database = database;
-        this.sourceID = sourceID;
-        this.initializationDate = initializationDate;
-    }
-
-	/**
-	 * Sets the ID of the Ensemble that the time series is linked to. The ID of
-     * the time series is invalidated if the ID of the Ensemble it is linked
-     * to changes
-	 * @param ensembleId The ID of the new ensemble
-	 */
-	public void setEnsembleID(Integer ensembleId)
-	{
-		if (this.ensembleID != null && !this.ensembleID.equals(ensembleId))
-		{
-			this.timeSeriesID = null;
-		}
-        this.ensembleID = ensembleId;
-	}
-	
-	/**
-	 * Sets the ID of the relationship between the variable and its location
-     * for this time series. The ID of the time series is
-	 * invalidated if the ID of the linked Variable location changes
-	 * @param variableFeatureID The ID of the new variable location
-	 */
-	public void setVariableFeatureID(int variableFeatureID)
-	{
-		if (this.variableFeatureID != null && this.variableFeatureID != variableFeatureID)
-		{
-			this.timeSeriesID = null;
-		}
-        this.variableFeatureID = variableFeatureID;
-	}
-
-    /**
-     * @return The ID of the union between the variable and location
-     */
-	public Integer getVariableFeatureID()
-    {
-        return this.variableFeatureID;
-    }
-
-	/**
-	 * Sets the ID of the unit of measurement connected to the ensemble for
-     * this Time Series. The ID of the Time Series
-	 * is invalidated if the ID of the linked Measurement Unit changes
-	 * @param measurementUnitID The ID of the new unit of measurement
-	 */
-	public void setMeasurementUnitID(int measurementUnitID)
-	{
-		if (this.measurementUnitID != null && this.measurementUnitID != measurementUnitID)
-		{
-			this.timeSeriesID = null;
-		}
+        this.ensembleID = ensembleID;
         this.measurementUnitID = measurementUnitID;
-	}
+        this.initializationDate = initializationDate;
+        this.sourceID = sourceID;
+        this.variableName = variableName;
+        this.featureID = featureID;
+    }
 
-    public String getInitializationDate()
+    public Instant getInitializationDate()
     {
         return this.initializationDate;
     }
@@ -157,7 +122,7 @@ public class TimeSeries
     
     private void setTimeScale( final int period, final String function )
     {
-        this.timeScale = TimeScaleOuter.of( Duration.ofMinutes( period ), 
+        this.timeScale = TimeScaleOuter.of( Duration.ofMinutes( period ),
                                        TimeScaleFunction.valueOf( function ) );
     }
 
@@ -212,22 +177,26 @@ public class TimeSeries
         }
 
         script.addTab().addLine("INSERT INTO wres.TimeSeries (");
-        script.addTab(  2  ).addLine("variablefeature_id,");
         script.addTab(  2  ).addLine("ensemble_id,");
         script.addTab(  2  ).addLine("measurementunit_id,");
         script.addTab(  2  ).addLine("initialization_date,");
         script.addTab(  2  ).addLine("scale_period,");
         script.addTab(  2  ).addLine("scale_function,");
-        script.addTab(  2  ).addLine("source_id");
+        script.addTab(  2  ).addLine("source_id,");
+        script.addTab(  2  ).addLine( "variable_name," );
+        script.addTab(  2  ).addLine( "feature_id" );
         script.addTab().addLine(")");
-        script.addTab().addLine( "VALUES ( ?, ?, ?, (?)::timestamp without time zone, ?, ?, ? );" );
-        script.addArgument( this.variableFeatureID );
+        script.addTab().addLine( "VALUES ( ?, ?, ?, ?, ?, ?, ?, ? );" );
         script.addArgument( this.ensembleID );
         script.addArgument( this.measurementUnitID );
-        script.addArgument( this.initializationDate );
+        OffsetDateTime offsetDateTime = OffsetDateTime.ofInstant( this.initializationDate,
+                                                                  ZoneOffset.UTC );
+        script.addArgument( offsetDateTime );
         script.addArgument( scalePeriod );
         script.addArgument( scaleFunction.name() );
         script.addArgument( this.sourceID );
+        script.addArgument( this.variableName );
+        script.addArgument( this.featureID );
 
         int rowsModified = script.execute();
         int insertedId = script.getInsertedIds()
@@ -246,6 +215,8 @@ public class TimeSeries
                                              + script );
         }
 
+        LOGGER.debug( "Given Instant {} translated to OffsetDateTime {} for wres.TimeSeries id {}",
+                      this.initializationDate, offsetDateTime, insertedId );
         this.timeSeriesID = insertedId;
     }
 

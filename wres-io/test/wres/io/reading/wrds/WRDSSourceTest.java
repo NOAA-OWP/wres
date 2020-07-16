@@ -3,11 +3,10 @@ package wres.io.reading.wrds;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Future;
 
-import com.zaxxer.hikari.HikariDataSource;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -15,7 +14,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
@@ -26,13 +24,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
-import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -41,21 +34,15 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.WRESCallable;
+import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
-import wres.io.data.details.TimeSeries;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.PreIngestException;
-import wres.io.reading.SourceCompleter;
-import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -3325,17 +3312,6 @@ public class WRDSSourceTest
             + "  ]\n"
             + "}\n";
 
-
-
-    private static final int FAKE_ENSEMBLE_ID = 4817;
-    private static final int FAKE_MEASUREMENT_ID = 4999;
-    private static final int FAKE_VARIABLE_ID = 5171;
-    private static final int FAKE_FEATURE_ID = 5351;
-    private static final int FAKE_TIMESERIES_ID = 5507;
-    private static final int FAKE_VARIABLEFEATURE_ID = 5519;
-    private static final int FAKE_SOURCE_ID = 5521;
-
-
     @Mock private SystemSettings mockSystemSettings;
     @Mock private Database mockDatabase;
     @Mock private DataSources mockDataSourcesCache;
@@ -3344,14 +3320,6 @@ public class WRDSSourceTest
     @Mock private Ensembles mockEnsemblesCache;
     @Mock private MeasurementUnits mockMeasurementUnitsCache;
     @Mock private DatabaseLockManager fakeLockManager;
-    @Mock private Future<IngestResult> mockFutureIngestResult;
-    @Mock private IngestResult mockIngestResult;
-    @Mock private TimeSeries mockTimeSeries;
-    @Mock private SourceCompletedDetails mockSourceCompletedDetails;
-    @Mock private SourceCompleter mockSourceCompleter;
-    @Mock private SourceDetails mockSourceDetails;
-    @Spy private FeatureDetails spyFeatureDetails;
-    @Mock private HikariDataSource mockHikariDataSource;
 
     @BeforeClass
     public static void createFakeServer()
@@ -3365,65 +3333,10 @@ public class WRDSSourceTest
         MockitoAnnotations.initMocks( this );
         // Needed only if there are more @Tests added:
         //WRDSSourceTest.mockServer.reset();
-
-        DataProvider mockDataProvider;
-
-        Mockito.doNothing()
-               .when( this.spyFeatureDetails )
-               .save( this.mockDatabase );
-
-        Mockito.doReturn( FAKE_FEATURE_ID )
-               .when( this.spyFeatureDetails )
-               .getId();
-
-        when( mockSourceDetails.performedInsert() ).thenReturn( true );
-        Mockito.when( this.mockDataSourcesCache.get( any( URI.class ),
-                                                     anyString(),
-                                                     any(),
-                                                     anyString() ) )
-               .thenReturn( mockSourceDetails );
-
-        Mockito.doNothing()
-               .when( this.mockSourceCompletedDetails )
-               .markCompleted();
-        Mockito.when( this.mockSourceCompletedDetails.wasCompleted() )
-               .thenReturn( true );
-
-        Mockito.when( this.mockSourceDetails.getId() )
-               .thenReturn( FAKE_SOURCE_ID );
-
-        Mockito.when( this.mockEnsemblesCache.getDefaultEnsembleID() )
-               .thenReturn( FAKE_ENSEMBLE_ID );
-
-        Mockito.when( this.mockMeasurementUnitsCache.getMeasurementUnitID( anyString() ) )
-               .thenReturn( FAKE_MEASUREMENT_ID );
-
-        mockDataProvider = mock( DataProvider.class );
-        Mockito.when( mockDataProvider.isEmpty() )
-               .thenReturn( false );
-        Mockito.when( this.mockSystemSettings.getConnectionPool() )
-               .thenReturn( this.mockHikariDataSource );
-        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
-                    .thenReturn( this.mockHikariDataSource );
-        Mockito.when( this.mockHikariDataSource.getMaximumPoolSize() )
-               .thenReturn( 1 );
-
-        Mockito.when( this.mockDatabase.ingest( any( WRESCallable.class ) ) )
-               .thenReturn( this.mockFutureIngestResult );
-        Mockito.when( this.mockFutureIngestResult.get() )
-               .thenReturn( this.mockIngestResult );
-        Mockito.when( this.mockTimeSeries.getTimeSeriesID() )
-               .thenReturn( FAKE_TIMESERIES_ID );
-
-        Mockito.when( this.mockVariablesCache.getVariableID( anyString() ) )
-               .thenReturn( FAKE_VARIABLE_ID );
-        Mockito.when( this.mockFeaturesCache.getVariableFeatureByFeature( any(),
-                                                                          eq( FAKE_VARIABLE_ID ) ) )
-               .thenReturn( FAKE_VARIABLEFEATURE_ID );
     }
 
     @Test
-    public void readAndSaveValidWrdsTimeSeries() throws IOException
+    public void readValidWrdsTimeSeries() throws IOException
     {
         WRDSSourceTest.mockServer.when( HttpRequest.request()
                                                    .withPath( VALID_AHPS_PATH )
@@ -3441,14 +3354,11 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
-                                                                          null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
 
-        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                         sourceList,
                                                         configVariable,
@@ -3463,24 +3373,15 @@ public class WRDSSourceTest
                                                                 config,
                                                                 null );
 
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( "DRRC2",
                                              "DRRC2",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
                                              null );
 
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3533,37 +3434,26 @@ public class WRDSSourceTest
                                       projectConfig,
                                       dataSource,
                                       this.fakeLockManager ) );
-        Mockito.doReturn( this.mockSourceCompleter )
-               .when( readValueManager )
-               .createSourceCompleter( this.mockDatabase, FAKE_SOURCE_ID, this.fakeLockManager );
 
-        Mockito.doReturn( this.mockSourceDetails )
+        // Fake the ingest, we want to verify GET, read, parse, translate.
+        Mockito.doReturn( Collections.emptyList() )
                .when( readValueManager )
-               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
+               .ingest( any( TimeSeries.class ) );
         Mockito.doReturn( readValueManager )
                .when( wrdsSource )
                .createReadValueManager( projectConfig,
                                         dataSource,
                                         this.fakeLockManager );
 
-        Mockito.doReturn( this.spyFeatureDetails )
-               .when( readValueManager )
-               .createFeatureDetails();
-        Mockito.doReturn( this.mockTimeSeries )
-               .when( readValueManager )
-               .createTimeSeries( any(), anyInt(), any() );
-
         List<IngestResult> ingestResults = wrdsSource.save();
 
         WRDSSourceTest.mockServer.verify( request().withMethod( "GET" )
                                                    .withPath( VALID_AHPS_PATH ) );
 
-        assertFalse( "Expected single result to have been 'ingested' during the test.",
-                     ingestResults.get( 0 )
-                                  .wasFoundAlready() );
-        assertEquals( "Expected ingest to happen for 'right'.",
-                      LeftOrRightOrBaseline.RIGHT, ingestResults.get( 0 )
-                                                               .getLeftOrRightOrBaseline() );
+        // Verify two WRES TimeSeries were passed to the ingest method.
+        Mockito.verify( readValueManager,
+                        Mockito.times( 2 ) )
+               .ingest( any( TimeSeries.class ) );
 
         WRDSSourceTest.mockServer.reset();
     }
@@ -3599,14 +3489,11 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
-                                                                          null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
 
-        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                         sourceList,
                                                         configVariable,
@@ -3621,24 +3508,15 @@ public class WRDSSourceTest
                                                                 config,
                                                                 null );
 
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( "DRRC2",
                                              "DRRC2",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
                                              null );
 
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3691,23 +3569,15 @@ public class WRDSSourceTest
                                       projectConfig,
                                       dataSource,
                                       this.fakeLockManager ) );
-        Mockito.doReturn( this.mockSourceCompleter )
+
+        Mockito.doReturn( Collections.emptyList() )
                .when( readValueManager )
-               .createSourceCompleter( this.mockDatabase, FAKE_SOURCE_ID, this.fakeLockManager );
-        Mockito.doReturn( this.mockSourceDetails )
-               .when( readValueManager )
-               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
+               .ingest( any( TimeSeries.class ) );
         Mockito.doReturn( readValueManager )
                .when( wrdsSource )
                .createReadValueManager( projectConfig,
                                         dataSource,
                                         this.fakeLockManager );
-        Mockito.doReturn( this.spyFeatureDetails )
-               .when( readValueManager )
-               .createFeatureDetails();
-        Mockito.doReturn( this.mockTimeSeries )
-               .when( readValueManager )
-               .createTimeSeries( any(), anyInt(), any() );
 
         List<IngestResult> ingestResults = wrdsSource.save();
 
@@ -3715,12 +3585,10 @@ public class WRDSSourceTest
                                                    .withPath( VALID_AHPS_PATH ),
                                           VerificationTimes.exactly( 3 ) );
 
-        assertFalse( "Expected single result to have been 'ingested' during the test.",
-                     ingestResults.get( 0 )
-                                  .wasFoundAlready() );
-        assertEquals( "Expected ingest to happen for 'right'.",
-                      LeftOrRightOrBaseline.RIGHT, ingestResults.get( 0 )
-                                                                .getLeftOrRightOrBaseline() );
+        // Verify two WRES TimeSeries were passed to the ingest method.
+        Mockito.verify( readValueManager,
+                        Mockito.times( 2 ) )
+               .ingest( any( TimeSeries.class ) );
 
         WRDSSourceTest.mockServer.reset();
     }
@@ -3746,14 +3614,11 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
-                                                                          null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
 
-        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                         sourceList,
                                                         configVariable,
@@ -3768,17 +3633,7 @@ public class WRDSSourceTest
                                                                 config,
                                                                 null );
 
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             "FAKE2",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( "FAKE2",
                                              null,
                                              null );
 
@@ -3786,6 +3641,7 @@ public class WRDSSourceTest
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3836,18 +3692,11 @@ public class WRDSSourceTest
                                       dataSource,
                                       this.fakeLockManager ) );
 
-        Mockito.doReturn( this.spyFeatureDetails )
-               .when( readValueManager )
-               .createFeatureDetails();
-        Mockito.doReturn( this.mockSourceDetails )
-               .when( readValueManager )
-               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
         Mockito.doReturn( readValueManager )
                .when( wrdsSource )
                .createReadValueManager( projectConfig,
                                         dataSource,
                                         this.fakeLockManager );
-
         // Expect a PreIngestException during attempt to save invalid data
         assertThrows( PreIngestException.class, wrdsSource::save );
 
@@ -3879,14 +3728,11 @@ public class WRDSSourceTest
                                                                           null,
                                                                           null,
                                                                           null,
-                                                                          null,
-                                                                          null,
-                                                                          null,
                                                                           null );
 
         sourceList.add( confSource );
 
-        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null, "CFS" );
+        DataSourceConfig.Variable configVariable = new DataSourceConfig.Variable( "QR", null );
         DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                         sourceList,
                                                         configVariable,
@@ -3901,24 +3747,15 @@ public class WRDSSourceTest
                                                                 config,
                                                                 null );
 
-        Feature featureConfig = new Feature( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
+        Feature featureConfig = new Feature( "NONE2",
                                              "NONE2",
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
                                              null );
 
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
                                                 features,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -3945,6 +3782,7 @@ public class WRDSSourceTest
                                                Set.of( LeftOrRightOrBaseline.LEFT,
                                                        LeftOrRightOrBaseline.RIGHT ),
                                                fakeAhpsUri );
+
         ReadValueManager readValueManager = Mockito.spy(
                 new ReadValueManager( this.mockSystemSettings,
                                       this.mockDatabase,
@@ -3956,18 +3794,10 @@ public class WRDSSourceTest
                                       projectConfig,
                                       dataSource,
                                       this.fakeLockManager ) );
-        Mockito.doReturn( this.mockSourceCompletedDetails )
+        Mockito.doReturn( Collections.emptyList() )
                .when( readValueManager )
-               .createSourceCompletedDetails( any( Database.class ),
-                                              any( SourceDetails.class ) );
-        Mockito.doReturn( this.mockSourceCompleter )
-               .when( readValueManager )
-               .createSourceCompleter( any( Database.class ),
-                                       anyInt(),
-                                       any( DatabaseLockManager.class ) );
-        Mockito.doReturn( this.mockSourceDetails )
-               .when( readValueManager )
-               .createSourceDetails( any( SourceDetails.SourceKey.class ) );
+               .ingest( any( TimeSeries.class ) );
+
         WRDSSource wrdsSource = Mockito.spy(
                 new WRDSSource( this.mockSystemSettings,
                                 this.mockDatabase,
@@ -3990,12 +3820,10 @@ public class WRDSSourceTest
         WRDSSourceTest.mockServer.verify( request().withMethod( "GET" )
                                                    .withPath( NO_FORECASTS_PATH ) );
 
-        assertFalse( "Expected single result to have been 'ingested' during the test.",
-                     ingestResults.get( 0 )
-                                  .wasFoundAlready() );
-        assertEquals( "Expected ingest to happen for 'right'.",
-                      LeftOrRightOrBaseline.RIGHT, ingestResults.get( 0 )
-                                                                .getLeftOrRightOrBaseline() );
+        // Verify zero WRES TimeSeries were passed to the ingest method.
+        Mockito.verify( readValueManager,
+                        Mockito.times( 0 ) )
+               .ingest( any( TimeSeries.class ) );
 
         WRDSSourceTest.mockServer.reset();
     }

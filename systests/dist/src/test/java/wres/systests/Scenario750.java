@@ -28,8 +28,8 @@ public class Scenario750
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "DRRC2_streamflow_NWM_v2.0_Medium_Range_Ensemble_MEAN_ERROR.csv" ),
-                    Path.of( "DRRC2_streamflow_NWM_v2.0_Medium_Range_Ensemble_SAMPLE_SIZE.csv" ),
+            Set.of( Path.of( "18384141_streamflow_NWM_v2.0_Medium_Range_Ensemble_MEAN_ERROR.csv" ),
+                    Path.of( "18384141_streamflow_NWM_v2.0_Medium_Range_Ensemble_SAMPLE_SIZE.csv" ),
                     Path.of( "pairs.csv" ) );
     
     private ScenarioInformation scenarioInfo;

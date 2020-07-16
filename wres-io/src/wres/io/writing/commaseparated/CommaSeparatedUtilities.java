@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.util.TimeHelper;
@@ -107,31 +107,15 @@ public class CommaSeparatedUtilities
 
     public static String getFeatureNameFromMetadata( SampleMetadata metadata )
     {
-
-        // TODO: need a more consistent representation of a geographic feature throughout the application
-        // See #55231-131
-        // For now, use the location name OR the coordinates, preferentially
-
         String featureName = "UNKNOWN";
 
         DatasetIdentifier identifier = metadata.getIdentifier();
         if ( Objects.nonNull( identifier ) && Objects.nonNull( identifier.getLocation() ) )
         {
-            Location location = identifier.getLocation();
-
-            // Full string representation unless a sensible short one is available
-            featureName = location.toString();
-
-            if ( location.hasLocationName() )
-            {
-                featureName = location.getLocationName();
-            }
-            else if ( location.hasCoordinates() )
-            {
-                featureName = Float.toString( location.getLongitude() ) +
-                              " "
-                              + Float.toString( location.getLatitude() );
-            }
+            // TODO: decide if "right" is sufficient or a combination is better.
+            FeatureKey location = identifier.getLocation()
+                                            .getRight();
+            featureName = location.getName();
         }
 
         return featureName;

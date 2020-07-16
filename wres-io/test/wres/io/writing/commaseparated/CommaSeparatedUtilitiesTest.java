@@ -11,7 +11,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.sampledata.Location;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
@@ -25,6 +26,9 @@ import wres.datamodel.time.TimeWindowOuter;
 
 public class CommaSeparatedUtilitiesTest
 {
+    private static final FeatureKey FEATURE_ONE = FeatureKey.of( "fooBasin" );
+    private static final FeatureKey FEATURE_TWO = FeatureKey.of( "fooBasiny" );
+    private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( FEATURE_TWO, FEATURE_ONE, FEATURE_TWO );
 
     private TimeWindowOuter timeWindow;
 
@@ -90,7 +94,7 @@ public class CommaSeparatedUtilitiesTest
     public void testGetFeatureNameFromMetadataWithNamedLocation()
     {
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "fooBasin" ), "barVariable" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( FEATURE_TUPLE, "barVariable" );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )
@@ -108,7 +112,7 @@ public class CommaSeparatedUtilitiesTest
     public void testGetFeatureNameFromMetadataWithGeographicLocation()
     {
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( 43.23F, 23.41F ), "barVariable" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( FEATURE_TUPLE, "barVariable" );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )
@@ -117,7 +121,7 @@ public class CommaSeparatedUtilitiesTest
         String actual =
                 CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
 
-        assertEquals( "43.23 23.41", actual.toString() );
+        assertEquals( FEATURE_TUPLE.getRightName(), actual );
 
     }
 
@@ -125,7 +129,7 @@ public class CommaSeparatedUtilitiesTest
     public void testGetFeatureNameFromMetadataWithNullLocation()
     {
 
-        DatasetIdentifier identifier = DatasetIdentifier.of( (Location) null, "barVariable" );
+        DatasetIdentifier identifier = DatasetIdentifier.of( (FeatureTuple) null, "barVariable" );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setIdentifier( identifier )

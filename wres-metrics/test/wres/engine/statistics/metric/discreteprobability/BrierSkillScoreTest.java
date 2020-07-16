@@ -12,11 +12,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -24,6 +22,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -65,11 +64,7 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                               "SQIN",
-                                                                               "HEFS",
-                                                                               "ESP" ) ),
+                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.BRIER_SKILL_SCORE,
@@ -90,7 +85,7 @@ public final class BrierSkillScoreTest
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
 
-        assertEquals( expected, actual );
+        assertEquals( expected.getData(), actual.getData() );
     }
 
     /**
@@ -106,10 +101,7 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                               "SQIN",
-                                                                               "HEFS" ) ),
+                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.BRIER_SKILL_SCORE,

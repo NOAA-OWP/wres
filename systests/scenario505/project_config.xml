@@ -19,7 +19,7 @@
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="FAKE2" />
+        <feature left="FAKE2" right="FAKE2" />
         <leadHours minimum="0" maximum="40" />
         <issuedDates earliest="2551-03-17T00:00:00Z" latest="2551-03-20T00:00:00Z" />
         <desiredTimeScale>

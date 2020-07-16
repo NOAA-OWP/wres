@@ -243,82 +243,8 @@ public class TestDatabase
             statement.execute( "DROP TABLE wres.ProjectSource" );
         }
     }        
-    
-    
-    /**
-     * Create the WRES source table using given liquibase database.
-     * Expected to be called within a test requiring the variablefeature table. 
-     * If you call createVariableFeatureTable at the beginning of a test, you 
-     * must call dropVariableFeatureTable at the end of the test. You must also 
-     * call dropLiquibaseChangeTables at the end of the test.
-     * @param liquibaseDatabase the Liquibase Database instance to use
-     * @throws LiquibaseException when liquibase migration fails
-     */
-
-    public void createVariableFeatureTable( Database liquibaseDatabase )
-            throws LiquibaseException
-    {
-        Liquibase liquibase = new Liquibase( "database/wres.VariableFeature_v3.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             liquibaseDatabase );
-        liquibase.update( new Contexts() );
-
-    }
 
 
-    /**
-     * Drop the WRES source table using given connection.
-     * Expected to be called at the same level as createVariableFeatureTable, namely
-     * within a test that requires the variablefeature table, at the end of the test.
-     * @param connection the connection to use
-     * @throws SQLException when drop fails
-     */
-    public void dropVariableFeatureTable( Connection connection ) throws SQLException
-    {
-        try ( Statement statement = connection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.VariableFeature" );
-        }
-    }  
-    
-    
-    /**
-     * Create the WRES source table using given liquibase database.
-     * Expected to be called within a test requiring the variable table. If you
-     * call createVariableTable at the beginning of a test, you must call
-     * dropVariableTable at the end of the test. You must also call
-     * dropLiquibaseChangeTables at the end of the test.
-     * @param liquibaseDatabase the Liquibase Database instance to use
-     * @throws LiquibaseException when liquibase migration fails
-     */
-
-    public void createVariableTable( Database liquibaseDatabase )
-            throws LiquibaseException
-    {
-        Liquibase liquibase = new Liquibase( "database/wres.Variable_v2.xml",
-                                             new ClassLoaderResourceAccessor(),
-                                             liquibaseDatabase );
-        liquibase.update( new Contexts() );
-
-    }
-
-
-    /**
-     * Drop the WRES source table using given connection.
-     * Expected to be called at the same level as createVariableTable, namely
-     * within a test that requires the variable table, at the end of the test.
-     * @param connection the connection to use
-     * @throws SQLException when drop fails
-     */
-    public void dropVariableTable( Connection connection ) throws SQLException
-    {
-        try ( Statement statement = connection.createStatement() )
-        {
-            statement.execute( "DROP TABLE wres.Variable" );
-        }
-    }  
-    
-    
     /**
      * Create the WRES source table using given liquibase database.
      * Expected to be called within a test requiring the feature table. If you
@@ -332,7 +258,7 @@ public class TestDatabase
     public void createFeatureTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.Feature_v2.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.Feature_v3.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );

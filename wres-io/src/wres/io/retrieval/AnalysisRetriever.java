@@ -135,14 +135,15 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
         this.individualAnalysisRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( super.getDatabase() )
+                                                           .setFeaturesCache( super.getFeaturesCache() )
                                                            .setProjectId( super.getProjectId() )
                                                            .setDeclaredExistingTimeScale( super.getDeclaredExistingTimeScale() )
                                                            .setDesiredTimeScale( super.getDesiredTimeScale() )
-                                                           .setHasMultipleSourcesPerSeries( false )
                                                            .setUnitMapper( super.getMeasurementUnitMapper() )
                                                            .setLeftOrRightOrBaseline( super.getLeftOrRightOrBaseline() )
                                                            .setTimeWindow( analysisRanges )
-                                                           .setVariableFeatureId( super.getVariableFeatureId() )
+                                                           .setFeature( super.getFeature() )
+                                                           .setVariableName( super.getVariableName() )
                                                            .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME )
                                                            //.setSeasonEnd(  )
                                                            //.setSeasonStart(  )
@@ -210,8 +211,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
         /**
          * Set the duplicate policy, if not <code>null</null>.
-         * 
-         * @param latestAnalysisDuration duration
+         *
          * @return A builder
          */
         Builder setDuplicatePolicy( DuplicatePolicy duplicatePolicy )
@@ -340,8 +340,8 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns <code>true</code> if the retriever should return one time-series for each of the common analysis 
-     * durations across several reference times of the type {@link ANALYSIS_START_TIME}, <code>false</code> if it 
-     * should return a single time-series per {@link ANALYSIS_START_TIME}.
+     * durations across several reference times of the type {@link ReferenceTimeType.ANALYSIS_START_TIME}, <code>false</code> if it
+     * should return a single time-series per {@link ReferenceTimeType.ANALYSIS_START_TIME}.
      * 
      * @return true if the retriever should return a separate time-series for each analysis duration, otherwise false
      */

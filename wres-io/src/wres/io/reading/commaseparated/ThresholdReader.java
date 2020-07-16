@@ -19,14 +19,13 @@ import java.util.function.DoubleUnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
-import wres.config.generated.Feature;
 import wres.config.generated.FeatureType;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -49,14 +48,14 @@ public class ThresholdReader
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into 
-     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link ThresholdOuter}. 
+     * a {@link Map} whose keys are {@link FeatureKey} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
      * 
      * @param systemSettings the system settings used to help resolve a path to thresholds
      * @param threshold the threshold configuration
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units
      * @param unitMapper a measurement unit mapper
-     * @return a map of thresholds by feature
+     * @return a map of thresholds by feature name
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
      * @throws IllegalArgumentException if one or more features failed with expected problems, such as 
@@ -64,10 +63,11 @@ public class ThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds). 
      */
 
-    public static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds( SystemSettings systemSettings,
-                                                                   ThresholdsConfig threshold,
-                                                                   MeasurementUnit units,
-                                                                   UnitMapper unitMapper )
+    public static Map<String, Set<ThresholdOuter>>
+    readThresholds( SystemSettings systemSettings,
+                    ThresholdsConfig threshold,
+                    MeasurementUnit units,
+                    UnitMapper unitMapper )
             throws IOException
     {
         Objects.requireNonNull( threshold, "Specify a non-null source of thresholds to read." );
@@ -146,16 +146,14 @@ public class ThresholdReader
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into 
-     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link ThresholdOuter}. 
+     * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
      * 
      * @param commaSeparated the path to the comma separated values
-     * @param operator the threshold condition
-     * @param dataType the threshold data types
      * @param missingValue an optional missing value identifier to ignore (may be null)
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to 
      *            the evaluation units 
      * @param unitMapper a measurement unit mapper
-     * @return a map of thresholds by feature
+     * @return a map of thresholds by feature name
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
      * @throws IllegalArgumentException if one or more features failed with expected problems, such as 
@@ -163,14 +161,14 @@ public class ThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds). 
      */
 
-    private static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds( Path commaSeparated,
+    private static Map<String, Set<ThresholdOuter>> readThresholds( Path commaSeparated,
                                                                     ThresholdDataTypes dataTypes,
                                                                     Double missingValue,
                                                                     MeasurementUnit units,
                                                                     UnitMapper unitMapper )
             throws IOException
     {
-        Map<FeaturePlus, Set<ThresholdOuter>> returnMe = new TreeMap<>();
+        Map<String, Set<ThresholdOuter>> returnMe = new TreeMap<>();
 
         // Rather than drip-feeding failures, collect all expected failure types, which
         // are IllegalArgumentException and NumberFormatException and propagate at the end.
@@ -222,13 +220,11 @@ public class ThresholdReader
 
                 String[] featureThresholds = nextLine.split( "\\s*(,)\\s*" );
 
-                String locationId = featureThresholds[0];
-
-                FeaturePlus nextFeature = ThresholdReader.getFeature( locationId, dataTypes.getFeatureType() );
+                String featureName = featureThresholds[0];
 
                 try
                 {
-                    returnMe.put( nextFeature,
+                    returnMe.put( featureName,
                                   ThresholdReader.getAllThresholdsForOneFeature( dataTypes,
                                                                                  labels,
                                                                                  featureThresholds,
@@ -238,19 +234,19 @@ public class ThresholdReader
                 // Catch expected exceptions and propagate finally to avoid drip-feeding
                 catch ( LabelInconsistencyException e )
                 {
-                    featuresThatFailedWithLabelInconsistency.add( locationId );
+                    featuresThatFailedWithLabelInconsistency.add( featureName );
                 }
                 catch ( AllThresholdsMissingException e )
                 {
-                    featuresThatFailedWithAllThresholdsMissing.add( locationId );
+                    featuresThatFailedWithAllThresholdsMissing.add( featureName );
                 }
                 catch ( NumberFormatException e )
                 {
-                    featuresThatFailedWithNonNumericInput.add( locationId );
+                    featuresThatFailedWithNonNumericInput.add( featureName );
                 }
                 catch ( IllegalArgumentException e )
                 {
-                    featuresThatFailedWithOtherWrongInput.add( locationId );
+                    featuresThatFailedWithOtherWrongInput.add( featureName );
                 }
 
                 // Move to next line
@@ -273,51 +269,6 @@ public class ThresholdReader
     }
 
     /**
-     * Returns a feature from the input.
-     * 
-     * @param name the feature name
-     * @param type the type of feature name
-     * @return a feature
-     */
-
-    private static FeaturePlus getFeature( String name, FeatureType type )
-    {
-        switch ( type )
-        {
-            case NWS_ID:
-                return FeaturePlus.of( new Feature( null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    name,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null ) );
-            case USGS_ID:
-                return FeaturePlus.of( new Feature( null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    name,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null,
-                                                    null ) );
-            default:
-                throw new IllegalArgumentException( "Unsupported feature type '" + type + "'." );
-        }
-    }
-
-    /**
      * Mutates the input map, reading all thresholds for one feature.
      * 
      * @param dataType the threshold data types
@@ -328,7 +279,6 @@ public class ThresholdReader
      * @throws NullPointerException if the featureThresholds is null
      * @throws LabelInconsistencyException if the number of labels is inconsistent with the number of thresholds
      * @throws NumberFormatException if one of the thresholds was not a number
-     * @throws AllMissingThresholdsException if all thresholds matched the missing value
      * @return the thresholds for one feature
      */
 
@@ -369,7 +319,7 @@ public class ThresholdReader
     }
 
     /**
-     * Generates a {@link Set} of {@link ThresholdOuter} from the input string. 
+     * Generates a {@link Set} of {@link ThresholdOuter} from the input string.
      * 
      * @param input the comma separated input string
      * @param labels a set of labels (as many as thresholds) or null
@@ -385,12 +335,12 @@ public class ThresholdReader
      */
 
     private static Set<ThresholdOuter> getThresholds( String[] input,
-                                                 String[] labels,
-                                                 boolean isProbability,
-                                                 Operator condition,
-                                                 ThresholdDataType dataType,
-                                                 Double missingValue,
-                                                 InnerUnitMapper unitMapper )
+                                                      String[] labels,
+                                                      boolean isProbability,
+                                                      Operator condition,
+                                                      ThresholdDataType dataType,
+                                                      Double missingValue,
+                                                      InnerUnitMapper unitMapper )
     {
         Objects.requireNonNull( input, "Specify a non-null input in order to read the thresholds." );
 
@@ -590,7 +540,7 @@ public class ThresholdReader
 
         /**
          * Create an instance.
-         * @param existingUnit the existing measurement unit
+         * @param existingUnits the existing measurement unit
          * @param desiredUnitMapper a mapper to create desired measurement units
          * @return an inner mapper
          */
@@ -614,7 +564,7 @@ public class ThresholdReader
          * Maps an input value in the existing measurement units to the desired units. If the existing units are
          * unknown, the input value is returned.
          * 
-         * @param thresholdValue a threshold value in existing units
+         * @param valueInExistingUnits a threshold value in existing units
          * @return the thresholds value in desired units
          */
 
@@ -632,7 +582,7 @@ public class ThresholdReader
         /**
          * Create an instance.
          * @param existingUnit the existing measurement unit
-         * @param desiredUnitMapper a mapper to create desired measurement units
+         * @param generalUnitMapper a mapper to create desired measurement units
          */
 
         private InnerUnitMapper( MeasurementUnit existingUnit, UnitMapper generalUnitMapper )

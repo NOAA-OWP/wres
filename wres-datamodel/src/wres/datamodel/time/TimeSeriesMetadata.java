@@ -8,6 +8,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 
 /**
@@ -38,10 +39,10 @@ public class TimeSeriesMetadata
 
 
     /**
-     * The name of the geographic feature.
+     * The geographic feature.
      */
 
-    private final String featureName;
+    private final FeatureKey feature;
 
 
     /**
@@ -56,7 +57,7 @@ public class TimeSeriesMetadata
      * @param referenceTimes The reference times, non-null
      * @param timeScale The time scale if available, or null if not.
      * @param variableName The variable name, non-null.
-     * @param featureName The feature name, non-null.
+     * @param feature The feature, non-null.
      * @param unit The measurement unit name, non-null.
      * @return an instance
      * @throws NullPointerException if any arg besides timeScale is null
@@ -65,13 +66,13 @@ public class TimeSeriesMetadata
     public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes,
                                          TimeScaleOuter timeScale,
                                          String variableName,
-                                         String featureName,
+                                         FeatureKey feature,
                                          String unit )
     {
         return new Builder().setReferenceTimes( referenceTimes )
                             .setTimeScale( timeScale )
                             .setVariableName( variableName )
-                            .setFeatureName( featureName )
+                            .setFeature( feature )
                             .setUnit( unit )
                             .build();
     }
@@ -91,9 +92,9 @@ public class TimeSeriesMetadata
         return this.variableName;
     }
 
-    public String getFeatureName()
+    public FeatureKey getFeature()
     {
-        return this.featureName;
+        return this.feature;
     }
 
     public String getUnit()
@@ -118,7 +119,7 @@ public class TimeSeriesMetadata
         return Objects.equals( timeScale, metadata.timeScale ) &&
                referenceTimes.equals( metadata.referenceTimes ) &&
                variableName.equals( metadata.variableName ) &&
-               featureName.equals( metadata.featureName ) &&
+               feature.equals( metadata.feature ) &&
                unit.equals( metadata.unit );
     }
 
@@ -128,7 +129,7 @@ public class TimeSeriesMetadata
         return Objects.hash( timeScale,
                              referenceTimes,
                              variableName,
-                             featureName,
+                             feature,
                              unit );
     }
 
@@ -139,7 +140,7 @@ public class TimeSeriesMetadata
                                                                             .append( "timeScale", timeScale )
                                                                             .append( "referenceTimes", referenceTimes )
                                                                             .append( "variableName", variableName )
-                                                                            .append( "featureName", featureName )
+                                                                            .append( "feature", feature )
                                                                             .append( "unit", unit )
                                                                             .toString();
     }
@@ -171,10 +172,10 @@ public class TimeSeriesMetadata
 
 
         /**
-         * The name of the geographic feature.
+         * The geographic feature.
          */
 
-        private String featureName;
+        private FeatureKey feature;
 
 
         /**
@@ -226,15 +227,15 @@ public class TimeSeriesMetadata
         }
         
         /**
-         * Sets the feature name.
+         * Sets the feature.
          *
-         * @param featureName the feature name
+         * @param feature the feature
          * @return the builder
          */
         
-        public Builder setFeatureName( String featureName )
+        public Builder setFeature( FeatureKey feature )
         {
-            this.featureName = featureName;
+            this.feature = feature;
             
             return this;
         }
@@ -282,7 +283,7 @@ public class TimeSeriesMetadata
         {
             if( Objects.nonNull( prototype ) )
             {
-                this.setFeatureName( prototype.getFeatureName() );
+                this.setFeature( prototype.getFeature() );
                 this.setVariableName( prototype.getVariableName() );
                 this.setReferenceTimes( prototype.getReferenceTimes() );
                 this.setTimeScale( prototype.getTimeScale() );
@@ -312,13 +313,13 @@ public class TimeSeriesMetadata
         this.referenceTimes = localTimes;
         this.timeScale = builder.timeScale;
         this.variableName = builder.variableName;
-        this.featureName = builder.featureName;
+        this.feature = builder.feature;
         this.unit = builder.unit;
         
         Objects.requireNonNull( this.getReferenceTimes() );
         // Often the timescale is not available: in that case valid to use null.
         Objects.requireNonNull( this.getVariableName() );
-        Objects.requireNonNull( this.getFeatureName() );
+        Objects.requireNonNull( this.getFeature() );
         Objects.requireNonNull( this.getUnit() );
 
     }

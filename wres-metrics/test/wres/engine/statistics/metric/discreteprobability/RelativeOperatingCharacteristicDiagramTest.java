@@ -12,10 +12,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
@@ -23,6 +21,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticMetadata;
+import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DiagramStatistic;
@@ -65,10 +64,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         //Metadata for the output
         final StatisticMetadata m1 =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
-                                                         DatasetIdentifier.of( Location.of( "Tampere" ),
-                                                                               "MAP",
-                                                                               "FMI" ) ),
+                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
                                       input.getRawData().size(),
                                       MeasurementUnit.of(),
                                       MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,

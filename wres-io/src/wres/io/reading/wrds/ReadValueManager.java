@@ -9,18 +9,19 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -29,7 +30,6 @@ import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -38,28 +38,27 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.ReferenceTimeType;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
+import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
-import wres.io.data.details.TimeSeries;
 import wres.io.reading.DataSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.IngestedValues;
 import wres.io.reading.PreIngestException;
-import wres.io.reading.SourceCompleter;
 import wres.io.utilities.WebClient;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 import wres.system.SystemSettings;
-import wres.util.TimeHelper;
 
 public class ReadValueManager
 {
@@ -68,8 +67,6 @@ public class ReadValueManager
             = ReadValueManager.getSslContextTrustingDodSigner();
 
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
-
-    private static final String MD5SUM_OF_EMPTY_STRING = "68b329da9893e34099c7d8ad5cb9c940";
 
     private final SystemSettings systemSettings;
     private final Database database;
@@ -81,7 +78,6 @@ public class ReadValueManager
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
-    private final Set<Pair<CountDownLatch,CountDownLatch>> latches = new HashSet<>();
 
     ReadValueManager( SystemSettings systemSettings,
                       Database database,
@@ -141,58 +137,14 @@ public class ReadValueManager
         return this.measurementUnitsCache;
     }
 
-    private SourceDetails saveLackOfData() throws IOException {
-        URI location = this.getLocation();
 
-        try {
-            // Cannot trust the DataSources.get() method to accurately
-            // report performedInsert(). Use other means here.
-            SourceDetails.SourceKey sourceKey =
-                    new SourceDetails.SourceKey(location,
-                            Instant.now().toString(),
-                            null,
-                            MD5SUM_OF_EMPTY_STRING.toUpperCase());
-
-            SourceDetails details = this.createSourceDetails(sourceKey);
-            Database database = this.getDatabase();
-            details.save(database);
-            boolean foundAlready = !details.performedInsert();
-
-            LOGGER.debug("Found {}? {}", details, foundAlready);
-
-            if (!foundAlready) {
-                this.lockManager.lockSource(details.getId());
-                SourceCompletedDetails completedDetails =
-                        createSourceCompletedDetails(database, details);
-                completedDetails.markCompleted();
-                // A special case here, where we don't use
-                // source completer because we know there are no data
-                // rows to be inserted, therefore there will be no
-                // coordination with the use of synchronizers/latches.
-                // Therefore, plain lock and unlock here.
-                this.lockManager.unlockSource(details.getId());
-
-                LOGGER.debug("Empty source id {} marked complete.",
-                        details.getId());
-            }
-
-            return details;
-        }
-        catch (SQLException e) {
-            throw new IngestException("Source metadata for '"
-                    + location +
-                    "' could not be stored in or retrieved from the database.",
-                    e);
-        }
-    }
-
-    private Pair<byte[], SourceDetails> getInputBytes() throws IOException {
+    private byte[] getInputBytes() throws IOException {
         URI location = this.getLocation();
 
         if ( location.getScheme().equals( "file" ) )
         {
             try (InputStream fileContents = this.getFromFile(location)) {
-                return Pair.of(IOUtils.toByteArray(fileContents), null);
+                return IOUtils.toByteArray( fileContents );
             }
         }
         else if ( location.getScheme().toLowerCase().startsWith( "http" ) )
@@ -203,37 +155,30 @@ public class ReadValueManager
 
                 if ( httpStatus >= 400 && httpStatus < 500 ) {
                     LOGGER.warn("Treating HTTP response code {} as no data found from URI {}",
-                            httpStatus,
-                            location);
-                    return Pair.of(null, this.saveLackOfData());
+                                httpStatus,
+                                location);
+                    return null;
                 }
 
-                return Pair.of(IOUtils.toByteArray(response.getResponse()), null);
+                return IOUtils.toByteArray( response.getResponse() );
             }
         }
         else
         {
             throw new UnsupportedOperationException( "Only file and http(s) "
-                    + "are supported. Got: "
-                    + location );
+                                                     + "are supported. Got: "
+                                                     + location );
         }
     }
 
     public List<IngestResult> save() throws IOException
     {
-        Instant now = Instant.now();
         URI location = this.getLocation();
+        byte[] rawForecast = this.getInputBytes();
 
-        Pair<byte[], SourceDetails> inputBytes = this.getInputBytes();
-
-        if (inputBytes.getLeft() == null) {
-            return IngestResult.singleItemListFrom(
-                    this.projectConfig,
-                    this.dataSource,
-                    inputBytes.getRight().getId(),
-                    !inputBytes.getRight().performedInsert(),
-                    false
-            );
+        if ( Objects.isNull( rawForecast ) )
+        {
+            return Collections.emptyList();
         }
 
         // It is conceivable that we could tee/pipe the data to both
@@ -241,7 +186,6 @@ public class ReadValueManager
         // more complexity and may not be worth it. For now assume that we are
         // not going to exhaust our heap by including the whole forecast
         // here in memory temporarily.
-        byte[] rawForecast = inputBytes.getLeft();
 
         if ( LOGGER.isTraceEnabled() )
         {
@@ -251,159 +195,46 @@ public class ReadValueManager
                                       StandardCharsets.UTF_8 ) );
         }
 
-        MessageDigest md5Name;
+        ObjectMapper mapper = new ObjectMapper();
 
         try
         {
-            md5Name = MessageDigest.getInstance( "MD5" );
+            ForecastResponse response = mapper.readValue( rawForecast,
+                                                          ForecastResponse.class );
+            List<IngestResult> results = new ArrayList<>( response.forecasts.length );
+
+            for ( Forecast forecast : response.getForecasts() )
+            {
+                LOGGER.debug( "Parsing {}", forecast );
+                TimeSeries<Double> timeSeries = this.read( forecast );
+                List<IngestResult> result = this.ingest( timeSeries );
+                results.addAll( result );
+            }
+
+            return Collections.unmodifiableList( results );
         }
-        catch ( NoSuchAlgorithmException nsae )
+        catch ( JsonMappingException | JsonParseException je )
         {
-            throw new PreIngestException( "Couldn't use MD5 algorithm.", nsae );
+            throw new PreIngestException( "Failed to parse the response body"
+                                          + " from WRDS url "
+                                          + location,
+                                          je );
         }
-
-        DigestUtils digestUtils = new DigestUtils( md5Name );
-        String hash = digestUtils.digestAsHex( rawForecast )
-                                 .toUpperCase();
-
-        boolean foundAlready;
-        boolean completed;
-        boolean dataSaved = false;
-        SourceDetails source;
-        SourceCompletedDetails completedDetails;
-
-        // Cannot trust the DataSources.get() method to accurately
-        // report performedInsert(). Use other means here.
-        SourceDetails.SourceKey sourceKey =
-                new SourceDetails.SourceKey( location,
-                                             now.toString(),
-                                             null,
-                                             hash );
-
-        try
+        catch ( IngestException e )
         {
-            source = this.createSourceDetails( sourceKey );
-            Database database = this.getDatabase();
-            source.save( database );
-            foundAlready = !source.performedInsert();
+            throw new IngestException( "Values from WRDS url "
+                                       + location
+                                       + " could not be ingested.",
+                                       e );
         }
-        catch ( SQLException e )
-        {
-            throw new IngestException( "Source metadata about '" + location +
-                                       "' could not be stored or retrieved from the database." );
-        }
-
-        if ( !foundAlready )
-        {
-            LOGGER.debug( "{} is responsible for source {}", this, hash );
-
-            try
-            {
-                this.lockManager.lockSource( source.getId() );
-            }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Failed to lock for source id "
-                                              + source.getId(), se );
-            }
-
-            ObjectMapper mapper = new ObjectMapper();
-
-            try
-            {
-                ForecastResponse response = mapper.readValue( rawForecast,
-                                                              ForecastResponse.class );
-
-                for ( Forecast forecast : response.getForecasts() )
-                {
-                    LOGGER.debug( "Parsing {}", forecast );
-                    boolean saved = this.read( forecast, source.getId() );
-                    dataSaved = dataSaved || saved;
-                }
-            }
-            catch ( JsonMappingException | JsonParseException je )
-            {
-                throw new PreIngestException( "Failed to parse the response body"
-                                              + " from WRDS url "
-                                              + location,
-                                              je );
-            }
-            catch ( IngestException e )
-            {
-                throw new IngestException( "Values from WRDS url "
-                                           + location
-                                           + " could not be ingested.",
-                                           e );
-            }
-
-            Database database = this.getDatabase();
-            SourceCompleter completer = createSourceCompleter( database,
-                                                               source.getId(),
-                                                               this.lockManager );
-
-            // See #64922, there are two special cases where "read()" will
-            // return before any data is saved. Tolerate that situation.
-            if ( dataSaved )
-            {
-                completer.complete( this.latches );
-                LOGGER.info( "Successfully ingested data from {}", location );
-            }
-            else if ( this.latches.isEmpty() )
-            {
-                Pair<CountDownLatch,CountDownLatch> fakeLatches
-                        = Pair.of( new CountDownLatch( 0 ),
-                                   new CountDownLatch( 0 ) );
-                // Satisfy the completer when there is no data saved by passing
-                // fake latches.
-                Set<Pair<CountDownLatch,CountDownLatch>> fakeSet
-                        = Set.of( fakeLatches );
-                completer.complete( fakeSet );
-            }
-            else
-            {
-                throw new IllegalStateException( "When no data was saved, no "
-                                                 + "coordinating latches should"
-                                                 + " exist." );
-            }
-
-            completed = true;
-        }
-        else
-        {
-            LOGGER.debug( "{} yields for source {}", this, hash );
-            Database database = this.getDatabase();
-            completedDetails = new SourceCompletedDetails( database, source.getId() );
-
-            try
-            {
-                completed = completedDetails.wasCompleted();
-            }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Unable to ask if source with url "
-                                           + this.dataSource.getUri() + " and source id "
-                                           + source.getId() + " was completed.",
-                                           se );
-            }
-        }
-
-        return IngestResult.singleItemListFrom(
-                this.projectConfig,
-                this.dataSource,
-                source.getId(),
-                foundAlready,
-                !completed
-        );
     }
 
     /**
      *
      * @param forecast
-     * @param sourceId
-     * @return true when data was saved, false otherwise.
-     * @throws IngestException
+     * @return Populated TimeSeries<Double> when data was read, null otherwise.
      */
-    private boolean read( Forecast forecast, int sourceId ) throws IngestException
+    private TimeSeries<Double> read( Forecast forecast )
     {
         URI location = this.getLocation();
         List<DataPoint> dataPointsList;
@@ -418,68 +249,78 @@ public class ReadValueManager
         {
             LOGGER.warn( "The forecast '{}' from '{}' did not have data to save.",
                          forecast, location );
-            return false;
+            return null;
         }
 
         if ( dataPointsList.size() < 2 )
         {
             LOGGER.warn( "Fewer than two values present in the first forecast '{}' from '{}'.",
                          forecast, location );
-            return false;
+            return null;
         }
 
         Duration timeDuration = Duration.between( dataPointsList.get( 0 ).getTime(),
                                                   dataPointsList.get( 1 ).getTime() );
 
-        OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
+        Map<ReferenceTimeType,Instant> datetimes = new HashMap<>( 2 );
+
+        if ( Objects.nonNull( forecast.getBasisTime() ) )
+        {
+            Instant basisDateTime = forecast.getBasisTime()
+                                            .toInstant();
+            datetimes.put( ReferenceTimeType.T0, basisDateTime );
+        }
+
+        if ( Objects.nonNull( forecast.getIssuedTime() ) )
+        {
+            Instant issuedDateTime = forecast.getIssuedTime()
+                                             .toInstant();
+            datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
+        }
+
+        if ( datetimes.isEmpty() )
+        {
+            LOGGER.warn( "Forecast at {} had neither a basis datetime nor an issued datetime. Skipping it.",
+                         location );
+            return null;
+        }
 
         // Get the time scale information, if available
         TimeScaleOuter timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), location );
-
-        TimeSeries timeSeries;
-        try
-        {
-            timeSeries = this.getTimeSeries( forecast, sourceId, startTime, timeScale );
-        }
-        catch ( SQLException se )
-        {
-            throw new IngestException( "Failed to get TimeSeries info for "
-                                       + "forecast=" + forecast
-                                       + " source=" + sourceId
-                                       + " startTime=" + startTime
-                                       + " timeScale=" + timeScale,
-                                       se );
-        }
+        String measurementUnit = forecast.getUnits()
+                                         .getUnitName();
+        String variableName = forecast.getParameterCodes()
+                                      .getPhysicalElement();
+        String featureName = forecast.getLocation()
+                                     .getNames()
+                                     .getNwsLid();
+        String featureDescription = forecast.getLocation()
+                                            .getNames()
+                                            .getNwsName();
+        FeatureKey feature = new FeatureKey( featureName, featureDescription, null, null );
+        TimeSeriesMetadata metadata =
+                TimeSeriesMetadata.of( datetimes,
+                                       timeScale,
+                                       variableName,
+                                       feature,
+                                       measurementUnit );
 
         // Before ingest, validate the timeseries as being a timeseries in the
         // sense that a timeseries is a sequence of values in time.
         this.validateTimeseries( dataPointsList );
 
+        TimeSeries.TimeSeriesBuilder<Double> timeSeriesBuilder =
+                new TimeSeries.TimeSeriesBuilder<Double>().setMetadata( metadata );
+
         for (DataPoint dataPoint : dataPointsList)
         {
-            Duration between = Duration.between( startTime, dataPoint.getTime());
-            int lead = ( int ) TimeHelper.durationToLongUnits( between, TimeHelper.LEAD_RESOLUTION );
-
-            try
-            {
-                Pair<CountDownLatch,CountDownLatch> synchronizer =
-                        IngestedValues.addTimeSeriesValue( this.getSystemSettings(),
-                                                           this.getDatabase(),
-                                                           timeSeries.getTimeSeriesID(),
-                                                           lead,
-                                                           dataPoint.getValue() );
-                this.latches.add( synchronizer );
-            }
-            catch ( SQLException se )
-            {
-                throw new IngestException( "Failed to ingest values when adding "
-                                           + "timeSeries=" + timeSeries
-                                           + " lead=" + lead
-                                           + " dataPoint=" + dataPoint,
-                                           se );
-            }
+            Event<Double> event = Event.of( dataPoint.getTime()
+                                                     .toInstant(),
+                                            dataPoint.getValue() );
+            timeSeriesBuilder.addEvent( event );
         }
-        return true;
+
+        return timeSeriesBuilder.build();
     }
 
 
@@ -528,67 +369,7 @@ public class ReadValueManager
         }
     }
 
-    private int getVariableFeatureId(final Forecast forecast) throws SQLException
-    {
-        LocationNames locationDescription = forecast.getLocation().getNames();
 
-        FeatureDetails details = this.createFeatureDetails();
-        details.setFeatureName( locationDescription.getNwsName() );
-
-        // Tolerate missing comid
-        if ( !locationDescription.getComId().isBlank() )
-        {
-            details.setComid( Integer.parseInt( locationDescription.getComId() ) );
-        }
-
-        details.setGageID( locationDescription.getUsgsSiteCode() );
-        details.setLid( locationDescription.getNwsLid() );
-        Database database = this.getDatabase();
-        details.save( database );
-        Variables variables = this.getVariablesCache();
-        Features features = this.getFeaturesCache();
-
-        // Use the Physical Element code as the variable name because AHPS
-        // forecasts have QR vs QI vs HG which represent different variables.
-        // See redmine issue #61535 for details.
-        int variableId = variables.getVariableID( forecast.getParameterCodes()
-                                                          .getPhysicalElement() );
-        return features.getVariableFeatureByFeature( details, variableId );
-    }
-
-    private TimeSeries getTimeSeries(
-            final Forecast forecast,
-            final int sourceId,
-            final OffsetDateTime startDate,
-            final TimeScaleOuter timeScale
-    ) throws SQLException
-    {
-        String startTime = TimeHelper.convertDateToString( startDate );
-        Database database = this.getDatabase();
-        TimeSeries timeSeries = this.createTimeSeries( database, sourceId, startTime);
-        Ensembles ensembles = this.getEnsemblesCache();
-        timeSeries.setEnsembleID( ensembles.getDefaultEnsembleID() );
-        timeSeries.setMeasurementUnitID( this.getMeasurementUnitId( forecast ) );
-        timeSeries.setVariableFeatureID( this.getVariableFeatureId( forecast ) );
-        timeSeries.setTimeScale( timeScale );
-        return timeSeries;
-    }
-
-    private OffsetDateTime getStartTime(final Forecast forecast, Duration timeStep)
-    {
-        if (forecast.getBasisTime() != null)
-        {
-            return forecast.getBasisTime().minus( timeStep );
-        }
-
-        return forecast.getIssuedTime();
-    }
-
-    private int getMeasurementUnitId(final Forecast forecast) throws SQLException
-    {
-        MeasurementUnits measurementUnits = this.getMeasurementUnitsCache();
-        return measurementUnits.getMeasurementUnitID(forecast.getUnits().getUnitName());
-    }
 
     private InputStream getFromFile( URI uri ) throws FileNotFoundException
     {
@@ -601,69 +382,6 @@ public class ReadValueManager
         Path forecastPath = Paths.get( uri );
         File forecastFile = forecastPath.toFile();
         return new FileInputStream( forecastFile );
-    }
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @param sourceKey the first arg to SourceDetails
-     * @return a SourceDetails
-     */
-
-    SourceDetails createSourceDetails( SourceDetails.SourceKey sourceKey )
-    {
-        return new SourceDetails( sourceKey );
-    }
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @param database The database to use.
-     * @param sourceId the first arg to SourceCompleter
-     * @param lockManager the second arg to SourceCompleter
-     * @return a SourceCompleter
-     */
-    SourceCompleter createSourceCompleter( Database database,
-                                           int sourceId,
-                                           DatabaseLockManager lockManager )
-    {
-        return new SourceCompleter( database, sourceId, lockManager );
-    }
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @param database The database to use.
-     * @param sourceDetails the first arg to SourceCompletedDetails
-     * @return a SourceCompleter
-     */
-    SourceCompletedDetails createSourceCompletedDetails( Database database,
-                                                         SourceDetails sourceDetails )
-    {
-        return new SourceCompletedDetails( database, sourceDetails );
-    }
-
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @return a fresh FeatureDetails
-     */
-
-    FeatureDetails createFeatureDetails()
-    {
-        return new FeatureDetails();
-    }
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @return a fresh TimeSeries
-     */
-
-    TimeSeries createTimeSeries( Database database, Integer sourceId, String startTime )
-    {
-        return new TimeSeries( database, sourceId, startTime );
     }
 
     private URI getLocation()
@@ -729,6 +447,41 @@ public class ReadValueManager
                                           + "requests made to WRDS services "
                                           + "and furthermore could not get the "
                                           + "default SSLContext.", nsae );
+        }
+    }
+
+
+    /**
+     * Perform ingest of the given timeSeries.
+     *
+     * A step toward separating ingest classes from reading classes.
+     * Also facilitates testing.
+     * @param timeSeries The timeSeries to ingest
+     * @return The ingest results.
+     * @throws IngestException When an exception occurs during ingest.
+     */
+
+    List<IngestResult> ingest( TimeSeries<Double> timeSeries )
+            throws IngestException
+    {
+        TimeSeriesIngester ingester = TimeSeriesIngester.of( this.getSystemSettings(),
+                                                             this.getDatabase(),
+                                                             this.getFeaturesCache(),
+                                                             this.getVariablesCache(),
+                                                             this.getEnsemblesCache(),
+                                                             this.getMeasurementUnitsCache(),
+                                                             this.projectConfig,
+                                                             this.dataSource,
+                                                             this.lockManager,
+                                                             timeSeries );
+        try
+        {
+            return ingester.call();
+        }
+        catch ( IOException ioe )
+        {
+            throw new IngestException( "Failed to ingest data from "
+                                       + this.getLocation(), ioe );
         }
     }
 }

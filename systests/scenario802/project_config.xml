@@ -38,7 +38,8 @@
     
         <!-- The measuring unit of the evaluation. -->
         <unit>FT</unit>
-        
+
+        <feature left="CKLN6" right="CKLN6SUQ" />
         <!-- The evaluation is restricted to a lead hour that ends at 144 hours, or 4 days. The
              desiredTimeScale of the evaluation is the 4 day maximum that ends at 4 days and 
              all those pairs are placed in a pool that is zero hours wide and centered on 144 

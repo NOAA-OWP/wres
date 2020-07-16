@@ -54,10 +54,7 @@ public class ValidationTest
                         null,
                         null,
                         Format.PI_XML,
-                        null,
                         "-0500",
-                        null,
-                        null,
                         null,
                         null
                 );
@@ -70,3 +67,4 @@ public class ValidationTest
                      + "PI-XML data is specified.", result );
     }
 }
+c

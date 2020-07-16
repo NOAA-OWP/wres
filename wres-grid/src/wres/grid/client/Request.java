@@ -2,7 +2,7 @@ package wres.grid.client;
 
 import java.util.List;
 
-import wres.config.generated.Feature;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -27,7 +27,7 @@ public interface Request
      * @return the features requested
      */
     
-    List<Feature> getFeatures();
+    List<FeatureKey> getFeatures();
     
     /**
      * @return the time window

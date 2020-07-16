@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.compress.utils.IOUtils;
-import wres.config.FeaturePlus;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -35,11 +34,11 @@ public final class WRDSReader {
                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final int LOCATION_REQUEST_COUNT = 20;
 
-    public static Map<FeaturePlus, Set<ThresholdOuter>> readThresholds(
+    public static Map<String, Set<ThresholdOuter>> readThresholds(
             final SystemSettings systemSettings,
             final ThresholdsConfig threshold,
             final UnitMapper unitMapper,
-            final Collection<FeaturePlus> features
+            final Set<String> features
     ) throws IOException
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
@@ -51,7 +50,7 @@ public final class WRDSReader {
             addresses.add(resolvedPath.toString());
         }
         else {
-            Collection<String> locationGroups = groupLocations(features);
+            Set<String> locationGroups = groupLocations( features );
             final String coreAddress;
 
             if (!source.getValue().toString().endsWith("/")) {
@@ -76,7 +75,7 @@ public final class WRDSReader {
         }
     }
 
-    static Map<FeaturePlus, Set<ThresholdOuter>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
+    static Map<String, Set<ThresholdOuter>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource();
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
@@ -112,19 +111,19 @@ public final class WRDSReader {
         return extractor.extract();
     }
 
-    static Collection<String> groupLocations(Collection<FeaturePlus> features) {
-        List<String> locationGroups = new ArrayList<>();
+    static Set<String> groupLocations( Set<String> features ) {
+        Set<String> locationGroups = new HashSet<>();
         StringJoiner locationJoiner = new StringJoiner(",");
         int counter = 0;
 
-        for (FeaturePlus feature : features) {
+        for ( String feature : features ) {
             if (counter % LOCATION_REQUEST_COUNT == 0 && locationJoiner.length() > 0) {
                 locationGroups.add(locationJoiner.toString());
                 locationJoiner = new StringJoiner(",");
                 counter = 0;
             }
 
-            locationJoiner.add(feature.getFeature().getLocationId());
+            locationJoiner.add( feature );
             counter++;
         }
 

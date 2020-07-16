@@ -10,9 +10,10 @@ import java.time.Instant;
 import org.junit.Test;
 
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.Location;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
@@ -49,9 +50,9 @@ public class StatisticMetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Location locationBase = Location.of( DRRC3 );
+        FeatureKey locationBase = FeatureKey.of( DRRC3 );
         SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
-                                                 DatasetIdentifier.of( locationBase,
+                                                 DatasetIdentifier.of( new FeatureTuple( locationBase, locationBase, locationBase ),
                                                                        "SQIN",
                                                                        "HEFS" ),
                                                  firstWindow,
@@ -112,11 +113,11 @@ public class StatisticMetadataTest
                                                         MetricConstants.NONE );
         assertFalse( first.equals( sixth ) );
         // Unequal input dimensions
-        Location seventhLocation = Location.of( DRRC3 );
+        FeatureKey seventhLocation = FeatureKey.of( DRRC3 );
         final TimeWindowOuter timeWindow = firstWindow;
         StatisticMetadata seventh =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( seventhLocation,
+                                                   .setIdentifier( DatasetIdentifier.of( new FeatureTuple( seventhLocation, seventhLocation, seventhLocation ),
                                                                                                        "SQIN",
                                                                                                        "HEFS" ) )
                                                                  .setTimeWindow( timeWindow )
@@ -139,9 +140,9 @@ public class StatisticMetadataTest
     @Test
     public void testMinimumEquals()
     {
-        Location locationBase = Location.of( DRRC3 );
+        FeatureKey locationBase = FeatureKey.of( DRRC3 );
         SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
-                                                 DatasetIdentifier.of( locationBase,
+                                                 DatasetIdentifier.of( new FeatureTuple( locationBase, locationBase, locationBase ),
                                                                        "SQIN",
                                                                        "HEFS" ) );
         StatisticMetadata first = StatisticMetadata.of( base,
@@ -189,9 +190,9 @@ public class StatisticMetadataTest
                                                         MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                         MetricConstants.NONE );
         assertFalse( fourth.minimumEquals( fifth ) );
-        Location secondLocation = Location.of( DRRC3 );
+        FeatureKey secondLocation = FeatureKey.of( DRRC3 );
         SampleMetadata baseSecond = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                                       DatasetIdentifier.of( secondLocation,
+                                                       DatasetIdentifier.of( new FeatureTuple( secondLocation, secondLocation, secondLocation ),
                                                                              "SQIN",
                                                                              "HEFS" ) );
 
@@ -220,9 +221,9 @@ public class StatisticMetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Location baseLocation = Location.of( DRRC3 );
+        FeatureKey baseLocation = FeatureKey.of( DRRC3 );
         SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( OTHER_TEST_DIMENSION ),
-                                                 DatasetIdentifier.of( baseLocation,
+                                                 DatasetIdentifier.of( new FeatureTuple( baseLocation, baseLocation, baseLocation ),
                                                                        "SQIN",
                                                                        "HEFS" ),
                                                  firstWindow,
@@ -278,15 +279,15 @@ public class StatisticMetadataTest
                                                         MetricConstants.NONE );
         assertFalse( first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
-        Location seventhLocation = Location.of( DRRC3 );
+        FeatureKey seventhLocation = FeatureKey.of( DRRC3 );
         final TimeWindowOuter timeWindow = firstWindow;
         StatisticMetadata seventh =
                 StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( TEST_DIMENSION ) )
-                                                                 .setIdentifier( DatasetIdentifier.of( seventhLocation,
-                                                                                                       "SQIN",
-                                                                                                       "HEFS" ) )
-                                                                 .setTimeWindow( timeWindow )
-                                                                 .build(),
+                                                   .setIdentifier( DatasetIdentifier.of( new FeatureTuple( seventhLocation, seventhLocation, seventhLocation ),
+                                                                                         "SQIN",
+                                                                                         "HEFS" ) )
+                                                   .setTimeWindow( timeWindow )
+                                                   .build(),
                                       2,
                                       MeasurementUnit.of( "CMS" ),
                                       MetricConstants.BIAS_FRACTION,

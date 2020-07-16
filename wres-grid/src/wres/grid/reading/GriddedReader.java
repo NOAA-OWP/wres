@@ -2,8 +2,7 @@ package wres.grid.reading;
 
 import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
-import wres.config.FeaturePlus;
-import wres.config.generated.Feature;
+import wres.datamodel.FeatureKey;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -98,7 +97,7 @@ public class GriddedReader
         Queue<String> paths = new LinkedList<>( request.getPaths() );
 
         // Events per feature, where each event is indexed by reference time in a pair
-        Map<FeaturePlus, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
+        Map<FeatureKey, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
 
         String measurementUnit = "UNKNOWN";
 
@@ -113,15 +112,13 @@ public class GriddedReader
             }
             else
             {
-                for ( Feature feature : request.getFeatures() )
+                for ( FeatureKey feature : request.getFeatures() )
                 {
-                    FeaturePlus featurePlus = FeaturePlus.of( feature );
-
-                    List<Pair<Instant, Event<Double>>> events = eventsPerFeature.get( featurePlus );
+                    List<Pair<Instant, Event<Double>>> events = eventsPerFeature.get( feature );
                     if ( Objects.isNull( events ) )
                     {
                         events = new ArrayList<>();
-                        eventsPerFeature.put( featurePlus, events );
+                        eventsPerFeature.put( feature, events );
                     }
 
                     // We'll need to eventually iterate through time, but now is
@@ -129,8 +126,8 @@ public class GriddedReader
                     griddedValue = reader.read(
                                                 null,
                                                 request.getVariableName(),
-                                                feature.getCoordinate().getLatitude(),
-                                                feature.getCoordinate().getLongitude() );
+                                                feature.getSrid(),
+                                                feature.getWkt() );
 
                     events.add( Pair.of( griddedValue.getIssueTime(),
                                          Event.of( griddedValue.getValidTime(), griddedValue.getValue() ) ) );
@@ -139,9 +136,9 @@ public class GriddedReader
             }
         }
 
-        Map<FeaturePlus, Stream<TimeSeries<Double>>> seriesPerFeature = new HashMap<>();
+        Map<FeatureKey, Stream<TimeSeries<Double>>> seriesPerFeature = new HashMap<>();
 
-        for ( Map.Entry<FeaturePlus, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
+        for ( Map.Entry<FeatureKey, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
         {
             Stream<TimeSeries<Double>> timeSeries =
                     GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(), 
@@ -177,7 +174,7 @@ public class GriddedReader
                                                                   TimeScaleOuter timeScale,
                                                                   boolean isForecast,
                                                                   String variableName,
-                                                                  FeaturePlus featurePlus,
+                                                                  FeatureKey feature,
                                                                   String unit )
     {
         Objects.requireNonNull( events );
@@ -241,8 +238,7 @@ public class GriddedReader
                     TimeSeriesMetadata.of( referenceTimes,
                                            timeScale,
                                            variableName,
-                                           String.valueOf( featurePlus.getFeature()
-                                                                      .getComid() ),
+                                           feature,
                                            unit );
             builder.setMetadata( metadata );
             returnMe.add( builder.build() );
@@ -256,7 +252,7 @@ public class GriddedReader
                                                                           timeScale,
                                                                           isForecast,
                                                                           variableName,
-                                                                          featurePlus,
+                                                                          feature,
                                                                           unit ) );
         }
 
@@ -303,6 +299,16 @@ public class GriddedReader
         private final Instant validTime;
     }
 
+    /**
+     * Parse a point from a point WKT, ignoring srid.
+     *
+     * TODO: do an affine transform, not just parse a point.
+     */
+    private static FeatureKey.GeoPoint getLatLonCoordFromSridWkt( int srid, String wkt )
+    {
+        return FeatureKey.getLonLatFromPointWkt( wkt );
+    }
+
     private static class GridFileReader
     {
         GridFileReader( final String path, final boolean isForecast )
@@ -312,7 +318,7 @@ public class GriddedReader
             this.readLock = new ReentrantLock();
         }
 
-        GridValue read( Integer time, String variableName, final double latitude, final double longitude )
+        GridValue read( Integer time, String variableName, Integer srid, String wkt )
                 throws IOException
         {
             if ( time == null )
@@ -321,6 +327,8 @@ public class GriddedReader
             }
 
             this.readLock.lock();
+
+            FeatureKey.GeoPoint point = getLatLonCoordFromSridWkt( srid, wkt );
 
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
@@ -331,7 +339,7 @@ public class GriddedReader
                 GridDatatype variable = gridDataset.findGridDatatype( variableName );
 
                 // Returns XY from YX parameters
-                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( latitude, longitude, null );
+                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( point.getY(), point.getX(), null );
 
                 // readDataSlice takes (time, z, y, x) as parameters. Since the previous call was XY, we need to flip
                 // the two, yielding indexes 1 then 0

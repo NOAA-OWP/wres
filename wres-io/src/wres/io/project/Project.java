@@ -20,18 +20,18 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationBoundsType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
-import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
+import wres.datamodel.FeatureTuple;
+import wres.datamodel.FeatureKey;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -87,22 +87,7 @@ public class Project
     /**
      * The set of all features pertaining to the project
      */
-    private Set<FeatureDetails> features;
-
-    /**
-     * The ID for the variable on the left side of the input
-     */
-    private Integer leftVariableID = null;
-
-    /**
-     * The ID for the variable on the right side of the input
-     */
-    private Integer rightVariableID = null;
-
-    /**
-     * The ID for the variable for the baseline
-     */
-    private Integer baselineVariableID = null;
+    private Set<FeatureTuple> features;
 
     /**
      * Indicates whether or not this project was inserted on upon this
@@ -164,7 +149,7 @@ public class Project
         return this.variablesCache;
     }
 
-    private Features getFeaturesCache()
+    public Features getFeaturesCache()
     {
         return this.featuresCache;
     }
@@ -212,10 +197,10 @@ public class Project
      * @return The Set of FeatureDetails with some data on each side
      */
 
-    private Set<FeatureDetails> getIntersectingFeatures( Database database )
+    private Set<FeatureTuple> getIntersectingFeatures( Database database )
             throws SQLException
     {
-        Set<FeatureDetails> intersectingFeatures;
+        Set<FeatureTuple> intersectingFeatures;
         Features featuresCache = this.getFeaturesCache();
 
         // Gridded features? #74266
@@ -229,8 +214,16 @@ public class Project
         else
         {
             intersectingFeatures = new HashSet<>();
-            DataScripter script = ProjectScriptGenerator.createIntersectingFeaturesScript( database,
-                                                                                           this );
+
+            // TODO: get features from service if service is specified, sub them
+            // in the third arg to createIntersectingFeaturesScript, or come up
+            // with an alternative to that approach.
+            DataScripter script =
+                    ProjectScriptGenerator.createIntersectingFeaturesScript( database,
+                                                                             this.getId(),
+                                                                             this.getProjectConfig()
+                                                                                 .getPair()
+                                                                                 .getFeature() );
 
             LOGGER.debug( "getIntersectingFeatures will run: {}", script );
 
@@ -238,11 +231,24 @@ public class Project
             {
                 while ( dataProvider.next() )
                 {
-                    int featureId = dataProvider.getInt( "feature_id" );
-                    FeatureDetails.FeatureKey key =
-                            featuresCache.getFeatureKey( featureId );
-                    FeatureDetails featureDetail = new FeatureDetails( key );
-                    intersectingFeatures.add( featureDetail );
+                    int leftId = dataProvider.getInt( "left_id" );
+                    FeatureKey leftKey =
+                            featuresCache.getFeatureKey( leftId );
+                    int rightId = dataProvider.getInt( "right_id" );
+                    FeatureKey rightKey =
+                            featuresCache.getFeatureKey( rightId );
+                    int baselineId = dataProvider.getInt( "baseline_id" );
+                    FeatureKey baselineKey = null;
+
+                    // JDBC getInt returns 0 when not found. All primary key
+                    // columns should start at 1.
+                    if ( baselineId > 0 )
+                    {
+                        baselineKey = featuresCache.getFeatureKey( baselineId );
+                    }
+
+                    FeatureTuple featureTuple = new FeatureTuple( leftKey, rightKey, baselineKey );
+                    intersectingFeatures.add( featureTuple );
                 }
             }
 
@@ -265,7 +271,7 @@ public class Project
      * @throws SQLException Thrown if details about the project's features
      * cannot be retrieved from the database
      */
-    public Set<FeatureDetails> getFeatures() throws SQLException
+    public Set<FeatureTuple> getFeatures() throws SQLException
     {
         Database database = this.getDatabase();
 
@@ -358,45 +364,15 @@ public class Project
         return this.projectConfig.getInputs().getBaseline();
     }
 
-    /**
-     * Determines the ID of the left variable
-     * @return The ID of the left variable
-     * @throws SQLException Thrown if the ID cannot be retrieved from the database
-     */
-    public Integer getLeftVariableID() throws SQLException
-    {
-        if ( this.leftVariableID == null )
-        {
-            Variables variablesCache = this.getVariablesCache();
-            this.leftVariableID = variablesCache.getVariableID( this.getLeftVariableName() );
-        }
-
-        return this.leftVariableID;
-    }
 
     /**
      * @return The name of the left variable
      */
-    private String getLeftVariableName()
+    public String getLeftVariableName()
     {
         return this.getLeft().getVariable().getValue();
     }
 
-    /**
-     * Determines the ID of the right variable
-     * @return The ID of the right variable
-     * @throws SQLException Thrown if the ID cannot be retrieved from the database
-     */
-    public Integer getRightVariableID() throws SQLException
-    {
-        if ( this.rightVariableID == null )
-        {
-            Variables variablesCache = this.getVariablesCache();
-            this.rightVariableID = variablesCache.getVariableID( this.getRightVariableName() );
-        }
-
-        return this.rightVariableID;
-    }
 
     /**
      * @return The name of the right variable
@@ -407,25 +383,9 @@ public class Project
     }
 
     /**
-     * Determines the ID of the baseline variable
-     * @return The ID of the baseline variable
-     * @throws SQLException Thrown if the ID cannot be retrieved from the database
-     */
-    public Integer getBaselineVariableID() throws SQLException
-    {
-        if ( this.hasBaseline() && this.baselineVariableID == null )
-        {
-            Variables variablesCache = this.getVariablesCache();
-            this.baselineVariableID = variablesCache.getVariableID( this.getBaselineVariableName() );
-        }
-
-        return this.baselineVariableID;
-    }
-
-    /**
      * @return The name of the baseline variable
      */
-    private String getBaselineVariableName()
+    public String getBaselineVariableName()
     {
         String name = null;
         if ( this.hasBaseline() )
@@ -435,79 +395,6 @@ public class Project
         return name;
     }
 
-    /**
-     * Determines the <code>variablefeature_id</code> of the left dataset for a given feature.
-     * @param feature the feature
-     * @return the left variablefeature_id
-     * @throws SQLException if the identifier cannot be determined
-     * @throws NullPointerException if the feature is null
-     */
-    public Integer getLeftVariableFeatureId( Feature feature ) throws SQLException
-    {
-        Objects.requireNonNull( feature );
-
-        Integer variableId = this.getLeftVariableID();
-        Features featuresCache = this.getFeaturesCache();
-        return featuresCache.getVariableFeatureID( feature, variableId );
-    }
-
-    /**
-     * Determines the <code>variablefeature_id</code> of the right dataset for a given feature.
-     * @param feature the feature
-     * @return the right variablefeature_id
-     * @throws SQLException if the identifier cannot be determined
-     * @throws NullPointerException if the feature is null
-     */
-    public Integer getRightVariableFeatureId( Feature feature ) throws SQLException
-    {
-        Objects.requireNonNull( feature );
-
-        Integer variableId = this.getRightVariableID();
-        Features featuresCache = this.getFeaturesCache();
-        return featuresCache.getVariableFeatureID( feature, variableId );
-    }
-
-    /**
-     * Determines the <code>variablefeature_id</code> of the baseline dataset for a given feature.
-     * @param feature the feature
-     * @return the baseline variablefeature_id
-     * @throws SQLException if the identifier cannot be determined
-     * @throws NullPointerException if the feature is null
-     */
-    public Integer getBaselineVariableFeatureId( Feature feature ) throws SQLException
-    {
-        Objects.requireNonNull( feature );
-
-        Integer returnMe = null;
-
-        if ( this.hasBaseline() )
-        {
-            Integer variableId = this.getBaselineVariableID();
-            Features featuresCache = this.getFeaturesCache();
-            returnMe = featuresCache.getVariableFeatureID( feature, variableId );
-        }
-
-        return returnMe;
-    }
-
-
-    /**
-     * Get the variableFeatureId, also facilitates testing.
-     * @param variableName The name of the variable.
-     * @param feature The feature.
-     * @return The integer id from the wres database, null if not found?
-     * @throws SQLException if the variableFeatureId cannot be retrieved
-     */
-
-    public Integer getVariableFeatureId( String variableName, Feature feature )
-            throws SQLException
-    {
-        Variables variablesCache = this.getVariablesCache();
-        int variableId = variablesCache.getVariableID( variableName );
-        Features featuresCache = this.getFeaturesCache();
-        return featuresCache.getVariableFeatureID( feature,
-                                                   variableId );
-    }
 
     /**
      * Returns the earliest analysis duration associated with the project or <code>null</code>.
@@ -844,6 +731,5 @@ public class Project
     {
         return this.getInputCode();
     }
-
 }
 
