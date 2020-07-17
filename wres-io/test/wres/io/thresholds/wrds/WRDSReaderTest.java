@@ -1562,5 +1562,387 @@ public class WRDSReaderTest {
                 this.unitMapper,
                 DESIRED_FEATURES
         );
+
+        Assert.assertTrue(readThresholds.containsKey(MNTG1));
+        Assert.assertTrue(readThresholds.containsKey(BLOF1));
+        Assert.assertTrue(readThresholds.containsKey(SMAF1));
+        Assert.assertTrue(readThresholds.containsKey(OKFG1));
+        Assert.assertTrue(readThresholds.containsKey(TLPT2));
+
+        Set<ThresholdOuter> mntg1Thresholds = readThresholds.get(MNTG1);
+
+        Assert.assertEquals(6, mntg1Thresholds.size());
+
+        boolean hasLow = false;
+        boolean hasBankfull = false;
+        boolean hasAction = false;
+        boolean hasMinor = false;
+        boolean hasModerate = false;
+        boolean hasMajor = false;
+        boolean hasRecord = false;
+
+        List<String> properThresholds = List.of(
+                "bankfull",
+                "action",
+                "minor",
+                "moderate",
+                "major",
+                "record"
+        );
+
+        for (ThresholdOuter thresholdOuter : mntg1Thresholds) {
+            String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+
+            Assert.assertTrue(properThresholds.contains(thresholdName));
+
+            switch (thresholdName) {
+                case "bankfull":
+                    hasBankfull = true;
+                    Assert.assertEquals(
+                            11.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "action":
+                    hasAction = true;
+                    Assert.assertEquals(
+                            11.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "minor":
+                    hasMinor = true;
+                    Assert.assertEquals(
+                            20.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "moderate":
+                    hasModerate = true;
+                    Assert.assertEquals(
+                            28.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "major":
+                    hasMajor = true;
+                    Assert.assertEquals(
+                            31.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "record":
+                    hasRecord = true;
+                    Assert.assertEquals(
+                            34.11,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+            }
+        }
+
+        Assert.assertFalse(hasLow);
+        Assert.assertTrue(hasBankfull);
+        Assert.assertTrue(hasAction);
+        Assert.assertTrue(hasMinor);
+        Assert.assertTrue(hasModerate);
+        Assert.assertTrue(hasMajor);
+        Assert.assertTrue(hasRecord);
+
+        Set<ThresholdOuter> blof1Thresholds = readThresholds.get(BLOF1);
+
+        Assert.assertEquals(6, blof1Thresholds.size());
+
+        hasLow = false;
+        hasBankfull = false;
+        hasAction = false;
+        hasMinor = false;
+        hasModerate = false;
+        hasMajor = false;
+        hasRecord = false;
+
+        properThresholds = List.of(
+                "bankfull",
+                "action",
+                "minor",
+                "moderate",
+                "major",
+                "record"
+        );
+
+        for (ThresholdOuter thresholdOuter : blof1Thresholds) {
+            String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+
+            Assert.assertTrue(properThresholds.contains(thresholdName));
+
+            switch (thresholdName) {
+                case "bankfull":
+                    hasBankfull = true;
+                    Assert.assertEquals(
+                            15.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "action":
+                    hasAction = true;
+                    Assert.assertEquals(
+                            13.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "minor":
+                    hasMinor = true;
+                    Assert.assertEquals(
+                            17.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "moderate":
+                    hasModerate = true;
+                    Assert.assertEquals(
+                            23.5,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "major":
+                    hasMajor = true;
+                    Assert.assertEquals(
+                            26.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "record":
+                    hasRecord = true;
+                    Assert.assertEquals(
+                            28.6,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+            }
+        }
+
+        Assert.assertFalse(hasLow);
+        Assert.assertTrue(hasBankfull);
+        Assert.assertTrue(hasAction);
+        Assert.assertTrue(hasMinor);
+        Assert.assertTrue(hasModerate);
+        Assert.assertTrue(hasMajor);
+        Assert.assertTrue(hasRecord);
+
+        Set<ThresholdOuter> smaf1Thresholds = readThresholds.get(SMAF1);
+
+        Assert.assertEquals(5, smaf1Thresholds.size());
+
+        hasLow = false;
+        hasBankfull = false;
+        hasAction = false;
+        hasMinor = false;
+        hasModerate = false;
+        hasMajor = false;
+        hasRecord = false;
+
+        properThresholds = List.of(
+                "action",
+                "minor",
+                "moderate",
+                "major",
+                "record"
+        );
+
+        for (ThresholdOuter thresholdOuter : smaf1Thresholds) {
+            String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+
+            Assert.assertTrue(properThresholds.contains(thresholdName));
+
+            switch (thresholdName) {
+                case "action":
+                    hasAction = true;
+                    Assert.assertEquals(
+                            8.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "minor":
+                    hasMinor = true;
+                    Assert.assertEquals(
+                            9.5,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "moderate":
+                    hasModerate = true;
+                    Assert.assertEquals(
+                            11.5,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "major":
+                    hasMajor = true;
+                    Assert.assertEquals(
+                            13.5,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "record":
+                    hasRecord = true;
+                    Assert.assertEquals(
+                            15.36,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+            }
+        }
+
+        Assert.assertFalse(hasLow);
+        Assert.assertFalse(hasBankfull);
+        Assert.assertTrue(hasAction);
+        Assert.assertTrue(hasMinor);
+        Assert.assertTrue(hasModerate);
+        Assert.assertTrue(hasMajor);
+        Assert.assertTrue(hasRecord);
+
+        Set<ThresholdOuter> okfg1Thresholds = readThresholds.get(OKFG1);
+
+        Assert.assertEquals(4, okfg1Thresholds.size());
+
+        hasLow = false;
+        hasBankfull = false;
+        hasAction = false;
+        hasMinor = false;
+        hasModerate = false;
+        hasMajor = false;
+        hasRecord = false;
+
+        properThresholds = List.of(
+                "bankfull",
+                "action",
+                "minor",
+                "record"
+        );
+
+        for (ThresholdOuter thresholdOuter : okfg1Thresholds) {
+            String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+
+            Assert.assertTrue(properThresholds.contains(thresholdName));
+
+            switch (thresholdName) {
+                case "bankfull":
+                    hasBankfull = true;
+                    Assert.assertEquals(
+                            0.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "action":
+                    hasAction = true;
+                    Assert.assertEquals(
+                            18.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "minor":
+                    hasMinor = true;
+                    Assert.assertEquals(
+                            23.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "record":
+                    hasRecord = true;
+                    Assert.assertEquals(
+                            40.1,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+            }
+        }
+
+        Assert.assertFalse(hasLow);
+        Assert.assertTrue(hasBankfull);
+        Assert.assertTrue(hasAction);
+        Assert.assertTrue(hasMinor);
+        Assert.assertFalse(hasModerate);
+        Assert.assertFalse(hasMajor);
+        Assert.assertTrue(hasRecord);
+
+        Set<ThresholdOuter> tlpt2Thresholds = readThresholds.get(TLPT2);
+
+        Assert.assertEquals(3, tlpt2Thresholds.size());
+
+        hasLow = false;
+        hasBankfull = false;
+        hasAction = false;
+        hasMinor = false;
+        hasModerate = false;
+        hasMajor = false;
+        hasRecord = false;
+
+        properThresholds = List.of(
+                "bankfull",
+                "minor",
+                "record"
+        );
+
+        for (ThresholdOuter thresholdOuter : tlpt2Thresholds) {
+            String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+
+            Assert.assertTrue(properThresholds.contains(thresholdName));
+
+            switch (thresholdName) {
+                case "bankfull":
+                    hasBankfull = true;
+                    Assert.assertEquals(
+                            15.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "minor":
+                    hasMinor = true;
+                    Assert.assertEquals(
+                            15.0,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+                case "record":
+                    hasRecord = true;
+                    Assert.assertEquals(
+                            16.02,
+                            thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                            EPSILON
+                    );
+                    break;
+            }
+        }
+
+        Assert.assertFalse(hasLow);
+        Assert.assertTrue(hasBankfull);
+        Assert.assertFalse(hasAction);
+        Assert.assertTrue(hasMinor);
+        Assert.assertFalse(hasModerate);
+        Assert.assertFalse(hasMajor);
+        Assert.assertTrue(hasRecord);
     }
 }
