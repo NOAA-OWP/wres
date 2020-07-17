@@ -54,7 +54,6 @@ public final class DoubleErrorScoreTest
         //Check the parameters
         assertTrue( "Unexpected baseline identifier for the DoubleErrorScore.",
                     actual.getMetadata()
-                          .getSampleMetadata()
                           .getIdentifier()
                           .getScenarioNameForBaseline()
                           .equals( "ESP" ) );
@@ -89,7 +88,7 @@ public final class DoubleErrorScoreTest
             }
 
             @Override
-            public MetricConstants getID()
+            public MetricConstants getMetricName()
             {
                 return MetricConstants.MEAN_ERROR;
             }
@@ -124,7 +123,7 @@ public final class DoubleErrorScoreTest
             }
 
             @Override
-            public MetricConstants getID()
+            public MetricConstants getMetricName()
             {
                 return MetricConstants.MEAN_ERROR;
             }
@@ -160,7 +159,7 @@ public final class DoubleErrorScoreTest
             }
 
             @Override
-            public MetricConstants getID()
+            public MetricConstants getMetricName()
             {
                 return MetricConstants.MEAN_ERROR;
             }

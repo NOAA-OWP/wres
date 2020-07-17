@@ -52,7 +52,7 @@ public class MedianError extends DoubleErrorScore<SampleData<Pair<Double, Double
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.MEDIAN_ERROR;
     }

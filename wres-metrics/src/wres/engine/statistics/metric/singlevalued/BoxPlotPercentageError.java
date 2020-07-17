@@ -8,11 +8,9 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -82,13 +80,6 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                         s.getRawData().size(),
-                                                         MeasurementUnit.of( "%" ),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN );
-
-
         BoxplotStatistic.Builder builder = BoxplotStatistic.newBuilder()
                                                            .setMetric( this.getMetric() );
 
@@ -98,7 +89,7 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
             // Add an empty box: #62863
             builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotPercentageError.EMPTY_BOX ) );
 
-            return BoxplotStatisticOuter.of( builder.build(), metOut );
+            return BoxplotStatisticOuter.of( builder.build(), s.getMetadata() );
         }
 
         // Get the sorted errors
@@ -123,11 +114,11 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
                                                      .addStatistics( Box.newBuilder().addAllQuantiles( box ) )
                                                      .build();
 
-        return BoxplotStatisticOuter.of( statistic, metOut );
+        return BoxplotStatisticOuter.of( statistic, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS;
     }

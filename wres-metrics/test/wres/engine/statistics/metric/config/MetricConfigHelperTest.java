@@ -580,7 +580,7 @@ public final class MetricConfigHelperTest
 
         Set<StatisticType> expected = new HashSet<>();
         expected.add( StatisticType.DIAGRAM );
-        expected.add( StatisticType.PAIRED );
+        expected.add( StatisticType.DURATION_DIAGRAM );
         expected.add( StatisticType.DOUBLE_SCORE );
         expected.add( StatisticType.BOXPLOT_PER_POOL );
         

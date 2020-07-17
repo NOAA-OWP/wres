@@ -28,7 +28,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
@@ -166,14 +165,14 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
         // Loop across metrics
-        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, T::getMetricName );
         for ( MetricConstants m : metrics )
         {
             List<T> nextMetric = Slicer.filter( output, m );
 
             SortedSet<ThresholdOuter> secondThreshold =
                     Slicer.discover( nextMetric,
-                                     next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
+                                     next -> next.getMetadata().getThresholds().second() );
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
@@ -183,7 +182,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
             {
                 // Slice by threshold two
                 secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( nextMetric,
-                                                                                data -> data.getSampleMetadata()
+                                                                                data -> data.getMetadata()
                                                                                             .getThresholds()
                                                                                             .second()
                                                                                             .equals( next ) ) ) );
@@ -203,8 +202,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
                 StringJoiner timeWindowHeader =
                         CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
-                                                                                             .getMetadata()
-                                                                                             .getSampleMetadata(),
+                                                                                             .getMetadata(),
                                                                                        durationUnits );
 
                 headerRow.merge( timeWindowHeader );
@@ -225,17 +223,20 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 // Secondary threshold? If yes, only one, as this was sliced above
                 SortedSet<ThresholdOuter> secondThresholds =
                         Slicer.discover( nextOutput,
-                                         next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
+                                         next -> next.getMetadata().getThresholds().second() );
                 if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
                      && !secondThresholds.isEmpty() )
                 {
                     append = secondThresholds.iterator().next().toStringSafe();
                 }
-                StatisticMetadata meta = nextOutput.get( 0 ).getMetadata();
+
+                SampleMetadata meta = nextOutput.get( 0 ).getMetadata();
                 Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                      destinationConfig,
                                                                      meta,
-                                                                     append );
+                                                                     append,
+                                                                     m,
+                                                                     null );
 
                 CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -316,9 +317,9 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( component, meta -> meta.getMetadata().getThresholds() );
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( component, meta -> meta.getMetadata().getTimeWindow() );
 
         SampleMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( component );
 
@@ -332,10 +333,10 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
             {
                 // Find the next score
                 List<S> nextScore = Slicer.filter( component,
-                                                   next -> next.getSampleMetadata()
+                                                   next -> next.getMetadata()
                                                                .getThresholds()
                                                                .equals( t )
-                                                           && next.getSampleMetadata()
+                                                           && next.getMetadata()
                                                                   .getTimeWindow()
                                                                   .equals( timeWindow ) );
                 if ( !nextScore.isEmpty() )
@@ -345,8 +346,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                                   nextScore.get( 0 )
-                                                                           .getMetadata()
-                                                                           .getSampleMetadata(),
+                                                                           .getMetadata(),
                                                                   Arrays.asList( stringScore ),
                                                                   null,
                                                                   true,

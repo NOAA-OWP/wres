@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.compress.utils.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -19,20 +22,20 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static wres.io.config.ConfigHelper.LOGGER;
-
 public final class WRDSReader {
+    private static final Logger LOGGER = LoggerFactory.getLogger( WRDSReader.class );
     private static final String CERT_NAME = "dod_sw_ca-54_expires_2022-11.pem";
     private static final WebClient WEB_CLIENT = new WebClient(WebClient.createSSLContext(CERT_NAME), true);
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
-    private static final int LOCATION_REQUEST_COUNT = 20;
+    public static final int LOCATION_REQUEST_COUNT = 20;
 
     public static Map<String, Set<ThresholdOuter>> readThresholds(
             final SystemSettings systemSettings,
@@ -75,7 +78,9 @@ public final class WRDSReader {
         }
     }
 
-    static Map<String, Set<ThresholdOuter>> extract(ThresholdResponse response, ThresholdsConfig config, UnitMapper desiredUnitMapper)
+    public static Map<String, Set<ThresholdOuter>> extract( ThresholdResponse response,
+                                                            ThresholdsConfig config,
+                                                            UnitMapper desiredUnitMapper )
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource();
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
@@ -111,7 +116,7 @@ public final class WRDSReader {
         return extractor.extract();
     }
 
-    static Set<String> groupLocations( Set<String> features ) {
+    public static Set<String> groupLocations( Set<String> features ) {
         Set<String> locationGroups = new HashSet<>();
         StringJoiner locationJoiner = new StringJoiner(",");
         int counter = 0;
@@ -134,10 +139,14 @@ public final class WRDSReader {
         return locationGroups;
     }
 
-    private static ThresholdResponse getResponse(final String inputAddress) throws StreamIOException {
-        URI address = URI.create(inputAddress);
+    public static ThresholdResponse getResponse(final String inputAddress) throws StreamIOException {
         try {
-            if (address.getScheme() == null || address.getScheme().toLowerCase().equals("file")) {
+            URI address = new URI(inputAddress);
+
+            if (address.getScheme() != null && address.getScheme().toLowerCase().startsWith("http")) {
+                return getRemoteResponse(inputAddress);
+            }
+            else {
                 Path thresholdPath;
 
                 if (address.getScheme() == null) {
@@ -150,15 +159,11 @@ public final class WRDSReader {
                     byte[] rawForecast = IOUtils.toByteArray(data);
                     return JSON_OBJECT_MAPPER.readValue(rawForecast, ThresholdResponse.class);
                 }
-            } else if (address.getScheme().toLowerCase().startsWith("http")) {
-                return getRemoteResponse(inputAddress);
             }
         }
-        catch (IOException ioe) {
+        catch (IOException | URISyntaxException ioe) {
             throw new StreamIOException("Error encountered while requesting WRDS threshold data", ioe);
         }
-
-        throw new IllegalArgumentException("Only files or web addresses may be used to retrieve thresholds");
     }
 
     private static ThresholdResponse getRemoteResponse(String inputAddress) throws IOException {

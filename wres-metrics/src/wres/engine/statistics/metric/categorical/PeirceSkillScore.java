@@ -9,7 +9,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -81,7 +80,7 @@ public class PeirceSkillScore extends ContingencyTableScore
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.PEIRCE_SKILL_SCORE;
     }
@@ -119,8 +118,6 @@ public class PeirceSkillScore extends ContingencyTableScore
                                     .getData()
                                     .getValue();
 
-        StatisticMetadata meta = this.getMetadata( contingencyTable );
-
         double result = FunctionFactory.finiteOrMissing()
                                        .applyAsDouble( ( tP / ( tP + fN ) )
                                                        - ( fP / ( fP + tN ) ) );
@@ -135,7 +132,7 @@ public class PeirceSkillScore extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, meta );
+        return DoubleScoreStatisticOuter.of( score, contingencyTable.getMetadata() );
     }
 
     /**
@@ -197,12 +194,10 @@ public class PeirceSkillScore extends ContingencyTableScore
                                                   + n );
         }
         //Compose the result
-        final double nSquared = n * n;
-        final double result = FunctionFactory.finiteOrMissing()
-                                             .applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
-                                                             / ( 1.0 - ( uniProd / nSquared ) ) );
-
-        StatisticMetadata meta = this.getMetadata( contingencyTable );
+        double nSquared = n * n;
+        double result = FunctionFactory.finiteOrMissing()
+                                       .applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
+                                                       / ( 1.0 - ( uniProd / nSquared ) ) );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
@@ -214,7 +209,7 @@ public class PeirceSkillScore extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, meta );
+        return DoubleScoreStatisticOuter.of( score, contingencyTable.getMetadata() );
     }
 
 

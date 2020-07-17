@@ -34,9 +34,9 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.FeatureKey;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.utilities.NoDataException;
@@ -69,9 +69,10 @@ public class ConfigHelper
 {
     private static final String ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE = "one or both of them don't have one.";
 
-    private static final String ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING = "Enter non-null metadata to establish a path for writing.";
+    private static final String ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING =
+            "Enter non-null metadata to establish a path for writing.";
 
-    public static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
 
     private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages =
             new ConcurrentHashMap<>();
@@ -100,24 +101,22 @@ public class ConfigHelper
     public static boolean usesNetCDFData( ProjectConfig projectConfig )
     {
         boolean usesNetcdf = wres.util.Collections.exists(
-                projectConfig.getInputs().getLeft().getSource(),
-                source -> source.getFormat() != null &&
-                          source.getFormat().equals( Format.NET_CDF )
-        );
+                                                           projectConfig.getInputs().getLeft().getSource(),
+                                                           source -> source.getFormat() != null &&
+                                                                     source.getFormat().equals( Format.NET_CDF ) );
 
         usesNetcdf = usesNetcdf || wres.util.Collections.exists(
-                projectConfig.getInputs().getRight().getSource(),
-                source -> source.getFormat() != null &&
-                          source.getFormat().equals( Format.NET_CDF )
-        );
+                                                                 projectConfig.getInputs().getRight().getSource(),
+                                                                 source -> source.getFormat() != null &&
+                                                                           source.getFormat()
+                                                                                 .equals( Format.NET_CDF ) );
 
-        if (!usesNetcdf && projectConfig.getInputs().getBaseline() != null)
+        if ( !usesNetcdf && projectConfig.getInputs().getBaseline() != null )
         {
             usesNetcdf = wres.util.Collections.exists(
-                    projectConfig.getInputs().getBaseline().getSource(),
-                    source -> source.getFormat() != null &&
-                              source.getFormat().equals( Format.NET_CDF )
-            );
+                                                       projectConfig.getInputs().getBaseline().getSource(),
+                                                       source -> source.getFormat() != null &&
+                                                                 source.getFormat().equals( Format.NET_CDF ) );
         }
 
         return usesNetcdf;
@@ -141,23 +140,23 @@ public class ConfigHelper
      * @return A unique hash code for the project's circumstances
      */
     public static Integer hashProject( final ProjectConfig projectConfig,
-                                final List<String> leftHashesIngested,
-                                final List<String> rightHashesIngested,
-                                final List<String> baselineHashesIngested )
+                                       final List<String> leftHashesIngested,
+                                       final List<String> rightHashesIngested,
+                                       final List<String> baselineHashesIngested )
     {
-        StringBuilder hashBuilder = new StringBuilder(  );
+        StringBuilder hashBuilder = new StringBuilder();
 
         DataSourceConfig left = projectConfig.getInputs().getLeft();
         DataSourceConfig right = projectConfig.getInputs().getRight();
         DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
 
-        hashBuilder.append(left.getType().value());
+        hashBuilder.append( left.getType().value() );
 
-        for ( EnsembleCondition ensembleCondition : left.getEnsemble())
+        for ( EnsembleCondition ensembleCondition : left.getEnsemble() )
         {
-            hashBuilder.append(ensembleCondition.getName());
-            hashBuilder.append(ensembleCondition.getMemberId());
-            hashBuilder.append(ensembleCondition.getQualifier());
+            hashBuilder.append( ensembleCondition.getName() );
+            hashBuilder.append( ensembleCondition.getMemberId() );
+            hashBuilder.append( ensembleCondition.getQualifier() );
         }
 
         // Sort for deterministic hash result for same list of ingested
@@ -171,13 +170,13 @@ public class ConfigHelper
 
         hashBuilder.append(left.getVariable().getValue());
 
-        hashBuilder.append(right.getType().value());
+        hashBuilder.append( right.getType().value() );
 
-        for ( EnsembleCondition ensembleCondition : right.getEnsemble())
+        for ( EnsembleCondition ensembleCondition : right.getEnsemble() )
         {
-            hashBuilder.append(ensembleCondition.getName());
-            hashBuilder.append(ensembleCondition.getMemberId());
-            hashBuilder.append(ensembleCondition.getQualifier());
+            hashBuilder.append( ensembleCondition.getName() );
+            hashBuilder.append( ensembleCondition.getMemberId() );
+            hashBuilder.append( ensembleCondition.getQualifier() );
         }
 
         // Sort for deterministic hash result for same list of ingested
@@ -189,18 +188,18 @@ public class ConfigHelper
             hashBuilder.append( rightHash );
         }
 
-        hashBuilder.append(right.getVariable().getValue());
+        hashBuilder.append( right.getVariable().getValue() );
 
-        if (baseline != null)
+        if ( baseline != null )
         {
 
-            hashBuilder.append(baseline.getType().value());
+            hashBuilder.append( baseline.getType().value() );
 
-            for ( EnsembleCondition ensembleCondition : baseline.getEnsemble())
+            for ( EnsembleCondition ensembleCondition : baseline.getEnsemble() )
             {
-                hashBuilder.append(ensembleCondition.getName());
-                hashBuilder.append(ensembleCondition.getMemberId());
-                hashBuilder.append(ensembleCondition.getQualifier());
+                hashBuilder.append( ensembleCondition.getName() );
+                hashBuilder.append( ensembleCondition.getMemberId() );
+                hashBuilder.append( ensembleCondition.getQualifier() );
             }
 
 
@@ -213,7 +212,7 @@ public class ConfigHelper
                 hashBuilder.append( baselineHash );
             }
 
-            hashBuilder.append(baseline.getVariable().getValue());
+            hashBuilder.append( baseline.getVariable().getValue() );
         }
 
         for ( Feature feature : projectConfig.getPair()
@@ -435,7 +434,7 @@ public class ConfigHelper
         }
     }
 
-    public static Duration getTimeShift(final DataSourceConfig dataSourceConfig)
+    public static Duration getTimeShift( final DataSourceConfig dataSourceConfig )
     {
         Duration timeShift = null;
 
@@ -639,29 +638,35 @@ public class ConfigHelper
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link StatisticMetadata}.
+     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link SampleMetadata}.
      *
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration
      * @param meta the metadata
+     * @param metricName the metric name
+     * @param metricComponentName name the optional component name
      * @return a path to write
-     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
      */
 
     public static Path getOutputPathToWrite( Path outputDirectory,
                                              DestinationConfig destinationConfig,
-                                             StatisticMetadata meta )
+                                             SampleMetadata meta,
+                                             MetricConstants metricName,
+                                             MetricConstants metricComponentName )
             throws IOException
     {
         return ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                   destinationConfig,
                                                   meta,
-                                                  (String) null );
+                                                  (String) null,
+                                                  metricName,
+                                                  metricComponentName );
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link SampleMetadata}
      * associated with the results and a {@link TimeWindowOuter}.
      *
      * @param outputDirectory the directory into which to write
@@ -669,16 +674,20 @@ public class ConfigHelper
      * @param meta the metadata
      * @param timeWindow the time window
      * @param leadUnits the time units to use for the lead durations
+     * @param metricName the metric name
+     * @param metricComponentName name the optional component name
      * @return a path to write
-     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
      */
 
     public static Path getOutputPathToWrite( Path outputDirectory,
                                              DestinationConfig destinationConfig,
-                                             StatisticMetadata meta,
+                                             SampleMetadata meta,
                                              TimeWindowOuter timeWindow,
-                                             ChronoUnit leadUnits )
+                                             ChronoUnit leadUnits,
+                                             MetricConstants metricName,
+                                             MetricConstants metricComponentName )
             throws IOException
     {
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
@@ -696,26 +705,32 @@ public class ConfigHelper
                                                   TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                                                   leadUnits )
                                                         + "_"
-                                                        + leadUnits.name().toUpperCase() );
+                                                        + leadUnits.name().toUpperCase(),
+                                                  metricName,
+                                                  metricComponentName );
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link SampleMetadata}
      * associated with the results and a {@link OneOrTwoThresholds}.
      *
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param threshold the threshold
+     * @param metricName the metric name
+     * @param metricComponentName name the optional component name
      * @return a path to write
-     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
      */
 
     public static Path getOutputPathToWrite( Path outputDirectory,
                                              DestinationConfig destinationConfig,
-                                             StatisticMetadata meta,
-                                             OneOrTwoThresholds threshold )
+                                             SampleMetadata meta,
+                                             OneOrTwoThresholds threshold,
+                                             MetricConstants metricName,
+                                             MetricConstants metricComponentName )
             throws IOException
     {
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
@@ -725,7 +740,9 @@ public class ConfigHelper
         return getOutputPathToWrite( outputDirectory,
                                      destinationConfig,
                                      meta,
-                                     threshold.toStringSafe() );
+                                     threshold.toStringSafe(),
+                                     metricName,
+                                     metricComponentName );
     }
 
     /**
@@ -736,6 +753,8 @@ public class ConfigHelper
      * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param append an optional string to append to the end of the path, may be null
+     * @param metricName the metric name
+     * @param metricComponentName name the optional component name
      * @return a path to write
      * @throws NullPointerException if any required input is null, including the identifier associated 
      *            with the sample metadata
@@ -745,8 +764,10 @@ public class ConfigHelper
 
     public static Path getOutputPathToWrite( Path outputDirectory,
                                              DestinationConfig destinationConfig,
-                                             StatisticMetadata meta,
-                                             String append )
+                                             SampleMetadata meta,
+                                             String append,
+                                             MetricConstants metricName,
+                                             MetricConstants metricComponentName )
             throws IOException
     {
         Objects.requireNonNull( destinationConfig,
@@ -755,16 +776,17 @@ public class ConfigHelper
 
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
-        Objects.requireNonNull( meta.getSampleMetadata().getIdentifier(),
+        Objects.requireNonNull( meta.getIdentifier(),
                                 "Enter a non-null identifier for the metadata to establish "
-                                                                          + "a path for writing." );
+                                                      + "a path for writing." );
 
+        Objects.requireNonNull( metricName, "Specify a non-null metric name." );
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
-        DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
-        Evaluation evaluation = meta.getSampleMetadata().getEvaluation();
-        Pool pool = meta.getSampleMetadata().getPool();
+        DatasetIdentifier identifier = meta.getIdentifier();
+        Evaluation evaluation = meta.getEvaluation();
+        Pool pool = meta.getPool();
 
         // Work-around to figure out if this is gridded data and if so to use
         // something other than the feature name, use the description.
@@ -793,16 +815,16 @@ public class ConfigHelper
         // Baseline scenarioId
         String configuredScenarioId = null;
         String configuredBaselineScenarioId = null;
-        if( !evaluation.getRightSourceName().isBlank() )
+        if ( !evaluation.getRightSourceName().isBlank() )
         {
             configuredScenarioId = evaluation.getRightSourceName();
         }
-        
-        if( !evaluation.getBaselineSourceName().isBlank() )
+
+        if ( !evaluation.getBaselineSourceName().isBlank() )
         {
             configuredBaselineScenarioId = evaluation.getBaselineSourceName();
         }
-        
+
         // Add optional scenario identifier unless the configured identifiers cannot discriminate between 
         // RIGHT and BASELINE 
         if ( identifier.hasScenarioName() && !Objects.equals( configuredScenarioId, configuredBaselineScenarioId ) )
@@ -816,13 +838,13 @@ public class ConfigHelper
             joinElements.add( identifier.getLeftOrRightOrBaseline().toString() );
         }
 
-        // Add the metric name()
-        joinElements.add( meta.getMetricID().name() );
+        // Add the metric name
+        joinElements.add( metricName.name() );
 
         // Add a non-default component name
-        if ( meta.hasMetricComponentID() && MetricConstants.MAIN != meta.getMetricComponentID() )
+        if ( Objects.nonNull( metricComponentName ) && MetricConstants.MAIN != metricComponentName )
         {
-            joinElements.add( meta.getMetricComponentID().name() );
+            joinElements.add( metricComponentName.name() );
         }
 
         // Add optional append
@@ -833,14 +855,14 @@ public class ConfigHelper
 
         // Add extension
         String extension;
-        
+
         // Default graphic extension type
-        if( destinationConfig.getType( ) == DestinationType.GRAPHIC )
+        if ( destinationConfig.getType() == DestinationType.GRAPHIC )
         {
             extension = ".png";
         }
         // Default numeric extension type
-        else if( destinationConfig.getType( ) == DestinationType.NUMERIC )
+        else if ( destinationConfig.getType() == DestinationType.NUMERIC )
         {
             extension = ".csv";
         }
@@ -849,13 +871,13 @@ public class ConfigHelper
         {
             extension = destinationConfig.getType().name().toLowerCase();
         }
-        
+
         // Derive a sanitized name
         String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ) + extension, "UTF-8" );
 
         return Paths.get( outputDirectory.toString(), safeName );
     }
-    
+
     /**
      * Returns a formatted file name for writing outputs to a specific time window using the destination 
      * information and other hints provided.
@@ -887,7 +909,7 @@ public class ConfigHelper
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
         StringJoiner filename = new StringJoiner( "_" );
-        
+
         filename.add( identifier.getVariableName() );
 
         // Add optional scenario identifier
@@ -939,7 +961,7 @@ public class ConfigHelper
         return Objects.nonNull( baselineConfig )
                && baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE;
     }
-    
+
 
     /**
      * Gets the desired time scale associated with the pair declaration, if any.

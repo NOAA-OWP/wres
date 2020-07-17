@@ -19,9 +19,10 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.categorical.ThreatScore;
+import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -42,7 +43,7 @@ public final class CollectableTaskTest
      * Metadata for the output 
      */
 
-    private StatisticMetadata m1;
+    private SampleMetadata m1;
 
     @Before
     public void setupBeforeEachTest()
@@ -52,11 +53,7 @@ public final class CollectableTaskTest
         //Add some appropriate metrics to the collection
         this.m = ThreatScore.of();
 
-        this.m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                        100,
-                                        MeasurementUnit.of(),
-                                        MetricConstants.CONTINGENCY_TABLE,
-                                        MetricConstants.MAIN );
+        this.m1 = SampleMetadata.of( MeasurementUnit.of() );
     }
 
     @Test
@@ -69,6 +66,8 @@ public final class CollectableTaskTest
 
                     DoubleScoreStatistic table =
                             DoubleScoreStatistic.newBuilder()
+                                                .setMetric( DoubleScoreMetric.newBuilder()
+                                                                             .setName( MetricName.CONTINGENCY_TABLE ) )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                              .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
                                                                                              .setValue( 1 ) )

@@ -29,7 +29,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -640,11 +640,11 @@ public class Chart2DTestOutput
         Path pathToDelete = Paths.get( "testoutput/chart2DTest/", outputImageFileSuffix );
         Files.deleteIfExists( pathToDelete );
 
-        final List<PairedStatisticOuter<Instant, Duration>> input =
+        final List<DurationDiagramStatisticOuter> input =
                 Chart2DTestDataGenerator.getTimeToPeakErrors();
 
         //Call the factory.
-        final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( null,
+        final ChartEngine engine = ChartEngineFactory.buildDurationDiagramChartEngine( null,
                                                                                              input,
                                                                                              null,
                                                                                              null,

@@ -12,22 +12,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
-import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -53,17 +49,13 @@ public final class EquitableThreatScoreTest
      * Metadata used for testing.
      */
 
-    private StatisticMetadata meta;
+    private SampleMetadata meta;
 
     @Before
     public void setUpBeforeEachTest()
     {
         ets = EquitableThreatScore.of();
-        meta = StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                     365,
-                                     MeasurementUnit.of(),
-                                     MetricConstants.EQUITABLE_THREAT_SCORE,
-                                     MetricConstants.MAIN );
+        meta = Boilerplate.getSampleMetadata();
     }
 
     /**

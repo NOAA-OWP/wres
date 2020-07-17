@@ -28,7 +28,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -373,29 +372,11 @@ public final class SlicerTest
                                     .addStatistics( sharpness )
                                     .build();
 
-        StatisticMetadata relMeta = StatisticMetadata.of( meta,
-                                                          1,
-                                                          MeasurementUnit.of(),
-                                                          MetricConstants.BRIER_SCORE,
-                                                          MetricConstants.RELIABILITY );
+        DoubleScoreStatisticOuter oneOuter = DoubleScoreStatisticOuter.of( one, meta );
 
-        StatisticMetadata resMeta = StatisticMetadata.of( meta,
-                                                          1,
-                                                          MeasurementUnit.of(),
-                                                          MetricConstants.BRIER_SCORE,
-                                                          MetricConstants.RESOLUTION );
+        DoubleScoreStatisticOuter twoOuter = DoubleScoreStatisticOuter.of( two, meta );
 
-        StatisticMetadata sharpMeta = StatisticMetadata.of( meta,
-                                                            1,
-                                                            MeasurementUnit.of(),
-                                                            MetricConstants.BRIER_SCORE,
-                                                            MetricConstants.SHARPNESS );
-
-        DoubleScoreStatisticOuter oneOuter = DoubleScoreStatisticOuter.of( one, relMeta );
-
-        DoubleScoreStatisticOuter twoOuter = DoubleScoreStatisticOuter.of( two, resMeta );
-
-        DoubleScoreStatisticOuter threeOuter = DoubleScoreStatisticOuter.of( three, sharpMeta );
+        DoubleScoreStatisticOuter threeOuter = DoubleScoreStatisticOuter.of( three, meta );
 
         toSlice.add( oneOuter );
         toSlice.add( twoOuter );
@@ -405,11 +386,11 @@ public final class SlicerTest
 
         //Check the results
         assertEquals( 3, sliced.size() );
-        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.RELIABILITY, reliability, relMeta ) ),
+        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.RELIABILITY, reliability, meta ) ),
                       sliced.get( MetricConstants.RELIABILITY ) );
-        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.RESOLUTION, resolution, resMeta ) ),
+        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.RESOLUTION, resolution, meta ) ),
                       sliced.get( MetricConstants.RESOLUTION ) );
-        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.SHARPNESS, sharpness, sharpMeta ) ),
+        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.SHARPNESS, sharpness, meta ) ),
                       sliced.get( MetricConstants.SHARPNESS ) );
     }
 
@@ -546,58 +527,38 @@ public final class SlicerTest
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowOne,
-                                                                                                      thresholdOne ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ),
+                                                             SampleMetadata.of( metadata,
+                                                                                windowOne,
+                                                                                thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( two,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowTwo,
-                                                                                                      thresholdTwo ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ),
+                                                             SampleMetadata.of( metadata,
+                                                                                windowTwo,
+                                                                                thresholdTwo ) ),
                                DoubleScoreStatisticOuter.of( three,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowThree,
-                                                                                                      thresholdThree ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ) );
+                                                             SampleMetadata.of( metadata,
+                                                                                windowThree,
+                                                                                thresholdThree ) ) );
 
         // Filter by the first lead time and the last lead time and threshold
-        Predicate<StatisticMetadata> filter = meta -> meta.getSampleMetadata().getTimeWindow().equals( windowOne )
-                                                      || ( meta.getSampleMetadata()
-                                                               .getTimeWindow()
-                                                               .equals( windowThree )
-                                                           && meta.getSampleMetadata()
-                                                                  .getThresholds()
-                                                                  .equals( thresholdThree ) );
+        Predicate<DoubleScoreStatisticOuter> filter = meta -> meta.getMetadata().getTimeWindow().equals( windowOne )
+                                                              || ( meta.getMetadata()
+                                                                       .getTimeWindow()
+                                                                       .equals( windowThree )
+                                                                   && meta.getMetadata()
+                                                                          .getThresholds()
+                                                                          .equals( thresholdThree ) );
 
         List<DoubleScoreStatisticOuter> actualOutput = Slicer.filter( listOfOutputs, filter );
 
         List<DoubleScoreStatisticOuter> expectedOutput =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowOne,
-                                                                                                      thresholdOne ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ),
+                                                             SampleMetadata.of( metadata,
+                                                                                windowOne,
+                                                                                thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( three,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowThree,
-                                                                                                      thresholdThree ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ) );
+                                                             SampleMetadata.of( metadata,
+                                                                                windowThree,
+                                                                                thresholdThree ) ) );
 
         assertEquals( actualOutput, expectedOutput );
     }
@@ -657,47 +618,35 @@ public final class SlicerTest
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
                 Arrays.asList( DoubleScoreStatisticOuter.of( one,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowOne,
-                                                                                                      thresholdOne ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ),
+                                                             SampleMetadata.of( metadata,
+                                                                                windowOne,
+                                                                                thresholdOne ) ),
                                DoubleScoreStatisticOuter.of( two,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowTwo,
-                                                                                                      thresholdTwo ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ),
+                                                             SampleMetadata.of( metadata,
+                                                                                windowTwo,
+                                                                                thresholdTwo ) ),
                                DoubleScoreStatisticOuter.of( three,
-                                                             StatisticMetadata.of( SampleMetadata.of( metadata,
-                                                                                                      windowThree,
-                                                                                                      thresholdThree ),
-                                                                                   0,
-                                                                                   MeasurementUnit.of(),
-                                                                                   MetricConstants.BIAS_FRACTION,
-                                                                                   MetricConstants.MAIN ) ) );
+                                                             SampleMetadata.of( metadata,
+                                                                                windowThree,
+                                                                                thresholdThree ) ) );
 
         // Discover the metrics available
         Set<MetricConstants> actualOutputOne =
-                Slicer.discover( listOfOutputs, next -> next.getMetadata().getMetricID() );
+                Slicer.discover( listOfOutputs, next -> next.getMetricName() );
         Set<MetricConstants> expectedOutputOne = Collections.singleton( MetricConstants.BIAS_FRACTION );
 
         assertEquals( actualOutputOne, expectedOutputOne );
 
         // Discover the unique time windows available
         Set<TimeWindowOuter> actualOutputTwo =
-                Slicer.discover( listOfOutputs, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( listOfOutputs, next -> next.getMetadata().getTimeWindow() );
         Set<TimeWindowOuter> expectedOutputTwo = new TreeSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
 
         assertEquals( actualOutputTwo, expectedOutputTwo );
 
         // Discover the thresholds available
         Set<OneOrTwoThresholds> actualOutputThree =
-                Slicer.discover( listOfOutputs, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( listOfOutputs, next -> next.getMetadata().getThresholds() );
         Set<OneOrTwoThresholds> expectedOutputThree =
                 new TreeSet<>( Arrays.asList( thresholdOne, thresholdTwo, thresholdThree ) );
 
@@ -707,11 +656,9 @@ public final class SlicerTest
         Set<Pair<Duration, Duration>> actualOutputFour =
                 Slicer.discover( listOfOutputs,
                                  next -> Pair.of( next.getMetadata()
-                                                      .getSampleMetadata()
                                                       .getTimeWindow()
                                                       .getEarliestLeadDuration(),
                                                   next.getMetadata()
-                                                      .getSampleMetadata()
                                                       .getTimeWindow()
                                                       .getLatestLeadDuration() ) );
 
@@ -723,7 +670,7 @@ public final class SlicerTest
 
         // Discover the second thresholds, which are not available
         assertTrue( Slicer.discover( listOfOutputs,
-                                     next -> next.getMetadata().getSampleMetadata().getThresholds().second() )
+                                     next -> next.getMetadata().getThresholds().second() )
                           .isEmpty() );
 
     }
@@ -744,7 +691,7 @@ public final class SlicerTest
     {
         assertThrows( NullPointerException.class,
                       () -> Slicer.filter( (List<Statistic<?>>) null,
-                                           (Predicate<StatisticMetadata>) null ) );
+                                           (Predicate<Statistic<?>>) null ) );
     }
 
     @Test
@@ -752,7 +699,7 @@ public final class SlicerTest
     {
         assertThrows( NullPointerException.class,
                       () -> Slicer.filter( List.of(),
-                                           (Predicate<StatisticMetadata>) null ) );
+                                           (Predicate<Statistic<?>>) null ) );
     }
 
     @Test

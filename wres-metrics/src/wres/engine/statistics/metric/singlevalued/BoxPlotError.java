@@ -11,7 +11,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -73,19 +72,12 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, Boxp
     }
 
     @Override
-    public BoxplotStatisticOuter apply( final SampleData<Pair<Double, Double>> s )
+    public BoxplotStatisticOuter apply( SampleData<Pair<Double, Double>> s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-
-        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN,
-                                                         this.hasRealUnits(),
-                                                         s.getRawData().size(),
-                                                         null );
 
         BoxplotStatistic.Builder builder = BoxplotStatistic.newBuilder()
                                                            .setMetric( this.getMetric() );
@@ -96,7 +88,7 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, Boxp
             // Add an empty box: #62863
             builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotError.EMPTY_BOX ) );
 
-            return BoxplotStatisticOuter.of( builder.build(), metOut );
+            return BoxplotStatisticOuter.of( builder.build(), s.getMetadata() );
         }
 
         // Get the sorted errors
@@ -120,11 +112,11 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, Boxp
                                                      .addStatistics( Box.newBuilder().addAllQuantiles( box ) )
                                                      .build();
 
-        return BoxplotStatisticOuter.of( statistic, metOut );
+        return BoxplotStatisticOuter.of( statistic, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.BOX_PLOT_OF_ERRORS;
     }

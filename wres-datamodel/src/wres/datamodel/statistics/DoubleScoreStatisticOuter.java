@@ -5,8 +5,12 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.BasicScoreStatistic.BasicScoreComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -23,6 +27,12 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
 {
 
     /**
+     * The metric name.
+     */
+
+    private final MetricConstants metricName;
+
+    /**
      * Construct the statistic.
      * 
      * @param statistic the verification statistic
@@ -31,7 +41,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
      * @return an instance of the output
      */
 
-    public static DoubleScoreStatisticOuter of( DoubleScoreStatistic statistic, StatisticMetadata metadata )
+    public static DoubleScoreStatisticOuter of( DoubleScoreStatistic statistic, SampleMetadata metadata )
     {
         return new DoubleScoreStatisticOuter( statistic, metadata );
     }
@@ -46,6 +56,12 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
     {
 
         /**
+         * The component name.
+         */
+
+        private final MetricConstants metricName;
+
+        /**
          * Hidden constructor.
          * @param name the name
          * @param component the score component
@@ -54,9 +70,11 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
 
         private DoubleScoreComponentOuter( MetricConstants name,
                                            DoubleScoreStatisticComponent component,
-                                           StatisticMetadata metadata )
+                                           SampleMetadata metadata )
         {
             super( name, component, metadata, next -> Double.toString( next.getValue() ) );
+
+            this.metricName = MetricConstants.valueOf( component.getName().name() );
         }
 
         /**
@@ -70,11 +88,38 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
          */
 
         public static DoubleScoreComponentOuter of( MetricConstants name,
-                                             DoubleScoreStatisticComponent component,
-                                             StatisticMetadata metadata )
+                                                    DoubleScoreStatisticComponent component,
+                                                    SampleMetadata metadata )
         {
             return new DoubleScoreComponentOuter( name, component, metadata );
         }
+
+        @Override
+        public MetricConstants getMetricName()
+        {
+            return this.metricName;
+        }
+    }
+
+    @Override
+    public MetricConstants getMetricName()
+    {
+        return this.metricName;
+    }
+
+    @Override
+    public String toString()
+    {
+        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
+
+        builder.append( "metric", this.getData().getMetric().getName() );
+
+        this.getInternalMapping().forEach( ( key, value ) -> builder.append( "value", value ) );
+
+        builder.append( "metadata", this.getMetadata() )
+               .append( "sample size", this.getData().getSampleSize() );
+
+        return builder.toString();
     }
 
     /**
@@ -83,9 +128,11 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
      * @param score the score
      */
 
-    private DoubleScoreStatisticOuter( DoubleScoreStatistic score, StatisticMetadata metadata )
+    private DoubleScoreStatisticOuter( DoubleScoreStatistic score, SampleMetadata metadata )
     {
         super( score, DoubleScoreStatisticOuter.createInternalMapping( score, metadata ), metadata );
+
+        this.metricName = MetricConstants.valueOf( score.getMetric().getName().name() );
     }
 
     /**
@@ -97,7 +144,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
      */
 
     private static Map<MetricConstants, DoubleScoreComponentOuter> createInternalMapping( DoubleScoreStatistic score,
-                                                                                          StatisticMetadata metadata )
+                                                                                          SampleMetadata metadata )
     {
         Map<MetricConstants, DoubleScoreComponentOuter> returnMe = new EnumMap<>( MetricConstants.class );
 

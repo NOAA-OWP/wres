@@ -22,7 +22,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
@@ -51,7 +50,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * Basis for latestDateToText function.
      */
     private Instant latestInstant = null;
-    
+
     /**
      * The duration units.
      */
@@ -70,11 +69,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         super();
 
         Objects.requireNonNull( meta, "Specify non-null metadata." );
-        
+
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
+
         this.durationUnits = durationUnits;
-        
+
         //Setup fixed arguments.  This uses a special set since it is not metric output.
         addArgument( "rangeAxisLabelPrefix", "Forecast" );
         addArgument( "domainAxisLabelPrefix", "Observed" );
@@ -101,28 +100,28 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         super();
 
         Objects.requireNonNull( displayPlotInput, "Specify a non-null box plot statistic." );
-        
+
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
+
         this.durationUnits = durationUnits;
-        
-        StatisticMetadata meta = displayPlotInput.getMetadata();
-        extractStandardArgumentsFromMetadata( meta );
 
-        recordWindowingArguments( meta.getSampleMetadata().getTimeWindow() );
+        SampleMetadata meta = displayPlotInput.getMetadata();
+        MetricConstants metricName = displayPlotInput.getMetricName();
+        extractStandardArgumentsFromMetadata( meta, metricName, null );
 
-        String durationString = Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata()
-                                                                                   .getTimeWindow()
+        recordWindowingArguments( meta.getTimeWindow() );
+
+        String durationString = Long.toString( TimeHelper.durationToLongUnits( meta.getTimeWindow()
                                                                                    .getLatestLeadDuration(),
                                                                                this.getDurationUnits() ) )
                                 + " "
                                 + this.getDurationUnits().name().toUpperCase();
 
         // Plot per pool? See: #62374
-        if ( displayPlotInput.getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
+        if ( metricName.isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
         {
             addArgument( "diagramInstanceDescription",
-                         "and for Threshold " + meta.getSampleMetadata().getThresholds() );
+                         "and for Threshold " + meta.getThresholds() );
         }
         else
         {
@@ -130,24 +129,24 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                          "and at Lead Time "
                                                        + durationString
                                                        + " and for Threshold "
-                                                       + meta.getSampleMetadata().getThresholds() );
+                                                       + meta.getThresholds() );
         }
 
 
         // See #65503
         String probabilities = "none defined";
-        if( displayPlotInput.getData().getStatisticsCount() != 0 )
+        if ( displayPlotInput.getData().getStatisticsCount() != 0 )
         {
-             List<Double> probs = displayPlotInput.getData().getMetric().getQuantilesList();
-             probabilities = Arrays.toString( probs.toArray() );
-             
-             // Pretty print
-             probabilities = probabilities.replaceAll( "0.0,", "min," );
-             probabilities = probabilities.replaceAll( "1.0", "max" );
-             probabilities = probabilities.replace( "[", "" );
-             probabilities = probabilities.replace( "]", "" );
+            List<Double> probs = displayPlotInput.getData().getMetric().getQuantilesList();
+            probabilities = Arrays.toString( probs.toArray() );
+
+            // Pretty print
+            probabilities = probabilities.replaceAll( "0.0,", "min," );
+            probabilities = probabilities.replaceAll( "1.0", "max" );
+            probabilities = probabilities.replace( "[", "" );
+            probabilities = probabilities.replace( "]", "" );
         }
-        
+
         this.addArgument( "probabilities", probabilities );
 
         initializeFunctionInformation();
@@ -157,49 +156,53 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * An arguments processor intended for use in displaying metric output FOR POOLING WINDOWS, whether scalar or vector.
      * 
      * @param <T> the output type
+     * @param metricName the metric name
+     * @param metricComponentName the optional metric component name
      * @param displayedPlotInput the plot input
      * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
      *     a pooling window plot.
      * @param durationUnits the time units for durations
      * @throws NullPointerException if the displayedPlotInput or the durationUnits are null
      */
-    public <T extends Statistic<?>> WRESArgumentProcessor( final List<T> displayedPlotInput,
+    public <T extends Statistic<?>> WRESArgumentProcessor( final MetricConstants metricName,
+                                                           final MetricConstants metricComponentName,
+                                                           final List<T> displayedPlotInput,
                                                            final ChartType plotType,
                                                            final ChronoUnit durationUnits )
     {
         super();
-        
+
         Objects.requireNonNull( displayedPlotInput, "Specify a non-null list of statistics." );
-        
+
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
 
         this.durationUnits = durationUnits;
 
-        StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
-        extractStandardArgumentsFromMetadata( meta );
+        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        extractStandardArgumentsFromMetadata( meta, metricName, metricComponentName );
 
         // Assemble a collection of smaller time windows where necessary
-        if ( plotType == ChartType.POOLING_WINDOW || meta.getMetricID().isInGroup( StatisticType.PAIRED ) )
+        if ( plotType == ChartType.POOLING_WINDOW || metricName.isInGroup( StatisticType.DURATION_DIAGRAM ) )
         {
             SortedSet<TimeWindowOuter> timeWindows =
                     Slicer.discover( displayedPlotInput,
-                                     next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+                                     next -> next.getMetadata().getTimeWindow() );
             TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindows.first().getEarliestReferenceTime(),
-                                                   timeWindows.last().getLatestReferenceTime(),
-                                                   timeWindows.first().getEarliestValidTime(),
-                                                   timeWindows.last().getLatestValidTime(),
-                                                   timeWindows.first().getEarliestLeadDuration(),
-                                                   timeWindows.last().getLatestLeadDuration() );
+                                                             timeWindows.last().getLatestReferenceTime(),
+                                                             timeWindows.first().getEarliestValidTime(),
+                                                             timeWindows.last().getLatestValidTime(),
+                                                             timeWindows.first().getEarliestLeadDuration(),
+                                                             timeWindows.last().getLatestLeadDuration() );
             recordWindowingArguments( timeWindow );
         }
         else
         {
-            recordWindowingArguments( meta.getSampleMetadata().getTimeWindow() );
+            recordWindowingArguments( meta.getTimeWindow() );
         }
 
         initializeFunctionInformation();
     }
-    
+
     /**
      * Returns the duration units.
      * 
@@ -210,38 +213,42 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         return this.durationUnits;
     }
-    
+
     /**
      * Extracts the standard arguments that can be pulled from and interpreted consistently for any output meta data. 
-     * @param meta the output metadata 
+     * @param meta the output metadata
+     * @param metricName the metric name
+     * @poaram metricComponentName the optional metric component name
      */
-    private void extractStandardArgumentsFromMetadata( StatisticMetadata meta )
+    private void extractStandardArgumentsFromMetadata( SampleMetadata meta,
+                                                       MetricConstants metricName,
+                                                       MetricConstants metricComponentName )
     {
         //Setup fixed arguments.
-        addArgument( "metricName", meta.getMetricID().toString() );
-        addArgument( "metricShortName", meta.getMetricID().toString() );
+        addArgument( "metricName", metricName.toString() );
+        addArgument( "metricShortName", metricName.toString() );
         addArgument( "outputUnits", meta.getMeasurementUnit().toString() );
-        addArgument( "inputUnits", meta.getSampleMetadata().getMeasurementUnit().toString() );
+        addArgument( "inputUnits", meta.getMeasurementUnit().toString() );
         addArgument( "outputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
-        addArgument( "inputUnitsLabelSuffix", " [" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
+        addArgument( "inputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
 
-        recordIdentifierArguments( meta.getSampleMetadata() );
+        recordIdentifierArguments( meta );
 
         // Add conditional arguments
-        
+
         //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
         //so why bother?  (This relates to an email James wrote.)
-        if ( ! meta.hasMetricComponentID() || meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
+        if ( Objects.isNull( metricComponentName ) || metricComponentName == MetricConstants.MAIN )
         {
             addArgument( "metricComponentNameSuffix", "" );
         }
         else
         {
-            addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
+            addArgument( "metricComponentNameSuffix", " - " + metricComponentName.toString() );
         }
-        
+
         // Time scale arguments, where defined
-        this.addTimeScaleArguments( meta );       
+        this.addTimeScaleArguments( meta );
     }
 
     /**
@@ -257,7 +264,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             addArgument( "variableName", identifier.getVariableName() );
             if ( identifier.hasScenarioName() )
             {
-                addArgument( "primaryScenario", " "+identifier.getScenarioName() );
+                addArgument( "primaryScenario", " " + identifier.getScenarioName() );
             }
             else
             {
@@ -269,7 +276,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     private void recordWindowingArguments( final TimeWindowOuter timeWindow )
     {
         // Check for unbounded times and do not display this unconstrained condition: #46772
-        if ( Objects.nonNull( timeWindow ) && ! timeWindow.hasUnboundedReferenceTimes() )
+        if ( Objects.nonNull( timeWindow ) && !timeWindow.hasUnboundedReferenceTimes() )
         {
             earliestInstant = timeWindow.getEarliestReferenceTime();
             latestInstant = timeWindow.getLatestReferenceTime();
@@ -278,12 +285,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                                                         this.getDurationUnits() ) ) );
             addArgument( "latestLeadTime",
                          Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
-                                                         this.getDurationUnits() ) ) );
-            
+                                                                        this.getDurationUnits() ) ) );
+
             // Jbr: Qualify the reference time with "evaluation period" in code rather than the graphics template
             // This allows for the time window to be ommited when unconstrained. See #46772.
             String referenceTime = "ISSUE TIME Evaluation Period: ";
-            
+
             addArgument( "referenceTime", referenceTime ); //#44873, #46772
         }
         else
@@ -299,20 +306,20 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param plotTimeWindow the time window
      */
     public <T extends Statistic<?>> void addLeadThresholdArguments( List<T> displayedPlotInput,
-                                           TimeWindowOuter plotTimeWindow )
+                                                                    TimeWindowOuter plotTimeWindow )
     {
-        final StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
 
-        final String legendTitle = "Threshold";
+        String legendTitle = "Threshold";
         String legendUnitsText = "";
         // Display real values for all real-valued thresholds, not just quantiles: #56955
         SortedSet<Boolean> thresholds =
                 Slicer.discover( displayedPlotInput,
-                                 next -> next.getMetadata().getSampleMetadata().getThresholds().first().hasValues() );
+                                 next -> next.getMetadata().getThresholds().first().hasValues() );
 
         if ( thresholds.contains( true ) )
         {
-            legendUnitsText += " [" + meta.getSampleMetadata().getMeasurementUnit() + "]";
+            legendUnitsText += " [" + meta.getMeasurementUnit() + "]";
         }
 
         addArgument( "legendTitle", legendTitle );
@@ -320,8 +327,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( plotTimeWindow != null )
         {
             String durationString =
-                    TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadDuration(), this.getDurationUnits() ) + " "
-                              + this.getDurationUnits().name().toUpperCase();
+                    TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadDuration(), this.getDurationUnits() )
+                                    + " "
+                                    + this.getDurationUnits().name().toUpperCase();
             addArgument( "diagramInstanceDescription", "at Lead Time " + durationString );
             addArgument( "plotTitleVariable", "Thresholds" );
         }
@@ -335,7 +343,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param threshold the threshold
      */
     public <T extends Statistic<?>> void addThresholdLeadArguments( List<T> displayedPlotInput,
-                                           OneOrTwoThresholds threshold )
+                                                                    OneOrTwoThresholds threshold )
     {
 
         // Augment the plot title when the input dataset contains a secondary threshold/classifier
@@ -343,17 +351,17 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         String supplementary = "";
         SortedSet<ThresholdOuter> secondThresholds =
                 Slicer.discover( displayedPlotInput,
-                                 next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
+                                 next -> next.getMetadata().getThresholds().second() );
         if ( !secondThresholds.isEmpty() )
         {
             String set = secondThresholds.toString();
             supplementary = " with occurrences defined as " + set;
         }
-        
+
         addArgument( "plotTitleSupplementary", supplementary );
-        addArgument( "legendTitle",  "Lead Time" );
+        addArgument( "legendTitle", "Lead Time" );
         addArgument( "legendUnitsText", " [" + this.getDurationUnits().name().toUpperCase() + "]" );
-        
+
         if ( threshold != null )
         {
             addArgument( "diagramInstanceDescription",
@@ -368,55 +376,54 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public <T extends Statistic<?>> void addPoolingWindowArguments(List<T> displayedPlotInput )
+    public <T extends Statistic<?>> void addPoolingWindowArguments( List<T> displayedPlotInput )
     {
-        final StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
-        
+        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+
         String durationUnitsString = "[" + this.getDurationUnits().name().toUpperCase() + "]";
-        
-        if ( !meta.getSampleMetadata()
-                  .getTimeWindow()
+
+        if ( !meta.getTimeWindow()
                   .getEarliestLeadDuration()
-                  .equals( meta.getSampleMetadata().getTimeWindow().getLatestLeadDuration() ) )
+                  .equals( meta.getTimeWindow().getLatestLeadDuration() ) )
         {
-            addArgument( "legendTitle", "Lead time window "+durationUnitsString+", Threshold " );
+            addArgument( "legendTitle", "Lead time window " + durationUnitsString + ", Threshold " );
         }
         else
         {
 
-            addArgument( "legendTitle", "Lead time "+durationUnitsString+", Threshold " );
+            addArgument( "legendTitle", "Lead time " + durationUnitsString + ", Threshold " );
         }
-        addArgument( "legendUnitsText", "[" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
+        addArgument( "legendUnitsText", "[" + meta.getMeasurementUnit() + "]" );
     }
 
     /**
      * Adds the arguments for metrics expressed with durations.
      */
-    
+
     public void addDurationMetricArguments()
     {
         addArgument( "outputUnitsLabelSuffix", " [HOURS]" );
     }
-    
+
     /**
      * Custom method created for the time-to-peak plots.
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public <T extends Statistic<?>> void addTimeToPeakArguments(List<T> displayedPlotInput )
+    public <T extends Statistic<?>> void addTimeToPeakArguments( List<T> displayedPlotInput )
     {
-        final StatisticMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
+        SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
         addArgument( "legendTitle", "Threshold " );
-        addArgument( "legendUnitsText", "[" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
+        addArgument( "legendUnitsText", "[" + meta.getMeasurementUnit() + "]" );
     }
-    
+
     /**
      * Adds arguments related to the baseline forecasts for skill scores.
      * @param meta the output metadata
      */
-    public void addBaselineArguments( StatisticMetadata meta )
+    public void addBaselineArguments( SampleMetadata meta )
     {
-        final DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
+        final DatasetIdentifier identifier = meta.getIdentifier();
         String baselineSuffix = "";
         if ( !Objects.isNull( identifier.getScenarioNameForBaseline() ) )
         {
@@ -431,31 +438,30 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * 
      * @param meta the statistics metadata
      */
-    
-    private void addTimeScaleArguments( StatisticMetadata meta )
+
+    private void addTimeScaleArguments( SampleMetadata meta )
     {
         Objects.requireNonNull( "Specify non-null metadata from which to obtain the time scale." );
 
         String timeScale = "";
-        if ( meta.getSampleMetadata().hasTimeScale() )
+        if ( meta.hasTimeScale() )
         {
             // Use the default string representation of an instantaneous time scale
             // See #62867
-            if( meta.getSampleMetadata().getTimeScale().isInstantaneous() )
+            if ( meta.getTimeScale().isInstantaneous() )
             {
-                timeScale = meta.getSampleMetadata().getTimeScale().toString()  + " ";
+                timeScale = meta.getTimeScale().toString() + " ";
             }
             else
             {
                 String period =
-                        Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata()
-                                                                           .getTimeScale()
+                        Long.toString( TimeHelper.durationToLongUnits( meta.getTimeScale()
                                                                            .getPeriod(),
                                                                        this.getDurationUnits() ) )
                                 + " "
                                 + this.getDurationUnits().name().toUpperCase();
 
-                timeScale = "[" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
+                timeScale = "[" + period + ", " + meta.getTimeScale().getFunction() + "] ";
             }
         }
 
@@ -491,14 +497,16 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
             try
             {
-                 formatter =
-                         DateTimeFormatter.ofPattern( dateFormat )
-                                          .withZone( ZoneId.of( timeZoneStr ) );
+                formatter =
+                        DateTimeFormatter.ofPattern( dateFormat )
+                                         .withZone( ZoneId.of( timeZoneStr ) );
             }
             catch ( IllegalArgumentException e )
             {
                 LOGGER.warn( "Date format '{}' is invalid for argument {}.",
-                             dateFormat, argument, e );
+                             dateFormat,
+                             argument,
+                             e );
                 return null;
             }
 

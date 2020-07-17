@@ -1,6 +1,8 @@
 package wres.datamodel.statistics;
 
+import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleMetadata;
 
 /**
  * <p>A {@link Statistic} is used to describe {@link SampleData} or to infer something about the population from which
@@ -21,11 +23,18 @@ public interface Statistic<U>
     U getData();
     
     /**
-     * Returns the metadata associated with the statistic.
+     * Returns the sample metadata associated with the statistic.
      * 
-     * @return the metadata associated with the statistic
+     * @return the sample metadata associated with the statistic
      */
 
-    StatisticMetadata getMetadata();
+    SampleMetadata getMetadata();
         
+    /**
+     * Returns the name of the metric that produced the statistic.
+     * 
+     * @return the metric name
+     */
+    
+    MetricConstants getMetricName();
 }

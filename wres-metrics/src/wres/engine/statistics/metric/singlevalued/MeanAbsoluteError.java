@@ -51,7 +51,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<SampleData<Pair<Double,D
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_ABSOLUTE_ERROR;
     }

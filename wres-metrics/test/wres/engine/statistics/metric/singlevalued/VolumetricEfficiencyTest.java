@@ -25,7 +25,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -62,21 +61,17 @@ public final class VolumetricEfficiencyTest
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
         //Metadata for the output
-        final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                           Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     Duration.ofHours( 24 ) );
 
-        final StatisticMetadata m1 =
-                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "103.1" ),
-                                                                                         "QME",
-                                                                                         "NVE" ) )
-                                                   .setTimeWindow( window )
-                                                   .build(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.VOLUMETRIC_EFFICIENCY,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                        .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "103.1" ),
+                                                                                              "QME",
+                                                                                              "NVE" ) )
+                                                        .setTimeWindow( window )
+                                                        .build();
+
         //Check the results
         DoubleScoreStatisticOuter actual = this.ve.apply( input );
 

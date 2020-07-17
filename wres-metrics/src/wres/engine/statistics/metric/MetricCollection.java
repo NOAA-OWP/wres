@@ -36,7 +36,7 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  * </p>
  * <p>
  * For metrics that implement {@link Collectable} and whose method {@link Collectable#getCollectionOf()} returns a
- * common superclass (by {@link Metric#getID()}), the intermediate output is computed once and applied to all 
+ * common superclass (by {@link Metric#getMetricName()}), the intermediate output is computed once and applied to all 
  * subclasses within the collection. For example, if the {@link MetricCollection} contains several {@link Score} that 
  * extend {@link ContingencyTable} and implement {@link Collectable}, the contingency table will be computed once, 
  * with all dependent scores using this result.
@@ -193,7 +193,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
 
         protected MetricCollectionBuilder<S, T, U> addMetric( final Metric<S, U> metric )
         {
-            this.metrics.put( metric.getID(), metric );
+            this.metrics.put( metric.getMetricName(), metric );
             return this;
         }
 
@@ -206,7 +206,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
 
         protected MetricCollectionBuilder<S, T, U> addCollectableMetric( final Collectable<S, T, U> metric )
         {
-            this.collectableMetrics.put( metric.getID(), metric );
+            this.collectableMetrics.put( metric.getMetricName(), metric );
             return this;
         }
 
@@ -425,7 +425,7 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
             // Determine the metrics computed
             Set<MetricConstants> collected = new TreeSet<>();
             this.collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
-            Set<MetricConstants> completed = Slicer.discover( results, meta -> meta.getMetadata().getMetricID() );
+            Set<MetricConstants> completed = Slicer.discover( results, U::getMetricName );
 
             logger.trace( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "

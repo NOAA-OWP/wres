@@ -35,20 +35,16 @@ public final class DiagramStatisticOuterTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private StatisticMetadata metadata;
+    private SampleMetadata metadata;
 
     @Before
     public void runBeforeEachTest()
     {
         FeatureKey feature = FeatureKey.of( "A" );
-        this.metadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                 DatasetIdentifier.of( new FeatureTuple( feature, feature, feature) ,
-                                                                                       "B",
-                                                                                       "C" ) ),
-                                              10,
-                                              MeasurementUnit.of(),
-                                              MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                              MetricConstants.MAIN );
+        this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                           DatasetIdentifier.of( new FeatureTuple( feature, feature, feature),
+                                                                 "B",
+                                                                 "C" ) );
     }
 
     /**
@@ -59,23 +55,15 @@ public final class DiagramStatisticOuterTest
     public void testEquals()
     {
         FeatureKey l2 = FeatureKey.of( "A" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     11,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
+                                                                     "B",
+                                                                     "C" ) );
         FeatureKey l3 = FeatureKey.of( "B" );
-        StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
+                                                                     "B",
+                                                                     "C" ) );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()
@@ -158,8 +146,8 @@ public final class DiagramStatisticOuterTest
         DiagramStatisticOuter q = DiagramStatisticOuter.of( rocOne, m2 );
         DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, m3 );
         assertEquals( q, q );
-        assertNotEquals( s, q );
-        assertNotEquals( q, s );
+        assertNotEquals( s, r );
+        assertNotEquals( r, s );
         assertNotEquals( q, r );
     }
 
@@ -171,14 +159,10 @@ public final class DiagramStatisticOuterTest
     public void testGetMetadata()
     {
         FeatureKey l2 = FeatureKey.of( "B" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
+                                                                     "B",
+                                                                     "C" ) );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()

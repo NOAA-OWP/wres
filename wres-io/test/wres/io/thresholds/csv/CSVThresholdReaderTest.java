@@ -1,17 +1,4 @@
-package wres.io.reading.commaseparated;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+package wres.io.thresholds.csv;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -24,19 +11,31 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
+import wres.io.thresholds.csv.CSVThresholdReader;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import static org.junit.Assert.*;
 
 /**
- * Tests the {@link ThresholdReader}.
+ * Tests the {@link CSVThresholdReader}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class ThresholdReaderTest
+public class CSVThresholdReaderTest
 {
 
     private UnitMapper unitMapper;
@@ -55,7 +54,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
+     * Tests the {@link CSVThresholdReader#readThresholds(SystemSettings, ThresholdsConfig, MeasurementUnit, UnitMapper)}
      * using input from testinput/commaseparated/testProbabiiltyThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -83,10 +82,10 @@ public class ThresholdReaderTest
                                                                  ThresholdOperator.GREATER_THAN );
 
         Map<String, Set<ThresholdOuter>> actual =
-                ThresholdReader.readThresholds( this.systemSettings,
-                                                thresholdConfig,
-                                                this.units,
-                                                this.unitMapper );
+                CSVThresholdReader.readThresholds( this.systemSettings,
+                                                   thresholdConfig,
+                                                   this.units,
+                                                   this.unitMapper );
 
         // Compare to expected
         Map<String, Set<ThresholdOuter>> expected = new TreeMap<>();
@@ -137,7 +136,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
+     * Tests the {@link CSVThresholdReader#readThresholds(SystemSettings, ThresholdsConfig, MeasurementUnit, UnitMapper)}
      * using input from testinput/commaseparated/testValueThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -165,7 +164,7 @@ public class ThresholdReaderTest
                                                                  ThresholdOperator.GREATER_THAN );
 
         Map<String, Set<ThresholdOuter>> actual =
-                ThresholdReader.readThresholds( this.systemSettings,
+                CSVThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
@@ -219,7 +218,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
+     * Tests the {@link CSVThresholdReader#readThresholds(SystemSettings, ThresholdsConfig, MeasurementUnit, UnitMapper)}
      * using input from testinput/commaseparated/testProbabiiltyThresholdsWithoutLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -246,7 +245,7 @@ public class ThresholdReaderTest
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
         Map<String, Set<ThresholdOuter>> actual =
-                ThresholdReader.readThresholds( this.systemSettings,
+                CSVThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
@@ -294,7 +293,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
+     * Tests the {@link CSVThresholdReader#readThresholds(SystemSettings, ThresholdsConfig, MeasurementUnit, UnitMapper)}
      * using input from testinput/commaseparated/testValueThresholdsWithoutLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -321,7 +320,7 @@ public class ThresholdReaderTest
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
         Map<String, Set<ThresholdOuter>> actual =
-                ThresholdReader.readThresholds( this.systemSettings,
+                CSVThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
@@ -369,7 +368,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
+     * Tests the {@link CSVThresholdReader#readThresholds(SystemSettings, ThresholdsConfig, MeasurementUnit, UnitMapper)}
      * using input from testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -396,7 +395,7 @@ public class ThresholdReaderTest
                                                                  source,
                                                                  ThresholdOperator.GREATER_THAN );
         Map<String, Set<ThresholdOuter>> actual =
-                ThresholdReader.readThresholds( this.systemSettings,
+                CSVThresholdReader.readThresholds( this.systemSettings,
                                                 thresholdConfig,
                                                 this.units,
                                                 this.unitMapper );
@@ -436,7 +435,7 @@ public class ThresholdReaderTest
     }
 
     /**
-     * Tests the {@link ThresholdReader#readThresholds(java.net.URI, boolean, wres.datamodel.ThresholdOuter.Operator)}
+     * Tests the {@link CSVThresholdReader#readThresholds(SystemSettings, ThresholdsConfig, MeasurementUnit, UnitMapper)}
      * using input from testinput/commaseparated/testValueThresholdsWithLabels.csv.
      * 
      * @throws IOException if the test data could not be read
@@ -464,7 +463,7 @@ public class ThresholdReaderTest
                                                                  ThresholdOperator.GREATER_THAN );
 
         Exception actualException = assertThrows( IllegalArgumentException.class,
-                                                  () -> ThresholdReader.readThresholds( this.systemSettings,
+                                                  () -> CSVThresholdReader.readThresholds( this.systemSettings,
                                                                                         thresholdConfig,
                                                                                         this.units,
                                                                                         this.unitMapper ) );

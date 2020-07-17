@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -22,7 +20,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
@@ -475,7 +473,7 @@ public final class MetricFactory
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume a {@link PoolOfPairs} with single-valued 
-     * pairs and produce {@link PairedStatisticOuter}.</p>
+     * pairs and produce {@link DurationDiagramStatisticOuter}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -486,7 +484,7 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<PoolOfPairs<Double, Double>, PairedStatisticOuter<Instant, Duration>, PairedStatisticOuter<Instant, Duration>>
+            MetricCollection<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -740,7 +738,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link PoolOfPairs} with single-valued pairs 
-     * and produce {@link PairedStatisticOuter}.
+     * and produce {@link DurationDiagramStatisticOuter}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -750,12 +748,12 @@ public final class MetricFactory
      */
 
     public static
-            MetricCollection<PoolOfPairs<Double, Double>, PairedStatisticOuter<Instant, Duration>, PairedStatisticOuter<Instant, Duration>>
+            MetricCollection<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeriesCollection( ExecutorService executor,
                                                 MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<PoolOfPairs<Double, Double>, PairedStatisticOuter<Instant, Duration>, PairedStatisticOuter<Instant, Duration>> builder =
+        final MetricCollectionBuilder<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -1038,14 +1036,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes a {@link PoolOfPairs} with single-valued pairs and produces 
-     * {@link PairedStatisticOuter}.
+     * {@link DurationDiagramStatisticOuter}.
      * 
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public static Metric<PoolOfPairs<Double, Double>, PairedStatisticOuter<Instant, Duration>>
+    public static Metric<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeries( MetricConstants metric )
     {
         switch ( metric )

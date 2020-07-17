@@ -10,7 +10,6 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -60,13 +59,7 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        final StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      null );
+
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();
         DoubleErrorFunction error = FunctionFactory.error();
@@ -93,7 +86,7 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
@@ -103,7 +96,7 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.BIAS_FRACTION;
     }

@@ -10,6 +10,7 @@ import com.google.protobuf.Timestamp;
 
 import wres.statistics.generated.TimeWindow;
 
+
 /**
  * <p>Metadata that describes the partition of three time lines in which a sample is collated for the purposes of a 
  * statistical calculation. The first timeline is a reference timeline in UTC, which may be used to represent
