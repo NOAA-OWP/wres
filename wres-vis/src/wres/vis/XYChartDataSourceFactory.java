@@ -34,11 +34,10 @@ import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.util.TimeHelper;
@@ -51,7 +50,8 @@ import wres.util.TimeHelper;
 public abstract class XYChartDataSourceFactory
 {
 
-    private static final String METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX = "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@";
+    private static final String METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX =
+            "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@";
     /**
      * Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting.
      */
@@ -76,16 +76,16 @@ public abstract class XYChartDataSourceFactory
 
         Objects.requireNonNull( durationUnits );
 
-        if( input.isEmpty() )
+        if ( input.isEmpty() )
         {
             throw new IllegalArgumentException( "Cannot generate box plot output with empty input." );
         }
-        
+
         // One box per pool? See #62374
-        boolean pooledInput = input.get(0).getMetadata().getMetricID().isInGroup( StatisticType.BOXPLOT_PER_POOL );
-        
+        boolean pooledInput = input.get( 0 ).getMetricName().isInGroup( StatisticType.BOXPLOT_PER_POOL );
+
         // Should be one dataset only if it is not per-pool
-        if( ! pooledInput && input.size() > 1 )
+        if ( !pooledInput && input.size() > 1 )
         {
             throw new IllegalArgumentException( "Cannot generate box plot output per pool with more than one dataset." );
         }
@@ -138,7 +138,7 @@ public abstract class XYChartDataSourceFactory
             if ( input.get( 0 ).getData().getStatisticsCount() != 0 )
             {
                 inputUnits = input.get( 0 ).getData().getMetric().getLinkedValueType().toString();
-                inputUnits = inputUnits.replace( "_",  " " );
+                inputUnits = inputUnits.replace( "_", " " );
             }
 
             source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -210,7 +210,7 @@ public abstract class XYChartDataSourceFactory
      */
     public static DefaultXYChartDataSource
             ofPairedOutputInstantDuration( int orderIndex,
-                                           final List<PairedStatisticOuter<Instant, Duration>> input )
+                                           final List<DurationDiagramStatisticOuter> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -229,7 +229,7 @@ public abstract class XYChartDataSourceFactory
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
                 Set<OneOrTwoThresholds> thresholds =
-                        Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+                        Slicer.discover( input, next -> next.getMetadata().getThresholds() );
 
                 // Filter by by threshold
                 for ( OneOrTwoThresholds nextSeries : thresholds )
@@ -237,18 +237,18 @@ public abstract class XYChartDataSourceFactory
                     TimeSeries next =
                             new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
 
-                    List<PairedStatisticOuter<Instant, Duration>> filtered =
+                    List<DurationDiagramStatisticOuter> filtered =
                             Slicer.filter( input,
-                                           data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
-                    
+                                           data -> data.getMetadata().getThresholds().equals( nextSeries ) );
+
                     // Create a set-view by instant, because JFreeChart cannot handle duplicates
                     // TODO: possibly upgrade JFreeChart or use an alternative
                     Set<Instant> instants = new HashSet<>();
 
                     // Create the series
-                    for ( PairedStatisticOuter<Instant, Duration> nextSet : filtered )
+                    for ( DurationDiagramStatisticOuter nextSet : filtered )
                     {
-                        for ( Pair<Instant, Duration> oneValue : nextSet )
+                        for ( Pair<Instant, Duration> oneValue : nextSet.getPairs() )
                         {
                             if ( !instants.contains( oneValue.getKey() ) )
                             {
@@ -272,7 +272,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() )
+                                Slicer.discover( input, next -> next.getMetadata().getThresholds() )
                                       .size() ); //# of series = number of thresholds in input.
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -390,11 +390,9 @@ public abstract class XYChartDataSourceFactory
                 // Filter by the lead time window, as contained within the TimeWindow portion of the key.
                 SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
                                                                                  next -> Pair.of( next.getMetadata()
-                                                                                                      .getSampleMetadata()
                                                                                                       .getTimeWindow()
                                                                                                       .getEarliestLeadDuration(),
                                                                                                   next.getMetadata()
-                                                                                                      .getSampleMetadata()
                                                                                                       .getTimeWindow()
                                                                                                       .getLatestLeadDuration() ) );
 
@@ -403,25 +401,25 @@ public abstract class XYChartDataSourceFactory
                     // Slice the data by the lead time in the window.  The resulting output will span
                     // multiple issued time windows and thresholds.
                     List<DoubleScoreComponentOuter> slice = Slicer.filter( input,
-                                                                                  next -> next.getSampleMetadata()
-                                                                                              .getTimeWindow()
-                                                                                              .getEarliestLeadDuration()
-                                                                                              .equals( nextTime.getLeft() )
-                                                                                          && next.getSampleMetadata()
-                                                                                                 .getTimeWindow()
-                                                                                                 .getLatestLeadDuration()
-                                                                                                 .equals( nextTime.getRight() ) );
+                                                                           next -> next.getMetadata()
+                                                                                       .getTimeWindow()
+                                                                                       .getEarliestLeadDuration()
+                                                                                       .equals( nextTime.getLeft() )
+                                                                                   && next.getMetadata()
+                                                                                          .getTimeWindow()
+                                                                                          .getLatestLeadDuration()
+                                                                                          .equals( nextTime.getRight() ) );
 
                     // Filter by threshold
                     SortedSet<OneOrTwoThresholds> thresholds =
-                            Slicer.discover( slice, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+                            Slicer.discover( slice, next -> next.getMetadata().getThresholds() );
                     for ( OneOrTwoThresholds nextThreshold : thresholds )
                     {
                         // Slice the data by threshold.  The resulting data will still contain potentially
                         // multiple issued time pooling windows.
                         List<DoubleScoreComponentOuter> finalSlice =
                                 Slicer.filter( slice,
-                                               next -> next.getSampleMetadata()
+                                               next -> next.getMetadata()
                                                            .getThresholds()
                                                            .equals( nextThreshold ) );
 
@@ -445,7 +443,6 @@ public abstract class XYChartDataSourceFactory
                         for ( DoubleScoreComponentOuter nextDouble : finalSlice )
                         {
                             next.add( new FixedMillisecond( nextDouble.getMetadata()
-                                                                      .getSampleMetadata()
                                                                       .getTimeWindow()
                                                                       .getMidPointBetweenEarliestAndLatestReferenceTimes()
                                                                       .toEpochMilli() ),
@@ -460,15 +457,13 @@ public abstract class XYChartDataSourceFactory
 
         SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
                                                                          next -> Pair.of( next.getMetadata()
-                                                                                              .getSampleMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getEarliestLeadDuration(),
                                                                                           next.getMetadata()
-                                                                                              .getSampleMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getLatestLeadDuration() ) );
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
 
         buildInitialParameters( source,
                                 orderIndex,
@@ -514,7 +509,7 @@ public abstract class XYChartDataSourceFactory
         };
 
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+                Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
 
         buildInitialParameters( source, orderIndex, timeWindows.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -563,7 +558,7 @@ public abstract class XYChartDataSourceFactory
         };
 
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+                Slicer.discover( input, next -> next.getMetadata().getThresholds() );
 
         buildInitialParameters( source, orderIndex, thresholds.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -631,7 +626,7 @@ public abstract class XYChartDataSourceFactory
             }
             yAxisValuesBySeries.add( yValues );
 
-            legendEntryBySeries.add( entry.getMetadata().getSampleMetadata().getThresholds().toStringWithoutUnits() );
+            legendEntryBySeries.add( entry.getMetadata().getThresholds().toStringWithoutUnits() );
         }
 
         //Creates the source.

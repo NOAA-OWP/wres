@@ -6,8 +6,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -22,7 +20,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
@@ -51,17 +48,13 @@ public final class PeirceSkillScoreTest
      * Metadata used for testing.
      */
 
-    private StatisticMetadata meta;
+    private SampleMetadata meta;
 
     @Before
     public void setUpBeforeEachTest()
     {
         this.pss = PeirceSkillScore.of();
-        this.meta = StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                          365,
-                                          MeasurementUnit.of(),
-                                          MetricConstants.PEIRCE_SKILL_SCORE,
-                                          MetricConstants.MAIN );
+        this.meta = Boilerplate.getSampleMetadata();
     }
 
     /**

@@ -1,30 +1,31 @@
 package wres.engine.statistics.metric.timeseries;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import com.google.protobuf.Timestamp;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.PairedStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
+import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 
 /**
  * Tests the {@link TimeToPeakError}.
@@ -33,9 +34,6 @@ import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
  */
 public final class TimeToPeakErrorTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link SumOfSquareError}.
@@ -46,63 +44,76 @@ public final class TimeToPeakErrorTest
     @Before
     public void setupBeforeEachTest()
     {
-        ttp = TimeToPeakError.of( new Random( 123456789 ) );
+        this.ttp = TimeToPeakError.of( new Random( 123456789 ) );
     }
 
     @Test
     public void testTimeToPeakError()
     {
         // Generate some data
-        PoolOfPairs<Double,Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+        PoolOfPairs<Double, Double> input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
         // Metadata for the output
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                           Instant.parse( "1985-01-02T00:00:00Z" ),
-                                           Duration.ofHours( 6 ),
-                                           Duration.ofHours( 18 ) );
-        final TimeWindowOuter timeWindow = window;
+                                                     Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                     Duration.ofHours( 6 ),
+                                                     Duration.ofHours( 18 ) );
+        TimeWindowOuter timeWindow = window;
 
-        StatisticMetadata m1 =
-                StatisticMetadata.of( new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                   .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
-                                                                                         "Streamflow" ) )
-                                                   .setTimeWindow( timeWindow )
-                                                   .build(),
-                                      input.get().size(),
-                                      MeasurementUnit.of( "DURATION" ),
-                                      MetricConstants.TIME_TO_PEAK_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                        .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
+                                                                                              "Streamflow" ) )
+                                                        .setTimeWindow( timeWindow )
+                                                        .build();
 
-        // Check the parameters
-        assertTrue( "Unexpected name for the Time-to-Peak Error.",
-                    ttp.getName().equals( MetricConstants.TIME_TO_PEAK_ERROR.toString() ) );
+        DurationDiagramStatisticOuter actual = this.ttp.apply( input );
 
-        // Check the results
-        PairedStatisticOuter<Instant, Duration> actual = ttp.apply( input );
-        List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
-        expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
-        expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
-        PairedStatisticOuter<Instant, Duration> expected = PairedStatisticOuter.of( expectedSource, m1 );
-        assertTrue( "Actual: " + actual.getData()
-                    + ". Expected: "
-                    + expected.getData()
-                    + ".",
-                    actual.equals( expected ) );
+        Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
+
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( firstInstant.getEpochSecond() )
+                                                                                  .setNanos( firstInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -21600 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( secondInstant.getEpochSecond() )
+                                                                                  .setNanos( secondInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 43200 ) )
+                                                               .build();
+
+        DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
+                                                                          .setMetric( TimeToPeakError.METRIC )
+                                                                          .addStatistics( one )
+                                                                          .addStatistics( two )
+                                                                          .build();
+
+        DurationDiagramStatisticOuter expected = DurationDiagramStatisticOuter.of( expectedSource, m1 );
+
+        assertEquals( expected, actual );
     }
 
     @Test
     public void testHasRealUnitsReturnsTrue()
     {
-        assertTrue( ttp.hasRealUnits() );
+        assertTrue( this.ttp.hasRealUnits() );
+    }
+
+    @Test
+    public void testGetName()
+    {
+        assertEquals( MetricConstants.TIME_TO_PEAK_ERROR.toString(), this.ttp.getName() );
     }
 
     @Test
     public void testApplyThrowsExceptionOnNullInput()
     {
-        //Check the exceptions
-        exception.expect( SampleDataException.class );
-
-        ttp.apply( null );
-    }  
+        assertThrows( SampleDataException.class, () -> this.ttp.apply( null ) );
+    }
 
 }

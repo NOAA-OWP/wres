@@ -1,7 +1,5 @@
 package wres.datamodel.statistics;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,10 +59,10 @@ public class StatisticsForProject
     private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPool = new ArrayList<>();
 
     /**
-     * Thread safe map for {@link PairedStatisticOuter}.
+     * Thread safe map for {@link DurationDiagramStatisticOuter}.
      */
 
-    private final List<Future<List<PairedStatisticOuter<Instant, Duration>>>> paired = new ArrayList<>();
+    private final List<Future<List<DurationDiagramStatisticOuter>>> paired = new ArrayList<>();
 
 
     /**
@@ -136,17 +134,17 @@ public class StatisticsForProject
     }
 
     /**
-     * Returns a {@link List} of {@link PairedStatisticOuter}.
+     * Returns a {@link List} of {@link DurationDiagramStatisticOuter}.
      * 
      * @return the paired output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<PairedStatisticOuter<Instant, Duration>> getInstantDurationPairStatistics()
+    public List<DurationDiagramStatisticOuter> getInstantDurationPairStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.PAIRED, this.paired );
+        return this.unwrap( StatisticType.DURATION_DIAGRAM, this.paired );
     }
 
     /**
@@ -170,7 +168,7 @@ public class StatisticsForProject
                 return !this.boxplotPerPair.isEmpty();
             case BOXPLOT_PER_POOL:
                 return !this.boxplotPerPool.isEmpty();
-            case PAIRED:
+            case DURATION_DIAGRAM:
                 return !this.paired.isEmpty();
             default:
                 return false;
@@ -212,9 +210,9 @@ public class StatisticsForProject
             returnMe.add( StatisticType.BOXPLOT_PER_POOL );
         }
 
-        if ( this.hasStatistic( StatisticType.PAIRED ) )
+        if ( this.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
-            returnMe.add( StatisticType.PAIRED );
+            returnMe.add( StatisticType.DURATION_DIAGRAM );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -263,10 +261,10 @@ public class StatisticsForProject
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Thread safe map for {@link PairedStatisticOuter}.
+         * Thread safe map for {@link DurationDiagramStatisticOuter}.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<PairedStatisticOuter<Instant, Duration>>>> pairedInternal =
+        private final ConcurrentLinkedQueue<Future<List<DurationDiagramStatisticOuter>>> pairedInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -350,7 +348,7 @@ public class StatisticsForProject
         }
 
         /**
-         * Adds a new {@link PairedStatisticOuter} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link DurationDiagramStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param result the result
@@ -358,7 +356,7 @@ public class StatisticsForProject
          */
 
         public Builder
-                addInstantDurationPairStatistics( Future<List<PairedStatisticOuter<Instant, Duration>>> result )
+                addInstantDurationPairStatistics( Future<List<DurationDiagramStatisticOuter>> result )
         {
             this.pairedInternal.add( result );
 
@@ -403,7 +401,7 @@ public class StatisticsForProject
                 this.addBoxPlotStatisticsPerPool( CompletableFuture.completedFuture( project.getBoxPlotStatisticsPerPool() ) );
             }
 
-            if ( project.hasStatistic( StatisticType.PAIRED ) )
+            if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
             {
                 this.addInstantDurationPairStatistics( CompletableFuture.completedFuture( project.getInstantDurationPairStatistics() ) );
             }
@@ -486,6 +484,5 @@ public class StatisticsForProject
 
         return Collections.unmodifiableList( returnMe );
     }
-
 
 }

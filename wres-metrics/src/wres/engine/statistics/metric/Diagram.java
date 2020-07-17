@@ -15,7 +15,7 @@ public abstract class Diagram<S extends SampleData<?>, T extends Statistic<?>> i
     @Override
     public String toString()
     {
-        return getID().toString();
+        return getMetricName().toString();
     }      
 
 }

@@ -43,7 +43,7 @@ public interface Metric<S extends SampleData<?>, T extends Statistic<?>> extends
      * @return a unique identifier
      */
 
-    MetricConstants getID();
+    MetricConstants getMetricName();
 
     /**
      * Returns true if the metric generates outputs that are dimensioned in real units, false if the outputs are in
@@ -64,14 +64,14 @@ public interface Metric<S extends SampleData<?>, T extends Statistic<?>> extends
     String toString();
 
     /**
-     * Returns the unique name of the metric, namely the string representation of {@link #getID()}.
+     * Returns the unique name of the metric, namely the string representation of {@link #getMetricName()}.
      * 
      * @return the unique metric name
      */
 
     default String getName()
     {
-        return this.getID().toString();
+        return this.getMetricName().toString();
     }
 
 }

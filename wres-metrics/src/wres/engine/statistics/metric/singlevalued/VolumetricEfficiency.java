@@ -8,7 +8,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -40,7 +39,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
                                                                        .setMaximum( 1 )
                                                                        .setOptimum( 1 )
                                                                        .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.SUM_OF_SQUARE_ERROR )
+                             .setName( MetricName.VOLUMETRIC_EFFICIENCY )
                              .build();
 
     /**
@@ -69,15 +68,6 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
             vP += Math.abs( nextPair.getLeft() - nextPair.getRight() );
         }
 
-        //Metadata
-        final StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      MetricConstants.MAIN,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      null );
-
         double result = Double.NaN;
 
         //Compute the atomic errors in a stream
@@ -97,7 +87,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
@@ -107,7 +97,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.VOLUMETRIC_EFFICIENCY;
     }

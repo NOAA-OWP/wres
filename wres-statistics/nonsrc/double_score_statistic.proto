@@ -18,6 +18,9 @@ message DoubleScoreStatistic
 
     repeated DoubleScoreStatisticComponent statistics = 2;
     // The score components.
+
+    int32 sample_size = 3;
+    // The number of pairs from which the statistic was computed.
     
     message DoubleScoreStatisticComponent
     {

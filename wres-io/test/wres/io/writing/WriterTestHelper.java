@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
+
+import com.google.protobuf.Timestamp;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -18,7 +19,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -26,8 +26,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -38,6 +37,9 @@ import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
@@ -49,6 +51,7 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramCom
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 
@@ -155,15 +158,10 @@ public class WriterTestHelper
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadataOne =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS,
-                                      null );
+        SampleMetadata fakeMetadataOne = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                            datasetIdentifier,
+                                                            timeOne,
+                                                            threshold );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS )
@@ -191,15 +189,10 @@ public class WriterTestHelper
                                     Duration.ofHours( 48 ),
                                     Duration.ofHours( 48 ) );
 
-        StatisticMetadata fakeMetadataTwo =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeTwo,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS,
-                                      null );
+        SampleMetadata fakeMetadataTwo = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                            datasetIdentifier,
+                                                            timeTwo,
+                                                            threshold );
 
         Box anotherBox = Box.newBuilder()
                             .addAllQuantiles( List.of( 11.0, 33.0, 55.0, 77.0, 99.0 ) )
@@ -244,15 +237,10 @@ public class WriterTestHelper
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
                                                          timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                      null );
+                                                         threshold );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -320,15 +308,10 @@ public class WriterTestHelper
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
                                                          timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.RELIABILITY_DIAGRAM,
-                                      null );
+                                                         threshold );
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
@@ -385,13 +368,13 @@ public class WriterTestHelper
     }
 
     /**
-     * Returns a {@link List} containing a {@link PairedStatisticOuter} that
+     * Returns a {@link List} containing a {@link DurationDiagramStatisticOuter} that
      * represents the output of time-to-peak error for each pair in a pool.
      * 
      * @return time time-to-peak errors for one pool
      */
 
-    public static List<PairedStatisticOuter<Instant, Duration>> getTimeToPeakErrorsForOnePool()
+    public static List<DurationDiagramStatisticOuter> getTimeToPeakErrorsForOnePool()
     {
 
         // location id
@@ -414,23 +397,59 @@ public class WriterTestHelper
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
                                                          timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.TIME_TO_PEAK_ERROR,
-                                      null );
+                                                         threshold );
 
-        List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
+        Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant thirdInstant = Instant.parse( "1985-01-03T00:00:00Z" );
 
-        // Fake output wrapper.
-        return Collections.singletonList( PairedStatisticOuter.of( fakeOutputs, fakeMetadata ) );
+        DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
+                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE )
+                                                                                                     .setNanos( 999_999_999 ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( 0 ) )
+                                                            .build();
+
+
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( firstInstant.getEpochSecond() )
+                                                                                  .setNanos( firstInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 3600 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( secondInstant.getEpochSecond() )
+                                                                                  .setNanos( secondInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 7200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                    .setNanos( thirdInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( 10800 ) )
+                                                                 .build();
+
+        DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
+                                                                          .setMetric( metric )
+                                                                          .addStatistics( one )
+                                                                          .addStatistics( two )
+                                                                          .addStatistics( three )
+                                                                          .build();
+
+        return Collections.singletonList( DurationDiagramStatisticOuter.of( expectedSource, fakeMetadata ) );
     }
 
     /**
@@ -456,34 +475,20 @@ public class WriterTestHelper
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadataA =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata fakeMetadataA = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                          datasetIdentifier,
+                                                          timeOne,
+                                                          threshold );
 
-        StatisticMetadata fakeMetadataB =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_ERROR,
-                                      MetricConstants.MAIN );
-        StatisticMetadata fakeMetadataC =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata fakeMetadataB = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                          datasetIdentifier,
+                                                          timeOne,
+                                                          threshold );
+
+        SampleMetadata fakeMetadataC = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                          datasetIdentifier,
+                                                          timeOne,
+                                                          threshold );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -545,18 +550,18 @@ public class WriterTestHelper
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
                                                          timeOne,
-                                                         threshold ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                      null );
+                                                         threshold );
+
+        DurationScoreMetric metric = DurationScoreMetric.newBuilder()
+                                                        .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
+                                                        .build();
 
         DurationScoreStatistic score =
                 DurationScoreStatistic.newBuilder()
+                                      .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
                                                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
@@ -599,15 +604,10 @@ public class WriterTestHelper
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
 
-        StatisticMetadata fakeMetadataA =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         thresholdOne ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata fakeMetadataA = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                          datasetIdentifier,
+                                                          timeOne,
+                                                          thresholdOne );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -625,30 +625,20 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        StatisticMetadata fakeMetadataB =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         thresholdTwo ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata fakeMetadataB = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                          datasetIdentifier,
+                                                          timeOne,
+                                                          thresholdTwo );
 
         DoubleScoreStatisticOuter fakeOutputB = DoubleScoreStatisticOuter.of( one, fakeMetadataB );
 
         // Add data for another time, and one threshold only
         TimeWindowOuter timeTwo = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
-        StatisticMetadata fakeMetadataC =
-                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeTwo,
-                                                         thresholdOne ),
-                                      1000,
-                                      MeasurementUnit.of(),
-                                      MetricConstants.MEAN_SQUARE_ERROR,
-                                      MetricConstants.MAIN );
+        SampleMetadata fakeMetadataC = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                          datasetIdentifier,
+                                                          timeTwo,
+                                                          thresholdOne );
 
         DoubleScoreStatisticOuter fakeOutputC = DoubleScoreStatisticOuter.of( one, fakeMetadataC );
 

@@ -25,7 +25,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -65,11 +64,7 @@ public final class BoxPlotErrorTest
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                       input.getRawData().size(),
-                                                       MeasurementUnit.of(),
-                                                       MetricConstants.BOX_PLOT_OF_ERRORS,
-                                                       MetricConstants.MAIN );
+        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of() );
 
         BoxplotStatisticOuter actual = this.boxPlotError.apply( input );
 
@@ -267,11 +262,7 @@ public final class BoxPlotErrorTest
 
         BoxplotStatisticOuter actual = this.boxPlotError.apply( input );
 
-        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
-                                                       0,
-                                                       MeasurementUnit.of(),
-                                                       MetricConstants.BOX_PLOT_OF_ERRORS,
-                                                       MetricConstants.MAIN );
+        SampleMetadata meta = SampleMetadata.of();
 
         List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
         List<Double> quantiles = List.of( Double.NaN,

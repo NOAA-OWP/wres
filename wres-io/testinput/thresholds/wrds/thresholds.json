@@ -1,0 +1,308 @@
+{
+    "_documentation": "***REMOVED***.***REMOVED***.***REMOVED***/docs/stage/location/swagger/",
+    "_metrics": {
+        "threshold_count": 13,
+        "total_request_time": 0.256730318069458
+    },
+    "thresholds": [
+        {
+            "metadata": {
+                "location_id": "PTSA1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "0.0",
+                "minor_stage": "0.0",
+                "moderate_stage": "0.0",
+                "major_stage": "0.0",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "MNTG1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "11.0",
+                "minor_stage": "20.0",
+                "moderate_stage": "28.0",
+                "major_stage": "31.0",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "MNTG1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "11.0",
+                "action_stage": "11.0",
+                "minor_stage": "20.0",
+                "moderate_stage": "28.0",
+                "major_stage": "31.0",
+                "record_stage": "34.11"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "BLOF1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "13.0",
+                "minor_stage": "17.0",
+                "moderate_stage": "23.5",
+                "major_stage": "26.0",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "BLOF1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "15.0",
+                "action_stage": "13.0",
+                "minor_stage": "17.0",
+                "moderate_stage": "23.5",
+                "major_stage": "26.0",
+                "record_stage": "28.6"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "CEDG1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "0.0",
+                "minor_stage": "0.0",
+                "moderate_stage": "0.0",
+                "major_stage": "0.0",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "SMAF1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "8.0",
+                "minor_stage": "9.5",
+                "moderate_stage": "11.5",
+                "major_stage": "13.5",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "SMAF1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "8.0",
+                "minor_stage": "9.5",
+                "moderate_stage": "11.5",
+                "major_stage": "13.5",
+                "record_stage": "15.36"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "CHAF1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "56.0",
+                "minor_stage": "0.0",
+                "moderate_stage": "0.0",
+                "major_stage": "0.0",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "OKFG1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "18.0",
+                "minor_stage": "23.0",
+                "moderate_stage": "0.0",
+                "major_stage": "0.0",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "OKFG1",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "0.0",
+                "action_stage": "18.0",
+                "minor_stage": "23.0",
+                "moderate_stage": "None",
+                "major_stage": "None",
+                "record_stage": "40.1"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "TLPT2",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-CMS",
+                "threshold_source_description": "National Weather Service - CMS",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "None",
+                "action_stage": "0.0",
+                "minor_stage": "15.0",
+                "moderate_stage": "0.0",
+                "major_stage": "0.0",
+                "record_stage": "None"
+            },
+            "calculated_values": {}
+        },
+        {
+            "metadata": {
+                "location_id": "TLPT2",
+                "id_type": "NWS Station",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database",
+                "rating_source": "NRLDB",
+                "rating_source_description": "NRLDB",
+                "stage_unit": "FT",
+                "flow_unit": "CFS",
+                "rating": {}
+            },
+            "original_values": {
+                "low_stage": "None",
+                "bankfull_stage": "15.0",
+                "action_stage": "None",
+                "minor_stage": "15.0",
+                "moderate_stage": "None",
+                "major_stage": "None",
+                "record_stage": "16.02"
+            },
+            "calculated_values": {}
+        }
+    ]
+}

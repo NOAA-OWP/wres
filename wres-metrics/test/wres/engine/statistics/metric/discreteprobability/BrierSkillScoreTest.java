@@ -21,7 +21,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -63,12 +62,7 @@ public final class BrierSkillScoreTest
         SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         // Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BRIER_SKILL_SCORE,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = Boilerplate.getSampleMetadata();
 
         // Check the results       
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
@@ -100,14 +94,9 @@ public final class BrierSkillScoreTest
         SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BRIER_SKILL_SCORE,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = Boilerplate.getSampleMetadata();
 
-        // Check the results       
+        // Check the results
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
@@ -224,7 +213,11 @@ public final class BrierSkillScoreTest
     @Test
     public void testApplyNaNOutputWithNaNBaseline()
     {
-        assertEquals( Double.NaN,  this.brierSkillScore.apply( MetricTestDataFactory.getDiscreteProbabilityPairsFour() )
-                      .getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN,
+                      this.brierSkillScore.apply( MetricTestDataFactory.getDiscreteProbabilityPairsFour() )
+                                          .getComponent( MetricConstants.MAIN )
+                                          .getData()
+                                          .getValue(),
+                      0.0 );
     }
 }

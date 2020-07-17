@@ -2,8 +2,6 @@ package wres.engine.statistics.metric.timeseries;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -12,15 +10,19 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Timestamp;
+
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.statistics.PairedStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 
 /**
  * <p>Constructs a {@link Metric} that returns the difference in time between the maximum values recorded in the left
@@ -34,11 +36,26 @@ public class TimeToPeakError extends TimingError
 {
 
     /**
+     * Canonical representation of the metric.
+     */
+
+    public static final DurationDiagramMetric METRIC = DurationDiagramMetric.newBuilder()
+                                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                     .setSeconds( Long.MIN_VALUE )
+                                                                                                                     .setNanos( 999_999_999 ) )
+                                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                     .setSeconds( 0 ) )
+                                                                            .build();
+
+    /**
      * Logger.
      */
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeToPeakError.class );
-    
+
     /**
      * Returns an instance.
      * 
@@ -63,7 +80,7 @@ public class TimeToPeakError extends TimingError
     }
 
     @Override
-    public PairedStatisticOuter<Instant, Duration> apply( PoolOfPairs<Double,Double> s )
+    public DurationDiagramStatisticOuter apply( PoolOfPairs<Double, Double> s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -71,9 +88,9 @@ public class TimeToPeakError extends TimingError
         }
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
-        List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
-        int sampleSize = 0;
-        for ( TimeSeries<Pair<Double,Double>> next : s.get() )
+        DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder()
+                                                                           .setMetric( TimeToPeakError.METRIC );
+        for ( TimeSeries<Pair<Double, Double>> next : s.get() )
         {
             // Some events?
             if ( !next.getEvents().isEmpty() )
@@ -98,23 +115,24 @@ public class TimeToPeakError extends TimingError
                                   s.hashCode() );
                 }
 
-                returnMe.add( Pair.of( referenceTime, error ) );
-                sampleSize++;
+                PairOfInstantAndDuration pair = PairOfInstantAndDuration.newBuilder()
+                                                                        .setTime( Timestamp.newBuilder()
+                                                                                           .setSeconds( referenceTime.getEpochSecond() )
+                                                                                           .setNanos( referenceTime.getNano() ) )
+                                                                        .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                                  .setSeconds( error.getSeconds() )
+                                                                                                                  .setNanos( error.getNano() ) )
+                                                                        .build();
+
+                builder.addStatistics( pair );
             }
         }
 
-        // Create output metadata
-        StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
-                                                       sampleSize,
-                                                       MeasurementUnit.of( "DURATION" ),
-                                                       this.getID(),
-                                                       MetricConstants.MAIN );
-
-        return PairedStatisticOuter.of( returnMe, meta );
+        return DurationDiagramStatisticOuter.of( builder.build(), s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.TIME_TO_PEAK_ERROR;
     }

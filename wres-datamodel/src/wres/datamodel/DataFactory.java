@@ -28,13 +28,13 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.statistics.PairedStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DurationDiagramStatistic;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -362,58 +362,56 @@ public final class DataFactory
     }
 
     /**
-     * Forms the union of the {@link PairedStatisticOuter}, returning a {@link PairedStatisticOuter} that contains all of the 
+     * Forms the union of the {@link DurationDiagramStatisticOuter}, returning a {@link DurationDiagramStatisticOuter} that contains all of the 
      * pairs in the inputs.
      * 
      * @param <S> the left side of the paired output
      * @param <T> the right side of the paired output
      * @param collection the list of inputs
-     * @return a combined {@link PairedStatisticOuter}
+     * @return a combined {@link DurationDiagramStatisticOuter}
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the input is empty
      */
 
-    public static <S, T> PairedStatisticOuter<S, T> unionOf( Collection<PairedStatisticOuter<S, T>> collection )
+    public static <S, T> DurationDiagramStatisticOuter unionOf( Collection<DurationDiagramStatisticOuter> collection )
     {
         Objects.requireNonNull( collection );
-        
-        if( collection.isEmpty() )
+
+        if ( collection.isEmpty() )
         {
             throw new IllegalArgumentException( "Specify one or more sets of pairs to combine." );
         }
-        
-        List<Pair<S, T>> combined = new ArrayList<>();
+
+        DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder();
+        builder.setMetric( collection.iterator().next().getData().getMetric() );
         List<TimeWindowOuter> combinedWindows = new ArrayList<>();
-        StatisticMetadata sourceMeta = null;
-        for ( PairedStatisticOuter<S, T> next : collection )
+        SampleMetadata sourceMeta = null;
+
+        for ( DurationDiagramStatisticOuter next : collection )
         {
-            combined.addAll( next.getData() );
+            builder.addAllStatistics( next.getData().getStatisticsList() );
+
             if ( Objects.isNull( sourceMeta ) )
             {
                 sourceMeta = next.getMetadata();
             }
-            combinedWindows.add( next.getMetadata().getSampleMetadata().getTimeWindow() );
+            combinedWindows.add( next.getMetadata().getTimeWindow() );
         }
-        
-        if( Objects.isNull( sourceMeta ) )
+
+        if ( Objects.isNull( sourceMeta ) )
         {
             throw new IllegalArgumentException( "Cannot find the union of input whose metadata is missing." );
         }
-        
+
         TimeWindowOuter unionWindow = null;
         if ( !combinedWindows.isEmpty() )
         {
             unionWindow = TimeWindowOuter.unionOf( combinedWindows );
         }
 
-        StatisticMetadata combinedMeta =
-                StatisticMetadata.of( SampleMetadata.of( sourceMeta.getSampleMetadata(), unionWindow ),
-                                      combined.size(),
-                                      sourceMeta.getMeasurementUnit(),
-                                      sourceMeta.getMetricID(),
-                                      sourceMeta.getMetricComponentID() );
-        
-        return PairedStatisticOuter.of( combined, combinedMeta );
+        DurationDiagramStatistic statistic = builder.build();
+
+        return DurationDiagramStatisticOuter.of( statistic, SampleMetadata.of( sourceMeta, unionWindow ) );
     }
 
     /**
@@ -583,7 +581,7 @@ public final class DataFactory
                 returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
             }
         }
-        
+
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
     }
 

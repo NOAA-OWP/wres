@@ -109,7 +109,7 @@ public class CalculatedThresholdValues implements Serializable {
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
     public Double getBankfull_flow() {
-        if (this.bankfull_flow == null || this.low_flow.toLowerCase().equals("none")) {
+        if (this.bankfull_flow == null || this.bankfull_flow.toLowerCase().equals("none")) {
             return null;
         }
         return Double.parseDouble(this.bankfull_flow);

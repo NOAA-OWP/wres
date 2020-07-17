@@ -5,9 +5,13 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import net.jcip.annotations.Immutable;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
@@ -25,6 +29,12 @@ public class DurationScoreStatisticOuter
 {
 
     /**
+     * The metric name.
+     */
+
+    private final MetricConstants metricName;
+
+    /**
      * Construct the statistic.
      * 
      * @param statistic the verification statistic
@@ -33,7 +43,7 @@ public class DurationScoreStatisticOuter
      * @return an instance of the output
      */
 
-    public static DurationScoreStatisticOuter of( DurationScoreStatistic statistic, StatisticMetadata metadata )
+    public static DurationScoreStatisticOuter of( DurationScoreStatistic statistic, SampleMetadata metadata )
     {
         return new DurationScoreStatisticOuter( statistic, metadata );
     }
@@ -46,6 +56,13 @@ public class DurationScoreStatisticOuter
 
     public static class DurationScoreComponentOuter extends BasicScoreComponent<DurationScoreStatisticComponent>
     {
+
+        /**
+         * The component name.
+         */
+
+        private final MetricConstants metricName;
+
         /**
          * Hidden constructor.
          * @param name the name
@@ -55,9 +72,11 @@ public class DurationScoreStatisticOuter
 
         private DurationScoreComponentOuter( MetricConstants name,
                                              DurationScoreStatisticComponent component,
-                                             StatisticMetadata metadata )
+                                             SampleMetadata metadata )
         {
             super( name, component, metadata, next -> MessageFactory.parse( next.getValue() ).toString() );
+
+            this.metricName = MetricConstants.valueOf( component.getName().name() );
         }
 
         /**
@@ -72,10 +91,36 @@ public class DurationScoreStatisticOuter
 
         public static DurationScoreComponentOuter of( MetricConstants name,
                                                       DurationScoreStatisticComponent component,
-                                                      StatisticMetadata metadata )
+                                                      SampleMetadata metadata )
         {
             return new DurationScoreComponentOuter( name, component, metadata );
         }
+
+        @Override
+        public MetricConstants getMetricName()
+        {
+            return this.metricName;
+        }
+    }
+
+    @Override
+    public MetricConstants getMetricName()
+    {
+        return this.metricName;
+    }
+
+    @Override
+    public String toString()
+    {
+        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
+
+        builder.append( "metric", this.getData().getMetric().getName() );
+
+        this.getInternalMapping().forEach( ( key, value ) -> builder.append( "value", value ) );
+
+        builder.append( "metadata", this.getMetadata() );
+
+        return builder.toString();
     }
 
     /**
@@ -84,9 +129,11 @@ public class DurationScoreStatisticOuter
      * @param score the score
      */
 
-    private DurationScoreStatisticOuter( DurationScoreStatistic score, StatisticMetadata metadata )
+    private DurationScoreStatisticOuter( DurationScoreStatistic score, SampleMetadata metadata )
     {
         super( score, DurationScoreStatisticOuter.createInternalMapping( score, metadata ), metadata );
+
+        this.metricName = MetricConstants.valueOf( score.getMetric().getName().name() );
     }
 
     /**
@@ -99,7 +146,7 @@ public class DurationScoreStatisticOuter
 
     private static Map<MetricConstants, DurationScoreComponentOuter>
             createInternalMapping( DurationScoreStatistic score,
-                                   StatisticMetadata metadata )
+                                   SampleMetadata metadata )
     {
         Map<MetricConstants, DurationScoreComponentOuter> returnMe = new EnumMap<>( MetricConstants.class );
 

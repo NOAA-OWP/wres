@@ -26,10 +26,10 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
+import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
@@ -374,12 +374,12 @@ public final class Slicer
     }
 
     /**
-     * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
+     * <p>Returns a subset of metric outputs whose {@link SampleMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindowOuter} and {@link OneOrTwoThresholds} associated with the 
      * output metadata:</p>
      * 
-     * <p><code>Slicer.filter( list, a {@literal ->} a.getSampleMetadata().getTimeWindow().equals( someWindow ) 
-     *                      {@literal &&} a.getSampleMetadata().getThresholds().equals( someThreshold ) );</code></p>
+     * <p><code>Slicer.filter( list, a {@literal ->} a.getMetadata().getTimeWindow().equals( someWindow ) 
+     *                      {@literal &&} a.getMetadata().getThresholds().equals( someThreshold ) );</code></p>
      *              
      * @param <T> the output type
      * @param outputs the outputs to filter
@@ -389,43 +389,27 @@ public final class Slicer
      */
 
     public static <T extends Statistic<?>> List<T> filter( List<T> outputs,
-                                                           Predicate<StatisticMetadata> predicate )
+                                                           Predicate<T> predicate )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( predicate, NULL_INPUT_EXCEPTION );
 
-        List<T> results = new ArrayList<>();
-
-        // Filter
-        for ( T next : outputs )
-        {
-            if ( predicate.test( next.getMetadata() ) )
-            {
-                results.add( next );
-            }
-        }
-
-        return Collections.unmodifiableList( results );
+        return outputs.stream().filter( predicate ).collect( Collectors.toUnmodifiableList() );
     }
-
+    
     /**
      * <p>Discovers the unique instances of a given type of statistic. The mapper function identifies the type to 
      * discover. For example, to discover the unique thresholds contained in the list of outputs:</p>
      * 
      * <p><code>Slicer.discover( outputs, next {@literal ->} 
-     *                                         next.getMetadata().getSampleMetadata().getThresholds() );</code></p>
-     * 
-     * <p>To discover the unique metrics contained in the list of outputs:</p>
-     * 
-     * <p><code>Slicer.discover( outputs, next {@literal ->}
-     *                                         next.getSampleMetadata().getMetadata().getMetricID() );</code></p>
+     *                                         next.getMetadata().getThresholds() );</code></p>
      * 
      * <p>To discover the unique pairs of lead times in the list of outputs:</p>
      * 
      * <p><code>Slicer.discover( outputs, next {@literal ->} 
-     * Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow().getEarliestLeadTime(), 
-     * next.getMetadata().getSampleMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
+     * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
+     * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
      * 
      * <p>Returns the empty set if no elements are mapped.</p>
      * 
@@ -469,8 +453,10 @@ public final class Slicer
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( metricIdentifier, NULL_INPUT_EXCEPTION );
-
-        return Slicer.filter( outputs, meta -> meta.getMetricID() == metricIdentifier );
+        
+        return outputs.stream()
+                      .filter( next -> metricIdentifier == next.getMetricName() )
+                      .collect( Collectors.toUnmodifiableList() );
     }
 
     /**

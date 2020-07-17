@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric.processing;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -19,7 +17,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -66,10 +64,10 @@ class MetricFuturesByTime
     private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPool = new ArrayList<>();    
     
     /**
-     * {@link PairedStatisticOuter} results.
+     * {@link DurationDiagramStatisticOuter} results.
      */
 
-    private final List<Future<List<PairedStatisticOuter<Instant, Duration>>>> paired = new ArrayList<>();
+    private final List<Future<List<DurationDiagramStatisticOuter>>> paired = new ArrayList<>();
 
     /**
      * Returns the results associated with the futures.
@@ -129,7 +127,7 @@ class MetricFuturesByTime
 
         if ( !this.paired.isEmpty() )
         {
-            returnMe.add( StatisticType.PAIRED );
+            returnMe.add( StatisticType.DURATION_DIAGRAM );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -189,10 +187,10 @@ class MetricFuturesByTime
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link PairedStatisticOuter} results.
+         * {@link DurationDiagramStatisticOuter} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<PairedStatisticOuter<Instant, Duration>>>> paired =
+        private final ConcurrentLinkedQueue<Future<List<DurationDiagramStatisticOuter>>> paired =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -266,13 +264,13 @@ class MetricFuturesByTime
         }        
 
         /**
-         * Adds a set of future {@link PairedStatisticOuter} to the appropriate internal store.
+         * Adds a set of future {@link DurationDiagramStatisticOuter} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addPairedOutput( Future<List<PairedStatisticOuter<Instant, Duration>>> value )
+        MetricFuturesByTimeBuilder addPairedOutput( Future<List<DurationDiagramStatisticOuter>> value )
         {
             this.paired.add( value );
 
@@ -360,7 +358,7 @@ class MetricFuturesByTime
                     {
                         this.boxplotPerPool.addAll( futures.boxplotPerPool );
                     }
-                    else if ( nextGroup == StatisticType.PAIRED )
+                    else if ( nextGroup == StatisticType.DURATION_DIAGRAM )
                     {
                         this.paired.addAll( futures.paired );
                     }

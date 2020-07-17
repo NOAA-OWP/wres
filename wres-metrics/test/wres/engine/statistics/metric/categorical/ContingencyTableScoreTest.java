@@ -13,7 +13,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -21,14 +20,10 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -56,7 +51,7 @@ public final class ContingencyTableScoreTest
      * Metadata used for testing.
      */
 
-    private StatisticMetadata meta;
+    private SampleMetadata meta;
 
     /**
      * Contingency table.
@@ -74,11 +69,7 @@ public final class ContingencyTableScoreTest
     public void setupBeforeEachTest()
     {
         this.cs = ThreatScore.of();
-        this.meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                          365,
-                                          MeasurementUnit.of(),
-                                          MetricConstants.CONTINGENCY_TABLE,
-                                          MetricConstants.MAIN );
+        this.meta = SampleMetadata.of( MeasurementUnit.of() );
 
         this.table =
                 DoubleScoreStatistic.newBuilder()
@@ -98,6 +89,7 @@ public final class ContingencyTableScoreTest
                                     .build();
 
         this.invalidTable = DoubleScoreStatistic.newBuilder()
+                                                .setMetric( ContingencyTable.METRIC )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                              .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
                                                                                              .setValue( 82.0 ) )
@@ -160,19 +152,14 @@ public final class ContingencyTableScoreTest
     @Test
     public void testGetCollectionInput()
     {
-        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final StatisticMetadata m1 =
-                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.CONTINGENCY_TABLE,
-                                      null );
+        SampleMetadata m1 = Boilerplate.getSampleMetadata();
 
-        final DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, m1 );
+        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, m1 );
 
-        final DoubleScoreStatisticOuter actual = this.cs.getInputForAggregation( input );
+        DoubleScoreStatisticOuter actual = this.cs.getInputForAggregation( input );
 
         assertEquals( "Unexpected result for the contingency table.", expected, actual );
     }
@@ -204,16 +191,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testGetMetadataReturnsExpectedOutput()
     {
-        final SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
+        SampleData<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        final StatisticMetadata expected =
-                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.THREAT_SCORE,
-                                      MetricConstants.MAIN );
+        SampleMetadata expected = Boilerplate.getSampleMetadata();
 
-        assertTrue( this.cs.getMetadata( this.cs.getInputForAggregation( input ) ).equals( expected ) );
+        assertEquals( expected, this.cs.getInputForAggregation( input ).getMetadata() );
     }
 
     /**

@@ -12,22 +12,22 @@ public class ThresholdMetadata implements Serializable {
     String threshold_source;
     String threshold_source_description;
     String rating_source;
-    String rating_source_definition;
+    String rating_source_description;
     String stage_unit;
     String flow_unit;
     Map<String, String> rating;
 
-    String getLocation_id()
+    public String getLocation_id()
     {
         return this.location_id;
     }
 
-    String getId_type()
+    public String getId_type()
     {
         return id_type;
     }
 
-    String getThreshold_source()
+    public String getThreshold_source()
     {
         if (this.threshold_source.equals("None")) {
             return null;
@@ -35,7 +35,7 @@ public class ThresholdMetadata implements Serializable {
         return this.threshold_source;
     }
 
-    String getThreshold_source_description()
+    public String getThreshold_source_description()
     {
         return this.threshold_source_description;
     }
@@ -73,14 +73,14 @@ public class ThresholdMetadata implements Serializable {
         this.rating_source = rating_source;
     }
 
-    public String getRating_source_definition()
+    public String getRating_source_description()
     {
-        return rating_source_definition;
+        return rating_source_description;
     }
 
-    public void setRating_source_definition(String rating_source_definition)
+    public void setRating_source_description(String rating_source_description)
     {
-        this.rating_source_definition = rating_source_definition;
+        this.rating_source_description = rating_source_description;
     }
 
     public String getStage_unit()

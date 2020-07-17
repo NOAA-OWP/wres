@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric.categorical;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -11,7 +9,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.statistics.generated.MetricName;
@@ -134,19 +131,11 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
                                                                                  .setValue( returnMe[1][1] ) )
                                     .build();
 
-        final StatisticMetadata metOut =
-                StatisticMetadata.of( s.getMetadata(),
-                                      this.getID(),
-                                      null,
-                                      this.hasRealUnits(),
-                                      s.getRawData().size(),
-                                      null );
-
-        return DoubleScoreStatisticOuter.of( table, metOut );
+        return DoubleScoreStatisticOuter.of( table, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.CONTINGENCY_TABLE;
     }
@@ -160,7 +149,7 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
     @Override
     public String toString()
     {
-        return getID().toString();
+        return getMetricName().toString();
     }
 
     @Override

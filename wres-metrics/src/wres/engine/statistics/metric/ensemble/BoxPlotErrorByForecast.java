@@ -11,7 +11,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -93,7 +92,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE;
     }
@@ -114,7 +113,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      */
 
     @Override
-    Box getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata )
+    Box getBox( Pair<Double, Ensemble> pair )
     {
         //Get the sorted errors
         List<Double> probs = this.getMetric().getQuantilesList();

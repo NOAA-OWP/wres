@@ -1,7 +1,5 @@
 package wres.engine.statistics.metric.processing;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -35,7 +33,7 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -71,10 +69,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume a {@link PoolOfPairs} with single-valued pairs 
-     * and produce {@link PairedStatisticOuter}.
+     * and produce {@link DurationDiagramStatisticOuter}.
      */
 
-    private final MetricCollection<PoolOfPairs<Double, Double>, PairedStatisticOuter<Instant, Duration>, PairedStatisticOuter<Instant, Duration>> timeSeries;
+    private final MetricCollection<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> timeSeries;
 
     /**
      * An instance of {@link TimingErrorDurationStatistics} for each timing error metric that requires 
@@ -122,7 +120,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
             this.processTimeSeriesPairs( inputNoMissing,
                                          futures,
-                                         StatisticType.PAIRED );
+                                         StatisticType.DURATION_DIAGRAM );
         }
 
         // Log
@@ -165,10 +163,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Construct the metrics
 
         //Time-series 
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRED ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ) )
         {
             MetricConstants[] timingErrorMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                    StatisticType.PAIRED );
+                                                                    StatisticType.DURATION_DIAGRAM );
             this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                                 timingErrorMetrics );
 
@@ -268,7 +266,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         // Determine whether to compute summary statistics
         boolean proceed = this.hasCachedMetricOutput()
-                          && this.getCachedMetricOutputInternal().hasStatistic( StatisticType.PAIRED );
+                          && this.getCachedMetricOutputInternal().hasStatistic( StatisticType.DURATION_DIAGRAM );
 
         // Summary statistics not already computed
         proceed = proceed && !this.getCachedMetricOutputInternal().hasStatistic( StatisticType.DURATION_SCORE );
@@ -283,25 +281,26 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             for ( Entry<MetricConstants, TimingErrorDurationStatistics> nextStats : this.timingErrorDurationStatistics.entrySet() )
             {
                 // Obtain the output for the current statistic
-                List<PairedStatisticOuter<Instant, Duration>> output =
-                        Slicer.filter( this.getCachedMetricOutputInternal().getInstantDurationPairStatistics(), nextStats.getKey() );
+                List<DurationDiagramStatisticOuter> output =
+                        Slicer.filter( this.getCachedMetricOutputInternal().getInstantDurationPairStatistics(),
+                                       nextStats.getKey() );
 
                 // Compute the collection of statistics for the next timing error metric
                 TimingErrorDurationStatistics timeToPeakErrorStats = nextStats.getValue();
 
                 SortedSet<OneOrTwoThresholds> thresholds =
-                        Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+                        Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
 
                 // Iterate through the thresholds
                 for ( OneOrTwoThresholds threshold : thresholds )
                 {
                     // Filter by current threshold  
-                    List<PairedStatisticOuter<Instant, Duration>> sliced =
+                    List<DurationDiagramStatisticOuter> sliced =
                             Slicer.filter( output,
-                                           next -> next.getSampleMetadata().getThresholds().equals( threshold ) );
+                                           next -> next.getMetadata().getThresholds().equals( threshold ) );
 
                     // Find the union of the paired output
-                    PairedStatisticOuter<Instant, Duration> union = DataFactory.unionOf( sliced );
+                    DurationDiagramStatisticOuter union = DataFactory.unionOf( sliced );
 
                     //Build the future result
                     Supplier<List<DurationScoreStatisticOuter>> supplier = () -> {
@@ -465,7 +464,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Build the future result
             final PoolOfPairs<Double, Double> finalPairs = pairs;
-            Future<List<PairedStatisticOuter<Instant, Duration>>> output =
+            Future<List<DurationDiagramStatisticOuter>> output =
                     CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    thresholdExecutor );
 

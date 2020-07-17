@@ -10,6 +10,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.protobuf.Timestamp;
+
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
@@ -23,21 +25,26 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.PairedStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 
@@ -61,7 +68,7 @@ public abstract class Chart2DTestDataGenerator
     public static List<DoubleScoreStatisticOuter> getMetricOutputMapByLeadThresholdOne()
             throws IOException
     {
-        List<DoubleScoreStatisticOuter> full = getScalarMetricOutputMapByLeadThreshold();
+        List<DoubleScoreStatisticOuter> full = Chart2DTestDataGenerator.getScalarMetricOutputMapByLeadThreshold();
         List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
 
         double[][] allow =
@@ -74,7 +81,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                OneOrTwoDoubles.of( next[0] ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
-            Slicer.filter( full, data -> filter.equals( data.getSampleMetadata().getThresholds() ) )
+            Slicer.filter( full, data -> filter.equals( data.getMetadata().getThresholds() ) )
                   .forEach( statistics::add );
         }
 
@@ -91,7 +98,7 @@ public abstract class Chart2DTestDataGenerator
     public static List<DoubleScoreStatisticOuter> getMetricOutputMapByLeadThresholdTwo()
             throws IOException
     {
-        List<DoubleScoreStatisticOuter> full = getScalarMetricOutputMapByLeadThreshold();
+        List<DoubleScoreStatisticOuter> full = Chart2DTestDataGenerator.getScalarMetricOutputMapByLeadThreshold();
         List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
 
         final int[] allow = new int[] { 42, 258, 474, 690 };
@@ -100,7 +107,7 @@ public abstract class Chart2DTestDataGenerator
             TimeWindowOuter filter = TimeWindowOuter.of( Instant.MIN,
                                                          Instant.MAX,
                                                          Duration.ofHours( next ) );
-            Slicer.filter( full, data -> filter.equals( data.getSampleMetadata().getTimeWindow() ) )
+            Slicer.filter( full, data -> filter.equals( data.getMetadata().getTimeWindow() ) )
                   .forEach( statistics::add );
         }
 
@@ -120,14 +127,12 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        DoubleScoreStatistic one = DoubleScoreStatistic.getDefaultInstance();
+        DoubleScoreStatistic one = DoubleScoreStatistic.newBuilder()
+                                                       .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                    .setName( MetricName.MEAN_ERROR ) )
+                                                       .build();
         DoubleScoreStatisticOuter value =
-                DoubleScoreStatisticOuter.of( one,
-                                              StatisticMetadata.of( SampleMetadata.of(),
-                                                                    1000,
-                                                                    MeasurementUnit.of(),
-                                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                    MetricConstants.MAIN ) );
+                DoubleScoreStatisticOuter.of( one, SampleMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -148,14 +153,12 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        DoubleScoreStatistic one = DoubleScoreStatistic.getDefaultInstance();
+        DoubleScoreStatistic one = DoubleScoreStatistic.newBuilder()
+                                                       .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                    .setName( MetricName.MEAN_ERROR ) )
+                                                       .build();
         DoubleScoreStatisticOuter value =
-                DoubleScoreStatisticOuter.of( one,
-                                              StatisticMetadata.of( SampleMetadata.of(),
-                                                                    1000,
-                                                                    MeasurementUnit.of(),
-                                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                    MetricConstants.MAIN ) );
+                DoubleScoreStatisticOuter.of( one, SampleMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -176,14 +179,12 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic statistic = DiagramStatistic.getDefaultInstance();
+        DiagramStatistic statistic =
+                DiagramStatistic.newBuilder()
+                                .setMetric( DiagramMetric.newBuilder().setName( MetricName.RELIABILITY_DIAGRAM ) )
+                                .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( statistic,
-                                          StatisticMetadata.of( SampleMetadata.of(),
-                                                                1000,
-                                                                MeasurementUnit.of(),
-                                                                MetricConstants.RELIABILITY_DIAGRAM,
-                                                                MetricConstants.MAIN ) );
+                DiagramStatisticOuter.of( statistic, SampleMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -206,14 +207,12 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic rocDiagram = DiagramStatistic.getDefaultInstance();
+        DiagramStatistic rocDiagram = DiagramStatistic.newBuilder()
+                                                      .setMetric( DiagramMetric.newBuilder()
+                                                                               .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) )
+                                                      .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( rocDiagram,
-                                          StatisticMetadata.of( SampleMetadata.of(),
-                                                                1000,
-                                                                MeasurementUnit.of(),
-                                                                MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                                MetricConstants.MAIN ) );
+                DiagramStatisticOuter.of( rocDiagram, SampleMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -236,14 +235,12 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic histogram = DiagramStatistic.getDefaultInstance();
+        DiagramStatistic histogram = DiagramStatistic.newBuilder()
+                                                     .setMetric( DiagramMetric.newBuilder()
+                                                                              .setName( MetricName.RANK_HISTOGRAM ) )
+                                                     .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( histogram,
-                                          StatisticMetadata.of( SampleMetadata.of(),
-                                                                1000,
-                                                                MeasurementUnit.of(),
-                                                                MetricConstants.RANK_HISTOGRAM,
-                                                                MetricConstants.MAIN ) );
+                DiagramStatisticOuter.of( histogram, SampleMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -266,14 +263,12 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        DiagramStatistic qqDiagram = DiagramStatistic.getDefaultInstance();
+        DiagramStatistic qqDiagram = DiagramStatistic.newBuilder()
+                                                     .setMetric( DiagramMetric.newBuilder()
+                                                                              .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM ) )
+                                                     .build();
         DiagramStatisticOuter value =
-                DiagramStatisticOuter.of( qqDiagram,
-                                          StatisticMetadata.of( SampleMetadata.of(),
-                                                                1000,
-                                                                MeasurementUnit.of( "MILLIMETER" ),
-                                                                MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                                MetricConstants.MAIN ) );
+                DiagramStatisticOuter.of( qqDiagram, SampleMetadata.of() );
 
         //Append result
         rawData.add( value );
@@ -296,12 +291,11 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        BoxplotStatistic boxplot = BoxplotStatistic.getDefaultInstance();
-        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
-                                                       1000,
-                                                       MeasurementUnit.of( "INCH" ),
-                                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                       MetricConstants.MAIN );
+        BoxplotStatistic boxplot = BoxplotStatistic.newBuilder()
+                                                   .setMetric( BoxplotMetric.newBuilder()
+                                                                            .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) )
+                                                   .build();
+        SampleMetadata meta = SampleMetadata.of();
 
         BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, meta );
 
@@ -326,14 +320,13 @@ public abstract class Chart2DTestDataGenerator
 
         // See #58348. There are no useful assertions about this dataset at present. If we develop some, then replace
         // this dataset with something meaningful that does not rely on files being read by the EVS
-        BoxplotStatistic boxplot = BoxplotStatistic.getDefaultInstance();
-        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of(),
-                                                       1000,
-                                                       MeasurementUnit.of( "INCH" ),
-                                                       MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                       MetricConstants.MAIN );
+        BoxplotStatistic boxplot = BoxplotStatistic.newBuilder()
+                                                   .setMetric( BoxplotMetric.newBuilder()
+                                                                            .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
+                                                   .build();
+        SampleMetadata metadata = SampleMetadata.of();
 
-        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, meta );
+        BoxplotStatisticOuter out = BoxplotStatisticOuter.of( boxplot, metadata );
 
         //Append result
         rawData.add( out );
@@ -399,13 +392,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter sixHourOutput =
-                    DoubleScoreStatisticOuter.of( sixHour,
-                                                  StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                           sixHourWindow ),
-                                                                        90,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                        MetricConstants.MAIN ) );
+                    DoubleScoreStatisticOuter.of( sixHour, SampleMetadata.of( source, sixHourWindow ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
             TimeWindowOuter twelveHourWindow = TimeWindowOuter.of( begin,
@@ -422,13 +409,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter twelveHourOutput =
-                    DoubleScoreStatisticOuter.of( twelveHour,
-                                                  StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                           twelveHourWindow ),
-                                                                        90,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                        MetricConstants.MAIN ) );
+                    DoubleScoreStatisticOuter.of( twelveHour, SampleMetadata.of( source, twelveHourWindow ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
             TimeWindowOuter eighteenHourWindow = TimeWindowOuter.of( begin,
@@ -445,13 +426,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter eighteenHourOutput =
-                    DoubleScoreStatisticOuter.of( eighteenHour,
-                                                  StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                           eighteenHourWindow ),
-                                                                        90,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                        MetricConstants.MAIN ) );
+                    DoubleScoreStatisticOuter.of( eighteenHour, SampleMetadata.of( source, eighteenHourWindow ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
             TimeWindowOuter twentyFourHourWindow = TimeWindowOuter.of( begin,
@@ -468,13 +443,7 @@ public abstract class Chart2DTestDataGenerator
                                         .build();
 
             DoubleScoreStatisticOuter twentyFourHourOutput =
-                    DoubleScoreStatisticOuter.of( twentyFourHour,
-                                                  StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                           twentyFourHourWindow ),
-                                                                        90,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                        MetricConstants.MAIN ) );
+                    DoubleScoreStatisticOuter.of( twentyFourHour, SampleMetadata.of( source, twentyFourHourWindow ) );
             rawData.add( twentyFourHourOutput );
         }
 
@@ -549,20 +518,14 @@ public abstract class Chart2DTestDataGenerator
                                                                                      .setName( ComponentName.MAIN ) )
                                         .build();
 
-            rawData.add( DoubleScoreStatisticOuter.of( one,
-                                                       StatisticMetadata.of( SampleMetadata.of( source,
-                                                                                                timeWindow ),
-                                                                             18,
-                                                                             MeasurementUnit.of(),
-                                                                             MetricConstants.BIAS_FRACTION,
-                                                                             MetricConstants.MAIN ) ) );
+            rawData.add( DoubleScoreStatisticOuter.of( one, SampleMetadata.of( source, timeWindow ) ) );
         }
 
         return Collections.unmodifiableList( rawData );
     }
 
     /**
-     * Returns a {@link PairedStatisticOuter} that comprises a {@link Duration} that represents a time-to-peak error against an
+     * Returns a {@link DurationDiagramStatisticOuter} that comprises a {@link Duration} that represents a time-to-peak error against an
      * {@link Instant} that represents the origin (basis time) of the time-series from which the timing error
      * originates. Contains results for forecasts issued at 12Z each day from 1985-01-01T12:00:00Z to
      * 1985-01-10T12:00:00Z and with a forecast horizon of 336h.
@@ -570,8 +533,32 @@ public abstract class Chart2DTestDataGenerator
      * @return a paired output of timing errors by basis time
      */
 
-    public static List<PairedStatisticOuter<Instant, Duration>> getTimeToPeakErrors()
+    public static List<DurationDiagramStatisticOuter> getTimeToPeakErrors()
     {
+
+        Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
+        Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
+        Instant thirdInstant = Instant.parse( "1985-01-03T00:00:00Z" );
+        Instant fourthInstant = Instant.parse( "1985-01-04T00:00:00Z" );
+        Instant fifthInstant = Instant.parse( "1985-01-05T00:00:00Z" );
+        Instant sixthInstant = Instant.parse( "1985-01-06T00:00:00Z" );
+        Instant seventhInstant = Instant.parse( "1985-01-07T00:00:00Z" );
+        Instant eighthInstant = Instant.parse( "1985-01-08T00:00:00Z" );
+        Instant ninthInstant = Instant.parse( "1985-01-09T00:00:00Z" );
+        Instant tenthInstant = Instant.parse( "1985-01-10T00:00:00Z" );
+
+        DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
+                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( Long.MIN_VALUE )
+                                                                                                     .setNanos( 999_999_999 ) )
+                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                     .setSeconds( 0 ) )
+                                                            .build();
+
+
         // Create a list of pairs
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         // Add some fake time-to-peak errors to the list
@@ -586,6 +573,101 @@ public abstract class Chart2DTestDataGenerator
         input.add( Pair.of( Instant.parse( "1985-01-09T12:00:00Z" ), Duration.ofHours( 0 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-10T12:00:00Z" ), Duration.ofHours( 24 ) ) );
 
+
+        PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( firstInstant.getEpochSecond() )
+                                                                                  .setNanos( firstInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -43200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( secondInstant.getEpochSecond() )
+                                                                                  .setNanos( secondInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -7200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( thirdInstant.getEpochSecond() )
+                                                                                    .setNanos( thirdInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( 7200 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration four = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( fourthInstant.getEpochSecond() )
+                                                                                   .setNanos( fourthInstant.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 14400 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration five = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( fifthInstant.getEpochSecond() )
+                                                                                   .setNanos( fifthInstant.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 28800 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration six = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( sixthInstant.getEpochSecond() )
+                                                                                  .setNanos( sixthInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( -43200 ) )
+                                                               .build();
+
+        PairOfInstantAndDuration seven = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( seventhInstant.getEpochSecond() )
+                                                                                    .setNanos( seventhInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( -57600 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration eight = PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( Timestamp.newBuilder()
+                                                                                    .setSeconds( eighthInstant.getEpochSecond() )
+                                                                                    .setNanos( eighthInstant.getNano() ) )
+                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                           .setSeconds( -79200 ) )
+                                                                 .build();
+
+        PairOfInstantAndDuration nine = PairOfInstantAndDuration.newBuilder()
+                                                                .setTime( Timestamp.newBuilder()
+                                                                                   .setSeconds( ninthInstant.getEpochSecond() )
+                                                                                   .setNanos( ninthInstant.getNano() ) )
+                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                          .setSeconds( 0 ) )
+                                                                .build();
+
+        PairOfInstantAndDuration ten = PairOfInstantAndDuration.newBuilder()
+                                                               .setTime( Timestamp.newBuilder()
+                                                                                  .setSeconds( tenthInstant.getEpochSecond() )
+                                                                                  .setNanos( tenthInstant.getNano() ) )
+                                                               .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                         .setSeconds( 86400 ) )
+                                                               .build();
+
+        DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
+                                                                          .setMetric( metric )
+                                                                          .addStatistics( one )
+                                                                          .addStatistics( two )
+                                                                          .addStatistics( three )
+                                                                          .addStatistics( four )
+                                                                          .addStatistics( five )
+                                                                          .addStatistics( six )
+                                                                          .addStatistics( seven )
+                                                                          .addStatistics( eight )
+                                                                          .addStatistics( nine )
+                                                                          .addStatistics( ten )
+                                                                          .build();
+
         // Create the metadata
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "1985-01-10T00:00:00Z" ),
@@ -597,18 +679,14 @@ public abstract class Chart2DTestDataGenerator
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                          DatasetIdentifier.of( FEATURE_TUPLE,
-                                                                                                "Streamflow",
-                                                                                                "HEFS" ),
-                                                                          window,
-                                                                          threshold ),
-                                                       input.size(),
-                                                       MeasurementUnit.of( "DURATION" ),
-                                                       MetricConstants.TIME_TO_PEAK_ERROR,
-                                                       MetricConstants.MAIN );
-        // Build and return
-        return Arrays.asList( PairedStatisticOuter.of( input, meta ) );
+        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                 DatasetIdentifier.of( FEATURE_TUPLE,
+                                                                       "Streamflow",
+                                                                       "HEFS" ),
+                                                 window,
+                                                 threshold );
+
+        return Arrays.asList( DurationDiagramStatisticOuter.of( expectedSource, meta ) );
     }
 
     /**
@@ -639,19 +717,20 @@ public abstract class Chart2DTestDataGenerator
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                          DatasetIdentifier.of( FEATURE_TUPLE,
-                                                                                                "Streamflow",
-                                                                                                "HEFS" ),
-                                                                          window,
-                                                                          threshold ),
-                                                       10,
-                                                       MeasurementUnit.of( "DURATION" ),
-                                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                       MetricConstants.MAIN );
+        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                 DatasetIdentifier.of( FEATURE_TUPLE,
+                                                                       "Streamflow",
+                                                                       "HEFS" ),
+                                                 window,
+                                                 threshold );
+
+        DurationScoreMetric metric = DurationScoreMetric.newBuilder()
+                                                        .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                                        .build();
 
         DurationScoreStatistic score =
                 DurationScoreStatistic.newBuilder()
+                                      .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
                                                                                      .setName( DurationScoreMetricComponent.ComponentName.MEAN )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()

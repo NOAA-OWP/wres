@@ -9,7 +9,6 @@ import org.junit.Test;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
@@ -47,32 +46,20 @@ public final class ScoreStatisticOuterTest
     public void testEquals()
     {
         FeatureKey l1 = FeatureKey.of( "A" );
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
+                                                                     "B",
+                                                                     "C" ) );
         FeatureKey l2 = FeatureKey.of( "A" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     11,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
+                                                                     "B",
+                                                                     "C" ) );
         FeatureKey l3 = FeatureKey.of( "B" );
-        StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
+                                                                     "B",
+                                                                     "C" ) );
 
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> s =
                 DoubleScoreStatisticOuter.of( this.one, m1 );
@@ -91,12 +78,11 @@ public final class ScoreStatisticOuterTest
                                     .build();
 
         assertNotEquals( DoubleScoreStatisticOuter.of( two, m1 ), s );
-        assertNotEquals( DoubleScoreStatisticOuter.of( this.one, m2 ), s );
+        assertNotEquals( DoubleScoreStatisticOuter.of( this.one, m3 ), s );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
                 DoubleScoreStatisticOuter.of( this.one, m2 );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> r =
                 DoubleScoreStatisticOuter.of( this.one, m3 );
-        assertNotEquals( q, s );
         assertEquals( q, q );
         assertNotEquals( q, r );
     }
@@ -109,14 +95,10 @@ public final class ScoreStatisticOuterTest
     public void testToString()
     {
         FeatureKey l1 = FeatureKey.of( "A" );
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of(new FeatureTuple( l1, l1, l1 ),
+                                                                     "B",
+                                                                     "C" ) );
 
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> s =
                 DoubleScoreStatisticOuter.of( this.one, m1 );
@@ -133,23 +115,15 @@ public final class ScoreStatisticOuterTest
     public void testGetMetadata()
     {
         FeatureKey l1 = FeatureKey.of( "A" );
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
+                                                                     "B",
+                                                                     "C" ) );
         FeatureKey l2 = FeatureKey.of( "B" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
+                                                                     "B",
+                                                                     "C" ) );
 
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
                 DoubleScoreStatisticOuter.of( this.one, m1 );
@@ -166,32 +140,15 @@ public final class ScoreStatisticOuterTest
     public void testHashCode()
     {
         FeatureKey l1 = FeatureKey.of( "A" );
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
+                                                                     "B",
+                                                                     "C" ) );
         FeatureKey l2 = FeatureKey.of( "A" );
-        StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
-        FeatureKey l3 = FeatureKey.of( "B" );
-        StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
-                                                                                              "B",
-                                                                                              "C" ) ),
-                                                     10,
-                                                     MeasurementUnit.of(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MAIN );
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
+                                                                     "B",
+                                                                     "C" ) );
 
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
                 DoubleScoreStatisticOuter.of( this.one, m1 );

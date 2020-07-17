@@ -22,19 +22,25 @@ message Statistics
 
     Pool pool = 1;
     // The pool whose pairs were used to create the statistics here.
+
+    Pool baseline_pool = 2;
+    // The pool of baseline pairs used to create the statistics here. When the 
+    // statistics include skill scores, both the pool and baseline_pool should
+    // be populated. The boundaries of the baseline_pool may differ from those 
+    // of the pool.
     
-    repeated DoubleScoreStatistic scores = 2;
+    repeated DoubleScoreStatistic scores = 3;
     // Zero or more score statistics.
     
-    repeated DiagramStatistic diagrams = 3;
+    repeated DiagramStatistic diagrams = 4;
     // Zero or more diagram statistics.
     
-    repeated BoxplotStatistic boxplots = 4;
+    repeated BoxplotStatistic boxplots = 5;
     // Zero or more boxplot statistics.
     
-    repeated DurationScoreStatistic duration_scores = 5;
+    repeated DurationScoreStatistic duration_scores = 6;
     // Zero or more duration score statistics.
     
-    repeated DurationDiagramStatistic duration_diagrams = 6;
+    repeated DurationDiagramStatistic duration_diagrams = 7;
     // Zero or more duration diagram statistics.
 }

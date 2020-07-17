@@ -11,12 +11,10 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -53,12 +51,11 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
      * Creates a box from an ensemble pair.
      * 
      * @param pair the pair
-     * @param metadata the box metadata
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract Box getBox( Pair<Double, Ensemble> pair, StatisticMetadata metadata );
+    abstract Box getBox( Pair<Double, Ensemble> pair );
 
     /**
      * Returns the metric definition.
@@ -77,18 +74,11 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         }
 
         List<Box> boxes = new ArrayList<>();
-
-        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN,
-                                                         this.hasRealUnits(),
-                                                         s.getRawData().size(),
-                                                         null );
-
+        
         // Create each box
         for ( Pair<Double, Ensemble> next : s.getRawData() )
         {
-            boxes.add( this.getBox( next, metOut ) );
+            boxes.add( this.getBox( next ) );
         }
 
         // Sort the boxes by value: #70986
@@ -99,7 +89,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
                                                      .addAllStatistics( boxes )
                                                      .build();
 
-        return BoxplotStatisticOuter.of( statistic, metOut );
+        return BoxplotStatisticOuter.of( statistic, s.getMetadata() );
     }
 
     @Override

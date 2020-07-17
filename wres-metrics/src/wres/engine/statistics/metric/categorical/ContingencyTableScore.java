@@ -10,7 +10,6 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.OrdinaryScore;
@@ -69,23 +68,6 @@ abstract class ContingencyTableScore extends OrdinaryScore<SampleData<Pair<Boole
     public boolean hasRealUnits()
     {
         return false;
-    }
-
-    /**
-     * Returns the {@link StatisticMetadata} for a {ContingencyTableScore}.
-     * 
-     * @param output the output from which the {@link StatisticMetadata} is built
-     * @return the {@link StatisticMetadata}
-     */
-
-    StatisticMetadata getMetadata( final DoubleScoreStatisticOuter output )
-    {
-        return StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
-                                     this.getID(),
-                                     MetricConstants.MAIN,
-                                     this.hasRealUnits(),
-                                     output.getMetadata().getSampleSize(),
-                                     null );
     }
 
     /**

@@ -21,10 +21,8 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -63,13 +61,7 @@ public final class BrierScoreTest
         SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.BRIER_SCORE,
-                                      MetricConstants.MAIN );
-
+        SampleMetadata m1 = Boilerplate.getSampleMetadata();
         // Check the results       
         DoubleScoreStatisticOuter actual = this.brierScore.apply( input );
 

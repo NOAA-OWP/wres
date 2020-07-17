@@ -83,11 +83,11 @@ public class FrequencyBias extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, getMetadata( output ) );
+        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.FREQUENCY_BIAS;
     }

@@ -95,12 +95,7 @@ public final class DataModelTestDataFactory
                                         .build();
 
             DoubleScoreStatisticOuter firstValue =
-                    DoubleScoreStatisticOuter.of( one,
-                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, first ),
-                                                                        1000,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                        MetricConstants.MAIN ) );
+                    DoubleScoreStatisticOuter.of( one, SampleMetadata.of( source, timeWindow, first ) );
 
             statistics.add( firstValue );
 
@@ -125,12 +120,7 @@ public final class DataModelTestDataFactory
                                         .build();
 
             DoubleScoreStatisticOuter secondValue =
-                    DoubleScoreStatisticOuter.of( two,
-                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, second ),
-                                                                        1000,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                        MetricConstants.MAIN ) );
+                    DoubleScoreStatisticOuter.of( two, SampleMetadata.of( source, timeWindow, second ) );
 
             statistics.add( secondValue );
 
@@ -156,12 +146,7 @@ public final class DataModelTestDataFactory
 
 
             DoubleScoreStatisticOuter thirdValue =
-                    DoubleScoreStatisticOuter.of( three,
-                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, third ),
-                                                                        1000,
-                                                                        MeasurementUnit.of(),
-                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                        MetricConstants.MAIN ) );
+                    DoubleScoreStatisticOuter.of( three, SampleMetadata.of( source, timeWindow, third ) );
 
             statistics.add( thirdValue );
 

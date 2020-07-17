@@ -20,7 +20,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -63,12 +62,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
-        final StatisticMetadata m1 =
-                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = Boilerplate.getSampleMetadata();
 
         //Check the results       
         DiagramStatisticOuter actual = this.roc.apply( input );

@@ -4,14 +4,12 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -93,15 +91,6 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
                                                                .getValue();
         
         double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
-
-        //Metadata
-        DatasetIdentifier baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
-        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN,
-                                                         this.hasRealUnits(),
-                                                         s.getRawData().size(),
-                                                         baselineIdentifier );
         
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setName( ComponentName.MAIN )
@@ -113,11 +102,11 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, metOut );
+        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
     }
 
     @Override
-    public MetricConstants getID()
+    public MetricConstants getMetricName()
     {
         return MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE;
     }

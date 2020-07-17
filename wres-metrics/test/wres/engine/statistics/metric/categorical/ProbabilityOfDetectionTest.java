@@ -21,7 +21,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
@@ -52,17 +51,13 @@ public final class ProbabilityOfDetectionTest
      * Metadata used for testing.
      */
 
-    private StatisticMetadata meta;
+    private SampleMetadata meta;
 
     @Before
     public void setUpBeforeEachTest()
     {
         this.pod = ProbabilityOfDetection.of();
-        this.meta = StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                          365,
-                                          MeasurementUnit.of(),
-                                          MetricConstants.PROBABILITY_OF_DETECTION,
-                                          MetricConstants.MAIN );
+        this.meta = Boilerplate.getSampleMetadata();
     }
 
     /**

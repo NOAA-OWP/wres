@@ -24,7 +24,6 @@ import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticMetadata;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DiagramStatistic;
@@ -66,14 +65,9 @@ public final class ReliabilityDiagramTest
         SampleData<Pair<Probability, Probability>>  input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
-        final StatisticMetadata m1 =
-                StatisticMetadata.of( Boilerplate.getSampleMetadata(),
-                                      input.getRawData().size(),
-                                      MeasurementUnit.of(),
-                                      MetricConstants.RELIABILITY_DIAGRAM,
-                                      MetricConstants.MAIN );
+        SampleMetadata m1 = Boilerplate.getSampleMetadata();
 
-        //Check the results       
+        //Check the results
         final DiagramStatisticOuter actual = rel.apply( input );
         List<Double> expectedFProb = List.of( 0.05490196078431369,
                                               0.19999999999999984,
@@ -188,11 +182,7 @@ public final class ReliabilityDiagramTest
                                                        identifier ) );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(), identifier ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.RELIABILITY_DIAGRAM,
-                                                           MetricConstants.MAIN );
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(), identifier );
 
         //Check the results       
         DiagramStatisticOuter actual = rel.apply( input );
