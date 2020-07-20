@@ -210,14 +210,15 @@
                                  onDelete="CASCADE" />
     </changeSet>
 
-    <changeSet id="Add source_id index to wres.TimeSeries."
+    <changeSet id="Add source_id index to wres.TimeSeries v2."
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <columnExists columnName="source_id"
                           tableName="TimeSeries"
                           schemaName="wres" />
             <not>
-                <indexExists indexName="timeseries_source_index"
+                <indexExists tableName="TimeSeries"
+                             indexName="timeseries_source_index"
                              schemaName="wres" />
             </not>
         </preConditions>
@@ -228,7 +229,7 @@
         </createIndex>
     </changeSet>
 
-    <changeSet id="Add feature_id index to wres.TimeSeries."
+    <changeSet id="Add feature_id index to wres.TimeSeries v2."
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <columnExists columnName="feature_id"
@@ -236,6 +237,7 @@
                           schemaName="wres" />
             <not>
                 <indexExists indexName="timeseries_feature_index"
+                             tableName="TimeSeries"
                              schemaName="wres" />
             </not>
         </preConditions>
