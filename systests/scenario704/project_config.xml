@@ -15,26 +15,12 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         
-        <feature>
-            <polygon>
-                <point>
-                    <latitude>35.0</latitude>
-                    <longitude>-100.0</longitude>
-                </point>
-                <point>
-                    <latitude>36.0</latitude>
-                    <longitude>-100.0</longitude>
-                </point>
-                <point>
-                    <latitude>36.0</latitude>
-                    <longitude>-99.0</longitude>
-                </point>
-                <point>
-                    <latitude>35.0</latitude>
-                    <longitude>-99.0</longitude>
-                </point>
-            </polygon>
-        </feature>
+        <feature left="07324400" right="678895" />
+        <feature left="07316500" right="3141592" />
+        <feature left="07324200" right="3142490" />
+        <feature left="07303400" right="13746044" />
+        <feature left="07301420" right="13754931" />
+        <feature left="07301500" right="13756121" />
 
         <leadHours minimum="0" maximum="18" />
         <dates earliest="2017-08-08T00:00:00Z" latest="2017-08-09T17:00:00Z" />
