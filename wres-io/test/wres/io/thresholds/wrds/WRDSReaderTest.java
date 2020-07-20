@@ -18,7 +18,7 @@ import java.net.URI;
 import java.util.*;
 
 public class WRDSReaderTest {
-    private static final String path = "testinput/thresholds/wrds/thresholds.json";
+    private static final URI path = URI.create( "testinput/thresholds/wrds/thresholds.json" );
     private static final double EPSILON = 0.00001;
 
     private static String createFeature( final String lid )
@@ -134,7 +134,7 @@ public class WRDSReaderTest {
             ThresholdType.VALUE,
             ThresholdDataType.LEFT,
             new ThresholdsConfig.Source(
-                    URI.create(path),
+                    path,
                     ThresholdFormat.WRDS,
                     null,
                     null,
@@ -150,7 +150,7 @@ public class WRDSReaderTest {
             ThresholdType.VALUE,
             ThresholdDataType.LEFT,
             new ThresholdsConfig.Source(
-                    URI.create(path),
+                    path,
                     ThresholdFormat.WRDS,
                     null,
                     null,
@@ -711,7 +711,8 @@ public class WRDSReaderTest {
     @Test
     public void testGetResponse()
     {
-        ThresholdResponse response = WRDSReader.getResponse(path);
+        WRDSReader reader = new WRDSReader( systemSettings );
+        ThresholdResponse response = reader.getResponse(path);
 
         Assert.assertEquals(13, response.getThresholds().size());
 
