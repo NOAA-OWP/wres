@@ -65,4 +65,3 @@ public class ValidationTest
                      + "PI-XML data is specified.", result );
     }
 }
-c
