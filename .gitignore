@@ -39,12 +39,20 @@ out
 *private*key*pem
 *pkcs10*request*pem
 
+# WRES-generated code
+wres-statistics/src/*
+wres-messages/src/main/java/wres/messages/generated/*
+
 # WRES-generated data
 output
 wres_evaluation_output*
 
 # Local zulu openjdk 11 installation
 zulu11*
+
+# Old directories
+wres-vis/testoutput/chart2DTest/*
+
 
 # sundry
 /*.xml
