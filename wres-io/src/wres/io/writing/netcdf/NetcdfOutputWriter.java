@@ -1081,6 +1081,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     }
                 }
 
+
                 if ( this.useLidForLocationIdentifier )
                 {
                     this.checkForCoordinateAndThrowExceptionIfNotFound( location, true );
@@ -1089,18 +1090,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 }
                 else
                 {
-                    throw new UnsupportedOperationException( "TODO: figure out what to do here." );
-                }
-                /* TODO: figure out if this is needed
-                else
-                {
                     this.checkForCoordinateAndThrowExceptionIfNotFound( location, false );
 
-                    return this.vectorCoordinatesMap.get( location.getVectorIdentifier().intValue() );
+                    return this.vectorCoordinatesMap.get( Integer.parseInt( location.getName() ) );
                 }
-                 */
             }
-
         }
 
         /**
@@ -1108,14 +1102,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * if the coordinate cannot be found.
          * 
          * @param location the location to check
-         * @param isLocationName is true to use the location name as the identifier, false for the NWM identifier
          * @throws CoordinateNotFoundException if a coordinate could not be found
          */
 
         private void checkForCoordinateAndThrowExceptionIfNotFound( FeatureKey location, boolean isLocationName )
                 throws CoordinateNotFoundException
         {
-
             // Location name is the glue
             if ( isLocationName )
             {
@@ -1129,37 +1121,46 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                            + location.getName()
                                                            + "." );
                 }
-            }
-            /* TODO: figure out what to do here
-
-            // Comid is the glue
-            else
-            {
-                Long coordinate = location.getVectorIdentifier();
-
-                if ( Objects.isNull( coordinate ) )
+                // Comid is the glue
+                else
                 {
-                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
-                                                           + this.outputPath
-                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
-                                                           + location
-                                                           + " because the NWM location identifier (comid) was absent." );
-                }
+                    Long coordinate;
 
-                if ( !this.vectorCoordinatesMap.containsKey( coordinate.intValue() ) )
-                {
+                    try
+                    {
+                        coordinate = Long.parseLong( location.getName() );
+                    }
+                    catch ( NumberFormatException nfe )
+                    {
+                        throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
+                                                               + this.outputPath
+                                                               + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
+                                                               + location
+                                                               + " because the NWM feature id was not type long.", nfe );
+                    }
 
-                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
-                                                           + this.outputPath
-                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
-                                                           + location
-                                                           + " using the NWM location identifier (comid) "
-                                                           + location.getVectorIdentifier().intValue()
-                                                           + "." );
+                    if ( coordinate > Integer.MAX_VALUE || coordinate < Integer.MIN_VALUE )
+                    {
+                        throw new CoordinateNotFoundException ( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
+                                                                + this.outputPath
+                                                                + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
+                                                                + location
+                                                                + " because the NWM feature id was out of integer range." );
+                    }
+
+                    if ( !this.vectorCoordinatesMap.containsKey( coordinate.intValue() ) )
+                    {
+
+                        throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
+                                                               + this.outputPath
+                                                               + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
+                                                               + location
+                                                               + " using the NWM location identifier (comid) "
+                                                               + location.getName()
+                                                               + "." );
+                    }
                 }
             }
-            */
-
         }
 
         @Override
