@@ -558,7 +558,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         {
 
             // The desired time scale must be a sensible function in the context of rescaling
-            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfDesiredFunctionIsUnknown( desiredTimeScale.getFunction() ) );
+            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfDesiredFunctionIsUnknown( desiredTimeScale ) );
 
             // Downscaling not currently allowed
             allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfDownscalingRequested( existingTimeScale.getPeriod(),
@@ -619,17 +619,17 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * Checks whether the desiredFunction is {@link TimeScaleFunction#UNKNOWN}, which is not allowed. If so,
      * returns a {@link ScaleValidationEvent} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
      *
-     * @param desiredFunction the desired function
+     * @param desiredScale the desired scale
      * @return a validation event
      */
 
-    private static ScaleValidationEvent checkIfDesiredFunctionIsUnknown( TimeScaleFunction desiredFunction )
+    private static ScaleValidationEvent checkIfDesiredFunctionIsUnknown( TimeScaleOuter desiredScale )
     {
-        if ( desiredFunction == TimeScaleFunction.UNKNOWN )
+        if ( desiredScale.getFunction() == TimeScaleFunction.UNKNOWN )
         {
-            String message = MessageFormat.format( "The desired time scale function is ''{0}''"
-                                                   + ": the function must be known to conduct rescaling.",
-                                                   TimeScaleFunction.UNKNOWN );
+            String message = MessageFormat.format( "The desired time scale is ''{0}'', but the function must be known "
+                                                   + "to conduct rescaling.",
+                                                   desiredScale );
 
             return ScaleValidationEvent.error( message );
         }

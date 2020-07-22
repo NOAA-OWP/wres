@@ -3,8 +3,10 @@ package wres.events;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -53,7 +55,13 @@ public class Consumers
      */
 
     private final List<Consumer<Collection<Statistics>>> groupedStatisticsConsumers;
+    
+    /**
+     * A list of external subscribers to track by their unique identifiers.
+     */
 
+    private final Set<String> externalSubscribers;
+    
     /**
      * Consumers of pairs.
      */
@@ -99,6 +107,14 @@ public class Consumers
     {
         return this.pairsConsumers; //Immutable on construction
     }
+    
+    /**
+     * @return the external subscribers
+     */
+    Set<String> getExternalSubscribers()
+    {
+        return this.externalSubscribers; //Immutable on construction
+    }
 
     /**
      * Builder.
@@ -137,6 +153,12 @@ public class Consumers
          */
 
         private List<Consumer<Pairs>> pairsConsumers = new ArrayList<>();
+        
+        /**
+         * An optional set of external subscriptions to be tracked.
+         */
+
+        private Set<String> externalSubscribers = new HashSet<>();
 
         /**
          * @param evaluationConsumer the evaluation consumer to add
@@ -146,9 +168,11 @@ public class Consumers
 
         public Builder addEvaluationConsumer( Consumer<Evaluation> evaluationConsumer )
         {
-            Objects.requireNonNull( evaluationConsumer );
-
-            this.evaluationConsumers.add( evaluationConsumer );
+            if ( Objects.nonNull( evaluationConsumer ) )
+            {
+                this.evaluationConsumers.add( evaluationConsumer );
+            }
+            
             return this;
         }
 
@@ -160,9 +184,11 @@ public class Consumers
 
         public Builder addStatusConsumer( Consumer<EvaluationStatus> statusConsumer )
         {
-            Objects.requireNonNull( statusConsumer );
-
-            this.statusConsumers.add( statusConsumer );
+            if ( Objects.nonNull( statusConsumer ) )
+            {
+                this.statusConsumers.add( statusConsumer );
+            }
+            
             return this;
         }
 
@@ -174,9 +200,11 @@ public class Consumers
 
         public Builder addStatisticsConsumer( Consumer<Statistics> statisticsConsumer )
         {
-            Objects.requireNonNull( statisticsConsumer );
-
-            this.statisticsConsumers.add( statisticsConsumer );
+            if ( Objects.nonNull( statisticsConsumer ) )
+            {
+                this.statisticsConsumers.add( statisticsConsumer );
+            }
+            
             return this;
         }
 
@@ -190,9 +218,11 @@ public class Consumers
 
         Builder addGroupedStatisticsConsumer( Consumer<Collection<Statistics>> groupStatisticsConsumer )
         {
-            Objects.requireNonNull( groupStatisticsConsumer );
-
-            this.groupedStatisticsConsumers.add( groupStatisticsConsumer );
+            if ( Objects.nonNull( groupStatisticsConsumer ) )
+            {
+                this.groupedStatisticsConsumers.add( groupStatisticsConsumer );
+            }
+            
             return this;
         }
 
@@ -203,9 +233,28 @@ public class Consumers
 
         public Builder addPairsConsumer( Consumer<Pairs> pairsConsumer )
         {
-            Objects.requireNonNull( pairsConsumer );
+            if ( Objects.nonNull( pairsConsumer ) )
+            {
+                this.pairsConsumers.add( pairsConsumer );
+            }
+            
+            return this;
+        }
+        
+        /**
+         * Adds an external subscriber with a unique identifier, to be tracked.
+         * 
+         * @param externalSubscriber the unique identifier of the external subscriber
+         * @return this builder 
+         */
 
-            this.pairsConsumers.add( pairsConsumer );
+        public Builder addExternalSubscriber( String externalSubscriber )
+        {
+            if ( Objects.nonNull( externalSubscriber ) )
+            {
+                this.externalSubscribers.add( externalSubscriber );
+            }
+
             return this;
         }
 
@@ -233,17 +282,15 @@ public class Consumers
         this.statusConsumers = Collections.unmodifiableList( builder.statusConsumers );
         this.groupedStatisticsConsumers = Collections.unmodifiableList( builder.groupedStatisticsConsumers );
         this.pairsConsumers = Collections.unmodifiableList( builder.pairsConsumers );
-
-        Objects.requireNonNull( this.evaluationConsumers );
-        Objects.requireNonNull( this.statisticsConsumers );
-        Objects.requireNonNull( this.statusConsumers );
-        Objects.requireNonNull( this.pairsConsumers );
+        this.externalSubscribers = builder.externalSubscribers;
 
         LOGGER.debug( "Successfully constructed a consumer group with {} evaluation consumers, {} evaluation status "
-                      + "consumers and {} statistics consumers.",
+                      + "consumers, {} statistics consumers, {} pairs consumers and {} external subscribers.",
                       this.getEvaluationConsumers().size(),
                       this.getEvaluationStatusConsumers().size(),
-                      this.getStatisticsConsumers().size() );
+                      this.getStatisticsConsumers().size(),
+                      this.getPairsConsumers().size(),
+                      this.getExternalSubscribers().size() );
     }
 
 }

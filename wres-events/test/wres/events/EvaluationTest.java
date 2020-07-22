@@ -1,6 +1,7 @@
 package wres.events;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -19,8 +20,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import com.google.protobuf.Timestamp;
 
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -133,6 +132,50 @@ public class EvaluationTest
     }
 
     @Test
+    @Ignore( "An out-of-band test for use with LongRunningSubscriber and a persistent broker. See #80267" )
+    public void publishAndConsumeOneEvaluationWithAnExternalSubscriber()
+            throws IOException, NamingException, JMSException, InterruptedException
+    {
+        // Create the consumers upfront
+        // Consumers simply dump to an actual output store for comparison with the expected output
+        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>(); // Common store
+        List<EvaluationStatus> actualStatuses = new ArrayList<>();
+        List<Statistics> actualStatistics = new ArrayList<>();
+
+        // Consumers, three for each evaluation
+        Consumer<EvaluationStatus> status = actualStatuses::add;
+        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
+        Consumer<Statistics> statistics = actualStatistics::add;
+
+        Consumers consumerGroup =
+                new Consumers.Builder().addStatusConsumer( status )
+                                       .addEvaluationConsumer( description )
+                                       .addStatisticsConsumer( statistics )
+                                       // Register an external subscriber with a unique identifier
+                                       .addExternalSubscriber( "4mOgkGkse3gWIGKuIhzVnl5ZPCM" )
+                                       .build();
+
+        // Create and start a broker and open an evaluation, closing on completion
+        try ( Evaluation evaluationOne = Evaluation.open( this.oneEvaluation,
+                                                          EvaluationTest.connections,
+                                                          consumerGroup ); )
+        {
+            // First evaluation
+            for ( Statistics next : this.oneStatistics )
+            {
+                evaluationOne.publish( next );
+            }
+
+            // Success
+            evaluationOne.markPublicationCompleteReportedSuccess();
+        }
+
+        // Make assertions about the internal subscriptions
+        assertEquals( List.of( this.oneEvaluation ), actualEvaluations );
+        assertEquals( this.oneStatistics, actualStatistics );
+    }
+
+    @Test
     public void publishAndConsumeTwoEvaluationsSimultaneously()
             throws IOException, NamingException, JMSException, InterruptedException
     {
@@ -178,20 +221,7 @@ public class EvaluationTest
             }
 
             // Success
-            Instant now = Instant.now();
-            long seconds = now.getEpochSecond();
-            int nanos = now.getNano();
-            EvaluationStatus complete = EvaluationStatus.newBuilder()
-                                                        .setCompletionStatus( CompletionStatus.COMPLETE_REPORTED_SUCCESS )
-                                                        .setEvaluationEndTime( Timestamp.newBuilder()
-                                                                                        .setSeconds( seconds )
-                                                                                        .setNanos( nanos ) )
-                                                        .setMessageCount( evaluationOne.getPublishedMessageCount() )
-                                                        .setStatusMessageCount( evaluationOne.getPublishedStatusMessageCount()
-                                                                                + 1 ) // This one
-                                                        .build();
-
-            evaluationOne.publish( complete );
+            evaluationOne.markPublicationCompleteReportedSuccess();
 
             // Second evaluation
             for ( Statistics next : this.anotherStatistics )
@@ -200,20 +230,7 @@ public class EvaluationTest
             }
 
             // Success
-            Instant nowTwo = Instant.now();
-            long secondsTwo = nowTwo.getEpochSecond();
-            int nanosTwo = nowTwo.getNano();
-            EvaluationStatus completeTwo = EvaluationStatus.newBuilder()
-                                                           .setCompletionStatus( CompletionStatus.COMPLETE_REPORTED_SUCCESS )
-                                                           .setEvaluationEndTime( Timestamp.newBuilder()
-                                                                                           .setSeconds( secondsTwo )
-                                                                                           .setNanos( nanosTwo ) )
-                                                           .setMessageCount( evaluationTwo.getPublishedMessageCount() )
-                                                           .setStatusMessageCount( evaluationTwo.getPublishedStatusMessageCount()
-                                                                                   + 1 ) // This one
-                                                           .build();
-
-            evaluationTwo.publish( completeTwo );
+            evaluationTwo.markPublicationCompleteReportedSuccess();
         }
 
         List<wres.statistics.generated.Evaluation> expectedEvaluations =
@@ -263,20 +280,7 @@ public class EvaluationTest
             }
 
             // Success
-            Instant now = Instant.now();
-            long seconds = now.getEpochSecond();
-            int nanos = now.getNano();
-            EvaluationStatus complete = EvaluationStatus.newBuilder()
-                                                        .setCompletionStatus( CompletionStatus.COMPLETE_REPORTED_SUCCESS )
-                                                        .setEvaluationEndTime( Timestamp.newBuilder()
-                                                                                        .setSeconds( seconds )
-                                                                                        .setNanos( nanos ) )
-                                                        .setMessageCount( evaluationOne.getPublishedMessageCount() )
-                                                        .setStatusMessageCount( evaluationOne.getPublishedStatusMessageCount()
-                                                                                + 1 ) // This one
-                                                        .build();
-
-            evaluationOne.publish( complete );
+            evaluationOne.markPublicationCompleteReportedSuccess();
         }
 
         List<wres.statistics.generated.Evaluation> expectedEvaluations =
@@ -289,9 +293,34 @@ public class EvaluationTest
         assertEquals( 24, actualStatuses.size() );
     }
 
-    // Performance testing only. Not to be exposed. Remove @ignore locally, when needed.
     @Test
-    @Ignore
+    public void testPublishThrowsExceptionAfterStop() throws IOException
+    {
+        // Add the same status consumer twice, which doubles the expected number of messages to 24
+        Consumers consumerGroup =
+                new Consumers.Builder()
+                                       .addStatusConsumer( message -> {
+                                       } )
+                                       .addEvaluationConsumer( message -> {
+                                       } )
+                                       .addStatisticsConsumer( message -> {
+                                       } )
+                                       .build();
+
+        // Create and start a broker and open an evaluation, closing on completion
+        Evaluation evaluationOne = Evaluation.open( this.oneEvaluation,
+                                                    EvaluationTest.connections,
+                                                    consumerGroup );
+
+        // Stop the evaluation
+        evaluationOne.stopOnException( new Exception( "an exception" ) );
+
+        EvaluationStatus message = EvaluationStatus.getDefaultInstance();
+        assertThrows( IllegalStateException.class, () -> evaluationOne.publish( message ) );
+    }
+
+    @Test
+    @Ignore( "Performance testing only. Not to be exposed. Remove @ignore locally, as needed." )
     public void testLargeEvaluation()
             throws IOException, NamingException, JMSException, InterruptedException
     {
@@ -351,21 +380,7 @@ public class EvaluationTest
             }
 
             // Success
-            Instant now = Instant.now();
-            long seconds = now.getEpochSecond();
-            int nanos = now.getNano();
-            EvaluationStatus complete = EvaluationStatus.newBuilder()
-                                                        .setCompletionStatus( CompletionStatus.COMPLETE_REPORTED_SUCCESS )
-                                                        .setEvaluationEndTime( Timestamp.newBuilder()
-                                                                                        .setSeconds( seconds )
-                                                                                        .setNanos( nanos ) )
-                                                        .setMessageCount( evaluation.getPublishedMessageCount() )
-                                                        .setGroupCount( featureCount )
-                                                        .setStatusMessageCount( evaluation.getPublishedStatusMessageCount()
-                                                                                + 1 ) // This one
-                                                        .build();
-
-            evaluation.publish( complete );
+            evaluation.markPublicationCompleteReportedSuccess();
         }
 
         assertEquals( featureCount, actualAggregatedStatistics.size() );
@@ -462,22 +477,7 @@ public class EvaluationTest
             evaluation.publish( groupTwoDone, "groupTwo" );
 
             // Success
-            Instant now = Instant.now();
-            long seconds = now.getEpochSecond();
-            int nanos = now.getNano();
-            EvaluationStatus complete = EvaluationStatus.newBuilder()
-                                                        .setCompletionStatus( CompletionStatus.COMPLETE_REPORTED_SUCCESS )
-                                                        .setEvaluationEndTime( Timestamp.newBuilder()
-                                                                                        .setSeconds( seconds )
-                                                                                        .setNanos( nanos ) )
-                                                        .setMessageCount( evaluation.getPublishedMessageCount() )
-                                                        .setPairsMessageCount( evaluation.getPublishedPairsMessageCount() )
-                                                        .setGroupCount( 2 )
-                                                        .setStatusMessageCount( evaluation.getPublishedStatusMessageCount()
-                                                                                + 1 ) // This one
-                                                        .build();
-
-            evaluation.publish( complete );
+            evaluation.markPublicationCompleteReportedSuccess();
         }
 
         // Make some assertions
@@ -503,7 +503,7 @@ public class EvaluationTest
         assertEquals( expectedAggregatedStatistics, actualAggregatedStatistics );
 
         // For status messages, assert number only: 15 statistics, 1 evaluation start and 1 evaluation end, 1 message 
-        // for each 2 group completed = 19
+        // for each 2 group completed and one for each of five consumers starting = 24
         assertEquals( 19, actualStatuses.size() );
 
         List<Pairs> expectedPairs = List.of( this.somePairs, this.somePairs );

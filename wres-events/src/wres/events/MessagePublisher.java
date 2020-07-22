@@ -3,6 +3,7 @@ package wres.events;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.jms.BytesMessage;
@@ -34,10 +35,36 @@ class MessagePublisher implements Closeable
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
 
-    static final String JMSX_GROUP_ID = "JMSXGroupID";
-    
-    static final String JMS_CORRELATION_ID = "JMSCorrelationID='";
-    
+    enum MessageProperty
+    {
+
+        JMSX_GROUP_ID,
+
+        JMS_CORRELATION_ID,
+        
+        JMS_MESSAGE_ID,
+        
+        CONSUMER_ID;
+
+        @Override
+        public String toString()
+        {
+            switch ( this )
+            {
+                case JMSX_GROUP_ID:
+                    return "JMSXGroupID";
+                case JMS_CORRELATION_ID:
+                    return "JMSCorrelationID";
+                case JMS_MESSAGE_ID:
+                    return "JMSMessageID";
+                case CONSUMER_ID:
+                    return "ConsumerID";
+                default:
+                    throw new IllegalStateException( "Implement the string identifier for " + this );
+            }
+        }
+    }
+
     /**
      * A connection to the broker.
      */
@@ -136,46 +163,47 @@ class MessagePublisher implements Closeable
      * Publishes a message to a destination.
      * 
      * @param messageBytes the message bytes to publish
-     * @param messageId the message identifier
+     * @param metadata the message metadata, minimally including a message identifier and correlation identifier
      * @param correlationId an identifier to correlate statistics messages to an evaluation
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if expected input is missing
      */
 
-    void publish( ByteBuffer messageBytes, String messageId, String correlationId ) throws JMSException
-    {
-        this.publish( messageBytes, messageId, correlationId, null );
-    }
-    
-    /**
-     * Publishes a message to a destination.
-     * 
-     * @param messageBytes the message bytes to publish
-     * @param messageId the message identifier
-     * @param groupId an optional group identifier
-     * @param correlationId an identifier to correlate statistics messages to an evaluation
-     * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
-     * @throws NullPointerException if any input is null
-     */
-
-    void publish( ByteBuffer messageBytes, String messageId, String correlationId, String groupId ) throws JMSException
+    void publish( ByteBuffer messageBytes, Map<MessageProperty, String> metadata ) throws JMSException
     {
         Objects.requireNonNull( messageBytes );
-        Objects.requireNonNull( messageId );
-        Objects.requireNonNull( correlationId );
+        Objects.requireNonNull( metadata );
+
+        if ( !metadata.containsKey( MessageProperty.JMS_MESSAGE_ID ) )
+        {
+            throw new IllegalArgumentException( "Expected a " + MessageProperty.JMS_MESSAGE_ID + "." );
+        }
+
+        if ( !metadata.containsKey( MessageProperty.JMS_CORRELATION_ID ) )
+        {
+            throw new IllegalArgumentException( "Expected a " + MessageProperty.JMS_CORRELATION_ID + "." );
+        }
 
         // Post
         BytesMessage message = this.session.createBytesMessage();
-        
-        // Set the message identifiers
-        message.setJMSMessageID( messageId );
-        message.setJMSCorrelationID( correlationId );
 
-        if( Objects.nonNull( groupId ) )
+        // Set the message identifiers
+        for ( Map.Entry<MessageProperty, String> next : metadata.entrySet() )
         {
-            message.setStringProperty( MessagePublisher.JMSX_GROUP_ID, groupId );
+            switch ( next.getKey() )
+            {
+                case JMS_MESSAGE_ID:
+                    message.setJMSMessageID( next.getValue() );
+                    break;
+                case JMS_CORRELATION_ID:
+                    message.setJMSCorrelationID( next.getValue() );
+                    break;
+                default:
+                    message.setStringProperty( next.getKey().toString(), next.getValue() );
+            }
         }
-        
+
         // At least until we can write from a buffer directly
         // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
         message.writeBytes( messageBytes.array() );
@@ -189,12 +217,10 @@ class MessagePublisher implements Closeable
         // Log the message
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "From publisher {}, sent a message of {} bytes with message identifier {} and correlation"
-                          + "identifier {} to destination {}.",
+            LOGGER.debug( "From publisher {}, sent a message of {} bytes with message properties {} to destination {}.",
                           this,
                           messageBytes.limit(),
-                          messageId,
-                          correlationId,
+                          metadata,
                           this.destination );
         }
 
