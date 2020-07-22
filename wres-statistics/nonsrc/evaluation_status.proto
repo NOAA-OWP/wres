@@ -37,7 +37,7 @@ message EvaluationStatus
         
     	UNKNOWN = 0;
 
-    	ONGOING = 1;
+    	EVALUATION_ONGOING = 1;
         // Evaluation is ongoing.
 
     	EVALUATION_COMPLETE_REPORTED_SUCCESS = 2;  
@@ -54,16 +54,19 @@ message EvaluationStatus
 
         READY_TO_CONSUME = 6; 
         // A consumer reports ready to consume. A consumer must be identified
-        // in order to correlate with its completion status. This identifier
-        // is assumed to be part of the protocol metadata.
+        // in order to correlate with its completion status. See consumer_id.
 
-        CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 7; 
+        CONSUMPTION_ONGOING = 7;
+        // A consumer reports ready to consume. A consumer must be identified
+        // in order to correlate with its completion status. See consumer_id.
+
+        CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 8; 
         // A consumer reports completion without errors.
         
-        CONSUMPTION_COMPLETE_REPORTED_FAILURE = 8;
+        CONSUMPTION_COMPLETE_REPORTED_FAILURE = 9;
         // A consumer reports completion with errors.
 
-        GROUP_COMPLETE_REPORTED_SUCCESS = 9;
+        GROUP_COMPLETE_REPORTED_SUCCESS = 10;
         // A message group has been completed. The group identifier is assumed 
         // to be part of the protocol metadata.
     }
@@ -72,7 +75,7 @@ message EvaluationStatus
 
     string consumer_id = 4;
     // The unique identifier of the consumer when the status update is about
-    // a message consumer.
+    // a message consumer. Must be present when a consumer reports.
     
     repeated EvaluationStatusEvent status_events = 5;
     // Zero or more caller-facing status events.
@@ -127,7 +130,12 @@ message EvaluationStatus
         }
         
         StatusMessageType event_type = 1;
+        // The type of event.
 
         string event_message = 2;
+        // The message.
+
+        int32 status_code = 3;
+        // A status code, such as an HTTP status code.
     }
 }

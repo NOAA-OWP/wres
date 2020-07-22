@@ -12,6 +12,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,10 +20,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
@@ -376,7 +379,7 @@ public class Evaluation implements Closeable
                          + statistics.getPool();
 
         EvaluationStatus ongoing = EvaluationStatus.newBuilder()
-                                                   .setCompletionStatus( CompletionStatus.ONGOING )
+                                                   .setCompletionStatus( CompletionStatus.EVALUATION_ONGOING )
                                                    .addStatusEvents( EvaluationStatusEvent.newBuilder()
                                                                                           .setEventType( StatusMessageType.INFO )
                                                                                           .setEventMessage( message ) )
@@ -512,6 +515,52 @@ public class Evaluation implements Closeable
             try
             {
                 this.statusTracker.await();
+
+                Instant now = Instant.now();
+
+                LOGGER.debug( "Completed publication and consumption for evaluation {}. {} elapsed between notification of "
+                              + "completion and the end of consumption. Ready to validate and then close this evaluation.",
+                              this.getEvaluationId(),
+                              Duration.between( then, now ) );
+
+                // Exceptions uncovered?
+                // Perhaps failing on the delivery of evaluation status messages is too high a bar?
+                boolean failed = Objects.nonNull( this.evaluationSubscribers.getFailedOn() )
+                                 || Objects.nonNull( this.evaluationStatusSubscribers.getFailedOn() )
+                                 || Objects.nonNull( this.statisticsSubscribers.getFailedOn() )
+                                 || Objects.nonNull( this.pairsSubscribers.getFailedOn() )
+                                 || Objects.nonNull( this.statusTrackerSubscriber.getFailedOn() );
+
+                if ( failed )
+                {
+                    String separator = System.getProperty( "line.separator" );
+
+                    LOGGER.debug( "While closing evaluation {}, discovered one or more undeliverable messages. The first "
+                                  + "undeliverable evaluation message is:{}{}{}The first undeliverable evaluation status "
+                                  + "message is:{}{}{}The first undeliverable statistics message is:{}{}{}The first "
+                                  + "undeliverable pairs message is:{}{}{}The first undeliverable evaluation completion "
+                                  + "message is:{}{}",
+                                  this.getEvaluationId(),
+                                  separator,
+                                  this.evaluationSubscribers.getFailedOn(),
+                                  separator,
+                                  separator,
+                                  this.evaluationStatusSubscribers.getFailedOn(),
+                                  separator,
+                                  separator,
+                                  this.statisticsSubscribers.getFailedOn(),
+                                  separator,
+                                  separator,
+                                  this.pairsSubscribers.getFailedOn(),
+                                  separator,
+                                  separator,
+                                  this.statusTrackerSubscriber.getFailedOn() );
+
+                    throw new EvaluationEventException( "While closing evaluation " + this.getEvaluationId()
+                                                        + ", discovered undeliverable messages after repeated delivery "
+                                                        + "attempts. These messages have been posted to their appropriate dead "
+                                                        + "letter queue (DLQ) for further inspection and removal." );
+                }
             }
             catch ( InterruptedException e )
             {
@@ -520,47 +569,8 @@ public class Evaluation implements Closeable
                 throw new EvaluationEventException( "Interrupted while waiting for completion status event for evaluuation "
                                                     + this.getEvaluationId() );
             }
-
-            Instant now = Instant.now();
-
-            LOGGER.debug( "Completed publication and consumption for evaluation {}. {} elapsed between notification of "
-                          + "completion and the end of consumption. Ready to validate and then close this evaluation.",
-                          this.getEvaluationId(),
-                          Duration.between( then, now ) );
-
-            // Exceptions uncovered?
-            // Perhaps failing on the delivery of evaluation status messages is too high a bar?
-            boolean failed = Objects.nonNull( this.evaluationSubscribers.getFailedOn() )
-                             || Objects.nonNull( this.evaluationStatusSubscribers.getFailedOn() )
-                             || Objects.nonNull( this.statisticsSubscribers.getFailedOn() )
-                             || Objects.nonNull( this.pairsSubscribers.getFailedOn() )
-                             || Objects.nonNull( this.statusTrackerSubscriber.getFailedOn() );
-
-            if ( failed )
+            finally
             {
-                String separator = System.getProperty( "line.separator" );
-
-                LOGGER.debug( "While closing evaluation {}, discovered one or more undeliverable messages. The first "
-                              + "undeliverable evaluation message is:{}{}{}The first undeliverable evaluation status "
-                              + "message is:{}{}{}The first undeliverable statistics message is:{}{}{}The first "
-                              + "undeliverable pairs message is:{}{}{}The first undeliverable evaluation completion "
-                              + "message is:{}{}",
-                              this.getEvaluationId(),
-                              separator,
-                              this.evaluationSubscribers.getFailedOn(),
-                              separator,
-                              separator,
-                              this.evaluationStatusSubscribers.getFailedOn(),
-                              separator,
-                              separator,
-                              this.statisticsSubscribers.getFailedOn(),
-                              separator,
-                              separator,
-                              this.pairsSubscribers.getFailedOn(),
-                              separator,
-                              separator,
-                              this.statusTrackerSubscriber.getFailedOn() );
-
                 this.evaluationPublisher.close();
                 this.evaluationSubscribers.close();
                 this.evaluationStatusPublisher.close();
@@ -569,22 +579,8 @@ public class Evaluation implements Closeable
                 this.statisticsSubscribers.close();
                 this.pairsSubscribers.close();
                 this.statusTrackerSubscriber.close();
-
-                throw new EvaluationEventException( "While closing evaluation " + this.getEvaluationId()
-                                                    + ", discovered undeliverable messages after repeated delivery "
-                                                    + "attempts. These messages have been posted to their appropriate dead "
-                                                    + "letter queue (DLQ) for further inspection and removal." );
             }
         }
-
-        this.evaluationPublisher.close();
-        this.evaluationSubscribers.close();
-        this.evaluationStatusPublisher.close();
-        this.evaluationStatusSubscribers.close();
-        this.statisticsPublisher.close();
-        this.statisticsSubscribers.close();
-        this.pairsSubscribers.close();
-        this.statusTrackerSubscriber.close();
 
         LOGGER.debug( "Closed evaluation {}.", this.getEvaluationId() );
     }
@@ -1120,7 +1116,7 @@ public class Evaluation implements Closeable
         long seconds = now.getEpochSecond();
         int nanos = now.getNano();
         EvaluationStatus ongoing = EvaluationStatus.newBuilder()
-                                                   .setCompletionStatus( CompletionStatus.ONGOING )
+                                                   .setCompletionStatus( CompletionStatus.EVALUATION_ONGOING )
                                                    .setEvaluationStartTime( Timestamp.newBuilder()
                                                                                      .setSeconds( seconds )
                                                                                      .setNanos( nanos ) )
@@ -1314,20 +1310,22 @@ public class Evaluation implements Closeable
     {
 
         /**
-         * A latch that records the completion of publication.
+         * A latch that records the completion of publication. There is no timeout on publication.
          */
 
         private final CountDownLatch publicationLatch = new CountDownLatch( 1 );
 
         /**
-         * A latch that records the number of top-level subscribers. A top-level subscriber is an external subscriber
-         * or an internal subscriber that collates one or more consumers. For example if there are three consumers of
-         * evaluation status messages, one consumer of pairs messages, one consumer of statistics messages and one
-         * consumer of evaluation description messages, then there are four top-level subscribers, one for each message
-         * type that has one or more consumers. Once set, this latch is counted down as subscribers report completion.
+         * A latch for each top-level subscriber by subscriber identifier. A top-level subscriber is an external 
+         * subscriber or an internal subscriber that collates one or more consumers. For example if there are three 
+         * consumers of evaluation status messages, one consumer of pairs messages, one consumer of statistics messages, 
+         * one consumer of evaluation description messages and one external subscriber, then there are five top-level 
+         * subscribers, one for each message type that has one or more consumers. Once set, this latch is counted down 
+         * for each subscriber that reports completion. Each latch is initialized with a count of one. Consumption is
+         * allowed to timeout when no progress is recorded within a prescribed duration.
          */
 
-        private final CountDownLatch subscribersLatch;
+        private final Map<String, TimedCountDownLatch> subscriberLatches;
 
         /**
          * The evaluation.
@@ -1347,6 +1345,18 @@ public class Evaluation implements Closeable
 
         private final Set<String> expectedSubscribers;
 
+        /**
+         * The timeout duration.
+         */
+
+        private final long timeout;
+
+        /**
+         * The timeout units.
+         */
+
+        private final TimeUnit timeoutUnits;
+
         @Override
         public void accept( EvaluationStatus message )
         {
@@ -1354,21 +1364,24 @@ public class Evaluation implements Closeable
 
             CompletionStatus status = message.getCompletionStatus();
 
-            if ( status == CompletionStatus.PUBLICATION_COMPLETE_REPORTED_SUCCESS
-                 || status == CompletionStatus.PUBLICATION_COMPLETE_REPORTED_FAILURE )
+            switch ( status )
             {
-                this.publicationLatch.countDown();
-            }
-            // Update about a consumer ready to consume
-            else if ( status == CompletionStatus.READY_TO_CONSUME )
-            {
-                this.registerSubscriberReady( message );
-            }
-            // Update about a consumer ready to consume
-            else if ( status == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
-                      || status == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
-            {
-                this.registerSubscriberComplete( message );
+                case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
+                case PUBLICATION_COMPLETE_REPORTED_FAILURE:
+                    this.publicationLatch.countDown();
+                    break;
+                case READY_TO_CONSUME:
+                    this.registerSubscriberReady( message );
+                    break;
+                case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
+                case CONSUMPTION_COMPLETE_REPORTED_FAILURE:
+                    this.registerSubscriberComplete( message );
+                    break;
+                case CONSUMPTION_ONGOING:
+                    this.registerConsumptionOngoing( message );
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -1388,17 +1401,155 @@ public class Evaluation implements Closeable
             LOGGER.debug( "While processing evaluation {}, received confirmation that publication has completed.",
                           this.evaluation.getEvaluationId() );
 
-            LOGGER.debug( "While processing evaluation {}, awaiting confirmation that consumption has completed "
+            for ( Map.Entry<String, TimedCountDownLatch> nextEntry : this.subscriberLatches.entrySet() )
+            {
+                String consumerId = nextEntry.getKey();
+                TimedCountDownLatch nextLatch = nextEntry.getValue();
+
+                LOGGER.debug( "While processing evaluation {}, awaiting confirmation that consumption has completed "
+                              + "for subscription {}.",
+                              this.evaluation.getEvaluationId(),
+                              consumerId );
+
+                // Wait for a fixed period unless there is progress
+                nextLatch.await( this.timeout, this.timeoutUnits );
+
+                LOGGER.debug( "While processing evaluation {}, received confirmation that consumption has completed "
+                              + "for subscription {}.",
+                              this.evaluation.getEvaluationId(),
+                              consumerId );
+            }
+
+            LOGGER.debug( "While processing evaluation {}, received confirmation that consumption has stopped "
                           + "across all {} registered subscriptions.",
                           this.evaluation.getEvaluationId(),
                           this.expectedSubscribers.size() );
 
-            this.subscribersLatch.await();
+            // Throw an exception if any consumers failed to complete consumption
+            Set<String> identifiers = this.subscriberLatches.entrySet()
+                                                            .stream()
+                                                            .filter( next -> next.getValue().getCount() > 0 )
+                                                            .map( Map.Entry::getKey )
+                                                            .collect( Collectors.toUnmodifiableSet() );
 
-            LOGGER.debug( "While processing evaluation {}, received confirmation that consumption has completed "
-                          + "across all {} registered subscriptions.",
+            if ( !identifiers.isEmpty() )
+            {
+                throw new SubscriberTimedOutException( "While processing evaluation "
+                                                       + this.evaluation.getEvaluationId()
+                                                       + ", the following subscribers failed to show progress within a "
+                                                       + "timeout period of "
+                                                       + this.timeout
+                                                       + " "
+                                                       + this.timeoutUnits
+                                                       + ": "
+                                                       + identifiers
+                                                       + ". Subscribers should report their status regularly, in "
+                                                       + "order to reset the timeout period. " );
+            }
+        }
+
+        /**
+         * Registers a new consumer as ready to consume.
+         * 
+         * @param message the status message containing the subscriber event
+         */
+
+        private void registerSubscriberReady( EvaluationStatus message )
+        {
+            String consumerId = message.getConsumerId();
+            this.validateConsumerId( consumerId );
+
+            this.subscribersReady.add( consumerId );
+
+            // Reset the countdown
+            this.getSubscriberLatch( consumerId ).resetClock();
+
+            LOGGER.debug( "Registered a message subscriber {} for evaluation {} as {}.",
+                          consumerId,
                           this.evaluation.getEvaluationId(),
-                          this.expectedSubscribers.size() );
+                          message.getCompletionStatus() );
+        }
+
+        /**
+         * Registers a new consumer as ready to consume.
+         * 
+         * @param message the status message containing the subscriber event
+         */
+
+        private void registerSubscriberComplete( EvaluationStatus message )
+        {
+            String consumerId = message.getConsumerId();
+            this.validateConsumerId( consumerId );
+
+            if ( !this.expectedSubscribers.contains( consumerId ) )
+            {
+                throw new EvaluationEventException( "While completing a subscription for evaluation "
+                                                    + this.evaluation.getEvaluationId()
+                                                    + " received a message about a consumer event with a consumerId of "
+                                                    + consumerId
+                                                    + ", which is not registered with this evaluation." );
+            }
+
+            // Countdown the subscription as complete
+            this.subscribersReady.remove( consumerId );
+            this.getSubscriberLatch( consumerId ).countDown();
+
+            LOGGER.debug( "Removed a message subscriber {} for evaluation {} as {}.",
+                          consumerId,
+                          this.evaluation.getEvaluationId(),
+                          message.getCompletionStatus() );
+        }
+
+
+        /**
+         * Registers consumption as ongoing for a given subscriber.
+         * 
+         * @param message the status message containing the subscriber event
+         */
+
+        private void registerConsumptionOngoing( EvaluationStatus message )
+        {
+            String consumerId = message.getConsumerId();
+            this.validateConsumerId( consumerId );
+
+            // Reset the countdown
+            this.getSubscriberLatch( consumerId ).resetClock();
+
+            LOGGER.debug( "Message subscriber {} for evaluation {} reports {}.",
+                          consumerId,
+                          this.evaluation.getEvaluationId(),
+                          message.getCompletionStatus() );
+        }
+
+        /**
+         * Throws an exception if the consumer identifier is blank.
+         * @param consumerId the consumer identifier
+         * @throws EvaluationEventException if the consumer identifier is blank
+         */
+
+        private void validateConsumerId( String consumerId )
+        {
+            if ( consumerId.isBlank() )
+            {
+                throw new EvaluationEventException( "While awaiting consumption for evaluation "
+                                                    + this.evaluation.getEvaluationId()
+                                                    + " received a message about a consumer event that did not "
+                                                    + "contain the consumerId, which is not allowed." );
+            }
+        }
+
+        /**
+         * Returns a subscriber latch for a given subscriber identifier.
+         * 
+         * @param consumerId the subscriber identifier
+         * @return the latch
+         */
+
+        private TimedCountDownLatch getSubscriberLatch( String consumerId )
+        {
+            this.validateConsumerId( consumerId );
+
+            return this.subscriberLatches.get( consumerId );
         }
 
         /**
@@ -1424,69 +1575,16 @@ public class Evaluation implements Closeable
             this.evaluation = evaluation;
             this.subscribersReady = new HashSet<>();
             this.expectedSubscribers = expectedSubscribers;
-            this.subscribersLatch = new CountDownLatch( this.expectedSubscribers.size() );
-        }
 
-        /**
-         * Registers a new consumer as ready to consume.
-         * 
-         * @param message the status message containing the consumer event
-         */
+            // Default timeout for consumption from an individual consumer unless progress is reported
+            // In practice, this is extremely lenient
+            this.timeout = 120;
+            this.timeoutUnits = TimeUnit.MINUTES;
 
-        private void registerSubscriberReady( EvaluationStatus message )
-        {
-            String consumerId = message.getConsumerId();
-
-            if ( consumerId.isBlank() )
-            {
-                throw new EvaluationEventException( "While awaiting consumption for evaluation "
-                                                    + this.evaluation.getEvaluationId()
-                                                    + " received a message about a consumer event that did not "
-                                                    + "contain the consumerId, which is not allowed." );
-            }
-
-            this.subscribersReady.add( consumerId );
-
-            LOGGER.debug( "Registered a message subscriber {} for evaluation {} as {}.",
-                          consumerId,
-                          this.evaluation.getEvaluationId(),
-                          message.getCompletionStatus() );
-        }
-
-        /**
-         * Registers a new consumer as ready to consume.
-         * 
-         * @param message the status message containing the consumer event
-         */
-
-        private void registerSubscriberComplete( EvaluationStatus message )
-        {
-            String consumerId = message.getConsumerId();
-
-            if ( consumerId.isBlank() )
-            {
-                throw new EvaluationEventException( "While completing a subscription for evaluation "
-                                                    + this.evaluation.getEvaluationId()
-                                                    + " received a message about a consumer event that did not "
-                                                    + "contain the consumerId, which is not allowed." );
-            }
-
-            if ( !this.expectedSubscribers.contains( consumerId ) )
-            {
-                throw new EvaluationEventException( "While completing a subscription for evaluation "
-                                                    + this.evaluation.getEvaluationId()
-                                                    + " received a message about a consumer event with a consumerId of "
-                                                    + consumerId
-                                                    + ", which is not registered with this evaluation." );
-            }
-
-            // Countdown the subscription as complete
-            this.subscribersReady.remove( consumerId );
-            this.subscribersLatch.countDown();
-            LOGGER.debug( "Removed a message subscriber {} for evaluation {} as {}.",
-                          consumerId,
-                          this.evaluation.getEvaluationId(),
-                          message.getCompletionStatus() );
+            // Create the latches
+            Map<String, TimedCountDownLatch> internalLatches = new HashMap<>( this.expectedSubscribers.size() );
+            this.expectedSubscribers.forEach( next -> internalLatches.put( next, new TimedCountDownLatch( 1 ) ) );
+            this.subscriberLatches = Collections.unmodifiableMap( internalLatches );
         }
     }
 

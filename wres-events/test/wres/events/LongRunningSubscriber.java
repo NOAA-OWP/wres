@@ -40,7 +40,7 @@ import wres.statistics.generated.Evaluation;
  * @author james.brown@hydrosolved.com
  */
 
-public class LongRunningSubscriber
+class LongRunningSubscriber
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( LongRunningSubscriber.class );
