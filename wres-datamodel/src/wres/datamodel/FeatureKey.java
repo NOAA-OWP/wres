@@ -5,11 +5,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import wres.statistics.generated.Geometry;
+
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Represents a geographic feature. Db contents matches what is here.
+ * 
+ * TODO: This class should probably compose a canonical {@link Geometry} as it is 1:1 with the canonical representation.
  */
 
 public class FeatureKey implements Comparable<FeatureKey>
@@ -38,7 +42,7 @@ public class FeatureKey implements Comparable<FeatureKey>
 
     public static FeatureKey of( String name )
     {
-        return new FeatureKey ( name, null, null, null );
+        return new FeatureKey( name, null, null, null );
     }
 
     public String getName()
@@ -72,10 +76,12 @@ public class FeatureKey implements Comparable<FeatureKey>
         {
             return false;
         }
-        FeatureKey that = ( FeatureKey ) o;
+        FeatureKey that = (FeatureKey) o;
         return name.equals( that.name ) &&
-               Objects.equals( description, that.description ) &&
-               Objects.equals( srid, that.srid ) &&
+               Objects.equals( description, that.description )
+               &&
+               Objects.equals( srid, that.srid )
+               &&
                Objects.equals( wkt, that.wkt );
     }
 
@@ -165,18 +171,20 @@ public class FeatureKey implements Comparable<FeatureKey>
         }
 
         throw new IllegalStateException( "Could not find the difference between FeatureKey "
-                                         + this + " and FeatureKey " + o );
+                                         + this
+                                         + " and FeatureKey "
+                                         + o );
     }
 
     @Override
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "name", name )
-                .append( "description", description )
-                .append( "srid", srid )
-                .append( "wkt", wkt )
-                .toString();
+                                                                            .append( "name", name )
+                                                                            .append( "description", description )
+                                                                            .append( "srid", srid )
+                                                                            .append( "wkt", wkt )
+                                                                            .toString();
     }
 
 
@@ -216,7 +224,7 @@ public class FeatureKey implements Comparable<FeatureKey>
             {
                 return false;
             }
-            GeoPoint geoPoint = ( GeoPoint ) o;
+            GeoPoint geoPoint = (GeoPoint) o;
             return Double.compare( geoPoint.getX(), getX() ) == 0 &&
                    Double.compare( geoPoint.getY(), getY() ) == 0;
         }
@@ -231,9 +239,9 @@ public class FeatureKey implements Comparable<FeatureKey>
         public String toString()
         {
             return new ToStringBuilder( this )
-                    .append( "x", x )
-                    .append( "y", y )
-                    .toString();
+                                              .append( "x", x )
+                                              .append( "y", y )
+                                              .toString();
         }
     }
 
@@ -253,7 +261,8 @@ public class FeatureKey implements Comparable<FeatureKey>
 
         // Validate it's a point
         if ( !wktUpperCase.startsWith( "POINT" ) ||
-             !wktUpperCase.contains( "(" ) ||
+             !wktUpperCase.contains( "(" )
+             ||
              !wktUpperCase.contains( ")" ) )
         {
             throw new IllegalArgumentException( "Only able to support POINT for gridded selection" );

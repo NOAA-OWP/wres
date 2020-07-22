@@ -539,7 +539,7 @@ public class PoolSupplierTest
         baselinePoolBuilder.setIsBaselinePool( true );
         SampleMetadata.Builder poolOneMetadataBaselineBuilder =
                 new SampleMetadata.Builder( poolOneMetadata.getEvaluation(), baselinePoolBuilder.build() );
-        poolOneMetadataBaselineBuilder.setIdentifier( DatasetIdentifier.of( poolOneMetadata.getIdentifier().getLocation(),
+        poolOneMetadataBaselineBuilder.setIdentifier( DatasetIdentifier.of( poolOneMetadata.getIdentifier().getFeatureTuple(),
                                                                      poolOneMetadata.getIdentifier().getVariableName(),
                                                                      poolOneMetadata.getIdentifier().getScenarioName(),
                                                                      poolOneMetadata.getIdentifier()

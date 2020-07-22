@@ -215,7 +215,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
         Objects.requireNonNull( pairs.getMetadata().getIdentifier(),
                                 "Cannot write pairs with a null dataset identifier." );
 
-        Objects.requireNonNull( pairs.getMetadata().getIdentifier().getLocation(),
+        Objects.requireNonNull( pairs.getMetadata().getIdentifier().getFeatureTuple(),
                                 "Cannot write pairs with a null geospatial identifier." );
 
         try

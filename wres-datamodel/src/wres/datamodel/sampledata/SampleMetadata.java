@@ -20,7 +20,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.ValueFilter;
 
@@ -46,20 +46,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      */
 
     private final Pool pool;
-
-    /**
-     * TODO: eliminate this glue. The {@link FeatureTuple} is only needed because it maps inadequately to a canonical
-     * {@link Geometry}. In order for wrappers like {@link SampleMetadata} to work when canonical forms are sent on the 
-     * wire they must wrap canonical forms 1:1 - they cannot wrap local abstractions, such as {@link FeatureTuple} or
-     * whatever replaces {@link FeatureTuple} after #72747, otherwise the canonical information sent on the wire would not
-     * be sufficient to build a {@link SampleMetadata}. Changes are needed in two steps. In the first step, eliminate 
-     * this glue and include a {@link Geometry} within a {@link DatasetIdentifier}, which used on construction of a 
-     * {@link SampleMetadata}. In the second step, do not allow for construction of a {@link SampleMetadata} from 
-     * non-canonical forms, such as {@link DatasetIdentifier}, rather from an {@link Evaluation} plus a {@link Pool}, 
-     * nothing else.
-     */
-    @Deprecated
-    private final FeatureTuple feature;
 
     /**
      * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit}.
@@ -299,16 +285,14 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         }
         SampleMetadata p = (SampleMetadata) o;
         return Objects.equals( this.getEvaluation(), p.getEvaluation() )
-               && Objects.equals( this.getPool(), p.getPool() )
-               && Objects.equals( this.feature, p.feature );
+               && Objects.equals( this.getPool(), p.getPool() );
     }
 
     @Override
     public int hashCode()
     {
         return Objects.hash( this.getEvaluation(),
-                             this.getPool(),
-                             this.feature );
+                             this.getPool() );
     }
 
     @Override
@@ -423,7 +407,15 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     {
         DatasetIdentifier returnMe = null;
 
-        FeatureTuple localLocation = this.feature;
+        // For now, only one GeometryTuple per DatasetIdentifier
+        // TODO: allow a DatasetIdentifier to contain N GeometryTuple
+        FeatureTuple localLocation = null;
+
+        if ( this.getPool().getGeometryTuplesCount() > 0 )
+        {
+            localLocation = MessageFactory.parse( this.getPool().getGeometryTuples( 0 ) );
+        }
+
         LeftOrRightOrBaseline localContext = LeftOrRightOrBaseline.RIGHT;
         String variableName = null;
         String scenario = null;
@@ -609,16 +601,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         private Pool pool;
 
         /**
-         * TODO: eliminate this glue. Replace the {@link FeatureTuple} inside the {@link DatasetIdentifier} with a canonical
-         * {@link Geometry}. It is currently needed because there is a poor mapping between a {@link FeatureTuple} and
-         * a canonical {@link Geometry}. Eventually, remove all options to build instances of this class from 
-         * non-canonical forms, such as the {@link DatasetIdentifier}. The only reason that has not been done upfront is 
-         * to stage the refactoring.
-         */
-
-        private FeatureTuple feature;
-
-        /**
          * Sets the measurement unit.
          * 
          * @param unit the measurement unit
@@ -741,7 +723,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
             this.evaluation = sampleMetadata.evaluation;
             this.pool = sampleMetadata.pool;
-            this.feature = sampleMetadata.feature;
         }
 
     }
@@ -767,7 +748,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
         Evaluation.Builder evaluationBuilder = null;
         Pool.Builder poolBuilder = null;
-        FeatureTuple localLocation = builder.feature;
 
         if ( Objects.isNull( localEvaluation ) )
         {
@@ -787,19 +767,15 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             poolBuilder = localPool.toBuilder();
         }
 
-        // TODO: replace the mapping between a Location and a Geometry
-        // For now, this is deferred by storing a location instance locally
-        if ( Objects.nonNull( identifier ) && identifier.hasLocation() )
-        {
-            localLocation = identifier.getLocation();
+        this.evaluation = this.getEvaluation( evaluationBuilder, unit, identifier, timeScale, localProjectConfig );
 
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a location of {}.",
-                          localLocation );
+        FeatureTuple featureTuple = null;
+        if ( Objects.nonNull( identifier ) )
+        {
+            featureTuple = identifier.getFeatureTuple();
         }
 
-        this.evaluation = this.getEvaluation( evaluationBuilder, unit, identifier, timeScale, localProjectConfig );
-        this.pool = this.getPool( poolBuilder, timeWindow, thresholds );
-        this.feature = localLocation;
+        this.pool = this.getPool( poolBuilder, featureTuple, timeWindow, thresholds );
 
         this.validate();
     }
@@ -910,15 +886,27 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * Sets the pool fields using the input and returns an instance of a pool.
      * 
      * @param poolBuilder the pool builder
+     * @param featureTuple the feature tuple
      * @param timeWindow the time window
      * @param thresholds the thresholds
      * @return the pool
      */
 
     private Pool getPool( wres.statistics.generated.Pool.Builder poolBuilder,
+                          FeatureTuple featureTuple,
                           TimeWindowOuter timeWindow,
                           OneOrTwoThresholds thresholds )
     {
+
+        // Populate the pool from the supplied information as reasonably as possible
+        if ( Objects.nonNull( featureTuple ) )
+        {
+            GeometryTuple geoTuple = MessageFactory.parse( featureTuple );
+            poolBuilder.addGeometryTuples( geoTuple );
+
+            LOGGER.debug( "While creating pool metadata, populated the pool with a geometry tuple of {}.",
+                          featureTuple );
+        }
 
         // Populate the pool from the supplied information as reasonably as possible
         if ( Objects.nonNull( timeWindow ) )

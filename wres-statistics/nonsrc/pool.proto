@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "geometry.proto";
+import "geometry_tuple.proto";
 import "time_window.proto";
 import "pairs.proto";
 import "threshold.proto";
@@ -16,8 +16,8 @@ message Pool
     /*A message that encapsulates a pool, which is the atomic collection of 
     pairs and statistics.*/
     
-    repeated Geometry geometries = 1;
-    // Zero or more geometries that characterize this pool.
+    repeated GeometryTuple geometryTuples = 1;
+    // Zero or more geometry tuples that characterize this pool.
         
     TimeWindow time_window = 2;
     // The temporal boundaries of the pool.

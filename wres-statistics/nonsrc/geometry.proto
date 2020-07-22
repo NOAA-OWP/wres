@@ -20,15 +20,7 @@ message Geometry
     string name = 3;
     /*User-friendly name for all sides of a pairing or the left side only if 
     other sides are defined explicitly. (e.g., DRRC2).*/
-    
-    string right_name = 4;
-    /*The name of the geometry used on the right side of a pairing when 
-    different geometries have been correlated or cross-walked.*/
-    
-    string baseline_name = 5;
-    /*The name of the geometry used on the baseline side of a pairing when 
-    different geometries have been correlated or cross-walked.*/
 
-    string description = 6;
+    string description = 4;
     // User-friendly description of the geometry.
 }

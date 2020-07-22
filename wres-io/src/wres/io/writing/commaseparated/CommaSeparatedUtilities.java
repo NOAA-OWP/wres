@@ -110,10 +110,10 @@ public class CommaSeparatedUtilities
         String featureName = "UNKNOWN";
 
         DatasetIdentifier identifier = metadata.getIdentifier();
-        if ( Objects.nonNull( identifier ) && Objects.nonNull( identifier.getLocation() ) )
+        if ( Objects.nonNull( identifier ) && Objects.nonNull( identifier.getFeatureTuple() ) )
         {
             // TODO: decide if "right" is sufficient or a combination is better.
-            FeatureKey location = identifier.getLocation()
+            FeatureKey location = identifier.getFeatureTuple()
                                             .getRight();
             featureName = location.getName();
         }

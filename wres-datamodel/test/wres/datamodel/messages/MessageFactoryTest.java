@@ -431,8 +431,13 @@ public class MessageFactoryTest
 
         FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+        DatasetIdentifier datasetIdentifier = DatasetIdentifier.of( new FeatureTuple( location,
+                                                                                      location,
+                                                                                      location ),
+                                                                    SQIN,
+                                                                    HEFS,
+                                                                    ESP,
+                                                                    LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                .setTimeScale( timeScale )
@@ -497,7 +502,11 @@ public class MessageFactoryTest
         FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
+                                      SQIN,
+                                      HEFS,
+                                      ESP,
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                .setTimeScale( timeScale )
@@ -578,7 +587,11 @@ public class MessageFactoryTest
         FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
+                                      SQIN,
+                                      HEFS,
+                                      ESP,
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
                                                .setTimeScale( timeScale )
@@ -703,7 +716,11 @@ public class MessageFactoryTest
         FeatureKey location = FeatureKey.of( "DOLC2" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
+                                      SQIN,
+                                      HEFS,
+                                      ESP,
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadata = SampleMetadata.of( CMS,
                                                          datasetIdentifier,
@@ -752,7 +769,11 @@ public class MessageFactoryTest
         FeatureKey location = FeatureKey.of( "DOLC2" );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ), SQIN, HEFS, ESP, LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
+                                      SQIN,
+                                      HEFS,
+                                      ESP,
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadata = SampleMetadata.of( CMS,
                                                          datasetIdentifier,

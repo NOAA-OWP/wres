@@ -6,11 +6,15 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Vector features correlated either as declared or by a service call. Contains
  * at least a left and right, optionally a baseline. Optionally (eventually) a
  * climatology.
+ * 
+ * TODO: This class should probably compose a canonical {@link GeometryTuple} as it is 1:1 with the canonical 
+ * representation.
  */
 
 public class FeatureTuple implements Comparable<FeatureTuple>

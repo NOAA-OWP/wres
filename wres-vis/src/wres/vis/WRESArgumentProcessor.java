@@ -260,7 +260,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( meta.hasIdentifier() )
         {
             final DatasetIdentifier identifier = meta.getIdentifier();
-            addArgument( "locationName", identifier.getLocation().toString() );
+            addArgument( "locationName", identifier.getFeatureTuple().toString() );
             addArgument( "variableName", identifier.getVariableName() );
             if ( identifier.hasScenarioName() )
             {

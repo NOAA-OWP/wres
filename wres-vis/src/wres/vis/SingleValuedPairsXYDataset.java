@@ -59,7 +59,7 @@ public class SingleValuedPairsXYDataset
         {
             return getOverrideLegendName(series);
         }
-        return getPlotData().getMetadata().getIdentifier().getLocation() + "."
+        return getPlotData().getMetadata().getIdentifier().getFeatureTuple() + "."
             + getPlotData().getMetadata().getIdentifier().getVariableName() + "."
             + getPlotData().getMetadata().getIdentifier().getScenarioName();
     }
