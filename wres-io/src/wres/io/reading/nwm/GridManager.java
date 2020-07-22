@@ -354,6 +354,9 @@ class GridManager
 
         private void ingestCoordinates() throws IOException, SQLException
         {
+            LOGGER.info( "Ingesting coordinates for gridded dataset {}. This may take some time...", 
+                         this.metadata.path );
+            
             DataBuilder builder = DataBuilder.with(
                     "gridprojection_id",
                     "x_position",
@@ -421,6 +424,8 @@ class GridManager
                                   rowsRemaining, this.metadata );
                 }
             }
+            
+            LOGGER.info( "Finished ingesting coordinates for gridded dataset {}.", this.metadata.path );
         }
 
         private void addX(final DataBuilder builder, final Variable xCoordinates, final int index) throws IOException

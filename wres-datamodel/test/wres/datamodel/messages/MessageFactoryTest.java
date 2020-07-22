@@ -356,7 +356,7 @@ public class MessageFactoryTest
         EvaluationStatus statusOut =
                 MessageFactory.parse( ELEVENTH_TIME,
                                       TWELFTH_TIME,
-                                      CompletionStatus.COMPLETE_REPORTED_SUCCESS,
+                                      CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS,
                                       List.of( warning, error, info ) );
 
         Path path = this.outputDirectory.resolve( "status.pb3" );

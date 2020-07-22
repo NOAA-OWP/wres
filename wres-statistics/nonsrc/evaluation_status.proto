@@ -16,7 +16,14 @@ message EvaluationStatus
     packaged with the protocol; it is not provided inband. An EvaluationStatus 
     message may record some or all of the EvaluationStatusEvent associated with 
     an evaluation at the point of request. For example, it may record only those 
-    "new" events surfaced since the last request.*/
+    "new" events surfaced since the last request. Publishers and subscribers also
+    report on their status, in order to allow for evaluations to be completed,
+    validated as complete, and resources returned. A publisher reports when 
+    publication is complete and a consumer reports when consumption has started
+    and completed. A consumer registers and reports with a consumer identifier 
+    in the protocol metadata. Once an evaluation reports publication complete 
+    and all consumers report consumption complete, then the evaluation itself 
+    can complete.*/
 
     google.protobuf.Timestamp evaluation_start_time = 1;
     // The evaluation start time.
@@ -29,39 +36,69 @@ message EvaluationStatus
         // Captures the status of an evaluation that has been started.
         
     	UNKNOWN = 0;
-    	ONGOING = 1;
-    	COMPLETE_REPORTED_SUCCESS = 2;
-    	COMPLETE_REPORTED_FAILURE = 3;
 
-        GROUP_COMPLETE_REPORTED_SUCCESS = 4;
+    	ONGOING = 1;
+        // Evaluation is ongoing.
+
+    	EVALUATION_COMPLETE_REPORTED_SUCCESS = 2;  
+        // Evaluation complete and succeeded.
+
+        EVALUATION_COMPLETE_REPORTED_FAILURE = 3;  
+        // Evaluation complete and failed.
+
+        PUBLICATION_COMPLETE_REPORTED_SUCCESS = 4; 
+        // Publication completed without errors.
+
+        PUBLICATION_COMPLETE_REPORTED_FAILURE = 5;
+        // Publication completed with errors.
+
+        READY_TO_CONSUME = 6; 
+        // A consumer reports ready to consume. A consumer must be identified
+        // in order to correlate with its completion status. This identifier
+        // is assumed to be part of the protocol metadata.
+
+        CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 7; 
+        // A consumer reports completion without errors.
+        
+        CONSUMPTION_COMPLETE_REPORTED_FAILURE = 8;
+        // A consumer reports completion with errors.
+
+        GROUP_COMPLETE_REPORTED_SUCCESS = 9;
         // A message group has been completed. The group identifier is assumed 
-        // to be part of the metadata associated with the messaging protocol.
+        // to be part of the protocol metadata.
     }
     
     CompletionStatus completion_status = 3;
+
+    string consumer_id = 4;
+    // The unique identifier of the consumer when the status update is about
+    // a message consumer.
     
-    repeated EvaluationStatusEvent status_events = 4;
+    repeated EvaluationStatusEvent status_events = 5;
     // Zero or more caller-facing status events.
     
-    int64 message_count = 5;
+    int32 message_count = 6;
     // Number of statistics messages that were published, plus one (for the 
     // evaluation message description that accompanies every evaluation). This 
     // is the expected number of messages a client consumer should receive. 
-    // Always set when the completion status indicates that a stage has been 
-    // completed.
+    // Always set when the completion status indicates that publication is 
+    // complete (from that point onwards).
 
-    int64 status_message_count = 6;
+    int32 status_message_count = 7;
     // Number of evaluation status messages (like this one) that were published, 
     // where applicable. This is the expected number of messages a client 
     // consumer should receive. Always set when the completion status indicates 
-    // that an evaluation has been completed.
+    // that publication is complete (from that point onwards).
 
-    int32 pairs_message_count = 7;
+    int32 pairs_message_count = 8;
     // The number of pairs messages that were published, where applicable. This 
     // is the expected number of messages a client consumer should receive.
+    // Always set when the completion status indicates that publication is 
+    // complete (from that point onwards).
 
-    int32 group_count = 8;
-    // The number of groups within the evaluation.
+    int32 group_count = 9;
+    // The number of groups within the evaluation. Always set when the completion 
+    // status indicates that publication is complete (from that point onwards).
 
     message EvaluationStatusEvent
     {

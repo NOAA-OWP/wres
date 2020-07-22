@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -20,10 +22,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import wres.events.Evaluation.EvaluationInfo;
+import wres.events.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -62,22 +63,8 @@ public class MessageSubscriberTest
         // Bytes sent, representing integer 1695609641
         ByteBuffer sentOne = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );
 
+        EvaluationInfo evaluationInfo = EvaluationInfo.of( "someEvaluationId" );
 
-        // Mock completion: decrement latch when a new consumption is registered
-        CountDownLatch latch = new CountDownLatch( 1 );
-        CompletionTracker completionTracker = Mockito.mock( CompletionTracker.class );
-
-        Mockito.doAnswer( new Answer<>()
-        {
-            public Object answer( InvocationOnMock invocation )
-            {
-                latch.countDown();
-                return null;
-            }
-        } ).when( completionTracker ).register();
-
-        EvaluationInfo evaluationInfo = EvaluationInfo.of( "someEvaluationId", completionTracker );
-        
         try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
                                                                 destination );
               MessageSubscriber<Integer> subscriberOne =
@@ -85,15 +72,19 @@ public class MessageSubscriberTest
                                                               .setTopic( destination )
                                                               .setMapper( mapper )
                                                               .setEvaluationInfo( evaluationInfo )
+                                                              .setExpectedMessageCountSupplier( message -> 1 )
                                                               .addSubscribers( List.of( consumerOne ) )
+                                                              .setEvaluationStatusTopic( destination )
                                                               .build(); )
         {
-            publisher.publish( sentOne,
-                               "ID:someId",
-                               "someEvaluationId" );
+            Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:someId" );
+            properties.put( MessageProperty.JMS_CORRELATION_ID, "someEvaluationId" );
 
-            // Must set the evaluation and group identifiers because messages are filtered by these           
-            latch.await();
+            publisher.publish( sentOne, Collections.unmodifiableMap( properties ) );
+
+            // Wait until one message was received
+            while( subscriberOne.getConsumptionCount() == 0 ) {}
 
             assertEquals( 1695609641, actualOne.get() );
         }
@@ -111,8 +102,8 @@ public class MessageSubscriberTest
 
         // Each consumer group adds two integers together from two separate integer messages
         Function<Collection<Integer>, Integer> groupAggregator = list -> list.stream()
-                                                                       .mapToInt( Integer::intValue )
-                                                                       .sum();
+                                                                             .mapToInt( Integer::intValue )
+                                                                             .sum();
         Consumer<Collection<Integer>> consumer = aList -> actual.add( groupAggregator.apply( aList ) );
 
         // Bytes sent, representing integers 1695609641, 243, 1746072600 and 7, respectively
@@ -131,24 +122,13 @@ public class MessageSubscriberTest
         ByteBuffer groupComplete = ByteBuffer.wrap( status.toByteArray() );
 
         // Mock completion: decrement latch when a new consumption is registered
-        CountDownLatch latch = new CountDownLatch( 4 );
-        CompletionTracker completionTracker = Mockito.mock( CompletionTracker.class );
-
-        Mockito.doAnswer( new Answer<>()
-        {
-            public Object answer( InvocationOnMock invocation )
-            {
-                latch.countDown();
-
-                return null;
-            }
-        } ).when( completionTracker ).register();
+        GroupCompletionTracker completionTracker = Mockito.mock( GroupCompletionTracker.class );
 
         Mockito.when( completionTracker.getExpectedMessagesPerGroup( "someGroupId" ) ).thenReturn( 2 );
         Mockito.when( completionTracker.getExpectedMessagesPerGroup( "anotherGroupId" ) ).thenReturn( 2 );
 
         EvaluationInfo evaluationInfo = EvaluationInfo.of( "someEvaluationId", completionTracker );
-        
+
         try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
                                                                 statisticsDestination );
               MessagePublisher statusPublisher =
@@ -157,39 +137,44 @@ public class MessageSubscriberTest
                       new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
                                                               .setTopic( statisticsDestination )
                                                               .setEvaluationStatusTopic( statusDestination )
+                                                              .setExpectedMessageCountSupplier( message -> 2 )
                                                               .setMapper( mapper )
                                                               .setEvaluationInfo( evaluationInfo )
                                                               .addGroupSubscribers( List.of( consumer ) )
                                                               .build(); )
         {
-            // Must set the evaluation and group identifiers because messages are filtered by these
-            publisher.publish( sentOne,
-                               "ID:123",
-                               "someEvaluationId",
-                               "someGroupId" );
 
-            publisher.publish( sentTwo,
-                               "ID:456",
-                               "someEvaluationId",
-                               "someGroupId" );
+            // Must set the evaluation and group identifiers because messages are filtered by these
+            Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:123" );
+            properties.put( MessageProperty.JMS_CORRELATION_ID, "someEvaluationId" );
+            properties.put( MessageProperty.JMSX_GROUP_ID, "someGroupId" );
+
+            publisher.publish( sentOne, Collections.unmodifiableMap( properties ) );
+
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:456" );
+
+            publisher.publish( sentTwo, Collections.unmodifiableMap( properties ) );
 
             // Group complete
-            statusPublisher.publish( groupComplete, "ID:131415", "someEvaluationId", "someGroupId" );
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:131415" );
+            statusPublisher.publish( groupComplete, Collections.unmodifiableMap( properties ) );
 
-            publisher.publish( sentThree,
-                               "ID:789",
-                               "someEvaluationId",
-                               "anotherGroupId" );
+            // Start another group
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:789" );
+            properties.put( MessageProperty.JMSX_GROUP_ID, "anotherGroupId" );
+            
+            publisher.publish( sentThree, Collections.unmodifiableMap( properties ) );
 
-            publisher.publish( sentFour,
-                               "ID:101112",
-                               "someEvaluationId",
-                               "anotherGroupId" );
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:101112" );
+            publisher.publish( sentFour, Collections.unmodifiableMap( properties ) );
 
             // Another group complete
-            statusPublisher.publish( groupComplete, "ID:161718", "someEvaluationId", "anotherGroupId" );
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:161718" );
+            statusPublisher.publish( groupComplete, Collections.unmodifiableMap( properties ) );
 
-            latch.await();
+            // Wait until four messages were received
+            while( subscriberOne.getConsumptionCount() < 4 ) {}
         }
 
         List<Integer> expected = List.of( 1695609641 + 243, 1746072600 + 7 );

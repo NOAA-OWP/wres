@@ -542,10 +542,10 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     public void testValidationFailsIfDesiredFunctionIsUnknown()
     {
         TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
-                                                    TimeScaleFunction.MEAN );
+                                                              TimeScaleFunction.MEAN );
 
-        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ),
-                                                   TimeScaleFunction.UNKNOWN );
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ),
+                                                             TimeScaleFunction.UNKNOWN );
 
         TimeSeriesMetadata existingMetadata = getBoilerplateMetadataWithTimeScale( existingTimeScale );
         TimeSeries<Double> fake = new TimeSeriesBuilder<Double>().setMetadata( existingMetadata )
@@ -554,8 +554,8 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
 
-        String message = "ERROR: The desired time scale function is 'UNKNOWN': the function must be "
-                         + "known to conduct rescaling.";
+        String message = "The desired time scale is '[PT2H,UNKNOWN]', but the function must be known to conduct "
+                         + "rescaling.";
 
         assertTrue( exception.getMessage().contains( message ) );
     }

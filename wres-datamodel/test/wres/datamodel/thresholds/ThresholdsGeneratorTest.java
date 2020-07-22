@@ -29,11 +29,7 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
  * Tests the {@link ThresholdGenerator}. 

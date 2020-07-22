@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -15,6 +18,8 @@ import javax.naming.NamingException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import wres.events.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
 
 /**
@@ -51,10 +56,12 @@ public class MessagePublisherTest
         {
             connection.start();
 
-            publisher.publish( ByteBuffer.wrap( "some bytes".getBytes() ),
-                               "ID:someId",
-                               "someCorrelationId",
-                               "aGroupId" );
+            Map<MessageProperty,String> properties = new EnumMap<>( MessageProperty.class );
+            properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:someId" );
+            properties.put( MessageProperty.JMS_CORRELATION_ID, "someCorrelationId" );
+            properties.put( MessageProperty.JMSX_GROUP_ID, "aGroupId" );
+            
+            publisher.publish( ByteBuffer.wrap( "some bytes".getBytes() ), Collections.unmodifiableMap( properties ) );
 
             // Blocking wait
             BytesMessage received = (BytesMessage) consumer.receive();

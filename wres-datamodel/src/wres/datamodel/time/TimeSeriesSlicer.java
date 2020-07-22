@@ -373,13 +373,14 @@ public final class TimeSeriesSlicer
             // Lower bound exclusive
             Instant nextStart = nextEnd.minus( period );
 
+            // Is event time within (start,nextEnd]?
+            SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
+            
             for ( int i = startIndex; i < eventCount; i++ )
             {
                 Event<T> nextEvent = listedEvents.get( i );
                 Instant eventTime = nextEvent.getTime();
 
-                // Is event time within (start,nextEnd]?
-                SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
                 if ( eventTime.compareTo( nextEnd ) <= 0 && eventTime.compareTo( nextStart ) > 0 )
                 {
                     // Create a new group
@@ -447,7 +448,7 @@ public final class TimeSeriesSlicer
      * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
      * events by time. See {@link #groupEventsByInterval(SortedSet, Set, Duration)}.
      * 
-     * @param workBackFromhere the index at which to begin searching backwards
+     * @param workBackFromHere the index at which to begin searching backwards
      * @param startTime the start time that must be exceeded
      * @param events the list of events in time order
      */
