@@ -762,7 +762,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     // Figure out the location of all values and build the origin in each variable grid
                     FeatureKey location = score.getMetadata()
                                                .getIdentifier()
-                                               .getLocation()
+                                               .getFeatureTuple()
                                                .getRight();
 
                     int[] origin;

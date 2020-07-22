@@ -158,7 +158,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      input.getMetadata().getIdentifier().getLocation(),
+                      input.getMetadata().getIdentifier().getFeatureTuple(),
                       input.getMetadata().getTimeWindow() );
 
         // Process and return the result       

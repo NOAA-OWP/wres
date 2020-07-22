@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "geometry.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "GeometryTupleProto";
+option java_multiple_files = true;
+
+message GeometryTuple
+{
+    /*A tuple of geometries for each dataset associated with an evaluation.
+     An evaluation may contain a separate geometry for each of the left, 
+     right and baseline data and, in future, possibly the climatological 
+     data too. If only one geometry is present, it is assumed to apply 
+     to all datasets.*/
+
+    Geometry left = 1;
+    // Geometry for the left-sided data.
+
+    Geometry right = 2;
+    // Geometry for the right-sided data.
+
+    Geometry baseline = 3;
+    // Geometry for the baseline-sided data.
+}

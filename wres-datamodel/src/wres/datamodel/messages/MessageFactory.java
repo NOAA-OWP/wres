@@ -40,6 +40,7 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Season;
@@ -174,7 +175,7 @@ public class MessageFactory
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
         FeatureTuple location = metadata.getIdentifier()
-                                        .getLocation();
+                                        .getFeatureTuple();
 
         return new PoolBoundaries( location, window, thresholds );
     }
@@ -265,9 +266,9 @@ public class MessageFactory
 
         if ( metadata.hasIdentifier() && metadata.getIdentifier().hasLocation() )
         {
-            FeatureTuple location = metadata.getIdentifier().getLocation();
-            Geometry geometry = MessageFactory.parse( location );
-            sample.addGeometries( geometry );
+            FeatureTuple location = metadata.getIdentifier().getFeatureTuple();
+            GeometryTuple geometry = MessageFactory.parse( location );
+            sample.addGeometryTuples( geometry );
         }
 
         statistics.setPool( sample );
@@ -550,49 +551,102 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.Geometry} from a 
-     * {@link wres.datamodel.FeatureTuple}.
+     * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link wres.datamodel.FeatureTuple}.
      * 
      * @param location the location from which to create a message
      * @return the message
      */
 
-    public static Geometry parse( FeatureTuple location )
+    public static GeometryTuple parse( FeatureTuple location )
     {
         Objects.requireNonNull( location );
 
+        Geometry left = MessageFactory.parse( location.getLeft() );
+        Geometry right = MessageFactory.parse( location.getRight() );
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
+                                                     .setLeft( left )
+                                                     .setRight( right );
+
+        if ( Objects.nonNull( location.getBaseline() ) )
+        {
+            Geometry baseline = MessageFactory.parse( location.getBaseline() );
+            builder.setBaseline( baseline);
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.Geometry} from a {@link wres.datamodel.FeatureKey}.
+     * 
+     * @param featureKey the feature key from which to create a message
+     * @return the message
+     */
+
+    public static Geometry parse( FeatureKey featureKey )
+    {
+        Objects.requireNonNull( featureKey );
+
         Geometry.Builder builder = Geometry.newBuilder();
 
-        // TODO consider the right name the primary name because it is the right
-        // dataset that is being evaluated, the left and baseline are used for
-        // the purpose of evaluating the right. Or discover what makes most
-        // sense to users if they vehemently disagree with this idea.
-
-        if ( Objects.nonNull( location.getLeft()
-                                      .getName() ) )
+        if ( Objects.nonNull( featureKey.getName() ) )
         {
-            builder.setName( location.getLeft()
-                                     .getName() );
-        }
-        // Add the wkt, srid, description and right/baseline names, as available
-        if ( Objects.nonNull( location.getRight()
-                                      .getName() ) )
-        {
-            builder.setRightName( location.getRight()
-                                          .getName() );
+            builder.setName( featureKey.getName() );
         }
 
-        FeatureKey baseline = location.getBaseline();
-
-        if ( Objects.nonNull( baseline )
-             && Objects.nonNull( baseline.getName() ) )
+        if ( Objects.nonNull( featureKey.getDescription() ) )
         {
-            builder.setBaselineName( baseline.getName() );
+            builder.setDescription( featureKey.getDescription() );
         }
 
-        // TODO: either add the other wkts, srids, descriptions or choose which
-        // one of the three to report. All should probably be included.
+        if ( Objects.nonNull( featureKey.getWkt() ) )
+        {
+            builder.setWkt( featureKey.getWkt() );
+        }
+
+        if ( Objects.nonNull( featureKey.getSrid() ) )
+        {
+            builder.setSrid( featureKey.getSrid() );
+        }
+
         return builder.build();
+    }
+
+    /**
+     * Creates a {@link wres.datamodel.FeatureTuple} from a {@link wres.statistics.generated.GeometryTuple}.
+     * 
+     * @param location the location from which to create a message
+     * @return the message
+     */
+
+    public static FeatureTuple parse( GeometryTuple location )
+    {
+        Objects.requireNonNull( location );
+
+        Geometry leftGeom = location.getLeft();
+        FeatureKey left = new FeatureKey( leftGeom.getName(),
+                                          leftGeom.getDescription(),
+                                          leftGeom.getSrid(),
+                                          leftGeom.getWkt() );
+
+        Geometry rightGeom = location.getRight();
+        FeatureKey right = new FeatureKey( rightGeom.getName(),
+                                           rightGeom.getDescription(),
+                                           rightGeom.getSrid(),
+                                           rightGeom.getWkt() );
+
+        FeatureKey baseline = null;
+
+        if ( location.hasBaseline() )
+        {
+            Geometry baselineGeom = location.getBaseline();
+            baseline = new FeatureKey( baselineGeom.getName(),
+                                       baselineGeom.getDescription(),
+                                       baselineGeom.getSrid(),
+                                       baselineGeom.getWkt() );
+        }
+
+        return new FeatureTuple( left, right, baseline );
     }
 
     /**

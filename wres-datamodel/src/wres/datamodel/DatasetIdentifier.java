@@ -20,7 +20,7 @@ public class DatasetIdentifier
     /**
      * Geospatial identifier.
      */
-    final FeatureTuple location;
+    final FeatureTuple featureTuple;
 
     /**
      * variable identifier.
@@ -46,7 +46,7 @@ public class DatasetIdentifier
     /**
      * Returns an instance from the inputs.
      * 
-     * @param location the optional location
+     * @param featureTuple the optional location
      * @param variableId the optional variable identifier
      * @param scenarioId the optional scenario identifier
      * @param baselineScenarioId the optional baseline scenario identifier
@@ -55,19 +55,19 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialId, variableId and scenarioId are all null
      */
 
-    public static DatasetIdentifier of( FeatureTuple location,
+    public static DatasetIdentifier of( FeatureTuple featureTuple,
                                         String variableId,
                                         String scenarioId,
                                         String baselineScenarioId,
                                         LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        return new DatasetIdentifier( location, variableId, scenarioId, baselineScenarioId, leftOrRightOrBaseline );
+        return new DatasetIdentifier( featureTuple, variableId, scenarioId, baselineScenarioId, leftOrRightOrBaseline );
     }
 
     /**
      * Returns an instance from the inputs.
      * 
-     * @param location the optional location
+     * @param featureTuple the optional location
      * @param variableId the optional variable identifier
      * @param scenarioId the optional scenario identifier
      * @param baselineScenarioId the optional baseline scenario identifier
@@ -75,12 +75,12 @@ public class DatasetIdentifier
      * @throws NullPointerException if the geospatialId, variableId and scenarioId are all null
      */
 
-    public static DatasetIdentifier of( FeatureTuple location,
+    public static DatasetIdentifier of( FeatureTuple featureTuple,
                                         String variableId,
                                         String scenarioId,
                                         String baselineScenarioId )
     {
-        return new DatasetIdentifier( location, variableId, scenarioId, baselineScenarioId, null );
+        return new DatasetIdentifier( featureTuple, variableId, scenarioId, baselineScenarioId, null );
     }
 
     /**
@@ -93,7 +93,7 @@ public class DatasetIdentifier
 
     public static DatasetIdentifier of( DatasetIdentifier identifier, String baselineScenarioId )
     {
-        return DatasetIdentifier.of( identifier.getLocation(),
+        return DatasetIdentifier.of( identifier.getFeatureTuple(),
                                      identifier.getVariableName(),
                                      identifier.getScenarioName(),
                                      baselineScenarioId,
@@ -103,30 +103,30 @@ public class DatasetIdentifier
     /**
      * Returns a dataset identifier.
      * 
-     * @param location an optional location (may be null)
+     * @param featureTuple an optional location (may be null)
      * @param variableId an optional variable identifier (may be null)
      * @param scenarioId an optional scenario identifier (may be null)
      * @return a dataset identifier
      */
 
-    public static DatasetIdentifier of( final FeatureTuple location,
+    public static DatasetIdentifier of( final FeatureTuple featureTuple,
                                         final String variableId,
                                         final String scenarioId )
     {
-        return DatasetIdentifier.of( location, variableId, scenarioId, null );
+        return DatasetIdentifier.of( featureTuple, variableId, scenarioId, null );
     }
 
     /**
      * Returns a dataset identifier.
      * 
-     * @param location an optional location (may be null)
+     * @param featureTuple an optional location (may be null)
      * @param variableId an optional variable identifier (may be null)
      * @return a dataset identifier
      */
 
-    public static DatasetIdentifier of( final FeatureTuple location, final String variableId )
+    public static DatasetIdentifier of( final FeatureTuple featureTuple, final String variableId )
     {
-        return DatasetIdentifier.of( location, variableId, null, null );
+        return DatasetIdentifier.of( featureTuple, variableId, null, null );
     }
 
     /**
@@ -135,9 +135,9 @@ public class DatasetIdentifier
      * @return the location or null
      */
 
-    public FeatureTuple getLocation()
+    public FeatureTuple getFeatureTuple()
     {
-        return this.location;
+        return this.featureTuple;
     }
 
     /**
@@ -187,14 +187,14 @@ public class DatasetIdentifier
     }
 
     /**
-     * Returns true if a {@link #getLocation()} returns non-null, false otherwise.
+     * Returns true if a {@link #getFeatureTuple()} returns non-null, false otherwise.
      * 
-     * @return true if {@link #getLocation()} returns non-null, false otherwise.
+     * @return true if {@link #getFeatureTuple()} returns non-null, false otherwise.
      */
 
     public boolean hasLocation()
     {
-        return Objects.nonNull( this.getLocation() );
+        return Objects.nonNull( this.getFeatureTuple() );
     }
 
     /**
@@ -245,8 +245,8 @@ public class DatasetIdentifier
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "location",
-                                                                                     this.getLocation() )
+                                                                            .append( "featureTuple",
+                                                                                     this.getFeatureTuple() )
                                                                             .append( "variableId",
                                                                                      this.getVariableName() )
                                                                             .append( "scenarioId",
@@ -273,7 +273,7 @@ public class DatasetIdentifier
 
         DatasetIdentifier check = (DatasetIdentifier) o;
 
-        return Objects.equals( this.getLocation(), check.getLocation() )
+        return Objects.equals( this.getFeatureTuple(), check.getFeatureTuple() )
                && Objects.equals( this.getLeftOrRightOrBaseline(), check.getLeftOrRightOrBaseline() )
                && Objects.equals( this.getVariableName(), check.getVariableName() )
                && Objects.equals( this.getScenarioName(), check.getScenarioName() )
@@ -283,7 +283,7 @@ public class DatasetIdentifier
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getLocation(),
+        return Objects.hash( this.getFeatureTuple(),
                              this.getVariableName(),
                              this.getScenarioName(),
                              this.getScenarioNameForBaseline(),
@@ -293,29 +293,29 @@ public class DatasetIdentifier
     /**
      * Hidden constructor.
      * 
-     * @param geospatialID the geospatial identifier
-     * @param variableID the variable identifier
-     * @param scenarioID the scenario identifier
-     * @param baselineScenarioID the baseline scenario identifier
+     * @param featureTuple the geospatial identifier
+     * @param variableName the variable identifier
+     * @param scenarioName the scenario identifier
+     * @param baselineScenarioName the baseline scenario identifier
      * @param leftOrRightOrBaseline the context for the dataset as it relates to the declaration
      * @throws NullPointerException if the geospatialID, variableID and scenarioID are all null
      */
 
-    private DatasetIdentifier( FeatureTuple geospatialID,
-                               String variableID,
-                               String scenarioID,
-                               String baselineScenarioID,
+    private DatasetIdentifier( FeatureTuple featureTuple,
+                               String variableName,
+                               String scenarioName,
+                               String baselineScenarioName,
                                LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        if ( Objects.isNull( geospatialID ) && Objects.isNull( variableID ) && Objects.isNull( scenarioID ) )
+        if ( Objects.isNull( featureTuple ) && Objects.isNull( variableName ) && Objects.isNull( scenarioName ) )
         {
             throw new NullPointerException( "One of the location, variable and scenario identifiers must be non-null." );
         }
 
-        this.location = geospatialID;
-        this.variableId = variableID;
-        this.scenarioId = scenarioID;
-        this.baselineScenarioId = baselineScenarioID;
+        this.featureTuple = featureTuple;
+        this.variableId = variableName;
+        this.scenarioId = scenarioName;
+        this.baselineScenarioId = baselineScenarioName;
         this.leftOrRightOrBaseline = leftOrRightOrBaseline;
     }
 

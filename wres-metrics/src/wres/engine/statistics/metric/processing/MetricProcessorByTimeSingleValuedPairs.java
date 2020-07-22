@@ -125,7 +125,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      input.getMetadata().getIdentifier().getLocation(),
+                      input.getMetadata().getIdentifier().getFeatureTuple(),
                       input.getMetadata().getTimeWindow() );
 
         //Process and return the result       
