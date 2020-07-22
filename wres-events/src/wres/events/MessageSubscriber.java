@@ -1566,7 +1566,7 @@ class MessageSubscriber<T> implements Closeable
             try
             {
                 // Close
-                consumer.close();
+                this.consumer.close();
 
                 // Unsubscribe
                 this.session.unsubscribe( this.name );
