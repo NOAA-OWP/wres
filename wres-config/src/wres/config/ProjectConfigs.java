@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
+import wres.config.generated.ProjectConfig.Inputs;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.
@@ -82,6 +83,68 @@ public class ProjectConfigs
         return Duration.of( timeScaleConfig.getPeriod(), unit );
     }
 
+    /**
+     * <p>Returns the variable identifier from the inputs configuration. The identifier is one of the following in
+     * order of precedent:</p>
+     *
+     * <p>If the variable identifier is required for the left and right:</p>
+     * <ol>
+     * <li>The label associated with the variable in the left source.</li>
+     * <li>The label associated with the variable in the right source.</li>
+     * <li>The value associated with the left variable.</li>
+     * </ol>
+     *
+     * <p>If the variable identifier is required for the baseline:</p>
+     * <ol>
+     * <li>The label associated with the variable in the baseline source.</li>
+     * <li>The value associated with the baseline variable.</li>
+     * </ol>
+     *
+     * <p>In both cases, the last declaration is always present.</p>
+     *
+     * @param inputs the inputs configuration
+     * @param isBaseline is true if the variable name is required for the baseline
+     * @return the variable identifier
+     * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain
+     *            a baseline source
+     * @throws NullPointerException if the input is null
+     */
+
+    public static String getVariableIdFromProjectConfig( Inputs inputs, boolean isBaseline )
+    {
+        Objects.requireNonNull( inputs );
+
+        // Baseline required?
+        if ( isBaseline )
+        {
+            // Has a baseline source
+            if ( Objects.nonNull( inputs.getBaseline() ) )
+            {
+                // Has a baseline source with a label
+                if ( Objects.nonNull( inputs.getBaseline().getVariable().getLabel() ) )
+                {
+                    return inputs.getBaseline().getVariable().getLabel();
+                }
+                // Only has a baseline source with a variable value
+                return inputs.getBaseline().getVariable().getValue();
+            }
+            throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
+                                                + "does not contain a baseline source." );
+        }
+        // Has a left source with a label
+        if ( Objects.nonNull( inputs.getLeft().getVariable().getLabel() ) )
+        {
+            return inputs.getLeft().getVariable().getLabel();
+        }
+        // Has a right source with a label
+        else if ( Objects.nonNull( inputs.getRight().getVariable().getLabel() ) )
+        {
+            return inputs.getRight().getVariable().getLabel();
+        }
+        // Has a left source with a variable value
+        return inputs.getLeft().getVariable().getValue();
+    }
+    
     private ProjectConfigs()
     {
         // Prevent construction, this is a static helper class.

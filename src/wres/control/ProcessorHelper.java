@@ -25,6 +25,7 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.datamodel.FeatureTuple;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
@@ -39,6 +40,8 @@ import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.io.writing.protobuf.ProtobufWriter;
+import wres.statistics.generated.Evaluation;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -96,6 +99,7 @@ class ProcessorHelper
                                              executor,
                                              projectConfig,
                                              lockManager );
+
         Operations.prepareForExecution( project );
 
         LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
@@ -142,7 +146,7 @@ class ProcessorHelper
         if ( decomposedFeatures.isEmpty() )
         {
             throw new NoDataException( "There were data correlated by "
-                                       + "geographic features specified " 
+                                       + "geographic features specified "
                                        + "available for evaluation but "
                                        + "there were no thresholds available "
                                        + "for any of those features." );
@@ -152,66 +156,13 @@ class ProcessorHelper
         String projectIdentifier = String.valueOf( project.getInputCode() );
 
         ResolvedProject resolvedProject = ResolvedProject.of(
-                projectConfigPlus,
-                decomposedFeatures,
-                projectIdentifier,
-                thresholds,
-                outputDirectory
-        );
-
-        // Obtain the duration units for outputs: #55441
-        String durationUnitsString = projectConfig.getOutputs().getDurationFormat().value().toUpperCase();
-        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
-
-        // Build any writers of incremental formats that are shared across features
-        SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
-        if ( ConfigHelper.getIncrementalFormats( projectConfig ).contains( DestinationType.NETCDF ) )
-        {
-            // Use the gridded netcdf writer
-            sharedWritersBuilder.setNetcdfOutputWriter(
-                    NetcdfOutputWriter.of(
-                            systemSettings,
-                            executor,
-                            projectConfig,
-                            durationUnits,
-                            outputDirectory,
-                            thresholds
-                    )
-            );
-        }
-
-        SharedSampleDataWriters sharedSampleWriters = null;
-        SharedSampleDataWriters sharedBaselineSampleWriters = null;
-
-        // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
-        // Writing the same pairs, more than once, to that single destination does not make sense.
-        // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
-        if ( !project.getPairDestinations().isEmpty() )
-        {
-            DecimalFormat decimalFormatter = null;
-            if ( Objects.nonNull( project.getPairDestinations().get( 0 ).getDecimalFormat() ) )
-            {
-                decimalFormatter = ConfigHelper.getDecimalFormatter( project.getPairDestinations().get( 0 ) );
-            }
-
-            sharedSampleWriters =
-                    SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
-                                                durationUnits,
-                                                decimalFormatter );
-            // Baseline writer?
-            if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
-            {
-                sharedBaselineSampleWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
-                                                                                     PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
-                                                                          durationUnits,
-                                                                          decimalFormatter );
-            }
-        }
+                                                              projectConfigPlus,
+                                                              decomposedFeatures,
+                                                              projectIdentifier,
+                                                              thresholds,
+                                                              outputDirectory );
 
         Set<Path> pathsWrittenTo = new HashSet<>();
-
-        // Iterate the features, closing any shared writers on completion
-        SharedStatisticsWriters sharedStatisticsWriters = sharedWritersBuilder.build();
 
         // Tasks for features
         List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
@@ -225,11 +176,14 @@ class ProcessorHelper
         // completion state of features has no value when reported in this way
         ProgressMonitor.deactivate();
 
-        // Share an instance of a unit mapper across features
-        SharedWriters sharedWriters = SharedWriters.of( sharedStatisticsWriters,
-                                                        sharedSampleWriters,
-                                                        sharedBaselineSampleWriters );
-        
+        // Shared writers
+        SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings, 
+                                                                        executor, 
+                                                                        project, 
+                                                                        projectConfig,
+                                                                        thresholds,
+                                                                        outputDirectory );
+
         // Create one task per feature
         for ( FeatureTuple feature : decomposedFeatures )
         {
@@ -259,7 +213,7 @@ class ProcessorHelper
             pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
 
             // Find the paths written to by shared writers
-            pathsWrittenTo.addAll( sharedStatisticsWriters.get() );
+            pathsWrittenTo.addAll( sharedWriters.getStatisticsWriters().get() );
 
             if ( sharedWriters.hasSharedSampleWriters() )
             {
@@ -298,6 +252,103 @@ class ProcessorHelper
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    
+    /**
+     * Returns an instance of {@link SharedWriters} for shared writing.
+     * 
+     * @param systemSettings the system settings
+     * @param executor the executor
+     * @param project the project that is aware of ingest
+     * @param projectConfig the project declaration
+     * @param thresholds the thresholds
+     * @param outputDirectory the output directory for writing
+     * @return the shared writer instance
+     * @throws IOException if the shared writer could not be created
+     */
+    
+    private static SharedWriters getSharedWriters( SystemSettings systemSettings,
+                                                   Executor executor,
+                                                   Project project,
+                                                   ProjectConfig projectConfig,
+                                                   Map<FeatureTuple, ThresholdsByMetric> thresholds,
+                                                   Path outputDirectory )
+            throws IOException
+    {
+
+        // Obtain the duration units for outputs: #55441
+        String durationUnitsString = projectConfig.getOutputs().getDurationFormat().value().toUpperCase();
+        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
+
+        // Build any writers of incremental formats that are shared across features
+        SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
+        Set<DestinationType> incrementalFormats = ConfigHelper.getIncrementalFormats( projectConfig );
+        
+        if ( incrementalFormats.contains( DestinationType.NETCDF ) )
+        {
+            // Use the gridded netcdf writer
+            sharedWritersBuilder.setNetcdfOutputWriter(
+                                                        NetcdfOutputWriter.of(
+                                                                               systemSettings,
+                                                                               executor,
+                                                                               projectConfig,
+                                                                               durationUnits,
+                                                                               outputDirectory,
+                                                                               thresholds ) );
+            
+            LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
+        }
+        
+        if ( incrementalFormats.contains( DestinationType.PROTOBUF ) )
+        {
+            // TODO: abstract the creation of an evaluation description to the outermost caller that creates
+            // an evaluation. For now, it is only used here.
+            
+            Evaluation evaluation = MessageFactory.parse( projectConfig );
+            
+            // Use a standard name for the protobuf
+            // Eventually, this should probably correspond to the unique evaluation identifier
+            Path protobufPath = outputDirectory.resolve( "evaluation.pb3" );           
+            sharedWritersBuilder.setProtobufWriter( ProtobufWriter.of( protobufPath, evaluation ) );
+            
+            LOGGER.debug( "Added a shared protobuf writer to the evaluation." );
+        }
+
+        SharedSampleDataWriters sharedSampleWriters = null;
+        SharedSampleDataWriters sharedBaselineSampleWriters = null;
+
+        // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
+        // Writing the same pairs, more than once, to that single destination does not make sense.
+        // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
+        if ( !project.getPairDestinations().isEmpty() )
+        {
+            DecimalFormat decimalFormatter = null;
+            if ( Objects.nonNull( project.getPairDestinations().get( 0 ).getDecimalFormat() ) )
+            {
+                decimalFormatter = ConfigHelper.getDecimalFormatter( project.getPairDestinations().get( 0 ) );
+            }
+
+            sharedSampleWriters =
+                    SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
+                                                durationUnits,
+                                                decimalFormatter );
+            // Baseline writer?
+            if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+            {
+                sharedBaselineSampleWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
+                                                                                     PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
+                                                                          durationUnits,
+                                                                          decimalFormatter );
+            }
+        }
+
+        // Iterate the features, closing any shared writers on completion
+        SharedStatisticsWriters sharedStatisticsWriters = sharedWritersBuilder.build();
+
+        return SharedWriters.of( sharedStatisticsWriters,
+                                 sharedSampleWriters,
+                                 sharedBaselineSampleWriters );
     }
 
     /**
@@ -370,131 +421,6 @@ class ProcessorHelper
         }
         //Either all done OR one completes exceptionally
         return CompletableFuture.anyOf( allDone, oneExceptional );
-    }
-
-    /**
-     * <p>Returns a map of features from the <code>featuresToEvaluate</code> for which external thresholds are available
-     * in the <code>externalThresholds</code>. The keys within the returned map correspond to the instances within the
-     * <code>featuresToEvaluate</code>, which are fully qualified. 
-     *
-     * <p>Logs a warning message if:
-     * 
-     * <ol>
-     * <li>Thresholds have been defined for one or more features individually; and</li>
-     * <li>The list of features that require computation contains one or more features for which
-     * thresholds have not been defined</li>
-     * </ol>
-     * 
-     * <p>Returns a map with the fully qualified features from the <code>featuresToEvaluate</code> as keys. 
-     * 
-     * <p>TODO: superseded by #62205, which aligns the declaration of thresholds and features.
-     * 
-     * @param externalThresholds the features with thresholds
-     * @param featuresToEvaluate the features to evaluate
-     * @return The map of filtered features to evaluate
-     * @throws IllegalArgumentException if some expected thresholds are missing
-     */
-
-    private static Map<FeatureTuple, ThresholdsByMetric>
-            reconcileFeaturesAndExternalThresholds( Map<String, ThresholdsByMetric> externalThresholds,
-                                                    Set<FeatureTuple> featuresToEvaluate )
-    {
-        LOGGER.debug( "Attempting to reconcile the {} features to evaluate with the {} features for which external "
-                      + "thresholds are available.",
-                      featuresToEvaluate.size(),
-                      externalThresholds.size() );
-        Map<FeatureTuple, ThresholdsByMetric> filteredFeatures = new TreeMap<>();
-
-        // Get the thresholds indexed by canonical feature name only
-        Map<String, ThresholdsByMetric> externalThresholdsByKey =
-                ProcessorHelper.getThresholdsByCanonicalFeatureName( externalThresholds );
-
-
-        // Iterate the features to evaluate, filtering any for which external thresholds are not available
-        Set<FeatureTuple> missingThresholds = new HashSet<>();
-
-        for ( FeatureTuple featureTuple : featuresToEvaluate )
-        {
-            // The right dataset is the one being evaluated, but the thresholds
-            // most commonly apply to the left dataset, so match on the left.
-            String featureName = featureTuple.getLeft()
-                                             .getName();
-
-            if ( externalThresholdsByKey.containsKey( featureName ) )
-            {
-                filteredFeatures.put( featureTuple, externalThresholdsByKey.get( featureName ) );
-            }
-            else
-            {
-                missingThresholds.add( featureTuple );
-            }
-        }
-
-        if ( !missingThresholds.isEmpty() && LOGGER.isWarnEnabled() )
-        {
-            StringJoiner joiner = new StringJoiner( ", " );
-
-            for ( FeatureTuple feature : missingThresholds )
-            {
-                joiner.add( feature.getLeft()
-                                   .getName() );
-            }
-
-            LOGGER.debug( "featuresToEvaluate: {}", featuresToEvaluate );
-            LOGGER.debug( "externalThresholds: {}", externalThresholds );
-            LOGGER.debug( "missingThresholds: {}", missingThresholds );
-            LOGGER.warn( "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
-                         "While attempting to reconcile the features to ",
-                         "evaluate with the features for which thresholds ",
-                         "are available, found ",
-                         featuresToEvaluate.size(),
-                         " features to evaluate and ",
-                         externalThresholds.size(),
-                         " features for which thresholds are available, but ",
-                         missingThresholds.size(),
-                         " features for which thresholds could not be ",
-                         "reconciled with features to evaluate. Features without ",
-                         "thresholds will be skipped. If the number of features ",
-                         "without thresholds is larger than expected, ensure ",
-                         "that the type of feature name (featureType) is properly ",
-                         "declared for the external source of thresholds. The ",
-                         "features without thresholds are: ",
-                         joiner,
-                         "." );
-        }
-
-        return Collections.unmodifiableMap( filteredFeatures );
-    }
-
-    /**
-     * Returns a map of thresholds that are keyed to a canonical identifier, based on the identifier found in the first 
-     * entry. Currently limited to {@link FeatureType#NWS_ID} and {@link FeatureType#USGS_ID}. TODO: superseded 
-     * by #62205, which aligns the declaration of thresholds and features.
-     * 
-     * @param thresholds the external thresholds
-     * @return a map of thresholds whose keys are partially matched by canonical name only
-     */
-
-    private static Map<String, ThresholdsByMetric>
-            getThresholdsByCanonicalFeatureName( Map<String, ThresholdsByMetric> thresholds )
-    {
-        Map<String, ThresholdsByMetric> thresholdsByKey = null;
-
-        if ( !thresholds.isEmpty() )
-        {
-            LOGGER.debug( "Discovered a source of thresholds by feature." );
-            thresholdsByKey = new TreeMap<>();
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Could not identify the type of feature name by which to reconcile "
-                                                + "features from an external source with features from an internal "
-                                                + "source." );
-        }
-
-        thresholdsByKey.putAll( thresholds );
-
-        return Collections.unmodifiableMap( thresholdsByKey );
     }
 
     /**

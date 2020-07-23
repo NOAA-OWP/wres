@@ -635,6 +635,7 @@
             <xs:enumeration value="numeric" />
             <xs:enumeration value="graphic" />
             <xs:enumeration value="pairs" />
+            <xs:enumeration value="protobuf" />
         </xs:restriction>
     </xs:simpleType>
 

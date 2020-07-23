@@ -54,14 +54,10 @@ public class ProtobufWriterTest
     public void runBeforeEachTest()
     {
         this.evaluation = Evaluation.newBuilder()
-                                    .setMetricMessageCount( 1 )
-                                    .setPoolMessageCount( 2 )
+                                    .setMetricCount( 1 )
                                     .setLeftSourceName( "aLeftSource" )
                                     .setRightSourceName( "aRightSource" )
                                     .setMeasurementUnit( "aMeasurementUnit" )
-                                    .setTimeScale( TimeScale.newBuilder()
-                                                            .setPeriod( Duration.newBuilder()
-                                                                                .setSeconds( 77 ) ) )
                                     .setVariableName( "aVariable" )
                                     .build();
 
@@ -84,7 +80,10 @@ public class ProtobufWriterTest
                                                        .setEarliestLeadDuration( Duration.newBuilder()
                                                                                          .setSeconds( 3600 ) )
                                                        .setLatestLeadDuration( Duration.newBuilder()
-                                                                                       .setSeconds( 3600 ) ) ) );
+                                                                                       .setSeconds( 3600 ) ) )
+                             .setTimeScale( TimeScale.newBuilder()
+                                                     .setPeriod( Duration.newBuilder()
+                                                                         .setSeconds( 77 ) ) ) );
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
@@ -130,7 +129,10 @@ public class ProtobufWriterTest
                                                        .setEarliestLeadDuration( Duration.newBuilder()
                                                                                          .setSeconds( 3600 ) )
                                                        .setLatestLeadDuration( Duration.newBuilder()
-                                                                                       .setSeconds( 3600 ) ) ) );
+                                                                                       .setSeconds( 3600 ) ) )
+                             .setTimeScale( TimeScale.newBuilder()
+                                                     .setPeriod( Duration.newBuilder()
+                                                                         .setSeconds( 88 ) ) ) );
         DoubleScoreStatistic four =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )

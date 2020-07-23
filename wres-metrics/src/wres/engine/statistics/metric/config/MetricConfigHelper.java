@@ -22,7 +22,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsGenerator;
 
 /**
  * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.

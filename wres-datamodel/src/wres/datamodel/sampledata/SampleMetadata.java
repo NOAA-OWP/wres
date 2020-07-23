@@ -507,9 +507,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     public TimeScaleOuter getTimeScale()
     {
         TimeScaleOuter outer = null;
-        if ( this.getEvaluation().hasTimeScale() )
+        if ( this.getPool().hasTimeScale() )
         {
-            outer = TimeScaleOuter.of( this.getEvaluation().getTimeScale() );
+            outer = TimeScaleOuter.of( this.getPool().getTimeScale() );
         }
 
         return outer;
@@ -767,7 +767,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             poolBuilder = localPool.toBuilder();
         }
 
-        this.evaluation = this.getEvaluation( evaluationBuilder, unit, identifier, timeScale, localProjectConfig );
+        this.evaluation = this.getEvaluation( evaluationBuilder, unit, identifier, localProjectConfig );
 
         FeatureTuple featureTuple = null;
         if ( Objects.nonNull( identifier ) )
@@ -775,7 +775,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             featureTuple = identifier.getFeatureTuple();
         }
 
-        this.pool = this.getPool( poolBuilder, featureTuple, timeWindow, thresholds );
+        this.pool = this.getPool( poolBuilder, featureTuple, timeWindow, timeScale, thresholds );
 
         this.validate();
     }
@@ -786,7 +786,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @param evaluationBuilder the evaluation builder
      * @param unit the measurement units
      * @param identifier the dataset identifier
-     * @param timeScale the time scale
      * @param projectConfig the project declaration
      * @return the evaluation
      */
@@ -794,7 +793,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     private Evaluation getEvaluation( wres.statistics.generated.Evaluation.Builder evaluationBuilder,
                                       MeasurementUnit unit,
                                       DatasetIdentifier identifier,
-                                      TimeScaleOuter timeScale,
                                       ProjectConfig projectConfig )
     {
 
@@ -832,16 +830,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                           identifier.getScenarioNameForBaseline() );
         }
 
-        if ( Objects.nonNull( timeScale ) )
-        {
-            wres.statistics.generated.TimeScale scale = MessageFactory.parse( timeScale );
-            evaluationBuilder.setTimeScale( scale );
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a time scale of "
-                          + "{}.",
-                          timeScale );
-        }
-
         if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getPair() )
              && Objects.nonNull( projectConfig.getPair().getSeason() ) )
         {
@@ -871,7 +859,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                                            .mapToInt( a -> a.getMetric().size() )
                                            .sum();
 
-            evaluationBuilder.setMetricMessageCount( metricCount );
+            evaluationBuilder.setMetricCount( metricCount );
 
             LOGGER.debug( "While creating sample metadata, populated the evaluation with a metric count of "
                           + "{}.",
@@ -888,6 +876,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @param poolBuilder the pool builder
      * @param featureTuple the feature tuple
      * @param timeWindow the time window
+     * @paream timeScale the time scale
      * @param thresholds the thresholds
      * @return the pool
      */
@@ -895,6 +884,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     private Pool getPool( wres.statistics.generated.Pool.Builder poolBuilder,
                           FeatureTuple featureTuple,
                           TimeWindowOuter timeWindow,
+                          TimeScaleOuter timeScale,
                           OneOrTwoThresholds thresholds )
     {
 
@@ -904,7 +894,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             GeometryTuple geoTuple = MessageFactory.parse( featureTuple );
             poolBuilder.addGeometryTuples( geoTuple );
 
-            LOGGER.debug( "While creating pool metadata, populated the pool with a geometry tuple of {}.",
+            LOGGER.debug( "While creating sample metadata, populated the pool with a geometry tuple of {}.",
                           featureTuple );
         }
 
@@ -914,10 +904,20 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             wres.statistics.generated.TimeWindow window = MessageFactory.parse( timeWindow );
             poolBuilder.setTimeWindow( window );
 
-            LOGGER.debug( "While creating pool metadata, populated the pool with a time window of {}.",
+            LOGGER.debug( "While creating sample metadata, populated the pool with a time window of {}.",
                           timeWindow );
         }
 
+        if ( Objects.nonNull( timeScale ) )
+        {
+            wres.statistics.generated.TimeScale scale = MessageFactory.parse( timeScale );
+            poolBuilder.setTimeScale( scale );
+
+            LOGGER.debug( "While creating sample metadata, populated the pool with a time scale of "
+                          + "{}.",
+                          timeScale );
+        }
+        
         // Populate the pool from the supplied information as reasonably as possible
         if ( Objects.nonNull( thresholds ) )
         {

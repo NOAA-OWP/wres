@@ -87,7 +87,7 @@ public class EvaluationTest
         // First evaluation
         wres.statistics.generated.Evaluation.Builder oneEvaluationBuilder =
                 wres.statistics.generated.Evaluation.newBuilder();
-        oneEvaluationBuilder.setPoolMessageCount( 10 );
+
         this.oneEvaluation = oneEvaluationBuilder.build();
         this.oneStatistics = new ArrayList<>();
 
@@ -106,7 +106,7 @@ public class EvaluationTest
         // Second evaluation
         wres.statistics.generated.Evaluation.Builder anotherEvaluationBuilder =
                 wres.statistics.generated.Evaluation.newBuilder();
-        anotherEvaluationBuilder.setPoolMessageCount( 5 );
+
         this.anotherStatistics = new ArrayList<>();
         this.anotherEvaluation = anotherEvaluationBuilder.build();
 

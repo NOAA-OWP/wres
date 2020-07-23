@@ -981,15 +981,6 @@ public class Evaluation implements Closeable
                                                 + "evaluation statistics events." );
         }
 
-        int expectedStatisticsMessageCount = evaluationMessage.getPoolMessageCount();
-
-        if ( expectedStatisticsMessageCount <= 0 )
-        {
-            throw new IllegalStateException( "An evaluation message failed to declare the expected number of pools "
-                                             + "(of statistics) produced by the evaluation, which is necessary to "
-                                             + "track and close the evaluation on successful completion." );
-        }
-
         this.publicationComplete = new AtomicBoolean();
         this.isStopped = new AtomicBoolean();
         this.evaluationId = Evaluation.getUniqueId();

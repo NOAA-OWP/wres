@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.text.Format;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -54,6 +55,7 @@ import wres.io.writing.png.PNGBoxPlotWriter;
 import wres.io.writing.png.PNGDiagramWriter;
 import wres.io.writing.png.PNGDoubleScoreWriter;
 import wres.io.writing.png.PNGDurationScoreWriter;
+import wres.statistics.generated.Statistics;
 import wres.io.writing.png.PNGDurationDiagramWriter;
 import wres.system.SystemSettings;
 
@@ -149,6 +151,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             new EnumMap<>( DestinationType.class );
 
     /**
+     * Writers that consume all types of statistics.
+     */
+
+    private final Set<Consumer<Statistics>> statisticsConsumers = new HashSet<>();
+
+    /**
      * A map of output formats for which specific metrics should not be written. 
      */
 
@@ -241,6 +249,12 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             {
                 this.processDurationDiagramStatistic( input.getInstantDurationPairStatistics() );
             }
+
+            // Consumers of all statistics
+            if ( !this.statisticsConsumers.isEmpty() )
+            {
+                this.processMultiStatistics( input );
+            }
         }
         catch ( InterruptedException e )
         {
@@ -306,6 +320,10 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
             this.buildPortableNetworkGraphicsConsumers();
         }
 
+        if ( this.configNeedsThisTypeOfOutput( DestinationType.PROTOBUF ) )
+        {
+            this.buildMultiStatisticsConsumers( sharedWriters );
+        }
     }
 
     /**
@@ -517,8 +535,9 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
              && sharedWriters.contains( StatisticType.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
             LOGGER.debug( "There are shared netcdf consumers for {}", this );
+
             this.doubleScoreConsumers.put( DestinationType.NETCDF,
-                                           sharedWriters );
+                                           next -> sharedWriters.getNetcdfOutputWriter().accept( next ) );
             this.writersToPaths.add( sharedWriters );
             // Not in charge of closing the sharedwriters, that is out at top.
         }
@@ -528,6 +547,29 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         }
     }
 
+    /**
+     * Builds a set of consumers for formats that accept all statistics.
+     *
+     * @throws ProjectConfigException if the project configuration is invalid for writing
+     * @throws IOException if the initial blobs could not be written
+     */
+
+    private void buildMultiStatisticsConsumers( SharedStatisticsWriters sharedWriters )
+    {
+        // Build the consumers conditionally
+        if ( Objects.nonNull( sharedWriters ) && sharedWriters.contains( DestinationType.PROTOBUF ) )
+        {
+            LOGGER.debug( "There are shared protobuf consumers for {}", this );
+
+            this.statisticsConsumers.add( sharedWriters.getProtobufWriter() );
+            this.writersToPaths.add( sharedWriters );
+            // Not in charge of closing the sharedwriters, that is out at top.
+        }
+        else
+        {
+            LOGGER.debug( "There are NOT shared protobuf consumers for {}", this );
+        }
+    }
 
     /**
      * Processes {@link DiagramStatisticOuter}.
@@ -556,6 +598,26 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
                 log( outputs, next.getKey(), false );
             }
+        }
+    }
+
+    /**
+     * Processes {@link StatisticsForProject} that contain all statistics.
+     * 
+     * @param statisticsForProject the statistics to consume
+     * @throws InterruptedException if the parsing was interrupted
+     * @throws NullPointerException if the input is null
+     */
+
+    private void processMultiStatistics( StatisticsForProject statisticsForProject ) throws InterruptedException
+    {
+        Objects.requireNonNull( statisticsForProject, NULL_OUTPUT_STRING );
+
+        // Iterate through the consumers
+        for ( Consumer<Statistics> nextConsumer : this.statisticsConsumers )
+        {
+            Collection<Statistics> statistics = MessageFactory.parse( statisticsForProject );
+            statistics.forEach( nextConsumer::accept );
         }
     }
 

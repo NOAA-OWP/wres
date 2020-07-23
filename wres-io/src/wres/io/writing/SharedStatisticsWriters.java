@@ -4,18 +4,16 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.io.writing.protobuf.ProtobufWriter;
 
 /**
  * Contains a set of shared writers for managing the shared state of statistical outputs that are written 
@@ -23,12 +21,20 @@ import wres.io.writing.netcdf.NetcdfOutputWriter;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SharedStatisticsWriters implements Closeable,
-        Consumer<List<DoubleScoreStatisticOuter>>,
-        Supplier<Set<Path>>
+public class SharedStatisticsWriters implements Closeable, Supplier<Set<Path>>
 {
 
+    /**
+     * Netcdf writer.
+     */
+
     private final NetcdfOutputWriter netcdfOutputWriter;
+
+    /**
+     * Consumer of protobufs.
+     */
+
+    private final ProtobufWriter protobufWriter;
 
     /**
      * Set of types for which writers are available.
@@ -48,16 +54,48 @@ public class SharedStatisticsWriters implements Closeable,
     public boolean contains( StatisticType type, DestinationType format )
     {
         Objects.requireNonNull( type, "Specify a non-null type to test." );
-
         Objects.requireNonNull( format, "Specify a non-null format to test." );
 
-        return storedTypes.contains( Pair.of( format, type ) );
+        // Protobufs accept all types
+        if ( format == DestinationType.PROTOBUF && Objects.nonNull( this.protobufWriter ) )
+        {
+            return true;
+        }
+
+        return this.storedTypes.contains( Pair.of( format, type ) );
     }
 
+    /**
+     * Returns <code>true</code> if a writer is available for the specified format, otherwise <code>false</code>.
+     * 
+     * @param format the output format
+     * @return true if a writer is available for the input types, otherwise false
+     * @throws NullPointerException if either input is null
+     */
 
-    NetcdfOutputWriter getNetcdfOutputWriter()
+    public boolean contains( DestinationType format )
+    {
+        Objects.requireNonNull( format, "Specify a non-null format to test." );
+
+        return this.storedTypes.stream().anyMatch( next -> next.getLeft() == format );
+    }
+
+    /**
+     * @return the netcdf writer
+     */
+
+    public NetcdfOutputWriter getNetcdfOutputWriter()
     {
         return this.netcdfOutputWriter;
+    }
+
+    /**
+     * @return the protobuf writer
+     */
+
+    public ProtobufWriter getProtobufWriter()
+    {
+        return this.protobufWriter;
     }
 
     /**
@@ -73,12 +111,38 @@ public class SharedStatisticsWriters implements Closeable,
 
         private NetcdfOutputWriter netcdfOutputWriter;
 
+        /**
+         * Consumer of protobufs.
+         */
+
+        private ProtobufWriter protobufWriter;
+
+        /**
+         * Sets the netcdf writer.
+         * @param netcdfOutputWriter the netcdf writer
+         * @return this builder
+         */
 
         public SharedWritersBuilder setNetcdfOutputWriter( NetcdfOutputWriter netcdfOutputWriter )
         {
             this.netcdfOutputWriter = netcdfOutputWriter;
+
             return this;
         }
+
+        /**
+         * Sets the protobuf writer.
+         * @param protobufWriter the protobuf writer
+         * @return this builder
+         */
+
+        public SharedWritersBuilder setProtobufWriter( ProtobufWriter protobufWriter )
+        {
+            this.protobufWriter = protobufWriter;
+
+            return this;
+        }
+
 
         /**
          * Return an instance of a {@link SharedStatisticsWriters}.
@@ -103,6 +167,7 @@ public class SharedStatisticsWriters implements Closeable,
     {
         // Set
         this.netcdfOutputWriter = builder.netcdfOutputWriter;
+        this.protobufWriter = builder.protobufWriter;
 
         // Register the stored types
         Set<Pair<DestinationType, StatisticType>> localTypes = new HashSet<>();
@@ -112,23 +177,12 @@ public class SharedStatisticsWriters implements Closeable,
             localTypes.add( Pair.of( DestinationType.NETCDF, StatisticType.DOUBLE_SCORE ) );
         }
 
-        this.storedTypes = Collections.unmodifiableSet( localTypes );
-    }
-
-
-    /**
-     * Pass-through any metrics to underlying writers.
-     *
-     * @param metricOutput metrics to write
-     */
-
-    @Override
-    public void accept( List<DoubleScoreStatisticOuter> metricOutput )
-    {
-        if ( Objects.nonNull( this.netcdfOutputWriter ) )
+        if ( Objects.nonNull( this.getProtobufWriter() ) )
         {
-            this.netcdfOutputWriter.accept( metricOutput );
+            localTypes.add( Pair.of( DestinationType.PROTOBUF, null ) );
         }
+
+        this.storedTypes = Collections.unmodifiableSet( localTypes );
     }
 
     @Override
@@ -136,12 +190,18 @@ public class SharedStatisticsWriters implements Closeable,
     {
         Set<Path> paths = new HashSet<>( 1 );
 
-        if ( Objects.nonNull( this.getNetcdfOutputWriter() ) )
+        if ( this.contains( DestinationType.NETCDF ) )
         {
             Set<Path> outputWriterPaths = this.getNetcdfOutputWriter().get();
             paths.addAll( outputWriterPaths );
         }
-
+        
+        if ( this.contains( DestinationType.PROTOBUF ) )
+        {
+            Set<Path> outputWriterPaths = this.getProtobufWriter().get();
+            paths.addAll( outputWriterPaths );
+        }
+        
         return Collections.unmodifiableSet( paths );
     }
 
