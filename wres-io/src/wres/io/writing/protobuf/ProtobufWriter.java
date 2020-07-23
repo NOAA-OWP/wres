@@ -1,13 +1,16 @@
 package wres.io.writing.protobuf;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +34,7 @@ import wres.statistics.generated.EvaluationStatus;
  */
 
 @Immutable
-public class ProtobufWriter implements Consumer<Statistics>
+public class ProtobufWriter implements Consumer<Statistics>, Supplier<Set<Path>>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProtobufWriter.class );
@@ -58,19 +61,20 @@ public class ProtobufWriter implements Consumer<Statistics>
     {
         Objects.requireNonNull( statistics );
 
-        LOGGER.debug( "Writing a statistics message to {}.", path );
+        LOGGER.debug( "Writing a statistics message to {}.", this.getPathToWrite() );
 
         this.getLockForWriting().lock();
 
-        try ( OutputStream stream = Files.newOutputStream( this.getPathToWrite(),
-                                                           StandardOpenOption.APPEND ) )
+        try ( OutputStream fileOut = Files.newOutputStream( this.getPathToWrite(),
+                                                            StandardOpenOption.APPEND );
+              OutputStream buffer = new BufferedOutputStream( fileOut ) )
         {
             // Write with framing
-            statistics.writeDelimitedTo( stream );
+            statistics.writeDelimitedTo( buffer );
         }
         catch ( IOException e )
         {
-            throw new ProtobufWriteException( "While writing an evaluation message to " + path
+            throw new ProtobufWriteException( "While writing an evaluation message to " + this.getPathToWrite()
                                               + ", encountered an exception.",
                                               e );
         }
@@ -79,7 +83,7 @@ public class ProtobufWriter implements Consumer<Statistics>
             this.getLockForWriting().unlock();
         }
 
-        LOGGER.debug( "Finished writing a statistics message to {}.", path );
+        LOGGER.debug( "Finished writing a statistics message to {}.", this.getPathToWrite() );
     }
 
     /**
@@ -95,6 +99,12 @@ public class ProtobufWriter implements Consumer<Statistics>
     public static ProtobufWriter of( Path path, Evaluation evaluation )
     {
         return new ProtobufWriter( path, evaluation );
+    }
+
+    @Override
+    public Set<Path> get()
+    {
+        return Set.of( this.getPathToWrite() );
     }
 
     /**
@@ -130,12 +140,13 @@ public class ProtobufWriter implements Consumer<Statistics>
 
         this.getLockForWriting().lock();
 
-        try ( OutputStream stream = Files.newOutputStream( path,
-                                                           StandardOpenOption.CREATE,
-                                                           StandardOpenOption.TRUNCATE_EXISTING ) )
+        try ( OutputStream fileOut = Files.newOutputStream( path,
+                                                            StandardOpenOption.CREATE,
+                                                            StandardOpenOption.TRUNCATE_EXISTING );
+              OutputStream buffer = new BufferedOutputStream( fileOut ) )
         {
             // Write with framing
-            evaluation.writeDelimitedTo( stream );
+            evaluation.writeDelimitedTo( buffer );
         }
         catch ( IOException e )
         {
@@ -193,5 +204,4 @@ public class ProtobufWriter implements Consumer<Statistics>
             super( message, cause );
         }
     }
-
 }

@@ -20,9 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +28,11 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
-import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.utilities.NoDataException;
@@ -67,15 +63,10 @@ import wres.util.TimeHelper;
 
 public class ConfigHelper
 {
-    private static final String ONE_OR_BOTH_OF_THEM_DON_T_HAVE_ONE = "one or both of them don't have one.";
-
     private static final String ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING =
             "Enter non-null metadata to establish a path for writing.";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
-
-    private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages =
-            new ConcurrentHashMap<>();
 
     /**
      * Default exception message when a destination cannot be established.
@@ -168,7 +159,7 @@ public class ConfigHelper
             hashBuilder.append( leftHash );
         }
 
-        hashBuilder.append(left.getVariable().getValue());
+        hashBuilder.append( left.getVariable().getValue() );
 
         hashBuilder.append( right.getType().value() );
 
@@ -576,68 +567,6 @@ public class ConfigHelper
     }
 
     /**
-     * <p>Returns the variable identifier from the inputs configuration. The identifier is one of the following in
-     * order of precedent:</p>
-     *
-     * <p>If the variable identifier is required for the left and right:</p>
-     * <ol>
-     * <li>The label associated with the variable in the left source.</li>
-     * <li>The label associated with the variable in the right source.</li>
-     * <li>The value associated with the left variable.</li>
-     * </ol>
-     *
-     * <p>If the variable identifier is required for the baseline:</p>
-     * <ol>
-     * <li>The label associated with the variable in the baseline source.</li>
-     * <li>The value associated with the baseline variable.</li>
-     * </ol>
-     *
-     * <p>In both cases, the last declaration is always present.</p>
-     *
-     * @param inputs the inputs configuration
-     * @param isBaseline is true if the variable name is required for the baseline
-     * @return the variable identifier
-     * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain
-     *            a baseline source
-     * @throws NullPointerException if the input is null
-     */
-
-    public static String getVariableIdFromProjectConfig( Inputs inputs, boolean isBaseline )
-    {
-        Objects.requireNonNull( inputs );
-
-        // Baseline required?
-        if ( isBaseline )
-        {
-            // Has a baseline source
-            if ( Objects.nonNull( inputs.getBaseline() ) )
-            {
-                // Has a baseline source with a label
-                if ( Objects.nonNull( inputs.getBaseline().getVariable().getLabel() ) )
-                {
-                    return inputs.getBaseline().getVariable().getLabel();
-                }
-                // Only has a baseline source with a variable value
-                return inputs.getBaseline().getVariable().getValue();
-            }
-            throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
-                                                + "does not contain a baseline source." );
-        }
-        // Has a left source with a label
-        if ( Objects.nonNull( inputs.getLeft().getVariable().getLabel() ) )
-        {
-            return inputs.getLeft().getVariable().getLabel();
-        }
-        // Has a right source with a label
-        else if ( Objects.nonNull( inputs.getRight().getVariable().getLabel() ) )
-        {
-            return inputs.getRight().getVariable().getLabel();
-        }
-        // Has a left source with a variable value
-        return inputs.getLeft().getVariable().getValue();
-    }
-
-    /**
      * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link SampleMetadata}.
      *
      * @param outputDirectory the directory into which to write
@@ -924,8 +853,8 @@ public class ConfigHelper
 
             // TODO: Format the last time in the style of "20180505T2046"
             // instead of "2018-05-05 20:46:00.000-0000"
-            lastTime = lastTime.replaceAll( "-", "" )
-                               .replaceAll( ":", "" )
+            lastTime = lastTime.replace( "-", "" )
+                               .replace( ":", "" )
                                .replace( "Z$", "" );
 
             filename.add( lastTime );
@@ -997,11 +926,13 @@ public class ConfigHelper
 
         Outputs output = projectConfig.getOutputs();
 
-        // The only incremental type currently supported is DestinationType.NETCDF
-        if ( Objects.nonNull( output )
-             && output.getDestination().stream().anyMatch( type -> type.getType() == DestinationType.NETCDF ) )
+        if ( Objects.nonNull( output ) )
         {
-            return Set.of( DestinationType.NETCDF );
+            return output.getDestination()
+                         .stream()
+                         .map( DestinationConfig::getType )
+                         .filter( next -> next == DestinationType.NETCDF || next == DestinationType.PROTOBUF )
+                         .collect( Collectors.toUnmodifiableSet() );
         }
 
         // Return empty set

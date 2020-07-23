@@ -6,6 +6,7 @@ import "geometry_tuple.proto";
 import "time_window.proto";
 import "pairs.proto";
 import "threshold.proto";
+import "time_scale.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "PoolProto";
@@ -22,23 +23,30 @@ message Pool
     TimeWindow time_window = 2;
     // The temporal boundaries of the pool.
 
-    Threshold event_threshold = 3;
+    TimeScale time_scale = 3;
+    // The time scale associated with the pairs and statistics in this pool.
+    // In general, the time scale is fixed across all pools within an evaluation,
+    // but it may not be known until pool creation time and, in principle, the 
+    // time scale could vary between pools.
+
+    Threshold event_threshold = 4;
     // Threshold used to define a partition of pairs or a categorical event.
         
-    Threshold decision_threshold = 4;
+    Threshold decision_threshold = 5;
     /*The threshold associated with a decision, such as the forecast probability 
     of flooding at which to issue a flood warning. This is used to transform 
     probabilistic dichotomous data to single-valued dichitomous data to which 
     dichotomous statistics may be applied, such as the equitable threat score.*/
+    
+    Pairs pairs = 6;
+    // The paired values that form the pool.
 
-    bool is_baseline_pool = 5;
+    bool is_baseline_pool = 7;
     // Is true when the pool contains statistics for the baseline pairs *only*, 
     // false when it contains statistics for the right pairs, whether absolute 
     // statistics or statistics relative to a baseline (skill). When an 
     // evaluation contains the same metrics for both the right pairs and 
     // baseline pairs, this allows the resulting statistics to be discriminated 
     // between.
-    
-    Pairs pairs = 6;
-    // The paired values that form the pool.
+
 }

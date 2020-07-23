@@ -47,6 +47,7 @@ import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
+import wres.config.ProjectConfigs;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DatasetIdentifier;
@@ -316,7 +317,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Dataset identifier, without a feature/location identifier
         // Use the main variable identifier in case there is a different one for the baseline
-        String variableId = ConfigHelper.getVariableIdFromProjectConfig( inputs, false );
+        String variableId = ProjectConfigs.getVariableIdFromProjectConfig( inputs, false );
         // Use the scenarioId for the right, unless there is a baseline that requires separate metrics
         // in which case, do not use a scenarioId
         String scenarioId = inputs.getRight().getLabel();

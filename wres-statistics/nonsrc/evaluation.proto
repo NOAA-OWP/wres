@@ -3,7 +3,6 @@ syntax = "proto3";
 package wres.statistics.generated;
 
 import "season.proto";
-import "time_scale.proto";
 import "value_filter.proto";
 
 option java_package = "wres.statistics.generated";
@@ -12,47 +11,34 @@ option java_multiple_files = true;
 
 message Evaluation
 {
-    /*A message that encapsulates an evaluation. An evaluation is composed of N
-    pools of pairs and M metrics. The pairs represent a single variable and time-
-    scale. Each pool of pairs is composed of G geospatial features and one time 
-    window. In the absence of thresholds that further partition a pool, each 
-    evaluation produces N*M statistics.*/ 
-
-    int32 pool_message_count = 1;
-    // Number of pools per evaluation. There is this many pools of statistics
-    // at most because some pools may contain no data (hence no statistics)
-    // The expected number of messages is part of an EvaluationStatus event,
-    // because this is only known after the evaluation has started.
+    // A message that encapsulates an evaluation.
         
-    int32 metric_message_count = 2;
-    // Number of metrics per evaluation. Always positive.
+    int32 metric_count = 1;
+    // Number of metrics in the evaluation. Always positive.
     
-    string left_source_name = 3;
+    string left_source_name = 2;
     // User-friendly name for the left data sources.
     
-    string right_source_name = 4;
+    string right_source_name = 3;
     // User-friendly name for the right data sources.
         
-    string baseline_source_name = 5;
+    string baseline_source_name = 4;
     // User-friendly name for the baseline data sources.
     
-    string variable_name = 6;
+    string variable_name = 5;
     // Variable name.
     
-    string measurement_unit = 7;
+    string measurement_unit = 6;
     /*Measurement units associated with the pairs, real-valued thresholds, and 
     any statistics that are expressed in real units.*/
     
-    Season season = 8;
+    Season season = 7;
     // A season filter.
     
-    TimeScale time_scale = 9;
-    // The time scale associated with the pairs and statistics.
-    
-    repeated string ensemble_member_subset = 10;
+    repeated string ensemble_member_subset = 8;
     /*A set of ensemble members by name that were included. If absent, all were
     included.*/
     
-    ValueFilter value_filter = 11;
+    ValueFilter value_filter = 9;
     // Values that were not filtered when forming pairs.
 }

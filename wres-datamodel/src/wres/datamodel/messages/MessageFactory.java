@@ -12,11 +12,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.DoubleBoundsType;
+import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.FeatureKey;
@@ -39,6 +44,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMe
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -65,6 +71,8 @@ import wres.statistics.generated.ValueFilter;
 public class MessageFactory
 {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( MessageFactory.class );
+
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsForProject}.
@@ -76,7 +84,7 @@ public class MessageFactory
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Collection<Statistics> parseByPool( StatisticsForProject project ) throws InterruptedException
+    public static Collection<Statistics> parse( StatisticsForProject project ) throws InterruptedException
     {
         Objects.requireNonNull( project );
 
@@ -86,7 +94,7 @@ public class MessageFactory
 
         for ( StatisticsForProject next : decomposedStatistics )
         {
-            Statistics statistics = MessageFactory.parse( next );
+            Statistics statistics = MessageFactory.parseOnePool( next );
             returnMe.add( statistics );
         }
 
@@ -94,90 +102,100 @@ public class MessageFactory
     }
 
     /**
-     * Decomposes the input into pools. A pool contains a single set of space, time and threshold dimensions.
-     *
-     * @param project the project statistics
-     * @return the decomposed statistics
-     * @throws InterruptedException if the statistics could not be retrieved from the project
-     * @throws NullPointerException if the input is null
+     * Creates an evaluation from a project declaration.
+     * 
+     * @param project the project declaration
+     * @return an evaluation
+     * @throws NullPointerException if the project is null
      */
 
-    private static Collection<StatisticsForProject> getStatisticsPerPool( StatisticsForProject project )
-            throws InterruptedException
+    public static Evaluation parse( ProjectConfig project )
     {
         Objects.requireNonNull( project );
 
-        Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics = new HashMap<>();
+        Evaluation.Builder builder = Evaluation.newBuilder();
 
-        // Double scores
-        if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
+        // Populate the evaluation from the supplied information as reasonably as possible
+        if ( Objects.nonNull( project.getPair() ) && Objects.nonNull( project.getPair().getUnit() ) )
         {
-            List<DoubleScoreStatisticOuter> statistics = project.getDoubleScoreStatistics();
-            MessageFactory.addDoubleScoreStatisticsToPool( statistics, mappedStatistics );
+            builder.setMeasurementUnit( project.getPair().getUnit() );
+
+            LOGGER.debug( "Populated the evaluation with a measurement unit of {}.",
+                          project.getPair().getUnit() );
         }
 
-        // Duration scores
-        if ( project.hasStatistic( StatisticType.DURATION_SCORE ) )
+        if ( Objects.nonNull( project.getInputs() ) )
         {
-            List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics =
-                    project.getDurationScoreStatistics();
-            MessageFactory.addDurationScoreStatisticsToPool( statistics, mappedStatistics );
+            String variableName = ProjectConfigs.getVariableIdFromProjectConfig( project.getInputs(), false );
+            builder.setVariableName( variableName );
+
+            LOGGER.debug( "Populated the evaluation with a variable name of {}.",
+                          variableName );
         }
 
-        // Diagrams
-        if ( project.hasStatistic( StatisticType.DIAGRAM ) )
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getLeft() )
+             && Objects.nonNull( project.getInputs().getLeft().getLabel() ) )
         {
-            List<wres.datamodel.statistics.DiagramStatisticOuter> statistics = project.getDiagramStatistics();
-            MessageFactory.addDiagramStatisticsToPool( statistics, mappedStatistics );
+            String name = project.getInputs().getLeft().getLabel();
+            builder.setLeftSourceName( name );
+
+            LOGGER.debug( "Populated the evaluation with a left source name of {}.",
+                          name );
         }
 
-        // Box plots per pair
-        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getRight() )
+             && Objects.nonNull( project.getInputs().getRight().getLabel() ) )
         {
-            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPair();
-            MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, false );
+            String name = project.getInputs().getRight().getLabel();
+            builder.setRightSourceName( name );
+
+            LOGGER.debug( "Populated the evaluation with a right source name of {}.",
+                          name );
         }
 
-        // Box plots statistics per pool
-        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getBaseline() )
+             && Objects.nonNull( project.getInputs().getBaseline().getLabel() ) )
         {
-            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPool();
-            MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, true );
+            String name = project.getInputs().getBaseline().getLabel();
+            builder.setBaselineSourceName( name );
+
+            LOGGER.debug( "Populated the evaluation with a baseline source name of {}.",
+                          name );
         }
 
-        // Box plots statistics per pool
-        if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
+        if ( Objects.nonNull( project.getPair() ) && Objects.nonNull( project.getPair().getSeason() ) )
         {
-            List<DurationDiagramStatisticOuter> statistics =
-                    project.getInstantDurationPairStatistics();
-            MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
+            Season season = MessageFactory.parse( project.getPair().getSeason() );
+            builder.setSeason( season );
+
+            LOGGER.debug( "Populated the evaluation with a season of {}.",
+                          season );
         }
 
-        Collection<StatisticsForProject> returnMe = new ArrayList<>();
+        if ( Objects.nonNull( project.getPair() ) && Objects.nonNull( project.getPair().getValues() ) )
+        {
+            ValueFilter filter = MessageFactory.parse( project.getPair().getValues() );
+            builder.setValueFilter( filter );
 
-        mappedStatistics.values().forEach( next -> returnMe.add( next.build() ) );
+            LOGGER.debug( "Populated the evaluation with a value filter of {}.",
+                          project.getPair().getValues() );
+        }
 
-        return Collections.unmodifiableCollection( returnMe );
-    }
+        if ( Objects.nonNull( project.getMetrics() ) )
+        {
+            
+            int metricCount = project.getMetrics()
+                                     .stream()
+                                     .mapToInt( a -> DataFactory.getMetricsFromMetricsConfig( a, project ).size()  )
+                                     .sum();
 
-    /**
-     * Creates pool boundaries from metadata.
-     *
-     * @param metadata the metadata
-     * @return the pool boundaries
-     */
+            builder.setMetricCount( metricCount );
 
-    private static PoolBoundaries getPoolBoundaries( SampleMetadata metadata )
-    {
-        Objects.requireNonNull( metadata );
+            LOGGER.debug( "Populated the evaluation with a metric count of {}.",
+                          metricCount );
+        }
 
-        wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
-        wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
-
-        FeatureTuple location = metadata.getIdentifier()
-                                        .getFeatureTuple();
-
-        return new PoolBoundaries( location, window, thresholds );
+        return builder.build();
     }
 
     /**
@@ -191,7 +209,7 @@ public class MessageFactory
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Statistics parse( StatisticsForProject project ) throws InterruptedException
+    public static Statistics parseOnePool( StatisticsForProject project ) throws InterruptedException
     {
         Objects.requireNonNull( project );
 
@@ -277,7 +295,7 @@ public class MessageFactory
     }
 
     /**
-     * Creates a collection of {@link wres.statistics.generated.Statistics} by pol from a
+     * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsForProject}.
      * 
      * @param project the project statistics
@@ -288,10 +306,10 @@ public class MessageFactory
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Statistics parse( StatisticsForProject project, PoolOfPairs<Double, Ensemble> pairs )
+    public static Statistics parseOnePool( StatisticsForProject project, PoolOfPairs<Double, Ensemble> pairs )
             throws InterruptedException
     {
-        Statistics prototype = MessageFactory.parse( project );
+        Statistics prototype = MessageFactory.parseOnePool( project );
 
         Statistics.Builder statistics = Statistics.newBuilder( prototype );
 
@@ -570,7 +588,7 @@ public class MessageFactory
         if ( Objects.nonNull( location.getBaseline() ) )
         {
             Geometry baseline = MessageFactory.parse( location.getBaseline() );
-            builder.setBaseline( baseline);
+            builder.setBaseline( baseline );
         }
 
         return builder.build();
@@ -647,6 +665,93 @@ public class MessageFactory
         }
 
         return new FeatureTuple( left, right, baseline );
+    }
+
+    /**
+     * Decomposes the input into pools. A pool contains a single set of space, time and threshold dimensions.
+     *
+     * @param project the project statistics
+     * @return the decomposed statistics
+     * @throws InterruptedException if the statistics could not be retrieved from the project
+     * @throws NullPointerException if the input is null
+     */
+
+    private static Collection<StatisticsForProject> getStatisticsPerPool( StatisticsForProject project )
+            throws InterruptedException
+    {
+        Objects.requireNonNull( project );
+
+        Map<PoolBoundaries, StatisticsForProject.Builder> mappedStatistics = new HashMap<>();
+
+        // Double scores
+        if ( project.hasStatistic( StatisticType.DOUBLE_SCORE ) )
+        {
+            List<DoubleScoreStatisticOuter> statistics = project.getDoubleScoreStatistics();
+            MessageFactory.addDoubleScoreStatisticsToPool( statistics, mappedStatistics );
+        }
+
+        // Duration scores
+        if ( project.hasStatistic( StatisticType.DURATION_SCORE ) )
+        {
+            List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics =
+                    project.getDurationScoreStatistics();
+            MessageFactory.addDurationScoreStatisticsToPool( statistics, mappedStatistics );
+        }
+
+        // Diagrams
+        if ( project.hasStatistic( StatisticType.DIAGRAM ) )
+        {
+            List<wres.datamodel.statistics.DiagramStatisticOuter> statistics = project.getDiagramStatistics();
+            MessageFactory.addDiagramStatisticsToPool( statistics, mappedStatistics );
+        }
+
+        // Box plots per pair
+        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
+        {
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPair();
+            MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, false );
+        }
+
+        // Box plots statistics per pool
+        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
+        {
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics = project.getBoxPlotStatisticsPerPool();
+            MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, true );
+        }
+
+        // Box plots statistics per pool
+        if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
+        {
+            List<DurationDiagramStatisticOuter> statistics =
+                    project.getInstantDurationPairStatistics();
+            MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
+        }
+
+        Collection<StatisticsForProject> returnMe = new ArrayList<>();
+
+        mappedStatistics.values().forEach( next -> returnMe.add( next.build() ) );
+
+        return Collections.unmodifiableCollection( returnMe );
+    }
+
+    /**
+     * Creates pool boundaries from metadata.
+     *
+     * @param metadata the metadata
+     * @return the pool boundaries
+     */
+
+    private static PoolBoundaries getPoolBoundaries( SampleMetadata metadata )
+    {
+        Objects.requireNonNull( metadata );
+
+        wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
+        wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
+
+        FeatureTuple location = metadata.getIdentifier()
+                                        .getFeatureTuple();
+
+        return new PoolBoundaries( location, window, thresholds );
     }
 
     /**

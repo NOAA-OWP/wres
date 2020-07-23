@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -150,7 +151,7 @@ public class PoolFactory
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
 
         // Create the basic metadata for the pools
-        String variableId = ConfigHelper.getVariableIdFromProjectConfig( inputsConfig, false );
+        String variableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, false );
         String scenarioId = inputsConfig.getRight().getLabel();
         SampleMetadata mainMetadata = PoolFactory.createMetadata( projectConfig,
                                                                   feature,
@@ -171,7 +172,7 @@ public class PoolFactory
                           projectId,
                           feature );
 
-            String baselineVariableId = ConfigHelper.getVariableIdFromProjectConfig( inputsConfig, true );
+            String baselineVariableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, true );
             String baselineScenarioId = inputsConfig.getBaseline().getLabel();
             baselineMetadata = PoolFactory.createMetadata( projectConfig,
                                                            feature,
@@ -284,7 +285,7 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( leftUpscaler );
 
         // Create the basic metadata for the pools
-        String variableId = ConfigHelper.getVariableIdFromProjectConfig( inputsConfig, false );
+        String variableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, false );
         String scenarioId = inputsConfig.getRight().getLabel();
         SampleMetadata mainMetadata = PoolFactory.createMetadata( projectConfig,
                                                                   feature,
@@ -303,7 +304,7 @@ public class PoolFactory
                           projectId,
                           feature );
 
-            String baselineVariableId = ConfigHelper.getVariableIdFromProjectConfig( inputsConfig, true );
+            String baselineVariableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, true );
             String baselineScenarioId = inputsConfig.getBaseline().getLabel();
             baselineMetadata = PoolFactory.createMetadata( projectConfig,
                                                            feature,
