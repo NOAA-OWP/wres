@@ -3380,6 +3380,7 @@ public class WRDSSourceTest
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
+                                                null,
                                                 features,
                                                 null,
                                                 null,
@@ -3515,6 +3516,7 @@ public class WRDSSourceTest
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
+                                                null,
                                                 features,
                                                 null,
                                                 null,
@@ -3640,6 +3642,7 @@ public class WRDSSourceTest
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
+                                                null,
                                                 features,
                                                 null,
                                                 null,
@@ -3754,6 +3757,7 @@ public class WRDSSourceTest
         List<Feature> features = new ArrayList<>( 1 );
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
+                                                null,
                                                 features,
                                                 null,
                                                 null,

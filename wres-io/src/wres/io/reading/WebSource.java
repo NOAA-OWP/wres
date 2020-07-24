@@ -1,11 +1,8 @@
  package wres.io.reading;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -19,10 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -32,9 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.IntPredicate;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -49,9 +42,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
-import wres.config.generated.Feature;
 import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
@@ -268,11 +259,9 @@ class WebSource implements Callable<List<IngestResult>>
     public List<IngestResult> call() throws IOException
     {
         List<IngestResult> ingestResults = new ArrayList<>();
-
-        Features featuresCache = this.getFeaturesCache();
         Set<String> features =
-                featuresCache.getFeatureNamesForSource( this.getProjectConfig(),
-                                                        this.getDataSourceConfig() );
+                ConfigHelper.getFeatureNamesForSource( this.getProjectConfig(),
+                                                       this.getDataSourceConfig() );
 
         Set<Pair<Instant, Instant>> weekRanges =
                 createWeekRanges( this.getProjectConfig(),

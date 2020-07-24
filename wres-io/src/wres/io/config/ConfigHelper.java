@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -939,4 +941,116 @@ public class ConfigHelper
         return Collections.emptySet();
     }
 
+    /**
+     * Get the feature names relevant to a particular dataSource.
+     *
+     * The declaration only references names, not complete feature identities,
+     * therefore we cannot have a full feature at this point, nor do we get one
+     * from a database here, because the purpose here is to read names only.
+     *
+     * A dataset will have complete feature identities which will be ingested
+     * at ingest-time. But to bootstrap ingest, we start with names only, which
+     * can limit requests for data from data sources. After ingest we will have
+     * the ability to get the full list of features for a dataset.
+     *
+     * This method is intended to be called by readers and with a fully dense
+     * project declaration of features. In other words the project declaration
+     * should have already been filled out either by the caller or by WRES
+     * control module earlier, to have complete feature correlations.
+     *
+     * Not all readers require declared features, so those projects including
+     * solely CSV or PI-XML, for example, will not need this method.
+     *
+     * This method is also used by FeatureFinder to get what is available from
+     * a sparse declaration. It will give a dense declaration to the rest of the
+     * evaluation pipeline so that reader will have a dense declaration.
+     *
+     * @param projectDeclaration The project declaration.
+     * @param sourceDeclaration The source declared within the declaration.
+     * @return A Set of String from the given declaration.
+     * @throws UnsupportedOperationException When called with no features.
+     */
+
+    public static Set<String> getFeatureNamesForSource( ProjectConfig projectDeclaration,
+                                                        DataSourceConfig sourceDeclaration )
+    {
+        SortedSet<String> featureNames = new TreeSet<>();
+        List<Feature> featuresConfigured = projectDeclaration.getPair()
+                                                             .getFeature();
+
+        if ( featuresConfigured.isEmpty() )
+        {
+            // TODO: decide whether to ingest ALL 2.7m features or throw
+            throw new UnsupportedOperationException( "Must configure features or specify a service to resolve features." );
+
+        }
+
+        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectDeclaration,
+                                                                           sourceDeclaration );
+        // Reference equality on purpose here.
+        if ( lrb.equals( LeftOrRightOrBaseline.LEFT ) )
+        {
+            for ( Feature featureConfigured : featuresConfigured )
+            {
+                String leftName = featureConfigured.getLeft();
+
+                if ( Objects.nonNull( leftName ) )
+                {
+                    if ( leftName.isBlank() )
+                    {
+                        LOGGER.warn( "Encountered blank name in left feature declaration {}",
+                                     featureConfigured );
+                    }
+                    else
+                    {
+                        featureNames.add( featureConfigured.getLeft() );
+                    }
+                }
+            }
+        }
+        else if ( lrb.equals( LeftOrRightOrBaseline.RIGHT ) )
+        {
+            for ( Feature featureConfigured : featuresConfigured )
+            {
+                String rightName = featureConfigured.getRight();
+
+                if ( Objects.nonNull( rightName ) )
+                {
+                    if ( rightName.isBlank() )
+                    {
+                        LOGGER.warn( "Encountered blank name in right feature declaration {}",
+                                     featureConfigured );
+                    }
+                    else
+                    {
+                        featureNames.add( rightName );
+                    }
+                }
+            }
+        }
+        else if ( lrb.equals( LeftOrRightOrBaseline.BASELINE )
+                  && Objects.nonNull( projectDeclaration.getInputs()
+                                                        .getBaseline() ) )
+        {
+            for ( Feature featureConfigured : featuresConfigured )
+            {
+                String baselineName = featureConfigured.getBaseline();
+
+                if ( Objects.nonNull( baselineName ) )
+                {
+                    if ( baselineName.isBlank() )
+                    {
+                        LOGGER.warn( "Encountered blank name in baseline feature declaration {}",
+                                     featureConfigured );
+                    }
+                    else
+                    {
+                        featureNames.add( featureConfigured.getBaseline() );
+                    }
+                }
+            }
+        }
+
+        return Collections.unmodifiableSortedSet( featureNames );
+    }
 }

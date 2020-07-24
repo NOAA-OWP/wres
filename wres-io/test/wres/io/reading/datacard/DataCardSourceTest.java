@@ -147,6 +147,7 @@ public class DataCardSourceTest
         List<Feature> features = new ArrayList<>();
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
+                                                null,
                                                 features,
                                                 null,
                                                 null,
@@ -244,6 +245,7 @@ public class DataCardSourceTest
         List<Feature> features = new ArrayList<>();
         features.add( featureConfig );
         PairConfig pairConfig = new PairConfig( "CMS",
+                                                null,
                                                 features,
                                                 null,
                                                 null,
