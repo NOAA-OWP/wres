@@ -70,6 +70,17 @@ public class FeatureFinder
         Objects.requireNonNull( projectDeclaration );
         boolean hasBaseline = Objects.nonNull( projectDeclaration.getInputs()
                                                                  .getBaseline() );
+
+        // In many cases, no need to declare features, such as evaluations where
+        // all the feature names are identical in sources on both sides or in
+        // gridded evaluations.
+        if ( projectDeclaration.getPair()
+                               .getFeature()
+                               .isEmpty() )
+        {
+            return projectDeclaration;
+        }
+
         Set<String> leftNames = ConfigHelper.getFeatureNamesForSource( projectDeclaration,
                                                                        projectDeclaration.getInputs()
                                                                                          .getLeft() );
