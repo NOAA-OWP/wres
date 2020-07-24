@@ -28,18 +28,32 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.BIAS_FRACTION )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.BIAS_FRACTION )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( BiasFraction.MAIN )
+                                                                    .setName( MetricName.BIAS_FRACTION )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -76,13 +90,13 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( BiasFraction.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( BiasFraction.METRIC )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

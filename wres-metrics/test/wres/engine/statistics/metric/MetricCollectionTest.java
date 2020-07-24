@@ -40,6 +40,7 @@ import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
 import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
+import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
@@ -661,20 +662,12 @@ public class MetricCollectionTest
         SampleMetadata outM = SampleMetadata.of( MeasurementUnit.of() );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( CorrelationPearsons.MAIN )
                                                                                .setValue( 0.9999999910148981 )
                                                                                .build();
-        /**
-         * Canonical description of the metric.
-         */
 
         DoubleScoreMetric rho =
                 DoubleScoreMetric.newBuilder()
-                                 .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                           .setMinimum( 0 )
-                                                                           .setMaximum( 1 )
-                                                                           .setOptimum( 1 )
-                                                                           .setName( ComponentName.MAIN ) )
                                  .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
                                  .build();
 

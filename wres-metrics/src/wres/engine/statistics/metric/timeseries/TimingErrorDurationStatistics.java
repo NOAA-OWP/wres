@@ -91,9 +91,6 @@ public class TimingErrorDurationStatistics
         {
             nextIdentifier = next.getKey();
 
-            // Add the metric component
-            metricBuilder.addComponents( this.components.get( nextIdentifier ) );
-
             // Data available
             if ( pairs.getData().getStatisticsCount() != 0 )
             {
@@ -114,8 +111,9 @@ public class TimingErrorDurationStatistics
                                                                                   .applyAsDouble( VectorOfDoubles.of( input ) ) ) );
 
                 // Add statistic component
+                DurationScoreMetricComponent componentMetric = this.components.get( nextIdentifier );
                 DurationScoreStatisticComponent.Builder builder = DurationScoreStatisticComponent.newBuilder()
-                                                                                                 .setName( ComponentName.valueOf( nextIdentifier.name() ) );
+                                                                                                 .setMetric( componentMetric );
 
                 builder.setValue( MessageFactory.parse( duration ) );
 

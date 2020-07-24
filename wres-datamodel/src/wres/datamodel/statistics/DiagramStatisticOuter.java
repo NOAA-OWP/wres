@@ -80,7 +80,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
             for ( DiagramStatisticComponent next : this.getData()
                                                        .getStatisticsList() )
             {
-                if ( identifier.name().equals( next.getName().name() ) )
+                if ( identifier.name().equals( next.getMetric().getName().name() ) )
                 {
                     List<Double> values = next.getValuesList();
                     returnMe = VectorOfDoubles.of( values.toArray( new Double[values.size()] ) );
@@ -158,7 +158,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 
         this.getData()
             .getStatisticsList()
-            .forEach( component -> builder.append( "component name", component.getName() )
+            .forEach( component -> builder.append( "component name", component.getMetric().getName() )
                                           .append( "component values", component.getValuesList() ) );
 
         return builder.toString();
@@ -190,7 +190,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 
         for ( DiagramStatisticComponent next : this.getData().getStatisticsList() )
         {
-            componentNames.add( MetricDimension.valueOf( next.getName().name() ) );
+            componentNames.add( MetricDimension.valueOf( next.getMetric().getName().name() ) );
         }
 
         this.componentNames = Collections.unmodifiableSortedSet( componentNames );

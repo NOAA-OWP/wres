@@ -23,7 +23,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -73,25 +72,25 @@ public final class ContingencyTableScoreTest
 
         this.table =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 82.0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 38.0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 23.0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 222.0 ) )
                                     .build();
 
         this.invalidTable = DoubleScoreStatistic.newBuilder()
-                                                .setMetric( ContingencyTable.METRIC )
+                                                .setMetric( ContingencyTable.BASIC_METRIC )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                             .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                              .setValue( 82.0 ) )
                                                 .build();
     }

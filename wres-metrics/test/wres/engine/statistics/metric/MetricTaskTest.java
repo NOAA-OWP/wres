@@ -17,9 +17,10 @@ import org.junit.Test;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.MetricName;
 
 /**
  * Tests the {@link MetricTask}.
@@ -69,11 +70,12 @@ public final class MetricTaskTest
         pairPool.submit( futureInput );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanError.METRIC.getComponents( 0 ) )
                                                                                .setValue( 200.55 )
                                                                                .build();
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanError.METRIC )
+                                                         .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                      .setName( MetricName.MEAN_ERROR ) )
                                                          .addStatistics( component )
                                                          .build();
 

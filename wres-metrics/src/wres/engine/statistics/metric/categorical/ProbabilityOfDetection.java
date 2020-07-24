@@ -22,18 +22,32 @@ public class ProbabilityOfDetection extends ContingencyTableScore
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.PROBABILITY_OF_DETECTION )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.PROBABILITY_OF_DETECTION )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( ProbabilityOfDetection.MAIN )
+                                                                    .setName( MetricName.PROBABILITY_OF_DETECTION )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -68,12 +82,12 @@ public class ProbabilityOfDetection extends ContingencyTableScore
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( tP / ( tP + fN ) );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ProbabilityOfDetection.MAIN )
                                                                                .setValue( result )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ProbabilityOfDetection.METRIC )
+                                    .setMetric( ProbabilityOfDetection.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

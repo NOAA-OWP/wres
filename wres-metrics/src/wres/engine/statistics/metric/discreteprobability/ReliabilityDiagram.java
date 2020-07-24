@@ -44,22 +44,48 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
 {
 
     /**
-     * Canonical representation of the metric.
+     * Forecast probability.
+     */
+
+    public static final DiagramMetricComponent FORECAST_PROBABILITY = DiagramMetricComponent.newBuilder()
+                                                                                            .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                                                                            .setMinimum( 0 )
+                                                                                            .setMaximum( 1 )
+                                                                                            .build();
+
+    /**
+     * Observed frequency.
+     */
+
+    public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY = DiagramMetricComponent.newBuilder()
+                                                                                                   .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                                                   .setMinimum( 0 )
+                                                                                                   .setMaximum( 1 )
+                                                                                                   .build();
+
+    /**
+     * Sample size or sharpness.
+     */
+
+    public static final DiagramMetricComponent SAMPLE_SIZE = DiagramMetricComponent.newBuilder()
+                                                                                   .setName( DiagramComponentName.SAMPLE_SIZE )
+                                                                                   .setMinimum( 0 )
+                                                                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                   .build();
+
+    /**
+     * Basic description of the metric.
+     */
+
+    public static final DiagramMetric BASIC_METRIC = DiagramMetric.newBuilder()
+                                                                  .setName( MetricName.RELIABILITY_DIAGRAM )
+                                                                  .build();
+
+    /**
+     * Full description of the metric.
      */
 
     public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.FORECAST_PROBABILITY )
-                                                                                                  .setMinimum( 0 )
-                                                                                                  .setMaximum( 1 ) )
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
-                                                                                                  .setMinimum( 0 )
-                                                                                                  .setMaximum( 1 ) )
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.SAMPLE_SIZE )
-                                                                                                  .setMinimum( 0 )
-                                                                                                  .setMaximum( 1 ) )
                                                             .setName( MetricName.RELIABILITY_DIAGRAM )
                                                             .build();
 
@@ -139,7 +165,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
 
         DiagramStatisticComponent forecastProbability =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .setMetric( ReliabilityDiagram.FORECAST_PROBABILITY )
                                          .addAllValues( Arrays.stream( fProb )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -147,7 +173,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
 
         DiagramStatisticComponent observedFrequency =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( ReliabilityDiagram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( Arrays.stream( oProb )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -155,7 +181,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
 
         DiagramStatisticComponent sampleSize =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .setMetric( ReliabilityDiagram.SAMPLE_SIZE )
                                          .addAllValues( Arrays.stream( samples )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -165,7 +191,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                                                      .addStatistics( forecastProbability )
                                                      .addStatistics( observedFrequency )
                                                      .addStatistics( sampleSize )
-                                                     .setMetric( ReliabilityDiagram.METRIC )
+                                                     .setMetric( ReliabilityDiagram.BASIC_METRIC )
                                                      .build();
 
         return DiagramStatisticOuter.of( statistic, s.getMetadata() );

@@ -23,16 +23,31 @@ public class EquitableThreatScore extends ContingencyTableScore
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
+     */
+
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.EQUITABLE_THREAT_SCORE )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( -1 / 3 )
+                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
      */
 
     public static final DoubleScoreMetric METRIC =
             DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( -1 / 3 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
+                             .addComponents( EquitableThreatScore.MAIN )
                              .setName( MetricName.EQUITABLE_THREAT_SCORE )
                              .build();
 
@@ -80,14 +95,13 @@ public class EquitableThreatScore extends ContingencyTableScore
                                        .applyAsDouble( ( tP - hitsRandom ) / ( t - hitsRandom ) );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( EquitableThreatScore.MAIN )
                                                                                .setValue( result )
                                                                                .build();
-        DoubleScoreStatistic score =
-                DoubleScoreStatistic.newBuilder()
-                                    .setMetric( EquitableThreatScore.METRIC )
-                                    .addStatistics( component )
-                                    .build();
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( EquitableThreatScore.BASIC_METRIC )
+                                                         .addStatistics( component )
+                                                         .build();
 
         return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }

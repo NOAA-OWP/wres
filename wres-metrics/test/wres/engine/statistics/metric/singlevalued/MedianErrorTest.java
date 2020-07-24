@@ -23,8 +23,9 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -58,17 +59,18 @@ public final class MedianErrorTest
 
         //Metadata for the output
         SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-        
+
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MedianError.METRIC.getComponents( 0 ) )
                                                                                .setValue( 1 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MedianError.METRIC )
+                                                         .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                      .setName( MetricName.MEDIAN_ERROR ) )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -87,17 +89,18 @@ public final class MedianErrorTest
 
         //Metadata for the output
         SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-        
+
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MedianError.METRIC.getComponents( 0 ) )
                                                                                .setValue( 3 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MedianError.METRIC )
+                                                         .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                      .setName( MetricName.MEDIAN_ERROR ) )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -122,12 +125,13 @@ public final class MedianErrorTest
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MedianError.METRIC.getComponents( 0 ) )
                                                                                .setValue( -12345.6789 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MedianError.METRIC )
+                                                         .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                      .setName( MetricName.MEDIAN_ERROR ) )
                                                          .addStatistics( component )
                                                          .build();
 

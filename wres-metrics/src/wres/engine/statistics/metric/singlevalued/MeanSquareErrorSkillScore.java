@@ -33,18 +33,32 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( MeanSquareErrorSkillScore.MAIN )
+                                                                    .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -111,13 +125,13 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanSquareErrorSkillScore.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( MeanSquareErrorSkillScore.METRIC )
+                                    .setMetric( MeanSquareErrorSkillScore.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

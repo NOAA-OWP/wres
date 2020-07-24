@@ -23,8 +23,8 @@ message DiagramStatistic
     {
         // A diagram component.
     
-        DiagramMetric.DiagramMetricComponent.DiagramComponentName name = 1;
-        // Metric component name.
+        DiagramMetric.DiagramMetricComponent metric = 1;
+        // Metric component.
         
         repeated double values = 2;
         // The component values.

@@ -22,7 +22,6 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -59,12 +58,12 @@ public final class CorrelationPearsonsTest
         DoubleScoreStatisticOuter actual = this.rho.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( CorrelationPearsons.MAIN )
                                                                                .setValue( 0.9999999910148981 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( CorrelationPearsons.METRIC )
+                                                         .setMetric( CorrelationPearsons.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

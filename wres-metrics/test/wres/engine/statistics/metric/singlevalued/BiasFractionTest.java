@@ -22,7 +22,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -60,12 +59,12 @@ public final class BiasFractionTest
         DoubleScoreStatisticOuter actual = this.biasFraction.apply( input );
         
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( BiasFraction.MAIN )
                                                                                .setValue( 0.056796297974534414 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( BiasFraction.METRIC )
+                                                         .setMetric( BiasFraction.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

@@ -33,18 +33,32 @@ public class PeirceSkillScore extends ContingencyTableScore
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( -1 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.PEIRCE_SKILL_SCORE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.PEIRCE_SKILL_SCORE )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( -1 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( PeirceSkillScore.MAIN )
+                                                                    .setName( MetricName.PEIRCE_SKILL_SCORE )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -123,12 +137,12 @@ public class PeirceSkillScore extends ContingencyTableScore
                                                        - ( fP / ( fP + tN ) ) );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( PeirceSkillScore.MAIN )
                                                                                .setValue( result )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( PeirceSkillScore.METRIC )
+                                    .setMetric( PeirceSkillScore.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 
@@ -200,12 +214,12 @@ public class PeirceSkillScore extends ContingencyTableScore
                                                        / ( 1.0 - ( uniProd / nSquared ) ) );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( PeirceSkillScore.MAIN )
                                                                                .setValue( result )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( PeirceSkillScore.METRIC )
+                                    .setMetric( PeirceSkillScore.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

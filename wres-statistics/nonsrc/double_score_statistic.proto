@@ -26,8 +26,8 @@ message DoubleScoreStatistic
     {
         // A score component.
     
-        DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName name = 1;
-        // Metric component name.
+        DoubleScoreMetric.DoubleScoreMetricComponent metric = 1;
+        // A description of the metric component.
         
         double value = 2;
         // Score component value.        

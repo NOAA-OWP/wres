@@ -33,7 +33,6 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -95,12 +94,12 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( 0.6785714285714286 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                         .setMetric( RelativeOperatingCharacteristicScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -144,12 +143,12 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( 0.75 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                         .setMetric( RelativeOperatingCharacteristicScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -165,12 +164,12 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actualBase = this.rocScore.apply( inputBase );
 
         DoubleScoreStatisticComponent componentBase = DoubleScoreStatisticComponent.newBuilder()
-                                                                                   .setName( ComponentName.MAIN )
+                                                                                   .setMetric( RelativeOperatingCharacteristicScore.MAIN )
                                                                                    .setValue( 0.0 )
                                                                                    .build();
 
         DoubleScoreStatistic scoreBase = DoubleScoreStatistic.newBuilder()
-                                                             .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                             .setMetric( RelativeOperatingCharacteristicScore.BASIC_METRIC )
                                                              .addStatistics( componentBase )
                                                              .build();
 
@@ -215,12 +214,12 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( Double.NaN )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                                         .setMetric( RelativeOperatingCharacteristicScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

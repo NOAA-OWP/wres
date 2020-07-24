@@ -32,18 +32,40 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
 {
 
     /**
-     * Canonical representation of the metric.
+     * Observed quantiles.
+     */
+
+    public static final DiagramMetricComponent OBSERVED_QUANTILES = DiagramMetricComponent.newBuilder()
+                                                                                          .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                                                                          .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                          .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                          .build();
+
+    /**
+     * Predicted quantiles.
+     */
+
+    public static final DiagramMetricComponent PREDICTED_QUANTILES = DiagramMetricComponent.newBuilder()
+                                                                                           .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                                                                           .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                           .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                           .build();
+
+    /**
+     * Basic description of the metric.
+     */
+
+    public static final DiagramMetric BASIC_METRIC = DiagramMetric.newBuilder()
+                                                                  .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM )
+                                                                  .build();
+
+    /**
+     * Full description of the metric.
      */
 
     public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.OBSERVED_QUANTILES )
-                                                                                                  .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                                  .setMaximum( Double.POSITIVE_INFINITY ) )
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.PREDICTED_QUANTILES )
-                                                                                                  .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                                  .setMaximum( Double.POSITIVE_INFINITY ) )
+                                                            .addComponents( QuantileQuantileDiagram.OBSERVED_QUANTILES )
+                                                            .addComponents( QuantileQuantileDiagram.PREDICTED_QUANTILES )
                                                             .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM )
                                                             .build();
 
@@ -113,7 +135,7 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
 
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES )
                                          .addAllValues( Arrays.stream( observedQ )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -121,7 +143,7 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES )
                                          .addAllValues( Arrays.stream( predictedQ )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -130,7 +152,7 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
         DiagramStatistic qqDiagram = DiagramStatistic.newBuilder()
                                                      .addStatistics( oqs )
                                                      .addStatistics( pqs )
-                                                     .setMetric( QuantileQuantileDiagram.METRIC )
+                                                     .setMetric( QuantileQuantileDiagram.BASIC_METRIC )
                                                      .build();
 
         return DiagramStatisticOuter.of( qqDiagram, s.getMetadata() );

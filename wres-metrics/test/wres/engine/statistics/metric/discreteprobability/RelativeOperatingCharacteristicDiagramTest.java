@@ -14,7 +14,6 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -24,7 +23,6 @@ import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -92,20 +90,20 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         DiagramStatisticComponent pod =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_DETECTION )
                                          .addAllValues( expectedPoD )
                                          .build();
 
         DiagramStatisticComponent pofd =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_FALSE_DETECTION )
                                          .addAllValues( expectedPoFD )
                                          .build();
 
         DiagramStatistic rocDiagram = DiagramStatistic.newBuilder()
                                                       .addStatistics( pod )
                                                       .addStatistics( pofd )
-                                                      .setMetric( RelativeOperatingCharacteristicDiagram.METRIC )
+                                                      .setMetric( RelativeOperatingCharacteristicDiagram.BASIC_METRIC )
                                                       .build();
 
         DiagramStatisticOuter expected = DiagramStatisticOuter.of( rocDiagram, m1 );
@@ -141,20 +139,20 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         DiagramStatisticComponent pod =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_DETECTION )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatisticComponent pofd =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_FALSE_DETECTION )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
                                                     .addStatistics( pod )
                                                     .addStatistics( pofd )
-                                                    .setMetric( RelativeOperatingCharacteristicDiagram.METRIC )
+                                                    .setMetric( RelativeOperatingCharacteristicDiagram.BASIC_METRIC )
                                                     .build();
 
         assertEquals( expected, actual.getData() );

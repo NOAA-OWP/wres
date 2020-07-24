@@ -16,7 +16,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanAbsoluteError extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
+public class MeanAbsoluteError extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
 {
 
     /**
@@ -32,18 +32,18 @@ public class MeanAbsoluteError extends DoubleErrorScore<SampleData<Pair<Double,D
                                                                        .setName( ComponentName.MAIN ) )
                              .setName( MetricName.MEAN_ABSOLUTE_ERROR )
                              .build();
-    
+
     /**
      * Returns an instance.
      * 
      * @return an instance
      */
-    
+
     public static MeanAbsoluteError of()
     {
         return new MeanAbsoluteError();
     }
-    
+
     @Override
     public boolean isSkillScore()
     {

@@ -40,18 +40,32 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.KLING_GUPTA_EFFICIENCY )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.KLING_GUPTA_EFFICIENCY )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( KlingGuptaEfficiency.MAIN )
+                                                                    .setName( MetricName.KLING_GUPTA_EFFICIENCY )
+                                                                    .build();
 
     /**
      * Default weighting for the correlation term.
@@ -125,7 +139,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
                            .getComponent( MetricConstants.MAIN )
                            .getData()
                            .getValue();
-        
+
         // Check for finite correlation
         if ( Double.isFinite( rhoVal ) )
         {
@@ -142,13 +156,13 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( KlingGuptaEfficiency.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( KlingGuptaEfficiency.METRIC )
+                                    .setMetric( KlingGuptaEfficiency.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

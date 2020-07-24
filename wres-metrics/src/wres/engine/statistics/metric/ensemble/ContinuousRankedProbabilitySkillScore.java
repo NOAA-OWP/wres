@@ -32,18 +32,32 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( ContinuousRankedProbabilitySkillScore.MAIN )
+                                                                    .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -89,16 +103,16 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         double denominator = super.apply( s.getBaselineData() ).getComponent( MetricConstants.MAIN )
                                                                .getData()
                                                                .getValue();
-        
+
         double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
-        
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilitySkillScore.MAIN )
                                                                                .setValue( result )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContinuousRankedProbabilitySkillScore.METRIC )
+                                    .setMetric( ContinuousRankedProbabilitySkillScore.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

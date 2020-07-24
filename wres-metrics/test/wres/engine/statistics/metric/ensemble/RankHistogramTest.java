@@ -24,7 +24,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -105,20 +104,20 @@ public final class RankHistogramTest
 
         DiagramStatisticComponent ro =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .setMetric( RankHistogram.RANK_ORDER )
                                          .addAllValues( expectedRanks )
                                          .build();
 
         DiagramStatisticComponent obs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( RankHistogram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( expectedRFreqs )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
                                                     .addStatistics( ro )
                                                     .addStatistics( obs )
-                                                    .setMetric( RankHistogram.METRIC )
+                                                    .setMetric( RankHistogram.BASIC_METRIC )
                                                     .build();
 
         assertEquals( expected, actual.getData() );
@@ -164,20 +163,20 @@ public final class RankHistogramTest
 
         DiagramStatisticComponent ro =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .setMetric( RankHistogram.RANK_ORDER )
                                          .addAllValues( expectedRanks )
                                          .build();
 
         DiagramStatisticComponent obs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( RankHistogram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( expectedRFreqs )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
                                                     .addStatistics( ro )
                                                     .addStatistics( obs )
-                                                    .setMetric( RankHistogram.METRIC )
+                                                    .setMetric( RankHistogram.BASIC_METRIC )
                                                     .build();
 
         assertEquals( expected, actual.getData() );
@@ -202,20 +201,20 @@ public final class RankHistogramTest
 
         DiagramStatisticComponent ro =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .setMetric( RankHistogram.RANK_ORDER )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatisticComponent obs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( RankHistogram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
                                                     .addStatistics( ro )
                                                     .addStatistics( obs )
-                                                    .setMetric( RankHistogram.METRIC )
+                                                    .setMetric( RankHistogram.BASIC_METRIC )
                                                     .build();
 
         assertEquals( expected, actual.getData() );

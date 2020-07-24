@@ -21,7 +21,6 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -56,12 +55,12 @@ public final class RootMeanSquareErrorNormalizedTest
         DoubleScoreStatisticOuter actual = this.rmsen.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( RootMeanSquareErrorNormalized.MAIN )
                                                                                .setValue( 0.05719926297814069 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( RootMeanSquareErrorNormalized.METRIC )
+                                                         .setMetric( RootMeanSquareErrorNormalized.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

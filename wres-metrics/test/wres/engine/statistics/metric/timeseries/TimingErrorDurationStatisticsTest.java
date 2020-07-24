@@ -84,18 +84,17 @@ public final class TimingErrorDurationStatisticsTest
 
         com.google.protobuf.Duration expectedSource = MessageFactory.parse( Duration.ofHours( 3 ) );
 
-        DurationScoreStatisticComponent component = DurationScoreStatisticComponent.newBuilder()
-                                                                                   .setName( ComponentName.MEAN )
-                                                                                   .setValue( expectedSource )
-                                                                                   .build();
-
         DurationScoreMetricComponent metricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                    .setName( ComponentName.MEAN )
                                                                                    .build();
 
+        DurationScoreStatisticComponent component = DurationScoreStatisticComponent.newBuilder()
+                                                                                   .setMetric( metricComponent )
+                                                                                   .setValue( expectedSource )
+                                                                                   .build();
+
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
-                                                        .addComponents( metricComponent )
                                                         .build();
 
         DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
@@ -171,26 +170,6 @@ public final class TimingErrorDurationStatisticsTest
         com.google.protobuf.Duration expectedMax = MessageFactory.parse( Duration.ofHours( 12 ) );
         com.google.protobuf.Duration expectedMeanAbs = MessageFactory.parse( Duration.ofHours( 9 ) );
 
-        DurationScoreStatisticComponent meanComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                       .setName( ComponentName.MEAN )
-                                                                                       .setValue( expectedMean )
-                                                                                       .build();
-
-        DurationScoreStatisticComponent minComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                      .setName( ComponentName.MINIMUM )
-                                                                                      .setValue( expectedMin )
-                                                                                      .build();
-
-        DurationScoreStatisticComponent maxComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                      .setName( ComponentName.MAXIMUM )
-                                                                                      .setValue( expectedMax )
-                                                                                      .build();
-
-        DurationScoreStatisticComponent meanAbsComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                          .setName( ComponentName.MEAN_ABSOLUTE )
-                                                                                          .setValue( expectedMeanAbs )
-                                                                                          .build();
-
         DurationScoreMetricComponent meanMetricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                        .setName( ComponentName.MEAN )
                                                                                        .build();
@@ -207,12 +186,28 @@ public final class TimingErrorDurationStatisticsTest
                                                                                           .setName( ComponentName.MEAN_ABSOLUTE )
                                                                                           .build();
 
+        DurationScoreStatisticComponent meanComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                       .setMetric( meanMetricComponent )
+                                                                                       .setValue( expectedMean )
+                                                                                       .build();
+
+        DurationScoreStatisticComponent minComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                      .setMetric( minMetricComponent )
+                                                                                      .setValue( expectedMin )
+                                                                                      .build();
+
+        DurationScoreStatisticComponent maxComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                      .setMetric( maxMetricComponent )
+                                                                                      .setValue( expectedMax )
+                                                                                      .build();
+
+        DurationScoreStatisticComponent meanAbsComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                          .setMetric( meanAbsMetricComponent )
+                                                                                          .setValue( expectedMeanAbs )
+                                                                                          .build();
+
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
-                                                        .addComponents( meanMetricComponent )
-                                                        .addComponents( minMetricComponent )
-                                                        .addComponents( maxMetricComponent )
-                                                        .addComponents( meanAbsMetricComponent )
                                                         .build();
         DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
                                                              .setMetric( metric )
@@ -256,13 +251,8 @@ public final class TimingErrorDurationStatisticsTest
         // Check the results
         DurationScoreStatisticOuter actual = ttps.apply( peakError.apply( input ) );
 
-        DurationScoreMetricComponent metricComponent = DurationScoreMetricComponent.newBuilder()
-                                                                                   .setName( ComponentName.MEAN )
-                                                                                   .build();
-
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
-                                                        .addComponents( metricComponent )
                                                         .build();
         DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
                                                              .setMetric( metric )

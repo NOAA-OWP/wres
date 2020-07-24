@@ -25,7 +25,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -76,12 +75,12 @@ public final class ContinousRankedProbabilityScoreTest
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
                                                                                .setValue( 7.63 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -116,12 +115,12 @@ public final class ContinousRankedProbabilityScoreTest
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
                                                                                .setValue( 8.734401927437641 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -151,12 +150,12 @@ public final class ContinousRankedProbabilityScoreTest
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
                                                                                .setValue( 13.36 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -187,12 +186,12 @@ public final class ContinousRankedProbabilityScoreTest
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
                                                                                .setValue( 4.56 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                                         .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

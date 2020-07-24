@@ -18,7 +18,10 @@ message DurationScoreMetric
     // Metric name.
     
     repeated DurationScoreMetricComponent components = 2;
-    // The score components.
+    // Zero or more score components. In general, the description of the score
+    // metric component should be inband to the corresponding score statistic 
+    // component, but there is the option to provide a complete, standalone, 
+    // description of a metric here, independent of any statistics.
     
     message DurationScoreMetricComponent
     {

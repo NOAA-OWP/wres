@@ -30,18 +30,32 @@ public class MeanSquareError extends SumOfSquareError
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.MEAN_SQUARE_ERROR )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.MEAN_SQUARE_ERROR )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( MeanSquareError.MAIN )
+                                                                    .setName( MetricName.MEAN_SQUARE_ERROR )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -98,13 +112,13 @@ public class MeanSquareError extends SumOfSquareError
                                     .applyAsDouble( input / output.getData().getSampleSize() );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanSquareError.MAIN )
                                                                                .setValue( mse )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( MeanSquareError.METRIC )
+                                    .setMetric( MeanSquareError.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

@@ -32,19 +32,32 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
     private static final Logger LOGGER = LoggerFactory.getLogger( SampleSize.class );
 
     /**
-     * Canonical description of the metric.
+     * A basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0.0 )
-                                                                       .setName( ComponentName.MAIN )
-                                                                       .setUnits( "COUNT" ) )
-                             .setName( MetricName.SAMPLE_SIZE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.SAMPLE_SIZE )
+                                                                          .build();
+
+    /**
+     * The main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                    .setOptimum( 0.0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .setUnits( "COUNT" )
+                                                                                    .build();
+    /**
+     * A full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( SampleSize.MAIN )
+                                                                    .setName( MetricName.SAMPLE_SIZE )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -73,9 +86,9 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( SampleSize.METRIC )
+                                    .setMetric( SampleSize.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( ComponentName.MAIN )
+                                                                                 .setMetric( SampleSize.MAIN )
                                                                                  .setValue( (double) s.getRawData()
                                                                                                       .size() ) )
                                     .build();

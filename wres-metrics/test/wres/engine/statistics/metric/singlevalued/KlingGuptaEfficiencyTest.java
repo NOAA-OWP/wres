@@ -28,7 +28,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -76,12 +75,12 @@ public final class KlingGuptaEfficiencyTest
         DoubleScoreStatisticOuter actual = kge.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( KlingGuptaEfficiency.MAIN )
                                                                                .setValue( 0.8921704394462281 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( KlingGuptaEfficiency.METRIC )
+                                                         .setMetric( KlingGuptaEfficiency.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -101,12 +100,12 @@ public final class KlingGuptaEfficiencyTest
         DoubleScoreStatisticOuter actual = this.kge.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( KlingGuptaEfficiency.MAIN )
                                                                                .setValue( 0.9432025316651065 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( KlingGuptaEfficiency.METRIC )
+                                                         .setMetric( KlingGuptaEfficiency.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

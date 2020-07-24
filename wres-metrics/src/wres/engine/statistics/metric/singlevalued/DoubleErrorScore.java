@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,6 +17,7 @@ import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -70,14 +72,25 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
             doubleScore = this.getErrorAccumulator().applyAsDouble( wrappedDoubles );
         }
 
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
-                                                                               .setValue( doubleScore )
-                                                                               .build();
+        Optional<DoubleScoreMetricComponent> main = this.metric.getComponentsList()
+                                                               .stream()
+                                                               .filter( next -> next.getName() == ComponentName.MAIN )
+                                                               .findFirst();
+
+        DoubleScoreStatisticComponent.Builder component = DoubleScoreStatisticComponent.newBuilder()
+                                                                                       .setValue( doubleScore );
+
+        if ( main.isPresent() )
+        {
+            component.setMetric( main.get() );
+        }
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( this.metric )
+                                    // Basic metric description at the top level, component description at the 
+                                    // component level
+                                    .setMetric( DoubleScoreMetric.newBuilder()
+                                                                 .setName( this.metric.getName() ) )
                                     .addStatistics( component )
                                     .build();
 

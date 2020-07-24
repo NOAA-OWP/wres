@@ -16,14 +16,14 @@ message EvaluationStatus
     packaged with the protocol; it is not provided inband. An EvaluationStatus 
     message may record some or all of the EvaluationStatusEvent associated with 
     an evaluation at the point of request. For example, it may record only those 
-    "new" events surfaced since the last request. Publishers and subscribers also
-    report on their status, in order to allow for evaluations to be completed,
-    validated as complete, and resources returned. A publisher reports when 
-    publication is complete and a consumer reports when consumption has started
-    and completed. A consumer registers and reports with a consumer identifier 
-    in the protocol metadata. Once an evaluation reports publication complete 
-    and all consumers report consumption complete, then the evaluation itself 
-    can complete.*/
+    "new" events surfaced since the last request. Publishers and subscribers 
+    also report on their status, in order to allow for evaluations to be 
+    completed, validated as complete, and resources returned. A publisher 
+    reports when publication is complete and a consumer reports when consumption 
+    has started and completed. A consumer registers and reports with a consumer 
+    identifier in the protocol metadata. Once an evaluation reports publication 
+    complete and all consumers report consumption complete, then the evaluation 
+    itself can complete.*/
 
     google.protobuf.Timestamp evaluation_start_time = 1;
     // The evaluation start time.

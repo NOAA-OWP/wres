@@ -13,9 +13,7 @@ message BoxplotStatistic
     // A message that encapsulates a box plot statistic.
 
     BoxplotMetric metric = 1;
-    /*This could be promoted to an Evaluation; however, there is one 
-    BoxplotMetric per BoxplotStatistic while the atomic collection is a pool, so 
-    there is no efficiency to be gained and some context to be lost.*/
+    // The metric.
     
     repeated Box statistics = 2;
     // The boxes.

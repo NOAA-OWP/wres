@@ -30,18 +30,32 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, D
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.INDEX_OF_AGREEMENT )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.INDEX_OF_AGREEMENT )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( IndexOfAgreement.MAIN )
+                                                                    .setName( MetricName.INDEX_OF_AGREEMENT )
+                                                                    .build();
 
     /**
      * The default exponent.
@@ -94,13 +108,13 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, D
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( IndexOfAgreement.MAIN )
                                                                                .setValue( returnMe )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( IndexOfAgreement.METRIC )
+                                    .setMetric( IndexOfAgreement.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

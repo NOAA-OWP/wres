@@ -29,19 +29,32 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.ROOT_MEAN_SQUARE_ERROR_NORMALIZED )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.ROOT_MEAN_SQUARE_ERROR_NORMALIZED )
+                                                                          .build();
 
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( RootMeanSquareErrorNormalized.MAIN )
+                                                                    .setName( MetricName.ROOT_MEAN_SQUARE_ERROR_NORMALIZED )
+                                                                    .build();
 
     /**
      * Instance of a standard deviation.
@@ -90,13 +103,13 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( RootMeanSquareErrorNormalized.MAIN )
                                                                                .setValue( returnMe )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( RootMeanSquareErrorNormalized.METRIC )
+                                    .setMetric( RootMeanSquareErrorNormalized.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

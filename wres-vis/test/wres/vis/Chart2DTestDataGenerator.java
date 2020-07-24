@@ -18,7 +18,6 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -42,6 +41,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
@@ -53,7 +53,8 @@ public abstract class Chart2DTestDataGenerator
 {
 
     private static final FeatureKey NWS_FEATURE = new FeatureKey( "DRRC2", null, null, null );
-    private static final FeatureKey USGS_FEATURE = new FeatureKey( "09165000", "DOLORES RIVER BELOW RICO, CO.", 4326, "POINT ( -108.0603517 37.63888428 )");
+    private static final FeatureKey USGS_FEATURE =
+            new FeatureKey( "09165000", "DOLORES RIVER BELOW RICO, CO.", 4326, "POINT ( -108.0603517 37.63888428 )" );
     private static final FeatureKey NWM_FEATURE = new FeatureKey( "18384141", null, null, null );
     private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE );
 
@@ -388,7 +389,8 @@ public abstract class Chart2DTestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( sixHourOutputs[i] )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter sixHourOutput =
@@ -405,7 +407,8 @@ public abstract class Chart2DTestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( twelveHourOutputs[i] )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter twelveHourOutput =
@@ -422,7 +425,8 @@ public abstract class Chart2DTestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( eighteenHourOutputs[i] )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter eighteenHourOutput =
@@ -439,7 +443,8 @@ public abstract class Chart2DTestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( twentyFourHourOutputs[i] )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter twentyFourHourOutput =
@@ -515,7 +520,8 @@ public abstract class Chart2DTestDataGenerator
                                                                      .setName( MetricName.BIAS_FRACTION ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( scores[i] )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
             rawData.add( DoubleScoreStatisticOuter.of( one, SampleMetadata.of( source, timeWindow ) ) );
@@ -732,28 +738,40 @@ public abstract class Chart2DTestDataGenerator
                 DurationScoreStatistic.newBuilder()
                                       .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEAN ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( 9360 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEDIAN ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( -3600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.STANDARD_DEVIATION )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.STANDARD_DEVIATION ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( 48_364 )
                                                                                                                             .setNanos( 615_000_000 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MINIMUM )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MINIMUM ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( -79_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( 86_400 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEAN_ABSOLUTE )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEAN_ABSOLUTE ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( 36_720 ) ) )
                                       .build();

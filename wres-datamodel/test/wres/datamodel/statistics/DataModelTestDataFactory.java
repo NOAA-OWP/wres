@@ -9,7 +9,6 @@ import java.util.List;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -21,6 +20,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -91,7 +91,8 @@ public final class DataModelTestDataFactory
                                                                      .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( 66.0 )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter firstValue =
@@ -116,7 +117,8 @@ public final class DataModelTestDataFactory
                                                                      .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( 67.0 )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter secondValue =
@@ -141,7 +143,8 @@ public final class DataModelTestDataFactory
                                                                      .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( 68.0 )
-                                                                                     .setName( ComponentName.MAIN ) )
+                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                           .setName( ComponentName.MAIN ) ) )
                                         .build();
 
 

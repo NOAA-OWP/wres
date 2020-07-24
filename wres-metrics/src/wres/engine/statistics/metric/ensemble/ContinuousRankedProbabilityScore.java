@@ -49,18 +49,32 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SCORE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SCORE )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( ContinuousRankedProbabilityScore.MAIN )
+                                                                    .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SCORE )
+                                                                    .build();
 
     /**
      * Default logger.
@@ -130,12 +144,12 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN )
                                                                                .setValue( crps[0] )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContinuousRankedProbabilityScore.METRIC )
+                                    .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

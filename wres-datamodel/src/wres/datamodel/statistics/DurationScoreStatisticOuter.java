@@ -65,35 +65,31 @@ public class DurationScoreStatisticOuter
 
         /**
          * Hidden constructor.
-         * @param name the name
          * @param component the score component
          * @param metadata the metadata
          */
 
-        private DurationScoreComponentOuter( MetricConstants name,
-                                             DurationScoreStatisticComponent component,
+        private DurationScoreComponentOuter( DurationScoreStatisticComponent component,
                                              SampleMetadata metadata )
         {
-            super( name, component, metadata, next -> MessageFactory.parse( next.getValue() ).toString() );
+            super( component, metadata, next -> MessageFactory.parse( next.getValue() ).toString() );
 
-            this.metricName = MetricConstants.valueOf( component.getName().name() );
+            this.metricName = MetricConstants.valueOf( component.getMetric().getName().name() );
         }
 
         /**
          * Create a component.
          * 
-         * @param name the name
          * @param component the score component
          * @param metadata the metadata
          * @return a component
          * @throws NullPointerException if any input is null 
          */
 
-        public static DurationScoreComponentOuter of( MetricConstants name,
-                                                      DurationScoreStatisticComponent component,
+        public static DurationScoreComponentOuter of( DurationScoreStatisticComponent component,
                                                       SampleMetadata metadata )
         {
-            return new DurationScoreComponentOuter( name, component, metadata );
+            return new DurationScoreComponentOuter( component, metadata );
         }
 
         @Override
@@ -153,8 +149,8 @@ public class DurationScoreStatisticOuter
         List<DurationScoreStatisticComponent> components = score.getStatisticsList();
         for ( DurationScoreStatisticComponent next : components )
         {
-            MetricConstants name = MetricConstants.valueOf( next.getName().name() );
-            DurationScoreComponentOuter nextOuter = DurationScoreComponentOuter.of( name, next, metadata );
+            MetricConstants name = MetricConstants.valueOf( next.getMetric().getName().name() );
+            DurationScoreComponentOuter nextOuter = DurationScoreComponentOuter.of( next, metadata );
 
             returnMe.put( name, nextOuter );
         }

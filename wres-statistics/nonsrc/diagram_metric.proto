@@ -21,7 +21,10 @@ message DiagramMetric
     the sample size or sharpness.*/
 
     repeated DiagramMetricComponent components = 2;
-    // The metric components.
+    // Zero or more diagram components. In general, the description of the 
+    // diagram metric component should be inband to the corresponding diagram 
+    // statistic component, but there is the option to provide a complete, 
+    // standalone, description of a metric here, independent of any statistics.
     
     message DiagramMetricComponent
     {

@@ -40,20 +40,41 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 public class RelativeOperatingCharacteristicDiagram
         extends Diagram<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter>
 {
+    /**
+     * Probability of detection.
+     */
+
+    public static final DiagramMetricComponent PROBABILITY_OF_DETECTION = DiagramMetricComponent.newBuilder()
+                                                                                                .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                                                                                .setMinimum( 0 )
+                                                                                                .setMaximum( 1 )
+                                                                                                .build();
 
     /**
-     * Canonical representation of the metric.
+     * Probability of false detection.
+     */
+
+    public static final DiagramMetricComponent PROBABILITY_OF_FALSE_DETECTION = DiagramMetricComponent.newBuilder()
+                                                                                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                                                                                      .setMinimum( 0 )
+                                                                                                      .setMaximum( 1 )
+                                                                                                      .build();
+
+    /**
+     * Basic description of the metric.
+     */
+
+    public static final DiagramMetric BASIC_METRIC = DiagramMetric.newBuilder()
+                                                                  .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
+                                                                  .build();
+
+    /**
+     * Full description of the metric.
      */
 
     public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
-                                                                                                  .setMinimum( 0 )
-                                                                                                  .setMaximum( 1 ) )
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
-                                                                                                  .setMinimum( 0 )
-                                                                                                  .setMaximum( 1 ) )
+                                                            .addComponents( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_DETECTION )
+                                                            .addComponents( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_FALSE_DETECTION )
                                                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
                                                             .build();
 
@@ -147,20 +168,20 @@ public class RelativeOperatingCharacteristicDiagram
 
         DiagramStatisticComponent pod =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_DETECTION )
                                          .addAllValues( Arrays.stream( pOD ).boxed().collect( Collectors.toList() ) )
                                          .build();
 
         DiagramStatisticComponent pofd =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_FALSE_DETECTION )
                                          .addAllValues( Arrays.stream( pOFD ).boxed().collect( Collectors.toList() ) )
                                          .build();
 
         DiagramStatistic rocDiagram = DiagramStatistic.newBuilder()
                                                       .addStatistics( pod )
                                                       .addStatistics( pofd )
-                                                      .setMetric( RelativeOperatingCharacteristicDiagram.METRIC )
+                                                      .setMetric( RelativeOperatingCharacteristicDiagram.BASIC_METRIC )
                                                       .build();
 
         return DiagramStatisticOuter.of( rocDiagram, s.getMetadata() );

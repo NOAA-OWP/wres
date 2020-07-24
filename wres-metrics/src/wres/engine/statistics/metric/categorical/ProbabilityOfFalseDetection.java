@@ -20,21 +20,35 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public class ProbabilityOfFalseDetection extends ContingencyTableScore
 {
-    
+
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.PROBABILITY_OF_FALSE_DETECTION )
-                             .build();
-    
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.PROBABILITY_OF_FALSE_DETECTION )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( ProbabilityOfFalseDetection.MAIN )
+                                                                    .setName( MetricName.PROBABILITY_OF_FALSE_DETECTION )
+                                                                    .build();
+
     /**
      * Returns an instance.
      * 
@@ -66,14 +80,14 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore
                           .getValue();
 
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( fP / ( fP + tN ) );
-        
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ProbabilityOfFalseDetection.MAIN )
                                                                                .setValue( result )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ProbabilityOfFalseDetection.METRIC )
+                                    .setMetric( ProbabilityOfFalseDetection.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

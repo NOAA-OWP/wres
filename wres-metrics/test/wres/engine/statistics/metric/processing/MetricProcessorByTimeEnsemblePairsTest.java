@@ -51,15 +51,12 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.engine.statistics.metric.Boilerplate;
-import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -477,7 +474,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertEquals( 18.997815872635968,
                       mae.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
-        assertEquals( 20.653785159500924 ,
+        assertEquals( 20.653785159500924,
                       mae.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
                       Precision.EPSILON );
         assertEquals( 22.094227646773568,
@@ -892,18 +889,18 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Exceeds 50.0 with occurrences > 0.05
         DoubleScoreStatistic firstTable =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 40 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 32 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 2 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 91 ) )
                                     .build();
 
@@ -928,18 +925,18 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Exceeds 50.0 with occurrences > 0.25
         DoubleScoreStatistic secondTable =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 39 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 17 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 3 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 106 ) )
                                     .build();
 
@@ -964,18 +961,18 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Exceeds 50.0 with occurrences > 0.5
         DoubleScoreStatistic thirdTable =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 39 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 15 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 3 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 108 ) )
                                     .build();
 
@@ -1000,18 +997,18 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Exceeds 50.0 with occurrences > 0.75
         DoubleScoreStatistic fourthTable =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 37 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 14 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 5 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 109 ) )
                                     .build();
 
@@ -1035,18 +1032,18 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Exceeds 50.0 with occurrences > 0.9
         DoubleScoreStatistic fifthTable =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 37 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 11 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 5 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 112 ) )
                                     .build();
 
@@ -1071,18 +1068,18 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Exceeds 50.0 with occurrences > 0.95
         DoubleScoreStatistic sixthTable =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 36 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 10 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 6 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 113 ) )
                                     .build();
 

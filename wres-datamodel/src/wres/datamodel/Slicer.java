@@ -502,12 +502,12 @@ public final class Slicer
             // Loop the entries
             for ( S nextComponent : nextScore )
             {
-                List<S> listOfComponents = returnMe.get( nextComponent.getName() );
+                List<S> listOfComponents = returnMe.get( nextComponent.getMetricName() );
                 
                 if ( Objects.isNull( listOfComponents ) )
                 {
                     listOfComponents = new ArrayList<>();
-                    returnMe.put( nextComponent.getName(), listOfComponents );
+                    returnMe.put( nextComponent.getMetricName(), listOfComponents );
                 }
                 
                 listOfComponents.add( nextComponent );

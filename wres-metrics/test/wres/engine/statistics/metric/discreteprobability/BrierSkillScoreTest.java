@@ -15,7 +15,6 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -24,7 +23,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -68,12 +66,12 @@ public final class BrierSkillScoreTest
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( BrierSkillScore.MAIN )
                                                                                .setValue( 0.11363636363636376 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( BrierSkillScore.METRIC )
+                                                         .setMetric( BrierSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -100,12 +98,12 @@ public final class BrierSkillScoreTest
         DoubleScoreStatisticOuter actual = this.brierSkillScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( BrierSkillScore.MAIN )
                                                                                .setValue( -0.040000000000000036 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( BrierSkillScore.METRIC )
+                                                         .setMetric( BrierSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
