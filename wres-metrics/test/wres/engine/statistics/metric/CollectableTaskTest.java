@@ -19,11 +19,11 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -69,16 +69,16 @@ public final class CollectableTaskTest
                                                 .setMetric( DoubleScoreMetric.newBuilder()
                                                                              .setName( MetricName.CONTINGENCY_TABLE ) )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                             .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                              .setValue( 1 ) )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                             .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                              .setValue( 1 ) )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                             .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                              .setValue( 1 ) )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                             .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                             .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                              .setValue( 1 ) )
                                                 .build();
 

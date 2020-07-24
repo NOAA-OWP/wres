@@ -65,14 +65,6 @@ public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statisti
     
     public interface ScoreComponent<S> extends Statistic<S>
     {
-        
-        /**
-         * Returns the component identifier.
-         * 
-         * @return the component name
-         */
-        
-        MetricConstants getName();
     }
     
 }

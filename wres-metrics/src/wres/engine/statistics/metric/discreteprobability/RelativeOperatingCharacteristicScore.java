@@ -53,18 +53,32 @@ public class RelativeOperatingCharacteristicScore
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( RelativeOperatingCharacteristicScore.MAIN )
+                                                                    .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -99,12 +113,12 @@ public class RelativeOperatingCharacteristicScore
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( rocScore )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( RelativeOperatingCharacteristicScore.METRIC )
+                                    .setMetric( RelativeOperatingCharacteristicScore.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

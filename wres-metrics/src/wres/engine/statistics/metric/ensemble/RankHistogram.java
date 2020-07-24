@@ -45,18 +45,40 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
 {
 
     /**
-     * Canonical representation of the metric.
+     * Rank order.
+     */
+
+    public static final DiagramMetricComponent RANK_ORDER = DiagramMetricComponent.newBuilder()
+                                                                                                .setName( DiagramComponentName.RANK_ORDER )
+                                                                                                .setMinimum( 0 )
+                                                                                                .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                                .build();
+
+    /**
+     * Observed relative frequency.
+     */
+
+    public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY = DiagramMetricComponent.newBuilder()
+                                                                                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                                                      .setMinimum( 0 )
+                                                                                                      .setMaximum( 1 )
+                                                                                                      .build();
+
+    /**
+     * Basic description of the metric.
+     */
+
+    public static final DiagramMetric BASIC_METRIC = DiagramMetric.newBuilder()
+                                                                  .setName( MetricName.RANK_HISTOGRAM )
+                                                                  .build();
+
+    /**
+     * Full description of the metric.
      */
 
     public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.RANK_ORDER )
-                                                                                                  .setMinimum( 1 )
-                                                                                                  .setMaximum( Double.POSITIVE_INFINITY ) )
-                                                            .addComponents( DiagramMetricComponent.newBuilder()
-                                                                                                  .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
-                                                                                                  .setMinimum( 0 )
-                                                                                                  .setMaximum( 1 ) )
+                                                            .addComponents( RankHistogram.RANK_ORDER )
+                                                            .addComponents( RankHistogram.OBSERVED_RELATIVE_FREQUENCY )
                                                             .setName( MetricName.RANK_HISTOGRAM )
                                                             .build();
 
@@ -128,7 +150,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
 
         DiagramStatisticComponent ro =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.RANK_ORDER )
+                                         .setMetric( RankHistogram.RANK_ORDER )
                                          .addAllValues( Arrays.stream( ranks )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -136,7 +158,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
 
         DiagramStatisticComponent obs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( RankHistogram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( Arrays.stream( relativeFrequencies )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -145,7 +167,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
         DiagramStatistic histogram = DiagramStatistic.newBuilder()
                                                      .addStatistics( ro )
                                                      .addStatistics( obs )
-                                                     .setMetric( RankHistogram.METRIC )
+                                                     .setMetric( RankHistogram.BASIC_METRIC )
                                                      .build();
 
         return DiagramStatisticOuter.of( histogram, s.getMetadata() );

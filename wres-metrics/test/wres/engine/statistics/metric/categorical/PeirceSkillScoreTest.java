@@ -11,10 +11,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -26,8 +24,6 @@ import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -71,12 +67,12 @@ public final class PeirceSkillScoreTest
         DoubleScoreStatisticOuter actual = this.pss.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( PeirceSkillScore.MAIN )
                                                                                .setValue( 0.6347985347985348 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( PeirceSkillScore.METRIC )
+                                                         .setMetric( PeirceSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -179,13 +175,13 @@ public final class PeirceSkillScoreTest
         DoubleScoreStatistic table = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( ContingencyTable.METRIC )
                                                          .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                                      .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                                      .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                                       .setValue( 1.0 ) )
                                                          .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                                      .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                                      .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                                       .setValue( 1.0 ) )
                                                          .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                                      .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                                      .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                                       .setValue( 1.0 ) )
                                                          .build();
 

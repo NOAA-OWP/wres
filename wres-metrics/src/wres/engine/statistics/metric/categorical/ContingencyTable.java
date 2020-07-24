@@ -32,35 +32,63 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
         Collectable<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setName( ComponentName.TRUE_POSITIVES ) )
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setName( ComponentName.TRUE_NEGATIVES ) )
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setName( ComponentName.TRUE_POSITIVES ) )
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.FALSE_POSITIVES ) )
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.FALSE_NEGATIVES ) )
-                             .setName( MetricName.CONTINGENCY_TABLE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.CONTINGENCY_TABLE )
+                                                                          .build();
+
+    /**
+     * True positives.
+     */
+
+    public static final DoubleScoreMetricComponent TRUE_POSITIVES = DoubleScoreMetricComponent.newBuilder()
+                                                                                              .setMinimum( 0 )
+                                                                                              .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                              .setName( ComponentName.TRUE_POSITIVES )
+                                                                                              .build();
+
+    /**
+     * False positives.
+     */
+
+    public static final DoubleScoreMetricComponent FALSE_POSITIVES = DoubleScoreMetricComponent.newBuilder()
+                                                                                               .setMinimum( 0 )
+                                                                                               .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                               .setName( ComponentName.FALSE_POSITIVES )
+                                                                                               .build();
+    /**
+     * True negatives.
+     */
+
+    public static final DoubleScoreMetricComponent TRUE_NEGATIVES = DoubleScoreMetricComponent.newBuilder()
+                                                                                              .setMinimum( 0 )
+                                                                                              .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                              .setName( ComponentName.TRUE_NEGATIVES )
+                                                                                              .build();
+
+    /**
+     * False negatives.
+     */
+
+    public static final DoubleScoreMetricComponent FALSE_NEGATIVES = DoubleScoreMetricComponent.newBuilder()
+                                                                                               .setMinimum( 0 )
+                                                                                               .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                               .setName( ComponentName.FALSE_NEGATIVES )
+                                                                                               .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( TRUE_POSITIVES )
+                                                                    .addComponents( FALSE_POSITIVES )
+                                                                    .addComponents( FALSE_NEGATIVES )
+                                                                    .addComponents( TRUE_NEGATIVES )
+                                                                    .setName( MetricName.CONTINGENCY_TABLE )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -116,18 +144,18 @@ public class ContingencyTable implements Metric<SampleData<Pair<Boolean, Boolean
         // Name the outcomes for a 2x2 contingency table
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( returnMe[0][0] ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( returnMe[0][1] ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( returnMe[1][0] ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( returnMe[1][1] ) )
                                     .build();
 

@@ -7,7 +7,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.math3.util.Precision;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +23,6 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -67,12 +65,12 @@ public final class SumOfSquareErrorTest
         DoubleScoreStatisticOuter actual = this.sse.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( SumOfSquareError.MAIN )
                                                                                .setValue( 4000039.29 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( SumOfSquareError.METRIC )
+                                                         .setMetric( SumOfSquareError.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .setSampleSize( 10 )
                                                          .build();

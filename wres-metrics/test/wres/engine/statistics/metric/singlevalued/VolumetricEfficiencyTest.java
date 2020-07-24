@@ -28,7 +28,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -76,12 +75,12 @@ public final class VolumetricEfficiencyTest
         DoubleScoreStatisticOuter actual = this.ve.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( VolumetricEfficiency.MAIN )
                                                                                .setValue( 0.657420176533252 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( VolumetricEfficiency.METRIC )
+                                                         .setMetric( VolumetricEfficiency.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -97,7 +96,7 @@ public final class VolumetricEfficiencyTest
         SampleDataBasic<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatisticOuter actual = ve.apply( input );
+        DoubleScoreStatisticOuter actual = this.ve.apply( input );
 
         assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
@@ -105,25 +104,25 @@ public final class VolumetricEfficiencyTest
     @Test
     public void testGetName()
     {
-        assertTrue( ve.getName().equals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString() ) );
+        assertTrue( this.ve.getName().equals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString() ) );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( ve.isDecomposable() );
+        assertFalse( this.ve.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( ve.isSkillScore() );
+        assertFalse( this.ve.isSkillScore() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ve.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.ve.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test

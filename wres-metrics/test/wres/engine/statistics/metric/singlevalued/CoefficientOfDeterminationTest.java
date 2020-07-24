@@ -22,7 +22,6 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -58,12 +57,12 @@ public final class CoefficientOfDeterminationTest
         DoubleScoreStatisticOuter actual = this.cod.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( CoefficientOfDetermination.MAIN )
                                                                                .setValue( 0.9999999820297963 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( CoefficientOfDetermination.METRIC )
+                                                         .setMetric( CoefficientOfDetermination.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

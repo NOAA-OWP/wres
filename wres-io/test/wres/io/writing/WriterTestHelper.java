@@ -49,6 +49,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
@@ -157,7 +158,11 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
+                                      "SQIN",
+                                      "HEFS",
+                                      "ESP",
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadataOne = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                             datasetIdentifier,
@@ -236,7 +241,11 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
+                                      "SQIN",
+                                      "HEFS",
+                                      "ESP",
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
@@ -307,7 +316,11 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
+                                      "SQIN",
+                                      "HEFS",
+                                      "ESP",
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
@@ -330,27 +343,24 @@ public class WriterTestHelper
                                       .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .addComponents( forecastComponent )
-                                            .addComponents( observedComponent )
-                                            .addComponents( sampleComponent )
                                             .setName( MetricName.RELIABILITY_DIAGRAM )
                                             .build();
 
         DiagramStatisticComponent forecastProbability =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .setMetric( forecastComponent )
                                          .addAllValues( List.of( 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 ) )
                                          .build();
 
         DiagramStatisticComponent observedFrequency =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( observedComponent )
                                          .addAllValues( List.of( 0.06294, 0.2938, 0.5, 0.73538, 0.93937 ) )
                                          .build();
 
         DiagramStatisticComponent sampleSize =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .setMetric( sampleComponent )
                                          .addAllValues( List.of( 5926.0, 371.0, 540.0, 650.0, 1501.0 ) )
                                          .build();
 
@@ -396,7 +406,11 @@ public class WriterTestHelper
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
+                                      "SQIN",
+                                      "HEFS",
+                                      "ESP",
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
@@ -474,7 +488,11 @@ public class WriterTestHelper
                                                           ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
+                                      "SQIN",
+                                      "HEFS",
+                                      "ESP",
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadataA = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                           datasetIdentifier,
@@ -496,7 +514,8 @@ public class WriterTestHelper
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -504,7 +523,8 @@ public class WriterTestHelper
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -513,7 +533,8 @@ public class WriterTestHelper
                                                                  .setName( MetricName.MEAN_ABSOLUTE_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 3.0 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
@@ -549,7 +570,11 @@ public class WriterTestHelper
                                                           ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
+                                      "SQIN",
+                                      "HEFS",
+                                      "ESP",
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                          datasetIdentifier,
@@ -564,15 +589,21 @@ public class WriterTestHelper
                 DurationScoreStatistic.newBuilder()
                                       .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEAN ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( 3_600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MEDIAN )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEDIAN ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( 7_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM )
+                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
+                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
+
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds( 10_800 ) ) )
                                       .build();
@@ -603,7 +634,11 @@ public class WriterTestHelper
                                                           ThresholdDataType.LEFT ) );
 
         DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of(  new FeatureTuple( LID, LID, null ), "SQIN", "HEFS", "ESP", LeftOrRightOrBaseline.RIGHT );
+                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
+                                      "SQIN",
+                                      "HEFS",
+                                      "ESP",
+                                      LeftOrRightOrBaseline.RIGHT );
 
         SampleMetadata fakeMetadataA = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                           datasetIdentifier,
@@ -615,7 +650,8 @@ public class WriterTestHelper
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatisticOuter fakeOutputA = DoubleScoreStatisticOuter.of( one, fakeMetadataA );

@@ -29,18 +29,32 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( RootMeanSquareError.MAIN )
+                                                                    .setName( MetricName.ROOT_MEAN_SQUARE_ERROR )
+                                                                    .build();
 
     /**
      * Instance of {@link SumOfSquareError}.
@@ -89,22 +103,22 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
         double input = output.getComponent( MetricConstants.MAIN )
                              .getData()
                              .getValue();
-        
+
         double sampleSize = output.getData().getSampleSize();
 
         double result = Math.sqrt( input / sampleSize );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( RootMeanSquareError.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( RootMeanSquareError.METRIC )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
-        
+
         return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
     }
 

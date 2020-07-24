@@ -28,18 +28,32 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( MeanSquareErrorSkillScoreNormalized.MAIN )
+                                                                    .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -97,13 +111,13 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
         double result = 1.0 / ( 2.0 - input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanSquareErrorSkillScoreNormalized.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( MeanSquareErrorSkillScoreNormalized.METRIC )
+                                    .setMetric( MeanSquareErrorSkillScoreNormalized.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

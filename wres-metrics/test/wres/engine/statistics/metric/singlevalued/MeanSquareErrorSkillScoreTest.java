@@ -27,7 +27,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -67,12 +66,12 @@ public final class MeanSquareErrorSkillScoreTest
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanSquareErrorSkillScore.MAIN )
                                                                                .setValue( 0.8007025335093799 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanSquareErrorSkillScore.METRIC )
+                                                         .setMetric( MeanSquareErrorSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -105,12 +104,12 @@ public final class MeanSquareErrorSkillScoreTest
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanSquareErrorSkillScore.MAIN )
                                                                                .setValue( 0.7832791707526114 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanSquareErrorSkillScore.METRIC )
+                                                         .setMetric( MeanSquareErrorSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
@@ -132,12 +131,12 @@ public final class MeanSquareErrorSkillScoreTest
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanSquareErrorSkillScore.MAIN )
                                                                                .setValue( 0.9963647159052861 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanSquareErrorSkillScore.METRIC )
+                                                         .setMetric( MeanSquareErrorSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

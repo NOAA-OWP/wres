@@ -25,18 +25,32 @@ public class CoefficientOfDetermination extends CorrelationPearsons
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.COEFFICIENT_OF_DETERMINATION )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.COEFFICIENT_OF_DETERMINATION )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( CoefficientOfDetermination.MAIN )
+                                                                    .setName( MetricName.COEFFICIENT_OF_DETERMINATION )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -76,13 +90,13 @@ public class CoefficientOfDetermination extends CorrelationPearsons
         double result = Math.pow( input, 2 );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( CoefficientOfDetermination.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( CoefficientOfDetermination.METRIC )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

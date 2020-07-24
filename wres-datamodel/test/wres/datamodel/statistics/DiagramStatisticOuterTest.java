@@ -14,7 +14,6 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.DiagramMetric;
@@ -76,20 +75,18 @@ public final class DiagramStatisticOuterTest
                                       .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .addComponents( podComponent )
-                                            .addComponents( pofdComponent )
                                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
                                             .build();
 
         DiagramStatisticComponent podOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
@@ -101,13 +98,13 @@ public final class DiagramStatisticOuterTest
 
         DiagramStatisticComponent podTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
@@ -119,13 +116,13 @@ public final class DiagramStatisticOuterTest
 
         DiagramStatisticComponent podThree =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) )
                                          .build();
 
         DiagramStatisticComponent pofdThree =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4, 0.5 ) )
                                          .build();
 
@@ -175,20 +172,18 @@ public final class DiagramStatisticOuterTest
                                       .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .addComponents( podComponent )
-                                            .addComponents( pofdComponent )
                                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
                                             .build();
 
         DiagramStatisticComponent podOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
@@ -222,20 +217,18 @@ public final class DiagramStatisticOuterTest
                                       .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .addComponents( podComponent )
-                                            .addComponents( pofdComponent )
                                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
                                             .build();
 
         DiagramStatisticComponent podOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
@@ -247,13 +240,13 @@ public final class DiagramStatisticOuterTest
 
         DiagramStatisticComponent podTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdTwo =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
@@ -283,20 +276,18 @@ public final class DiagramStatisticOuterTest
                                       .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
-                                            .addComponents( podComponent )
-                                            .addComponents( pofdComponent )
                                             .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
                                             .build();
 
         DiagramStatisticComponent podOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                         .setMetric( podComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 
         DiagramStatisticComponent pofdOne =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                         .setMetric( pofdComponent )
                                          .addAllValues( List.of( 0.1, 0.2, 0.3, 0.4 ) )
                                          .build();
 

@@ -63,35 +63,31 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
 
         /**
          * Hidden constructor.
-         * @param name the name
          * @param component the score component
          * @param metadata the metadata
          */
 
-        private DoubleScoreComponentOuter( MetricConstants name,
-                                           DoubleScoreStatisticComponent component,
+        private DoubleScoreComponentOuter( DoubleScoreStatisticComponent component,
                                            SampleMetadata metadata )
         {
-            super( name, component, metadata, next -> Double.toString( next.getValue() ) );
+            super( component, metadata, next -> Double.toString( next.getValue() ) );
 
-            this.metricName = MetricConstants.valueOf( component.getName().name() );
+            this.metricName = MetricConstants.valueOf( component.getMetric().getName().name() );
         }
 
         /**
          * Create a component.
          * 
-         * @param name the name
          * @param component the score component
          * @param metadata the metadata
          * @return a component
          * @throws NullPointerException if any input is null 
          */
 
-        public static DoubleScoreComponentOuter of( MetricConstants name,
-                                                    DoubleScoreStatisticComponent component,
+        public static DoubleScoreComponentOuter of( DoubleScoreStatisticComponent component,
                                                     SampleMetadata metadata )
         {
-            return new DoubleScoreComponentOuter( name, component, metadata );
+            return new DoubleScoreComponentOuter( component, metadata );
         }
 
         @Override
@@ -151,8 +147,9 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         List<DoubleScoreStatisticComponent> components = score.getStatisticsList();
         for ( DoubleScoreStatisticComponent next : components )
         {
-            MetricConstants name = MetricConstants.valueOf( next.getName().name() );
-            DoubleScoreComponentOuter nextOuter = DoubleScoreComponentOuter.of( name, next, metadata );
+            MetricConstants name = MetricConstants.valueOf( next.getMetric().getName().name() );
+            
+            DoubleScoreComponentOuter nextOuter = DoubleScoreComponentOuter.of( next, metadata );
 
             returnMe.put( name, nextOuter );
         }

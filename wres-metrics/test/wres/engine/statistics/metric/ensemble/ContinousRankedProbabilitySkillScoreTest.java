@@ -27,7 +27,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -90,12 +89,12 @@ public final class ContinousRankedProbabilitySkillScoreTest
         DoubleScoreStatisticOuter actual = this.crpss.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( ContinuousRankedProbabilitySkillScore.MAIN )
                                                                                .setValue( 0.0779168348809044 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( ContinuousRankedProbabilitySkillScore.METRIC )
+                                                         .setMetric( ContinuousRankedProbabilitySkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

@@ -36,6 +36,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -341,16 +342,19 @@ public final class SlicerTest
 
         DoubleScoreStatisticComponent reliability = DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.5 )
-                                                                                 .setName( ComponentName.RELIABILITY )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.RELIABILITY ) )
                                                                                  .build();
         DoubleScoreStatisticComponent resolution = DoubleScoreStatisticComponent.newBuilder()
                                                                                 .setValue( 0.2 )
-                                                                                .setName( ComponentName.RESOLUTION )
+                                                                                .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                      .setName( ComponentName.RESOLUTION ) )
                                                                                 .build();
 
         DoubleScoreStatisticComponent sharpness = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setValue( 0.1 )
-                                                                               .setName( ComponentName.SHARPNESS )
+                                                                               .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                     .setName( ComponentName.SHARPNESS ) )
                                                                                .build();
 
         DoubleScoreStatistic one =
@@ -386,11 +390,11 @@ public final class SlicerTest
 
         //Check the results
         assertEquals( 3, sliced.size() );
-        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.RELIABILITY, reliability, meta ) ),
+        assertEquals( List.of( DoubleScoreComponentOuter.of( reliability, meta ) ),
                       sliced.get( MetricConstants.RELIABILITY ) );
-        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.RESOLUTION, resolution, meta ) ),
+        assertEquals( List.of( DoubleScoreComponentOuter.of( resolution, meta ) ),
                       sliced.get( MetricConstants.RESOLUTION ) );
-        assertEquals( List.of( DoubleScoreComponentOuter.of( MetricConstants.SHARPNESS, sharpness, meta ) ),
+        assertEquals( List.of( DoubleScoreComponentOuter.of( sharpness, meta ) ),
                       sliced.get( MetricConstants.SHARPNESS ) );
     }
 
@@ -505,7 +509,8 @@ public final class SlicerTest
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BIAS_FRACTION ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.1 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -513,7 +518,8 @@ public final class SlicerTest
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BIAS_FRACTION ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.2 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -522,7 +528,8 @@ public final class SlicerTest
                                                                  .setName( MetricName.BIAS_FRACTION ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.3 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
@@ -596,7 +603,8 @@ public final class SlicerTest
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BIAS_FRACTION ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.1 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -604,7 +612,8 @@ public final class SlicerTest
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BIAS_FRACTION ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.2 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -613,7 +622,8 @@ public final class SlicerTest
                                                                  .setName( MetricName.BIAS_FRACTION ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.3 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> listOfOutputs =

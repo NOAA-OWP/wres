@@ -865,7 +865,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             SampleMetadata sampleMetadata = score.getMetadata();
 
             // Find the metric name
-            MetricConstants metricComponentName = MetricConstants.valueOf( score.getData().getName().name() );
+            MetricConstants metricComponentName =
+                    MetricConstants.valueOf( score.getData().getMetric().getName().name() );
             String metricNameString = metricName.name();
             if ( metricComponentName != MetricConstants.MAIN )
             {

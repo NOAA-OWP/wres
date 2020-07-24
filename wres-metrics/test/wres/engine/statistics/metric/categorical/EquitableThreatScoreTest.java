@@ -25,7 +25,6 @@ import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -72,12 +71,12 @@ public final class EquitableThreatScoreTest
         DoubleScoreStatisticOuter actual = this.ets.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( EquitableThreatScore.MAIN )
                                                                                .setValue( 0.43768152544513195 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( EquitableThreatScore.METRIC )
+                                                         .setMetric( EquitableThreatScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

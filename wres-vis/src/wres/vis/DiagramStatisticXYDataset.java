@@ -3,6 +3,7 @@ package wres.vis;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedSet;
 
 import org.jfree.data.xy.XYDataset;
@@ -13,6 +14,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
+import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.util.TimeHelper;
 
 /**
@@ -78,40 +80,55 @@ public class DiagramStatisticXYDataset
     @Override
     public int getItemCount( final int series )
     {
-        return getPlotData().get( series )
-                            .getData()
-                            .getStatisticsList()
-                            .stream()
-                            .filter( next -> this.xConstant == next.getName() )
-                            .findFirst()
-                            .get()
-                            .getValuesCount();
+        Optional<DiagramStatisticComponent> number = getPlotData().get( series )
+                .getData()
+                .getStatisticsList()
+                .stream()
+                .filter( next -> this.xConstant == next.getMetric().getName() )
+                .findFirst();
+        
+        if( number.isPresent() )
+        {
+            return number.get().getValuesCount();
+        }
+        
+        return 0;
     }
 
     @Override
     public Number getX( final int series, final int item )
     {
-        return getPlotData().get( series )
-                            .getData()
-                            .getStatisticsList()
-                            .stream()
-                            .filter( next -> this.xConstant == next.getName() )
-                            .findFirst()
-                            .get()
-                            .getValues( item );
+        Optional<DiagramStatisticComponent> number = getPlotData().get( series )
+                .getData()
+                .getStatisticsList()
+                .stream()
+                .filter( next -> this.xConstant == next.getMetric().getName() )
+                .findFirst();
+        
+        if( number.isPresent() )
+        {
+            return number.get().getValues( item );
+        }
+        
+        return Double.NaN;
     }
 
     @Override
     public Number getY( final int series, final int item )
     {
-        return getPlotData().get( series )
-                            .getData()
-                            .getStatisticsList()
-                            .stream()
-                            .filter( next -> this.yConstant == next.getName() )
-                            .findFirst()
-                            .get()
-                            .getValues( item );
+        Optional<DiagramStatisticComponent> number = getPlotData().get( series )
+                .getData()
+                .getStatisticsList()
+                .stream()
+                .filter( next -> this.yConstant == next.getMetric().getName() )
+                .findFirst();
+        
+        if( number.isPresent() )
+        {
+            return number.get().getValues( item );
+        }
+        
+        return Double.NaN;
     }
 
     @Override

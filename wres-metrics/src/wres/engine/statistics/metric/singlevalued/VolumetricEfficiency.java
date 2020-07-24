@@ -29,18 +29,32 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.VOLUMETRIC_EFFICIENCY )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.VOLUMETRIC_EFFICIENCY )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( VolumetricEfficiency.MAIN )
+                                                                    .setName( MetricName.VOLUMETRIC_EFFICIENCY )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -77,13 +91,13 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( VolumetricEfficiency.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( VolumetricEfficiency.METRIC )
+                                    .setMetric( VolumetricEfficiency.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

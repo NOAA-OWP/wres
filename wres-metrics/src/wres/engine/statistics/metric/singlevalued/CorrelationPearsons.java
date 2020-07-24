@@ -34,19 +34,33 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 1 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
-                             .build();
-    
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 1 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( CorrelationPearsons.MAIN )
+                                                                    .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                                                                    .build();
+
     /**
      * Instance of {@link PearsonsCorrelation}.
      */
@@ -79,17 +93,17 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
         {
             returnMe = FunctionFactory.finiteOrMissing()
                                       .applyAsDouble( this.correlation.correlation( Slicer.getLeftSide( s ),
-                                                                               Slicer.getRightSide( s ) ) );
+                                                                                    Slicer.getRightSide( s ) ) );
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( CorrelationPearsons.MAIN )
                                                                                .setValue( returnMe )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( CorrelationPearsons.METRIC )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 
@@ -133,7 +147,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         return output;
     }
 

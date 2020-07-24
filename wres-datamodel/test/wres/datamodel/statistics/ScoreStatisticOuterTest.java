@@ -15,6 +15,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -35,7 +36,8 @@ public final class ScoreStatisticOuterTest
                                 .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                              .setValue( 1.0 )
-                                                                             .setName( ComponentName.MAIN ) )
+                                                                             .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                   .setName( ComponentName.MAIN ) ) )
                                 .build();
 
     /**
@@ -74,7 +76,8 @@ public final class ScoreStatisticOuterTest
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
-                                                                                 .setName( ComponentName.MAIN ) )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
                                     .build();
 
         assertNotEquals( DoubleScoreStatisticOuter.of( two, m1 ), s );
@@ -96,7 +99,7 @@ public final class ScoreStatisticOuterTest
     {
         FeatureKey l1 = FeatureKey.of( "A" );
         SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of(new FeatureTuple( l1, l1, l1 ),
+                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
                                                                      "B",
                                                                      "C" ) );
 

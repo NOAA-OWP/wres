@@ -37,20 +37,34 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, Probability>>>
         implements ProbabilityScore<SampleData<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
 {
-    
+
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( 1 )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.BRIER_SCORE )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.BRIER_SCORE )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( 1 )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( BrierScore.MAIN )
+                                                                    .setName( MetricName.BRIER_SCORE )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -90,12 +104,12 @@ public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, P
                                 .getValue();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( BrierScore.MAIN )
                                                                                .setValue( result )
                                                                                .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( BrierScore.METRIC )
+                                    .setMetric( BrierScore.BASIC_METRIC )
                                     .addStatistics( component )
                                     .build();
 

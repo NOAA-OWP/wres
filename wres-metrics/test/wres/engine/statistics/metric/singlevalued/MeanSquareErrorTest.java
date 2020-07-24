@@ -22,7 +22,6 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -61,12 +60,12 @@ public final class MeanSquareErrorTest
         DoubleScoreStatisticOuter actual = this.mse.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( MeanSquareError.MAIN )
                                                                                .setValue( 400003.929 )
                                                                                .build();
 
         DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanSquareError.METRIC )
+                                                         .setMetric( MeanSquareError.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 

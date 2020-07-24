@@ -27,7 +27,6 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -62,7 +61,7 @@ public final class ReliabilityDiagramTest
     public void testApply()
     {
         //Generate some data
-        SampleData<Pair<Probability, Probability>>  input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        SampleData<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
         SampleMetadata m1 = Boilerplate.getSampleMetadata();
@@ -102,19 +101,19 @@ public final class ReliabilityDiagramTest
 
         DiagramStatisticComponent forecastProbability =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .setMetric( ReliabilityDiagram.FORECAST_PROBABILITY )
                                          .addAllValues( expectedFProb )
                                          .build();
 
         DiagramStatisticComponent observedFrequency =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( ReliabilityDiagram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( expectedOProb )
                                          .build();
 
         DiagramStatisticComponent sampleSize =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .setMetric( ReliabilityDiagram.SAMPLE_SIZE )
                                          .addAllValues( expectedSample )
                                          .build();
 
@@ -122,7 +121,7 @@ public final class ReliabilityDiagramTest
                                                      .addStatistics( forecastProbability )
                                                      .addStatistics( observedFrequency )
                                                      .addStatistics( sampleSize )
-                                                     .setMetric( ReliabilityDiagram.METRIC )
+                                                     .setMetric( ReliabilityDiagram.BASIC_METRIC )
                                                      .build();
 
         DiagramStatisticOuter expected = DiagramStatisticOuter.of( statistic, m1 );
@@ -219,19 +218,19 @@ public final class ReliabilityDiagramTest
 
         DiagramStatisticComponent forecastProbability =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .setMetric( ReliabilityDiagram.FORECAST_PROBABILITY )
                                          .addAllValues( expectedFProb )
                                          .build();
 
         DiagramStatisticComponent observedFrequency =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( ReliabilityDiagram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( expectedOProb )
                                          .build();
 
         DiagramStatisticComponent sampleSize =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .setMetric( ReliabilityDiagram.SAMPLE_SIZE )
                                          .addAllValues( expectedSample )
                                          .build();
 
@@ -239,7 +238,7 @@ public final class ReliabilityDiagramTest
                                                      .addStatistics( forecastProbability )
                                                      .addStatistics( observedFrequency )
                                                      .addStatistics( sampleSize )
-                                                     .setMetric( ReliabilityDiagram.METRIC )
+                                                     .setMetric( ReliabilityDiagram.BASIC_METRIC )
                                                      .build();
 
         DiagramStatisticOuter expected = DiagramStatisticOuter.of( statistic, m1 );
@@ -275,19 +274,19 @@ public final class ReliabilityDiagramTest
 
         DiagramStatisticComponent forecastProbability =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                         .setMetric( ReliabilityDiagram.FORECAST_PROBABILITY )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatisticComponent observedFrequency =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                         .setMetric( ReliabilityDiagram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatisticComponent sampleSize =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.SAMPLE_SIZE )
+                                         .setMetric( ReliabilityDiagram.SAMPLE_SIZE )
                                          .addAllValues( sourceSample )
                                          .build();
 
@@ -295,7 +294,7 @@ public final class ReliabilityDiagramTest
                                                     .addStatistics( forecastProbability )
                                                     .addStatistics( observedFrequency )
                                                     .addStatistics( sampleSize )
-                                                    .setMetric( ReliabilityDiagram.METRIC )
+                                                    .setMetric( ReliabilityDiagram.BASIC_METRIC )
                                                     .build();
 
         assertEquals( expected, actual.getData() );

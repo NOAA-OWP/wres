@@ -10,14 +10,17 @@ option java_multiple_files = true;
 
 message DoubleScoreMetric
 {
-    /*A message that encapsulates a score metric or scoring rule, which is composed 
-    of one or more scalar values.*/
+    /*A message that encapsulates a score metric or scoring rule, which is 
+    composed of one or more scalar values.*/
     
     MetricName name = 1;
     // Metric name.
     
     repeated DoubleScoreMetricComponent components = 2;
-    // One or more score components.
+    // Zero or more score components. In general, the description of the score
+    // metric component should be inband to the corresponding score statistic 
+    // component, but there is the option to provide a complete, standalone, 
+    // description of a metric here, independent of any statistics.
     
     message DoubleScoreMetricComponent
     {

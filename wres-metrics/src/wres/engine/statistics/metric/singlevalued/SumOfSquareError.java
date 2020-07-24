@@ -31,18 +31,32 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
 {
 
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
-                                                                       .setName( ComponentName.MAIN ) )
-                             .setName( MetricName.SUM_OF_SQUARE_ERROR )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.SUM_OF_SQUARE_ERROR )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
+                                                                                    .setMinimum( 0 )
+                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                    .setOptimum( 0 )
+                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
+                                                                    .addComponents( SumOfSquareError.MAIN )
+                                                                    .setName( MetricName.SUM_OF_SQUARE_ERROR )
+                                                                    .build();
 
     /**
      * Returns an instance.
@@ -102,13 +116,13 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setName( ComponentName.MAIN )
+                                                                               .setMetric( SumOfSquareError.MAIN )
                                                                                .setValue( returnMe )
                                                                                .build();
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( METRIC )
+                                    .setMetric( SumOfSquareError.BASIC_METRIC )
                                     .addStatistics( component )
                                     .setSampleSize( input.getRawData().size() )
                                     .build();

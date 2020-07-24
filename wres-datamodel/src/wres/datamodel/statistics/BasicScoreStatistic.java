@@ -136,12 +136,6 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         private final S component;
 
         /**
-         * The component name.
-         */
-
-        private final MetricConstants name;
-
-        /**
          * The metadata.
          */
 
@@ -152,33 +146,23 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
          */
 
         private final Function<S,String> mapper;
-        
-        @Override
-        public MetricConstants getName()
-        {
-            return this.name;
-        }
 
         /**
          * Hidden constructor.
-         * @param name the name
          * @param component the score component
          * @param metadata the metadata
          * @param mapper a mapper to a pretty string
          * @throws NullPointerException if any input is null
          */
 
-        BasicScoreComponent( MetricConstants name,
-                             S component,
+        BasicScoreComponent( S component,
                              SampleMetadata metadata,
                              Function<S,String> mapper )
         {
-            Objects.requireNonNull( name );
             Objects.requireNonNull( component );
             Objects.requireNonNull( metadata );
             Objects.requireNonNull( mapper );
             
-            this.name = name;
             this.component = component;
             this.metadata = metadata;
             this.mapper = mapper;
@@ -211,7 +195,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
 
             BasicScoreComponent<?> component = (BasicScoreComponent<?>) o;
 
-            return Objects.equals( this.getName(), component.getName() )
+            return Objects.equals( this.getMetricName(), component.getMetricName() )
                    && Objects.equals( this.getData(), component.getData() )
                    && Objects.equals( this.getMetadata(), component.getMetadata() );
         }
@@ -219,7 +203,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         @Override
         public int hashCode()
         {
-            return Objects.hash( this.getName(), this.getData(), this.getMetadata() );
+            return Objects.hash( this.getMetricName(), this.getData(), this.getMetadata() );
         }
 
         @Override
@@ -227,7 +211,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         {
             String pretty = this.mapper.apply( this.getData() );
             return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                                .append( "name", this.getName().name() )
+                                                                                .append( "name", this.getMetricName().name() )
                                                                                 .append( "value", pretty )
                                                                                 .build();
         }

@@ -18,7 +18,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
@@ -28,7 +27,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  */
 public final class QuantileQuantileDiagramTest
 {
-    
+
     /**
      * Default instance of a {@link QuantileQuantileDiagram}.
      */
@@ -70,20 +69,20 @@ public final class QuantileQuantileDiagramTest
 
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES )
                                          .addAllValues( observedQ )
                                          .build();
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES )
                                          .addAllValues( predictedQ )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
                                                     .addStatistics( oqs )
                                                     .addStatistics( pqs )
-                                                    .setMetric( QuantileQuantileDiagram.METRIC )
+                                                    .setMetric( QuantileQuantileDiagram.BASIC_METRIC )
                                                     .build();
 
         assertEquals( expected, actual.getData() );
@@ -99,27 +98,27 @@ public final class QuantileQuantileDiagramTest
         DiagramStatisticOuter actual = this.qqd.apply( input );
 
         List<Double> source = new ArrayList<>();
-        for(int i = 0; i < 10; i ++ )
+        for ( int i = 0; i < 10; i++ )
         {
             source.add( Double.NaN );
         }
 
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setName( DiagramComponentName.PREDICTED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
                                                     .addStatistics( oqs )
                                                     .addStatistics( pqs )
-                                                    .setMetric( QuantileQuantileDiagram.METRIC )
+                                                    .setMetric( QuantileQuantileDiagram.BASIC_METRIC )
                                                     .build();
 
         assertEquals( expected, actual.getData() );
@@ -135,7 +134,7 @@ public final class QuantileQuantileDiagramTest
     public void testApplyExceptionOnNullInput()
     {
         SampleDataException expected = assertThrows( SampleDataException.class, () -> this.qqd.apply( null ) );
-        
+
         assertEquals( "Specify non-null input to the 'QUANTILE QUANTILE DIAGRAM'.", expected.getMessage() );
     }
 

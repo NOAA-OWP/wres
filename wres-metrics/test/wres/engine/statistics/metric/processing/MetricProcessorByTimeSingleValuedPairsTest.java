@@ -66,7 +66,6 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
@@ -94,12 +93,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      */
 
     private static final String STREAMFLOW = "Streamflow";
-
-    /**
-     * Duration for metadata.
-     */
-
-    private static final String DURATION = "DURATION";
 
     /**
      * Location for metadata.
@@ -247,18 +240,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 400 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 100 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 0 ) )
                                     .build();
 
@@ -561,31 +554,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         com.google.protobuf.Duration expectedMax = MessageFactory.parse( Duration.ofHours( 12 ) );
         com.google.protobuf.Duration expectedMeanAbs = MessageFactory.parse( Duration.ofHours( 9 ) );
 
-        DurationScoreStatisticComponent meanComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                       .setName( ComponentName.MEAN )
-                                                                                       .setValue( expectedMean )
-                                                                                       .build();
-
-        DurationScoreStatisticComponent medianComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                         .setName( ComponentName.MEDIAN )
-                                                                                         .setValue( expectedMedian )
-                                                                                         .build();
-
-        DurationScoreStatisticComponent minComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                      .setName( ComponentName.MINIMUM )
-                                                                                      .setValue( expectedMin )
-                                                                                      .build();
-
-        DurationScoreStatisticComponent maxComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                      .setName( ComponentName.MAXIMUM )
-                                                                                      .setValue( expectedMax )
-                                                                                      .build();
-
-        DurationScoreStatisticComponent meanAbsComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                          .setName( ComponentName.MEAN_ABSOLUTE )
-                                                                                          .setValue( expectedMeanAbs )
-                                                                                          .build();
-
         DurationScoreMetricComponent meanMetricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                        .setName( ComponentName.MEAN )
                                                                                        .build();
@@ -606,13 +574,33 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           .setName( ComponentName.MEAN_ABSOLUTE )
                                                                                           .build();
 
+
+        DurationScoreStatisticComponent meanComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                       .setMetric( meanMetricComponent )
+                                                                                       .setValue( expectedMean )
+                                                                                       .build();
+
+        DurationScoreStatisticComponent medianComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                         .setMetric( medianMetricComponent )
+                                                                                         .setValue( expectedMedian )
+                                                                                         .build();
+
+        DurationScoreStatisticComponent minComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                      .setMetric( minMetricComponent )
+                                                                                      .setValue( expectedMin )
+                                                                                      .build();
+
+        DurationScoreStatisticComponent maxComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                      .setMetric( maxMetricComponent )
+                                                                                      .setValue( expectedMax )
+                                                                                      .build();
+
+        DurationScoreStatisticComponent meanAbsComponent = DurationScoreStatisticComponent.newBuilder()
+                                                                                          .setMetric( meanAbsMetricComponent )
+                                                                                          .setValue( expectedMeanAbs )
+                                                                                          .build();
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
-                                                        .addComponents( meanMetricComponent )
-                                                        .addComponents( medianMetricComponent )
-                                                        .addComponents( minMetricComponent )
-                                                        .addComponents( maxMetricComponent )
-                                                        .addComponents( meanAbsMetricComponent )
                                                         .build();
         DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
                                                              .setMetric( metric )
@@ -722,18 +710,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 500 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 0 ) )
                                     .build();
 
@@ -813,18 +801,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.METRIC )
+                                    .setMetric( ContingencyTable.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
                                                                                  .setValue( 0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_POSITIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
                                                                                  .setValue( 0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.FALSE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
                                                                                  .setValue( 0 ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setName( DoubleScoreMetricComponent.ComponentName.TRUE_NEGATIVES )
+                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
                                                                                  .setValue( 0 ) )
                                     .build();
 
@@ -881,29 +869,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                       timeWindow,
                                                       thresholds );
 
-        DurationScoreMetricComponent mean = DurationScoreMetricComponent.newBuilder()
-                                                                        .setName( ComponentName.MEAN )
-                                                                        .build();
-        DurationScoreMetricComponent median = DurationScoreMetricComponent.newBuilder()
-                                                                          .setName( ComponentName.MEDIAN )
-                                                                          .build();
-        DurationScoreMetricComponent minimum = DurationScoreMetricComponent.newBuilder()
-                                                                           .setName( ComponentName.MINIMUM )
-                                                                           .build();
-        DurationScoreMetricComponent maximum = DurationScoreMetricComponent.newBuilder()
-                                                                           .setName( ComponentName.MAXIMUM )
-                                                                           .build();
-        DurationScoreMetricComponent meanAbsolute = DurationScoreMetricComponent.newBuilder()
-                                                                                .setName( ComponentName.MEAN_ABSOLUTE )
-                                                                                .build();
-
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
-                                                        .addComponents( mean )
-                                                        .addComponents( median )
-                                                        .addComponents( minimum )
-                                                        .addComponents( maximum )
-                                                        .addComponents( meanAbsolute )
                                                         .build();
         DurationScoreStatistic score = DurationScoreStatistic.newBuilder()
                                                              .setMetric( metric )
