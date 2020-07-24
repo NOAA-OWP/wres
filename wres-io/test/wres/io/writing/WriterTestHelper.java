@@ -91,6 +91,7 @@ public class WriterTestHelper
         features.add( feature );
 
         PairConfig pairConfig = new PairConfig( null,
+                                                null,
                                                 features,
                                                 null,
                                                 null,

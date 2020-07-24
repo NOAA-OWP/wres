@@ -7,22 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.Polygon;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.FeatureKey;
-import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
 import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
@@ -157,149 +151,6 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
     }
 
 
-    public FeatureDetails getDetails( FeatureKey feature ) throws SQLException
-    {
-        LOGGER.trace( "getDetails with FeatureKey: {}", feature );
-        Integer id = this.getFeatureID( feature );
-
-        if (id == null)
-        {
-            throw new NullPointerException(
-                    "No feature ID could be found for the feature described as "
-                    + feature );
-        }
-
-        return this.get( id );
-    }
-
-    private Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
-            throws SQLException
-    {
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
-        script.addLine("SELECT *");
-        script.addLine("FROM wres.Feature");
-        script.addLine("WHERE lid != ''");
-        script.addTab().addLine("AND lid IS NOT NULL");
-
-        if (ConfigHelper.usesNetCDFData( projectConfig ))
-        {
-            script.addTab().addLine("AND comid > 0");
-            script.addTab().addLine("AND comid IS NOT NULL");
-        }
-
-        script.addLine("ORDER BY feature_id");
-
-        // A set is used to avoid duplications
-        Set<FeatureDetails> features = new HashSet<>(  );
-        script.consume( featureRow -> features.add( new FeatureDetails(  featureRow  )) );
-
-        return features;
-    }
-/*
-    public Set<FeatureDetails> getAllDetails(ProjectConfig projectConfig) throws SQLException
-    {
-        Set<FeatureDetails> features;
-
-        if (projectConfig.getPair().getFeature() == null || projectConfig.getPair().getFeature().isEmpty())
-        {
-            features = this.getUnspecifiedDetails( projectConfig );
-        }
-        else
-        {
-            features = this.getSpecifiedDetails(projectConfig);
-        }
-
-        return features;
-    }
-*/
-
-    /**
-     * Get the feature names relevant to a particular dataSource (for reading).
-     *
-     * The declaration only references names, not complete feature identities,
-     * therefore we cannot have a full feature at this point, nor do we get one
-     * from a database here, because the purpose here is to read names only.
-     *
-     * A dataset will have complete feature identities which will be ingested
-     * at ingest-time. But to bootstrap ingest, we start with names only, which
-     * can limit requests for data from data sources. After ingest we will have
-     * the ability to get the full list of features for a dataset.
-     *
-     * @param projectDeclaration The project declaration
-     * @param sourceDeclaration The source declared within the projectDeclaration
-     * @return A set of String either declared or from service
-     */
-
-    public Set<String> getFeatureNamesForSource( ProjectConfig projectDeclaration,
-                                                 DataSourceConfig sourceDeclaration )
-    {
-
-        SortedSet<String> featureNames = new TreeSet<>();
-        List<Feature> featuresConfigured = projectDeclaration.getPair()
-                                                             .getFeature();
-
-        if ( featuresConfigured.isEmpty() )
-        {
-            // TODO: decide whether to ingest ALL 2.7m features or throw
-            throw new UnsupportedOperationException( "Must configure features or specify a service to resolve features." );
-
-        }
-
-        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectDeclaration,
-                                                                           sourceDeclaration );
-        // Reference equality on purpose here.
-        if ( lrb.equals( LeftOrRightOrBaseline.LEFT ) )
-        {
-            for ( Feature featureConfigured : featuresConfigured )
-            {
-                featureNames.add( featureConfigured.getLeft() );
-            }
-        }
-        else if ( lrb.equals( LeftOrRightOrBaseline.RIGHT ) )
-        {
-            for ( Feature featureConfigured : featuresConfigured )
-            {
-                featureNames.add( featureConfigured.getRight() );
-            }
-        }
-        else if ( lrb.equals( LeftOrRightOrBaseline.BASELINE ) )
-        {
-            for ( Feature featureConfigured : featuresConfigured )
-            {
-                featureNames.add( featureConfigured.getBaseline() );
-            }
-        }
-
-        return Collections.unmodifiableSortedSet( featureNames );
-    }
-
-/*
-    // TODO: this can do magic selection from the WRDS Location Service.
-    private Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
-    {
-        Set<FeatureDetails> features = new HashSet<>();
-
-        for ( Feature feature : projectConfig.getPair().getFeature() )
-        {
-            for ( FeatureDetails details : this.getAllDetails( feature ) )
-            {
-                features.add( details );
-            }
-        }
-
-        return features;
-    }
-*/
-    // TODO: this can do magic selection from the WRDS Location Service.
-
-    /*
-        private Set<FeatureDetails> getAllDetails( Feature feature )
-            throws SQLException
-    {
-        return this.getDetailsByGeometry( feature );
-    }
-*/
     public Set<FeatureTuple> getGriddedDetails( Project details )
             throws SQLException
     {
@@ -521,108 +372,6 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
                                                 + y );
         }
     }
-
-    /* TODO see if can be done using wkt
-
-    private Set<FeatureDetails> getDetailsByCoordinates( Float longitude,
-                                                         Float latitude,
-                                                         Float range )
-            throws SQLException
-    {
-        Double radianLatitude = Math.toRadians( latitude );
-
-        // This is the approximate distance between longitudinal degrees at
-        // the equator
-        final Double distanceAtEquator = 111321.0;
-
-        // This is an approximation
-        Double distanceOfOneDegree = Math.cos(radianLatitude) * distanceAtEquator;
-
-        // We take the max between the approximate distance and 0.00005 because
-        // 0.00005 serves as a decent epsilon for database distance comparison.
-        // If the distance is much smaller than that, float point error
-        // can exclude the requested location, even if the coordinates were
-        // spot on.
-        Double rangeInDegrees = Math.max( range / distanceOfOneDegree, 0.00005);
-
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
-        script.addLine("WITH feature_and_distance AS");
-        script.addLine("(");
-        script.addTab().addLine("SELECT SQRT((", latitude, " - latitude)^2 + (", longitude, " - longitude)^2) AS distance");
-        script.addTab().addLine("FROM wres.Feature");
-        script.addTab().addLine("WHERE NOT (");
-        script.addTab(  2  ).addLine("longitude IS NULL OR latitude IS NULL");
-        script.addTab().addLine(")");
-        script.addLine(")");
-        script.addLine("SELECT *");
-        script.addLine("FROM feature_and_distance");
-        script.addLine("WHERE distance <= ", rangeInDegrees);
-        script.addLine("ORDER BY feature_id;");
-
-        return this.getDetailsFromDatabase( script );
-    }
-*/
-
-    /* TODO see if can be done using wkt
-    private Set<FeatureDetails> getDetailsByGeometry( Feature feature )
-            throws SQLException
-    {
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
-        script.addLine("SELECT *");
-        script.addLine("FROM wres.Feature F");
-        script.addLine("WHERE F.latitude IS NOT NULL");
-        script.addTab().addLine("AND (");
-        boolean geometryAdded = false;
-
-        if (feature.getCircle() != null)
-        {
-            geometryAdded = true;
-            script.addLine("( POINT(F.longitude, F.latitude) <@ CIRCLE '((",
-                           feature.getCircle().getLongitude(),
-                           ", ",
-                           feature.getCircle().getLatitude(),
-                           "), ",
-                           feature.getCircle().getDiameter(),
-                           ")' )");
-        }
-
-        if (feature.getPolygon() != null)
-        {
-            if ( geometryAdded )
-            {
-                script.addTab( 2 ).add( "OR (" );
-            }
-            else
-            {
-                script.addTab( 2 ).add( "(" );
-            }
-
-            String shape = "POLYGON";
-
-            if (feature.getPolygon().getPoint().size() == 2)
-            {
-                shape = "BOX";
-            }
-
-            StringJoiner pointJoiner = new StringJoiner( "), (",
-                                                         " POINT(F.longitude, F.latitude) <@ " + shape + " '((",
-                                                         "))'" );
-
-            for ( Polygon.Point point : feature.getPolygon().getPoint())
-            {
-                pointJoiner.add( point.getLongitude() + ", " + point.getLatitude() );
-            }
-
-            script.addLine(pointJoiner.toString(), ")");
-        }
-
-        script.addTab().add(");");
-
-        return this.getDetailsFromDatabase( script );
-    }
-*/
 
     @Override
     public boolean hasID( FeatureKey key )

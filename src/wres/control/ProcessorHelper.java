@@ -30,6 +30,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.geography.FeatureFinder;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
@@ -91,13 +92,18 @@ class ProcessorHelper
         String desiredMeasurementUnit = pairConfig.getUnit();
         UnitMapper unitMapper = UnitMapper.of( database, desiredMeasurementUnit );
 
+        // Look up any needed feature correlations, generate a new declaration.
+        ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
+        LOGGER.debug( "Filled out features for project. Before: {} After: {}",
+                      projectConfig, featurefulProjectConfig );
+
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
         Project project = Operations.ingest( systemSettings,
                                              database,
                                              executor,
-                                             projectConfig,
+                                             featurefulProjectConfig,
                                              lockManager );
 
         Operations.prepareForExecution( project );

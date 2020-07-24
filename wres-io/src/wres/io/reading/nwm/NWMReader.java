@@ -31,6 +31,7 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
 import wres.io.concurrency.TimeSeriesIngester;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
@@ -346,10 +347,9 @@ public class NWMReader implements Callable<List<IngestResult>>
     private List<IngestResult> ingest() throws IngestException
     {
         List<IngestResult> ingestResults = new ArrayList<>();
-        Features featuresCache = this.getFeaturesCache();
-        Set<String> features = featuresCache.getFeatureNamesForSource( this.getProjectConfig(),
-                                                                       this.getDataSource()
-                                                                           .getContext() );
+        Set<String> features = ConfigHelper.getFeatureNamesForSource( this.getProjectConfig(),
+                                                                      this.getDataSource()
+                                                                          .getContext() );
 
         // A list of featureIds that will be sorted in NWM id order to be used
         // to create blocks of sequential NWM ids.

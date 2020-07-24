@@ -843,6 +843,7 @@ time scale within a single class, rather than two classes.
 
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
+            <xs:element name="featureService" type="xs:anyURI" minOccurs="0" maxOccurs="1" />
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="gridSelection" type="unnamedFeature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
