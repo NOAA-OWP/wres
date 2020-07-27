@@ -3,7 +3,9 @@ package wres.io.thresholds.csv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.config.MetricConfigException;
-import wres.config.generated.*;
+
+import wres.config.generated.ThresholdFormat;
+import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
@@ -122,10 +124,7 @@ public class CSVThresholdReader
             dataType = DataFactory.getThresholdDataType( threshold.getApplyTo() );
         }
 
-        // The type of feature
-        FeatureType featureType = nextSource.getFeatureType();
-
-        ThresholdDataTypes dataTypes = new ThresholdDataTypes( dataType, featureType, threshold.getType(), operator );
+        ThresholdDataTypes dataTypes = new ThresholdDataTypes( dataType, threshold.getType(), operator );
 
         return CSVThresholdReader.readThresholds( commaSeparated,
                                                   dataTypes,

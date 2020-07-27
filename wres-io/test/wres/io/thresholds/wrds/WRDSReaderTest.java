@@ -4,7 +4,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import wres.config.generated.*;
+
+import wres.config.generated.ThresholdDataType;
+import wres.config.generated.ThresholdFormat;
+import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdType;
+import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -138,7 +143,6 @@ public class WRDSReaderTest {
                     ThresholdFormat.WRDS,
                     null,
                     null,
-                    FeatureType.NWS_ID,
                     "NWS-NRLDB",
                     null,
                     "stage"
@@ -154,7 +158,6 @@ public class WRDSReaderTest {
                     ThresholdFormat.WRDS,
                     null,
                     null,
-                    FeatureType.NWS_ID,
                     "NWS-CMS",
                     null,
                     "stage"
@@ -170,7 +173,6 @@ public class WRDSReaderTest {
                     ThresholdFormat.WRDS,
                     "The unit does not matter here",
                     "Totally doesn't matter",
-                    FeatureType.NWS_ID,
                     "FlavorTown",
                     "DonkeySauce",
                     "flow"

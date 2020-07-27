@@ -4,7 +4,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.config.generated.FeatureType;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
@@ -16,7 +15,6 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
-import wres.io.thresholds.csv.CSVThresholdReader;
 
 import java.io.IOException;
 import java.net.URI;
@@ -71,7 +69,6 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
-                FeatureType.NWS_ID,
                 null,
                 null,
                 null
@@ -153,7 +150,6 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
-                FeatureType.NWS_ID,
                 null,
                 null,
                 null
@@ -235,7 +231,6 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
-                FeatureType.NWS_ID,
                 null,
                 null,
                 null
@@ -310,7 +305,6 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
-                FeatureType.NWS_ID,
                 null,
                 null,
                 null
@@ -385,7 +379,6 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
-                FeatureType.NWS_ID,
                 null,
                 null,
                 null
@@ -452,7 +445,6 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
-                FeatureType.NWS_ID,
                 null,
                 null,
                 null
