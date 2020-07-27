@@ -678,21 +678,30 @@ project(':wres-statistics')
     // Also generate an html document from markdown
     // TODO: cannot install miniconda in current build environment
     // Enable this when we have more control over the build environment
-    //task (buildProtobufBindingsForPython, type: VenvTask, dependsOn: ['generateProto', 'markdownToHtml'] ) {
+    //task (buildProtobufBindingsForPython, type: VenvTask, dependsOn: ['generateProto'] ) {
     //    workingDir = file( "src/main/python" )
     //    args = ["wresproto.py"]
     //}
     
+    task copyProtoSchemaToDist(type:Copy, dependsOn: markdownToHtml ) {
+        description = 'Copies the Protobuf schema from nonsrc to dist/src.'
+        destinationDir = file("${project.projectDir}/dist/wresproto/src")
+        delete fileTree(dir: destinationDir)
+        from fileTree("${project.projectDir}/nonsrc").include("*.proto")
+        into destinationDir
+    }
+    
     // Generate html from markdown
-    // TODO: cannot install miniconda in current build environment
-    // Enable this when we have more control over the build environment
-    //markdownToHtml
-    //{
-    //   sourceDir = new File( "${project.projectDir}/dist/wresproto/doc" )
-    //   outputDir = new File( "${project.projectDir}/dist/wresproto/doc" )
-    //   // Enable all options
-    //   markdownToHtml.all = true
-    //}
+    markdownToHtml
+    {
+       sourceDir = new File( "${project.projectDir}/dist/wresproto/doc" )
+       outputDir = new File( "${project.projectDir}/dist/wresproto/doc" )
+       // Enable all options
+       markdownToHtml.all = true
+    }
+
+    // Tie the preparation of the Protobuf distribution into the java compile task for convenience. 
+    compileJava.dependsOn copyProtoSchemaToDist
 
     // Tie the python wheel generation into the java compile task for convenience
     // TODO: cannot install miniconda in current build environment
