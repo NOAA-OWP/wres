@@ -369,19 +369,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="featureType">
-        <xs:annotation>
-            <xs:documentation>Identifies the type of feature name in an external 
-                source of thresholds. This type correlates with the locationId 
-                in the external source. The default type is nwsId.
-            </xs:documentation>
-        </xs:annotation>
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="nwsId" />
-            <xs:enumeration value="usgsId" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:complexType name="datasourceBaseline">
 
         <!-- for class naming using xjc-->
@@ -467,7 +454,6 @@
                                 <xs:attribute name="format" type="thresholdFormat" use="required" />
                                 <xs:attribute name="unit" type="xs:string" default="" />
                                 <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
-                                <xs:attribute name="featureType" type="featureType" default="nwsId" />
                                 <xs:attribute name="provider" type="xs:string" />
                                 <xs:attribute name="ratingProvider" type="xs:string" />
                                 <xs:attribute name="parameterToMeasure" type="xs:string" />
@@ -639,7 +625,7 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- Possibilities for the outputType element. The "default" option indicates 
+    <!-- Possibilities for the outputType element. The "default" option indicates
     that the default output configuration should be used when multiple options are 
     possible for the same type of output data. The default should also be assumed 
     when the output type is undefined.-->
