@@ -3,6 +3,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.StandardCopyOption
 import java.time.ZoneId
+import com.pswidersk.gradle.python.VenvTask
 
 /* Used by gradle plugins outside the official gradle plugins repository */
 buildscript
@@ -56,6 +57,12 @@ plugins
 
     // To discover library versions with updates available
     id 'com.github.ben-manes.versions' version '0.28.0'
+
+    // Run python scripts
+    id 'com.pswidersk.python-plugin' version '1.2.1'
+    
+    // Markdown to html
+    id 'org.kordamp.gradle.markdown' version '2.2.0'
 }
 
 repositories
@@ -413,6 +420,12 @@ project(':wres-statistics')
 {
     apply plugin: 'com.google.protobuf'
 
+    // Python bindings and wheel from python script
+    apply plugin: 'com.pswidersk.python-plugin'
+
+    // Html from markdown
+    apply plugin: 'org.kordamp.gradle.markdown'
+    
     def generatedDir = "${project.projectDir}/src"
 
     protobuf
@@ -424,8 +437,20 @@ project(':wres-statistics')
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
+        
+        // Generate python bindings: more long-winded as java is a default option
+        generateProtoTasks {
+            all().each { task ->
+                task.builtins {
+                    // Python sources
+                    python { 
+                        outputSubDir = 'python/wresproto'
+                    }
+                }
+            }
+        }
     }
-
+    
     sourceSets
     {
         main
@@ -627,7 +652,7 @@ project(':wres-statistics')
         
         dest buildDir
         overwrite false
-    }    
+    }
     
     // TODO: REMOVE OR EDIT THIS GUARD as non-windows platforms work - when all work, remove
     if( isWindows() )
@@ -635,6 +660,30 @@ project(':wres-statistics')
         // Create generated java sources before compiling java classes
         compileJava.dependsOn createJavaSourcesFromCapnproto
     }
+    
+    // Set the python version to use
+    pythonPlugin {
+        pythonVersion = "3.8.2"
+    }
+    
+    // Generate a python wheel artifact for the wres protobuf bindings for use in python applications
+    // Also generate an html document from markdown
+    task (buildProtobufBindingsForPython, type: VenvTask, dependsOn: ['generateProto', 'markdownToHtml'] ) {
+        workingDir = file( "src/main/python" )
+        args = ["wresproto.py"]
+    }
+    
+    // Generate html from markdown
+    markdownToHtml
+    {
+       sourceDir = new File( "${project.projectDir}/dist/wresproto/doc" )
+       outputDir = new File( "${project.projectDir}/dist/wresproto/doc" )
+       // Enable all options
+       markdownToHtml.all = true
+    }
+
+    // Tie the python wheel generation into the java compile task for convenience
+    compileJava.dependsOn buildProtobufBindingsForPython
 
     dependencies
     {
@@ -1134,9 +1183,11 @@ task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [su
 
 
 /**
- * Task to compile markdown to html
+ * Task to compile markdown to html.
+ *
+ * TODO: replace with plugin 'org.kordamp.gradle.markdown'
  */
-task(buildDocs, group: 'Documentation')
+task(buildHtmlFromMarkdown, group: 'Documentation')
 {
     description = 'Compiles markdown documentation into html'
     def srcDir = "${project.projectDir}/documentation/src" // seems odd that we have to do this
@@ -1196,7 +1247,7 @@ task(buildDocs, group: 'Documentation')
  * Kind of like xjc, there is an intermediate location in the build directory
  * so that gradle clean will remove these files.
  */
-task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildDocs)
+task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildHtmlFromMarkdown)
 {
     description = 'Copies documentation source to distribution directory.'
 
@@ -1207,7 +1258,7 @@ task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildDocs)
         delete fileTree(dir: destinationDir).include('**/*.html')
     }
 
-    from buildDocs
+    from buildHtmlFromMarkdown
     into destinationDir
 }
 
@@ -1335,7 +1386,7 @@ distributions
                 // Must also add the new directory to classpath under
                 // startScripts below. For each module that adds to dist,
                 // add here for now until we can make it grab all of em.
-                ['dist', 'wres-vis/dist', 'wres-io/dist', 'LICENSE']
+                ['dist', 'wres-vis/dist', 'wres-io/dist', 'wres-statistics/dist', 'LICENSE']
             }
         }
     }
