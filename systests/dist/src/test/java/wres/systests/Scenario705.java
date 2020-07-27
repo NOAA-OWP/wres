@@ -17,7 +17,10 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Sets;
+
 import wres.control.Control;
+
 public class Scenario705
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario705.class );
@@ -28,7 +31,15 @@ public class Scenario705
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "19958172_streamflow_NWM_Short_Range_BIAS_FRACTION.csv" ),
+            Set.of( Path.of( "673192_streamflow_NWM_Short_Range_BIAS_FRACTION.csv" ),
+                    Path.of( "673192_streamflow_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),
+                    Path.of( "673192_streamflow_NWM_Short_Range_MEAN_ABSOLUTE_ERROR.csv" ),
+                    Path.of( "673192_streamflow_NWM_Short_Range_MEAN_ERROR.csv" ),
+                    Path.of( "673192_streamflow_NWM_Short_Range_MEAN_SQUARE_ERROR.csv" ),
+                    Path.of( "673192_streamflow_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
+                    Path.of( "673192_streamflow_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
+                    Path.of( "673192_streamflow_NWM_Short_Range_SAMPLE_SIZE.csv" ),
+                    Path.of( "19958172_streamflow_NWM_Short_Range_BIAS_FRACTION.csv" ),
                     Path.of( "19958172_streamflow_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),
                     Path.of( "19958172_streamflow_NWM_Short_Range_MEAN_ABSOLUTE_ERROR.csv" ),
                     Path.of( "19958172_streamflow_NWM_Short_Range_MEAN_ERROR.csv" ),
@@ -1077,9 +1088,9 @@ public class Scenario705
                     Path.of( "391680_streamflow_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "391680_streamflow_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
                     Path.of( "391680_streamflow_NWM_Short_Range_SAMPLE_SIZE.csv" ) );
-    
+
     private ScenarioInformation scenarioInfo;
-    
+
     /**
      * Watch for any failed assertions and log them.
      */
@@ -1101,9 +1112,9 @@ public class Scenario705
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
         this.scenarioInfo = new ScenarioInformation( this.getClass()
-                                              .getSimpleName()
-                                              .toLowerCase(),
-                                              ScenarioHelper.getBaseDirectory() );
+                                                         .getSimpleName()
+                                                         .toLowerCase(),
+                                                     ScenarioHelper.getBaseDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
     }
 
@@ -1111,7 +1122,7 @@ public class Scenario705
     public void testScenario()
     {
         Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
+
         // Collect the file names actually written and that exist
         Set<Path> pathsWritten = control.get();
         Set<Path> actualFileNamesThatExist = pathsWritten.stream()
@@ -1123,13 +1134,18 @@ public class Scenario705
         LOGGER.info( "Checking expected file names against actual file names that exist for {} files...",
                      EXPECTED_FILE_NAMES.size() );
 
-        assertEquals( "The actual set of file names does not match the expected set of file names.",
+        assertEquals( "The actual set of file names does not match the expected set of file names."
+                      + " These existed in expected, but not in actual: "
+                      + Sets.difference( EXPECTED_FILE_NAMES, actualFileNamesThatExist )
+                      + " while these existed in actual, but not expected: "
+                      + Sets.difference( actualFileNamesThatExist, EXPECTED_FILE_NAMES ),
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
-        
+
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
         LOGGER.info( "########################################################## COMPLETED "
-                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
+                     + this.getClass().getSimpleName().toLowerCase()
+                     + NEWLINE );
     }
 }
 
