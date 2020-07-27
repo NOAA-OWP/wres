@@ -40,8 +40,10 @@ out
 *pkcs10*request*pem
 
 # WRES-generated code
-wres-statistics/src/*
 wres-messages/src/main/java/wres/messages/generated/*
+wres-statistics/src/*
+wres-statistics/dist/wresproto/doc/README.html
+wres-statistics/dist/wresproto/src/*
 
 # WRES-generated data
 output
