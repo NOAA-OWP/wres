@@ -575,19 +575,7 @@ public class FeatureFinder
             }
             else if ( to.equals( WrdsLocationAuthority.NWM_FEATURE_ID ) )
             {
-                if ( !location.getNwmFeatures()
-                              .containsKey( NWM_DEFAULT_VERSION ) )
-                {
-                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
-                                                  + uri
-                                                  + " had no "
-                                                  + NWM_DEFAULT_VERSION
-                                                  + " feature data." );
-                }
-
-                String nwmFeatureId = location.getNwmFeatures()
-                                              .get( NWM_DEFAULT_VERSION )
-                                              .getNwmFeatureId();
+                String nwmFeatureId = location.getNwmFeatureId();
 
                 if ( Objects.isNull( nwmFeatureId )
                      || nwmFeatureId.isBlank() )
@@ -595,7 +583,7 @@ public class FeatureFinder
                     throw new PreIngestException( RESPONSE_FROM_WRDS_AT
                                                   + uri
                                                   + HAD_NULL_OR_BLANK
-                                                  + " USGS Site Code." );
+                                                  + " NWM Feature ID." );
                 }
 
                 return nwmFeatureId;

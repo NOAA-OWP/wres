@@ -12,59 +12,55 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Parse relevant portions of a a document similar to
- *{
- *    "_metrics": {
- *        "location_count": 1,
- *        "model_tracing_api_call": 0.01062917709350586,
- *        "total_request_time": 0.16103196144104004
- *    },
- *    "_warnings": [],
- *    "_documentation": "***REMOVED***.***REMOVED***.***REMOVED***/docs/prod/location/swagger/",
- *    "locations": [
- *        {
- *            "nwm_features": {
- *                "1.2": {
- *                    "nwm_feature_id": "6163159",
- *                    "dataset": "National Water Model v1.2",
- *                    "dataset_id": "1.2"
- *                },
- *                "2.0": {
- *                    "nwm_feature_id": "6163159",
- *                    "dataset": "National Water Model v2.0",
- *                    "dataset_id": "2.0"
- *                },
- *                "2.1": {
- *                    "nwm_feature_id": "6163159",
- *                    "dataset": "National Water Model v2.1",
- *                    "dataset_id": "2.1"
- *                },
- *                "2.1-corrected": {
- *                    "nwm_feature_id": "6163159",
- *                    "dataset": "National Water Model v2.1 Corrected",
- *                    "dataset_id": "2.1-corrected"
- *                }
- *            },
- *            "goes_id": "CE3984EA",
- *            "usgs_site_code": "01122000",
- *            "nws_lid": "WMNC3",
- *            "huc": "01100002",
- *            "rfc": "NERFC",
- *            "state": "Connecticut",
- *            "county": "Windham",
- *            "county_code": "9015",
- *            "name": "NATCHAUG RIVER AT WILLIMANTIC, CT",
- *            "longitude": "-72.195575",
- *            "latitude": "41.7201",
- *            "upstream_nwm_features": [
- *                "6163349",
- *                "6163155"
- *            ],
- *            "downstream_nwm_features": [
- *                "6162677"
- *            ]
- *        }
- *    ]
- *}
+ * {
+ *     "_metrics": {
+ *         "location_count": 1,
+ *         "model_tracing_api_call": 0.019634008407592773,
+ *         "total_request_time": 0.11055397987365723
+ *     },
+ *     "_warnings": [],
+ *     "_documentation": "***REMOVED***.***REMOVED***.***REMOVED***/docs/stage/location/swagger/",
+ *     "locations": [
+ *         {
+ *             "nwm_feature_id": "18384141",
+ *             "goes_id": "DDD7D016",
+ *             "usgs_site_code": "09165000",
+ *             "nws_lid": "DRRC2",
+ *             "huc": "14030002",
+ *             "rfc": "CBRFC",
+ *             "state": "Colorado",
+ *             "county": "Dolores",
+ *             "county_code": "8033",
+ *             "name": "DOLORES RIVER BELOW RICO, CO.",
+ *             "longitude": "-108.0603517",
+ *             "latitude": "37.63888428",
+ *             "site_type": "ST",
+ *             "rfc_forecast_point": "False",
+ *             "flood_only_forecast_point": "False",
+ *             "gages_ii_reference": "False",
+ *             "active": "True",
+ *             "crosswalk_datasets": {
+ *                 "nwm_location_crosswalk_dataset": {
+ *                     "nwm_location_crosswalk_dataset_id": "2.1-corrected",
+ *                     "name": "National Water Model v2.1 Corrected",
+ *                     "description": "National Water Model v2.1 Corrected"
+ *                 },
+ *                 "nws_usgs_crosswalk_dataset": {
+ *                     "nws_usgs_crosswalk_dataset_id": "1.0",
+ *                     "name": "NWS Station to USGS Gages 1.0",
+ *                     "description": "Authoritative 1.0 dataset mapping NWS Stations to USGS Gages"
+ *                 }
+ *             },
+ *             "upstream_nwm_features": [
+ *                 "18384171",
+ *                 "18384129"
+ *             ],
+ *             "downstream_nwm_features": [
+ *                 "18384153"
+ *             ]
+ *         }
+ *     ]
+ * }
  */
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
