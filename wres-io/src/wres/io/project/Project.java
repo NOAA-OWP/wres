@@ -215,15 +215,17 @@ public class Project
         {
             intersectingFeatures = new HashSet<>();
 
-            // TODO: get features from service if service is specified, sub them
-            // in the third arg to createIntersectingFeaturesScript, or come up
-            // with an alternative to that approach.
+            // At this point, features should already have been correlated by
+            // the declaration or by a location service. In the latter case, the
+            // WRES will have generated the List<Feature> and replaced them in
+            // a new ProjectConfig, so this code cannot tell the difference.
             DataScripter script =
                     ProjectScriptGenerator.createIntersectingFeaturesScript( database,
                                                                              this.getId(),
                                                                              this.getProjectConfig()
                                                                                  .getPair()
-                                                                                 .getFeature() );
+                                                                                 .getFeature(),
+                                                                             this.hasBaseline() );
 
             LOGGER.debug( "getIntersectingFeatures will run: {}", script );
 
@@ -237,17 +239,26 @@ public class Project
                     int rightId = dataProvider.getInt( "right_id" );
                     FeatureKey rightKey =
                             featuresCache.getFeatureKey( rightId );
-                    int baselineId = dataProvider.getInt( "baseline_id" );
                     FeatureKey baselineKey = null;
 
-                    // JDBC getInt returns 0 when not found. All primary key
-                    // columns should start at 1.
-                    if ( baselineId > 0 )
+                    // Baseline column will only be there when baseline exists.
+                    if ( hasBaseline() )
                     {
-                        baselineKey = featuresCache.getFeatureKey( baselineId );
+                        int baselineId =
+                                dataProvider.getInt( "baseline_id" );
+
+                        // JDBC getInt returns 0 when not found. All primary key
+                        // columns should start at 1.
+                        if ( baselineId > 0 )
+                        {
+                            baselineKey =
+                                    featuresCache.getFeatureKey( baselineId );
+                        }
                     }
 
-                    FeatureTuple featureTuple = new FeatureTuple( leftKey, rightKey, baselineKey );
+                    FeatureTuple featureTuple = new FeatureTuple( leftKey,
+                                                                  rightKey,
+                                                                  baselineKey );
                     intersectingFeatures.add( featureTuple );
                 }
             }
