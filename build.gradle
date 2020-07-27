@@ -3,7 +3,9 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.StandardCopyOption
 import java.time.ZoneId
-import com.pswidersk.gradle.python.VenvTask
+// TODO: cannot install miniconda in current build environment
+// Enable this when we have more control over the build environment
+//import com.pswidersk.gradle.python.VenvTask
 
 /* Used by gradle plugins outside the official gradle plugins repository */
 buildscript
@@ -59,7 +61,9 @@ plugins
     id 'com.github.ben-manes.versions' version '0.28.0'
 
     // Run python scripts
-    id 'com.pswidersk.python-plugin' version '1.2.1'
+    // TODO: cannot install miniconda in current build environment
+    // Enable this when we have more control over the build environment
+    //id 'com.pswidersk.python-plugin' version '1.2.1'
     
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
@@ -421,7 +425,9 @@ project(':wres-statistics')
     apply plugin: 'com.google.protobuf'
 
     // Python bindings and wheel from python script
-    apply plugin: 'com.pswidersk.python-plugin'
+    // TODO: cannot install miniconda in current build environment
+    // Enable this when we have more control over the build environment
+    //apply plugin: 'com.pswidersk.python-plugin'
 
     // Html from markdown
     apply plugin: 'org.kordamp.gradle.markdown'
@@ -662,28 +668,36 @@ project(':wres-statistics')
     }
     
     // Set the python version to use
-    pythonPlugin {
-        pythonVersion = "3.8.2"
-    }
+    // TODO: cannot install miniconda in current build environment
+    // Enable this when we have more control over the build environment
+    //pythonPlugin {
+    //    pythonVersion = "3.8.2"
+    //}
     
     // Generate a python wheel artifact for the wres protobuf bindings for use in python applications
     // Also generate an html document from markdown
-    task (buildProtobufBindingsForPython, type: VenvTask, dependsOn: ['generateProto', 'markdownToHtml'] ) {
-        workingDir = file( "src/main/python" )
-        args = ["wresproto.py"]
-    }
+    // TODO: cannot install miniconda in current build environment
+    // Enable this when we have more control over the build environment
+    //task (buildProtobufBindingsForPython, type: VenvTask, dependsOn: ['generateProto', 'markdownToHtml'] ) {
+    //    workingDir = file( "src/main/python" )
+    //    args = ["wresproto.py"]
+    //}
     
     // Generate html from markdown
-    markdownToHtml
-    {
-       sourceDir = new File( "${project.projectDir}/dist/wresproto/doc" )
-       outputDir = new File( "${project.projectDir}/dist/wresproto/doc" )
-       // Enable all options
-       markdownToHtml.all = true
-    }
+    // TODO: cannot install miniconda in current build environment
+    // Enable this when we have more control over the build environment
+    //markdownToHtml
+    //{
+    //   sourceDir = new File( "${project.projectDir}/dist/wresproto/doc" )
+    //   outputDir = new File( "${project.projectDir}/dist/wresproto/doc" )
+    //   // Enable all options
+    //   markdownToHtml.all = true
+    //}
 
     // Tie the python wheel generation into the java compile task for convenience
-    compileJava.dependsOn buildProtobufBindingsForPython
+    // TODO: cannot install miniconda in current build environment
+    // Enable this when we have more control over the build environment
+    //compileJava.dependsOn buildProtobufBindingsForPython
 
     dependencies
     {
