@@ -184,7 +184,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
 
         // See comments in wres.io.reading.WebSource for info on below approach.
         ThreadFactory wrdsNwmReaderIngest = new BasicThreadFactory.Builder()
-                .namingPattern( "WrdsNwmReader Ingest" )
+                .namingPattern( "WrdsNwmReader Ingest %d" )
                 .build();
 
         // As of 2.1, the SystemSetting is used in two different NWM readers:

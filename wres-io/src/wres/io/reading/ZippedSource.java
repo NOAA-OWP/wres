@@ -76,7 +76,7 @@ public class ZippedSource extends BasicSource {
     private ThreadPoolExecutor createReaderService( SystemSettings systemSettings )
     {
         ThreadFactory zippedSourceFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "ZippedSource Ingest" )
+                .namingPattern( "ZippedSource Ingest %d" )
                 .build();
         BlockingQueue<Runnable>
                 zippedSourceQueue = new ArrayBlockingQueue<>( systemSettings.maximumArchiveThreads() );

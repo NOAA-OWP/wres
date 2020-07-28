@@ -252,7 +252,7 @@ public class NWMReader implements Callable<List<IngestResult>>
         this.lockManager = lockManager;
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "NWMReader Ingest" )
+                .namingPattern( "NWMReader Ingest %d" )
                 .build();
 
         // See comments in WebSource class regarding the setup of the executor,

@@ -148,7 +148,7 @@ class NWMTimeSeries implements Closeable
                       referenceDatetime, profile, this.baseUri );
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "NWMTimeSeries Reader" )
+                .namingPattern( "NWMTimeSeries Reader %d" )
                 .build();
 
         // See comments in WebSource class regarding the setup of the executor,
