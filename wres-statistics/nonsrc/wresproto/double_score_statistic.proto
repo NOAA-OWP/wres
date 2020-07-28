@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "double_score_metric.proto";
+import "wresproto/double_score_metric.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "DoubleScoreStatisticProto";

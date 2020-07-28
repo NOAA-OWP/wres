@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "metric_name.proto";
+import "wresproto/metric_name.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "BoxplotMetricProto";
