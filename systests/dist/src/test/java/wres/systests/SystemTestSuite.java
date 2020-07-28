@@ -85,7 +85,7 @@ import wres.system.SystemSettings;
     Scenario721.class,
     Scenario750.class,
     Scenario801.class,
-	Scenario802.class
+    Scenario802.class
 } )
 
 /**
@@ -95,28 +95,28 @@ import wres.system.SystemSettings;
  */
 public class SystemTestSuite
 {
-	private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestSuite.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestSuite.class );
 
    /**
     * Cleans once before all tests.
-    * 
+    *
     * @throws SQLException if the test database could not be cleaned for any reason
     */
-	@BeforeClass
-	public static void runBeforeAllTests() throws SQLException
-	{
-		String dbName = System.getProperty( "wres.databaseName" );
-		LOGGER.info( "Cleaning the test database instance {}...", dbName );
+    @BeforeClass
+    public static void runBeforeAllTests() throws SQLException
+    {
+        String dbName = System.getProperty( "wres.databaseName" );
+        LOGGER.info( "Cleaning the test database instance {}...", dbName );
         SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
         Database database = new Database( systemSettings );
-		Instant started = Instant.now();
+        Instant started = Instant.now();
         Operations.cleanDatabase( database );
-		Instant stopped = Instant.now();
-		Duration duration = Duration.between( started, stopped );
+        Instant stopped = Instant.now();
+        Duration duration = Duration.between( started, stopped );
         database.shutdown();
 
-		LOGGER.info( "Finished cleaning the test database instance {}, which took {}.", 
+        LOGGER.info( "Finished cleaning the test database instance {}, which took {}.",
                      dbName,
                      duration );
-	}
+    }
 }

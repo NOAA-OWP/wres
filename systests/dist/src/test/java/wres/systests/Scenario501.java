@@ -91,11 +91,11 @@ public class Scenario501
                 + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
     }
 
-	@After
+    @After
     public void afterIndividualTest() throws IOException, SQLException
     {
         ScenarioHelper.searchAndReplace( "smalldata/1985043014_DRRC2FAKE1_forecast.xml", "9001.0", "16.0");
-	}
+    }
 
 }
 
