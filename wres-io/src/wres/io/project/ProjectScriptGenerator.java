@@ -21,15 +21,25 @@ final class ProjectScriptGenerator
      * @param database The database to use
      * @param projectId The wres.project row id to look for intersecting data.
      * @param featureDeclarations Original or generated feature declarations.
+     * @param hasBaseline Whether the project has a baseline dataset.
      */
 
     static DataScripter createIntersectingFeaturesScript( Database database,
                                                           int projectId,
-                                                          List<Feature> featureDeclarations )
+                                                          List<Feature> featureDeclarations,
+                                                          boolean hasBaseline )
     {
         DataScripter script = new DataScripter( database );
 
-        script.addLine( "SELECT L.feature_id left_id, R.feature_id right_id, B.feature_id baseline_id" );
+        if ( hasBaseline )
+        {
+            script.addLine( "SELECT L.feature_id left_id, R.feature_id right_id, B.feature_id baseline_id" );
+        }
+        else
+        {
+            script.addLine( "SELECT L.feature_id left_id, R.feature_id right_id" );
+        }
+
         script.addLine( "FROM wres.Feature L");
         script.addLine( "INNER JOIN wres.Feature R ON" );
         script.addLine( "(" );
@@ -90,55 +100,57 @@ final class ProjectScriptGenerator
 
         script.addLine(")");
 
-        // Baseline is optional for each feature pair. In other words it can be
-        // null and shouldn't filter out pairs of left/right where they exist.
-        // TODO: review if this is true (that non-existence of baseline data
-        // should not cause filtering out of features).
-        script.addLine( "LEFT JOIN wres.Feature B ON " );
-        script.addLine( "(" );
-
-        boolean addedBaselineFeature = false;
-
-        for ( Feature featureDeclaration : featureDeclarations )
+        if ( hasBaseline )
         {
-            if ( Objects.nonNull( featureDeclaration.getLeft() )
-                 && Objects.nonNull( featureDeclaration.getBaseline() ) )
+            // Baseline is optional for a given declaration, but when there is
+            // a baseline dataset, require there be data for the baseline for a
+            // feature for any pairs to be generated for that feature.
+            script.addLine( "INNER JOIN wres.Feature B ON " );
+            script.addLine( "(" );
+            boolean addedBaselineFeature = false;
+
+            for ( Feature featureDeclaration : featureDeclarations )
             {
-                if ( addedBaselineFeature )
+                if ( Objects.nonNull( featureDeclaration.getLeft() )
+                     && Objects.nonNull( featureDeclaration.getBaseline() ) )
                 {
-                    script.addTab().addLine( "OR" );
+                    if ( addedBaselineFeature )
+                    {
+                        script.addTab().addLine( "OR" );
+                    }
+
+                    script.addTab().addLine( "(" );
+                    script.addTab( 2 ).add( "L.name = '" );
+                    script.add( validateStringForSql( featureDeclaration.getLeft() ) );
+                    script.add( "' AND B.name = '" );
+                    script.add( validateStringForSql( featureDeclaration.getBaseline() ) );
+                    script.addLine( "'" );
+                    script.addTab().addLine( ")" );
+                    addedBaselineFeature = true;
                 }
-
-                script.addTab().addLine( "(" );
-                script.addTab( 2 ).add( "L.name = '" );
-                script.add( validateStringForSql( featureDeclaration.getLeft() ) );
-                script.add( "' AND B.name = '" );
-                script.add( validateStringForSql( featureDeclaration.getBaseline() ) );
-                script.addLine( "'" );
-                script.addTab().addLine( ")" );
-                addedBaselineFeature = true;
             }
-        }
 
-        if ( !addedBaselineFeature )
-        {
-            // When no features are specified, default to matching names in both
-            // the left and baseline datasets. This assumes that a name is used
-            // consistently within a dataset ingested for an evaluation.
-            script.addTab().addLine( "L.name = B.name" );
-        }
+            if ( !addedFeature && !addedBaselineFeature )
+            {
+                // When no features are specified, default to matching names in
+                // both the left and baseline datasets. This assumes that a name
+                // is used consistently within each dataset ingested for an
+                // evaluation.
+                script.addTab().addLine( "L.name = B.name" );
+            }
 
-        script.addLine( ")" );
-        script.addLine( "AND EXISTS" );
-        script.addLine( "(" );
-        script.addTab().addLine( "SELECT 1" );
-        script.addTab().addLine( "FROM wres.TimeSeries TS" );
-        script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab().addLine( "ON PS.source_id = TS.source_id" );
-        script.addTab().addLine( "WHERE PS.project_id = ", projectId );
-        script.addTab( 2 ).addLine( "AND PS.member = 'baseline'" );
-        script.addTab( 2 ).addLine( "AND TS.feature_id = B.feature_id" );
-        script.addLine( ")" );
+            script.addLine( ")" );
+            script.addLine( "AND EXISTS" );
+            script.addLine( "(" );
+            script.addTab().addLine( "SELECT 1" );
+            script.addTab().addLine( "FROM wres.TimeSeries TS" );
+            script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab().addLine( "ON PS.source_id = TS.source_id" );
+            script.addTab().addLine( "WHERE PS.project_id = ", projectId );
+            script.addTab( 2 ).addLine( "AND PS.member = 'baseline'" );
+            script.addTab( 2 ).addLine( "AND TS.feature_id = B.feature_id" );
+            script.addLine( ")" );
+        }
 
         return script;
     }
