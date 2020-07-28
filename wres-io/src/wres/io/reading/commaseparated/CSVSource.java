@@ -119,7 +119,7 @@ public class CSVSource extends BasicSource
 
         // See comments in wres.io.reading.WebSource for info on below approach.
         ThreadFactory csvIngest = new BasicThreadFactory.Builder()
-                .namingPattern( "CSV Ingest" )
+                .namingPattern( "CSV Ingest %d" )
                 .build();
 
         int concurrentCount = 3;

@@ -123,7 +123,7 @@ public class DatabaseLockManager
         this.lockTwo = new ReentrantLock();
 
         ThreadFactory monitorServiceNaming = new BasicThreadFactory.Builder()
-                .namingPattern( "DatabaseLockManager" )
+                .namingPattern( "DatabaseLockManager %d" )
                 .build();
 
         this.connectionMonitorService = Executors.newScheduledThreadPool( 1, monitorServiceNaming );

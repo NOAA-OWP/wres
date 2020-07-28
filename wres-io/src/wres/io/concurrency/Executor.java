@@ -10,6 +10,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,9 @@ public class Executor {
 	 */
     private ThreadPoolExecutor createService()
 	{
-		ThreadFactory factory = runnable -> new Thread(runnable, "Executor Thread");
+        ThreadFactory factory = new BasicThreadFactory.Builder()
+                .namingPattern( "Executor Thread %d" )
+                .build();
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 systemSettings.maximumThreadCount(),
                 systemSettings.maximumThreadCount(),
@@ -60,7 +63,9 @@ public class Executor {
 
 	private static ThreadPoolExecutor createHighPriorityService()
 	{
-		ThreadFactory factory = runnable -> new Thread(runnable, "High Priority Database Thread");
+        ThreadFactory factory = new BasicThreadFactory.Builder()
+                .namingPattern( "High Priority Database Thread %d" )
+                .build();
 		return (ThreadPoolExecutor) Executors.newFixedThreadPool(10, factory);
 	}
 

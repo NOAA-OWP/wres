@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.eclipse.persistence.internal.sessions.factories.model.project.ProjectConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,12 +186,22 @@ public class Control implements Function<String[], Integer>,
         // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
         // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
         // there is a DEADLOCK probability
-        ThreadFactory featureFactory = runnable -> new Thread( runnable, "Feature Thread" );
-        ThreadFactory pairFactory = runnable -> new Thread( runnable, "Pair Thread" );
-        ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Dispatch Thread" );
-        ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Thread" );
-        ThreadFactory productFactory = runnable -> new Thread( runnable, "Product Thread" );
 
+        ThreadFactory featureFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "Feature Thread %d" )
+                .build();
+        ThreadFactory pairFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "Pair Thread %d" )
+                .build();
+        ThreadFactory thresholdFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "Threshold Dispatch Thread %d" )
+                .build();
+        ThreadFactory metricFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "Metric Thread %d" )
+                .build();
+        ThreadFactory productFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "Product Thread %d" )
+                .build();
         SystemSettings systemSettings = this.getSystemSettings();
 
         // Name our queues in order to easily monitor them
