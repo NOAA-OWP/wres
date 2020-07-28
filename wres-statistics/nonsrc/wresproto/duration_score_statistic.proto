@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "duration_score_metric.proto";
+import "wresproto/duration_score_metric.proto";
 import "google/protobuf/duration.proto";
 
 option java_package = "wres.statistics.generated";

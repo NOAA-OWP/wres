@@ -450,7 +450,7 @@ project(':wres-statistics')
                 task.builtins {
                     // Python sources
                     python { 
-                        outputSubDir = 'python/wresproto'
+                        outputSubDir = 'python'
                     }
                 }
             }
@@ -685,9 +685,9 @@ project(':wres-statistics')
     
     task copyProtoSchemaToDist(type:Copy, dependsOn: markdownToHtml ) {
         description = 'Copies the Protobuf schema from nonsrc to dist/src.'
-        destinationDir = file("${project.projectDir}/dist/wresproto/src")
+        destinationDir = file("${project.projectDir}/dist/wresproto/src/wresproto")
         delete fileTree(dir: destinationDir)
-        from fileTree("${project.projectDir}/nonsrc").include("*.proto")
+        from fileTree("${project.projectDir}/nonsrc/wresproto").include("*.proto")
         into destinationDir
     }
     

@@ -31,7 +31,9 @@ wresproto
  |    |
  |    +-- README.html (this file in html format)
  |
- +-- src (the protobuf source files)
+ +-- src
+ |    |
+ |    + wresproto (the protobuf source files)
  |
  +-- wresproto-0.0.1-py3-none-any.whl (a Python wheel artifact)
 ```
@@ -45,10 +47,16 @@ To install the Python bindings using the Python Package Installer (pip):
 ```
 pip install wresproto-0.0.1-py3-none-any.whl
 ```
-
 Also see:
 
 https://packaging.python.org/tutorials/installing-packages/
+
+To build the Python bindings from the raw protos, navigate to the directory
+that contains the wresproto subdirectory (which contains the Protobuf sources):
+
+```
+protoc --python_out . --proto_path . wresproto/*.proto
+```
 
 ## Usage
 

@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "geometry_tuple.proto";
-import "time_window.proto";
-import "pairs.proto";
-import "threshold.proto";
-import "time_scale.proto";
+import "wresproto/geometry_tuple.proto";
+import "wresproto/time_window.proto";
+import "wresproto/pairs.proto";
+import "wresproto/threshold.proto";
+import "wresproto/time_scale.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "PoolProto";

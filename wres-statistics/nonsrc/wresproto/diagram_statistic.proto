@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "diagram_metric.proto";
+import "wresproto/diagram_metric.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "DiagramStatisticProto";

@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package wres.statistics.generated;
 
-import "pool.proto";
-import "double_score_statistic.proto";
-import "diagram_statistic.proto";
-import "boxplot_statistic.proto";
-import "duration_score_statistic.proto";
-import "duration_diagram_statistic.proto";
+import "wresproto/pool.proto";
+import "wresproto/double_score_statistic.proto";
+import "wresproto/diagram_statistic.proto";
+import "wresproto/boxplot_statistic.proto";
+import "wresproto/duration_score_statistic.proto";
+import "wresproto/duration_diagram_statistic.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "StatisticsProto";
