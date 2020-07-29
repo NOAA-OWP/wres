@@ -476,7 +476,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
 
             // Climatological data required?
             Supplier<Stream<TimeSeries<L>>> climatologySupplier = null;
-            if ( this.getProject().usesProbabilityThresholds()
+            if ( this.getProject().hasProbabilityThresholds()
                  || ConfigHelper.hasGeneratedBaseline( inputsConfig.getBaseline() ) )
             {
                 // Re-use the climatology across pools with a caching retriever

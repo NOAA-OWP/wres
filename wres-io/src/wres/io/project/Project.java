@@ -709,21 +709,9 @@ public class Project
      * 
      * @return Whether or not the project uses probability thresholds
      */
-    public boolean usesProbabilityThresholds()
+    public boolean hasProbabilityThresholds()
     {
-        // Iterate metrics configuration
-        for ( MetricsConfig next : this.projectConfig.getMetrics() )
-        {
-            // Check thresholds           
-            if ( next.getThresholds()
-                     .stream()
-                     .anyMatch( a -> Objects.isNull( a.getType() )
-                                     || a.getType() == ThresholdType.PROBABILITY ) )
-            {
-                return true;
-            }
-        }
-        return false;
+        return ConfigHelper.hasProbabilityThresholds( this.getProjectConfig() );
     }
 
     public int compareTo( Project other )

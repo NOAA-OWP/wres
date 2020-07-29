@@ -5,8 +5,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,10 +19,8 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -86,20 +82,6 @@ public final class MeanSquareErrorSkillScoreTest
         //Generate some data
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsFive();
 
-        //Metadata for the output
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     Duration.ofHours( 24 ) );
-        TimeWindowOuter timeWindow = window;
-
-        SampleMetadata m1 = new SampleMetadata.Builder()
-                                                        .setTimeWindow( timeWindow )
-                                                        .setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
-                                                        .setIdentifier( DatasetIdentifier.of( MetricTestDataFactory.getLocation( "103.1" ),
-                                                                                              "QME",
-                                                                                              "NVE" ) )
-                                                        .build();
-
         //Check the results
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
@@ -108,14 +90,12 @@ public final class MeanSquareErrorSkillScoreTest
                                                                                .setValue( 0.7832791707526114 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( MeanSquareErrorSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test

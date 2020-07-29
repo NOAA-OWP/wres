@@ -22,19 +22,23 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.EvaluationStatus;
@@ -183,10 +187,10 @@ public class MessageFactory
 
         if ( Objects.nonNull( project.getMetrics() ) )
         {
-            
+
             int metricCount = project.getMetrics()
                                      .stream()
-                                     .mapToInt( a -> DataFactory.getMetricsFromMetricsConfig( a, project ).size()  )
+                                     .mapToInt( a -> DataFactory.getMetricsFromMetricsConfig( a, project ).size() )
                                      .sum();
 
             builder.setMetricCount( metricCount );
@@ -196,6 +200,95 @@ public class MessageFactory
         }
 
         return builder.build();
+    }
+
+    /**
+     * Sets the evaluation fields using the input and returns an instance of an evaluation.
+     * 
+     * @param unit the measurement units
+     * @param identifier the dataset identifier
+     * @param projectConfig the project declaration
+     * @return the evaluation
+     */
+
+    public static Evaluation parse( MeasurementUnit unit,
+                                    DatasetIdentifier identifier,
+                                    ProjectConfig projectConfig )
+    {
+
+        Evaluation.Builder evaluationBuilder = Evaluation.newBuilder();
+
+        // Populate the evaluation from the supplied information as reasonably as possible
+        if ( Objects.nonNull( unit ) )
+        {
+            evaluationBuilder.setMeasurementUnit( unit.getUnit() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a measurement unit of {}.",
+                          unit.getUnit() );
+        }
+
+        if ( Objects.nonNull( identifier ) && identifier.hasVariableName() )
+        {
+            evaluationBuilder.setVariableName( identifier.getVariableName() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a variable name of {}.",
+                          identifier.getVariableName() );
+        }
+
+        if ( Objects.nonNull( identifier ) && identifier.hasScenarioName() )
+        {
+            evaluationBuilder.setRightSourceName( identifier.getScenarioName() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a right source name of {}.",
+                          identifier.getScenarioName() );
+        }
+
+        if ( Objects.nonNull( identifier ) && identifier.hasScenarioNameForBaseline() )
+        {
+            evaluationBuilder.setBaselineSourceName( identifier.getScenarioNameForBaseline() );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a baseline source name of "
+                          + "{}.",
+                          identifier.getScenarioNameForBaseline() );
+        }
+
+        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getPair() )
+             && Objects.nonNull( projectConfig.getPair().getSeason() ) )
+        {
+            wres.statistics.generated.Season season = MessageFactory.parse( projectConfig.getPair().getSeason() );
+            evaluationBuilder.setSeason( season );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a season of "
+                          + "{}.",
+                          projectConfig.getPair().getSeason() );
+        }
+
+        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getPair() )
+             && Objects.nonNull( projectConfig.getPair().getValues() ) )
+        {
+            ValueFilter filter = MessageFactory.parse( projectConfig.getPair().getValues() );
+            evaluationBuilder.setValueFilter( filter );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a value filter of "
+                          + "{}.",
+                          projectConfig.getPair().getValues() );
+        }
+
+        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            int metricCount = projectConfig.getMetrics()
+                                           .stream()
+                                           .mapToInt( a -> a.getMetric().size() )
+                                           .sum();
+
+            evaluationBuilder.setMetricCount( metricCount );
+
+            LOGGER.debug( "While creating sample metadata, populated the evaluation with a metric count of "
+                          + "{}.",
+                          metricCount );
+        }
+
+        return evaluationBuilder.build();
     }
 
     /**
@@ -262,34 +355,8 @@ public class MessageFactory
             metadata = durationDiagrams.get( 0 ).getMetadata();
         }
 
-        Pool.Builder sample = Pool.newBuilder();
-
-        if ( metadata.hasTimeWindow() )
-        {
-            TimeWindow timeWindow = MessageFactory.parse( metadata.getTimeWindow() );
-            sample.setTimeWindow( timeWindow );
-        }
-
-        if ( metadata.hasThresholds() )
-        {
-            OneOrTwoThresholds thresholds = metadata.getThresholds();
-            Threshold evenThreshold = MessageFactory.parse( thresholds.first() );
-            sample.setEventThreshold( evenThreshold );
-            if ( thresholds.hasTwo() )
-            {
-                Threshold decisionThreshold = MessageFactory.parse( thresholds.second() );
-                sample.setDecisionThreshold( decisionThreshold );
-            }
-        }
-
-        if ( metadata.hasIdentifier() && metadata.getIdentifier().hasLocation() )
-        {
-            FeatureTuple location = metadata.getIdentifier().getFeatureTuple();
-            GeometryTuple geometry = MessageFactory.parse( location );
-            sample.addGeometryTuples( geometry );
-        }
-
-        statistics.setPool( sample );
+        // Set the pool information
+        statistics.setPool( metadata.getPool() );
 
         return statistics.build();
     }
@@ -317,7 +384,7 @@ public class MessageFactory
         {
             Pool prototypeSample = statistics.getPool();
             Pool.Builder sampleBuilder = Pool.newBuilder( prototypeSample );
-            sampleBuilder.setPairs( MessageFactory.parseEnsemblePairs( pairs ) );
+            sampleBuilder.setPairs( MessageFactory.parseTimeSeriesOfEnsemblePairs( pairs ) );
             statistics.setPool( sampleBuilder );
         }
 
@@ -368,6 +435,135 @@ public class MessageFactory
             statusEvent.setEventType( StatusMessageType.valueOf( event.getEventType().name() ) )
                        .setEventMessage( event.getMessage() );
             builder.addStatusEvents( statusEvent );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Builds a pool from the input, some of which may be missing.
+     * 
+     * @param featureTuple the feature tuple
+     * @param timeWindow the time window
+     * @param timeScale the time scale
+     * @param thresholds the thresholds
+     * @param isBaselinePool is true if the pool refers to pairs of left and baseline data, otherwise left and right
+     * @return the pool
+     */
+
+    public static Pool parse( FeatureTuple featureTuple,
+                              TimeWindowOuter timeWindow,
+                              TimeScaleOuter timeScale,
+                              OneOrTwoThresholds thresholds,
+                              boolean isBaselinePool )
+    {
+
+        Pool.Builder poolBuilder = Pool.newBuilder()
+                                       .setIsBaselinePool( isBaselinePool );
+
+        // Feature tuple
+        if ( Objects.nonNull( featureTuple ) )
+        {
+            GeometryTuple geoTuple = MessageFactory.parse( featureTuple );
+            poolBuilder.addGeometryTuples( geoTuple );
+
+            LOGGER.debug( "While creating sample metadata, populated the pool with a geometry tuple of {}.",
+                          featureTuple );
+        }
+
+        // Time window
+        if ( Objects.nonNull( timeWindow ) )
+        {
+            wres.statistics.generated.TimeWindow window = MessageFactory.parse( timeWindow );
+            poolBuilder.setTimeWindow( window );
+
+            LOGGER.debug( "While creating sample metadata, populated the pool with a time window of {}.",
+                          timeWindow );
+        }
+
+        // Time scale
+        if ( Objects.nonNull( timeScale ) )
+        {
+            wres.statistics.generated.TimeScale scale = MessageFactory.parse( timeScale );
+            poolBuilder.setTimeScale( scale );
+
+            LOGGER.debug( "While creating sample metadata, populated the pool with a time scale of "
+                          + "{}.",
+                          timeScale );
+        }
+
+        // Thresholds
+        if ( Objects.nonNull( thresholds ) )
+        {
+            wres.statistics.generated.Threshold event = MessageFactory.parse( thresholds.first() );
+            poolBuilder.setEventThreshold( event );
+
+            if ( thresholds.hasTwo() )
+            {
+                wres.statistics.generated.Threshold decision = MessageFactory.parse( thresholds.second() );
+                poolBuilder.setDecisionThreshold( decision );
+            }
+
+            LOGGER.debug( "While creating pool metadata, populated the pool with a threshold of {}.",
+                          thresholds );
+        }
+
+        return poolBuilder.build();
+    }
+
+    /**
+     * Returns a {@link Pairs} from a {@link PoolOfPairs}.
+     * 
+     * @param pairs The pairs
+     * @return a pairs message
+     */
+
+    public static Pairs parseTimeSeriesOfEnsemblePairs( PoolOfPairs<Double, Ensemble> pairs )
+    {
+        Objects.requireNonNull( pairs );
+
+        Pairs.Builder builder = Pairs.newBuilder();
+
+        for ( TimeSeries<Pair<Double, Ensemble>> nextSeries : pairs.get() )
+        {
+            TimeSeriesOfPairs.Builder series = TimeSeriesOfPairs.newBuilder();
+
+            // Add the reference times
+            Map<wres.datamodel.time.ReferenceTimeType, Instant> times = nextSeries.getReferenceTimes();
+            for ( Map.Entry<wres.datamodel.time.ReferenceTimeType, Instant> nextEntry : times.entrySet() )
+            {
+                wres.datamodel.time.ReferenceTimeType nextType = nextEntry.getKey();
+                Instant nextTime = nextEntry.getValue();
+                ReferenceTime nextRef =
+                        ReferenceTime.newBuilder()
+                                     .setReferenceTimeType( ReferenceTimeType.valueOf( nextType.toString() ) )
+                                     .setReferenceTime( Timestamp.newBuilder()
+                                                                 .setSeconds( nextTime.getEpochSecond() )
+                                                                 .setNanos( nextTime.getNano() ) )
+                                     .build();
+                series.addReferenceTimes( nextRef );
+            }
+
+            // Add the events
+            for ( Event<Pair<Double, Ensemble>> nextEvent : nextSeries.getEvents() )
+            {
+                wres.statistics.generated.Pairs.Pair.Builder nextPair =
+                        wres.statistics.generated.Pairs.Pair.newBuilder();
+
+                nextPair.setValidTime( Timestamp.newBuilder()
+                                                .setSeconds( nextEvent.getTime().getEpochSecond() )
+                                                .setNanos( nextEvent.getTime().getNano() ) )
+                        .addLeft( nextEvent.getValue().getLeft() );
+
+                for ( double nextRight : nextEvent.getValue().getRight().getMembers() )
+                {
+                    nextPair.addRight( nextRight );
+                }
+
+                series.addPairs( nextPair );
+            }
+
+            builder.addTimeSeries( series );
         }
 
         return builder.build();
@@ -752,64 +948,6 @@ public class MessageFactory
                                         .getFeatureTuple();
 
         return new PoolBoundaries( location, window, thresholds );
-    }
-
-    /**
-     * Returns a {@link Pairs} from a {@link PoolOfPairs}.
-     * 
-     * @param pairs The pairs
-     * @return a pairs message
-     */
-
-    private static Pairs parseEnsemblePairs( PoolOfPairs<Double, Ensemble> pairs )
-    {
-        Objects.requireNonNull( pairs );
-
-        Pairs.Builder builder = Pairs.newBuilder();
-
-        for ( TimeSeries<Pair<Double, Ensemble>> nextSeries : pairs.get() )
-        {
-            TimeSeriesOfPairs.Builder series = TimeSeriesOfPairs.newBuilder();
-
-            // Add the reference times
-            Map<wres.datamodel.time.ReferenceTimeType, Instant> times = nextSeries.getReferenceTimes();
-            for ( Map.Entry<wres.datamodel.time.ReferenceTimeType, Instant> nextEntry : times.entrySet() )
-            {
-                wres.datamodel.time.ReferenceTimeType nextType = nextEntry.getKey();
-                Instant nextTime = nextEntry.getValue();
-                ReferenceTime nextRef =
-                        ReferenceTime.newBuilder()
-                                     .setReferenceTimeType( ReferenceTimeType.valueOf( nextType.toString() ) )
-                                     .setReferenceTime( Timestamp.newBuilder()
-                                                                 .setSeconds( nextTime.getEpochSecond() )
-                                                                 .setNanos( nextTime.getNano() ) )
-                                     .build();
-                series.addReferenceTimes( nextRef );
-            }
-
-            // Add the events
-            for ( Event<Pair<Double, Ensemble>> nextEvent : nextSeries.getEvents() )
-            {
-                wres.statistics.generated.Pairs.Pair.Builder nextPair =
-                        wres.statistics.generated.Pairs.Pair.newBuilder();
-
-                nextPair.setValidTime( Timestamp.newBuilder()
-                                                .setSeconds( nextEvent.getTime().getEpochSecond() )
-                                                .setNanos( nextEvent.getTime().getNano() ) )
-                        .addLeft( nextEvent.getValue().getLeft() );
-
-                for ( double nextRight : nextEvent.getValue().getRight().getMembers() )
-                {
-                    nextPair.addRight( nextRight );
-                }
-
-                series.addPairs( nextPair );
-            }
-
-            builder.addTimeSeries( series );
-        }
-
-        return builder.build();
     }
 
     /**

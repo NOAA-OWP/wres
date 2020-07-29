@@ -33,9 +33,9 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -44,6 +44,8 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 
 /**
  * Tests the {@link EnsemblePairsWriter}.
@@ -114,7 +116,9 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PLUM" ), FeatureKey.of( "PLUM" ), null ),
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PLUM" ),
+                                                                           FeatureKey.of( "PLUM" ),
+                                                                           null ),
                                                          "RIFLE" ) );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
@@ -135,7 +139,9 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "ORANGE" ), FeatureKey.of( "ORANGE" ), null ),
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "ORANGE" ),
+                                                                           FeatureKey.of( "ORANGE" ),
+                                                                           null ),
                                                          "PISTOL" ) );
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
@@ -156,7 +162,9 @@ public final class EnsemblePairsWriterTest
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "BANANA" ), FeatureKey.of( "BANANA" ), null ),
+                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "BANANA" ),
+                                                                           FeatureKey.of( "BANANA" ),
+                                                                           null ),
                                                          "GRENADE" ) );
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
@@ -190,13 +198,22 @@ public final class EnsemblePairsWriterTest
             PoolOfPairsBuilder<Double, Ensemble> tsBuilder = new PoolOfPairsBuilder<>();
 
             // Set the measurement units and time scale
-            SampleMetadata meta =
-                    new Builder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PINEAPPLE" ), FeatureKey.of( "PINEAPPLE" ), null ),
-                                                                                     "MORTARS" ) )
-                                               .setTimeScale( TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
-                                                                            TimeScaleFunction.MEAN ) )
-                                               .build();
+            FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
+                                                          FeatureKey.of( "PINEAPPLE" ),
+                                                          null );
+            Evaluation evaluation =
+                    MessageFactory.parse( MeasurementUnit.of( "SCOOBIES" ),
+                                          DatasetIdentifier.of( featureTuple,
+                                                                "MORTARS" ),
+                                          null );
+            Pool pool = MessageFactory.parse( featureTuple,
+                                              null,
+                                              TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
+                                                                 TimeScaleFunction.MEAN ),
+                                              null,
+                                              false );
+
+            SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
             TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
                                                                               Collections.emptySortedSet() );
@@ -236,7 +253,7 @@ public final class EnsemblePairsWriterTest
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
         {
 
-            PoolOfPairsBuilder<Double,Ensemble> tsBuilder = new PoolOfPairsBuilder<>();
+            PoolOfPairsBuilder<Double, Ensemble> tsBuilder = new PoolOfPairsBuilder<>();
 
             SortedSet<Event<Pair<Double, Ensemble>>> setOfPairs = new TreeSet<>();
 
@@ -250,20 +267,29 @@ public final class EnsemblePairsWriterTest
             tsBuilder.addTimeSeries( timeSeriesNaN );
 
             // Set the measurement units and time scale
-            SampleMetadata meta =
-                    new Builder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                               .setIdentifier( DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PINEAPPLE" ), FeatureKey.of( "PINEAPPLE" ), null ),
-                                                                                     "MORTARS" ) )
-                                               .setTimeScale( TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
-                                                                            TimeScaleFunction.MEAN ) )
-                                               .build();
+            FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
+                                                          FeatureKey.of( "PINEAPPLE" ),
+                                                          null );
+            Evaluation evaluation =
+                    MessageFactory.parse( MeasurementUnit.of( "SCOOBIES" ),
+                                          DatasetIdentifier.of( featureTuple,
+                                                                "MORTARS" ),
+                                          null );
+            Pool pool = MessageFactory.parse( featureTuple,
+                                              null,
+                                              TimeScaleOuter.of( Duration.ofSeconds( 3600 ),
+                                                                 TimeScaleFunction.MEAN ),
+                                              null,
+                                              false );
+
+            SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
             TimeSeries<Pair<Double, Ensemble>> timeSeriesOne = TimeSeries.of( getBoilerplateMetadata(),
                                                                               Collections.emptySortedSet() );
 
-            PoolOfPairs<Double,Ensemble> emptyPairs = tsBuilder.addTimeSeries( timeSeriesOne )
-                                                         .setMetadata( meta )
-                                                         .build();
+            PoolOfPairs<Double, Ensemble> emptyPairs = tsBuilder.addTimeSeries( timeSeriesOne )
+                                                                .setMetadata( meta )
+                                                                .build();
 
             // Write the pairs
             writer.accept( emptyPairs );

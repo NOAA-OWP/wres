@@ -8,6 +8,7 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.statistics.generated.Pool;
 import wres.util.TimeHelper;
 
 /**
@@ -107,15 +108,18 @@ public class CommaSeparatedUtilities
 
     public static String getFeatureNameFromMetadata( SampleMetadata metadata )
     {
+        Objects.requireNonNull( metadata );
+
         String featureName = "UNKNOWN";
 
-        DatasetIdentifier identifier = metadata.getIdentifier();
-        if ( Objects.nonNull( identifier ) && Objects.nonNull( identifier.getFeatureTuple() ) )
+        Pool pool = metadata.getPool();
+
+        if ( Objects.nonNull( pool ) && pool.getGeometryTuplesCount() > 0 )
         {
             // TODO: decide if "right" is sufficient or a combination is better.
-            FeatureKey location = identifier.getFeatureTuple()
-                                            .getRight();
-            featureName = location.getName();
+            featureName = pool.getGeometryTuples( 0 )
+                              .getRight()
+                              .getName();
         }
 
         return featureName;

@@ -13,12 +13,14 @@ import org.junit.Test;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 
 /**
  * Tests the {@link CommaSeparatedUtilities}.
@@ -49,10 +51,14 @@ public class CommaSeparatedUtilitiesTest
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
 
-        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setTimeWindow( this.timeWindow )
-                                                             .setTimeScale( TimeScaleOuter.of() )
-                                                             .build();
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), null, null );
+        Pool pool = MessageFactory.parse( null,
+                                          this.timeWindow,
+                                          TimeScaleOuter.of(),
+                                          null,
+                                          false );
+        
+        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
 
         String expected = "EARLIEST ISSUE TIME,"
                           + "LATEST ISSUE TIME,"
@@ -72,11 +78,15 @@ public class CommaSeparatedUtilitiesTest
     {
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
-        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setTimeWindow( this.timeWindow )
-                                                             .setTimeScale( timeScale )
-                                                             .build();
-
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), null, null );
+        Pool pool = MessageFactory.parse( null,
+                                          this.timeWindow,
+                                          timeScale,
+                                          null,
+                                          false );
+        
+        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+        
         String expected = "EARLIEST ISSUE TIME,"
                           + "LATEST ISSUE TIME,"
                           + "EARLIEST VALID TIME,"
@@ -96,32 +106,19 @@ public class CommaSeparatedUtilitiesTest
 
         DatasetIdentifier identifier = DatasetIdentifier.of( FEATURE_TUPLE, "barVariable" );
 
-        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setIdentifier( identifier )
-                                                             .build();
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), identifier, null );
+        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+        
+        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
 
         String actual =
                 CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
-
 
         assertEquals( "fooBasin", actual.toString() );
-
-    }
-
-    @Test
-    public void testGetFeatureNameFromMetadataWithGeographicLocation()
-    {
-
-        DatasetIdentifier identifier = DatasetIdentifier.of( FEATURE_TUPLE, "barVariable" );
-
-        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setIdentifier( identifier )
-                                                             .build();
-
-        String actual =
-                CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
-
-        assertEquals( FEATURE_TUPLE.getRightName(), actual );
 
     }
 
@@ -131,9 +128,14 @@ public class CommaSeparatedUtilitiesTest
 
         DatasetIdentifier identifier = DatasetIdentifier.of( (FeatureTuple) null, "barVariable" );
 
-        SampleMetadata metadata = new Builder().setMeasurementUnit( MeasurementUnit.of() )
-                                                             .setIdentifier( identifier )
-                                                             .build();
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), identifier, null );
+        Pool pool = MessageFactory.parse( null,
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+        
+        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
 
         String actual =
                 CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );

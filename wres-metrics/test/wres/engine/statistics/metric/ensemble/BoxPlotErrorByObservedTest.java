@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,19 +13,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.time.TimeWindowOuter;
-import wres.engine.statistics.metric.Boilerplate;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
@@ -43,11 +36,6 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  */
 public final class BoxPlotErrorByObservedTest
 {
-    /**
-     * Units used in testing.
-     */
-
-    private static final String MM_DAY = "MM/DAY";
 
     /**
      * Default instance of a {@link BoxPlotErrorByObserved}.
@@ -72,24 +60,7 @@ public final class BoxPlotErrorByObservedTest
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 50.0, Ensemble.of( 0.0, 25.0, 50.0, 75.0, 100.0 ) ) );
 
-        TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
-                                                     Instant.MAX,
-                                                     Duration.ofHours( 24 ) );
-        TimeWindowOuter timeWindow1 = window;
-        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                           .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                                 "MAP" ) )
-                                           .setTimeWindow( timeWindow1 )
-                                           .build();
-
-        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, meta );
-        TimeWindowOuter timeWindow = window;
-
-        SampleMetadata m1 = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                        .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                                         "MAP" ) )
-                                                   .setTimeWindow( timeWindow )
-                                                   .build();
+        SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( values, SampleMetadata.of() );
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 
@@ -112,9 +83,7 @@ public final class BoxPlotErrorByObservedTest
                                                        .addStatistics( box )
                                                        .build();
 
-        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBox, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expectedBox, actual.getData() );
     }
 
     /**

@@ -125,7 +125,7 @@ public class PoolsGeneratorTest
         Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
-        Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Double>>> actual =
@@ -213,7 +213,7 @@ public class PoolsGeneratorTest
         Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.getBaselineVariableName() ).thenReturn( null );
         Mockito.when( project.hasBaseline() ).thenReturn( false );
-        Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Ensemble>>> actual =

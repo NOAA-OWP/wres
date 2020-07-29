@@ -43,7 +43,7 @@ public class WriterHelper
     }
 
     /**
-     * Returns a map of statistics grouped by the {@link DatasetIdentifier#getLeftOrRightOrBaseline()}.
+     * Returns a map of statistics grouped by the {@link LeftOrRightOrBaseline}.
      * 
      * @param <T> the type of statistic
      * @param input the input list of statistics
