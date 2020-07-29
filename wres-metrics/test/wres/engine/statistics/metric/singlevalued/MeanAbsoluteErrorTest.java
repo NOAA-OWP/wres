@@ -25,6 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 
 /**
  * Tests the {@link MeanAbsoluteError}.
@@ -61,8 +62,15 @@ public final class MeanAbsoluteErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.mae.apply( input );
 
+        DoubleScoreMetricComponent metricComponent = MeanAbsoluteError.METRIC.getComponents( 0 )
+                                                                             .toBuilder()
+                                                                             .setUnits( input.getMetadata()
+                                                                                             .getMeasurementUnit()
+                                                                                             .toString() )
+                                                                             .build();
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( MeanAbsoluteError.METRIC.getComponents( 0 ) )
+                                                                               .setMetric( metricComponent )
                                                                                .setValue( 201.37 )
                                                                                .build();
 

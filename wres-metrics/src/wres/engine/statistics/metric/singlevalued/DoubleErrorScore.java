@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MissingValues;
@@ -31,6 +33,9 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>>>
         extends OrdinaryScore<S, DoubleScoreStatisticOuter>
 {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( DoubleErrorScore.class );
+    
     /**
      * The error function.
      */
@@ -82,7 +87,27 @@ public abstract class DoubleErrorScore<S extends SampleData<Pair<Double, Double>
 
         if ( main.isPresent() )
         {
-            component.setMetric( main.get() );
+            DoubleScoreMetricComponent toSet = main.get();
+
+            // If the metric units are not explicitly set, they are paired units
+            if ( toSet.getUnits()
+                      .isBlank() )
+            {
+                String unit = s.getMetadata()
+                               .getMeasurementUnit()
+                               .toString();
+                toSet = toSet.toBuilder()
+                             .setUnits( unit )
+                             .build();
+                if ( LOGGER.isTraceEnabled() )
+                {
+                    LOGGER.trace( "Setting the measurement units for score metric component {} to {}.",
+                                  toSet.getName().name(),
+                                  unit );
+                }
+            }
+
+            component.setMetric( toSet );
         }
 
         DoubleScoreStatistic score =

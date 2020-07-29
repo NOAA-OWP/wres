@@ -8,6 +8,7 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -50,6 +51,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
                                                                                     .setMaximum( 1 )
                                                                                     .setOptimum( 1 )
                                                                                     .setName( ComponentName.MAIN )
+                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
     /**

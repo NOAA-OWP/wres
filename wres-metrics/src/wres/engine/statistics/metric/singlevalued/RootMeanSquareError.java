@@ -108,8 +108,14 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
 
         double result = Math.sqrt( input / sampleSize );
 
+        // Set the real-valued measurement units
+        DoubleScoreMetricComponent.Builder metricCompBuilder = RootMeanSquareError.MAIN.toBuilder()
+                                                                                       .setUnits( output.getMetadata()
+                                                                                                        .getMeasurementUnit()
+                                                                                                        .toString() );
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( RootMeanSquareError.MAIN )
+                                                                               .setMetric( metricCompBuilder )
                                                                                .setValue( result )
                                                                                .build();
 

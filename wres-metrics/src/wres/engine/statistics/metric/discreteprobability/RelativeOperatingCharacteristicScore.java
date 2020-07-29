@@ -12,6 +12,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.MetricConstants.MetricGroup;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -69,6 +70,7 @@ public class RelativeOperatingCharacteristicScore
                                                                                     .setMaximum( 1 )
                                                                                     .setOptimum( 1 )
                                                                                     .setName( ComponentName.MAIN )
+                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
     /**

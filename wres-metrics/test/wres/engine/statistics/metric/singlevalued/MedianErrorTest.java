@@ -24,6 +24,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -63,8 +64,15 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
+        DoubleScoreMetricComponent metricComponent = MedianError.METRIC.getComponents( 0 )
+                                                                       .toBuilder()
+                                                                       .setUnits( input.getMetadata()
+                                                                                       .getMeasurementUnit()
+                                                                                       .toString() )
+                                                                       .build();
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( MedianError.METRIC.getComponents( 0 ) )
+                                                                               .setMetric( metricComponent )
                                                                                .setValue( 1 )
                                                                                .build();
 
@@ -93,8 +101,15 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
+        DoubleScoreMetricComponent metricComponent = MedianError.METRIC.getComponents( 0 )
+                                                                       .toBuilder()
+                                                                       .setUnits( input.getMetadata()
+                                                                                       .getMeasurementUnit()
+                                                                                       .toString() )
+                                                                       .build();
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( MedianError.METRIC.getComponents( 0 ) )
+                                                                               .setMetric( metricComponent )
                                                                                .setValue( 3 )
                                                                                .build();
 
@@ -124,8 +139,15 @@ public final class MedianErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
+        DoubleScoreMetricComponent metricComponent = MedianError.METRIC.getComponents( 0 )
+                                                                       .toBuilder()
+                                                                       .setUnits( input.getMetadata()
+                                                                                       .getMeasurementUnit()
+                                                                                       .toString() )
+                                                                       .build();
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( MedianError.METRIC.getComponents( 0 ) )
+                                                                               .setMetric( metricComponent )
                                                                                .setValue( -12345.6789 )
                                                                                .build();
 

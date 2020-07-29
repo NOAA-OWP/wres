@@ -36,6 +36,7 @@ import wres.vis.ChartEngineFactory.ChartType;
  */
 public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 {
+    private static final String SPECIFY_NON_NULL_DURATION_UNITS = "Specify non-null duration units.";
     private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
     private static final String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
     private static final String LATEST_DATE_TO_TEXT = "latestDateToText";
@@ -61,23 +62,24 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * An arguments processor intended for use in displaying single-valued pairs. It is assumed that there is 
      * only a single time window associated with the data, specified in the meta data for the displayed plot input.
      * @param meta The metadata corresponding to a SingleValuedPairs instance.
+     * @param metricUnits the measurement units of the metric
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( final SampleMetadata meta, final ChronoUnit durationUnits )
+    public WRESArgumentProcessor( final SampleMetadata meta, String metricUnits, final ChronoUnit durationUnits )
     {
         super();
 
         Objects.requireNonNull( meta, "Specify non-null metadata." );
 
-        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        Objects.requireNonNull( durationUnits, SPECIFY_NON_NULL_DURATION_UNITS );
 
         this.durationUnits = durationUnits;
 
         //Setup fixed arguments.  This uses a special set since it is not metric output.
         addArgument( "rangeAxisLabelPrefix", "Forecast" );
         addArgument( "domainAxisLabelPrefix", "Observed" );
-        addArgument( "inputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
+        addArgument( "inputUnitsLabelSuffix", " [" + metricUnits + "]" );
         addArgument( "inputUnits", meta.getMeasurementUnit().toString() );
 
         recordIdentifierArguments( meta );
@@ -101,13 +103,20 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         Objects.requireNonNull( displayPlotInput, "Specify a non-null box plot statistic." );
 
-        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        Objects.requireNonNull( durationUnits, SPECIFY_NON_NULL_DURATION_UNITS );
 
         this.durationUnits = durationUnits;
 
+        String metricUnits = displayPlotInput.getMetadata().getEvaluation().getMeasurementUnit();
+        
+        if( !displayPlotInput.getData().getMetric().getUnits().isBlank() )
+        {
+            metricUnits = displayPlotInput.getData().getMetric().getUnits();
+        }
+        
         SampleMetadata meta = displayPlotInput.getMetadata();
         MetricConstants metricName = displayPlotInput.getMetricName();
-        extractStandardArgumentsFromMetadata( meta, metricName, null );
+        extractStandardArgumentsFromMetadata( meta, metricUnits, metricName, null );
 
         recordWindowingArguments( meta.getTimeWindow() );
 
@@ -158,6 +167,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param metricName the metric name
      * @param metricComponentName the optional metric component name
+     * @param metricUnits the metric units
      * @param displayedPlotInput the plot input
      * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
      *     a pooling window plot.
@@ -166,6 +176,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      */
     public <T extends Statistic<?>> WRESArgumentProcessor( final MetricConstants metricName,
                                                            final MetricConstants metricComponentName,
+                                                           final String metricUnits,
                                                            final List<T> displayedPlotInput,
                                                            final ChartType plotType,
                                                            final ChronoUnit durationUnits )
@@ -174,12 +185,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         Objects.requireNonNull( displayedPlotInput, "Specify a non-null list of statistics." );
 
-        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        Objects.requireNonNull( durationUnits, SPECIFY_NON_NULL_DURATION_UNITS );
 
         this.durationUnits = durationUnits;
 
         SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
-        extractStandardArgumentsFromMetadata( meta, metricName, metricComponentName );
+        extractStandardArgumentsFromMetadata( meta, metricUnits, metricName, metricComponentName );
 
         // Assemble a collection of smaller time windows where necessary
         if ( plotType == ChartType.POOLING_WINDOW || metricName.isInGroup( StatisticType.DURATION_DIAGRAM ) )
@@ -217,19 +228,21 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * Extracts the standard arguments that can be pulled from and interpreted consistently for any output meta data. 
      * @param meta the output metadata
+     * @param metricUnits the metric units
      * @param metricName the metric name
      * @poaram metricComponentName the optional metric component name
      */
     private void extractStandardArgumentsFromMetadata( SampleMetadata meta,
+                                                       String metricUnits,
                                                        MetricConstants metricName,
                                                        MetricConstants metricComponentName )
     {
         //Setup fixed arguments.
         addArgument( "metricName", metricName.toString() );
         addArgument( "metricShortName", metricName.toString() );
-        addArgument( "outputUnits", meta.getMeasurementUnit().toString() );
+        addArgument( "outputUnits", metricUnits );
         addArgument( "inputUnits", meta.getMeasurementUnit().toString() );
-        addArgument( "outputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
+        addArgument( "outputUnitsLabelSuffix", " [" + metricUnits + "]" );
         addArgument( "inputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
 
         recordIdentifierArguments( meta );

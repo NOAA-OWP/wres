@@ -111,8 +111,14 @@ public class MeanSquareError extends SumOfSquareError
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( input / output.getData().getSampleSize() );
 
+        // Set the real-valued measurement units
+        DoubleScoreMetricComponent.Builder metricCompBuilder = MeanSquareError.MAIN.toBuilder()
+                                                                                   .setUnits( output.getMetadata()
+                                                                                                    .getMeasurementUnit()
+                                                                                                    .toString() );
+        
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( MeanSquareError.MAIN )
+                                                                               .setMetric( metricCompBuilder )
                                                                                .setValue( mse )
                                                                                .build();
 
