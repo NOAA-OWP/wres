@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigs;
 import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -24,12 +23,10 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -86,25 +83,32 @@ public class PoolFactory
     /**
      * Create pools for single-valued data from a prescribed {@link Project} and {@link Feature}.
      * 
+     * @param evaluation the evaluation description
      * @param database The database to use.
      * @param featuresCache The features cache/orm to use.
      * @param project the project for which pools are required
      * @param feature the feature for which pools are required
      * @param unitMapper the mapper to convert measurement units
      * @return a list of suppliers that supply pools of pairs
-     * @throws NullPointerException if the input is null
+     * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Database database,
+    public static List<Supplier<PoolOfPairs<Double, Double>>> getSingleValuedPools( Evaluation evaluation,
+                                                                                    Database database,
                                                                                     Features featuresCache,
                                                                                     Project project,
                                                                                     FeatureTuple feature,
                                                                                     UnitMapper unitMapper )
     {
+        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );        
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
-
+        Objects.requireNonNull( featuresCache, "Cannot create pools without a feature cache." );
+        Objects.requireNonNull( database, "Cannot create pools without a database instance." );
+        Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
+        Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
+        
         // Validate the project declaration for the required data type
         // TODO: do not rely on the declared type. Detect the type instead
         // See #57301
@@ -119,9 +123,6 @@ public class PoolFactory
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,
                       feature );
-
-        // Get a unit mapper for the declared measurement units
-        String desiredMeasurementUnit = pairConfig.getUnit();
 
         // Get the times scale
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
@@ -151,13 +152,8 @@ public class PoolFactory
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
 
         // Create the basic metadata for the pools
-        String variableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, false );
-        String scenarioId = inputsConfig.getRight().getLabel();
-        SampleMetadata mainMetadata = PoolFactory.createMetadata( projectConfig,
+        SampleMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
                                                                   feature,
-                                                                  variableId,
-                                                                  scenarioId,
-                                                                  desiredMeasurementUnit,
                                                                   desiredTimeScale,
                                                                   LeftOrRightOrBaseline.RIGHT );
 
@@ -171,14 +167,9 @@ public class PoolFactory
                           + "source.",
                           projectId,
                           feature );
-
-            String baselineVariableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, true );
-            String baselineScenarioId = inputsConfig.getBaseline().getLabel();
-            baselineMetadata = PoolFactory.createMetadata( projectConfig,
+            
+            baselineMetadata = PoolFactory.createMetadata( evaluation,
                                                            feature,
-                                                           baselineVariableId,
-                                                           baselineScenarioId,
-                                                           desiredMeasurementUnit,
                                                            desiredTimeScale,
                                                            LeftOrRightOrBaseline.BASELINE );
 
@@ -218,6 +209,7 @@ public class PoolFactory
     /**
      * Create pools for ensemble data from a prescribed {@link Project} and {@link Feature}.
      * 
+     * @param evaluation the evaluation description
      * @param database The database to use.
      * @param featuresCache The features cache to use.
      * @param project the project for which pools are required
@@ -229,13 +221,19 @@ public class PoolFactory
      *            data
      */
 
-    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Database database,
+    public static List<Supplier<PoolOfPairs<Double, Ensemble>>> getEnsemblePools( Evaluation evaluation,
+                                                                                  Database database,
                                                                                   Features featuresCache,
                                                                                   Project project,
                                                                                   FeatureTuple feature,
                                                                                   UnitMapper unitMapper )
     {
+        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );        
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
+        Objects.requireNonNull( featuresCache, "Cannot create pools without a feature cache." );
+        Objects.requireNonNull( database, "Cannot create pools without a database instance." );
+        Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
+        Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
 
         // Validate the project declaration for the required data type
         // TODO: do not rely on the declared type. Detect the type instead
@@ -250,9 +248,6 @@ public class PoolFactory
         LOGGER.debug( "Creating pool suppliers for project '{}' and feature '{}'.",
                       projectId,
                       feature );
-
-        // Get a unit mapper for the declared measurement units
-        String desiredMeasurementUnit = pairConfig.getUnit();
 
         // Get the times scale
         TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
@@ -285,13 +280,8 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( leftUpscaler );
 
         // Create the basic metadata for the pools
-        String variableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, false );
-        String scenarioId = inputsConfig.getRight().getLabel();
-        SampleMetadata mainMetadata = PoolFactory.createMetadata( projectConfig,
+        SampleMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
                                                                   feature,
-                                                                  variableId,
-                                                                  scenarioId,
-                                                                  desiredMeasurementUnit,
                                                                   desiredTimeScale,
                                                                   LeftOrRightOrBaseline.RIGHT );
 
@@ -304,13 +294,8 @@ public class PoolFactory
                           projectId,
                           feature );
 
-            String baselineVariableId = ProjectConfigs.getVariableIdFromProjectConfig( inputsConfig, true );
-            String baselineScenarioId = inputsConfig.getBaseline().getLabel();
-            baselineMetadata = PoolFactory.createMetadata( projectConfig,
+            baselineMetadata = PoolFactory.createMetadata( evaluation,
                                                            feature,
-                                                           baselineVariableId,
-                                                           baselineScenarioId,
-                                                           desiredMeasurementUnit,
                                                            desiredTimeScale,
                                                            LeftOrRightOrBaseline.BASELINE );
         }
@@ -360,35 +345,18 @@ public class PoolFactory
     /**
      * Returns a metadata representation of the input.
      * 
-     * @param projectConfig the project declaration
+     * @param evaluation the evaluation description
      * @param featureTuple the feature
-     * @param variableId the variable identifier
-     * @param scenarioId the scenario identifier
-     * @param measurementUnitString the measurement units string
      * @param desiredTimeScale the desired time scale
      * @param leftOrRightOrBaseline the context for the data as it relates to the declaration
      * @return the metadata
      */
 
-    private static SampleMetadata createMetadata( ProjectConfig projectConfig,
+    private static SampleMetadata createMetadata( Evaluation evaluation,
                                                   FeatureTuple featureTuple,
-                                                  String variableId,
-                                                  String scenarioId,
-                                                  String measurementUnitString,
                                                   TimeScaleOuter desiredTimeScale,
                                                   LeftOrRightOrBaseline leftOrRightOrBaseline )
-    {
-
-        DatasetIdentifier identifier = DatasetIdentifier.of( featureTuple,
-                                                             variableId,
-                                                             scenarioId,
-                                                             null,
-                                                             leftOrRightOrBaseline );
-
-        MeasurementUnit measurementUnit = MeasurementUnit.of( measurementUnitString );
-
-        Evaluation evaluation = MessageFactory.parse( measurementUnit, identifier, projectConfig );
-        
+    {        
         Pool pool = MessageFactory.parse( featureTuple,
                                           null,
                                           desiredTimeScale,

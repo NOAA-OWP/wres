@@ -476,8 +476,15 @@ public class Evaluation implements Closeable
                                                            .setEventMessage( sw.toString() )
                                                            .build();
 
+        Instant now = Instant.now();
+        long seconds = now.getEpochSecond();
+        int nanos = now.getNano();
+
         EvaluationStatus complete = EvaluationStatus.newBuilder()
                                                     .setCompletionStatus( status )
+                                                    .setTime( Timestamp.newBuilder()
+                                                                       .setSeconds( seconds )
+                                                                       .setNanos( nanos ) )
                                                     .addStatusEvents( event )
                                                     .build();
 
@@ -1106,14 +1113,14 @@ public class Evaluation implements Closeable
         Instant now = Instant.now();
         long seconds = now.getEpochSecond();
         int nanos = now.getNano();
-        EvaluationStatus ongoing = EvaluationStatus.newBuilder()
-                                                   .setCompletionStatus( CompletionStatus.EVALUATION_ONGOING )
-                                                   .setEvaluationStartTime( Timestamp.newBuilder()
-                                                                                     .setSeconds( seconds )
-                                                                                     .setNanos( nanos ) )
+        EvaluationStatus started = EvaluationStatus.newBuilder()
+                                                   .setCompletionStatus( CompletionStatus.EVALUATION_STARTED )
+                                                   .setTime( Timestamp.newBuilder()
+                                                                      .setSeconds( seconds )
+                                                                      .setNanos( nanos ) )
                                                    .build();
 
-        this.publish( ongoing );
+        this.publish( started );
     }
 
     /**

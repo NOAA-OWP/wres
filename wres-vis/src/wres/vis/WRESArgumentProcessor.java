@@ -273,7 +273,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( Objects.nonNull( meta.getIdentifier() ) )
         {
             final DatasetIdentifier identifier = meta.getIdentifier();
-            if ( identifier.getFeatureTuple().getBaselineName() != null )
+            if ( Objects.nonNull( identifier.getFeatureTuple() )
+                 && identifier.getFeatureTuple().getBaselineName() != null )
             {
                 addArgument( "locationName",
                              "(left=" + identifier.getFeatureTuple().getLeftName()
@@ -283,7 +284,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                              + identifier.getFeatureTuple().getBaselineName()
                                              + ")" );
             }
-            else
+            else if( Objects.nonNull( identifier.getFeatureTuple() ))
             {
                 addArgument( "locationName",
                              "(left=" + identifier.getFeatureTuple().getLeftName()
@@ -456,7 +457,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         Objects.requireNonNull( meta );
 
         String baselineSuffix = meta.getEvaluation()
-                                    .getBaselineSourceName();
+                                    .getBaselineDataName();
         if ( !baselineSuffix.isBlank() )
         {
             baselineSuffix = " Against Predictions From " + baselineSuffix;

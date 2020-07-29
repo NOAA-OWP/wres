@@ -56,10 +56,10 @@ public class ProtobufWriterTest
     {
         this.evaluation = Evaluation.newBuilder()
                                     .setMetricCount( 1 )
-                                    .setLeftSourceName( "aLeftSource" )
-                                    .setRightSourceName( "aRightSource" )
+                                    .setLeftDataName( "aLeftSource" )
+                                    .setRightDataName( "aRightSource" )
                                     .setMeasurementUnit( "aMeasurementUnit" )
-                                    .setVariableName( "aVariable" )
+                                    .setLeftVariableName( "aVariable" )
                                     .build();
 
         this.writer = ProtobufWriter.of( ProtobufWriterTest.PATH, this.evaluation );

@@ -84,6 +84,9 @@ class ProcessorHelper
         ProgressMonitor.setShowStepDescription( false );
         ProgressMonitor.resetMonitor();
 
+        // Create a description of the evaluation
+        Evaluation evaluation = MessageFactory.parse( projectConfig );
+        
         // Create output directory prior to ingest, fails early when it fails.
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
 
@@ -193,7 +196,8 @@ class ProcessorHelper
         // Create one task per feature
         for ( FeatureTuple feature : decomposedFeatures )
         {
-            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( feature,
+            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluation,
+                                                                                       feature,
                                                                                        resolvedProject,
                                                                                        project,
                                                                                        unitMapper,
@@ -428,7 +432,7 @@ class ProcessorHelper
         //Either all done OR one completes exceptionally
         return CompletableFuture.anyOf( allDone, oneExceptional );
     }
-
+    
     /**
      * A value object that a) reduces count of args for some methods and
      * b) provides names for those objects. Can be removed if we can reduce the

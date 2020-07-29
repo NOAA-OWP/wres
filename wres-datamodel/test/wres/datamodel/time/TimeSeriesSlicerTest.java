@@ -223,13 +223,14 @@ public final class TimeSeriesSlicerTest
         third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
         SampleMetadata meta = SampleMetadata.of();
+        SampleMetadata baseMeta = SampleMetadata.of( true );
         //Add the time-series, with only one for baseline
         PoolOfPairs<Double, Double> ts = b.addTimeSeries( TimeSeries.of( firstMetadata, first ) )
                                           .addTimeSeries( TimeSeries.of( secondMetadata, second ) )
                                           .addTimeSeries( TimeSeries.of( thirdMetadata, third ) )
                                           .addTimeSeriesForBaseline( TimeSeries.of( firstMetadata, first ) )
                                           .setMetadata( meta )
-                                          .setMetadataForBaseline( meta )
+                                          .setMetadataForBaseline( baseMeta )
                                           .build();
 
         //Iterate and test
@@ -712,9 +713,10 @@ public final class TimeSeriesSlicerTest
         assertTrue( fourthResult.getClimatology().equals( climatologyExpected ) );
 
         // Also filter baseline data
+        SampleMetadata baseMeta = SampleMetadata.of( true );
         b.addTimeSeriesForBaseline( TimeSeries.of( firstMetadata, first ) )
          .addTimeSeriesForBaseline( TimeSeries.of( secondMetadata, second ) )
-         .setMetadataForBaseline( meta );
+         .setMetadataForBaseline( baseMeta );
 
         // Filter all values where both sides are greater than or equal to 4
         PoolOfPairs<Double, Double> fifthResult =

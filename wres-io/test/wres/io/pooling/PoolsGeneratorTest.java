@@ -24,12 +24,13 @@ import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
-import wres.system.SystemSettings;
+import wres.statistics.generated.Evaluation;
 
 /**
  * Tests the {@link PoolsGenerator}.
@@ -38,8 +39,6 @@ import wres.system.SystemSettings;
  */
 public class PoolsGeneratorTest
 {
-
-    private static final String GET_VARIABLE_ID_FROM_PROJECT_CONFIG = "getVariableIdFromProjectConfig";
 
     private static final String STREAMFLOW = "STREAMFLOW";
 
@@ -129,9 +128,12 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
+        Evaluation evaluation = MessageFactory.parse( projectConfig );
+        
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Double>>> actual =
-                PoolFactory.getSingleValuedPools( this.wresDatabase,
+                PoolFactory.getSingleValuedPools( evaluation,
+                                                  this.wresDatabase,
                                                   this.featuresCache,
                                                   project,
                                                   new FeatureTuple( feature, feature, null ),
@@ -219,9 +221,12 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
+        Evaluation evaluation = MessageFactory.parse( projectConfig );
+        
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Ensemble>>> actual =
-                PoolFactory.getEnsemblePools( this.wresDatabase,
+                PoolFactory.getEnsemblePools( evaluation,
+                                              this.wresDatabase,
                                               this.featuresCache,
                                               project,
                                               new FeatureTuple( feature, feature, null ),

@@ -128,12 +128,33 @@ public class MessageFactory
                           project.getPair().getUnit() );
         }
 
-        if ( Objects.nonNull( project.getInputs() ) )
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getLeft() ) )
         {
-            String variableName = ProjectConfigs.getVariableIdFromProjectConfig( project.getInputs(), false );
-            builder.setVariableName( variableName );
+            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
+                                                                                           .getLeft() );
+            builder.setLeftVariableName( variableName );
 
-            LOGGER.debug( "Populated the evaluation with a variable name of {}.",
+            LOGGER.debug( "Populated the evaluation with a left variable name of {}.",
+                          variableName );
+        }
+
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getRight() ) )
+        {
+            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
+                                                                                           .getRight() );
+            builder.setRightVariableName( variableName );
+
+            LOGGER.debug( "Populated the evaluation with a right variable name of {}.",
+                          variableName );
+        }
+
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getBaseline() ) )
+        {
+            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
+                                                                                           .getBaseline() );
+            builder.setBaselineVariableName( variableName );
+
+            LOGGER.debug( "Populated the evaluation with a baseline variable name of {}.",
                           variableName );
         }
 
@@ -141,7 +162,7 @@ public class MessageFactory
              && Objects.nonNull( project.getInputs().getLeft().getLabel() ) )
         {
             String name = project.getInputs().getLeft().getLabel();
-            builder.setLeftSourceName( name );
+            builder.setLeftDataName( name );
 
             LOGGER.debug( "Populated the evaluation with a left source name of {}.",
                           name );
@@ -151,7 +172,7 @@ public class MessageFactory
              && Objects.nonNull( project.getInputs().getRight().getLabel() ) )
         {
             String name = project.getInputs().getRight().getLabel();
-            builder.setRightSourceName( name );
+            builder.setRightDataName( name );
 
             LOGGER.debug( "Populated the evaluation with a right source name of {}.",
                           name );
@@ -161,7 +182,7 @@ public class MessageFactory
              && Objects.nonNull( project.getInputs().getBaseline().getLabel() ) )
         {
             String name = project.getInputs().getBaseline().getLabel();
-            builder.setBaselineSourceName( name );
+            builder.setBaselineDataName( name );
 
             LOGGER.debug( "Populated the evaluation with a baseline source name of {}.",
                           name );
@@ -209,8 +230,9 @@ public class MessageFactory
      * @param identifier the dataset identifier
      * @param projectConfig the project declaration
      * @return the evaluation
+     * @deprecated in favor of {@link #parse(ProjectConfig)}
      */
-
+    @Deprecated( since = "4.3", forRemoval = true )
     public static Evaluation parse( MeasurementUnit unit,
                                     DatasetIdentifier identifier,
                                     ProjectConfig projectConfig )
@@ -229,7 +251,12 @@ public class MessageFactory
 
         if ( Objects.nonNull( identifier ) && identifier.hasVariableName() )
         {
-            evaluationBuilder.setVariableName( identifier.getVariableName() );
+            evaluationBuilder.setLeftVariableName( identifier.getVariableName() );
+            evaluationBuilder.setRightVariableName( identifier.getVariableName() );
+            if ( identifier.hasScenarioNameForBaseline() )
+            {
+                evaluationBuilder.setBaselineVariableName( identifier.getVariableName() );
+            }
 
             LOGGER.debug( "While creating sample metadata, populated the evaluation with a variable name of {}.",
                           identifier.getVariableName() );
@@ -237,7 +264,7 @@ public class MessageFactory
 
         if ( Objects.nonNull( identifier ) && identifier.hasScenarioName() )
         {
-            evaluationBuilder.setRightSourceName( identifier.getScenarioName() );
+            evaluationBuilder.setRightDataName( identifier.getScenarioName() );
 
             LOGGER.debug( "While creating sample metadata, populated the evaluation with a right source name of {}.",
                           identifier.getScenarioName() );
@@ -245,7 +272,7 @@ public class MessageFactory
 
         if ( Objects.nonNull( identifier ) && identifier.hasScenarioNameForBaseline() )
         {
-            evaluationBuilder.setBaselineSourceName( identifier.getScenarioNameForBaseline() );
+            evaluationBuilder.setBaselineDataName( identifier.getScenarioNameForBaseline() );
 
             LOGGER.debug( "While creating sample metadata, populated the evaluation with a baseline source name of "
                           + "{}.",
@@ -394,37 +421,29 @@ public class MessageFactory
     /**
      * Creates a {@link EvaluationStatus} message from a list of {@link EvaluationEvent} and other metadata.
      * 
-     * @param startTime the evaluation start time
-     * @param endTime the evaluation end time
+     * @param time an optional time associated with the status event
      * @param status the completion status
      * @param events a list of evaluation events
      * @return a status message
-     * @throws NullPointerException if the start time completion status or list of events is null
+     * @throws NullPointerException if the status or list of events is null
      */
 
-    public static EvaluationStatus parse( Instant startTime,
-                                          Instant endTime,
+    public static EvaluationStatus parse( Instant time,
                                           CompletionStatus status,
                                           List<EvaluationEvent> events )
     {
-        Objects.requireNonNull( startTime );
         Objects.requireNonNull( status );
         Objects.requireNonNull( events );
 
         EvaluationStatus.Builder builder = EvaluationStatus.newBuilder();
 
-        Timestamp start = Timestamp.newBuilder()
-                                   .setSeconds( startTime.getEpochSecond() )
-                                   .build();
-        builder.setEvaluationStartTime( start );
-
-
-        if ( Objects.nonNull( endTime ) )
+        if ( Objects.nonNull( time ) )
         {
-            Timestamp end = Timestamp.newBuilder()
-                                     .setSeconds( endTime.getEpochSecond() )
-                                     .build();
-            builder.setEvaluationEndTime( end );
+            Timestamp aTime = Timestamp.newBuilder()
+                                       .setSeconds( time.getEpochSecond() )
+                                       .setNanos( time.getNano() )
+                                       .build();
+            builder.setTime( aTime );
         }
 
         builder.setCompletionStatus( status );
