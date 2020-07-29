@@ -115,8 +115,14 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
                             .sum();
         }
 
+        // Set the real-valued measurement units
+        DoubleScoreMetricComponent.Builder metricCompBuilder = SumOfSquareError.MAIN.toBuilder()
+                                                                                    .setUnits( input.getMetadata()
+                                                                                                    .getMeasurementUnit()
+                                                                                                    .toString() );
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( SumOfSquareError.MAIN )
+                                                                               .setMetric( metricCompBuilder )
                                                                                .setValue( returnMe )
                                                                                .build();
 

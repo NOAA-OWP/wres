@@ -14,6 +14,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -65,6 +66,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
                                                                                     .setMaximum( 1 )
                                                                                     .setOptimum( 0 )
                                                                                     .setName( ComponentName.MAIN )
+                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
     /**

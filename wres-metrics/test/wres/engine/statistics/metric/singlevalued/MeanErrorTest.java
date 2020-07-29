@@ -24,6 +24,7 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -60,8 +61,15 @@ public final class MeanErrorTest
         //Check the results
         DoubleScoreStatisticOuter actual = this.meanError.apply( input );
 
+        DoubleScoreMetricComponent metricComponent = MeanError.METRIC.getComponents( 0 )
+                                                                     .toBuilder()
+                                                                     .setUnits( input.getMetadata()
+                                                                                     .getMeasurementUnit()
+                                                                                     .toString() )
+                                                                     .build();
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( MeanError.METRIC.getComponents( 0 ) )
+                                                                               .setMetric( metricComponent )
                                                                                .setValue( 200.55 )
                                                                                .build();
 

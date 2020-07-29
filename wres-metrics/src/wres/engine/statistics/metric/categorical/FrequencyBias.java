@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.categorical;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -39,6 +40,7 @@ public class FrequencyBias extends ContingencyTableScore
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
                                                                                     .setOptimum( 1 )
                                                                                     .setName( ComponentName.MAIN )
+                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
     /**

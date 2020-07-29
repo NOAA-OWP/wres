@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -45,6 +46,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
                                                                                     .setOptimum( 0 )
                                                                                     .setName( ComponentName.MAIN )
+                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                                                     .build();
 
     /**

@@ -280,6 +280,7 @@ public abstract class ChartEngineFactory
     {
         WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice.get( 0 ).getMetricName(),
                                                                 null,
+                                                                null,
                                                                 inputSlice,
                                                                 usedPlotType,
                                                                 durationUnits );
@@ -877,7 +878,8 @@ public abstract class ChartEngineFactory
     {
         
         // Find the metadata for the first element, which is sufficient here
-        SampleMetadata metadata = input.get( 0 ).getMetadata();
+        SampleMetadata metadata = input.get( 0 ).getMetadata();   
+        String metricUnits = input.get( 0 ).getData().getMetric().getUnits();
 
         // Component name
         MetricConstants metricComponentName = input.get( 0 ).getMetricName();
@@ -895,6 +897,7 @@ public abstract class ChartEngineFactory
         //Setup the default arguments.
         final WRESArgumentProcessor arguments = new WRESArgumentProcessor( metricName,
                                                                            metricComponentName,
+                                                                           metricUnits,
                                                                            input,
                                                                            usedPlotType,
                                                                            durationUnits );
@@ -979,8 +982,12 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments =
-                new WRESArgumentProcessor( metricName, null, input, null, durationUnits );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( metricName,
+                                                                           null,
+                                                                           durationUnits.toString(),
+                                                                           input,
+                                                                           null,
+                                                                           durationUnits );
 
         //Setup plot specific arguments.
         arguments.addBaselineArguments( metadata );
@@ -1039,8 +1046,12 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments =
-                new WRESArgumentProcessor( metricName, null, input, null, durationUnits );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( metricName,
+                                                                           null,
+                                                                           durationUnits.toString(),
+                                                                           input,
+                                                                           null,
+                                                                           durationUnits );
 
         //Setup plot specific arguments.
         arguments.addBaselineArguments( metadata );
@@ -1099,7 +1110,10 @@ public abstract class ChartEngineFactory
         final DefaultXYChartDataSource source = XYChartDataSourceFactory.ofSingleValuedPairs( 0, input );
 
         //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input.getMetadata(), durationUnits );
+        final WRESArgumentProcessor arguments =
+                new WRESArgumentProcessor( input.getMetadata(),
+                                           input.getMetadata().getMeasurementUnit().toString(),
+                                           durationUnits );
 
         //Process override parameters.
         ChartDrawingParameters override = null;
