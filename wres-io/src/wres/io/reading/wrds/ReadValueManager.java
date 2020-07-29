@@ -207,8 +207,12 @@ public class ReadValueManager
             {
                 LOGGER.debug( "Parsing {}", forecast );
                 TimeSeries<Double> timeSeries = this.read( forecast );
-                List<IngestResult> result = this.ingest( timeSeries );
-                results.addAll( result );
+
+                if ( Objects.nonNull( timeSeries ) )
+                {
+                    List<IngestResult> result = this.ingest( timeSeries );
+                    results.addAll( result );
+                }
             }
 
             return Collections.unmodifiableList( results );
