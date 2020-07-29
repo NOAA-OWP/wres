@@ -441,7 +441,7 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( project.getRightVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.getBaselineVariableName() ).thenReturn( STREAMFLOW );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
-        Mockito.when( project.usesProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );

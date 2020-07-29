@@ -396,7 +396,33 @@ public class ConfigHelper
                                               projectConfig.getInputs().getBaseline() );
     }
 
-
+    /**
+     * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the project declaration
+     * @return Whether or not the project uses probability thresholds
+     * @throws NullPointerException if the input is null or the metrics declaration is null
+     */
+    public static boolean hasProbabilityThresholds( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( projectConfig.getMetrics() );
+        
+        // Iterate metrics configuration
+        for ( MetricsConfig next : projectConfig.getMetrics() )
+        {
+            // Check thresholds           
+            if ( next.getThresholds()
+                     .stream()
+                     .anyMatch( a -> Objects.isNull( a.getType() )
+                                     || a.getType() == ThresholdType.PROBABILITY ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     private enum ConusZoneId
     {
         UTC( "+0000" ),
@@ -893,6 +919,21 @@ public class ConfigHelper
                && baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE;
     }
 
+    /**
+     * Returns <code>true</code> if a baseline is present, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the declaration to inspect
+     * @return true if a baseline is present
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasBaseline( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+
+        return Objects.nonNull( projectConfig.getInputs() )
+               && Objects.nonNull( projectConfig.getInputs().getBaseline() );
+    }
 
     /**
      * Gets the desired time scale associated with the pair declaration, if any.

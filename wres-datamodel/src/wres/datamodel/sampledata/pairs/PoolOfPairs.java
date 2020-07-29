@@ -426,7 +426,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
             throw new SampleDataException( "One or more of the baseline time-series is null." );
         }
 
-        if ( Objects.nonNull( this.baseline ) && this.baselineMeta.hasIdentifier()
+        if ( Objects.nonNull( this.baseline ) && Objects.nonNull( this.baselineMeta.getIdentifier() )
              && this.baselineMeta.getIdentifier().hasLeftOrRightOrBaseline()
              && this.baselineMeta.getIdentifier().getLeftOrRightOrBaseline() != LeftOrRightOrBaseline.BASELINE )
         {

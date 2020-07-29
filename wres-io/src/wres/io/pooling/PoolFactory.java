@@ -28,9 +28,9 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MissingValues;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries;
@@ -361,7 +361,7 @@ public class PoolFactory
      * Returns a metadata representation of the input.
      * 
      * @param projectConfig the project declaration
-     * @param feature the feature
+     * @param featureTuple the feature
      * @param variableId the variable identifier
      * @param scenarioId the scenario identifier
      * @param measurementUnitString the measurement units string
@@ -371,14 +371,15 @@ public class PoolFactory
      */
 
     private static SampleMetadata createMetadata( ProjectConfig projectConfig,
-                                                  FeatureTuple feature,
+                                                  FeatureTuple featureTuple,
                                                   String variableId,
                                                   String scenarioId,
                                                   String measurementUnitString,
                                                   TimeScaleOuter desiredTimeScale,
                                                   LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
-        DatasetIdentifier identifier = DatasetIdentifier.of( feature,
+
+        DatasetIdentifier identifier = DatasetIdentifier.of( featureTuple,
                                                              variableId,
                                                              scenarioId,
                                                              null,
@@ -386,29 +387,15 @@ public class PoolFactory
 
         MeasurementUnit measurementUnit = MeasurementUnit.of( measurementUnitString );
 
-        SampleMetadata metadata = new Builder().setIdentifier( identifier )
-                                               .setProjectConfig( projectConfig )
-                                               .setMeasurementUnit( measurementUnit )
-                                               .setTimeScale( desiredTimeScale )
-                                               .build();
+        Evaluation evaluation = MessageFactory.parse( measurementUnit, identifier, projectConfig );
         
-        // TODO: instantiate directly with an Evaluation and Pool rather than using non-canonical forms and then
-        // acquiring and editing the canonical form. These shenanigans are a temporary bridge until the description of
-        // statistics is supported via canonical forms only.
-        if ( leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE )
-        {
-            Evaluation evaluation = metadata.getEvaluation();
-            Pool pool = metadata.getPool();
-            Pool.Builder poolBuilder = Pool.newBuilder( pool );
-            // Identify this as a baseline pool
-            poolBuilder.setIsBaselinePool( true );
-            SampleMetadata.Builder finalBuilder = new SampleMetadata.Builder( evaluation, poolBuilder.build() );
-            metadata = finalBuilder.setIdentifier( identifier )
-                                   .setProjectConfig( projectConfig )
-                                   .build();      
-        }
-        
-        return metadata;
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          null,
+                                          desiredTimeScale,
+                                          null,
+                                          leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
+
+        return SampleMetadata.of( evaluation, pool );
     }
 
     /**

@@ -21,6 +21,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -35,6 +36,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.pooling.PoolSupplier.PoolOfPairsSupplierBuilder;
 import wres.io.retrieval.CachingRetriever;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
@@ -421,7 +423,8 @@ public class PoolSupplierTest
         this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                            DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "FAKE2" ),
                                                                                    FeatureKey.of( "FAKE2" ),
-                                                                                   null ), "STREAMFLOW" ) );
+                                                                                   null ),
+                                                                 "STREAMFLOW" ) );
 
         // Upscaler
         this.upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
@@ -534,20 +537,23 @@ public class PoolSupplierTest
                                                             poolOneWindow,
                                                             this.desiredTimeScale );
 
-        
-        Pool.Builder baselinePoolBuilder = poolOneMetadata.getPool().toBuilder();
-        baselinePoolBuilder.setIsBaselinePool( true );
-        SampleMetadata.Builder poolOneMetadataBaselineBuilder =
-                new SampleMetadata.Builder( poolOneMetadata.getEvaluation(), baselinePoolBuilder.build() );
-        poolOneMetadataBaselineBuilder.setIdentifier( DatasetIdentifier.of( poolOneMetadata.getIdentifier().getFeatureTuple(),
-                                                                     poolOneMetadata.getIdentifier().getVariableName(),
-                                                                     poolOneMetadata.getIdentifier().getScenarioName(),
-                                                                     poolOneMetadata.getIdentifier()
-                                                                                    .getScenarioNameForBaseline(),
-                                                                     LeftOrRightOrBaseline.BASELINE ) );
-        
-        SampleMetadata poolOneMetadataBaseline = poolOneMetadataBaselineBuilder.build();
-        
+        Pool baselinePool = MessageFactory.parse( poolOneMetadata.getIdentifier().getFeatureTuple(),
+                                                  poolOneWindow,
+                                                  poolOneMetadata.getTimeScale(),
+                                                  null,
+                                                  true );
+
+        Evaluation baseEvaluation =
+                MessageFactory.parse( poolOneMetadata.getMeasurementUnit(),
+                                      DatasetIdentifier.of( poolOneMetadata.getIdentifier().getFeatureTuple(),
+                                                            poolOneMetadata.getIdentifier().getVariableName(),
+                                                            poolOneMetadata.getIdentifier().getScenarioName(),
+                                                            poolOneMetadata.getIdentifier()
+                                                                           .getScenarioNameForBaseline(),
+                                                            LeftOrRightOrBaseline.BASELINE ), null );
+
+        SampleMetadata poolOneMetadataBaseline = SampleMetadata.of( baseEvaluation, baselinePool );
+
         Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
                 new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )
                                                                 .setRight( forcSupplierOne )

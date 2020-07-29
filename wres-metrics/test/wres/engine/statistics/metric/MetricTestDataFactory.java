@@ -25,11 +25,11 @@ import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.Probability;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -38,6 +38,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 
 /**
@@ -252,12 +253,14 @@ public final class MetricTestDataFactory
                                                                        "ESP" ) );
 
         Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
-        SampleMetadata base = new SampleMetadata.Builder( null, pool )
-                                                .setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                "SQIN",
-                                                                "ESP" ) )
-                                                .build();
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
+                                                                            "SQIN",
+                                                                            "ESP" ),
+                                                      null );
+
+        SampleMetadata base = SampleMetadata.of( evaluation, pool );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -334,12 +337,19 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 1 ) );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                 .setIdentifier( DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                                       "SQIN",
-                                                                                       "HEFS" ) )
-                                                 .setTimeWindow( window )
-                                                 .build();
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
+                                                                            "SQIN",
+                                                                            "HEFS" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( Boilerplate.getFeatureTuple(),
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -387,12 +397,22 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                 .setIdentifier( DatasetIdentifier.of( getLocation( "103.1" ),
-                                                                                       "QME",
-                                                                                       "NVE" ) )
-                                                 .setTimeWindow( window )
-                                                 .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "103.1" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "QME",
+                                                                            "NVE" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
         return SampleDataBasic.of( values, meta );
     }
 
@@ -413,11 +433,20 @@ public final class MetricTestDataFactory
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
-        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                           .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                 "MAP" ) )
-                                           .setTimeWindow( window )
-                                           .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "MAP" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -439,13 +468,20 @@ public final class MetricTestDataFactory
                                                  DatasetIdentifier.of( getLocation( DRRC2 ),
                                                                        "SQIN",
                                                                        "HEFS" ) );
-        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
-        SampleMetadata base = new SampleMetadata.Builder( null, pool )
-                                                                      .setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                                      .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                            "SQIN",
-                                                                                                            "ESP" ) )
-                                                                      .build();
+        Pool pool = Pool.newBuilder()
+                        .setIsBaselinePool( true )
+                        .build();
+
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "SQIN",
+                                                                            "ESP" ),
+                                                      null );
+
+        SampleMetadata base = SampleMetadata.of( evaluation, pool );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -616,11 +652,19 @@ public final class MetricTestDataFactory
                                                            Duration.ofSeconds( 10800 ),
                                                            Duration.ofSeconds( 118800 ) );
 
-        SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                               .setIdentifier( DatasetIdentifier.of( getLocation( "FAKE2" ),
-                                                                                     "DISCHARGE" ) )
-                                               .setTimeWindow( window )
-                                               .build();
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "FAKE2" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "DISCHARGE" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
 
         tsBuilder.setMetadata( metaData );
 
@@ -669,21 +713,30 @@ public final class MetricTestDataFactory
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
-        SampleMetadata meta = new SampleMetadata.Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                          .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                "SQIN",
-                                                                                                "HEFS",
-                                                                                                "ESP" ) )
-                                                          .setTimeWindow( window )
-                                                          .build();
-        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
-        SampleMetadata baseMeta =
-                new SampleMetadata.Builder( null, pool ).setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                        .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                              "SQIN",
-                                                                                              "ESP" ) )
-                                                        .setTimeWindow( window )
-                                                        .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "SQIN",
+                                                                            "HEFS",
+                                                                            "ESP" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
+        Pool poolTwo = MessageFactory.parse( featureTuple,
+                                             window,
+                                             null,
+                                             null,
+                                             true );
+
+        SampleMetadata baseMeta = SampleMetadata.of( evaluation, poolTwo );
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -744,20 +797,30 @@ public final class MetricTestDataFactory
         TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                      Instant.parse( SECOND_TIME ),
                                                      Duration.ofHours( 24 ) );
-        SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                 "SQIN",
-                                                                                 "HEFS" ) )
-                                           .setTimeWindow( window )
-                                           .build();
 
-        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
-        SampleMetadata baseMeta = new Builder( null, pool ).setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                           .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                 "SQIN",
-                                                                                                 "ESP" ) )
-                                                           .setTimeWindow( window )
-                                                           .build();
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "SQIN",
+                                                                            "HEFS",
+                                                                            "ESP" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
+        Pool poolTwo = MessageFactory.parse( featureTuple,
+                                             window,
+                                             null,
+                                             null,
+                                             true );
+
+        SampleMetadata baseMeta = SampleMetadata.of( evaluation, poolTwo );
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
@@ -812,12 +875,22 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                 .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                       "SQIN",
-                                                                                       "HEFS" ) )
-                                                 .setTimeWindow( window )
-                                                 .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "SQIN",
+                                                                            "HEFS" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
@@ -845,11 +918,21 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                 .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                       "MAP" ) )
-                                                 .setTimeWindow( window )
-                                                 .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "MAP" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -870,18 +953,28 @@ public final class MetricTestDataFactory
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 24 ) );
-        final SampleMetadata meta = new Builder().setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                 .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                       "MAP" ) )
-                                                 .setTimeWindow( window )
-                                                 .build();
 
-        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
-        SampleMetadata base = new SampleMetadata.Builder( null, pool )
-                                                                      .setMeasurementUnit( MeasurementUnit.of( MM_DAY ) )
-                                                                      .setIdentifier( DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                                                            "MAP" ) )
-                                                                      .build();
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            "MAP" ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
+        Pool basePool = MessageFactory.parse( featureTuple,
+                                              window,
+                                              null,
+                                              null,
+                                              true );
+
+        SampleMetadata base = SampleMetadata.of( evaluation, basePool );
 
         PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
 
@@ -1476,11 +1569,21 @@ public final class MetricTestDataFactory
                                                            Instant.parse( THIRD_TIME ),
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 18 ) );
-        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                           STREAMFLOW ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            STREAMFLOW ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
                                                      firstValues ) )
@@ -1514,11 +1617,21 @@ public final class MetricTestDataFactory
                                                            Instant.parse( FIRST_TIME ),
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 18 ) );
-        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                           STREAMFLOW ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            STREAMFLOW ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( firstId ),
                                                      firstValues ) )
@@ -1554,11 +1667,20 @@ public final class MetricTestDataFactory
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 18 ) );
 
-        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                           STREAMFLOW ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            STREAMFLOW ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+
         // Build the time-series
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )
@@ -1582,11 +1704,21 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindowOuter window = TimeWindowOuter.of( Instant.MIN,
                                                            Instant.MAX );
-        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                           STREAMFLOW ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            STREAMFLOW ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+
         // Build the time-series
         return builder.setMetadata( metaData ).build();
     }
@@ -1621,12 +1753,21 @@ public final class MetricTestDataFactory
                                                            Instant.parse( THIRD_TIME ),
                                                            Duration.ofHours( 6 ),
                                                            Duration.ofHours( 30 ) );
-        final SampleMetadata metaData = new Builder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
-                                                     .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
-                                                                                           STREAMFLOW ) )
-                                                     .setTimeWindow( window )
-                                                     .build();
-        // Build the time-series
+
+        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
+
+        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
+                                                      DatasetIdentifier.of( featureTuple,
+                                                                            STREAMFLOW ),
+                                                      null );
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          window,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata metaData = SampleMetadata.of( evaluation, pool );
+
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadataWithT0( secondId ),
                                                      secondValues ) )
                       .setMetadata( metaData )

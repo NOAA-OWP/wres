@@ -38,7 +38,6 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
-import wres.datamodel.sampledata.SampleMetadata.Builder;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.ScaleValidationEvent;
@@ -60,6 +59,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreMetric;
@@ -70,6 +70,7 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
@@ -440,12 +441,14 @@ public class MessageFactoryTest
                                                                     ESP,
                                                                     LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
-                                               .setTimeScale( timeScale )
-                                               .setTimeWindow( TIME_WINDOW )
-                                               .setThresholds( threshold )
-                                               .setIdentifier( datasetIdentifier )
-                                               .build();
+        Evaluation evaluation = MessageFactory.parse( CMS, datasetIdentifier, null );
+        Pool pool = MessageFactory.parse( new FeatureTuple( location, location, location ),
+                                          TIME_WINDOW,
+                                          timeScale,
+                                          threshold,
+                                          false );
+
+        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
 
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
 
@@ -512,12 +515,14 @@ public class MessageFactoryTest
                                       ESP,
                                       LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
-                                               .setTimeScale( timeScale )
-                                               .setTimeWindow( TIME_WINDOW )
-                                               .setThresholds( threshold )
-                                               .setIdentifier( datasetIdentifier )
-                                               .build();
+        Evaluation evaluation = MessageFactory.parse( CMS, datasetIdentifier, null );
+        Pool pool = MessageFactory.parse( new FeatureTuple( location, location, location ),
+                                          TIME_WINDOW,
+                                          timeScale,
+                                          threshold,
+                                          false );
+
+        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
@@ -594,12 +599,14 @@ public class MessageFactoryTest
                                       ESP,
                                       LeftOrRightOrBaseline.RIGHT );
 
-        SampleMetadata metadata = new Builder().setMeasurementUnit( CMS )
-                                               .setTimeScale( timeScale )
-                                               .setTimeWindow( TIME_WINDOW )
-                                               .setThresholds( threshold )
-                                               .setIdentifier( datasetIdentifier )
-                                               .build();
+        Evaluation evaluation = MessageFactory.parse( CMS, datasetIdentifier, null );
+        Pool pool = MessageFactory.parse( new FeatureTuple( location, location, location ),
+                                          TIME_WINDOW,
+                                          timeScale,
+                                          threshold,
+                                          false );
+
+        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
 
         List<Double> probabilities = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 

@@ -192,7 +192,7 @@ public class DatasetIdentifier
      * @return true if {@link #getFeatureTuple()} returns non-null, false otherwise.
      */
 
-    public boolean hasLocation()
+    public boolean hasFeatureTuple()
     {
         return Objects.nonNull( this.getFeatureTuple() );
     }

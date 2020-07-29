@@ -257,7 +257,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      */
     private void recordIdentifierArguments( final SampleMetadata meta )
     {
-        if ( meta.hasIdentifier() )
+        if ( Objects.nonNull( meta.getIdentifier() ) )
         {
             final DatasetIdentifier identifier = meta.getIdentifier();
             if ( identifier.getFeatureTuple().getBaselineName() != null )
@@ -440,11 +440,13 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      */
     public void addBaselineArguments( SampleMetadata meta )
     {
-        final DatasetIdentifier identifier = meta.getIdentifier();
-        String baselineSuffix = "";
-        if ( !Objects.isNull( identifier.getScenarioNameForBaseline() ) )
+        Objects.requireNonNull( meta );
+
+        String baselineSuffix = meta.getEvaluation()
+                                    .getBaselineSourceName();
+        if ( !baselineSuffix.isBlank() )
         {
-            baselineSuffix = " Against Predictions From " + identifier.getScenarioNameForBaseline();
+            baselineSuffix = " Against Predictions From " + baselineSuffix;
         }
         addArgument( "baselineLabelSuffix", baselineSuffix );
     }
