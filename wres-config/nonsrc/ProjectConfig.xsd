@@ -222,6 +222,15 @@
         <xs:attribute name="srid" type="xs:integer" default="4326" />
     </xs:complexType>
 
+    <xs:simpleType name="featureDimension">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="nws_lid" />
+            <xs:enumeration value="usgs_site_code" />
+            <xs:enumeration value="nwm_feature_id" />
+            <xs:enumeration value="custom" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:complexType name="datasource">
 
         <!-- for class naming using xjc-->
@@ -360,6 +369,7 @@
             <xs:element name="existingTimeScale" type="timeScale" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
+        <xs:attribute name="featureDimension" type="featureDimension" />
     </xs:complexType>
 
     <xs:simpleType name="thresholdFormat">

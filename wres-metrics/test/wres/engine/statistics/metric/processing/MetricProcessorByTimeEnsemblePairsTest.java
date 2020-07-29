@@ -1145,6 +1145,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                      null,
                                                                      null,
                                                                      null,
+                                                                     null,
                                                                      null ),
                                                null ),
                                    null,
@@ -1193,6 +1194,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig mock =
                 new ProjectConfig( new Inputs( null,
                                                new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
+                                                                     null,
                                                                      null,
                                                                      null,
                                                                      null,

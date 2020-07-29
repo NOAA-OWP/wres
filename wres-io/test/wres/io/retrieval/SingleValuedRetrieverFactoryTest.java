@@ -397,6 +397,7 @@ public class SingleValuedRetrieverFactoryTest
                                                       null,
                                                       null,
                                                       null,
+                                                      null,
                                                       null );
 
         // Same right and baseline
@@ -404,6 +405,7 @@ public class SingleValuedRetrieverFactoryTest
                 new DataSourceBaselineConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                               sourceList,
                                               new Variable( STREAMFLOW, null ),
+                                              null,
                                               null,
                                               null,
                                               null,

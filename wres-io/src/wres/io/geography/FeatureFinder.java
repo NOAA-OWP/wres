@@ -4,19 +4,23 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.FeatureDimension;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -39,14 +43,6 @@ public class FeatureFinder
 
     private static final String RESPONSE_FROM_WRDS_AT = "Response from WRDS at ";
     private static final String HAD_NULL_OR_BLANK = " had null or blank ";
-    private static final String NWM_DEFAULT_VERSION = "2.0";
-
-    private enum WrdsLocationAuthority
-    {
-        NWS_LID,
-        USGS_SITE_CODE,
-        NWM_FEATURE_ID
-    }
 
     private FeatureFinder()
     {
@@ -174,6 +170,26 @@ public class FeatureFinder
         List<Feature> hasBaselineNeedsLeft = new ArrayList<>();
         List<Feature> hasBaselineNeedsRight = new ArrayList<>();
 
+        // Figure out if the same authority is used on multiple sides. If so,
+        // consolidate lists.
+        FeatureDimension leftDimension =
+                FeatureFinder.determineDimension( projectConfig,
+                                                  projectConfig.getInputs()
+                                                               .getLeft() );
+        FeatureDimension rightDimension =
+                FeatureFinder.determineDimension( projectConfig,
+                                                  projectConfig.getInputs()
+                                                               .getRight() );
+        FeatureDimension baselineDimension = null;
+
+        if ( projectHasBaseline )
+        {
+            baselineDimension = FeatureFinder.determineDimension( projectConfig,
+                                                                  projectConfig.getInputs()
+                                                                               .getBaseline() );
+        }
+
+
         // Go through the features, finding what was declared and not.
         for ( Feature feature : sparseFeatures )
         {
@@ -183,6 +199,7 @@ public class FeatureFinder
                 continue;
             }
 
+            boolean addedToSearchRequests = false;
             String leftName = feature.getLeft();
             String rightName = feature.getRight();
             String baselineName = feature.getBaseline();
@@ -194,64 +211,63 @@ public class FeatureFinder
             boolean baselinePresent = Objects.nonNull( baselineName )
                                       && !baselineName.isBlank();
 
-            boolean leftFoundByRight = false;
-            boolean rightFoundByLeft = false;
-            boolean baselineFoundByLeft = false;
 
             if ( leftPresent && !rightPresent )
             {
                 hasLeftNeedsRight.add( feature );
-                rightFoundByLeft = true;
+                addedToSearchRequests = true;
             }
 
             if ( projectHasBaseline && leftPresent && !baselinePresent )
             {
                 hasLeftNeedsBaseline.add( feature );
-                baselineFoundByLeft = true;
+                addedToSearchRequests = true;
             }
 
             if ( rightPresent && !leftPresent )
             {
                 hasRightNeedsLeft.add( feature );
-                leftFoundByRight = true;
+                addedToSearchRequests = true;
             }
 
-            if ( projectHasBaseline && rightPresent && !baselinePresent && !baselineFoundByLeft )
+            if ( projectHasBaseline && rightPresent && !baselinePresent )
             {
                 hasRightNeedsBaseline.add( feature );
+                addedToSearchRequests = true;
             }
 
-            if ( projectHasBaseline && baselinePresent && !leftPresent && !leftFoundByRight )
+            if ( projectHasBaseline && baselinePresent && !leftPresent )
             {
                 hasBaselineNeedsLeft.add( feature );
+                addedToSearchRequests = true;
             }
 
-            if ( projectHasBaseline && baselinePresent && !rightPresent && !rightFoundByLeft )
+            if ( projectHasBaseline && baselinePresent && !rightPresent )
             {
                 hasBaselineNeedsRight.add( feature );
+                addedToSearchRequests = true;
+            }
+
+            if ( !addedToSearchRequests )
+            {
+                LOGGER.debug( "This feature was not added to search requests: {}",
+                              feature );
+                // There can be a feature with a custom feature dimension, but
+                // then that feature name must be specified. However, the custom
+                // name cannot be used to look up another feature name.
+                throw new IllegalStateException( "Each sparse feature must be added to a request, this one was not: "
+                                                 + feature );
             }
         }
 
 
-        // Figure out if the same authority is used on multiple sides. If so,
-        // consolidate lists.
-        WrdsLocationAuthority
-                leftAuthority = FeatureFinder.determineAuthority( projectConfig,
-                                                                  projectConfig.getInputs()
-                                                                               .getLeft() );
-        WrdsLocationAuthority
-                rightAuthority = FeatureFinder.determineAuthority( projectConfig,
-                                                                   projectConfig.getInputs()
-                                                                                .getRight() );
-        WrdsLocationAuthority baselineAuthority = null;
-
-        if ( projectHasBaseline )
-        {
-            baselineAuthority = FeatureFinder.determineAuthority( projectConfig,
-                                                                  projectConfig.getInputs()
-                                                                               .getBaseline() );
-        }
-
+        // Map of from/to dimensions to set of Strings to look up using from/to.
+        // A means to consolidate "from NWS LID to USGS site code" regardless of
+        // whether left or right or baseline duplicates dimensions. For example,
+        // if left is nws_lid, right is usgs_site_code, and baseline is nws_lid,
+        // we don't need to look up the usgs_site_code twice, nor do we need to
+        // look up the nws_lid twice.
+        Map<Pair<FeatureDimension,FeatureDimension>,Set<String>> needsLookup = new HashMap<>();
 
         // Need an intermediate map from original Feature to new l/r/b values
         // because the same Feature may have needed two different new values,
@@ -265,113 +281,277 @@ public class FeatureFinder
 
         for ( Feature feature : hasLeftNeedsRight )
         {
-            if ( leftAuthority.equals( rightAuthority ) )
+            Pair<FeatureDimension,FeatureDimension> leftToRight =
+                    Pair.of( leftDimension, rightDimension );
+
+            if ( !needsLookup.containsKey( leftToRight ) )
             {
-                // No need to ask service for hasLeftNeedsRight.
-                // No need to ask service for hasRightNeedsLeft.
-                withNewRight.put( feature, feature.getLeft() );
+                needsLookup.put( leftToRight, new HashSet<>( hasLeftNeedsRight.size() ) );
             }
-            else
-            {
-                String foundName = FeatureFinder.findFeatureName( featureServiceBaseUri,
-                                                                  leftAuthority,
-                                                                  feature.getLeft(),
-                                                                  rightAuthority );
-                withNewRight.put( feature, foundName );
-            }
+
+            needsLookup.get( leftToRight )
+                       .add( feature.getLeft() );
         }
 
         for ( Feature feature : hasLeftNeedsBaseline )
         {
-            if ( projectHasBaseline
-                 && leftAuthority.equals( baselineAuthority ) )
+            Pair<FeatureDimension,FeatureDimension> leftToBaseline =
+                    Pair.of( leftDimension, baselineDimension );
+
+            if ( !needsLookup.containsKey( leftToBaseline ) )
             {
-                // No need to ask service for hasLeftNeedsBaseline.
-                // No need to ask service for hasBaselineNeedsLeft.
-                withNewBaseline.put( feature, feature.getLeft() );
+                needsLookup.put( leftToBaseline, new HashSet<>( hasLeftNeedsBaseline.size() ) );
             }
-            else
-            {
-                String foundName = FeatureFinder.findFeatureName( featureServiceBaseUri,
-                                                                  leftAuthority,
-                                                                  feature.getLeft(),
-                                                                  baselineAuthority );
-                withNewBaseline.put( feature, foundName );
-            }
+
+            needsLookup.get( leftToBaseline )
+                       .add( feature.getLeft() );
         }
 
         for ( Feature feature : hasRightNeedsLeft )
         {
-            if ( leftAuthority.equals( rightAuthority ) )
+            Pair<FeatureDimension,FeatureDimension> rightToLeft =
+                    Pair.of( rightDimension, leftDimension );
+
+            if ( !needsLookup.containsKey( rightToLeft ) )
             {
-                // No need to ask service for hasLeftNeedsRight.
-                // No need to ask service for hasRightNeedsLeft.
-                withNewLeft.put( feature, feature.getRight() );
+                needsLookup.put( rightToLeft, new HashSet<>( hasRightNeedsLeft.size() ) );
             }
-            else
-            {
-                String foundName = FeatureFinder.findFeatureName( featureServiceBaseUri,
-                                                                  rightAuthority,
-                                                                  feature.getRight(),
-                                                                  leftAuthority );
-                withNewLeft.put( feature, foundName );
-            }
+
+            needsLookup.get( rightToLeft )
+                       .add( feature.getRight() );
         }
 
         for ( Feature feature : hasRightNeedsBaseline )
         {
-            if ( projectHasBaseline
-                 && rightAuthority.equals( baselineAuthority ) )
+            Pair<FeatureDimension,FeatureDimension> rightToBaseline =
+                    Pair.of( rightDimension, baselineDimension );
+
+            if ( !needsLookup.containsKey( rightToBaseline ) )
             {
-                // No need to ask service for hasRightNeedsBaseline.
-                // No need to ask service for hasBaselineNeedsRight.
-                withNewBaseline.put( feature, feature.getRight() );
+                needsLookup.put( rightToBaseline, new HashSet<>( hasRightNeedsBaseline.size() ) );
             }
-            else
-            {
-                String foundName = FeatureFinder.findFeatureName( featureServiceBaseUri,
-                                                                  rightAuthority,
-                                                                  feature.getRight(),
-                                                                  baselineAuthority );
-                withNewBaseline.put( feature, foundName );
-            }
+
+            needsLookup.get( rightToBaseline)
+                       .add( feature.getRight() );
         }
 
         for ( Feature feature : hasBaselineNeedsLeft )
         {
-            if ( projectHasBaseline
-                 && leftAuthority.equals( baselineAuthority ) )
+            Pair<FeatureDimension,FeatureDimension> baselineToLeft =
+                    Pair.of( baselineDimension, leftDimension );
+
+            if ( !needsLookup.containsKey( baselineToLeft ) )
             {
-                // No need to ask service for hasLeftNeedsBaseline.
-                // No need to ask service for hasBaselineNeedsLeft.
-                withNewLeft.put( feature, feature.getBaseline() );
+                needsLookup.put( baselineToLeft, new HashSet<>( hasBaselineNeedsLeft.size() ) );
             }
-            else
-            {
-                String foundName = FeatureFinder.findFeatureName( featureServiceBaseUri,
-                                                                  baselineAuthority,
-                                                                  feature.getBaseline(),
-                                                                  leftAuthority );
-                withNewLeft.put( feature, foundName );
-            }
+
+            needsLookup.get( baselineToLeft )
+                       .add( feature.getBaseline() );
         }
 
         for ( Feature feature : hasBaselineNeedsRight )
         {
-            if ( projectHasBaseline
-                 && rightAuthority.equals( baselineAuthority ) )
+            Pair<FeatureDimension,FeatureDimension> baselineToRight =
+                    Pair.of( baselineDimension, rightDimension );
+
+            if ( !needsLookup.containsKey( baselineToRight ) )
             {
-                // No need to ask service for hasRightNeedsBaseline.
-                // No need to ask service for hasBaselineNeedsRight.
-                withNewRight.put( feature, feature.getBaseline() );
+                needsLookup.put( baselineToRight, new HashSet<>( hasBaselineNeedsRight.size() ) );
             }
-            else
+
+            needsLookup.get( baselineToRight )
+                       .add( feature.getBaseline() );
+        }
+
+        LOGGER.debug( "These need lookups: {}", needsLookup );
+
+        for ( Pair<FeatureDimension,FeatureDimension> fromAndTo : needsLookup.keySet() )
+        {
+            Set<String> namesToLookUp = needsLookup.get( fromAndTo );
+            FeatureDimension from = fromAndTo.getKey();
+            FeatureDimension to = fromAndTo.getValue();
+            Map<String,String> found = FeatureFinder.bulkLookup( featureServiceBaseUri,
+                                                                 from,
+                                                                 to,
+                                                                 namesToLookUp );
+            // Go through the has-this-needs-that lists
+            if ( from.equals( leftDimension ) )
             {
-                String foundName = FeatureFinder.findFeatureName( featureServiceBaseUri,
-                                                                  baselineAuthority,
-                                                                  feature.getBaseline(),
-                                                                  rightAuthority );
-                withNewRight.put( feature, foundName );
+                if ( to.equals( rightDimension ) )
+                {
+                    for ( Feature needed : hasLeftNeedsRight )
+                    {
+                        String rightName = found.get( needed.getLeft() );
+
+                        if ( Objects.nonNull( rightName ) )
+                        {
+                            String foundBefore =
+                                    withNewRight.put( needed, rightName );
+
+                            if ( Objects.nonNull( foundBefore ) )
+                            {
+                                LOGGER.debug(
+                                        "Overwrote previously-found right feature {} with {} for original {} from left.",
+                                        foundBefore,
+                                        rightName,
+                                        needed );
+                            }
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Not putting null value from left into right for {}",
+                                          needed );
+                        }
+                    }
+                }
+
+                // No if/else, because both could be true.
+                if ( to.equals( baselineDimension ) )
+                {
+                    for ( Feature needed : hasLeftNeedsBaseline )
+                    {
+                        String baselineName = found.get( needed.getLeft() );
+
+                        if ( Objects.nonNull( baselineName ) )
+                        {
+                            String foundBefore = withNewBaseline.put( needed, baselineName );
+
+                            if ( Objects.nonNull( foundBefore ) )
+                            {
+                                LOGGER.debug(
+                                        "Overwrote previously-found baseline feature {} with {} for original {} from left.",
+                                        foundBefore,
+                                        baselineName,
+                                        needed );
+                            }
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Not putting null from left into baseline for {}",
+                                          needed );
+                        }
+                    }
+                }
+            }
+
+            // No if/else, because both could be true.
+            if ( from.equals( rightDimension ) )
+            {
+                if ( to.equals( leftDimension ) )
+                {
+                    for ( Feature needed : hasRightNeedsLeft )
+                    {
+                        String leftName = found.get( needed.getRight() );
+
+                        if ( Objects.nonNull( leftName ) )
+                        {
+                            String foundBefore =
+                                    withNewLeft.put( needed, leftName );
+
+                            if ( Objects.nonNull( foundBefore ) )
+                            {
+                                LOGGER.debug(
+                                        "Overwrote previously-found left feature {} with {} for original {} from right.",
+                                        foundBefore,
+                                        leftName,
+                                        needed );
+                            }
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Not putting null value from left into right for {}",
+                                          needed );
+                        }
+                    }
+                }
+
+                // No if/else, because both could be true.
+                if ( to.equals( baselineDimension ) )
+                {
+                    for ( Feature needed : hasRightNeedsBaseline )
+                    {
+                        String baselineName = found.get( needed.getRight() );
+
+                        if ( Objects.nonNull( baselineName ) )
+                        {
+                            String foundBefore =
+                                    withNewBaseline.put( needed, baselineName );
+
+                            if ( Objects.nonNull( foundBefore ) )
+                            {
+                                LOGGER.debug(
+                                        "Overwrote previously-found baseline feature {} with {} for original {} from right",
+                                        foundBefore,
+                                        baselineName,
+                                        needed );
+                            }
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Not putting null value from right into baseline for {}",
+                                          needed );
+                        }
+                    }
+                }
+            }
+
+            if ( from.equals( baselineDimension ) )
+            {
+                if ( to.equals( leftDimension ) )
+                {
+                    for ( Feature needed : hasBaselineNeedsLeft )
+                    {
+                        String leftName = found.get( needed.getBaseline() );
+
+                        if ( Objects.nonNull( leftName ) )
+                        {
+                            String foundBefore =
+                                    withNewLeft.put( needed, leftName );
+
+                            if ( Objects.nonNull( foundBefore ) )
+                            {
+                                LOGGER.debug(
+                                        "Overwrote previously-found left feature {} with {} for original {} from baseline.",
+                                        foundBefore,
+                                        leftName,
+                                        needed );
+                            }
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Not putting null value from baseline into left for {}",
+                                          needed );
+                        }
+                    }
+                }
+
+                if ( to.equals( rightDimension ) )
+                {
+                    for ( Feature needed : hasBaselineNeedsRight )
+                    {
+                        String rightName = found.get( needed.getBaseline() );
+
+                        if ( Objects.nonNull( rightName ) )
+                        {
+                            String foundBefore =
+                                    withNewRight.put( needed, rightName );
+
+                            if ( Objects.nonNull( foundBefore ) )
+                            {
+                                LOGGER.debug(
+                                        "Overwrote previously-found right feature {} with {} for original {} from baseline.",
+                                        foundBefore,
+                                        rightName,
+                                        needed );
+                            }
+                        }
+                        else
+                        {
+                            LOGGER.debug( "Not putting null value from baseline into right for {}",
+                                          needed );
+                        }
+                    }
+                }
             }
         }
 
@@ -441,92 +621,161 @@ public class FeatureFinder
      * Determine the location authority of the given datasource.
      * @param projectConfig The project declaration to use.
      * @param dataSourceConfig The data source declaration within projectConfig.
+     * @return The WrdsLocationDimension or null if custom dimension.
      * @throws ProjectConfigException On inconsistent or incomplete declaration.
      * @throws NullPointerException When any argument is null.
+     * @throws UnsupportedOperationException When code cannot handle something.
      */
 
-    private static WrdsLocationAuthority determineAuthority( ProjectConfig projectConfig,
-                                                             DataSourceConfig dataSourceConfig )
+    private static FeatureDimension determineDimension( ProjectConfig projectConfig,
+                                                        DataSourceConfig dataSourceConfig )
     {
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSourceConfig );
 
-        SortedSet<WrdsLocationAuthority> authorities = new TreeSet<>();
+        SortedSet<FeatureDimension> dimensions = new TreeSet<>();
+        FeatureDimension featureDimension = dataSourceConfig.getFeatureDimension();
+
+        if ( Objects.nonNull( featureDimension ) )
+        {
+            dimensions.add( featureDimension );
+        }
 
         for ( DataSourceConfig.Source source : dataSourceConfig.getSource() )
         {
-            if ( Objects.isNull( source.getInterface() ) )
+            if ( Objects.isNull( featureDimension )
+                 && Objects.isNull( source.getInterface() ) )
             {
                 throw new ProjectConfigException( source,
-                                                  "The interface on sources must be declared to determine the authority to ask for location correlations." );
+                                                  "Either the geographic "
+                                                  + "feature dimension ('"
+                                                  + "featureDimension' "
+                                                  + "attribute) of the dataset "
+                                                  + "or the interface on each "
+                                                  + "source must be declared "
+                                                  + "to determine how to ask "
+                                                  + "for location correlations."
+                                                  + " Valid values for "
+                                                  + "featureDimension include: "
+                                                  + FeatureFinder.getValidFeatureDimensionValues() );
             }
-            if ( source.getInterface()
-                       .equals( InterfaceShortHand.USGS_NWIS ) )
+
+            if ( Objects.nonNull( source.getInterface() ) )
             {
-                authorities.add( WrdsLocationAuthority.USGS_SITE_CODE );
-            }
-            else if ( source.getInterface()
-                            .equals( InterfaceShortHand.WRDS_AHPS ) )
-            {
-                authorities.add( WrdsLocationAuthority.NWS_LID );
-            }
-            else if ( source.getInterface()
-                            .equals( InterfaceShortHand.WRDS_NWM ) )
-            {
-                authorities.add( WrdsLocationAuthority.NWM_FEATURE_ID );
-            }
-            else if ( source.getInterface()
-                            .toString()
-                            .toLowerCase()
-                            .startsWith( "nwm_" ) )
-            {
-                authorities.add( WrdsLocationAuthority.NWM_FEATURE_ID );
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Unable to determine what geographic identifier authority to use for source "
-                                                         + source
-                                                         + " having interface "
-                                                         + source.getInterface() );
+                if ( source.getInterface()
+                           .equals( InterfaceShortHand.USGS_NWIS ) )
+                {
+                    dimensions.add( FeatureDimension.USGS_SITE_CODE );
+                }
+                else if ( source.getInterface()
+                                .equals( InterfaceShortHand.WRDS_AHPS ) )
+                {
+                    dimensions.add( FeatureDimension.NWS_LID );
+                }
+                else if ( source.getInterface()
+                                .equals( InterfaceShortHand.WRDS_NWM ) )
+                {
+                    dimensions.add( FeatureDimension.NWM_FEATURE_ID );
+                }
+                else if ( source.getInterface()
+                                .toString()
+                                .toLowerCase()
+                                .startsWith( "nwm_" ) )
+                {
+                    dimensions.add( FeatureDimension.NWM_FEATURE_ID );
+                }
+                else
+                {
+                    throw new UnsupportedOperationException(
+                            "Unable to determine what geographic identifiers to use for source "
+                            + source
+                            + " having interface "
+                            + source.getInterface() );
+                }
             }
         }
 
-        if ( authorities.isEmpty() )
+        if ( dimensions.isEmpty() )
         {
             throw new ProjectConfigException( dataSourceConfig,
-                                              "Unable to determine what geographic authority to use for source, cannot ask service without this data." );
+                                              "Unable to determine what "
+                                              + "geographic feature dimension "
+                                              + "to use for source, cannot ask "
+                                              + "service without a feature "
+                                              + "dimension inferred from source"
+                                              + " interface (e.g. WRES knows "
+                                              + " interface usgs_nwis uses "
+                                              + " usgs_site_code dimension) or "
+                                              + "explicitly declared in the "
+                                              + "'featureDimension' attribute "
+                                              + "of left/right/baseline. Valid "
+                                              + "values include: "
+                                              + FeatureFinder.getValidFeatureDimensionValues() );
+
         }
-        else if ( authorities.size() > 1 )
+        else if ( dimensions.size() > 1 )
         {
             throw new ProjectConfigException( dataSourceConfig,
-                                              "Cannot have more than one authority for a given dataset (e.g. all sources on the left could use USGS site codes but not a mix of USGS site codes and NWS lids. Found these: "
-                                              + authorities );
+                                              "Cannot have more than one "
+                                              + "geographic feature dimension "
+                                              + "for a given dataset (e.g. all "
+                                              + "sources on the left could use "
+                                              + "usgs_site_code but not a mix "
+                                              + "of usgs_site_code and nws_lid."
+                                              + " Found these: "
+                                              + dimensions );
         }
 
-        return authorities.first();
+        return dimensions.first();
     }
 
 
     /**
-     *
-     * @param featureServiceBaseUri The base uri to use to get names.
-     * @param from The authority of the locationNameFrom to use.
-     * @param locationName The location name to look up.
-     * @param to The authority to which to correlate the given locationName
-     * @return The geographic feature name in the "to" authority.
-     * @throws PreIngestException When correlation data not found.
+     * Given a dimension "from" and dimension "to", look up the set of features.
+     * @param from The known feature dimension, in which "featureNames" exist.
+     * @param to The unknown feature dimension, the dimension to search in.
+     * @param featureNames The names in the "from" dimension to look for in "to"
+     * @return The Set of name pairs: "from" as key, "to" as value.
      */
 
-    private static String findFeatureName( URI featureServiceBaseUri,
-                                           WrdsLocationAuthority from,
-                                           String locationName,
-                                           WrdsLocationAuthority to )
+    private static Map<String,String> bulkLookup( URI featureServiceBaseUri,
+                                                  FeatureDimension from,
+                                                  FeatureDimension to,
+                                                  Set<String> featureNames )
     {
+        Map<String,String> locations = new HashMap<>( featureNames.size() );
+
+        if ( from.equals( to ) )
+        {
+            // In the case where the original dimension is same as the new
+            // dimension, no lookup is needed. Fill out directly.
+            for ( String feature : featureNames )
+            {
+                locations.put( feature, feature );
+            }
+
+            LOGGER.debug( "Did not ask a service because from={}, to={}, returned {}",
+                          from, to, locations );
+            return Collections.unmodifiableMap( locations );
+        }
+
+        if ( from.equals( FeatureDimension.CUSTOM ) )
+        {
+            // We will have no luck asking for features based on an unknown
+            // dimension. But this call will happen sometimes, so return empty.
+            LOGGER.debug( "Did not ask a service because from={}", from );
+            return Collections.emptyMap();
+        }
+
+        StringJoiner joiner = new StringJoiner( "," );
+        featureNames.forEach( joiner::add );
+        String commaDelimitedFeatures = joiner.toString();
+
         // Add to request set. (Request directly for now)
         String path = featureServiceBaseUri.getPath();
         String fullPath = path + "/" + from.toString()
                                            .toLowerCase()
-                          + "/" + locationName;
+                          + "/" + commaDelimitedFeatures;
         URI uri = featureServiceBaseUri.resolve( fullPath )
                                        .normalize();
 
@@ -534,17 +783,21 @@ public class FeatureFinder
         int countOfLocations = featureData.getLocations()
                                           .size();
 
-        if ( countOfLocations != 1 )
+        if ( countOfLocations != featureNames.size() )
         {
             throw new PreIngestException( "Response from WRDS at " + uri
                                           + " did not include exactly "
-                                          + "one location, had "
+                                          + featureNames.size() + " locations, "
+                                          + " but had "
                                           + countOfLocations );
         }
 
         for ( WrdsLocation location : featureData.getLocations() )
         {
-            if ( to.equals( WrdsLocationAuthority.NWS_LID ) )
+            String original;
+            String found;
+
+            if ( from.equals( FeatureDimension.NWS_LID ) )
             {
                 String nwsLid = location.getNwsLid();
 
@@ -556,9 +809,9 @@ public class FeatureFinder
                                                   + "NWS LID." );
                 }
 
-                return nwsLid;
+                original = nwsLid;
             }
-            else if ( to.equals( WrdsLocationAuthority.USGS_SITE_CODE ) )
+            else if ( from.equals( FeatureDimension.USGS_SITE_CODE ) )
             {
                 String usgsSiteCode = location.getUsgsSiteCode();
 
@@ -571,9 +824,9 @@ public class FeatureFinder
                                                   + " USGS Site Code." );
                 }
 
-                return usgsSiteCode;
+                original = usgsSiteCode;
             }
-            else if ( to.equals( WrdsLocationAuthority.NWM_FEATURE_ID ) )
+            else if ( from.equals( FeatureDimension.NWM_FEATURE_ID ) )
             {
                 String nwmFeatureId = location.getNwmFeatureId();
 
@@ -586,16 +839,88 @@ public class FeatureFinder
                                                   + " NWM Feature ID." );
                 }
 
-                return nwmFeatureId;
+                original = nwmFeatureId;
             }
             else
             {
                 throw new UnsupportedOperationException(
                         "Unknown feature location authority" );
             }
+
+            if ( to.equals( FeatureDimension.NWS_LID ) )
+            {
+                String nwsLid = location.getNwsLid();
+
+                if ( Objects.isNull( nwsLid ) || nwsLid.isBlank() )
+                {
+                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
+                                                  + uri
+                                                  + HAD_NULL_OR_BLANK
+                                                  + "NWS LID." );
+                }
+
+                found = nwsLid;
+            }
+            else if ( to.equals( FeatureDimension.USGS_SITE_CODE ) )
+            {
+                String usgsSiteCode = location.getUsgsSiteCode();
+
+                if ( Objects.isNull( usgsSiteCode )
+                     || usgsSiteCode.isBlank() )
+                {
+                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
+                                                  + uri
+                                                  + HAD_NULL_OR_BLANK
+                                                  + " USGS Site Code." );
+                }
+
+                found = usgsSiteCode;
+            }
+            else if ( to.equals( FeatureDimension.NWM_FEATURE_ID ) )
+            {
+                String nwmFeatureId = location.getNwmFeatureId();
+
+                if ( Objects.isNull( nwmFeatureId )
+                     || nwmFeatureId.isBlank() )
+                {
+                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
+                                                  + uri
+                                                  + HAD_NULL_OR_BLANK
+                                                  + " NWM Feature ID." );
+                }
+
+                found = nwmFeatureId;
+            }
+            else
+            {
+                throw new UnsupportedOperationException(
+                        "Unknown feature location authority" );
+            }
+
+            locations.put( original, found );
         }
 
-        throw new NoDataException( "No geographic feature correlation data found at "
-                                   + uri );
+        LOGGER.debug( "For from={} and to={}, found these: {}",
+                      from, to, locations );
+        return Collections.unmodifiableMap( locations );
     }
+
+    /**
+     * Convenience method for printing error messages. Displays all valid values
+     * of the featureDimension.
+     * @return The
+     */
+    private static String getValidFeatureDimensionValues()
+    {
+        StringJoiner joiner = new StringJoiner( "', '", "'", "'" );
+
+        for ( FeatureDimension dimension : FeatureDimension.values() )
+        {
+            joiner.add( dimension.value() );
+        }
+
+        return joiner.toString();
+    }
+
+
 }
