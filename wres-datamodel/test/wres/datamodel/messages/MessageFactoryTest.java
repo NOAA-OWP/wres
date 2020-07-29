@@ -356,8 +356,7 @@ public class MessageFactoryTest
 
         // Create a message
         EvaluationStatus statusOut =
-                MessageFactory.parse( ELEVENTH_TIME,
-                                      TWELFTH_TIME,
+                MessageFactory.parse( TWELFTH_TIME,
                                       CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS,
                                       List.of( warning, error, info ) );
 

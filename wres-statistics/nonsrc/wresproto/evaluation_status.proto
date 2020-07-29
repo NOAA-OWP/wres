@@ -25,81 +25,81 @@ message EvaluationStatus
     complete and all consumers report consumption complete, then the evaluation 
     itself can complete.*/
 
-    google.protobuf.Timestamp evaluation_start_time = 1;
-    // The evaluation start time.
-    
-    google.protobuf.Timestamp evaluation_end_time = 2;
-    // The evaluation end time.
-    
+    google.protobuf.Timestamp time = 1;
+    // The time associated with the message.
+
     enum CompletionStatus
     {
         // Captures the status of an evaluation that has been started.
         
     	UNKNOWN = 0;
 
-    	EVALUATION_ONGOING = 1;
+    	EVALUATION_STARTED = 1;
         // Evaluation is ongoing.
 
-    	EVALUATION_COMPLETE_REPORTED_SUCCESS = 2;  
+    	EVALUATION_ONGOING = 2;
+        // Evaluation is ongoing.
+
+    	EVALUATION_COMPLETE_REPORTED_SUCCESS = 3;  
         // Evaluation complete and succeeded.
 
-        EVALUATION_COMPLETE_REPORTED_FAILURE = 3;  
+        EVALUATION_COMPLETE_REPORTED_FAILURE = 4;  
         // Evaluation complete and failed.
 
-        PUBLICATION_COMPLETE_REPORTED_SUCCESS = 4; 
+        PUBLICATION_COMPLETE_REPORTED_SUCCESS = 5; 
         // Publication completed without errors.
 
-        PUBLICATION_COMPLETE_REPORTED_FAILURE = 5;
+        PUBLICATION_COMPLETE_REPORTED_FAILURE = 6;
         // Publication completed with errors.
 
-        READY_TO_CONSUME = 6; 
+        READY_TO_CONSUME = 7; 
         // A consumer reports ready to consume. A consumer must be identified
         // in order to correlate with its completion status. See consumer_id.
 
-        CONSUMPTION_ONGOING = 7;
+        CONSUMPTION_ONGOING = 8;
         // A consumer reports ready to consume. A consumer must be identified
         // in order to correlate with its completion status. See consumer_id.
 
-        CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 8; 
+        CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 9; 
         // A consumer reports completion without errors.
         
-        CONSUMPTION_COMPLETE_REPORTED_FAILURE = 9;
+        CONSUMPTION_COMPLETE_REPORTED_FAILURE = 10;
         // A consumer reports completion with errors.
 
-        GROUP_COMPLETE_REPORTED_SUCCESS = 10;
+        GROUP_COMPLETE_REPORTED_SUCCESS = 11;
         // A message group has been completed. The group identifier is assumed 
         // to be part of the protocol metadata.
     }
     
-    CompletionStatus completion_status = 3;
+    CompletionStatus completion_status = 2;
 
-    string consumer_id = 4;
+    string consumer_id = 3;
     // The unique identifier of the consumer when the status update is about
     // a message consumer. Must be present when a consumer reports.
     
-    repeated EvaluationStatusEvent status_events = 5;
+    repeated EvaluationStatusEvent status_events = 4;
     // Zero or more caller-facing status events.
     
-    int32 message_count = 6;
+    int32 message_count = 5;
     // Number of statistics messages that were published, plus one (for the 
     // evaluation message description that accompanies every evaluation). This 
     // is the expected number of messages a client consumer should receive. 
     // Always set when the completion status indicates that publication is 
     // complete (from that point onwards).
 
-    int32 status_message_count = 7;
+    int32 status_message_count = 6;
     // Number of evaluation status messages (like this one) that were published, 
     // where applicable. This is the expected number of messages a client 
     // consumer should receive. Always set when the completion status indicates 
     // that publication is complete (from that point onwards).
 
-    int32 pairs_message_count = 8;
+    int32 pairs_message_count = 7;
     // The number of pairs messages that were published, where applicable. This 
     // is the expected number of messages a client consumer should receive.
     // Always set when the completion status indicates that publication is 
     // complete (from that point onwards).
 
-    int32 group_count = 9;
+    int32 group_count = 8;
     // The number of groups within the evaluation. Always set when the completion 
     // status indicates that publication is complete (from that point onwards).
 

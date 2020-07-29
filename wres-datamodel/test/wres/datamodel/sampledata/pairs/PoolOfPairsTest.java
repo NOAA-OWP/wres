@@ -18,6 +18,7 @@ import java.util.stream.StreamSupport;
 import org.junit.Test;
 
 import wres.datamodel.FeatureKey;
+import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -28,6 +29,8 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -88,17 +91,15 @@ public final class PoolOfPairsTest
                                                                      values );
         b.addTimeSeries( timeSeries ).setMetadata( meta );
 
-        PoolOfPairs<Double, Double> expectedBaseline = b.build();
-
         assertNull( b.build().getBaselineData() );
 
-        b.addTimeSeriesForBaseline( timeSeries ).setMetadataForBaseline( meta );
+        SampleMetadata baseMeta = SampleMetadata.of( true );
+
+        b.addTimeSeriesForBaseline( timeSeries ).setMetadataForBaseline( baseMeta );
 
         PoolOfPairs<Double, Double> actualBaseline = b.build().getBaselineData();
 
         assertNotNull( actualBaseline );
-
-        assertEquals( expectedBaseline, actualBaseline );
     }
 
     @Test
@@ -136,13 +137,14 @@ public final class PoolOfPairsTest
                                                                       third );
 
         SampleMetadata meta = SampleMetadata.of();
+        SampleMetadata baseMeta = SampleMetadata.of( true );
 
         c.addTimeSeries( secondSeries )
          .addTimeSeries( thirdSeries )
          .addTimeSeriesForBaseline( secondSeries )
          .addTimeSeriesForBaseline( thirdSeries )
          .setMetadata( meta )
-         .setMetadataForBaseline( meta );
+         .setMetadataForBaseline( baseMeta );
 
         PoolOfPairs<Double, Double> tsAppend = c.build();
 
@@ -230,7 +232,7 @@ public final class PoolOfPairsTest
         String bToString = b.build()
                             .toString();
         assertTrue( ( bToString ).contains( expectedOne ) );
-        assertTrue( ( bToString ).contains( expectedTwo) );
+        assertTrue( ( bToString ).contains( expectedTwo ) );
         assertTrue( ( bToString ).contains( expectedThree ) );
         assertTrue( ( bToString ).contains( expectedFour ) );
         assertTrue( ( bToString ).contains( expectedFive ) );

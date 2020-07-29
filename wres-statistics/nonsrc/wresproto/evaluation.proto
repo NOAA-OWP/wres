@@ -16,29 +16,35 @@ message Evaluation
     int32 metric_count = 1;
     // Number of metrics in the evaluation. Always positive.
     
-    string left_source_name = 2;
+    string left_data_name = 2;
     // User-friendly name for the left data sources.
     
-    string right_source_name = 3;
+    string right_data_name = 3;
     // User-friendly name for the right data sources.
         
-    string baseline_source_name = 4;
+    string baseline_data_name = 4;
     // User-friendly name for the baseline data sources.
     
-    string variable_name = 5;
-    // Variable name.
+    string left_variable_name = 5;
+    // Variable name for the left data.
     
-    string measurement_unit = 6;
+    string right_variable_name = 6;
+    // Variable name for the right data.
+    
+    string baseline_variable_name = 7;
+    // Variable name for the baseline data.
+    
+    string measurement_unit = 8;
     /*Measurement units associated with the pairs, real-valued thresholds, and 
     any statistics that are expressed in real units.*/
     
-    Season season = 7;
+    Season season = 9;
     // A season filter.
     
-    repeated string ensemble_member_subset = 8;
+    repeated string ensemble_member_subset = 10;
     /*A set of ensemble members by name that were included. If absent, all were
     included.*/
     
-    ValueFilter value_filter = 9;
+    ValueFilter value_filter = 11;
     // Values that were not filtered when forming pairs.
 }

@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Objects;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -143,6 +144,33 @@ public class ProjectConfigs
         }
         // Has a left source with a variable value
         return inputs.getLeft().getVariable().getValue();
+    }
+    
+    /**
+     * <p>Returns the variable name from an {@link DataSourceConfig}. The identifier is one of the following in
+     * order of precedent:</p>
+
+     * <ol>
+     * <li>The label associated with the variable.</li>
+     * <li>The value associated with the variable.</li>
+     * </ol>
+     *
+     * @param dataSourceConfig the data source configuration
+     * @return the variable identifier
+     * @throws NullPointerException if the input is null or the variable is undefined
+     */
+
+    public static String getVariableIdFromDataSourceConfig( DataSourceConfig dataSourceConfig )
+    {
+        Objects.requireNonNull( dataSourceConfig );
+        Objects.requireNonNull( dataSourceConfig.getVariable() );
+        
+        if( Objects.nonNull( dataSourceConfig.getVariable().getLabel() ) )
+        {
+            return dataSourceConfig.getVariable().getLabel();
+        }
+        
+        return dataSourceConfig.getVariable().getValue();
     }
     
     private ProjectConfigs()

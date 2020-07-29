@@ -772,14 +772,14 @@ public class ConfigHelper
         // Baseline scenarioId
         String configuredScenarioId = null;
         String configuredBaselineScenarioId = null;
-        if ( !evaluation.getRightSourceName().isBlank() )
+        if ( !evaluation.getRightDataName().isBlank() )
         {
-            configuredScenarioId = evaluation.getRightSourceName();
+            configuredScenarioId = evaluation.getRightDataName();
         }
 
-        if ( !evaluation.getBaselineSourceName().isBlank() )
+        if ( !evaluation.getBaselineDataName().isBlank() )
         {
-            configuredBaselineScenarioId = evaluation.getBaselineSourceName();
+            configuredBaselineScenarioId = evaluation.getBaselineDataName();
         }
 
         // Add optional scenario identifier unless the configured identifiers cannot discriminate between 

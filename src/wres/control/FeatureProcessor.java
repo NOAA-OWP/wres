@@ -33,13 +33,13 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Features;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
 import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
+import wres.statistics.generated.Evaluation;
 
 /**
  * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeatureTuple}.
@@ -81,6 +81,12 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private final ResolvedProject resolvedProject;
 
     /**
+     * The evaluation description.
+     */
+    
+    private final Evaluation evaluation;
+    
+    /**
      * The executors services.
      */
 
@@ -101,6 +107,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     /**
      * Build a processor. 
      * 
+     * @param evaluation a description of the evaluation
      * @param feature the feature to process
      * @param resolvedProject the resolved project
      * @param project the project to use
@@ -110,7 +117,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @throws NullPointerException if any required input is null
      */
 
-    FeatureProcessor( FeatureTuple feature,
+    FeatureProcessor( Evaluation evaluation,
+                      FeatureTuple feature,
                       ResolvedProject resolvedProject,
                       Project project,
                       UnitMapper unitMapper,
@@ -122,6 +130,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( executors );
         Objects.requireNonNull( sharedWriters );
+        Objects.requireNonNull( evaluation );
 
         this.feature = feature;
         this.resolvedProject = resolvedProject;
@@ -129,7 +138,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.unitMapper = unitMapper;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
-
+        this.evaluation = evaluation;
+        
         // Error message
         errorMessage = "While processing feature " + feature;
     }
@@ -157,7 +167,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             if ( type == DatasourceType.ENSEMBLE_FORECASTS )
             {
                 List<Supplier<PoolOfPairs<Double, Ensemble>>> pools =
-                        PoolFactory.getEnsemblePools( this.project.getDatabase(),
+                        PoolFactory.getEnsemblePools( this.evaluation,
+                                                      this.project.getDatabase(),
                                                       this.project.getFeaturesCache(),
                                                       this.project,
                                                       this.feature,
@@ -193,7 +204,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             else
             {
                 List<Supplier<PoolOfPairs<Double, Double>>> pools =
-                        PoolFactory.getSingleValuedPools( this.project.getDatabase(),
+                        PoolFactory.getSingleValuedPools( this.evaluation,
+                                                          this.project.getDatabase(),
                                                           this.project.getFeaturesCache(),
                                                           this.project,
                                                           this.feature,
