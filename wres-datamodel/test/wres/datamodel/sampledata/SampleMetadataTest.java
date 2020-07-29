@@ -378,6 +378,7 @@ public class SampleMetadataTest
                                                                      null,
                                                                      null,
                                                                      null,
+                                                                     null,
                                                                      null ),
                                                null ),
                                    null,
@@ -393,6 +394,7 @@ public class SampleMetadataTest
         ProjectConfig mockConfigTwo =
                 new ProjectConfig( new Inputs( null,
                                                new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
                                                                      null,
                                                                      null,
                                                                      null,
@@ -662,6 +664,7 @@ public class SampleMetadataTest
                                                                      null,
                                                                      null,
                                                                      null,
+                                                                     null,
                                                                      null ),
                                                null ),
                                    null,
@@ -677,6 +680,7 @@ public class SampleMetadataTest
         ProjectConfig mockConfigTwo =
                 new ProjectConfig( new Inputs( null,
                                                new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
                                                                      null,
                                                                      null,
                                                                      null,
