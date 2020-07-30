@@ -828,6 +828,43 @@ time scale within a single class, rather than two classes.
         </xs:sequence>
     </xs:complexType>
 
+
+    <xs:complexType name="featureGroup">
+        <xs:annotation>
+            <xs:documentation>
+                Used with featureService, a featureGroup has a "type" and a
+                "value" that are passed through to the "select_by" and
+                "selector" URL paths of the service, respectively.
+            </xs:documentation>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="type" type="xs:string" />
+            <xs:element name="value" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="featureService">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:documentation>
+                The place to declare a feature service url and additional groups
+                of features to request from that service. One way to use the
+                featureService is to let WRES use it to fill in missing feature
+                names among explicitly declared features. Another way to use the
+                featureService is to let WRES use it to get whole groups of
+                features and append them to the declaration that goes through
+                WRES.
+            </xs:documentation>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="baseUrl" type="xs:anyURI" />
+            <xs:element name="group" type="featureGroup" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
     <xs:complexType name="pair">
 
         <!-- for class naming using xjc-->
@@ -839,7 +876,7 @@ time scale within a single class, rather than two classes.
 
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
-            <xs:element name="featureService" type="xs:anyURI" minOccurs="0" maxOccurs="1" />
+            <xs:element name="featureService" type="featureService" minOccurs="0" maxOccurs="1" />
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="gridSelection" type="unnamedFeature" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
