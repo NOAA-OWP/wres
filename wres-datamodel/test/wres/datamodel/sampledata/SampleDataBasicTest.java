@@ -12,7 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
-import wres.datamodel.sampledata.SampleMetadata;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 
 /**
  * Tests the {@link SampleDataBasic}.
@@ -134,11 +135,12 @@ public final class SampleDataBasicTest
 
         assertNotEquals( unequalOnData, this.sampleTest );
 
-        MeasurementUnit unit = MeasurementUnit.of( "CFS" );
-
         SampleData<String> unequalOnMetadata =
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
-                                                    .setMetadata( SampleMetadata.of( unit ) )
+                                                    .setMetadata( SampleMetadata.of( Evaluation.newBuilder()
+                                                                                               .setMeasurementUnit( "CFS" )
+                                                                                               .build(),
+                                                                                     Pool.getDefaultInstance() ) )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
                                                     .setMetadataForBaseline( SampleMetadata.of() )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
@@ -160,7 +162,10 @@ public final class SampleDataBasicTest
                 new SampleDataBasicBuilder<String>().addData( List.of( "a", "b", "c" ) )
                                                     .setMetadata( SampleMetadata.of() )
                                                     .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                    .setMetadataForBaseline( SampleMetadata.of( unit ) )
+                                                    .setMetadataForBaseline( SampleMetadata.of( Evaluation.newBuilder()
+                                                                                                          .setMeasurementUnit( "CFS" )
+                                                                                                          .build(),
+                                                                                                Pool.getDefaultInstance() ) )
                                                     .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                                     .build();
 

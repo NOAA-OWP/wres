@@ -17,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -63,9 +62,6 @@ public final class BoxPlotErrorTest
         //Generate some data
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Metadata for the output
-        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of() );
-
         BoxplotStatisticOuter actual = this.boxPlotError.apply( input );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
@@ -81,14 +77,12 @@ public final class BoxPlotErrorTest
                      .addAllQuantiles( List.of( -3.0, -0.325, 1.0, 2.55, 2000.0 ) )
                      .build();
 
-        BoxplotStatistic expectedBox = BoxplotStatistic.newBuilder()
+        BoxplotStatistic expected = BoxplotStatistic.newBuilder()
                                                        .setMetric( metric )
                                                        .addStatistics( box )
                                                        .build();
 
-        BoxplotStatisticOuter expected = BoxplotStatisticOuter.of( expectedBox, meta );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test

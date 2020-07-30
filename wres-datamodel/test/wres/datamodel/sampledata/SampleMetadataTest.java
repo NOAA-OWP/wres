@@ -19,9 +19,9 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
+import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
@@ -62,64 +62,48 @@ public class SampleMetadataTest
     {
         FeatureKey l1 = FeatureKey.of( DRRC2 );
 
-        Evaluation evaluationOne =
-                MessageFactory.parse( MeasurementUnit.of(),
-                                      DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ), SQIN, HEFS ),
-                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
 
-        Pool poolOne = MessageFactory.parse( null,
+        Pool poolOne = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ),
                                              TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                  Instant.parse( "1985-12-31T23:59:59Z" ) ),
                                              null,
                                              null,
                                              false );
 
-        SampleMetadata m1 = SampleMetadata.of( evaluationOne, poolOne );
+        SampleMetadata m1 = SampleMetadata.of( evaluation, poolOne );
 
         FeatureKey l2 = FeatureKey.of( DRRC2 );
 
-        Evaluation evaluationTwo =
-                MessageFactory.parse( MeasurementUnit.of(),
-                                      DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ), SQIN, HEFS ),
-                                      null );
-
-        Pool poolTwo = MessageFactory.parse( null,
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
                                              TimeWindowOuter.of( Instant.parse( SECOND_TIME ),
                                                                  Instant.parse( "1986-12-31T23:59:59Z" ) ),
                                              null,
                                              null,
                                              false );
 
-        SampleMetadata m2 = SampleMetadata.of( evaluationTwo, poolTwo );
+        SampleMetadata m2 = SampleMetadata.of( evaluation, poolTwo );
 
         FeatureKey l3 = FeatureKey.of( DRRC2 );
 
-        Evaluation evaluationThree =
-                MessageFactory.parse( MeasurementUnit.of(),
-                                      DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ), SQIN, HEFS ),
-                                      null );
-
-        Pool poolThree = MessageFactory.parse( null,
+        Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
                                                TimeWindowOuter.of( Instant.parse( "1987-01-01T00:00:00Z" ),
                                                                    Instant.parse( "1988-01-01T00:00:00Z" ) ),
                                                null,
                                                null,
                                                false );
 
-        SampleMetadata m3 = SampleMetadata.of( evaluationThree, poolThree );
+        SampleMetadata m3 = SampleMetadata.of( evaluation, poolThree );
 
         FeatureKey benchmarkLocation = FeatureKey.of( DRRC2 );
 
-        Evaluation evaluationFour =
-                MessageFactory.parse( MeasurementUnit.of(),
-                                      DatasetIdentifier.of( new FeatureTuple( benchmarkLocation,
-                                                                              benchmarkLocation,
-                                                                              benchmarkLocation ),
-                                                            SQIN,
-                                                            HEFS ),
-                                      null );
-
-        Pool poolFour = MessageFactory.parse( null,
+        Pool poolFour = MessageFactory.parse( new FeatureTuple( benchmarkLocation,
+                                                                benchmarkLocation,
+                                                                benchmarkLocation ),
                                               TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                                   Instant.parse( "1988-01-01T00:00:00Z" ) ),
                                               null,
@@ -127,7 +111,7 @@ public class SampleMetadataTest
                                               false );
 
 
-        SampleMetadata benchmark = SampleMetadata.of( evaluationFour, poolFour );
+        SampleMetadata benchmark = SampleMetadata.of( evaluation, poolFour );
 
         assertEquals( "Unexpected difference between union of metadata and benchmark.",
                       benchmark,
@@ -183,13 +167,24 @@ public class SampleMetadataTest
         FeatureTuple drrc3 = new FeatureTuple( FeatureKey.of( DRRC3 ),
                                                FeatureKey.of( DRRC3 ),
                                                FeatureKey.of( DRRC3 ) );
-        SampleMetadata failOne = SampleMetadata.of( MeasurementUnit.of(),
-                                                    DatasetIdentifier.of( drrc3, SQIN, HEFS ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
+
+        Pool poolOne = MessageFactory.parse( drrc3, null, null, null, false );
+
+        SampleMetadata failOne = SampleMetadata.of( evaluation, poolOne );
+
         FeatureTuple a = new FeatureTuple( FeatureKey.of( "A" ),
                                            FeatureKey.of( "A" ),
                                            FeatureKey.of( "A" ) );
-        SampleMetadata failTwo =
-                SampleMetadata.of( MeasurementUnit.of(), DatasetIdentifier.of( a, "B" ) );
+
+        Pool poolTwo = MessageFactory.parse( a, null, null, null, false );
+
+        SampleMetadata failTwo = SampleMetadata.of( evaluation, poolTwo );
 
         SampleMetadataException actual = assertThrows( SampleMetadataException.class,
                                                        () -> SampleMetadata.unionOf( Arrays.asList( failOne,
@@ -208,11 +203,20 @@ public class SampleMetadataTest
     {
         assertNotNull( SampleMetadata.of() );
 
-        assertNotNull( SampleMetadata.of( MeasurementUnit.of() ) );
+        assertNotNull( SampleMetadata.of( Evaluation.newBuilder()
+                                                    .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                                    .build(),
+                                          Pool.getDefaultInstance() ) );
         FeatureKey a = FeatureKey.of( "A" );
-        DatasetIdentifier identifier = DatasetIdentifier.of( new FeatureTuple( a, a, a ), "B" );
 
-        assertNotNull( SampleMetadata.of( MeasurementUnit.of(), identifier ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "B" )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
+
+        Pool poolOne = MessageFactory.parse( new FeatureTuple( a, a, a ), null, null, null, false );
+
+        assertNotNull( SampleMetadata.of( evaluation, poolOne ) );
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                   Operator.EQUAL,
@@ -227,9 +231,6 @@ public class SampleMetadataTest
 
         assertNotNull( SampleMetadata.of( SampleMetadata.of(), timeWindow, thresholds ) );
 
-        assertNotNull( SampleMetadata.of( MeasurementUnit.of(), identifier, timeWindow, thresholds ) );
-
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), identifier, null );
         Pool pool = MessageFactory.parse( new FeatureTuple( a, a, a ),
                                           timeWindow,
                                           TimeScaleOuter.of( Duration.ofDays( 1 ),
@@ -249,36 +250,84 @@ public class SampleMetadataTest
     {
         assertEquals( SampleMetadata.of(), SampleMetadata.of() );
         FeatureKey l1 = FeatureKey.of( DRRC2 );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
-                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ), SQIN, HEFS ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ), null, null, null, false );
+
+        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+
         // Reflexive
         assertEquals( m1, m1 );
         FeatureKey l2 = FeatureKey.of( DRRC2 );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ), SQIN, HEFS ) );
+
+        Evaluation evaluationTwo = Evaluation.newBuilder()
+                                             .setRightVariableName( SQIN )
+                                             .setRightDataName( HEFS )
+                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                             .build();
+
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ), null, null, null, false );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluationTwo, poolTwo );
+
         // Symmetric
         assertEquals( m1, m2 );
         assertEquals( m2, m1 );
         FeatureKey l3 = FeatureKey.of( DRRC2 );
-        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ), SQIN, HEFS ) );
+
+        Evaluation evaluationThree = Evaluation.newBuilder()
+                                               .setRightVariableName( SQIN )
+                                               .setRightDataName( HEFS )
+                                               .setMeasurementUnit( TEST_DIMENSION )
+                                               .build();
+
+        Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ), null, null, null, false );
+
+        SampleMetadata m3 = SampleMetadata.of( evaluationThree, poolThree );
+
         FeatureKey l4 = FeatureKey.of( DRRC2 );
-        SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                               DatasetIdentifier.of( new FeatureTuple( l4, l4, l4 ), SQIN, HEFS ) );
+
+        Evaluation evaluationFour = Evaluation.newBuilder()
+                                              .setRightVariableName( SQIN )
+                                              .setRightDataName( HEFS )
+                                              .setMeasurementUnit( TEST_DIMENSION )
+                                              .build();
+
+        Pool poolFour = MessageFactory.parse( new FeatureTuple( l4, l4, l4 ), null, null, null, false );
+
+        SampleMetadata m4 = SampleMetadata.of( evaluationFour, poolFour );
         assertEquals( m3, m4 );
         assertNotEquals( m1, m3 );
+
         // Transitive
         FeatureKey l4t = FeatureKey.of( DRRC2 );
-        SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                                DatasetIdentifier.of( new FeatureTuple( l4t, l4t, l4t ), SQIN, HEFS ) );
+
+        Evaluation evaluationFive = Evaluation.newBuilder()
+                                              .setRightVariableName( SQIN )
+                                              .setRightDataName( HEFS )
+                                              .setMeasurementUnit( TEST_DIMENSION )
+                                              .build();
+
+        Pool poolFive = MessageFactory.parse( new FeatureTuple( l4t, l4t, l4t ), null, null, null, false );
+
+        SampleMetadata m4t = SampleMetadata.of( evaluationFive, poolFive );
         assertEquals( m4, m4t );
         assertEquals( m3, m4t );
+
         // Unequal
         FeatureKey l5 = FeatureKey.of( DRRC3 );
-        SampleMetadata m5 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                               DatasetIdentifier.of( new FeatureTuple( l5, l5, l5 ), SQIN, HEFS ) );
+        Pool poolSix = MessageFactory.parse( new FeatureTuple( l5, l5, l5 ), null, null, null, false );
+        SampleMetadata m5 = SampleMetadata.of( evaluationFive, poolSix );
         assertNotEquals( m4, m5 );
-        SampleMetadata m5NoDim = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ), null );
+        SampleMetadata m5NoDim = SampleMetadata.of( Evaluation.newBuilder()
+                                                              .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                                              .build(),
+                                                    poolSix );
         assertNotEquals( m5, m5NoDim );
 
         // Consistent
@@ -291,36 +340,26 @@ public class SampleMetadataTest
                                                           Instant.parse( SECOND_TIME ) );
         FeatureKey l6 = FeatureKey.of( DRRC3 );
 
-        Evaluation evaluationOne =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l6, l6, l6 ), SQIN, HEFS ),
-                                      null );
+        Pool poolSeven = MessageFactory.parse( new FeatureTuple( l6, l6, l6 ),
+                                               firstWindow,
+                                               null,
+                                               null,
+                                               false );
 
-        Pool poolOne = MessageFactory.parse( null,
-                                             firstWindow,
-                                             null,
-                                             null,
-                                             false );
-
-        SampleMetadata m6 = SampleMetadata.of( evaluationOne, poolOne );
+        SampleMetadata m6 = SampleMetadata.of( evaluationFive, poolSeven );
 
         FeatureKey l7 = FeatureKey.of( DRRC3 );
 
         TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ) );
 
-        Evaluation evaluationTwo =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l7, l7, l7 ), SQIN, HEFS ),
-                                      null );
+        Pool poolEight = MessageFactory.parse( new FeatureTuple( l7, l7, l7 ),
+                                               secondWindow,
+                                               null,
+                                               null,
+                                               false );
 
-        Pool poolTwo = MessageFactory.parse( null,
-                                             secondWindow,
-                                             null,
-                                             null,
-                                             false );
-
-        SampleMetadata m7 = SampleMetadata.of( evaluationTwo, poolTwo );
+        SampleMetadata m7 = SampleMetadata.of( evaluationFive, poolEight );
 
         assertEquals( m6, m7 );
         assertEquals( m7, m6 );
@@ -332,18 +371,13 @@ public class SampleMetadataTest
                                                           Instant.parse( SECOND_TIME ) );
         FeatureKey l8 = FeatureKey.of( DRRC3 );
 
-        Evaluation evaluationThree =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                      null );
+        Pool poolNine = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                              thirdWindow,
+                                              null,
+                                              null,
+                                              false );
 
-        Pool poolThree = MessageFactory.parse( null,
-                                               thirdWindow,
-                                               null,
-                                               null,
-                                               false );
-
-        SampleMetadata m8 = SampleMetadata.of( evaluationThree, poolThree );
+        SampleMetadata m8 = SampleMetadata.of( evaluationFive, poolNine );
 
         assertNotEquals( m6, m8 );
 
@@ -353,17 +387,17 @@ public class SampleMetadataTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        SampleMetadata m9 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                               DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                               thirdWindow,
-                                               thresholds );
+        Pool poolTen = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                             thirdWindow,
+                                             null,
+                                             thresholds,
+                                             false );
+
+        SampleMetadata m9 = SampleMetadata.of( evaluationFive, poolTen );
 
         assertNotEquals( m8, m9 );
 
-        SampleMetadata m10 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                                DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                                thirdWindow,
-                                                thresholds );
+        SampleMetadata m10 = SampleMetadata.of( evaluationFive, poolTen );
 
         assertEquals( m9, m10 );
 
@@ -381,7 +415,23 @@ public class SampleMetadataTest
                                                                      null,
                                                                      null ),
                                                null ),
-                                   null,
+                                   new PairConfig( "CMS",
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       null,
@@ -404,7 +454,23 @@ public class SampleMetadataTest
                                                                      null,
                                                                      null ),
                                                null ),
-                                   null,
+                                   new PairConfig( "CMS",
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       null,
@@ -413,62 +479,54 @@ public class SampleMetadataTest
                                    null,
                                    null,
                                    null );
-        final TimeWindowOuter timeWindow = thirdWindow;
-        final OneOrTwoThresholds thresholds1 = thresholds;
-        final ProjectConfig projectConfig = mockConfigOne;
+        TimeWindowOuter timeWindow = thirdWindow;
+        OneOrTwoThresholds thresholds1 = thresholds;
 
-        Evaluation evaluationFour =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                      projectConfig );
+        Evaluation evaluationSix = MessageFactory.parse( mockConfigOne );
 
-        Pool poolFour = MessageFactory.parse( null,
-                                              timeWindow,
-                                              null,
-                                              thresholds1,
-                                              false );
+        Pool poolEleven = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                                timeWindow,
+                                                null,
+                                                thresholds1,
+                                                false );
 
-        SampleMetadata m11 = SampleMetadata.of( evaluationFour, poolFour );
+        SampleMetadata m11 = SampleMetadata.of( evaluationSix, poolEleven );
 
-        final TimeWindowOuter timeWindow1 = thirdWindow;
-        final OneOrTwoThresholds thresholds2 = thresholds;
-        final ProjectConfig projectConfig1 = mockConfigTwo;
+        TimeWindowOuter timeWindow1 = thirdWindow;
+        OneOrTwoThresholds thresholds2 = thresholds;
 
-        Evaluation evaluationFive =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                      projectConfig1 );
+        Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwo );
 
-        Pool poolFive = MessageFactory.parse( null,
-                                              timeWindow1,
-                                              null,
-                                              thresholds2,
-                                              false );
+        Pool poolTwelve = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                                timeWindow1,
+                                                null,
+                                                thresholds2,
+                                                false );
 
-        SampleMetadata m12 = SampleMetadata.of( evaluationFive, poolFive );
+        SampleMetadata m12 = SampleMetadata.of( evaluationSeven, poolTwelve );
 
         assertEquals( m11, m12 );
 
         // Add a time scale
-        Pool poolSix = MessageFactory.parse( null,
-                                             timeWindow1,
-                                             TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ),
-                                             thresholds2,
-                                             false );
+        Pool poolThirteen = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                                  timeWindow1,
+                                                  TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ),
+                                                  thresholds2,
+                                                  false );
 
 
-        SampleMetadata m13 = SampleMetadata.of( evaluationFive, poolSix );
+        SampleMetadata m13 = SampleMetadata.of( evaluationSeven, poolThirteen );
 
-        SampleMetadata m14 = SampleMetadata.of( evaluationFive, poolSix );
+        SampleMetadata m14 = SampleMetadata.of( evaluationSeven, poolThirteen );
 
-        Pool poolSeven = MessageFactory.parse( null,
-                                               timeWindow1,
-                                               TimeScaleOuter.of( Duration.ofDays( 2 ), TimeScaleFunction.MEAN ),
-                                               thresholds2,
-                                               false );
+        Pool poolFourteen = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                                  timeWindow1,
+                                                  TimeScaleOuter.of( Duration.ofDays( 2 ), TimeScaleFunction.MEAN ),
+                                                  thresholds2,
+                                                  false );
 
 
-        SampleMetadata m15 = SampleMetadata.of( evaluationFive, poolSeven );
+        SampleMetadata m15 = SampleMetadata.of( evaluationSeven, poolFourteen );
 
         assertEquals( m13, m14 );
 
@@ -478,7 +536,7 @@ public class SampleMetadataTest
         assertNotEquals( null, m6 );
 
         // Other type check
-        assertNotEquals( Double.valueOf( 2 ), m6 );
+        assertNotEquals( m6, Double.valueOf( 2 ) );
     }
 
     /**
@@ -491,66 +549,22 @@ public class SampleMetadataTest
         // False if the input is null
         assertFalse( SampleMetadata.of().equalsWithoutTimeWindowOrThresholds( null ) );
 
-        // Simplest case of equality
-        assertTrue( SampleMetadata.of().equalsWithoutTimeWindowOrThresholds( SampleMetadata.of() ) );
-
-        // Remaining cases test scenarios not tested already through Object::equals
-        ProjectConfig projectOne = new ProjectConfig( null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null );
-        Evaluation evaluationOne =
-                MessageFactory.parse( MeasurementUnit.of(),
-                                      null,
-                                      projectOne );
-
-        Pool poolOne = MessageFactory.parse( null,
-                                             null,
-                                             TimeScaleOuter.of( Duration.ofDays( 1 ),
-                                                                TimeScaleFunction.MAXIMUM ),
-                                             null,
-                                             false );
-
-        SampleMetadata metaOne = SampleMetadata.of( evaluationOne, poolOne );
-
-        Evaluation evaluationTwo =
-                MessageFactory.parse( MeasurementUnit.of(),
-                                      null,
-                                      null );
+        // Different evaluations
+        Evaluation evaluationOne = Evaluation.newBuilder()
+                .setRightVariableName( SQIN )
+                .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                .build();
         
-        SampleMetadata metaTwo = SampleMetadata.of( evaluationTwo, Pool.getDefaultInstance() );
-
-        assertTrue( metaOne.equalsWithoutTimeWindowOrThresholds( metaOne ) );
-
-        assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaTwo ) );
-
-        Pool poolTwo = MessageFactory.parse( null,
-                                             null,
-                                             TimeScaleOuter.of( Duration.ofDays( 1 ),
-                                                                TimeScaleFunction.MEAN ),
-                                             null,
-                                             false );
+        Evaluation evaluationTwo = Evaluation.newBuilder()
+                .setRightVariableName( SQIN )
+                .setRightDataName( HEFS )
+                .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                .build();
         
-        SampleMetadata metaThree = SampleMetadata.of( evaluationTwo, poolTwo );
-
-        SampleMetadata metaFour = SampleMetadata.of( evaluationTwo, poolOne );
-
-        Evaluation evaluationThree =
-                MessageFactory.parse( MeasurementUnit.of(),
-                                      null,
-                                      projectOne );
-        
-        SampleMetadata metaFive = SampleMetadata.of( evaluationThree, Pool.getDefaultInstance() );
-
-        assertFalse( metaThree.equalsWithoutTimeWindowOrThresholds( metaOne ) );
-
-        assertTrue( metaThree.equalsWithoutTimeWindowOrThresholds( metaThree ) );
-
-        assertFalse( metaThree.equalsWithoutTimeWindowOrThresholds( metaFour ) );
-
-        assertFalse( metaFive.equalsWithoutTimeWindowOrThresholds( metaOne ) );
+        SampleMetadata one = SampleMetadata.of( evaluationOne, Pool.getDefaultInstance() );
+        SampleMetadata two = SampleMetadata.of( evaluationTwo, Pool.getDefaultInstance() );
+     
+        assertFalse( one.equalsWithoutTimeWindowOrThresholds( two ) );
     }
 
     /**
@@ -563,23 +577,51 @@ public class SampleMetadataTest
         // Equal
         assertEquals( SampleMetadata.of().hashCode(), SampleMetadata.of().hashCode() );
         FeatureKey l1 = FeatureKey.of( DRRC2 );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
-                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ), SQIN, HEFS ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ), null, null, null, false );
+
+        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
         assertEquals( m1.hashCode(), m1.hashCode() );
         FeatureKey l2 = FeatureKey.of( DRRC2 );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ), SQIN, HEFS ) );
+
+        Evaluation evaluationTwo = Evaluation.newBuilder()
+                                             .setRightVariableName( SQIN )
+                                             .setRightDataName( HEFS )
+                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                             .build();
+
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ), null, null, null, false );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluationTwo, poolTwo );
         assertEquals( m1.hashCode(), m2.hashCode() );
         FeatureKey l3 = FeatureKey.of( DRRC2 );
-        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ), SQIN, HEFS ) );
+
+        Evaluation evaluationThree = Evaluation.newBuilder()
+                                               .setRightVariableName( SQIN )
+                                               .setRightDataName( HEFS )
+                                               .setMeasurementUnit( SampleMetadataTest.TEST_DIMENSION )
+                                               .build();
+
+        Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ), null, null, null, false );
+
+        SampleMetadata m3 = SampleMetadata.of( evaluationThree, poolThree );
         FeatureKey l4 = FeatureKey.of( DRRC2 );
-        SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                               DatasetIdentifier.of( new FeatureTuple( l4, l4, l4 ), SQIN, HEFS ) );
+
+        Pool poolFour = MessageFactory.parse( new FeatureTuple( l4, l4, l4 ), null, null, null, false );
+
+        SampleMetadata m4 = SampleMetadata.of( evaluationThree, poolFour );
         assertEquals( m3.hashCode(), m4.hashCode() );
         FeatureKey l4t = FeatureKey.of( DRRC2 );
-        SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                                DatasetIdentifier.of( new FeatureTuple( l4t, l4t, l4t ), SQIN, HEFS ) );
+
+        Pool poolFive = MessageFactory.parse( new FeatureTuple( l4t, l4t, l4t ), null, null, null, false );
+
+        SampleMetadata m4t = SampleMetadata.of( evaluationThree, poolFive );
         assertEquals( m4.hashCode(), m4t.hashCode() );
         assertEquals( m3.hashCode(), m4t.hashCode() );
 
@@ -593,39 +635,28 @@ public class SampleMetadataTest
         TimeWindowOuter firstWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                           Instant.parse( SECOND_TIME ) );
         FeatureKey l6 = FeatureKey.of( DRRC3 );
-        
-        Evaluation evaluationOne =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l6, l6, l6 ), SQIN, HEFS ),
-                                      null );
 
-        Pool poolOne = MessageFactory.parse( null,
+        Pool poolSix = MessageFactory.parse( new FeatureTuple( l6, l6, l6 ),
                                              firstWindow,
-                                              null,
-                                              null,
-                                              false );
+                                             null,
+                                             null,
+                                             false );
 
-        SampleMetadata m6 = SampleMetadata.of( evaluationOne, poolOne );
-        
+        SampleMetadata m6 = SampleMetadata.of( evaluationThree, poolSix );
+
         FeatureKey l7 = FeatureKey.of( DRRC3 );
 
         TimeWindowOuter secondWindow = TimeWindowOuter.of( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ) );
-        
-        
-        Evaluation evaluationTwo =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l7, l7, l7 ), SQIN, HEFS ),
-                                      null );
 
-        Pool poolTwo = MessageFactory.parse( null,
-                                             secondWindow,
-                                              null,
-                                              null,
-                                              false );
-        
-        SampleMetadata m7 = SampleMetadata.of( evaluationTwo, poolTwo );
-        
+        Pool poolSeven = MessageFactory.parse( new FeatureTuple( l7, l7, l7 ),
+                                               secondWindow,
+                                               null,
+                                               null,
+                                               false );
+
+        SampleMetadata m7 = SampleMetadata.of( evaluationThree, poolSeven );
+
         assertEquals( m6.hashCode(), m7.hashCode() );
         assertEquals( m7.hashCode(), m6.hashCode() );
 
@@ -641,15 +672,15 @@ public class SampleMetadataTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        SampleMetadata m9 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                               DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
+        Pool poolEight = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
                                                thirdWindow,
-                                               thresholds );
+                                               null,
+                                               thresholds,
+                                               false );
 
-        SampleMetadata m10 = SampleMetadata.of( MeasurementUnit.of( TEST_DIMENSION ),
-                                                DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                                thirdWindow,
-                                                thresholds );
+        SampleMetadata m9 = SampleMetadata.of( evaluationThree, poolEight );
+
+        SampleMetadata m10 = SampleMetadata.of( evaluationThree, poolEight );
 
         assertEquals( m9.hashCode(), m10.hashCode() );
 
@@ -667,7 +698,23 @@ public class SampleMetadataTest
                                                                      null,
                                                                      null ),
                                                null ),
-                                   null,
+                                   new PairConfig( "CMS",
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       null,
@@ -690,7 +737,23 @@ public class SampleMetadataTest
                                                                      null,
                                                                      null ),
                                                null ),
-                                   null,
+                                   new PairConfig( "CMS",
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
                                                                                                       null,
@@ -699,35 +762,28 @@ public class SampleMetadataTest
                                    null,
                                    null,
                                    null );
-        final TimeWindowOuter timeWindow = thirdWindow;
-        final OneOrTwoThresholds thresholds1 = thresholds;
-        final ProjectConfig projectConfig = mockConfigOne;
-        
-        Evaluation evaluationThree =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                      projectConfig );
+        TimeWindowOuter timeWindow = thirdWindow;
+        OneOrTwoThresholds thresholds1 = thresholds;
 
-        Pool poolThree = MessageFactory.parse( null,
-                                             timeWindow,
-                                             null,
-                                             thresholds1,
-                                             false );
-        
-        SampleMetadata m11 = SampleMetadata.of( evaluationThree, poolThree );
+        Evaluation evaluationFour = MessageFactory.parse( mockConfigOne );
 
-        Evaluation evaluationFour =
-                MessageFactory.parse( MeasurementUnit.of( TEST_DIMENSION ),
-                                      DatasetIdentifier.of( new FeatureTuple( l8, l8, l8 ), SQIN, HEFS ),
-                                      mockConfigTwo );
+        Pool poolNine = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                              timeWindow,
+                                              null,
+                                              thresholds1,
+                                              false );
 
-        Pool poolFour = MessageFactory.parse( null,
-                                              thirdWindow,
+        SampleMetadata m11 = SampleMetadata.of( evaluationFour, poolNine );
+
+        Evaluation evaluationFive = MessageFactory.parse( mockConfigTwo );
+
+        Pool poolTen = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
+                                             thirdWindow,
                                              null,
                                              thresholds,
                                              false );
-        
-        SampleMetadata m12 = SampleMetadata.of( evaluationFour, poolFour );
+
+        SampleMetadata m12 = SampleMetadata.of( evaluationFive, poolTen );
 
         assertEquals( m11.hashCode(), m12.hashCode() );
     }

@@ -9,9 +9,7 @@ import java.util.Iterator;
 import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.time.TimeSeries;
@@ -24,9 +22,6 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class TimingErrorHelperTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void testGetTimeToPeakWithoutTies()

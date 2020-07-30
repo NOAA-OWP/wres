@@ -11,10 +11,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -51,13 +49,6 @@ public final class MeanSquareErrorSkillScoreTest
         //Generate some data
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( MetricTestDataFactory.getLocation( "DRRC2" ),
-                                                                     "SQIN",
-                                                                     "HEFS",
-                                                                     "ESP" ) );
-
         //Check the results
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
@@ -66,14 +57,12 @@ public final class MeanSquareErrorSkillScoreTest
                                                                                .setValue( 0.8007025335093799 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( MeanSquareErrorSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected.getData(), actual.getData() );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test
@@ -104,9 +93,6 @@ public final class MeanSquareErrorSkillScoreTest
         //Generate some data
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-
         //Check the results
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
@@ -115,14 +101,12 @@ public final class MeanSquareErrorSkillScoreTest
                                                                                .setValue( 0.9963647159052861 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( MeanSquareErrorSkillScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test

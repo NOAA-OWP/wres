@@ -15,7 +15,6 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -68,7 +67,7 @@ public final class ContingencyTableScoreTest
     public void setupBeforeEachTest()
     {
         this.cs = ThreatScore.of();
-        this.meta = SampleMetadata.of( MeasurementUnit.of() );
+        this.meta = SampleMetadata.of();
 
         this.table =
                 DoubleScoreStatistic.newBuilder()

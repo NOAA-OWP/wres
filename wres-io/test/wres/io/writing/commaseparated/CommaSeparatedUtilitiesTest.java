@@ -10,7 +10,6 @@ import java.util.StringJoiner;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
@@ -31,6 +30,9 @@ public class CommaSeparatedUtilitiesTest
     private static final FeatureKey FEATURE_ONE = FeatureKey.of( "fooBasin" );
     private static final FeatureKey FEATURE_TWO = FeatureKey.of( "fooBasiny" );
     private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( FEATURE_TWO, FEATURE_ONE, FEATURE_TWO );
+    private static final Evaluation EVALUATION = Evaluation.newBuilder()
+                                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                                           .build();;
 
     private TimeWindowOuter timeWindow;
 
@@ -50,15 +52,13 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
-
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), null, null );
         Pool pool = MessageFactory.parse( null,
                                           this.timeWindow,
                                           TimeScaleOuter.of(),
                                           null,
                                           false );
-        
-        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+
+        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
         String expected = "EARLIEST ISSUE TIME,"
                           + "LATEST ISSUE TIME,"
@@ -78,15 +78,14 @@ public class CommaSeparatedUtilitiesTest
     {
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), null, null );
         Pool pool = MessageFactory.parse( null,
                                           this.timeWindow,
                                           timeScale,
                                           null,
                                           false );
-        
-        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
-        
+
+        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
+
         String expected = "EARLIEST ISSUE TIME,"
                           + "LATEST ISSUE TIME,"
                           + "EARLIEST VALID TIME,"
@@ -103,17 +102,13 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetFeatureNameFromMetadataWithNamedLocation()
     {
-
-        DatasetIdentifier identifier = DatasetIdentifier.of( FEATURE_TUPLE, "barVariable" );
-
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), identifier, null );
         Pool pool = MessageFactory.parse( FEATURE_TUPLE,
                                           null,
                                           null,
                                           null,
                                           false );
-        
-        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+
+        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
         String actual =
                 CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );
@@ -125,17 +120,13 @@ public class CommaSeparatedUtilitiesTest
     @Test
     public void testGetFeatureNameFromMetadataWithNullLocation()
     {
-
-        DatasetIdentifier identifier = DatasetIdentifier.of( (FeatureTuple) null, "barVariable" );
-
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of(), identifier, null );
         Pool pool = MessageFactory.parse( null,
                                           null,
                                           null,
                                           null,
                                           false );
-        
-        SampleMetadata metadata = SampleMetadata.of( evaluation, pool );
+
+        SampleMetadata metadata = SampleMetadata.of( CommaSeparatedUtilitiesTest.EVALUATION, pool );
 
         String actual =
                 CommaSeparatedUtilities.getFeatureNameFromMetadata( metadata );

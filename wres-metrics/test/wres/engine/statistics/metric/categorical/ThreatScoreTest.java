@@ -2,15 +2,14 @@ package wres.engine.statistics.metric.categorical;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
@@ -34,9 +33,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class ThreatScoreTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Score used for testing. 
@@ -159,9 +155,10 @@ public final class ThreatScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the '" + this.ts.getName() + "'." );
-        this.ts.aggregate( (DoubleScoreStatisticOuter) null );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.ts.aggregate( (DoubleScoreStatisticOuter) null ) );
+
+        assertEquals( "Specify non-null input to the '" + this.ts.getName() + "'.", actual.getMessage() );
     }
 
 }

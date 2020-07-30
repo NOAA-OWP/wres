@@ -2,15 +2,14 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
@@ -32,9 +31,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class BrierSkillScoreTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link BrierSkillScore}.
@@ -136,7 +132,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testGetName()
     {
-        assertTrue( brierSkillScore.getName().equals( MetricConstants.BRIER_SKILL_SCORE.toString() ) );
+        assertTrue( this.brierSkillScore.getName().equals( MetricConstants.BRIER_SKILL_SCORE.toString() ) );
     }
 
     /**
@@ -146,7 +142,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testIsDecomposable()
     {
-        assertTrue( brierSkillScore.isDecomposable() );
+        assertTrue( this.brierSkillScore.isDecomposable() );
     }
 
     /**
@@ -156,7 +152,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testIsSkillScore()
     {
-        assertTrue( brierSkillScore.isSkillScore() );
+        assertTrue( this.brierSkillScore.isSkillScore() );
     }
 
     /**
@@ -166,7 +162,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( brierSkillScore.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.brierSkillScore.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     /**
@@ -176,7 +172,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testIsProper()
     {
-        assertFalse( brierSkillScore.isProper() );
+        assertFalse( this.brierSkillScore.isProper() );
     }
 
     /**
@@ -186,7 +182,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testIsStrictlyProper()
     {
-        assertFalse( brierSkillScore.isStrictlyProper() );
+        assertFalse( this.brierSkillScore.isStrictlyProper() );
     }
 
     /**
@@ -195,13 +191,14 @@ public final class BrierSkillScoreTest
      */
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'BRIER SKILL SCORE'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.brierSkillScore.apply( (SampleData<Pair<Probability, Probability>>) null ) );
 
-        brierSkillScore.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.brierSkillScore.getName() + "'.", actual.getMessage() );
     }
+
 
     /**
      * Tests for {@link Double#NaN} output when supplying {@link BrierSkillScore#apply(DiscreteProbabilityPairs)} with 

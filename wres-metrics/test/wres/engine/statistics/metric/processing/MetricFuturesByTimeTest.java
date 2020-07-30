@@ -11,13 +11,10 @@ import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -49,9 +46,6 @@ import wres.statistics.generated.MetricName;
  */
 public final class MetricFuturesByTimeTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * A default instance to test.
@@ -112,11 +106,11 @@ public final class MetricFuturesByTimeTest
                                                                                      .setMetric( BoxplotMetric.newBuilder()
                                                                                                               .setName( MetricName.BOX_PLOT_OF_ERRORS ) )
                                                                                      .build(),
-                                                                     SampleMetadata.of( MeasurementUnit.of() ) ) );
+                                                                     SampleMetadata.of() ) );
 
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( boxplot ) );
 
-        SampleMetadata doubleScoreMeta = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata doubleScoreMeta = SampleMetadata.of();
 
         this.doubleScore =
                 Collections.singletonList( DoubleScoreStatisticOuter.of( DoubleScoreStatistic.newBuilder()
@@ -127,7 +121,7 @@ public final class MetricFuturesByTimeTest
 
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
 
-        SampleMetadata dScoreMetadata = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata dScoreMetadata = SampleMetadata.of();
 
         // Add a duration score future
         this.durationScore =
@@ -145,7 +139,7 @@ public final class MetricFuturesByTimeTest
                                                                                      .setMetric( DiagramMetric.newBuilder()
                                                                                                               .setName( MetricName.COEFFICIENT_OF_DETERMINATION ) )
                                                                                      .build(),
-                                                                     SampleMetadata.of( MeasurementUnit.of() ) ) );
+                                                                     SampleMetadata.of() ) );
 
         builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
 
@@ -155,7 +149,7 @@ public final class MetricFuturesByTimeTest
                                                                                                      .setMetric( DurationDiagramMetric.newBuilder()
                                                                                                                                       .setName( MetricName.COEFFICIENT_OF_DETERMINATION ) )
                                                                                                      .build(),
-                                                                             SampleMetadata.of( MeasurementUnit.of() ) ) );
+                                                                             SampleMetadata.of() ) );
 
         builder.addPairedOutput( CompletableFuture.completedFuture( this.paired ) );
 

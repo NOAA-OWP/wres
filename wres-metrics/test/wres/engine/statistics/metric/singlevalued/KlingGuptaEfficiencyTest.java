@@ -14,7 +14,6 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -71,8 +70,6 @@ public final class KlingGuptaEfficiencyTest
     {
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-
         //Check the results
         DoubleScoreStatisticOuter actual = this.kge.apply( input );
 
@@ -81,14 +78,12 @@ public final class KlingGuptaEfficiencyTest
                                                                                .setValue( 0.9432025316651065 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( KlingGuptaEfficiency.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test
@@ -134,11 +129,12 @@ public final class KlingGuptaEfficiencyTest
     }
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        SampleDataException actual = assertThrows( SampleDataException.class, () -> this.kge.apply( null ) );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.kge.apply( null ) );
 
-        assertEquals( "Specify non-null input to the 'KLING GUPTA EFFICIENCY'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.kge.getName() + "'.", actual.getMessage() );
     }
 
 }

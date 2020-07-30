@@ -11,15 +11,15 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
@@ -70,10 +70,20 @@ public final class BoxPlotStatisticOuterTest
 
         this.basic = boxplotOne.build();
         FeatureKey l2 = FeatureKey.of( "A" );
-        this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                           DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                 "B",
-                                                                 "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        this.metadata = SampleMetadata.of( evaluation, pool );
     }
 
     /**
@@ -86,20 +96,39 @@ public final class BoxPlotStatisticOuterTest
 
         //Build datasets
         FeatureKey l1 = FeatureKey.of( "A" );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
         FeatureKey l2 = FeatureKey.of( "A" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+                                             null,
+                                             null,
+                                             null,
+                                             false );
+
+
+        SampleMetadata m2 = SampleMetadata.of( evaluation, poolTwo );
         FeatureKey l3 = FeatureKey.of( "B" );
-        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Pool poolThree = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
+                                               null,
+                                               null,
+                                               null,
+                                               false );
+
+        SampleMetadata m3 = SampleMetadata.of( evaluation, poolThree );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -248,10 +277,20 @@ public final class BoxPlotStatisticOuterTest
 
         // Consistent with equals
         FeatureKey l2 = FeatureKey.of( "A" );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -295,12 +334,8 @@ public final class BoxPlotStatisticOuterTest
     @Test
     public void testGetMetadata()
     {
-        BoxplotStatisticOuter outer = BoxplotStatisticOuter.of( this.basic, this.metadata );
-        FeatureKey l1 = FeatureKey.of( "A" );
-        SampleMetadata expected = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                     DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                           "B",
-                                                                           "C" ) );
+        BoxplotStatisticOuter outer = BoxplotStatisticOuter.of( this.basic, SampleMetadata.of() );
+        SampleMetadata expected = SampleMetadata.of();
 
         assertEquals( expected, outer.getMetadata() );
     }

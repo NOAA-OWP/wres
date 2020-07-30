@@ -12,13 +12,12 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.protobuf.Timestamp;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -40,7 +39,9 @@ import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -354,13 +355,20 @@ public abstract class Chart2DTestDataGenerator
                                                                            ThresholdDataType.LEFT ) );
 
         //Source metadata
-        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FEATURE_TUPLE,
-                                                                               "STREAMFLOW",
-                                                                               "HEFS",
-                                                                               "ESP" ),
-                                                         null,
-                                                         threshold );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "STREAMFLOW" )
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+                                          null,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata source = SampleMetadata.of( evaluation, pool );
 
         // Rolling window parameters
         Instant start = Instant.parse( "2015-12-01T00:00:00Z" );
@@ -471,12 +479,19 @@ public abstract class Chart2DTestDataGenerator
                                                           ThresholdDataType.LEFT ) );
 
         //Source metadata
-        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( FEATURE_TUPLE,
-                                                                               "STREAMFLOW",
-                                                                               "NWM" ),
-                                                         null,
-                                                         threshold );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "STREAMFLOW" )
+                                          .setRightDataName( "NWM" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+                                          null,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata source = SampleMetadata.of( evaluation, pool );
 
         double[] scores = new double[] {
                                          -0.39228763627058233,
@@ -685,12 +700,19 @@ public abstract class Chart2DTestDataGenerator
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                 DatasetIdentifier.of( FEATURE_TUPLE,
-                                                                       "Streamflow",
-                                                                       "HEFS" ),
-                                                 window,
-                                                 threshold );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "Streamflow" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+                                          window,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
         return Arrays.asList( DurationDiagramStatisticOuter.of( expectedSource, meta ) );
     }
@@ -723,12 +745,19 @@ public abstract class Chart2DTestDataGenerator
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                 DatasetIdentifier.of( FEATURE_TUPLE,
-                                                                       "Streamflow",
-                                                                       "HEFS" ),
-                                                 window,
-                                                 threshold );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "Streamflow" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+                                          window,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR )

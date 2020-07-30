@@ -26,6 +26,7 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -158,7 +159,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      input.getMetadata().getIdentifier().getFeatureTuple(),
+                      MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
                       input.getMetadata().getTimeWindow() );
 
         // Process and return the result       

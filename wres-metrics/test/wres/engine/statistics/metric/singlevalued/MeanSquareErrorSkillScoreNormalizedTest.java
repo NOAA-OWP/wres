@@ -13,7 +13,6 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -94,9 +93,6 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
         //Generate some data
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-
         //Check the results
         DoubleScoreStatisticOuter actual = this.msessn.apply( input );
 
@@ -105,14 +101,12 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
                                                                                .setValue( 0.9963778833284114 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( MeanSquareErrorSkillScoreNormalized.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test

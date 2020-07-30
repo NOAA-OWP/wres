@@ -14,7 +14,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -53,7 +52,7 @@ public final class CollectableTaskTest
         //Add some appropriate metrics to the collection
         this.m = ThreatScore.of();
 
-        this.m1 = SampleMetadata.of( MeasurementUnit.of() );
+        this.m1 = SampleMetadata.of();
     }
 
     @Test

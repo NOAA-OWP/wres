@@ -10,14 +10,15 @@ import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 
 /**
@@ -33,6 +34,12 @@ public final class DurationDiagramStatisticOuterTest
      */
 
     private DurationDiagramStatistic defaultInstance;
+
+    /**
+     * Metadata for testing.
+     */
+
+    private SampleMetadata metadata;
 
     @Before
     public void runBeforeEachTest()
@@ -53,22 +60,24 @@ public final class DurationDiagramStatisticOuterTest
                                                        .setMetric( metric )
                                                        .addStatistics( one )
                                                        .build();
+
+        FeatureKey feature = FeatureKey.of( "A" );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature, feature, feature ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        this.metadata = SampleMetadata.of( evaluation, pool );
     }
-
-    /**
-     * Location for testing.
-     */
-
-    private final FeatureKey l1 = FeatureKey.of( "A" );
-
-    /**
-     * Metadata for testing.
-     */
-
-    private final SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                               "B",
-                                                                               "C" ) );
 
     /**
      * Constructs a {@link DurationDiagramStatisticOuter} and tests for equality with another 
@@ -79,15 +88,30 @@ public final class DurationDiagramStatisticOuterTest
     public void testEquals()
     {
         FeatureKey l2 = FeatureKey.of( "A" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
         FeatureKey l3 = FeatureKey.of( "B" );
-        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
+                                             null,
+                                             null,
+                                             null,
+                                             false );
+
+        SampleMetadata m3 = SampleMetadata.of( evaluation, poolTwo );
 
         DurationDiagramStatisticOuter one = DurationDiagramStatisticOuter.of( this.defaultInstance, m2 );
 
@@ -114,7 +138,7 @@ public final class DurationDiagramStatisticOuterTest
                                                                 .addStatistics( first )
                                                                 .build();
 
-        DurationDiagramStatisticOuter another = DurationDiagramStatisticOuter.of( next, this.m1 );
+        DurationDiagramStatisticOuter another = DurationDiagramStatisticOuter.of( next, this.metadata );
 
         assertNotEquals( one, another );
         assertNotEquals( one, DurationDiagramStatisticOuter.of( this.defaultInstance, m3 ) );
@@ -156,7 +180,7 @@ public final class DurationDiagramStatisticOuterTest
         String expectedContainsMetadata = "metadata=SampleMetadata[";
         String expectedContainsMeasurementUnit = "measurementUnit=CMS";
 
-        String m1ToString = DurationDiagramStatisticOuter.of( this.defaultInstance, this.m1 ).toString();
+        String m1ToString = DurationDiagramStatisticOuter.of( this.defaultInstance, this.metadata ).toString();
         assertTrue( m1ToString.startsWith( expectedStart ) );
         assertTrue( m1ToString.contains( expectedContainsMetric ) );
         assertTrue( m1ToString.contains( expectedContainsStatistic ) );
@@ -172,14 +196,10 @@ public final class DurationDiagramStatisticOuterTest
     @Test
     public void testGetMetadata()
     {
-
-        FeatureKey l2 = FeatureKey.of( "B" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2),
-                                                                     "B",
-                                                                     "C" ) );
-
-        assertEquals( m2, DurationDiagramStatisticOuter.of( this.defaultInstance, m2 ).getMetadata() );
+        assertEquals( SampleMetadata.of(),
+                      DurationDiagramStatisticOuter.of( this.defaultInstance,
+                                                        SampleMetadata.of() )
+                                                   .getMetadata() );
     }
 
     /**
@@ -190,10 +210,20 @@ public final class DurationDiagramStatisticOuterTest
     public void testHashCode()
     {
         FeatureKey l2 = FeatureKey.of( "A" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
 
         DurationDiagramStatisticOuter anInstance = DurationDiagramStatisticOuter.of( this.defaultInstance, m2 );
 
@@ -208,7 +238,7 @@ public final class DurationDiagramStatisticOuterTest
     @Test
     public void testExceptionOnConstructionWithNullData()
     {
-        assertThrows( StatisticException.class, () -> DurationDiagramStatisticOuter.of( null, this.m1 ) );
+        assertThrows( StatisticException.class, () -> DurationDiagramStatisticOuter.of( null, this.metadata ) );
     }
 
     @Test

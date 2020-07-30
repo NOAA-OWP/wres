@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.processing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -16,9 +17,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
@@ -32,16 +31,15 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -57,6 +55,8 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -72,9 +72,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     private static final String TEST_SOURCE =
             "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void testGetFilterForEnsemblePairs()
@@ -391,8 +388,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         List<DoubleScoreStatisticOuter> results = processor.getCachedMetricOutput()
                                                            .getDoubleScoreStatistics();
 
-        //Validate a selection of the outputs only
-
         //Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
         assertEquals( -0.032093836077598345,
@@ -526,10 +521,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     }
 
     @Test
-    public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
+    public void testExceptionOnNullInput() throws MetricParameterException
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Expected non-null input to the metric processor." );
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
                                                                                     null,
@@ -538,40 +531,40 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                     null,
                                                                                     null ),
                                                                  Collections.singleton( StatisticType.DOUBLE_SCORE ) );
-        processor.apply( null );
+
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> processor.apply( null ) );
+
+        assertEquals( "Expected non-null input to the metric processor.", actual.getMessage() );
     }
 
     @Test
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricConfigException.class );
-        exception.expectMessage( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
-                                 + "add one or more thresholds to the configuration." );
-
         MetricsConfig metrics =
                 new MetricsConfig( null,
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
-                                                                                    null,
-                                                                                    Arrays.asList( metrics ),
-                                                                                    null,
-                                                                                    null,
-                                                                                    null ),
-                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
-        processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
+
+        MetricConfigException actual = assertThrows( MetricConfigException.class,
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
+                                                                                                                               null,
+                                                                                                                               Arrays.asList( metrics ),
+                                                                                                                               null,
+                                                                                                                               null,
+                                                                                                                               null ),
+                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+
+        assertEquals( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
+                      + "add one or more thresholds to the configuration.",
+                      actual.getMessage() );
     }
 
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
             throws MetricParameterException
     {
-        exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "Unable to determine quantile threshold from probability threshold: no climatological "
-                                 + "observations were available in the input" );
-
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) );
@@ -592,21 +585,22 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-
         MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
                 MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
                                                                  Collections.singleton( StatisticType.DOUBLE_SCORE ) );
-        processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
+
+        MetricCalculationException actual = assertThrows( MetricCalculationException.class,
+                                                          () -> processor.apply( MetricTestDataFactory.getEnsemblePairsThree() ) );
+
+        assertEquals( "Unable to determine quantile threshold from probability threshold: no climatological "
+                      + "observations were available in the input.",
+                      actual.getMessage() );
     }
 
     @Test
     public void testApplyThrowsExceptionWhenBaselineIsMissing()
             throws MetricParameterException
     {
-        exception.expect( MetricConfigException.class );
-        exception.expectMessage( "Specify a non-null baseline from which to generate the 'CONTINUOUS RANKED "
-                                 + "PROBABILITY SKILL SCORE'." );
-
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) );
@@ -619,21 +613,19 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<PoolOfPairs<Double, Ensemble>> processor =
-                MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                                 Collections.singleton( StatisticType.DOUBLE_SCORE ) );
-        processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
+        MetricConfigException actual = assertThrows( MetricConfigException.class,
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+
+        assertEquals( "Specify a non-null baseline from which to generate the 'CONTINUOUS RANKED "
+                      + "PROBABILITY SKILL SCORE'.",
+                      actual.getMessage() );
     }
 
     @Test
     public void testApplyThrowsExceptionForDichotomousMetricWhenClassifierThresholdsAreMissing()
             throws MetricParameterException
     {
-        exception.expect( MetricConfigException.class );
-        exception.expectMessage( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
-                                 + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
-                                 + "probabilities into occurrences and non-occurrences." );
-
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, null, MetricConfigName.THREAT_SCORE ) );
@@ -653,19 +645,21 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                         Collections.singleton( StatisticType.DOUBLE_SCORE ) );
+
+        MetricConfigException actual = assertThrows( MetricConfigException.class,
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+
+        assertEquals( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
+                      + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
+                      + "probabilities into occurrences and non-occurrences.",
+                      actual.getMessage() );
     }
 
     @Test
     public void testApplyThrowsExceptionForMulticategoryMetricWhenClassifierThresholdsAreMissing()
             throws MetricParameterException
     {
-        exception.expect( MetricConfigException.class );
-        exception.expectMessage( "In order to configure multicategory metrics for ensemble inputs, every metric "
-                                 + "group that contains multicategory metrics must also contain thresholds for classifying the "
-                                 + "forecast probabilities into occurrences and non-occurrences." );
-
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
@@ -685,8 +679,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
-                                                         Collections.singleton( StatisticType.DOUBLE_SCORE ) );
+        MetricConfigException actual = assertThrows( MetricConfigException.class,
+                                                     () -> MetricFactory.ofMetricProcessorForEnsemblePairs( mockedConfig,
+                                                                                                            Collections.singleton( StatisticType.DOUBLE_SCORE ) ) );
+
+        assertEquals( "In order to configure multicategory metrics for ensemble inputs, every metric "
+                      + "group that contains multicategory metrics must also contain thresholds for classifying the "
+                      + "forecast probabilities into occurrences and non-occurrences.",
+                      actual.getMessage() );
     }
 
     @Test
@@ -873,12 +873,20 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         FeatureKey featureKey = FeatureKey.of( "DRRC2" );
         FeatureTuple featureTuple = new FeatureTuple( featureKey, featureKey, featureKey );
-        SampleMetadata expectedSampleMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( featureTuple,
-                                                                                     "SQIN",
-                                                                                     "HEFS" ),
-                                                               expectedWindow,
-                                                               null );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( featureTuple,
+                                          expectedWindow,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata expectedSampleMeta = SampleMetadata.of( evaluation, pool );
 
         //Obtain the results
         List<DoubleScoreStatisticOuter> results =

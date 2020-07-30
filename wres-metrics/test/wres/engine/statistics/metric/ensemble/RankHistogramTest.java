@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.ensemble;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -11,9 +12,7 @@ import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
@@ -33,9 +32,6 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  */
 public final class RankHistogramTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link RankHistogram}.
@@ -237,14 +233,13 @@ public final class RankHistogramTest
      */
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'RANK HISTOGRAM'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.rh.apply( (SampleData<Pair<Double, Ensemble>>) null ) );
 
-        rh.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.rh.getName() + "'.", actual.getMessage() );
     }
-
 
     /**
      * Tests for the correct construction of a {@link RankHistogram} when a random number generator is not supplied.

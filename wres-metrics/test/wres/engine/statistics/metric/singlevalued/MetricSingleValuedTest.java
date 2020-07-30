@@ -2,9 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.engine.statistics.metric.Metric;
@@ -16,9 +14,6 @@ import wres.engine.statistics.metric.Metric;
  */
 public final class MetricSingleValuedTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs a {@link Metric} and tests the {@link Metric#toString()}.

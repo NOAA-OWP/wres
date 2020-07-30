@@ -21,7 +21,6 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -480,7 +479,7 @@ public final class SlicerTest
     public void testFilterListOfMetricOutputs()
     {
         // Populate a list of outputs
-        SampleMetadata metadata = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata metadata = SampleMetadata.of();
 
         TimeWindowOuter windowOne =
                 TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
@@ -574,7 +573,7 @@ public final class SlicerTest
     public void testDiscoverListOfMetricOutputs()
     {
         // Populate a list of outputs
-        SampleMetadata metadata = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata metadata = SampleMetadata.of();
 
         TimeWindowOuter windowOne =
                 TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );

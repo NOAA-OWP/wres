@@ -2,19 +2,17 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -31,9 +29,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class BiasFractionTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link BiasFraction}.
@@ -53,24 +48,19 @@ public final class BiasFractionTest
         //Generate some data
         SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-
         DoubleScoreStatisticOuter actual = this.biasFraction.apply( input );
-        
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( BiasFraction.MAIN )
                                                                                .setValue( 0.056796297974534414 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( BiasFraction.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
+                                                            .setMetric( BiasFraction.BASIC_METRIC )
+                                                            .addStatistics( component )
+                                                            .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-        
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test
@@ -80,7 +70,7 @@ public final class BiasFractionTest
         SampleData<Pair<Double, Double>> input =
                 SampleDataBasic.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreStatisticOuter actual = biasFraction.apply( input );
+        DoubleScoreStatisticOuter actual = this.biasFraction.apply( input );
 
         assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
@@ -88,34 +78,34 @@ public final class BiasFractionTest
     @Test
     public void testGetName()
     {
-        assertTrue( biasFraction.getName().equals( MetricConstants.BIAS_FRACTION.toString() ) );
+        assertTrue( this.biasFraction.getName().equals( MetricConstants.BIAS_FRACTION.toString() ) );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertFalse( biasFraction.isDecomposable() );
+        assertFalse( this.biasFraction.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( biasFraction.isSkillScore() );
+        assertFalse( this.biasFraction.isSkillScore() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( biasFraction.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.biasFraction.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'BIAS FRACTION'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.biasFraction.apply( null ) );
 
-        biasFraction.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.biasFraction.getName() + "'.", actual.getMessage() );
     }
 
 }

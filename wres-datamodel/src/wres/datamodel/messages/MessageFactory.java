@@ -128,7 +128,8 @@ public class MessageFactory
                           project.getPair().getUnit() );
         }
 
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getLeft() ) )
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getLeft() )
+             && Objects.nonNull( project.getInputs().getLeft().getVariable() ) )
         {
             String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
                                                                                            .getLeft() );
@@ -138,7 +139,8 @@ public class MessageFactory
                           variableName );
         }
 
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getRight() ) )
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getRight() )
+             && Objects.nonNull( project.getInputs().getRight().getVariable() ) )
         {
             String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
                                                                                            .getRight() );
@@ -148,7 +150,8 @@ public class MessageFactory
                           variableName );
         }
 
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getBaseline() ) )
+        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getBaseline() )
+             && Objects.nonNull( project.getInputs().getBaseline().getVariable() ) )
         {
             String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
                                                                                            .getBaseline() );
@@ -221,101 +224,6 @@ public class MessageFactory
         }
 
         return builder.build();
-    }
-
-    /**
-     * Sets the evaluation fields using the input and returns an instance of an evaluation.
-     * 
-     * @param unit the measurement units
-     * @param identifier the dataset identifier
-     * @param projectConfig the project declaration
-     * @return the evaluation
-     * @deprecated in favor of {@link #parse(ProjectConfig)}
-     */
-    @Deprecated( since = "4.3", forRemoval = true )
-    public static Evaluation parse( MeasurementUnit unit,
-                                    DatasetIdentifier identifier,
-                                    ProjectConfig projectConfig )
-    {
-
-        Evaluation.Builder evaluationBuilder = Evaluation.newBuilder();
-
-        // Populate the evaluation from the supplied information as reasonably as possible
-        if ( Objects.nonNull( unit ) )
-        {
-            evaluationBuilder.setMeasurementUnit( unit.getUnit() );
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a measurement unit of {}.",
-                          unit.getUnit() );
-        }
-
-        if ( Objects.nonNull( identifier ) && identifier.hasVariableName() )
-        {
-            evaluationBuilder.setLeftVariableName( identifier.getVariableName() );
-            evaluationBuilder.setRightVariableName( identifier.getVariableName() );
-            if ( identifier.hasScenarioNameForBaseline() )
-            {
-                evaluationBuilder.setBaselineVariableName( identifier.getVariableName() );
-            }
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a variable name of {}.",
-                          identifier.getVariableName() );
-        }
-
-        if ( Objects.nonNull( identifier ) && identifier.hasScenarioName() )
-        {
-            evaluationBuilder.setRightDataName( identifier.getScenarioName() );
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a right source name of {}.",
-                          identifier.getScenarioName() );
-        }
-
-        if ( Objects.nonNull( identifier ) && identifier.hasScenarioNameForBaseline() )
-        {
-            evaluationBuilder.setBaselineDataName( identifier.getScenarioNameForBaseline() );
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a baseline source name of "
-                          + "{}.",
-                          identifier.getScenarioNameForBaseline() );
-        }
-
-        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getPair() )
-             && Objects.nonNull( projectConfig.getPair().getSeason() ) )
-        {
-            wres.statistics.generated.Season season = MessageFactory.parse( projectConfig.getPair().getSeason() );
-            evaluationBuilder.setSeason( season );
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a season of "
-                          + "{}.",
-                          projectConfig.getPair().getSeason() );
-        }
-
-        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getPair() )
-             && Objects.nonNull( projectConfig.getPair().getValues() ) )
-        {
-            ValueFilter filter = MessageFactory.parse( projectConfig.getPair().getValues() );
-            evaluationBuilder.setValueFilter( filter );
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a value filter of "
-                          + "{}.",
-                          projectConfig.getPair().getValues() );
-        }
-
-        if ( Objects.nonNull( projectConfig ) && Objects.nonNull( projectConfig.getMetrics() ) )
-        {
-            int metricCount = projectConfig.getMetrics()
-                                           .stream()
-                                           .mapToInt( a -> a.getMetric().size() )
-                                           .sum();
-
-            evaluationBuilder.setMetricCount( metricCount );
-
-            LOGGER.debug( "While creating sample metadata, populated the evaluation with a metric count of "
-                          + "{}.",
-                          metricCount );
-        }
-
-        return evaluationBuilder.build();
     }
 
     /**

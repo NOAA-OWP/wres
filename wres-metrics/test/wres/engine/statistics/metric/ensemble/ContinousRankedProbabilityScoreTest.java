@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.ensemble;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -10,14 +11,11 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -34,9 +32,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class ContinousRankedProbabilityScoreTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link ContinuousRankedProbabilityScore}.
@@ -69,8 +64,8 @@ public final class ContinousRankedProbabilityScoreTest
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-        
+        SampleMetadata m1 = SampleMetadata.of();
+
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
@@ -108,9 +103,6 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( Pair.of( 43.0, Ensemble.of( 23, 12, 12 ) ) );
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
@@ -119,14 +111,12 @@ public final class ContinousRankedProbabilityScoreTest
                                                                                .setValue( 8.734401927437641 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
 
     }
 
@@ -143,9 +133,6 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( Pair.of( 8.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-        
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
@@ -154,14 +141,12 @@ public final class ContinousRankedProbabilityScoreTest
                                                                                .setValue( 13.36 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     /**
@@ -179,9 +164,6 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( Pair.of( 32.0, Ensemble.of( 23, 54, 23, 12, 32 ) ) );
         SampleData<Pair<Double, Ensemble>> input = SampleDataBasic.of( pairs, SampleMetadata.of() );
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
-        
         //Check the results       
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
@@ -190,14 +172,12 @@ public final class ContinousRankedProbabilityScoreTest
                                                                                .setValue( 4.56 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( ContinuousRankedProbabilityScore.BASIC_METRIC )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
 
@@ -286,27 +266,27 @@ public final class ContinousRankedProbabilityScoreTest
      */
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'CONTINUOUS RANKED PROBABILITY SCORE'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.crps.apply( (SampleData<Pair<Double, Ensemble>>) null ) );
 
-        crps.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.crps.getName() + "'.", actual.getMessage() );
     }
+
 
     /**
      * Tests for an expected exception on building a {@link ContinuousRankedProbabilityScore} with 
      * an unrecognized decomposition identifier.
-     * @throws MetricParameterException if the metric could not be built for an unexpected reason
      */
 
     @Test
-    public void testApplyExceptionOnUnrecognizedDecompositionIdentifier() throws MetricParameterException
+    public void testApplyExceptionOnUnrecognizedDecompositionIdentifier()
     {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
+        MetricParameterException actual = assertThrows( MetricParameterException.class,
+                                                   () -> ContinuousRankedProbabilityScore.of( MetricGroup.LBR ) );
 
-        ContinuousRankedProbabilityScore.of( MetricGroup.LBR );
+        assertEquals( "Unsupported decomposition identifier 'LBR'.", actual.getMessage() );
     }
 
 }

@@ -13,14 +13,12 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.GraphicalType;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -41,7 +39,9 @@ import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic;
@@ -140,7 +140,7 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        FeatureKey LID = FeatureKey.of( "JUNP1" );
+        FeatureKey feature = FeatureKey.of( "JUNP1" );
 
         // Create fake outputs
         TimeWindowOuter timeOne =
@@ -154,20 +154,22 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
-                                      "SQIN",
-                                      "HEFS",
-                                      "ESP",
-                                      LeftOrRightOrBaseline.RIGHT );
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
+                                                            feature,
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
 
-        SampleMetadata fakeMetadataOne = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                            datasetIdentifier,
-                                                            timeOne,
-                                                            threshold );
+        SampleMetadata fakeMetadataOne = SampleMetadata.of( evaluation, pool );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS )
@@ -195,10 +197,15 @@ public class WriterTestHelper
                                     Duration.ofHours( 48 ),
                                     Duration.ofHours( 48 ) );
 
-        SampleMetadata fakeMetadataTwo = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                            datasetIdentifier,
-                                                            timeTwo,
-                                                            threshold );
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( feature,
+                                                               feature,
+                                                               null ),
+                                             timeTwo,
+                                             null,
+                                             threshold,
+                                             false );
+
+        SampleMetadata fakeMetadataTwo = SampleMetadata.of( evaluation, poolTwo );
 
         Box anotherBox = Box.newBuilder()
                             .addAllQuantiles( List.of( 11.0, 33.0, 55.0, 77.0, 99.0 ) )
@@ -223,7 +230,7 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        FeatureKey LID = FeatureKey.of( "JUNP1" );
+        FeatureKey feature = FeatureKey.of( "JUNP1" );
 
         // Create fake outputs
         TimeWindowOuter timeOne =
@@ -237,20 +244,22 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
-                                      "SQIN",
-                                      "HEFS",
-                                      "ESP",
-                                      LeftOrRightOrBaseline.RIGHT );
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
+                                                            feature,
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold );
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -298,7 +307,7 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey LID = FeatureKey.of( "CREC1" );
+        FeatureKey feature = FeatureKey.of( "CREC1" );
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
@@ -312,20 +321,22 @@ public class WriterTestHelper
                                                                            Operator.GREATER_EQUAL,
                                                                            ThresholdDataType.LEFT ) );
 
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
-                                      "SQIN",
-                                      "HEFS",
-                                      "ESP",
-                                      LeftOrRightOrBaseline.RIGHT );
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
+                                                            feature,
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold );
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
@@ -389,7 +400,7 @@ public class WriterTestHelper
     {
 
         // location id
-        FeatureKey LID = FeatureKey.of( "FTSC1" );
+        FeatureKey feature = FeatureKey.of( "FTSC1" );
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
@@ -402,20 +413,22 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
-                                      "SQIN",
-                                      "HEFS",
-                                      "ESP",
-                                      LeftOrRightOrBaseline.RIGHT );
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
+                                                            feature,
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold );
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         Instant firstInstant = Instant.parse( "1985-01-01T00:00:00Z" );
         Instant secondInstant = Instant.parse( "1985-01-02T00:00:00Z" );
@@ -478,7 +491,7 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey LID = FeatureKey.of( "DRRC2" );
+        final FeatureKey feature = FeatureKey.of( "DRRC2" );
 
         TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
@@ -487,27 +500,22 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
-                                      "SQIN",
-                                      "HEFS",
-                                      "ESP",
-                                      LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        SampleMetadata fakeMetadataA = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                          datasetIdentifier,
-                                                          timeOne,
-                                                          threshold );
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
+                                                            feature,
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
 
-        SampleMetadata fakeMetadataB = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                          datasetIdentifier,
-                                                          timeOne,
-                                                          threshold );
-
-        SampleMetadata fakeMetadataC = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                          datasetIdentifier,
-                                                          timeOne,
-                                                          threshold );
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -538,9 +546,9 @@ public class WriterTestHelper
                                     .build();
 
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadataA ) );
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadataB ) );
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( three, fakeMetadataC ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadata ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadata ) );
+        fakeOutputs.add( DoubleScoreStatisticOuter.of( three, fakeMetadata ) );
 
         return Collections.unmodifiableList( fakeOutputs );
     }
@@ -556,7 +564,7 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey LID = FeatureKey.of( "DOLC2" );
+        final FeatureKey feature = FeatureKey.of( "DOLC2" );
 
         TimeWindowOuter timeOne =
                 TimeWindowOuter.of( Instant.MIN,
@@ -569,17 +577,22 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
-                                      "SQIN",
-                                      "HEFS",
-                                      "ESP",
-                                      LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold );
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
+                                                            feature,
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
@@ -624,7 +637,7 @@ public class WriterTestHelper
     {
 
         // location id
-        final FeatureKey LID = FeatureKey.of( "FTSC1" );
+        final FeatureKey feature = FeatureKey.of( "FTSC1" );
 
         TimeWindowOuter timeOne = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
@@ -633,17 +646,22 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( LID, LID, null ),
-                                      "SQIN",
-                                      "HEFS",
-                                      "ESP",
-                                      LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        SampleMetadata fakeMetadataA = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                          datasetIdentifier,
-                                                          timeOne,
-                                                          thresholdOne );
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature,
+                                                            feature,
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          thresholdOne,
+                                          false );
+
+        SampleMetadata fakeMetadataA = SampleMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -662,20 +680,30 @@ public class WriterTestHelper
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        SampleMetadata fakeMetadataB = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                          datasetIdentifier,
-                                                          timeOne,
-                                                          thresholdTwo );
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( feature,
+                                                               feature,
+                                                               null ),
+                                             timeOne,
+                                             null,
+                                             thresholdTwo,
+                                             false );
+
+        SampleMetadata fakeMetadataB = SampleMetadata.of( evaluation, poolTwo );
 
         DoubleScoreStatisticOuter fakeOutputB = DoubleScoreStatisticOuter.of( one, fakeMetadataB );
 
         // Add data for another time, and one threshold only
         TimeWindowOuter timeTwo = TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
-        SampleMetadata fakeMetadataC = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                          datasetIdentifier,
-                                                          timeTwo,
-                                                          thresholdOne );
+        Pool poolThree = MessageFactory.parse( new FeatureTuple( feature,
+                                                                 feature,
+                                                                 null ),
+                                               timeTwo,
+                                               null,
+                                               thresholdOne,
+                                               false );
+
+        SampleMetadata fakeMetadataC = SampleMetadata.of( evaluation, poolThree );
 
         DoubleScoreStatisticOuter fakeOutputC = DoubleScoreStatisticOuter.of( one, fakeMetadataC );
 

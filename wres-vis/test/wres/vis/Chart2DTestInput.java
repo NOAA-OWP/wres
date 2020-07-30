@@ -14,38 +14,49 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 
 public class Chart2DTestInput extends TestCase
 {
     private static final FeatureKey NWS_FEATURE = new FeatureKey( "DRRC2", null, null, null );
-    private static final FeatureKey USGS_FEATURE = new FeatureKey( "09165000", "DOLORES RIVER BELOW RICO, CO.", 4326, "POINT ( -108.0603517 37.63888428 )");
+    private static final FeatureKey USGS_FEATURE =
+            new FeatureKey( "09165000", "DOLORES RIVER BELOW RICO, CO.", 4326, "POINT ( -108.0603517 37.63888428 )" );
     private static final FeatureKey NWM_FEATURE = new FeatureKey( "18384141", null, null, null );
     private static final FeatureTuple FEATURE_TUPLE = new FeatureTuple( USGS_FEATURE, NWS_FEATURE, NWM_FEATURE );
 
     public void test1SingleValuedPairsScatter()
             throws ChartEngineException, XYChartDataSourceException, IOException
     {
-        final Random rand = new Random(0L);
+        final Random rand = new Random( 0L );
 
-        final List<Pair<Double,Double>> values = new ArrayList<>();
-        for (int i = 0; i < 100; i ++)
+        final List<Pair<Double, Double>> values = new ArrayList<>();
+        for ( int i = 0; i < 100; i++ )
         {
-            values.add(Pair.of(rand.nextGaussian(), rand.nextGaussian()));
+            values.add( Pair.of( rand.nextGaussian(), rand.nextGaussian() ) );
         }
 
-        final SampleMetadata meta = SampleMetadata.of(MeasurementUnit.of("CMS"),
-                                                 DatasetIdentifier.of( FEATURE_TUPLE,
-                                                                       "SQIN",
-                                                                       "HEFS"));
-        
-        final SampleData<Pair<Double,Double>> pairs = SampleDataBasic.of(values, meta);
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( FEATURE_TUPLE,
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
+        final SampleData<Pair<Double, Double>> pairs = SampleDataBasic.of( values, meta );
 
         //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.
@@ -63,7 +74,7 @@ public class Chart2DTestInput extends TestCase
                                             800,
                                             500 );
 
-            //Compare against OS specific image benchmark.
+        //Compare against OS specific image benchmark.
 //Turned off because this often fails.
 //            FileComparisonUtilities.assertImageFileSimilarToBenchmark(new File("testoutput/chart2DTest/" + scenarioName
 //                + "_output.png"),
