@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -12,9 +13,7 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MetricConstants;
@@ -22,7 +21,6 @@ import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -42,9 +40,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class RelativeOperatingCharacteristicScoreTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link RelativeOperatingCharacteristicScore}.
@@ -88,7 +83,7 @@ public final class RelativeOperatingCharacteristicScoreTest
                 SampleDataBasic.of( values, SampleMetadata.of() );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata m1 = SampleMetadata.of();
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
@@ -137,7 +132,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         SampleData<Pair<Probability, Probability>> input = SampleDataBasic.of( values, meta );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata m1 = SampleMetadata.of();
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
@@ -208,7 +203,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         SampleData<Pair<Probability, Probability>> input = SampleDataBasic.of( values, meta );
 
         //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata m1 = SampleMetadata.of();
 
         //Check the results       
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
@@ -327,10 +322,11 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         SampleData<Pair<Probability, Probability>> transPairs = Slicer.transform( pairs, mapper );
 
-        assertEquals( "ESP", this.rocScore.apply( transPairs )
-                                 .getMetadata()
-                                 .getIdentifier()
-                                 .getScenarioNameForBaseline() );
+        assertEquals( "ESP",
+                      this.rocScore.apply( transPairs )
+                                   .getMetadata()
+                                   .getEvaluation()
+                                   .getBaselineDataName() );
     }
 
     /**
@@ -339,12 +335,12 @@ public final class RelativeOperatingCharacteristicScoreTest
      */
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'RELATIVE OPERATING CHARACTERISTIC SCORE'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.rocScore.apply( (SampleData<Pair<Probability, Probability>>) null ) );
 
-        this.rocScore.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.rocScore.getName() + "'.", actual.getMessage() );
     }
 
 }

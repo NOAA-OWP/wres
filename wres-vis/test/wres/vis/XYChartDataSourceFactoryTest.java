@@ -13,7 +13,9 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 
 /**
  * Tests the {@link XYChartDataSourceFactory}.
@@ -29,7 +31,11 @@ public class XYChartDataSourceFactoryTest
      */
 
     private final SampleMetadata meta =
-            SampleMetadata.of( SampleMetadata.of( MeasurementUnit.of() ), TimeWindowOuter.of() );
+            SampleMetadata.of( SampleMetadata.of( Evaluation.newBuilder()
+                                                            .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                                            .build(),
+                                                  Pool.getDefaultInstance() ),
+                               TimeWindowOuter.of() );
 
     /**
      * Do not throw an IndexOutOfBoundsException when the input is empty. See #65503.

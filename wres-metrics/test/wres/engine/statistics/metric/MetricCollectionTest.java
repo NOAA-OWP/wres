@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -47,8 +46,6 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -659,7 +656,7 @@ public class MetricCollectionTest
         Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
         List<DoubleScoreStatisticOuter> actual = collection.apply( input, ignore );
-        SampleMetadata outM = SampleMetadata.of( MeasurementUnit.of() );
+        SampleMetadata outM = SampleMetadata.of();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( CorrelationPearsons.MAIN )

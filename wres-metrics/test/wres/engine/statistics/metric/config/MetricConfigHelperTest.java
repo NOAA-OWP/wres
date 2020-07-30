@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
@@ -16,11 +17,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.DestinationConfig;
@@ -64,11 +62,8 @@ public final class MetricConfigHelperTest
     /**
      * Test thresholds.
      */
-    
-    private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
 
     /**
      * Default mocked project configuration.
@@ -143,9 +138,10 @@ public final class MetricConfigHelperTest
     @Test
     public void testExceptionFromMetricNameWithNullInput()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify input configuration with a non-null name to map" );
-        MetricConfigHelper.from( (MetricConfigName) null );
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                   () -> MetricConfigHelper.from( (MetricConfigName) null ) );
+
+        assertEquals( "Specify input configuration with a non-null name to map.", actual.getMessage() );
     }
 
     /**
@@ -181,9 +177,10 @@ public final class MetricConfigHelperTest
     @Test
     public void testExceptionFromSummaryStatisticsNameWithNullInput()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify input configuration with a non-null name to map" );
-        MetricConfigHelper.from( (SummaryStatisticsName) null );
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> MetricConfigHelper.from( (SummaryStatisticsName) null ) );
+
+        assertEquals( "Specify input configuration with a non-null name to map.", actual.getMessage() );
     }
 
     /**
@@ -254,16 +251,17 @@ public final class MetricConfigHelperTest
         Map<MetricConstants, Set<ThresholdOuter>> mockExternal = new EnumMap<>( MetricConstants.class );
         Set<ThresholdOuter> atomicExternal = new HashSet<>();
         atomicExternal.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
-                                                     Operator.GREATER,
-                                                     ThresholdConstants.ThresholdDataType.LEFT,
-                                                     dimension ) );
+                                               Operator.GREATER,
+                                               ThresholdConstants.ThresholdDataType.LEFT,
+                                               dimension ) );
         mockExternal.put( MetricConstants.BIAS_FRACTION, atomicExternal );
 
         ThresholdsByMetric externalThresholds =
                 new ThresholdsByMetricBuilder().addThresholds( mockExternal, ThresholdGroup.VALUE ).build();
 
         // Compute combined thresholds
-        ThresholdsByMetric actualByMetric = ThresholdsGenerator.getThresholdsFromConfig(mockedConfig).unionWithThisStore(externalThresholds);
+        ThresholdsByMetric actualByMetric =
+                ThresholdsGenerator.getThresholdsFromConfig( mockedConfig ).unionWithThisStore( externalThresholds );
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual = actualByMetric.getOneOrTwoThresholds();
 
@@ -272,20 +270,20 @@ public final class MetricConfigHelperTest
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                        Operator.GREATER,
+                                                                        ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdConstants.ThresholdDataType.LEFT,
-                                                                              dimension ) ) );
+                                                                        Operator.GREATER,
+                                                                        ThresholdConstants.ThresholdDataType.LEFT,
+                                                                        dimension ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdConstants.ThresholdDataType.LEFT,
-                                                                              dimension ) ) );
+                                                                        Operator.GREATER,
+                                                                        ThresholdConstants.ThresholdDataType.LEFT,
+                                                                        dimension ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdConstants.ThresholdDataType.LEFT,
-                                                                              dimension ) ) );
+                                                                        Operator.GREATER,
+                                                                        ThresholdConstants.ThresholdDataType.LEFT,
+                                                                        dimension ) ) );
 
         expected.put( MetricConstants.BIAS_FRACTION, atomicThresholds );
 
@@ -313,59 +311,60 @@ public final class MetricConfigHelperTest
 
         Method method =
                 ThresholdsGenerator.class.getDeclaredMethod( "getThresholdsFromCommaSeparatedValues",
-                                                            String.class,
-                                                            Operator.class,
-                                                            ThresholdConstants.ThresholdDataType.class,
-                                                            boolean.class,
-                                                            MeasurementUnit.class );
+                                                             String.class,
+                                                             Operator.class,
+                                                             ThresholdConstants.ThresholdDataType.class,
+                                                             boolean.class,
+                                                             MeasurementUnit.class );
         method.setAccessible( true );
 
         // Test with probability thresholds
         @SuppressWarnings( "unchecked" )
         Set<ThresholdOuter> actual = (Set<ThresholdOuter>) method.invoke( null,
-                                                                TEST_THRESHOLDS,
-                                                                Operator.BETWEEN,
-                                                                ThresholdConstants.ThresholdDataType.LEFT,
-                                                                true,
-                                                                null );
+                                                                          TEST_THRESHOLDS,
+                                                                          Operator.BETWEEN,
+                                                                          ThresholdConstants.ThresholdDataType.LEFT,
+                                                                          true,
+                                                                          null );
 
         Set<ThresholdOuter> expected = new HashSet<>();
         expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1, 0.2 ),
-                                                          Operator.BETWEEN,
-                                                          ThresholdConstants.ThresholdDataType.LEFT ) );
+                                                             Operator.BETWEEN,
+                                                             ThresholdConstants.ThresholdDataType.LEFT ) );
         expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2, 0.3 ),
-                                                          Operator.BETWEEN,
-                                                          ThresholdConstants.ThresholdDataType.LEFT ) );
+                                                             Operator.BETWEEN,
+                                                             ThresholdConstants.ThresholdDataType.LEFT ) );
         assertTrue( actual.equals( expected ) );
 
         // Test with value thresholds
         @SuppressWarnings( "unchecked" )
         Set<ThresholdOuter> actualValue = (Set<ThresholdOuter>) method.invoke( null,
-                                                                     TEST_THRESHOLDS,
-                                                                     Operator.BETWEEN,
-                                                                     ThresholdConstants.ThresholdDataType.LEFT,
-                                                                     false,
-                                                                     null );
+                                                                               TEST_THRESHOLDS,
+                                                                               Operator.BETWEEN,
+                                                                               ThresholdConstants.ThresholdDataType.LEFT,
+                                                                               false,
+                                                                               null );
 
         Set<ThresholdOuter> expectedValue = new HashSet<>();
         expectedValue.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1, 0.2 ),
-                                                    Operator.BETWEEN,
-                                                    ThresholdConstants.ThresholdDataType.LEFT ) );
+                                              Operator.BETWEEN,
+                                              ThresholdConstants.ThresholdDataType.LEFT ) );
         expectedValue.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2, 0.3 ),
-                                                    Operator.BETWEEN,
-                                                    ThresholdConstants.ThresholdDataType.LEFT ) );
+                                              Operator.BETWEEN,
+                                              ThresholdConstants.ThresholdDataType.LEFT ) );
 
 
         assertTrue( actualValue.equals( expectedValue ) );
 
-        // Test exception    
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
-        method.invoke( null,
-                       "0.1",
-                       Operator.BETWEEN,
-                       ThresholdConstants.ThresholdDataType.LEFT,
-                       false,
-                       null );
+        // Test exception 
+        InvocationTargetException exception = assertThrows( InvocationTargetException.class,
+                                                            () -> method.invoke( null,
+                                                                                 "0.1",
+                                                                                 Operator.BETWEEN,
+                                                                                 ThresholdConstants.ThresholdDataType.LEFT,
+                                                                                 false,
+                                                                                 null ) );
+        assertEquals( exception.getCause().getClass(), MetricConfigException.class );
     }
 
     /**
@@ -493,13 +492,14 @@ public final class MetricConfigHelperTest
     @Test
     public void testHasSummaryStatisticsThrowsExceptionOnAllValid()
     {
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Cannot obtain summary statistics for the general type 'all valid' "
-                                 + "when a specific type is required: instead, provide a time-series "
-                                 + "metric that is specific." );
+        IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
+                                                        () -> MetricConfigHelper.hasSummaryStatisticsFor( this.defaultMockedConfig,
+                                                                                                          next -> next.equals( TimeSeriesMetricConfigName.ALL_VALID ) ) );
 
-        MetricConfigHelper.hasSummaryStatisticsFor( defaultMockedConfig,
-                                                    next -> next.equals( TimeSeriesMetricConfigName.ALL_VALID ) );
+        assertEquals( "Cannot obtain summary statistics for the general type 'all valid' "
+                      + "when a specific type is required: instead, provide a time-series "
+                      + "metric that is specific.",
+                      actual.getMessage() );
     }
 
     /**
@@ -584,7 +584,7 @@ public final class MetricConfigHelperTest
         expected.add( StatisticType.DURATION_DIAGRAM );
         expected.add( StatisticType.DOUBLE_SCORE );
         expected.add( StatisticType.BOXPLOT_PER_POOL );
-        
+
         assertEquals( expected, MetricConfigHelper.getCacheListFromProjectConfig( mockedConfigWithOutput ) );
 
     }

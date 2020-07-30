@@ -17,13 +17,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.FeatureKey;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
@@ -420,11 +417,20 @@ public class PoolSupplierTest
         this.desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         // Basic metadata
-        this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                           DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "FAKE2" ),
-                                                                                   FeatureKey.of( "FAKE2" ),
-                                                                                   null ),
-                                                                 "STREAMFLOW" ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "STREAMFLOW" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "FAKE2" ),
+                                                            FeatureKey.of( "FAKE2" ),
+                                                            null ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        this.metadata = SampleMetadata.of( evaluation, pool );
 
         // Upscaler
         this.upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
@@ -537,22 +543,12 @@ public class PoolSupplierTest
                                                             poolOneWindow,
                                                             this.desiredTimeScale );
 
-        Pool baselinePool = MessageFactory.parse( poolOneMetadata.getIdentifier().getFeatureTuple(),
-                                                  poolOneWindow,
-                                                  poolOneMetadata.getTimeScale(),
-                                                  null,
-                                                  true );
+        Pool baselinePool = poolOneMetadata.getPool()
+                                           .toBuilder()
+                                           .setIsBaselinePool( true )
+                                           .build();
 
-        Evaluation baseEvaluation =
-                MessageFactory.parse( poolOneMetadata.getMeasurementUnit(),
-                                      DatasetIdentifier.of( poolOneMetadata.getIdentifier().getFeatureTuple(),
-                                                            poolOneMetadata.getIdentifier().getVariableName(),
-                                                            poolOneMetadata.getIdentifier().getScenarioName(),
-                                                            poolOneMetadata.getIdentifier()
-                                                                           .getScenarioNameForBaseline(),
-                                                            LeftOrRightOrBaseline.BASELINE ), null );
-
-        SampleMetadata poolOneMetadataBaseline = SampleMetadata.of( baseEvaluation, baselinePool );
+        SampleMetadata poolOneMetadataBaseline = SampleMetadata.of( poolOneMetadata.getEvaluation(), baselinePool );
 
         Supplier<PoolOfPairs<Double, Double>> poolOneSupplier =
                 new PoolOfPairsSupplierBuilder<Double, Double>().setLeft( obsSupplier )

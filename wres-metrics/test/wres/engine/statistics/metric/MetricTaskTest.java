@@ -17,7 +17,6 @@ import org.junit.Test;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.engine.statistics.metric.singlevalued.MeanError;
-import wres.engine.statistics.metric.singlevalued.MedianError;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;

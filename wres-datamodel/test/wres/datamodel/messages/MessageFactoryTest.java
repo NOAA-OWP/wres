@@ -28,8 +28,6 @@ import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.EvaluationEvent.EventType;
@@ -432,16 +430,16 @@ public class MessageFactoryTest
 
         FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
-        DatasetIdentifier datasetIdentifier = DatasetIdentifier.of( new FeatureTuple( location,
-                                                                                      location,
-                                                                                      location ),
-                                                                    SQIN,
-                                                                    HEFS,
-                                                                    ESP,
-                                                                    LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setBaselineDataName( ESP )
+                                          .setMeasurementUnit( CMS.toString() )
+                                          .build();
 
-        Evaluation evaluation = MessageFactory.parse( CMS, datasetIdentifier, null );
-        Pool pool = MessageFactory.parse( new FeatureTuple( location, location, location ),
+        Pool pool = MessageFactory.parse( new FeatureTuple( location,
+                                                            location,
+                                                            location ),
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -507,15 +505,16 @@ public class MessageFactoryTest
 
         FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
-                                      SQIN,
-                                      HEFS,
-                                      ESP,
-                                      LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setBaselineDataName( ESP )
+                                          .setMeasurementUnit( CMS.toString() )
+                                          .build();
 
-        Evaluation evaluation = MessageFactory.parse( CMS, datasetIdentifier, null );
-        Pool pool = MessageFactory.parse( new FeatureTuple( location, location, location ),
+        Pool pool = MessageFactory.parse( new FeatureTuple( location,
+                                                            location,
+                                                            location ),
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -591,15 +590,16 @@ public class MessageFactoryTest
 
         FeatureKey location = new FeatureKey( FEATURE_NAME, null, null, "POINT ( 23.45, 56.21 )" );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
-                                      SQIN,
-                                      HEFS,
-                                      ESP,
-                                      LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setBaselineDataName( ESP )
+                                          .setMeasurementUnit( CMS.toString() )
+                                          .build();
 
-        Evaluation evaluation = MessageFactory.parse( CMS, datasetIdentifier, null );
-        Pool pool = MessageFactory.parse( new FeatureTuple( location, location, location ),
+        Pool pool = MessageFactory.parse( new FeatureTuple( location,
+                                                            location,
+                                                            location ),
                                           TIME_WINDOW,
                                           timeScale,
                                           threshold,
@@ -722,17 +722,22 @@ public class MessageFactoryTest
 
         FeatureKey location = FeatureKey.of( "DOLC2" );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
-                                      SQIN,
-                                      HEFS,
-                                      ESP,
-                                      LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setBaselineDataName( ESP )
+                                          .setMeasurementUnit( CMS.toString() )
+                                          .build();
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( CMS,
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold );
+        Pool pool = MessageFactory.parse( new FeatureTuple( location,
+                                                            location,
+                                                            location ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR )
@@ -778,17 +783,22 @@ public class MessageFactoryTest
 
         FeatureKey location = FeatureKey.of( "DOLC2" );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( location, location, location ),
-                                      SQIN,
-                                      HEFS,
-                                      ESP,
-                                      LeftOrRightOrBaseline.RIGHT );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setBaselineDataName( ESP )
+                                          .setMeasurementUnit( CMS.toString() )
+                                          .build();
 
-        SampleMetadata fakeMetadata = SampleMetadata.of( CMS,
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold );
+        Pool pool = MessageFactory.parse( new FeatureTuple( location,
+                                                            location,
+                                                            location ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
                                                             .setName( MetricName.TIME_TO_PEAK_ERROR )

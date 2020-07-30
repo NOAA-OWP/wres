@@ -19,7 +19,6 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
@@ -246,21 +245,24 @@ public final class MetricTestDataFactory
         baseline.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.1, 13.0 ) ) );
         baseline.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.2, 94.8 ) ) );
 
-        SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                 DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                       "SQIN",
-                                                                       "HEFS",
-                                                                       "ESP" ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
 
-        Pool pool = Pool.newBuilder().setIsBaselinePool( true ).build();
+        Pool pool = MessageFactory.parse( Boilerplate.getFeatureTuple(),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                            "SQIN",
-                                                                            "ESP" ),
-                                                      null );
+        SampleMetadata main = SampleMetadata.of( evaluation, pool );
 
-        SampleMetadata base = SampleMetadata.of( evaluation, pool );
+        Pool poolTwo = Pool.newBuilder().setIsBaselinePool( true ).build();
+
+        SampleMetadata base = SampleMetadata.of( evaluation, poolTwo );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -296,10 +298,19 @@ public final class MetricTestDataFactory
             events.add( Event.of( start.plus( Duration.ofHours( i ) ), Pair.of( 5.0, 10.0 ) ) );
         }
 
-        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                 DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                       "SQIN",
-                                                                       "HEFS" ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( Boilerplate.getFeatureTuple(),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -338,11 +349,12 @@ public final class MetricTestDataFactory
                                                            Instant.parse( SECOND_TIME ),
                                                            Duration.ofHours( 1 ) );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( Boilerplate.getFeatureTuple(),
-                                                                            "SQIN",
-                                                                            "HEFS" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( Boilerplate.getFeatureTuple(),
                                           window,
                                           null,
@@ -400,11 +412,12 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "103.1" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "QME",
-                                                                            "NVE" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "QME" )
+                                          .setRightDataName( "NVE" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -436,10 +449,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "MAP" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -464,24 +478,24 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Double> getSingleValuedPairsSeven()
     {
         //Construct some single-valued pairs
-        SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                 DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                       "SQIN",
-                                                                       "HEFS" ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        SampleMetadata main = SampleMetadata.of( evaluation, Pool.getDefaultInstance() );
         Pool pool = Pool.newBuilder()
                         .setIsBaselinePool( true )
                         .build();
 
+        Evaluation evaluationTwo = Evaluation.newBuilder()
+                                             .setRightVariableName( "SQIN" )
+                                             .setRightDataName( "ESP" )
+                                             .setMeasurementUnit( "CMS" )
+                                             .build();
 
-        FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
-
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "SQIN",
-                                                                            "ESP" ),
-                                                      null );
-
-        SampleMetadata base = SampleMetadata.of( evaluation, pool );
+        SampleMetadata base = SampleMetadata.of( evaluationTwo, pool );
 
         PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
@@ -654,10 +668,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "FAKE2" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "DISCHARGE" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "DISCHARGE" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -716,12 +731,13 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "SQIN",
-                                                                            "HEFS",
-                                                                            "ESP" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -800,12 +816,13 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "SQIN",
-                                                                            "HEFS",
-                                                                            "ESP" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -878,11 +895,12 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "SQIN",
-                                                                            "HEFS" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -921,10 +939,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "MAP" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -956,10 +975,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( MM_DAY ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "MAP" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -1089,10 +1109,16 @@ public final class MetricTestDataFactory
                                  new boolean[] { false, false, true } ) );
         }
 
-        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
-                                                       DatasetIdentifier.of( getLocation( DRRC2 ),
-                                                                             "SQIN",
-                                                                             "HEFS" ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ), null, null, null, false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
+
         return SampleDataBasic.of( values, meta ); //Construct the pairs
     }
 
@@ -1572,10 +1598,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            STREAMFLOW ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -1620,10 +1647,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            STREAMFLOW ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -1669,10 +1697,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            STREAMFLOW ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -1707,10 +1736,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            STREAMFLOW ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,
@@ -1756,10 +1786,11 @@ public final class MetricTestDataFactory
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( "A" );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            STREAMFLOW ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,

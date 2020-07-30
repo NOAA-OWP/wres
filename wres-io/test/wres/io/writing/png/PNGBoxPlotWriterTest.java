@@ -21,11 +21,10 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -35,6 +34,8 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriterTestHelper;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 import wres.system.SystemSettings;
 
 /**
@@ -166,17 +167,20 @@ public class PNGBoxPlotWriterTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT ) );
 
-        DatasetIdentifier datasetIdentifier =
-                DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
-                                                        FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
-                                                        null ),
-                                      "SQIN" );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        MeasurementUnit measurementUnit = MeasurementUnit.of( "CMS" );
-        SampleMetadata fakeMetadata = SampleMetadata.of( measurementUnit,
-                                                         datasetIdentifier,
-                                                         timeOne,
-                                                         threshold );
+        Pool pool = MessageFactory.parse( new FeatureTuple( FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
+                                                            FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
+                                                            null ),
+                                          timeOne,
+                                          null,
+                                          threshold,
+                                          false );
+
+        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
 
         // Construct the fake declaration
         Feature feature = WriterTestHelper.getMockedFeature( PNGBoxPlotWriterTest.LOCATION_ID );

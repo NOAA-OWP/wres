@@ -110,17 +110,27 @@ public final class SingleValuedPairsWriterTest
         setOfPairs.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), Pair.of( 3.0, 4.0 ) ) );
         setOfPairs.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), Pair.of( 5.0, 6.0 ) ) );
 
-        SampleMetadata meta =
-                SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "PLUM" ),
-                                                                           FeatureKey.of( "PLUM" ),
-                                                                           null ),
-                                                         "RIFLE" ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "RIFLE" )
+                                          .setMeasurementUnit( "SCOOBIES" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "PLUM" ),
+                                                            FeatureKey.of( "PLUM" ),
+                                                            null ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata meta = SampleMetadata.of( evaluation, pool );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime );
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
 
-        pairs = tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
+        SingleValuedPairsWriterTest.pairs = tsBuilder.addTimeSeries( timeSeriesOne )
+                                                     .setMetadata( meta )
+                                                     .build();
 
         // Create the second time-series of pairs
         PoolOfPairsBuilder<Double, Double> tsBuilderTwo = new PoolOfPairsBuilder<>();
@@ -133,17 +143,26 @@ public final class SingleValuedPairsWriterTest
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ),
                                      Pair.of( 11.0, 12.0 ) ) );
 
-        SampleMetadata metaTwo =
-                SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "ORANGE" ),
-                                                                           FeatureKey.of( "ORANGE" ),
-                                                                           null ),
-                                                         "PISTOL" ) );
+        Evaluation evaluationTwo = Evaluation.newBuilder()
+                                             .setRightVariableName( "PISTOL" )
+                                             .setMeasurementUnit( "SCOOBIES" )
+                                             .build();
+
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "ORANGE" ),
+                                                               FeatureKey.of( "ORANGE" ),
+                                                               null ),
+                                             null,
+                                             null,
+                                             null,
+                                             false );
+
+        SampleMetadata metaTwo = SampleMetadata.of( evaluationTwo, poolTwo );
         TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
 
-        pairsTwo = tsBuilderTwo.addTimeSeries( timeSeriesTwo ).setMetadata( metaTwo ).build();
+        SingleValuedPairsWriterTest.pairsTwo =
+                tsBuilderTwo.addTimeSeries( timeSeriesTwo ).setMetadata( metaTwo ).build();
 
 
         // Create the third time-series of pairs
@@ -157,17 +176,28 @@ public final class SingleValuedPairsWriterTest
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ),
                                        Pair.of( 17.0, 18.0 ) ) );
 
-        SampleMetadata metaThree =
-                SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
-                                   DatasetIdentifier.of( new FeatureTuple( FeatureKey.of( "BANANA" ),
-                                                                           FeatureKey.of( "BANANA" ),
-                                                                           null ),
-                                                         "GRENADE" ) );
+        Evaluation evaluationThree = Evaluation.newBuilder()
+                                               .setRightVariableName( "GRENADE" )
+                                               .setMeasurementUnit( "SCOOBIES" )
+                                               .build();
+
+        Pool poolThree = MessageFactory.parse( new FeatureTuple( FeatureKey.of( "BANANA" ),
+                                                                 FeatureKey.of( "BANANA" ),
+                                                                 null ),
+                                               null,
+                                               null,
+                                               null,
+                                               false );
+
+        SampleMetadata metaThree = SampleMetadata.of( evaluationThree, poolThree );
+
         TimeSeriesMetadata metadataThree = getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
 
-        pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree ).setMetadata( metaThree ).build();
+        SingleValuedPairsWriterTest.pairsThree = tsBuilderThree.addTimeSeries( timeSeriesThree )
+                                                               .setMetadata( metaThree )
+                                                               .build();
     }
 
     @Before
@@ -198,10 +228,12 @@ public final class SingleValuedPairsWriterTest
             FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
                                                           FeatureKey.of( "PINEAPPLE" ),
                                                           null );
-            Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "SCOOBIES" ),
-                                                          DatasetIdentifier.of( featureTuple,
-                                                                                "MORTARS" ),
-                                                          null );
+
+            Evaluation evaluation = Evaluation.newBuilder()
+                                              .setRightVariableName( "MORTARS" )
+                                              .setMeasurementUnit( "SCOOBIES" )
+                                              .build();
+
             Pool pool = MessageFactory.parse( featureTuple,
                                               null,
                                               TimeScaleOuter.of( Duration.ofSeconds( 3600 ),

@@ -6,11 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -19,7 +18,9 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -60,11 +61,20 @@ public final class DataModelTestDataFactory
         List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
 
         //Fake metadata
-        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( DRRC2_TUPLE,
-                                                                               "SQIN",
-                                                                               "HEFS",
-                                                                               "ESP" ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setRightVariableName( "SQIN" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( DataModelTestDataFactory.DRRC2_TUPLE,
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        final SampleMetadata source = SampleMetadata.of( evaluation, pool );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 

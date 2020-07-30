@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -8,9 +9,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
@@ -32,9 +31,6 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  */
 public final class RelativeOperatingCharacteristicDiagramTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link RelativeOperatingCharacteristicDiagram}.
@@ -166,7 +162,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     @Test
     public void testGetName()
     {
-        assertTrue( roc.getName().equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString() ) );
+        assertTrue( this.roc.getName().equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString() ) );
     }
 
     /**
@@ -175,12 +171,13 @@ public final class RelativeOperatingCharacteristicDiagramTest
      */
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'RELATIVE OPERATING CHARACTERISTIC DIAGRAM'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.roc.apply( (SampleData<Pair<Probability, Probability>>) null ) );
 
-        roc.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.roc.getName() + "'.", actual.getMessage() );
     }
+
 
 }

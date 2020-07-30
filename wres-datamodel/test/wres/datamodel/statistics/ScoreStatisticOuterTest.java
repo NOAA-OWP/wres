@@ -4,17 +4,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -31,14 +33,43 @@ public final class ScoreStatisticOuterTest
      * Instant to use when testing.
      */
 
-    private final DoubleScoreStatistic one =
-            DoubleScoreStatistic.newBuilder()
-                                .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
-                                .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                             .setValue( 1.0 )
-                                                                             .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                   .setName( ComponentName.MAIN ) ) )
-                                .build();
+    private DoubleScoreStatistic one;
+
+    /**
+     * Default metadata for testing.
+     */
+    
+    private SampleMetadata metadata;
+
+    @Before
+    public void runBeforeEachTest()
+    {
+        FeatureKey feature = FeatureKey.of( "A" );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature, feature, feature ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+        this.metadata = SampleMetadata.of( evaluation, pool );
+
+        this.one =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 1.0 )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                    .build();
+    }
+
 
     /**
      * Constructs a {@link DoubleScoreStatisticOuter} and tests for equality with another {@link DoubleScoreStatisticOuter}.
@@ -48,20 +79,33 @@ public final class ScoreStatisticOuterTest
     public void testEquals()
     {
         FeatureKey l1 = FeatureKey.of( "A" );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                     "B",
-                                                                     "C" ) );
-        FeatureKey l2 = FeatureKey.of( "A" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l1, l1, l1 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
+
         FeatureKey l3 = FeatureKey.of( "B" );
-        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
+                                             null,
+                                             null,
+                                             null,
+                                             false );
+
+        SampleMetadata m3 = SampleMetadata.of( evaluation, poolTwo );
 
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> s =
                 DoubleScoreStatisticOuter.of( this.one, m1 );
@@ -97,16 +141,10 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testToString()
     {
-        FeatureKey l1 = FeatureKey.of( "A" );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                     "B",
-                                                                     "C" ) );
-
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> s =
-                DoubleScoreStatisticOuter.of( this.one, m1 );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> t =
-                DoubleScoreStatisticOuter.of( this.one, m1 );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata );
         assertEquals( "Expected equal string representations.", s.toString(), t.toString() );
     }
 
@@ -117,22 +155,11 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testGetMetadata()
     {
-        FeatureKey l1 = FeatureKey.of( "A" );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                     "B",
-                                                                     "C" ) );
-        FeatureKey l2 = FeatureKey.of( "B" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                     "B",
-                                                                     "C" ) );
-
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
-                DoubleScoreStatisticOuter.of( this.one, m1 );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> r =
-                DoubleScoreStatisticOuter.of( this.one, m2 );
-        assertNotEquals( "Equal metadata.", q.getMetadata(), r.getMetadata() );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata );
+        assertEquals( q.getMetadata(), r.getMetadata() );
     }
 
     /**
@@ -142,21 +169,10 @@ public final class ScoreStatisticOuterTest
     @Test
     public void testHashCode()
     {
-        FeatureKey l1 = FeatureKey.of( "A" );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l1, l1, l1 ),
-                                                                     "B",
-                                                                     "C" ) );
-        FeatureKey l2 = FeatureKey.of( "A" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                     "B",
-                                                                     "C" ) );
-
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
-                DoubleScoreStatisticOuter.of( this.one, m1 );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> r =
-                DoubleScoreStatisticOuter.of( this.one, m2 );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata );
         assertEquals( "Expected equal hash codes.", q.hashCode(), r.hashCode() );
     }
 

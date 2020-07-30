@@ -33,7 +33,6 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
@@ -197,11 +196,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-            Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                          DatasetIdentifier.of( featureTuple,
-                                                                                "SQIN",
-                                                                                "HEFS" ),
-                                                          null );
+            Evaluation evaluation = Evaluation.newBuilder()
+                                              .setRightVariableName( "SQIN" )
+                                              .setRightDataName( "HEFS" )
+                                              .setMeasurementUnit( "CMS" )
+                                              .build();
+
             Pool pool = MessageFactory.parse( featureTuple,
                                               window,
                                               null,
@@ -240,12 +240,19 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           ThresholdDataType.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        SampleMetadata expectedMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
-                                                                               "SQIN",
-                                                                               "HEFS" ),
-                                                         expectedWindow,
-                                                         expectedThreshold );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+                                          expectedWindow,
+                                          null,
+                                          expectedThreshold,
+                                          false );
+
+        SampleMetadata expectedMeta = SampleMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -345,17 +352,26 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
-                                                                     STREAMFLOW ),
-                                               firstWindow,
-                                               thresholds );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
 
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
-                                                                     STREAMFLOW ),
-                                               secondWindow,
-                                               thresholds );
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                          firstWindow,
+                                          null,
+                                          thresholds,
+                                          false );
+
+        SampleMetadata m1 = SampleMetadata.of( evaluation, pool );
+
+        Pool poolTwo = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                             secondWindow,
+                                             null,
+                                             thresholds,
+                                             false );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluation, poolTwo );
 
         PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
                                                                .setTime( Timestamp.newBuilder()
@@ -449,9 +465,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                        Operator.GREATER,
                                                                                        ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                   DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
-                                                                         STREAMFLOW ) );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata source = SampleMetadata.of( evaluation, pool );
 
         List<DurationDiagramStatisticOuter> expected = new ArrayList<>();
 
@@ -551,11 +576,18 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        SampleMetadata scoreMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
-                                                                            STREAMFLOW ),
-                                                      timeWindow,
-                                                      thresholds );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                          timeWindow,
+                                          null,
+                                          thresholds,
+                                          false );
+
+        SampleMetadata scoreMeta = SampleMetadata.of( evaluation, pool );
 
         com.google.protobuf.Duration expectedMean = MessageFactory.parse( Duration.ofHours( 3 ) );
         com.google.protobuf.Duration expectedMedian = MessageFactory.parse( Duration.ofHours( 3 ) );
@@ -680,11 +712,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-            Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                          DatasetIdentifier.of( featureTuple,
-                                                                                "SQIN",
-                                                                                "HEFS" ),
-                                                          null );
+            Evaluation evaluation = Evaluation.newBuilder()
+                                              .setRightVariableName( "SQIN" )
+                                              .setMeasurementUnit( "CMS" )
+                                              .setRightDataName( "HEFS" )
+                                              .build();
+
             Pool pool = MessageFactory.parse( featureTuple,
                                               window,
                                               null,
@@ -720,12 +753,19 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           Operator.GREATER_EQUAL,
                                                           ThresholdDataType.LEFT ) );
 
-        SampleMetadata expectedMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
-                                                                               "SQIN",
-                                                                               "HEFS" ),
-                                                         expectedWindow,
-                                                         expectedThreshold );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+                                          expectedWindow,
+                                          null,
+                                          expectedThreshold,
+                                          false );
+
+        SampleMetadata expectedMeta = SampleMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -779,11 +819,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-            Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                          DatasetIdentifier.of( featureTuple,
-                                                                                "SQIN",
-                                                                                "HEFS" ),
-                                                          null );
+            Evaluation evaluation = Evaluation.newBuilder()
+                                              .setRightVariableName( "SQIN" )
+                                              .setRightDataName( "HEFS" )
+                                              .setMeasurementUnit( "CMS" )
+                                              .build();
+
             Pool pool = MessageFactory.parse( featureTuple,
                                               window,
                                               null,
@@ -820,12 +861,19 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                           ThresholdDataType.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        SampleMetadata expectedMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                         DatasetIdentifier.of( MetricTestDataFactory.getLocation( DRRC2 ),
-                                                                               "SQIN",
-                                                                               "HEFS" ),
-                                                         expectedWindow,
-                                                         expectedThreshold );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( DRRC2 ),
+                                          expectedWindow,
+                                          null,
+                                          expectedThreshold,
+                                          false );
+
+        SampleMetadata expectedMeta = SampleMetadata.of( evaluation, pool );
 
         DoubleScoreStatistic table =
                 DoubleScoreStatistic.newBuilder()
@@ -884,18 +932,25 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Metadata
         TimeWindowOuter combinedWindow = TimeWindowOuter.of( Instant.MIN,
                                                              Instant.MAX );
-        final TimeWindowOuter timeWindow = combinedWindow;
+        TimeWindowOuter timeWindow = combinedWindow;
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           Operator.GREATER,
                                                           ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        SampleMetadata scoreMeta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( MetricTestDataFactory.getLocation( "A" ),
-                                                                            STREAMFLOW ),
-                                                      timeWindow,
-                                                      thresholds );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( STREAMFLOW )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( MetricTestDataFactory.getLocation( "A" ),
+                                          timeWindow,
+                                          null,
+                                          thresholds,
+                                          false );
+
+        SampleMetadata scoreMeta = SampleMetadata.of( evaluation, pool );
 
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
                                                         .setName( MetricName.TIME_TO_PEAK_ERROR_STATISTIC )
@@ -928,11 +983,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         FeatureTuple featureTuple = MetricTestDataFactory.getLocation( DRRC2 );
 
-        Evaluation evaluation = MessageFactory.parse( MeasurementUnit.of( "CMS" ),
-                                                      DatasetIdentifier.of( featureTuple,
-                                                                            "SQIN",
-                                                                            "AHPS" ),
-                                                      null );
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "AHPS" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
         Pool pool = MessageFactory.parse( featureTuple,
                                           window,
                                           null,

@@ -2,20 +2,17 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -33,9 +30,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class SumOfSquareErrorTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link SumOfSquareError}.
@@ -55,13 +49,6 @@ public final class SumOfSquareErrorTest
         //Generate some data
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( MetricTestDataFactory.getLocation( "DRRC2" ),
-                                                                     "SQIN",
-                                                                     "HEFS",
-                                                                     "ESP" ) );
-
         //Check the results
         DoubleScoreStatisticOuter actual = this.sse.apply( input );
 
@@ -76,15 +63,13 @@ public final class SumOfSquareErrorTest
                                                                                .setValue( 4000039.29 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( SumOfSquareError.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .setSampleSize( 10 )
-                                                         .build();
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
+                                                            .setMetric( SumOfSquareError.BASIC_METRIC )
+                                                            .addStatistics( component )
+                                                            .setSampleSize( 10 )
+                                                            .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected.getData(), actual.getData() );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test
@@ -102,49 +87,49 @@ public final class SumOfSquareErrorTest
     @Test
     public void testGetName()
     {
-        assertTrue( sse.getName().equals( MetricConstants.SUM_OF_SQUARE_ERROR.toString() ) );
+        assertTrue( this.sse.getName().equals( MetricConstants.SUM_OF_SQUARE_ERROR.toString() ) );
     }
 
     @Test
     public void testIsDecomposable()
     {
-        assertTrue( sse.isDecomposable() );
+        assertTrue( this.sse.isDecomposable() );
     }
 
     @Test
     public void testIsSkillScore()
     {
-        assertFalse( sse.isSkillScore() );
+        assertFalse( this.sse.isSkillScore() );
     }
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( sse.getScoreOutputGroup() == MetricGroup.NONE );
+        assertTrue( this.sse.getScoreOutputGroup() == MetricGroup.NONE );
     }
 
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( sse.getCollectionOf().equals( MetricConstants.SUM_OF_SQUARE_ERROR ) );
+        assertTrue( this.sse.getCollectionOf().equals( MetricConstants.SUM_OF_SQUARE_ERROR ) );
     }
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'SUM OF SQUARE ERROR'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.sse.apply( null ) );
 
-        sse.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.sse.getName() + "'.", actual.getMessage() );
     }
 
     @Test
     public void testAggregateExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'SUM OF SQUARE ERROR'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.sse.aggregate( null ) );
 
-        sse.aggregate( null );
+        assertEquals( "Specify non-null input to the '" + this.sse.getName() + "'.", actual.getMessage() );
     }
 
 }

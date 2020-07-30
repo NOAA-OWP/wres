@@ -7,21 +7,20 @@ import static org.junit.Assert.assertThrows;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.sampledata.MeasurementUnit;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 
 /**
  * Tests the {@link DiagramStatisticOuter}.
@@ -31,19 +30,26 @@ import wres.statistics.generated.MetricName;
 public final class DiagramStatisticOuterTest
 {
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     private SampleMetadata metadata;
 
     @Before
     public void runBeforeEachTest()
     {
         FeatureKey feature = FeatureKey.of( "A" );
-        this.metadata = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                           DatasetIdentifier.of( new FeatureTuple( feature, feature, feature),
-                                                                 "B",
-                                                                 "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( feature, feature, feature ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        this.metadata = SampleMetadata.of( evaluation, pool );
     }
 
     /**
@@ -54,15 +60,29 @@ public final class DiagramStatisticOuterTest
     public void testEquals()
     {
         FeatureKey l2 = FeatureKey.of( "A" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
         FeatureKey l3 = FeatureKey.of( "B" );
-        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l3, l3, l3 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Pool poolTwo = MessageFactory.parse( new FeatureTuple( l3, l3, l3 ),
+                                             null,
+                                             null,
+                                             null,
+                                             false );
+
+        SampleMetadata m3 = SampleMetadata.of( evaluation, poolTwo );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()
@@ -156,10 +176,20 @@ public final class DiagramStatisticOuterTest
     public void testGetMetadata()
     {
         FeatureKey l2 = FeatureKey.of( "B" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                               DatasetIdentifier.of( new FeatureTuple( l2, l2, l2 ),
-                                                                     "B",
-                                                                     "C" ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightDataName( "B" )
+                                          .setBaselineDataName( "C" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Pool pool = MessageFactory.parse( new FeatureTuple( l2, l2, l2 ),
+                                          null,
+                                          null,
+                                          null,
+                                          false );
+
+        SampleMetadata m2 = SampleMetadata.of( evaluation, pool );
 
         DiagramMetricComponent podComponent =
                 DiagramMetricComponent.newBuilder()

@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -9,16 +10,10 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.FeatureKey;
-import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Probability;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
@@ -36,9 +31,6 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  */
 public final class ReliabilityDiagramTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Default instance of a {@link ReliabilityDiagram}.
@@ -170,18 +162,9 @@ public final class ReliabilityDiagramTest
         data.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
         data.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
 
-        FeatureKey fake = FeatureKey.of( "FAKE" );
-        FeatureTuple fakeTuple = new FeatureTuple( fake, fake, fake );
-        DatasetIdentifier identifier =
-                DatasetIdentifier.of( fakeTuple, "MAP", "FK" );
-
         SampleData<Pair<Probability, Probability>> input =
                 SampleDataBasic.of( data,
-                                    SampleMetadata.of( MeasurementUnit.of(),
-                                                       identifier ) );
-
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(), identifier );
+                                    SampleMetadata.of() );
 
         //Check the results       
         DiagramStatisticOuter actual = rel.apply( input );
@@ -234,16 +217,14 @@ public final class ReliabilityDiagramTest
                                          .addAllValues( expectedSample )
                                          .build();
 
-        DiagramStatistic statistic = DiagramStatistic.newBuilder()
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
                                                      .addStatistics( forecastProbability )
                                                      .addStatistics( observedFrequency )
                                                      .addStatistics( sampleSize )
                                                      .setMetric( ReliabilityDiagram.BASIC_METRIC )
                                                      .build();
 
-        DiagramStatisticOuter expected = DiagramStatisticOuter.of( statistic, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     /**
@@ -317,12 +298,13 @@ public final class ReliabilityDiagramTest
      */
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'RELIABILITY DIAGRAM'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.rel.apply( (SampleData<Pair<Probability, Probability>>) null ) );
 
-        rel.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.rel.getName() + "'.", actual.getMessage() );
     }
+
 
 }

@@ -26,6 +26,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
@@ -94,11 +95,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         if ( !this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            LOGGER.debug( "Removing any single-valued pairs with missing left or right values for {} at "
+            LOGGER.debug( "Removing any single-valued pairs with missing left or right values for feature {} at "
                           + "time window {}, since time-series metrics are not required.",
-                          inputNoMissing.getMetadata().getIdentifier(),
+                          MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
                           inputNoMissing.getMetadata().getTimeWindow() );
-
+            
             inputNoMissing = TimeSeriesSlicer.filter( input,
                                                       Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),
                                                       MetricProcessor.ADMISSABLE_DATA );
@@ -125,7 +126,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      input.getMetadata().getIdentifier().getFeatureTuple(),
+                      MessageFactory.parse( input.getMetadata().getPool().getGeometryTuples( 0 ) ),
                       input.getMetadata().getTimeWindow() );
 
         //Process and return the result       

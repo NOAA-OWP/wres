@@ -1,13 +1,13 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
@@ -26,14 +26,11 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 public final class DoubleErrorScoreTest
 {
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     /**
      * Default instance of a {@link MeanError}.
      */
 
-    private DoubleErrorScore<SampleData<Pair<Double,Double>>> score;
+    private DoubleErrorScore<SampleData<Pair<Double, Double>>> score;
 
     @Before
     public void setupBeforeEachTest()
@@ -54,8 +51,8 @@ public final class DoubleErrorScoreTest
         //Check the parameters
         assertTrue( "Unexpected baseline identifier for the DoubleErrorScore.",
                     actual.getMetadata()
-                          .getIdentifier()
-                          .getScenarioNameForBaseline()
+                          .getEvaluation()
+                          .getBaselineDataName()
                           .equals( "ESP" ) );
     }
 
@@ -74,7 +71,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testExceptionOnNullErrorFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
+        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
         {
             private ExceptionCheck()
             {
@@ -100,16 +97,17 @@ public final class DoubleErrorScoreTest
             }
         }
 
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Cannot construct the error score 'MEAN ERROR' with a null error function." );
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() ) );
 
-        new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
+        assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null error function.",
+                      actual.getMessage() );
     }
 
     @Test
     public void testExceptionOnNullAccumulationFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
+        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
         {
             private ExceptionCheck()
             {
@@ -135,17 +133,18 @@ public final class DoubleErrorScoreTest
             }
         }
 
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Cannot construct the error score 'MEAN ERROR' with a null "
-                                 + "accumulator function." );
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() ) );
 
-        new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
+        assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null "
+                + "accumulator function.",
+                      actual.getMessage() );
     }
-    
+
     @Test
     public void testExceptionOnNullErrorFunctionAndNonNullAccumulatorFunction()
     {
-        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
+        class ExceptionCheck extends DoubleErrorScore<SampleData<Pair<Double, Double>>>
         {
             private ExceptionCheck()
             {
@@ -171,19 +170,20 @@ public final class DoubleErrorScoreTest
             }
         }
 
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Cannot construct the error score 'MEAN ERROR' with a null error function." );
+        NullPointerException actual = assertThrows( NullPointerException.class,
+                                                    () -> new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() ) );
 
-        new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
-    }    
+        assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null error function.",
+                      actual.getMessage() );
+    }
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        exception.expect( SampleDataException.class );
-        exception.expectMessage( "Specify non-null input to the 'MEAN ERROR'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.score.apply( null ) );
 
-        score.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.score.getName() + "'.", actual.getMessage() );
     }
 
 }

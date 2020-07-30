@@ -14,8 +14,10 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.Evaluation;
 
 /**
  * Tests the {@link WresArgumentProcessor}.
@@ -30,8 +32,12 @@ public class WRESArgumentProcessorTest
      * Metadata to assist in testing.
      */
 
-    private final SampleMetadata meta = SampleMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
-                                                           TimeWindowOuter.of() );
+    private final SampleMetadata meta =
+            SampleMetadata.of( SampleMetadata.of( Evaluation.newBuilder()
+                                                            .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                                            .build(),
+                                                  Pool.getDefaultInstance() ),
+                               TimeWindowOuter.of() );
 
     /**
      * Do not throw an IndexOutOfBoundsException when the input is empty. See #65503.

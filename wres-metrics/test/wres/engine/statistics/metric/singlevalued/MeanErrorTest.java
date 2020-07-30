@@ -2,19 +2,17 @@ package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -34,10 +32,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class MeanErrorTest
 {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
+    
     /**
      * Default instance of a {@link MeanError}.
      */
@@ -56,8 +51,6 @@ public final class MeanErrorTest
         //Generate some data
         PoolOfPairs<Double, Double> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Metadata for the output
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of() );
         //Check the results
         DoubleScoreStatisticOuter actual = this.meanError.apply( input );
 
@@ -73,15 +66,13 @@ public final class MeanErrorTest
                                                                                .setValue( 200.55 )
                                                                                .build();
 
-        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+        DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
                                                          .setMetric( DoubleScoreMetric.newBuilder()
                                                                                       .setName( MetricName.MEAN_ERROR ) )
                                                          .addStatistics( component )
                                                          .build();
 
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( score, m1 );
-
-        assertEquals( expected, actual );
+        assertEquals( expected, actual.getData() );
     }
 
     @Test
@@ -121,12 +112,12 @@ public final class MeanErrorTest
     }
 
     @Test
-    public void testApplyExceptionOnNullInput()
+    public void testExceptionOnNullInput()
     {
-        this.exception.expect( SampleDataException.class );
-        this.exception.expectMessage( "Specify non-null input to the 'MEAN ERROR'." );
+        SampleDataException actual = assertThrows( SampleDataException.class,
+                                                   () -> this.meanError.apply( null ) );
 
-        this.meanError.apply( null );
+        assertEquals( "Specify non-null input to the '" + this.meanError.getName() + "'.", actual.getMessage() );
     }
 
 }
