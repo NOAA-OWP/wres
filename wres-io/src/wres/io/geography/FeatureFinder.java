@@ -49,6 +49,7 @@ public class FeatureFinder
 
     private static final String RESPONSE_FROM_WRDS_AT = "Response from WRDS at ";
     private static final String HAD_NULL_OR_BLANK = " had null or blank ";
+    private static final int MAX_SAFE_URL_LENGTH = 2000;
 
     private FeatureFinder()
     {
@@ -632,6 +633,7 @@ public class FeatureFinder
         }
 
         URI featureServiceBaseUri = featureService.getBaseUrl();
+
         List<Feature> features = new ArrayList<>();
 
         for ( FeatureGroup group : featureService.getGroup() )
@@ -641,6 +643,20 @@ public class FeatureFinder
                               + "/" + group.getValue();
             URI uri = featureServiceBaseUri.resolve( fullPath )
                                            .normalize();
+
+            if ( uri.toString()
+                    .length() > MAX_SAFE_URL_LENGTH )
+            {
+                throw new ProjectConfigException( group,
+                                                  "The URL to be created using "
+                                                  + "this configuration would "
+                                                  + "be greater than "
+                                                  + MAX_SAFE_URL_LENGTH
+                                                  + "characters. Please use a "
+                                                  + "shorter base URL or group "
+                                                  + "type or group value." );
+            }
+
             WrdsLocationRootDocument featureData = WrdsLocationReader.read( uri );
 
             for ( WrdsLocation wrdsLocation : featureData.getLocations() )
@@ -882,6 +898,12 @@ public class FeatureFinder
      * @param featureNames The names in the "from" dimension to look for in "to"
      * @return The Set of name pairs: "from" as key, "to" as value.
      * @throws ProjectConfigException When a feature service was needed but null
+     * @throws PreIngestException When the count of features in response differs
+     *                            from the count of feature names requested, or
+     *                            when the requested "to" was not found in the
+     *                            response.
+     * @throws UnsupportedOperationException When unknown "from" or "to" given.
+     * @throws NullPointerException When projectConfig or featureNames is null.
      */
 
     private static Map<String,String> bulkLookup( ProjectConfig projectConfig,
@@ -890,6 +912,9 @@ public class FeatureFinder
                                                   FeatureDimension to,
                                                   Set<String> featureNames )
     {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( featureNames );
+
         Map<String,String> locations = new HashMap<>( featureNames.size() );
 
         if ( from.equals( to ) )
@@ -948,6 +973,89 @@ public class FeatureFinder
         }
 
         URI featureServiceBaseUri = featureService.getBaseUrl();
+        Set<String> batchOfFeatureNames = new HashSet<>();
+
+        // Track how large the URL gets. Base uri, from, plus 2 for the slashes.
+        int baseLength = 2 + featureServiceBaseUri.toString()
+                                                  .length()
+                         + from.toString()
+                               .length();
+        int totalLength = baseLength;
+
+        for ( String featureName : featureNames )
+        {
+            int addedLength = featureName.length() + 1;
+
+            if ( totalLength + addedLength <= MAX_SAFE_URL_LENGTH )
+            {
+                batchOfFeatureNames.add( featureName );
+                totalLength += addedLength;
+                continue;
+            }
+
+            LOGGER.debug( "One more feature name would be unsafe length URL: {}",
+                          batchOfFeatureNames );
+            // At this point there are more features to go, but we hit the safe
+            // URL length limit.
+            Map<String,String> batchOfResults =
+                    FeatureFinder.getBatchOfFeatures( from,
+                                                      to,
+                                                      featureServiceBaseUri,
+                                                      batchOfFeatureNames );
+            locations.putAll( batchOfResults );
+            batchOfFeatureNames = new HashSet<>();
+            totalLength = baseLength;
+        }
+
+        LOGGER.debug( "Last of the feature names to request: {}",
+                      batchOfFeatureNames );
+        // Get the remaining features.
+        Map<String,String> batchOfResults =
+                FeatureFinder.getBatchOfFeatures( from,
+                                                  to,
+                                                  featureServiceBaseUri,
+                                                  batchOfFeatureNames );
+        locations.putAll( batchOfResults );
+
+        LOGGER.debug( "For from={} and to={}, found these: {}",
+                      from, to, locations );
+        return Collections.unmodifiableMap( locations );
+    }
+
+
+    /**
+     * Make a request for the complete given featureNames, already vetted to be
+     * less than the maximum safe URL length when to, featureServiceBaseUri,
+     * and featureNames are joined together with slashes and commas.
+     * @param from The known feature dimension, in which "featureNames" exist.
+     * @param to The unknown feature dimension, the dimension to search in.
+     * @param featureServiceBaseUri The base URI from which to build a full URI.
+     * @param featureNames The names in the "from" dimension to look for in "to"
+     * @return The Set of name pairs: "from" as key, "to" as value.
+     * @throws PreIngestException When the count of features in response differs
+     *                            from the count of feature names requested, or
+     *                            when the requested "to" was not found in the
+     *                            response.
+     * @throws NullPointerException When any argument is null.
+     * @throws UnsupportedOperationException When unknown "from" or "to" given.
+     * @throws IllegalArgumentException When any arg is null.
+     */
+    private static Map<String,String> getBatchOfFeatures( FeatureDimension from,
+                                                          FeatureDimension to,
+                                                          URI featureServiceBaseUri,
+                                                          Set<String> featureNames )
+    {
+        Objects.requireNonNull( from );
+        Objects.requireNonNull( to );
+        Objects.requireNonNull( featureServiceBaseUri );
+        Objects.requireNonNull( featureNames );
+
+        if ( featureNames.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Encountered an empty batch of feature names." );
+        }
+
+        Map<String,String> batchOfLocations = new HashMap<>( featureNames.size() );
         StringJoiner joiner = new StringJoiner( "," );
         featureNames.forEach( joiner::add );
         String commaDelimitedFeatures = joiner.toString();
@@ -1024,8 +1132,8 @@ public class FeatureFinder
             }
             else
             {
-                throw new UnsupportedOperationException(
-                        "Unknown feature location authority" );
+                throw new UnsupportedOperationException( "Unknown geographic feature dimension "
+                                                         + from );
             }
 
             if ( to.equals( FeatureDimension.NWS_LID ) )
@@ -1074,16 +1182,14 @@ public class FeatureFinder
             }
             else
             {
-                throw new UnsupportedOperationException(
-                        "Unknown feature location authority" );
+                throw new UnsupportedOperationException( "Unknown geographic feature dimension"
+                                                         + to );
             }
 
-            locations.put( original, found );
+            batchOfLocations.put( original, found );
         }
 
-        LOGGER.debug( "For from={} and to={}, found these: {}",
-                      from, to, locations );
-        return Collections.unmodifiableMap( locations );
+        return Collections.unmodifiableMap( batchOfLocations );
     }
 
     /**
