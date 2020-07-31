@@ -49,6 +49,17 @@ public class FeatureFinder
 
     private static final String RESPONSE_FROM_WRDS_AT = "Response from WRDS at ";
     private static final String HAD_NULL_OR_BLANK = " had null or blank ";
+    private static final String EXPLANATION_OF_WHY_AND_WHAT_TO_DO =
+           "By declaring a feature, WRES interprets it as an intent to use that"
+           + " feature in the evaluation. If the corresponding feature cannot "
+           + "be found or has no correlation from the featureService, WRES "
+           + "prefers to inform you that the declared evaluation including that"
+           + " feature cannot be started. Options to resolve include any of: "
+           + "investigate the URL above in a web browser, report to the "
+           + "geographic feature service team the service issue or the data "
+           + "issue (e.g. expected correlation), omit this feature from the "
+           + "declaration, include a complete feature correlation declaration, "
+           + "or contact the WRES team for help.";
     private static final int MAX_SAFE_URL_LENGTH = 2000;
 
     private FeatureFinder()
@@ -64,8 +75,20 @@ public class FeatureFinder
      * @param projectDeclaration The project declaration to fill out.
      * @return A project declaration, potentially with new List of Feature, but
      * the same project declaration when feature declaration was fully dense.
+     * @throws ProjectConfigException When fillFeatures cannot proceed with the
+     * given declaration due to incongruent declaration. This should be a
+     * user/caller exception.
+     * @throws PreIngestException When there is a problem getting data from the
+     * declared featureService or a problem with the returned data itself.
+     * In some cases will be a user/caller exception and in others an upstream
+     * service provider exception.
      * @throws NullPointerException When projectDeclaration or required contents
-     * is null. Required: inputs, left, right, pair, feature.
+     * is null. Required: inputs, left, right, pair, feature. This should be a
+     * programming error, because we expect basic config validation to occur
+     * prior to the call to fillFeatures.
+     * @throws UnsupportedOperationException When this code could not handle a
+     * situation given. This should be a programming error.
+     * prior to the call to fillFeatures.
      */
 
     public static ProjectConfig fillFeatures( ProjectConfig projectDeclaration )
@@ -988,6 +1011,8 @@ public class FeatureFinder
 
             if ( totalLength + addedLength <= MAX_SAFE_URL_LENGTH )
             {
+                LOGGER.trace( "totalLength {} + addedLength {} <= MAX_SAFE_URL_LENGTH {}",
+                              totalLength, addedLength, MAX_SAFE_URL_LENGTH );
                 batchOfFeatureNames.add( featureName );
                 totalLength += addedLength;
                 continue;
@@ -1078,8 +1103,13 @@ public class FeatureFinder
                                           + " did not include exactly "
                                           + featureNames.size() + " locations, "
                                           + " but had "
-                                          + countOfLocations );
+                                          + countOfLocations
+                                          + ". "
+                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
         }
+
+        List<WrdsLocation> fromWasNullOrBlank = new ArrayList<>( 2 );
+        List<WrdsLocation> toWasNullOrBlank = new ArrayList<>( 2 );
 
         for ( WrdsLocation location : featureData.getLocations() )
         {
@@ -1092,10 +1122,7 @@ public class FeatureFinder
 
                 if ( Objects.isNull( nwsLid ) || nwsLid.isBlank() )
                 {
-                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
-                                                  + uri
-                                                  + HAD_NULL_OR_BLANK
-                                                  + "NWS LID." );
+                    fromWasNullOrBlank.add( location );
                 }
 
                 original = nwsLid;
@@ -1107,10 +1134,7 @@ public class FeatureFinder
                 if ( Objects.isNull( usgsSiteCode )
                      || usgsSiteCode.isBlank() )
                 {
-                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
-                                                  + uri
-                                                  + HAD_NULL_OR_BLANK
-                                                  + " USGS Site Code." );
+                    fromWasNullOrBlank.add( location );
                 }
 
                 original = usgsSiteCode;
@@ -1122,10 +1146,7 @@ public class FeatureFinder
                 if ( Objects.isNull( nwmFeatureId )
                      || nwmFeatureId.isBlank() )
                 {
-                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
-                                                  + uri
-                                                  + HAD_NULL_OR_BLANK
-                                                  + " NWM Feature ID." );
+                    fromWasNullOrBlank.add( location );
                 }
 
                 original = nwmFeatureId;
@@ -1142,10 +1163,7 @@ public class FeatureFinder
 
                 if ( Objects.isNull( nwsLid ) || nwsLid.isBlank() )
                 {
-                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
-                                                  + uri
-                                                  + HAD_NULL_OR_BLANK
-                                                  + "NWS LID." );
+                    toWasNullOrBlank.add( location );
                 }
 
                 found = nwsLid;
@@ -1157,10 +1175,7 @@ public class FeatureFinder
                 if ( Objects.isNull( usgsSiteCode )
                      || usgsSiteCode.isBlank() )
                 {
-                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
-                                                  + uri
-                                                  + HAD_NULL_OR_BLANK
-                                                  + " USGS Site Code." );
+                    toWasNullOrBlank.add( location );
                 }
 
                 found = usgsSiteCode;
@@ -1172,10 +1187,7 @@ public class FeatureFinder
                 if ( Objects.isNull( nwmFeatureId )
                      || nwmFeatureId.isBlank() )
                 {
-                    throw new PreIngestException( RESPONSE_FROM_WRDS_AT
-                                                  + uri
-                                                  + HAD_NULL_OR_BLANK
-                                                  + " NWM Feature ID." );
+                    toWasNullOrBlank.add( location );
                 }
 
                 found = nwmFeatureId;
@@ -1187,6 +1199,20 @@ public class FeatureFinder
             }
 
             batchOfLocations.put( original, found );
+        }
+
+        if ( !fromWasNullOrBlank.isEmpty()
+             || !toWasNullOrBlank.isEmpty() )
+        {
+            throw new PreIngestException( "From the response at " + uri
+                                          + " the following were missing "
+                                          + from.value() + " (from) values: "
+                                          + fromWasNullOrBlank + " and/or "
+                                          + "the following were missing "
+                                          + to.value() + " (to) values: "
+                                          + toWasNullOrBlank
+                                          + ". "
+                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
         }
 
         return Collections.unmodifiableMap( batchOfLocations );
