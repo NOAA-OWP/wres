@@ -41,6 +41,7 @@ import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.generators.PersistenceGenerator;
+import wres.events.Evaluation;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
@@ -49,7 +50,6 @@ import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.SingleValuedRetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 
 /**
@@ -363,7 +363,7 @@ public class PoolFactory
                                           null,
                                           leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
 
-        return SampleMetadata.of( evaluation, pool );
+        return SampleMetadata.of( evaluation.getEvaluationDescription(), pool );
     }
 
     /**

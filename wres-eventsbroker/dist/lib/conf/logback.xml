@@ -1,0 +1,29 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+
+            <!-- %exception{full}: full stacktrace in log file. -->
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n%exception{full}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Keep eclipse/jetty libraries at info regardless of wres level -->
+    <logger name="org.eclipse">
+        <level value="WARN" />
+    </logger>
+
+    <!-- Qpid-->
+   <logger name="org.apache.qpid">
+        <level value="WARN" />
+    </logger>
+
+    <!-- Qpid AMQMessageDelegate off as the reported errors are not useful.-->
+   <logger name="org.apache.qpid.client.message.AMQMessageDelegate">
+        <level value="OFF" />
+    </logger>
+
+    <!-- Allow -Dwres.logLevel to set logging level, otherwise warn. -->
+    <root level="${wres.logLevel:-warn}">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

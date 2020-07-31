@@ -216,7 +216,7 @@ public class Consumers
          * @throws NullPointerException if the input is null
          */
 
-        Builder addGroupedStatisticsConsumer( Consumer<Collection<Statistics>> groupStatisticsConsumer )
+        public Builder addGroupedStatisticsConsumer( Consumer<Collection<Statistics>> groupStatisticsConsumer )
         {
             if ( Objects.nonNull( groupStatisticsConsumer ) )
             {
@@ -269,7 +269,7 @@ public class Consumers
             return new Consumers( this );
         }
     }
-
+    
     /**
      * Hidden constructor.
      * 

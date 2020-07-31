@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -508,6 +509,53 @@ public class EvaluationTest
 
         List<Pairs> expectedPairs = List.of( this.somePairs, this.somePairs );
         assertEquals( expectedPairs, actualPairs );
+    }
+    
+    @Test
+    public void testEmptyEvaluation() throws IOException
+    {
+        // Create the consumers
+        // Create a container for all the consumers
+        Consumers consumerGroup =
+                new Consumers.Builder().addStatusConsumer( consume -> {
+                } )
+                                       .addEvaluationConsumer( consume -> {
+                                       } )
+                                       .addStatisticsConsumer( consume -> {
+                                       } )
+                                       .build();
+
+        // Create and start a broker and open an evaluation, closing on completion
+        Evaluation evaluation = null;
+        Integer exitCode = null;
+        try
+        {
+            evaluation = Evaluation.open( this.oneEvaluation,
+                                          EvaluationTest.connections,
+                                          consumerGroup );
+            
+            // Notify publication done, even though nothing published, as this 
+            // has the expected message count
+            evaluation.markPublicationCompleteReportedSuccess();
+        }
+        catch ( EvaluationEventException e )
+        {
+            if( Objects.nonNull( evaluation ) )
+            {
+                evaluation.stopOnException( e );
+            }
+        }
+        finally
+        {
+            // Close the evaluation
+            if ( Objects.nonNull( evaluation ) )
+            {
+                evaluation.close();
+                exitCode = evaluation.getExitCode();
+            }
+        }
+        
+        assertEquals( (Integer) 0, exitCode );
     }
 
     /**

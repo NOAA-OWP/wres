@@ -48,6 +48,10 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
 public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFactory>
 {
 
+    private static final String LOCALHOST_127_0_0_1_0 = "127.0.0.1:0";
+
+    private static final String LOCALHOST_0 = "localhost:0";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactory.class );
 
     /**
@@ -138,6 +142,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
      * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
      * @throws NullPointerException if the jndiProperties is null
+     * @throws CouldNotLoadBrokerConfigurationException if the properties could not be read
      */
 
     private BrokerConnectionFactory( String jndiProperties )
@@ -148,6 +153,13 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
         // Load the jndi.properties
         URL config = BrokerConnectionFactory.class.getClassLoader().getResource( jndiProperties );
+
+        if ( Objects.isNull( config ) )
+        {
+            throw new CouldNotLoadBrokerConfigurationException( "Could not find the " + jndiProperties
+                                                                + " file on the class path." );
+        }
+
         try ( InputStream stream = config.openStream() )
         {
             properties.load( stream );
@@ -156,7 +168,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                           jndiProperties,
                           properties );
 
-            this.broker = this.createEmbeddedBrokerIfRequired( properties );
+            this.broker = this.createEmbeddedBrokerFromPropertiesIfRequired( properties );
         }
         catch ( IOException | NamingException e )
         {
@@ -202,7 +214,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started.
      */
 
-    private EmbeddedBroker createEmbeddedBrokerIfRequired( Properties properties ) throws NamingException
+    private EmbeddedBroker createEmbeddedBrokerFromPropertiesIfRequired( Properties properties ) throws NamingException
     {
         EmbeddedBroker returnMe = null;
 
@@ -225,22 +237,36 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
             Context localContext = new InitialContext( properties );
             factory = (ConnectionFactory) localContext.lookup( factoryName );
 
-            // If retries are configured, then expect retries here, even if the connection ultimately fails
-            LOGGER.debug( "Probing to establish whether an active broker is accepting connections at {}. This "
-                          + "may fail!",
-                          value );
-
-            try ( Connection connection = factory.createConnection() )
+            // Embedded broker with dynamic port assignment?
+            if ( value.contains( LOCALHOST_0 ) || value.contains( LOCALHOST_127_0_0_1_0 ) )
             {
-                LOGGER.info( "Discovered an active AMQP broker at {}", value );
-            }
-            catch ( JMSException e )
-            {
-                LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
-                             + "instead.",
-                             value );
+                LOGGER.debug( "Discovered the connection property {} with value {}, which indicates that an embedded "
+                              + "broker should be started and bound to a port assigned dynamically by the broker.",
+                              key,
+                              value );
 
                 returnMe = EmbeddedBroker.of();
+            }
+            // Look for an active broker, fall back on an embedded one
+            else
+            {
+                // If retries are configured, then expect retries here, even if the connection ultimately fails
+                LOGGER.debug( "Probing to establish whether an active broker is accepting connections at {}. This "
+                              + "may fail!",
+                              value );
+
+                try ( Connection connection = factory.createConnection() )
+                {
+                    LOGGER.info( "Discovered an active AMQP broker at {}", value );
+                }
+                catch ( JMSException e )
+                {
+                    LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
+                                 + "instead.",
+                                 value );
+
+                    returnMe = EmbeddedBroker.of();
+                }
             }
         }
 
@@ -286,8 +312,8 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
-     * If the connection string contains the reserved TCP port of 0, then update the port inline to the properties 
-     * map with the relevant AMQP port from the list of broker ports for which bindings were found. 
+     * If the connection string contains a different port than the port actually used, then update the port inline to 
+     * the properties map with the relevant AMQP port from the list of broker ports for which bindings were found. 
      * 
      * @param propertyName
      * @param propertyValue
@@ -299,8 +325,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                                                     Properties properties,
                                                                     Map<String, Integer> ports )
     {
-        if ( !ports.isEmpty()
-             && ( propertyValue.contains( "localhost:0" ) || propertyValue.contains( "127.0.0.1:0" ) ) )
+        if ( !ports.isEmpty() )
         {
             for ( Map.Entry<String, Integer> next : ports.entrySet() )
             {
@@ -308,15 +333,16 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                 {
                     Integer port = next.getValue();
 
-                    String updated = propertyValue.replace( "localhost:0", "localhost:" + port )
-                                                  .replace( "127.0.0.1:0", "127.0.0.1:" + port );
+                    String updated = propertyValue.replaceAll( "localhost:\\d+", "localhost:" + port )
+                                                  .replaceAll( "127.0.0.1:\\d+", "127.0.0.1:" + port );
 
                     properties.setProperty( propertyName, updated );
 
-                    LOGGER.debug( "The embedded broker was configured with a binding to TCP port 0 for AMQP traffic "
+                    LOGGER.debug( "The embedded broker was configured with a binding of {} for AMQP traffic "
                                   + "but is actually bound to TCP port {}. Updated the configured TCP port to reflect "
                                   + "the bound port. The configured property is {}={}. The updated property is "
                                   + "{}={}.",
+                                  propertyValue,
                                   port,
                                   propertyName,
                                   propertyValue,

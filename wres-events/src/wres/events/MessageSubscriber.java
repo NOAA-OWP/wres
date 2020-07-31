@@ -2,6 +2,8 @@ package wres.events;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,7 +24,6 @@ import java.util.function.ToIntFunction;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.JMSSecurityException;
 import javax.jms.Message;
@@ -67,7 +68,7 @@ class MessageSubscriber<T> implements Closeable
             "While attempting to recover a session for evaluation {}, ";
 
     private static final String ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION =
-            "encountered an error that prevented consumption: ";
+            "encountered an error that prevented consumption: {} ";
 
     private static final String WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER =
             "While attempting to consume a message with identifier {} and correlation identifier {}, ";
@@ -793,11 +794,16 @@ class MessageSubscriber<T> implements Closeable
                     this.failure = receivedBytes;
                 }
 
+                // Create a stack trace to log
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter( sw );
+                e.printStackTrace( pw );
+
                 LOGGER.error( WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER
                               + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION,
                               messageId,
                               correlationId,
-                              e.getMessage() );
+                              sw.toString() );
 
                 try
                 {
@@ -922,10 +928,9 @@ class MessageSubscriber<T> implements Closeable
 
     /**
      * Internally closes resources.
-     * @throws IOException if any resource could not be closed for any reason.
      */
 
-    private void internalClose() throws IOException
+    private void internalClose()
     {
         try
         {
@@ -936,11 +941,10 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( IOException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a registered consumer within "
-                                   + "consumer "
-                                   + this
-                                   + ".",
-                                   e );
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer within "
+                          + "subscriber {}: {}",
+                          this,
+                          e.getMessage() );
         }
 
         try
@@ -952,27 +956,25 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( IOException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a registered consumer of "
-                                   + "evaluation status messages within consumer "
-                                   + this
-                                   + ".",
-                                   e );
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation status "
+                          + "messages within subscriber {}: {}",
+                          this,
+                          e.getMessage() );
         }
 
         try
         {
-            if ( Objects.nonNull( this.statusConsumer ) )
+            if ( Objects.nonNull( this.statusPublisher ) )
             {
                 this.statusPublisher.close();
             }
         }
         catch ( IOException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a registered publisher of "
-                                   + "evaluation status messages within consumer "
-                                   + this
-                                   + ".",
-                                   e );
+            LOGGER.error( "Encountered an error while attempting to close a registered publisher of evaluation status "
+                          + "messages within subscriber {}: {}",
+                          this,
+                          e.getMessage() );
         }
 
         try
@@ -981,9 +983,9 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( JMSException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a broker session in consumer " + this
-                                   + ".",
-                                   e );
+            LOGGER.error( "Encountered an error while attempting to close a broker session within subscriber {}: {}",
+                          this,
+                          e.getMessage() );
         }
 
         try
@@ -992,10 +994,9 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( JMSException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a broker connection in consumer "
-                                   + this
-                                   + " for message consumption.",
-                                   e );
+            LOGGER.error( "Encountered an error while attempting to close a broker connection within subscriber {}: {}",
+                          this,
+                          e.getMessage() );
         }
 
         try
@@ -1004,10 +1005,10 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( JMSException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a broker connection in consumer "
-                                   + this
-                                   + " for the publication of evaluation status messages.",
-                                   e );
+            LOGGER.error( "Encountered an error while attempting to close a broker connection for evaluation status "
+                          + "messages within subscriber {}: {}",
+                          this,
+                          e.getMessage() );
         }
     }
 
@@ -1059,22 +1060,6 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
-     * Listen for failures on a connection.
-     */
-
-    private static class EvaluationEventExceptionListener implements ExceptionListener
-    {
-
-        @Override
-        public void onException( JMSException exception )
-        {
-            throw new EvaluationEventException( "Encountered an error while attempting to complete an evaluation "
-                                                + "message.",
-                                                exception );
-        }
-    }
-
-    /**
      * Registers the current consumer by publishing an evaluation status message indicating that the consumer is ready
      * to consume.
      */
@@ -1082,7 +1067,7 @@ class MessageSubscriber<T> implements Closeable
     private void registerThisConsumer()
     {
         // Create a message identifier 
-        String messageId = "ID:" + this.getIdentifier() + "-c1";
+        String messageId = "ID:" + this.getIdentifier() + "-start";
 
         EvaluationStatus ready = EvaluationStatus.newBuilder()
                                                  .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
@@ -1166,14 +1151,14 @@ class MessageSubscriber<T> implements Closeable
     private void checkAndCompleteSubscription()
     {
         // Not already completed and completing now?
-        if ( !this.isComplete() && this.expectedMessageCount.get() > 0
+        if ( !this.isComplete() && this.expectedMessageCount.get() > -1
              && this.expectedMessageCount.get() == this.actualMessageCount.get() )
         {
             this.isComplete.set( true );
 
             // Send the status message, then close 
             // Create a message identifier 
-            String messageId = "ID:" + this.getIdentifier() + "-c2";
+            String messageId = "ID:" + this.getIdentifier() + "-stop";
 
             List<EvaluationStatusEvent> events = new ArrayList<>();
             CompletionStatus status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS;
@@ -1415,7 +1400,8 @@ class MessageSubscriber<T> implements Closeable
         this.topic = builder.topic;
         this.evaluationInfo = builder.evaluationInfo;
         this.actualMessageCount = new AtomicInteger();
-        this.expectedMessageCount = new AtomicInteger();
+        // Register the initial expectation as -1, because zero is a reasonable expectation too
+        this.expectedMessageCount = new AtomicInteger( -1 );
         this.isComplete = new AtomicBoolean();
         this.expectedMessageCountSupplier = builder.expectedMessageCountSupplier;
         this.isIgnoreConsumerMessages = builder.isIgnoreConsumerMessages;
@@ -1443,7 +1429,7 @@ class MessageSubscriber<T> implements Closeable
         this.consumerConnection = localFactory.createConnection();
 
         // Create a connection for consumption and register a listener for exceptions
-        this.consumerConnection.setExceptionListener( new EvaluationEventExceptionListener() );
+        this.consumerConnection.setExceptionListener( new ConnectionExceptionListener( this.getIdentifier() ) );
 
         // Client acknowledges
         this.session = this.consumerConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
@@ -1499,8 +1485,9 @@ class MessageSubscriber<T> implements Closeable
         this.statusConnection = localFactory.createConnection();
         this.statusPublisher = MessagePublisher.of( localFactory, statusTopic );
 
-        // Start the connection
+        // Start the connections
         this.consumerConnection.start();
+        this.statusConnection.start();
 
         // Notify status as ready to consume if there are consumers attached to this susbcriber, other than the
         // status consumer
@@ -1561,14 +1548,16 @@ class MessageSubscriber<T> implements Closeable
         @Override
         public void close() throws IOException
         {
-            LOGGER.debug( "Closing and unsubscribing consumer {} for evaluation {}.", this.name, this.evaluationId );
+            LOGGER.debug( "Closing and then unsubscribing consumer {} for evaluation {}.",
+                          this.name,
+                          this.evaluationId );
 
             try
             {
-                // Close
+                // Close first according to docs
                 this.consumer.close();
 
-                // Unsubscribe
+                // Then unsubscribe
                 this.session.unsubscribe( this.name );
             }
             catch ( JMSException e )

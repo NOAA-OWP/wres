@@ -128,11 +128,14 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
-        Evaluation evaluation = MessageFactory.parse( projectConfig );
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+        wres.events.Evaluation mockEvaluation = Mockito.mock( wres.events.Evaluation.class );
+        Mockito.when( mockEvaluation.getEvaluationDescription() )
+               .thenReturn( evaluationDescription );
         
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Double>>> actual =
-                PoolFactory.getSingleValuedPools( evaluation,
+                PoolFactory.getSingleValuedPools( mockEvaluation,
                                                   this.wresDatabase,
                                                   this.featuresCache,
                                                   project,
@@ -221,11 +224,14 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
-        Evaluation evaluation = MessageFactory.parse( projectConfig );
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+        wres.events.Evaluation mockEvaluation = Mockito.mock( wres.events.Evaluation.class );
+        Mockito.when( mockEvaluation.getEvaluationDescription() )
+               .thenReturn( evaluationDescription );
         
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Ensemble>>> actual =
-                PoolFactory.getEnsemblePools( evaluation,
+                PoolFactory.getEnsemblePools( mockEvaluation,
                                               this.wresDatabase,
                                               this.featuresCache,
                                               project,

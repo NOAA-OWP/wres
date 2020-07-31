@@ -11,7 +11,6 @@ import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.JMSSecurityException;
 import javax.jms.Message;
@@ -41,9 +40,9 @@ class MessagePublisher implements Closeable
         JMSX_GROUP_ID,
 
         JMS_CORRELATION_ID,
-        
+
         JMS_MESSAGE_ID,
-        
+
         CONSUMER_ID;
 
         @Override
@@ -108,10 +107,27 @@ class MessagePublisher implements Closeable
     private final long messageTimeToLive;
 
     /**
+     * The unique identifier of this consumer.
+     */
+
+    private final String identifier;
+
+    /**
      * Number of messages published so far to this publisher.
      */
 
     private int messageCount = 0;
+
+    @Override
+    public String toString()
+    {
+        return this.getIdentifier();
+    }
+
+    String getIdentifier()
+    {
+        return this.identifier;
+    }
 
     /**
      * Creates an instance with default settings.
@@ -230,15 +246,17 @@ class MessagePublisher implements Closeable
     @Override
     public void close() throws IOException
     {
-        LOGGER.debug( "Closing the statistics messager, {}.", this );
+        LOGGER.debug( "Closing message publisher {}.", this );
 
         try
         {
-            this.connection.close();
+            this.producer.close();
         }
         catch ( JMSException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a broker connection.", e );
+            LOGGER.error( "Encountered an error while attempting to close a message publisher within client {}: {}",
+                          this,
+                          e.getMessage() );
         }
 
         try
@@ -247,16 +265,20 @@ class MessagePublisher implements Closeable
         }
         catch ( JMSException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a broker session.", e );
+            LOGGER.error( "Encountered an error while attempting to close a broker session within client {}: {}",
+                          this,
+                          e.getMessage() );
         }
 
         try
         {
-            this.producer.close();
+            this.connection.close();
         }
         catch ( JMSException e )
         {
-            throw new IOException( "Encountered an error while attempting to close a broker message producer.", e );
+            LOGGER.error( "Encountered an error while attempting to close a broker connection within client {}: {}",
+                          this,
+                          e.getMessage() );
         }
     }
 
@@ -267,22 +289,6 @@ class MessagePublisher implements Closeable
     int getMessageCount()
     {
         return this.messageCount;
-    }
-
-    /**
-     * Listen for failures on a connection.
-     */
-
-    private static class EvaluationEventExceptionListener implements ExceptionListener
-    {
-
-        @Override
-        public void onException( JMSException exception )
-        {
-            throw new EvaluationEventException( "Encountered an error while attempting to post an evaluation "
-                                                + "message.",
-                                                exception );
-        }
     }
 
     /**
@@ -308,11 +314,14 @@ class MessagePublisher implements Closeable
         Objects.requireNonNull( connectionFactory );
         Objects.requireNonNull( destination );
 
+        // Create a unique identifier for the publisher
+        this.identifier = Evaluation.getUniqueId();
+
         this.connection = connectionFactory.createConnection();
         this.destination = destination;
 
         // Register a listener for exceptions
-        this.connection.setExceptionListener( new EvaluationEventExceptionListener() );
+        this.connection.setExceptionListener( new ConnectionExceptionListener( this.identifier ) );
 
         // Client acknowledges messages processed
         this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
