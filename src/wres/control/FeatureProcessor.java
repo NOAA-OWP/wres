@@ -31,6 +31,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
+import wres.events.Evaluation;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.pooling.PoolFactory;
@@ -39,7 +40,6 @@ import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
 import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
-import wres.statistics.generated.Evaluation;
 
 /**
  * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeatureTuple}.

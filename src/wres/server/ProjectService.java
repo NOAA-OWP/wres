@@ -63,7 +63,9 @@ public class ProjectService
     {
         long projectId;
 
-        try
+        try ( Control control = new Control( SYSTEM_SETTINGS,
+                                             DATABASE,
+                                             EXECUTOR ) )
         {
             ProjectConfigPlus projectPlus =
                     ProjectConfigPlus.from( rawProjectConfig,
@@ -74,9 +76,6 @@ public class ProjectService
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
-            Control control = new Control( SYSTEM_SETTINGS,
-                                           DATABASE,
-                                           EXECUTOR );
             control.accept( projectPlus );
             Set<java.nio.file.Path> outputPaths = control.get();
             OUTPUTS.put( projectId, outputPaths );

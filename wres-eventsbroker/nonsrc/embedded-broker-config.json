@@ -35,14 +35,7 @@
                     "type": "hostnameAlias"
                 }
             ]
-        },
-       {
-            "name" : "HTTP",
-            "port" : "0",
-            "protocols" : [ "HTTP" ],            
-            "authenticationProvider" : "externalAuthProvider",
-            "needClientAuth": "false"
-       }
+        }
     ],
     "virtualhostnodes":
     [
@@ -57,9 +50,5 @@
             },
             "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"5\"}}] }"
         }
-    ],
-    "plugins" : [ {
-        "type" : "MANAGEMENT-HTTP",
-        "name" : "httpManagement"
-    } ]
+    ]
 }

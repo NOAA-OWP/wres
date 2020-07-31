@@ -1,5 +1,6 @@
 package wres.control;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,6 +35,7 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.control.ProcessorHelper.ExecutorServices;
+import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
@@ -49,13 +51,16 @@ import wres.system.SystemSettings;
  */
 public class Control implements Function<String[], Integer>,
                                 Consumer<ProjectConfigPlus>,
-                                Supplier<Set<Path>>
+                                Supplier<Set<Path>>,
+                                Closeable
 {
     private final SystemSettings systemSettings;
     private final Database database;
     private final Executor executor;
 
     private final Set<Path> pathsWrittenTo = new HashSet<>();
+    
+    private final BrokerConnectionFactory connections;
 
     public Control( SystemSettings systemSettings,
                     Database database,
@@ -67,6 +72,7 @@ public class Control implements Function<String[], Integer>,
         this.systemSettings = systemSettings;
         this.database = database;
         this.executor = executor;
+        this.connections = BrokerConnectionFactory.of();
     }
 
     private SystemSettings getSystemSettings()
@@ -295,12 +301,13 @@ public class Control implements Function<String[], Integer>,
 
             // Process the configuration
             Set<Path> innerPathsWrittenTo =
-                    ProcessorHelper.processProjectConfig( systemSettings,
-                                                          database,
-                                                          executor,
-                                                          projectConfigPlus,
-                                                          executors,
-                                                          lockManager );
+                    ProcessorHelper.processEvaluation( systemSettings,
+                                                       database,
+                                                       executor,
+                                                       projectConfigPlus,
+                                                       executors,
+                                                       lockManager,
+                                                       connections );
 
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             LOGGER.info( "Wrote the following output: {}", this.pathsWrittenTo );
@@ -467,5 +474,22 @@ public class Control implements Function<String[], Integer>,
             LOGGER.info( "IoQ={}, IoHiPriQ={}, FeatureQ={}, PairQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
                          ioCount, hiPriCount, featureCount, pairCount, databaseCount, thresholdCount, metricCount, productCount );
         }
+    }
+
+    @Override
+    public void close()
+    {
+        LOGGER.debug( "Closing broker connections." );
+        
+        try
+        {
+            this.connections.close();
+            
+            LOGGER.debug( "Broker connections closed." );   
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error( "Failed to close broker connections." );
+        }  
     }
 }

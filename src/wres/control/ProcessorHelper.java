@@ -27,6 +27,10 @@ import wres.config.generated.*;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.events.Consumers;
+import wres.events.Evaluation;
+import wres.events.EvaluationEventException;
+import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
@@ -42,7 +46,6 @@ import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.protobuf.ProtobufWriter;
-import wres.statistics.generated.Evaluation;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -66,27 +69,122 @@ class ProcessorHelper
      * Assumes that a shared lock for evaluation has already been obtained.
      * @param projectConfigPlus the project configuration
      * @param executors the executors
+     * @param connections broker connections
+     * @return the paths to which outputs were written
+     * @throws WresProcessingException if the evaluation fails for any reason
+     * @throws NullPointerException if any input is null
+     */
+
+    static Set<Path> processEvaluation( SystemSettings systemSettings,
+                                        Database database,
+                                        Executor executor,
+                                        ProjectConfigPlus projectConfigPlus,
+                                        ExecutorServices executors,
+                                        DatabaseLockManager lockManager,
+                                        BrokerConnectionFactory connections )
+            throws IOException
+    {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( executor );
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( executors );
+        Objects.requireNonNull( lockManager );
+
+        Set<Path> returnMe = new TreeSet<>();
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        // Create a description of the evaluation
+        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+
+        // Create the consumers
+        // Create a container for all the consumers
+        // TODO: populate with real consumers, not no-op consumers.
+        Consumers consumerGroup =
+                new Consumers.Builder().addStatusConsumer( consume -> {
+                } )
+                                       .addEvaluationConsumer( consume -> {
+                                       } )
+                                       .addStatisticsConsumer( consume -> {
+                                       } )
+                                       .addGroupedStatisticsConsumer( consume -> {
+                                       } )
+                                       .build();
+
+        // Create and start a broker and open an evaluation, closing on completion
+        Evaluation evaluation = null;
+        try
+        {
+            evaluation = Evaluation.open( evaluationDescription,
+                                          connections,
+                                          consumerGroup );
+
+            Set<Path> pathsWritten = ProcessorHelper.processProjectConfig( evaluation,
+                                                                           systemSettings,
+                                                                           database,
+                                                                           executor,
+                                                                           projectConfigPlus,
+                                                                           executors,
+                                                                           lockManager );
+            returnMe.addAll( pathsWritten );
+        }
+        catch ( IOException | ProjectConfigException | WresProcessingException
+                | IllegalArgumentException
+                | EvaluationEventException e )
+        {
+            String evaluationId = "unknown";
+
+            if ( Objects.nonNull( evaluation ) )
+            {
+                evaluation.stopOnException( e );
+                evaluationId = evaluation.getEvaluationId();
+            }
+
+            // Rethrow
+            throw new WresProcessingException( "Encountered an error while processing evaluation '"
+                                               + evaluationId
+                                               + "': ",
+                                               e );
+        }
+        finally
+        {
+            // Close the evaluation
+            if ( Objects.nonNull( evaluation ) )
+            {
+                evaluation.close();
+            }
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
+     * thresholds and metrics.
+     *
+     * Assumes that a shared lock for evaluation has already been obtained.
+     * @param projectConfigPlus the project configuration
+     * @param executors the executors
      * @throws IOException when an issue occurs during ingest
      * @throws ProjectConfigException if the project configuration is invalid
      * @throws WresProcessingException when an issue occurs during processing
      * @return the paths to which outputs were written
      */
 
-    static Set<Path> processProjectConfig( SystemSettings systemSettings,
-                                           Database database,
-                                           Executor executor,
-                                           final ProjectConfigPlus projectConfigPlus,
-                                           final ExecutorServices executors,
-                                           DatabaseLockManager lockManager )
+    private static Set<Path> processProjectConfig( Evaluation evaluation,
+                                                   SystemSettings systemSettings,
+                                                   Database database,
+                                                   Executor executor,
+                                                   final ProjectConfigPlus projectConfigPlus,
+                                                   final ExecutorServices executors,
+                                                   DatabaseLockManager lockManager )
             throws IOException
     {
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
         ProgressMonitor.setShowStepDescription( false );
         ProgressMonitor.resetMonitor();
 
-        // Create a description of the evaluation
-        Evaluation evaluation = MessageFactory.parse( projectConfig );
-        
         // Create output directory prior to ingest, fails early when it fails.
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
 
@@ -218,6 +316,10 @@ class ProcessorHelper
         {
             // Complete the feature tasks
             ProcessorHelper.doAllOrException( featureTasks ).join();
+            
+            // Report that all publication was completed. At this stage, a message is sent indicating the expected 
+            // message count for all message types, thereby allowing consumers to know when they are done/
+            evaluation.markPublicationCompleteReportedSuccess();
 
             // Find the paths written to by writers
             pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
@@ -263,7 +365,6 @@ class ProcessorHelper
 
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
-
     
     /**
      * Returns an instance of {@link SharedWriters} for shared writing.
@@ -315,7 +416,7 @@ class ProcessorHelper
             // TODO: abstract the creation of an evaluation description to the outermost caller that creates
             // an evaluation. For now, it is only used here.
             
-            Evaluation evaluation = MessageFactory.parse( projectConfig );
+            wres.statistics.generated.Evaluation evaluation = MessageFactory.parse( projectConfig );
             
             // Use a standard name for the protobuf
             // Eventually, this should probably correspond to the unique evaluation identifier

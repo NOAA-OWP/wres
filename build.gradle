@@ -307,6 +307,7 @@ project(':wres-io')
         compile project(':wres-config')
         compile project(':wres-vis')
         compile project(':wres-grid')
+        compile project(':wres-events')
 
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
@@ -1144,7 +1145,8 @@ project(':wres-eventsbroker')
         compile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.0'
 
         // https://mvnrepository.com/artifact/org.apache.qpid/qpid-broker-plugins-management-http
-        compile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.0'
+        // Adds too much bloat for the value at test time with an embedded broker
+        //compile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.0'
 
         // QPID JMS client for AMQP 0.X (not 1.0). JMS 1.1 support only
         compile group: 'org.apache.qpid', name: 'qpid-client', version: '6.4.0'
@@ -1160,6 +1162,7 @@ project(':wres-events')
         compile project( ':wres-eventsbroker' )
         compile project( ':wres-statistics' )
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
+
         // JCIP annotations
         compile group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
@@ -1325,6 +1328,8 @@ dependencies
     compile project(':wres-metrics')
     compile project(':wres-config')
     compile project(':wres-vis')
+    compile project(':wres-events')
+    compile project(':wres-eventsbroker')
 
     compile 'org.slf4j:slf4j-api:1.8.0-beta4'
 

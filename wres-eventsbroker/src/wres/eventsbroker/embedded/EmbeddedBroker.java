@@ -134,11 +134,11 @@ public class EmbeddedBroker implements Closeable
     @Override
     public void close() throws IOException
     {
-        LOGGER.debug( "Closing embedded broker." );
+        LOGGER.debug( "Closing embedded broker instance." );
 
         this.shutdown();
 
-        LOGGER.debug( "Embedded broker closed." );
+        LOGGER.info( "The embedded broker instance has been closed." );
     }
 
     /**
