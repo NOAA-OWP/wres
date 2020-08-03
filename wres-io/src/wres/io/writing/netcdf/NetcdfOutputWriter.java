@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -70,6 +71,18 @@ import wres.system.SystemSettings;
 import wres.util.FutureQueue;
 import wres.util.Strings;
 
+/**
+ * A writer is instantiated in two stages. First, the writer is built. Second, the blobs are initialized for writing. 
+ * In between these two stages, the writer is in an exceptional state with respect to writing statistics. This 
+ * requirement stems from the need to build a consumer at evaluation construction time. However, the netcdf writer
+ * depends on the thresholds-by-feature, which is part of the internal state of an evaluation. This state is not
+ * available at evaluation construction time and must be instantiated post-ingest. Construction of a blob on-the-fly is
+ * also not possible as blobs cannot be augmented when using the Java UCAR netcdf library and the first blob of 
+ * statistics received by the writer may contain only some of the thresholds-by-feature. If this writer is ever 
+ * abstracted to a subscriber in a separate process, this problem will resurface because the internal state of an 
+ * evaluation cannot be exposed to such a writer. See #80267-137.
+ */
+
 public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOuter>,
         Supplier<Set<Path>>,
         Closeable
@@ -108,7 +121,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Guarded by windowLock
      */
     private final List<Future<Set<Path>>> writingTasksSubmitted = new ArrayList<>();
+    
+    /**
+     * Project declaration.
+     */
 
+    private final ProjectConfig projectConfig;
+
+    /**
+     * Records whether the writer is ready to write. It is ready when all blobs have been created.
+     */
+    
+    private final AtomicBoolean isReadyToWrite;
+    
     /**
      * Mapping between standard threshold names and representative thresholds for those standard names. This is used
      * to help determine the threshold portion of a variable name to which a statistic corresponds, based on the 
@@ -125,7 +150,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
-     * @param thresholds Thresholds that will be imposed on input data
      * @return an instance of the writer
      * @throws IOException if the blobs could not be created for any reason
      */
@@ -134,8 +158,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                          Executor executor,
                                          ProjectConfig projectConfig,
                                          ChronoUnit durationUnits,
-                                         Path outputDirectory,
-                                         Map<FeatureTuple, ThresholdsByMetric> thresholds )
+                                         Path outputDirectory )
             throws IOException
     {
         return new NetcdfOutputWriter(
@@ -143,8 +166,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                        executor,
                                        projectConfig,
                                        durationUnits,
-                                       outputDirectory,
-                                       thresholds );
+                                       outputDirectory );
     }
 
     /**
@@ -162,8 +184,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                 Executor executor,
                                 ProjectConfig projectConfig,
                                 ChronoUnit durationUnits,
-                                Path outputDirectory,
-                                Map<FeatureTuple, ThresholdsByMetric> thresholds )
+                                Path outputDirectory )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
@@ -178,7 +199,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         this.netcdfConfiguration = this.destinationConfig.getNetcdf();
         this.durationUnits = durationUnits;
         this.outputDirectory = outputDirectory;
-
+        this.projectConfig = projectConfig;
+        this.pathsWrittenTo = new TreeSet<>();
+        this.isReadyToWrite = new AtomicBoolean();
+        
         if ( this.netcdfConfiguration == null )
         {
             this.netcdfConfiguration = new NetcdfType( null,
@@ -187,9 +211,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                        null,
                                                        null );
         }
-
-        // Create the blobs into which statistics will be written and a writer per blob
-        this.pathsWrittenTo = this.createBlobsAndBlobWriters( projectConfig, thresholds );
 
         Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
     }
@@ -202,18 +223,24 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * Creates the blobs into which outputs will be written.
      *
-     * @param projectConfig The project configuration.
      * @param thresholds Thresholds imposed upon input data
+     * @throws WriteException if the blobs have already been created
      * @throws IOException if the blobs could not be created for any reason
-     * @return the paths written
      */
 
-    private Set<Path> createBlobsAndBlobWriters( ProjectConfig projectConfig,
-                                                 Map<FeatureTuple, ThresholdsByMetric> thresholds )
+    public void createBlobsForWriting( Map<FeatureTuple, ThresholdsByMetric> thresholds )
             throws IOException
     {
+        Objects.requireNonNull( thresholds );
+        
+        if( this.getIsReadyToWrite().get() )
+        {
+            throw new WriteException( "The netcdf blobs have already been created." );
+        }
+        
         // Time windows
-        PairConfig pairConfig = projectConfig.getPair();
+        PairConfig pairConfig = this.getProjectConfig()
+                                    .getPair();
         Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
         Optional<ThresholdsByMetric> possibleThresholds = thresholds.values().stream().findFirst();
@@ -236,14 +263,44 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // Create blobs from components
-        return this.createBlobsAndBlobWriters(
-                                               projectConfig.getInputs(),
-                                               timeWindows,
-                                               thresholdsToLoad,
-                                               units,
-                                               desiredTimeScale );
+        synchronized ( this.windowLock )
+        {
+            Set<Path> pathsCreated = this.createBlobsAndBlobWriters(
+                                                                     this.getProjectConfig()
+                                                                         .getInputs(),
+                                                                     timeWindows,
+                                                                     thresholdsToLoad,
+                                                                     units,
+                                                                     desiredTimeScale );
+
+            this.pathsWrittenTo.addAll( pathsCreated );
+            
+            // Flag ready
+            this.getIsReadyToWrite()
+                .set( true );
+        }
+        
+        LOGGER.debug( "Created the following netcdf paths for writing: {}.", this.getPathsWrittenTo() );
     }
 
+    /**
+     * @return whether the writer is ready to write.
+     */
+    
+    private AtomicBoolean getIsReadyToWrite()
+    {
+        return this.isReadyToWrite;
+    }
+    
+    /**
+     * @return the project declaration.
+     */
+    
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+    
     /**
      * Creates the blobs into which outputs will be written.
      * 
@@ -536,6 +593,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     @Override
     public void accept( List<DoubleScoreStatisticOuter> output )
     {
+        if( ! this.getIsReadyToWrite().get() )
+        {
+            throw new WriteException( "This netcdf output writer is not ready for writing. The blobs must be "
+                    + "created first. The caller has made an error by asking the writer to accept statistics "
+                    + "before calling createBlobsForWriting." );
+        }
+        
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
 
         Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow = wres.util.Collections.group(
