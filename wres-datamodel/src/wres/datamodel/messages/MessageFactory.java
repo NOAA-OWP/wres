@@ -22,13 +22,11 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Ensemble;
 import wres.datamodel.EvaluationEvent;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -261,14 +259,19 @@ public class MessageFactory
             metadata = diagrams.get( 0 ).getMetadata();
         }
 
-        // Add the boxplots
-        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR )
-             || project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
+        // Add the boxplots per pool
+        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots =
-                    new ArrayList<>( project.getBoxPlotStatisticsPerPair() );
-            boxplots.addAll( project.getBoxPlotStatisticsPerPool() );
-            boxplots.forEach( next -> statistics.addBoxplots( MessageFactory.parse( next ) ) );
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = project.getBoxPlotStatisticsPerPool();
+            boxplots.forEach( next -> statistics.addOneBoxPerPool( MessageFactory.parse( next ) ) );
+            metadata = boxplots.get( 0 ).getMetadata();
+        }
+        
+        // Add the boxplots per pair
+        if ( project.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
+        {
+            List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = project.getBoxPlotStatisticsPerPair();
+            boxplots.forEach( next -> statistics.addOneBoxPerPair( MessageFactory.parse( next ) ) );
             metadata = boxplots.get( 0 ).getMetadata();
         }
 
@@ -871,10 +874,12 @@ public class MessageFactory
         wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
-        FeatureTuple location = metadata.getIdentifier()
-                                        .getFeatureTuple();
+        GeometryTuple geometryTuple = metadata.getPool()
+                                        .getGeometryTuples( 0 );
+        
+        FeatureTuple featureTuple = MessageFactory.parse( geometryTuple );
 
-        return new PoolBoundaries( location, window, thresholds );
+        return new PoolBoundaries( featureTuple, window, thresholds );
     }
 
     /**

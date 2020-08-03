@@ -214,7 +214,7 @@ class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
 
         try
         {
-            // Multivector output available
+            // Diagram output available
             if ( input.hasStatistic( StatisticType.DIAGRAM ) )
             {
                 this.processDiagramOutputs( input.getDiagramStatistics() );

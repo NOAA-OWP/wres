@@ -1,7 +1,6 @@
 package wres.control;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.Feature;
 import wres.datamodel.FeatureTuple;
-import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 
 /**

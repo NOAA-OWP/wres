@@ -556,12 +556,12 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     public static ConcurrentMap<Object, ChartEngine>
-            buildMultiVectorOutputChartEngine( final ProjectConfig config,
-                                               final List<DiagramStatisticOuter> input,
-                                               final OutputTypeSelection userSpecifiedPlotType,
-                                               final String userSpecifiedTemplateResourceName,
-                                               final String overrideParametersStr,
-                                               final ChronoUnit durationUnits )
+            buildDiagramChartEngine( final ProjectConfig config,
+                                     final List<DiagramStatisticOuter> input,
+                                     final OutputTypeSelection userSpecifiedPlotType,
+                                     final String userSpecifiedTemplateResourceName,
+                                     final String overrideParametersStr,
+                                     final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
@@ -573,7 +573,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = ChartEngineFactory.determineChartType( config, metricName, userSpecifiedPlotType );
 
         String templateName = ChartEngineFactory.determineTemplate( metricName,
-                                                 usedPlotType );
+                                                                    usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;

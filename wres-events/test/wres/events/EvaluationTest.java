@@ -27,7 +27,6 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
-import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Pairs.Pair;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 import wres.statistics.generated.Pairs;
@@ -111,7 +110,7 @@ public class EvaluationTest
         this.anotherStatistics = new ArrayList<>();
         this.anotherEvaluation = anotherEvaluationBuilder.build();
 
-        // Add one score with an incrementing value across each of ten pools
+        // Add one score with an incrementing value across each of five pools
         for ( int i = 10; i < 15; i++ )
         {
             Statistics.Builder statistics = Statistics.newBuilder();
@@ -370,14 +369,8 @@ public class EvaluationTest
                     evaluation.publish( next, "group_" + i );
                 }
 
-                // Flag completion of group one
-                EvaluationStatus groupDone =
-                        EvaluationStatus.newBuilder()
-                                        .setCompletionStatus( CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
-                                        .setMessageCount( 10 )
-                                        .build();
-
-                evaluation.publish( groupDone, "group_" + i );
+                // Mark the group complete
+                evaluation.markGroupPublicationCompleteReportedSuccess( "group_" + i );
             }
 
             // Success
@@ -450,14 +443,8 @@ public class EvaluationTest
             // Publish the pairs
             evaluation.publish( this.somePairs );
 
-            // Flag completion of group one
-            EvaluationStatus groupOneDone =
-                    EvaluationStatus.newBuilder()
-                                    .setCompletionStatus( CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
-                                    .setMessageCount( 10 )
-                                    .build();
-
-            evaluation.publish( groupOneDone, "groupOne" );
+            // Mark the group complete
+            evaluation.markGroupPublicationCompleteReportedSuccess( "groupOne" );
 
             // Second group
             for ( Statistics next : this.anotherStatistics )
@@ -468,14 +455,8 @@ public class EvaluationTest
             // Publish the pairs
             evaluation.publish( this.somePairs );
 
-            // Flag completion of group two
-            EvaluationStatus groupTwoDone =
-                    EvaluationStatus.newBuilder()
-                                    .setCompletionStatus( CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
-                                    .setMessageCount( 5 )
-                                    .build();
-
-            evaluation.publish( groupTwoDone, "groupTwo" );
+            // Mark the group complete
+            evaluation.markGroupPublicationCompleteReportedSuccess( "groupTwo" );
 
             // Success
             evaluation.markPublicationCompleteReportedSuccess();

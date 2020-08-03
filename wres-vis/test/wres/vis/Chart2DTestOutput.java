@@ -142,7 +142,7 @@ public class Chart2DTestOutput
 //        });
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
@@ -180,7 +180,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
@@ -257,7 +257,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
@@ -295,7 +295,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
@@ -332,7 +332,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
@@ -369,7 +369,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
@@ -405,7 +405,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
@@ -444,7 +444,7 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( null,
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,

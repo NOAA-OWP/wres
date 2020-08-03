@@ -35,12 +35,15 @@ message Statistics
     repeated DiagramStatistic diagrams = 4;
     // Zero or more diagram statistics.
     
-    repeated BoxplotStatistic boxplots = 5;
-    // Zero or more boxplot statistics.
+    repeated BoxplotStatistic one_box_per_pool = 5;
+    // Zero or more boxplot statistics that contain one box per pool.
+
+    repeated BoxplotStatistic one_box_per_pair = 6;
+    // Zero or more boxplot statistics that contain one box per pair.
     
-    repeated DurationScoreStatistic duration_scores = 6;
+    repeated DurationScoreStatistic duration_scores = 7;
     // Zero or more duration score statistics.
     
-    repeated DurationDiagramStatistic duration_diagrams = 7;
+    repeated DurationDiagramStatistic duration_diagrams = 8;
     // Zero or more duration diagram statistics.
 }
