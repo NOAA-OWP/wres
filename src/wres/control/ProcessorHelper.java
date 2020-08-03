@@ -409,15 +409,18 @@ class ProcessorHelper
 
         if ( incrementalFormats.contains( DestinationType.NETCDF ) )
         {
-            // Use the gridded netcdf writer
-            sharedWritersBuilder.setNetcdfOutputWriter(
-                                                        NetcdfOutputWriter.of(
-                                                                               systemSettings,
-                                                                               executor,
-                                                                               projectConfig,
-                                                                               durationUnits,
-                                                                               outputDirectory,
-                                                                               thresholds ) );
+            // Use the gridded netcdf writer.
+            NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of(
+                                                                     systemSettings,
+                                                                     executor,
+                                                                     projectConfig,
+                                                                     durationUnits,
+                                                                     outputDirectory );
+
+            sharedWritersBuilder.setNetcdfOutputWriter( netcdfWriter );
+            
+            // Create the blobs for writing. See #80267-137.
+            netcdfWriter.createBlobsForWriting( thresholds );
 
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
         }
