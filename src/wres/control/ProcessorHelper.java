@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -101,15 +102,21 @@ class ProcessorHelper
         // Create the consumers
         // Create a container for all the consumers
         // TODO: populate with real consumers, not no-op consumers.
+        // Statistics that are consumed by feature should be published by feature group
+        // Statistics that are consumed by feature and time window could be published by feature and time window group
+        // or by feature group. The advantage of the former is more atomic consumption.
+        // Statistic types for the consumer are set on construction. For example, see:
+        // Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
+        // This provides the set of statistics types that are grouped by feature
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( consume -> {
-                } )
-                                       .addEvaluationConsumer( consume -> {
-                                       } )
-                                       .addStatisticsConsumer( consume -> {
-                                       } )
-                                       .addGroupedStatisticsConsumer( consume -> {
-                                       } )
+                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
+                                       .addEvaluationConsumer( Function.identity()::apply )
+                                       // Add a regular consumer for statistics that are neither grouped by time window
+                                       // nor feature. These include box plots per pair and statistics that can be 
+                                       // written incrementally, such as netCDF and Protobuf
+                                       .addStatisticsConsumer( Function.identity()::apply )
+                                       // Add a grouped consumer for statistics that are grouped by feature
+                                       .addGroupedStatisticsConsumer( Function.identity()::apply )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -176,8 +183,8 @@ class ProcessorHelper
                                                    SystemSettings systemSettings,
                                                    Database database,
                                                    Executor executor,
-                                                   final ProjectConfigPlus projectConfigPlus,
-                                                   final ExecutorServices executors,
+                                                   ProjectConfigPlus projectConfigPlus,
+                                                   ExecutorServices executors,
                                                    DatabaseLockManager lockManager )
             throws IOException
     {
@@ -196,7 +203,8 @@ class ProcessorHelper
         // Look up any needed feature correlations, generate a new declaration.
         ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
         LOGGER.debug( "Filled out features for project. Before: {} After: {}",
-                      projectConfig, featurefulProjectConfig );
+                      projectConfig,
+                      featurefulProjectConfig );
 
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
@@ -284,9 +292,9 @@ class ProcessorHelper
         ProgressMonitor.deactivate();
 
         // Shared writers
-        SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings, 
-                                                                        executor, 
-                                                                        project, 
+        SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
+                                                                        executor,
+                                                                        project,
                                                                         projectConfig,
                                                                         thresholds,
                                                                         outputDirectory );
@@ -316,7 +324,7 @@ class ProcessorHelper
         {
             // Complete the feature tasks
             ProcessorHelper.doAllOrException( featureTasks ).join();
-            
+
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when they are done/
             evaluation.markPublicationCompleteReportedSuccess();
@@ -365,7 +373,7 @@ class ProcessorHelper
 
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
-    
+
     /**
      * Returns an instance of {@link SharedWriters} for shared writing.
      * 
@@ -378,7 +386,7 @@ class ProcessorHelper
      * @return the shared writer instance
      * @throws IOException if the shared writer could not be created
      */
-    
+
     private static SharedWriters getSharedWriters( SystemSettings systemSettings,
                                                    Executor executor,
                                                    Project project,
@@ -389,13 +397,16 @@ class ProcessorHelper
     {
 
         // Obtain the duration units for outputs: #55441
-        String durationUnitsString = projectConfig.getOutputs().getDurationFormat().value().toUpperCase();
+        String durationUnitsString = projectConfig.getOutputs()
+                                                  .getDurationFormat()
+                                                  .value()
+                                                  .toUpperCase();
         ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
 
         // Build any writers of incremental formats that are shared across features
         SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
         Set<DestinationType> incrementalFormats = ConfigHelper.getIncrementalFormats( projectConfig );
-        
+
         if ( incrementalFormats.contains( DestinationType.NETCDF ) )
         {
             // Use the gridded netcdf writer
@@ -407,22 +418,22 @@ class ProcessorHelper
                                                                                durationUnits,
                                                                                outputDirectory,
                                                                                thresholds ) );
-            
+
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
         }
-        
+
         if ( incrementalFormats.contains( DestinationType.PROTOBUF ) )
         {
             // TODO: abstract the creation of an evaluation description to the outermost caller that creates
             // an evaluation. For now, it is only used here.
-            
+
             wres.statistics.generated.Evaluation evaluation = MessageFactory.parse( projectConfig );
-            
+
             // Use a standard name for the protobuf
             // Eventually, this should probably correspond to the unique evaluation identifier
-            Path protobufPath = outputDirectory.resolve( "evaluation.pb3" );           
+            Path protobufPath = outputDirectory.resolve( "evaluation.pb3" );
             sharedWritersBuilder.setProtobufWriter( ProtobufWriter.of( protobufPath, evaluation ) );
-            
+
             LOGGER.debug( "Added a shared protobuf writer to the evaluation." );
         }
 
@@ -533,7 +544,7 @@ class ProcessorHelper
         //Either all done OR one completes exceptionally
         return CompletableFuture.anyOf( allDone, oneExceptional );
     }
-    
+
     /**
      * A value object that a) reduces count of args for some methods and
      * b) provides names for those objects. Can be removed if we can reduce the

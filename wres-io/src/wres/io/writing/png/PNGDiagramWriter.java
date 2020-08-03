@@ -98,7 +98,7 @@ public class PNGDiagramWriter extends PNGWriter
                 for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGDiagramWriter.writeMultiVectorCharts( super.getSystemSettings(),
+                            PNGDiagramWriter.writeDiagrams( super.getSystemSettings(),
                                                                      super.getOutputDirectory(),
                                                                      super.getProjectConfigPlus(),
                                                                      destinationConfig,
@@ -135,12 +135,12 @@ public class PNGDiagramWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeMultiVectorCharts( SystemSettings systemSettings,
-                                                     Path outputDirectory,
-                                                     ProjectConfigPlus projectConfigPlus,
-                                                     DestinationConfig destinationConfig,
-                                                     List<DiagramStatisticOuter> output,
-                                                     ChronoUnit durationUnits )
+    private static Set<Path> writeDiagrams( SystemSettings systemSettings,
+                                            Path outputDirectory,
+                                            ProjectConfigPlus projectConfigPlus,
+                                            DestinationConfig destinationConfig,
+                                            List<DiagramStatisticOuter> output,
+                                            ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -153,12 +153,12 @@ public class PNGDiagramWriter extends PNGWriter
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
 
             final Map<Object, ChartEngine> engines =
-                    ChartEngineFactory.buildMultiVectorOutputChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                          output,
-                                                                          helper.getOutputType(),
-                                                                          helper.getTemplateResourceName(),
-                                                                          helper.getGraphicsString(),
-                                                                          durationUnits );
+                    ChartEngineFactory.buildDiagramChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                output,
+                                                                helper.getOutputType(),
+                                                                helper.getTemplateResourceName(),
+                                                                helper.getGraphicsString(),
+                                                                durationUnits );
 
             // Build the outputs
             for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )

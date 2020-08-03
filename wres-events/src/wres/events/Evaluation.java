@@ -222,10 +222,12 @@ public class Evaluation implements Closeable
     private final AtomicInteger pairsMessageCount;
 
     /**
-     * A record of the message groups to which messages have been published.
+     * A record of the message groups to which messages have been published, together with the number of statistics 
+     * messages published against that identifier. When a group has been marked complete, the message count is set to
+     * a negative number so that the completion state is transparent to publishers for validation purposes.
      */
 
-    private final Set<String> messageGroups;
+    private final Map<String, AtomicInteger> messageGroups;
 
     /**
      * Is <code>true</code> when publication is complete. Upon completion, an evaluation status message is sent to 
@@ -254,7 +256,7 @@ public class Evaluation implements Closeable
      */
 
     private final AtomicInteger exitCode = new AtomicInteger( -1 );
-    
+
     /**
      * Returns the unique evaluation identifier.
      * 
@@ -269,7 +271,7 @@ public class Evaluation implements Closeable
     /**
      * Opens an evaluation.
      * 
-     * @param evaluation the evaluation message
+     * @param evaluationDescription the evaluation description message
      * @param broker the broker
      * @param consumers the consumers to subscribe
      * @return an open evaluation
@@ -278,16 +280,16 @@ public class Evaluation implements Closeable
      * @throws IllegalArgumentException if any input is invalid
      */
 
-    public static Evaluation open( wres.statistics.generated.Evaluation evaluation,
+    public static Evaluation open( wres.statistics.generated.Evaluation evaluationDescription,
                                    BrokerConnectionFactory broker,
                                    Consumers consumers )
     {
-        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( evaluationDescription );
         Objects.requireNonNull( broker );
         Objects.requireNonNull( consumers );
 
         return new Builder().setBroker( broker )
-                            .setEvaluation( evaluation )
+                            .setEvaluationDescription( evaluationDescription )
                             .setConsumers( consumers )
                             .build();
     }
@@ -346,6 +348,7 @@ public class Evaluation implements Closeable
      * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
      * @throws NullPointerException if the message is null or the groupId is null when there are group subscriptions
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
+     * @throws IllegalArgumentException if the group has already been marked complete
      */
 
     public void publish( EvaluationStatus status, String groupId )
@@ -363,7 +366,7 @@ public class Evaluation implements Closeable
         // Record group
         if ( Objects.nonNull( groupId ) )
         {
-            this.messageGroups.add( groupId );
+            this.messageGroups.putIfAbsent( groupId, new AtomicInteger() );
         }
     }
 
@@ -374,6 +377,7 @@ public class Evaluation implements Closeable
      * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
      * @throws NullPointerException if the message is null or the groupId is null when there are group subscriptions
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
+     * @throws IllegalArgumentException if the group has already been marked complete
      */
 
     public void publish( Statistics statistics, String groupId )
@@ -406,7 +410,13 @@ public class Evaluation implements Closeable
         // Record group
         if ( Objects.nonNull( groupId ) )
         {
-            this.messageGroups.add( groupId );
+            // Add a new group or increment an existing one
+            AtomicInteger group = new AtomicInteger( 1 );
+            group = this.messageGroups.putIfAbsent( groupId, group );
+            if ( Objects.nonNull( group ) )
+            {
+                group.incrementAndGet();
+            }
         }
     }
 
@@ -442,6 +452,47 @@ public class Evaluation implements Closeable
 
         // No further publication allowed by public methods
         this.publicationComplete.set( true );
+        
+        // Information about groups is now redundant
+        this.messageGroups.clear();
+    }
+
+    /**
+     * <p>Marks complete the publication of statistics messages by this instance for the prescribed message group. 
+     * 
+     * If no statistics messages were published by this instance, then no tracking by group is needed and 
+     * {@link #markPublicationCompleteReportedSuccess()} should be used instead.
+     * 
+     * @param groupId the group identifier
+     * @see #markPublicationCompleteReportedSuccess()
+     * @throws IllegalArgumentException if no messages were published for the prescribed group prior to completion
+     * @throws NullPointerException if the group identifier is null
+     */
+
+    public void markGroupPublicationCompleteReportedSuccess( String groupId )
+    {
+        Objects.requireNonNull( groupId );
+
+        if ( !this.messageGroups.containsKey( groupId ) )
+        {
+            throw new IllegalArgumentException( "Cannot close message group " + groupId
+                                                + " because no statistics "
+                                                + "messages were published to this group." );
+        }
+
+        CompletionStatus status = CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS;
+
+        AtomicInteger count = this.messageGroups.get( groupId );
+
+        EvaluationStatus complete = EvaluationStatus.newBuilder()
+                                                    .setCompletionStatus( status )
+                                                    .setMessageCount( count.get() )
+                                                    .build();
+
+        this.publish( complete, groupId );
+
+        // Make completion of this group transparent to publishers by assigning a negative message count
+        count.set( -1 );
     }
 
     /**
@@ -554,7 +605,7 @@ public class Evaluation implements Closeable
      * 
      * @throws IOException if the evaluation could not close for any reason
      */
-    
+
     private void awaitCompletionAndThenClose() throws IOException
     {
         LOGGER.debug( "Awaiting completion of evaluation {}...", this.getEvaluationId() );
@@ -566,7 +617,7 @@ public class Evaluation implements Closeable
             int exit = this.statusTracker.await();
 
             this.exitCode.set( exit );
-            
+
             Instant now = Instant.now();
 
             LOGGER.debug( "Completed publication and consumption for evaluation {}. {} elapsed between notification of "
@@ -606,7 +657,7 @@ public class Evaluation implements Closeable
                               separator,
                               separator,
                               this.statusTrackerSubscriber.getFailedOn() );
-                
+
                 this.exitCode.set( 1 );
 
                 throw new EvaluationEventException( "While closing evaluation " + this.getEvaluationId()
@@ -634,26 +685,26 @@ public class Evaluation implements Closeable
             this.statisticsPublisher.close();
         }
     }
-    
+
     /**
      * Returns the status of the evaluation on exit.
      * 
      * @return the exit status
      * @throws IllegalStateException if this message is called before the status is known
      */
-    
+
     public int getExitCode()
     {
         int code = this.exitCode.get();
-        
-        if( code < 0 )
+
+        if ( code < 0 )
         {
             throw new IllegalStateException( "Cannot acquire the exit status of a running evaluation." );
         }
-        
+
         return code;
     }
-    
+
     /**
      * Builds an evaluation.
      * 
@@ -697,13 +748,13 @@ public class Evaluation implements Closeable
         /**
          * Sets the evaluation message containing an overview of the evaluation.
          * 
-         * @param evaluation the evaluation
+         * @param evaluationDescription the evaluation
          * @return this builder
          */
 
-        public Builder setEvaluation( wres.statistics.generated.Evaluation evaluation )
+        public Builder setEvaluationDescription( wres.statistics.generated.Evaluation evaluationDescription )
         {
-            this.evaluationDescription = evaluation;
+            this.evaluationDescription = evaluationDescription;
 
             return this;
         }
@@ -980,7 +1031,8 @@ public class Evaluation implements Closeable
      * Looks for the presence of a group identifier and throws an exception when absent.
      * 
      * @param groupId a group identifier
-     * @throws NullPointerException if the group identifier is null
+     * @throws NullPointerException if there are group subscriptions and the group identifier is null
+     * @throws IllegalArgumentException if there are group subscriptions and the group has already been marked complete
      */
 
     private void validateGroupId( String groupId )
@@ -991,6 +1043,18 @@ public class Evaluation implements Closeable
                                     "Evaluation " + this.getEvaluationId()
                                              + " has subscriptions to message groups. When publishing to this "
                                              + "evaluation, a group identifier must be supplied." );
+
+            AtomicInteger count = this.messageGroups.get( groupId );
+
+            if ( Objects.nonNull( count ) && count.get() < 0 )
+            {
+                throw new IllegalArgumentException( "While attempting to publish a grouped message to evaluation "
+                                                    + this.getEvaluationId()
+                                                    + ", discovered that group "
+                                                    + groupId
+                                                    + " has already been marked complete and cannot accept further "
+                                                    + "messages." );
+            }
         }
     }
 
@@ -1018,9 +1082,9 @@ public class Evaluation implements Closeable
     private Evaluation( Builder builder )
     {
         this.evaluationId = Evaluation.getUniqueId();
-        
+
         LOGGER.info( "Creating an evaluation with id {}.", this.evaluationId );
-        
+
         // Copy then validate
         BrokerConnectionFactory broker = builder.broker;
         List<Consumer<wres.statistics.generated.Evaluation>> evaluationSubs =
@@ -1133,7 +1197,7 @@ public class Evaluation implements Closeable
         this.messageCount = new AtomicInteger();
         this.statusMessageCount = new AtomicInteger();
         this.pairsMessageCount = new AtomicInteger();
-        this.messageGroups = ConcurrentHashMap.newKeySet();
+        this.messageGroups = new ConcurrentHashMap<>();
 
         // Subscriber to evaluation status messages that allows this instance to track its own status
         Set<String> subscribers = new HashSet<>();
@@ -1162,7 +1226,7 @@ public class Evaluation implements Closeable
         this.statusTracker = new EvaluationStatusTracker( this,
                                                           Collections.unmodifiableSet( subscribers ),
                                                           statusTrackerId );
-        
+
         String completionContext = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-complete";
 
         try
@@ -1202,7 +1266,7 @@ public class Evaluation implements Closeable
 
         // Publish the evaluation description  and update the evaluation status
         this.internalPublish( this.evaluationDescription );
-        
+
         LOGGER.info( "Finished creating an evaluation with id {} and subscribers by type: {}.",
                      this.evaluationId,
                      subString );
@@ -1328,17 +1392,15 @@ public class Evaluation implements Closeable
         {
             publisher.publish( body, Collections.unmodifiableMap( properties ) );
 
-            LOGGER.info( "Published a message with identifier {} and correlation identifier {} and groupId {} for "
-                         + "evaluation {} to amq.topic/{}.",
-                         messageId,
-                         this.getEvaluationId(),
-                         groupId,
+            LOGGER.info( "Published a message with metadata {} for evaluation {} to amq.topic/{}.",
+                         properties,
                          this.getEvaluationId(),
                          queue );
         }
         catch ( JMSException e )
         {
-            throw new EvaluationEventException( "Failed to send a message for evaluation "
+            throw new EvaluationEventException( "Failed to publish a message with metadata " + properties
+                                                + " for evaluation "
                                                 + this.getEvaluationId()
                                                 + " to amq.topic/"
                                                 + queue,
@@ -1446,20 +1508,20 @@ public class Evaluation implements Closeable
          */
 
         private final String myConsumerId;
-        
+
         /**
          * The exit code.
          */
 
         private final AtomicInteger exitCode = new AtomicInteger();
-        
+
         @Override
         public void accept( EvaluationStatus message )
         {
             Objects.requireNonNull( message );
 
             CompletionStatus status = message.getCompletionStatus();
-            
+
             switch ( status )
             {
                 case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
@@ -1479,9 +1541,9 @@ public class Evaluation implements Closeable
                 default:
                     break;
             }
-            
+
             // Non-zero exit code
-            if( status.toString().toLowerCase().contains( "failure" ) )
+            if ( status.toString().toLowerCase().contains( "failure" ) )
             {
                 this.exitCode.set( 1 );
             }
@@ -1549,7 +1611,7 @@ public class Evaluation implements Closeable
                                                        + ". Subscribers should report their status regularly, in "
                                                        + "order to reset the timeout period. " );
             }
-            
+
             return this.exitCode.get();
         }
 

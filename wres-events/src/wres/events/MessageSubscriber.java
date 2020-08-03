@@ -578,23 +578,27 @@ class MessageSubscriber<T> implements Closeable
                 correlationId = message.getJMSCorrelationID();
                 groupId = message.getStringProperty( MessageProperty.JMSX_GROUP_ID.toString() );
 
-                // Create the byte array to hold the message
-                int messageLength = (int) receivedBytes.getBodyLength();
+                // This is a grouped message
+                if ( !UNKNOWN.equals( groupId ) )
+                {
+                    // Create the byte array to hold the message
+                    int messageLength = (int) receivedBytes.getBodyLength();
 
-                byte[] messageContainer = new byte[messageLength];
+                    byte[] messageContainer = new byte[messageLength];
 
-                receivedBytes.readBytes( messageContainer );
+                    receivedBytes.readBytes( messageContainer );
 
-                ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
+                    ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
 
-                T received = mapper.apply( bufferedMessage );
+                    T received = mapper.apply( bufferedMessage );
 
-                Queue<OneGroupConsumer<T>> subscribers = this.getGroupSubscriber( innerSubscriber,
-                                                                                  groupId );
+                    Queue<OneGroupConsumer<T>> subscribers = this.getGroupSubscriber( innerSubscriber,
+                                                                                      groupId );
 
-                // Register the message with each grouped subscriber
-                subscribers.forEach( next -> next.accept( received ) );
-
+                    // Register the message with each grouped subscriber
+                    subscribers.forEach( next -> next.accept( received ) );
+                }
+                
                 // Acknowledge
                 message.acknowledge();
 
@@ -1104,17 +1108,23 @@ class MessageSubscriber<T> implements Closeable
             this.statusPublisher.publish( message, Collections.unmodifiableMap( properties ) );
 
             LOGGER.info( "Published an evaluation status message with metadata {} for "
-                         + "evaluation {} with status {}.",
+                         + "evaluation {} with status {} to amq.topic/{}.",
                          properties,
                          evaluationId,
-                         status );
+                         status,
+                         Evaluation.EVALUATION_STATUS_QUEUE );
         }
         catch ( JMSException e )
         {
-            throw new EvaluationEventException( "Failed to send an evaluation status message for evaluation "
+            throw new EvaluationEventException( "Failed to publish an evaluation status message with metadata "
+                                                + properties
+                                                + " for evaluation "
                                                 + evaluationId
                                                 + " from subscriber "
-                                                + this,
+                                                + this
+                                                + " to amq.topic/"
+                                                + Evaluation.EVALUATION_STATUS_QUEUE
+                                                + ".",
                                                 e );
         }
     }

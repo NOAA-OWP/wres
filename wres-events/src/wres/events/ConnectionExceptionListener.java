@@ -25,7 +25,10 @@ class ConnectionExceptionListener implements ExceptionListener
     @Override
     public void onException( JMSException exception )
     {
-        LOGGER.error( "An exception listener uncovered an error in client {}. {}",
+        // Could consider promoting to WARN or ERROR. See #80267-109 for an example of the type of exception that 
+        // might appear here. Could also rethrow, but that cannot be done until the embedded broker exits cleanly as
+        // described in #80267-109.
+        LOGGER.debug( "An exception listener uncovered an error in client {}. {}",
                       this.clientId,
                       exception.getMessage() );
     }

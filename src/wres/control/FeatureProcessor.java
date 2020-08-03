@@ -32,7 +32,6 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.events.Evaluation;
-import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
@@ -192,8 +191,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                          this.executors.getThresholdExecutor(),
                                                                          this.executors.getMetricExecutor() );
 
-                return this.processFeature( this.project.getSystemSettings(),
-                                            this.project.getExecutor(),
+                return this.processFeature( this.evaluation,
+                                            this.project.getSystemSettings(),
                                             projectConfig,
                                             processor,
                                             pools,
@@ -229,8 +228,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                              this.executors.getThresholdExecutor(),
                                                                              this.executors.getMetricExecutor() );
 
-                return this.processFeature( this.project.getSystemSettings(),
-                                            this.project.getExecutor(),
+                return this.processFeature( this.evaluation,
+                                            this.project.getSystemSettings(),
                                             projectConfig,
                                             processor,
                                             pools,
@@ -249,14 +248,18 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * 
      * @param <L> the left data type
      * @param <R> the right data type
+     * @param evaluation the evaluation
+     * @param system settings the system settings
      * @param projectConfig the project declaration
      * @param processor the metric processor
      * @param pools the data pools
+     * @param sampleWriter the sample data writer
+     * @param baselineSampleWriter the baseline sample data writer
      * @return a processing result
      */
 
-    private <L, R> FeatureProcessingResult processFeature( SystemSettings systemSettings,
-                                                           Executor executor,
+    private <L, R> FeatureProcessingResult processFeature( Evaluation evaluation,
+                                                           SystemSettings systemSettings,
                                                            ProjectConfig projectConfig,
                                                            MetricProcessor<PoolOfPairs<L, R>> processor,
                                                            List<Supplier<PoolOfPairs<L, R>>> pools,
@@ -288,17 +291,17 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                         CompletableFuture.supplyAsync( nextInput, this.executors.getPairExecutor() )
                                          .thenApplyAsync( this.getStatisticsProcessingTask( processor, projectConfig ),
                                                           this.executors.getPairExecutor() )
-                                         .thenApplyAsync( metricOutputs -> {
+                                         .thenApplyAsync( statistics -> {
                                              ProduceOutputsFromStatistics outputProcessor =
                                                      ProduceOutputsFromStatistics.of( systemSettings,
                                                                                       this.resolvedProject,
                                                                                       onlyWriteTheseTypes,
                                                                                       this.sharedWriters.getStatisticsWriters() );
-                                             outputProcessor.accept( metricOutputs );
+                                             outputProcessor.accept( statistics );
                                              outputProcessor.close();
 
                                              // Register statistics produced
-                                             typesProduced.addAll( metricOutputs.getStatisticTypes() );
+                                             typesProduced.addAll( statistics.getStatisticTypes() );
 
                                              return outputProcessor.get();
                                          },
@@ -349,7 +352,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         // Generate cached output if available
         Set<Path> endOfPipelinePaths = this.generateEndOfPipelineProducts( systemSettings,
-                                                                           executor,
                                                                            processor );
 
         Set<Path> paths = new HashSet<>( endOfPipelinePaths );
@@ -467,12 +469,12 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * 
      * @param <L> the left data type
      * @param <R> the right data type
+     * 
      * @param processor the processor from which to obtain the inputs for product generation
      * @return a set of paths written
      */
 
     private <L, R> Set<Path> generateEndOfPipelineProducts( SystemSettings systemSettings,
-                                                            Executor executor,
                                                             MetricProcessor<PoolOfPairs<L, R>> processor )
     {
         if ( processor.hasCachedMetricOutput() )
