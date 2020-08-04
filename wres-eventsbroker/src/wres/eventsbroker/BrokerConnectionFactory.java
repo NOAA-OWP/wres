@@ -196,7 +196,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         try
         {
             this.context = new InitialContext( properties );
-            this.connectionFactory = this.createConnectionFactory( properties );
+            this.connectionFactory = this.createConnectionFactory( this.context, properties );
         }
         catch ( NamingException e )
         {
@@ -210,21 +210,21 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * 
      * @param properties the broker configuration properties
      * @return an embedded broker or null
-     * @throws NamingException if the jndi property could not be found
+     * @throws NamingException if the connection factory could not be located
      * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started.
      */
 
-    private EmbeddedBroker createEmbeddedBrokerFromPropertiesIfRequired( Properties properties ) throws NamingException
+    private EmbeddedBroker createEmbeddedBrokerFromPropertiesIfRequired( Properties properties )
+            throws NamingException
     {
         EmbeddedBroker returnMe = null;
 
-        String factoryName = null;
-        ConnectionFactory factory = null;
+        Context localContext = new InitialContext( properties );
+        ConnectionFactory factory = this.createConnectionFactory( localContext, properties );
 
         Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
 
         String key = connectionProperty.getKey();
-        factoryName = key.replace( "connectionfactory.", "" );
         String value = connectionProperty.getValue();
 
         if ( value.contains( "localhost" ) || value.contains( "127.0.0.1" ) )
@@ -233,9 +233,6 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                           + "indicates that a broker should be listening on localhost.",
                           key,
                           value );
-
-            Context localContext = new InitialContext( properties );
-            factory = (ConnectionFactory) localContext.lookup( factoryName );
 
             // Embedded broker with dynamic port assignment?
             if ( value.contains( LOCALHOST_0 ) || value.contains( LOCALHOST_127_0_0_1_0 ) )
@@ -257,13 +254,13 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
                 try ( Connection connection = factory.createConnection() )
                 {
-                    LOGGER.info( "Discovered an active AMQP broker at {}", value );
+                    LOGGER.debug( "Discovered an active AMQP broker at {}", value );
                 }
                 catch ( JMSException e )
                 {
-                    LOGGER.info( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
-                                 + "instead.",
-                                 value );
+                    LOGGER.debug( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
+                                  + "instead.",
+                                  value );
 
                     returnMe = EmbeddedBroker.of();
                 }
@@ -356,23 +353,30 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     /**
      * Creates a connection factory.
      * 
+     * @param context the context
      * @param properties the broker configuration properties.
      * @return a connection factory
-     * @throws NamingException if the jndi property could not be found
+     * @throws NamingException if the connection factory could not be located
+     * @throws NullPointerException if any input is null
      */
 
-    private ConnectionFactory createConnectionFactory( Properties properties ) throws NamingException
+    private ConnectionFactory createConnectionFactory( Context context, Properties properties )
+            throws NamingException
     {
-        String factoryName = null;
+        Objects.requireNonNull( context );
+        Objects.requireNonNull( properties );
+        
+        Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
+        String factoryName = connectionProperty.getKey().replace( "connectionfactory.", "" );
+        String connectionUrl = connectionProperty.getValue();
 
-        for ( Object nextKey : properties.keySet() )
-        {
-            if ( Objects.nonNull( nextKey ) && nextKey.toString().contains( "connectionfactory" ) )
-            {
-                factoryName = nextKey.toString().replace( "connectionfactory.", "" );
-            }
-        }
+        ConnectionFactory factory = (ConnectionFactory) context.lookup( factoryName );
+        
+        LOGGER.info( "Created a connection factory with name {} and URL connection string {}.",
+                     factoryName,
+                     connectionUrl );
 
-        return (ConnectionFactory) this.context.lookup( factoryName );
+        return factory;
     }
+    
 }

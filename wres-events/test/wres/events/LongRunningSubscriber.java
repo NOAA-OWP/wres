@@ -163,9 +163,9 @@ class LongRunningSubscriber
         this.evaluationTopic = (Topic) factory.getDestination( EVALUATION_QUEUE );
         this.statisticsTopic = (Topic) factory.getDestination( STATISTICS_QUEUE );
 
-        this.evaluationStatusPublisher = MessagePublisher.of( factory.get(), this.evaluationStatusTopic );
-
         this.consumerConnection = factory.get().createConnection();
+        
+        this.evaluationStatusPublisher = MessagePublisher.of( this.consumerConnection, this.evaluationStatusTopic );
 
         // Create a connection for consumption and register a listener for exceptions
         this.consumerConnection.setExceptionListener( new EvaluationEventExceptionListener() );

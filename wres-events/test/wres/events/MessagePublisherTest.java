@@ -48,7 +48,7 @@ public class MessagePublisherTest
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Create and start a broker and open an evaluation, closing on completion
-        try ( MessagePublisher publisher = MessagePublisher.of( MessagePublisherTest.connections.get(),
+        try ( MessagePublisher publisher = MessagePublisher.of( MessagePublisherTest.connections.get().createConnection(),
                                                                 MessagePublisherTest.connections.getDestination( "status" ) );
               Connection connection = MessagePublisherTest.connections.get().createConnection();
               Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE );

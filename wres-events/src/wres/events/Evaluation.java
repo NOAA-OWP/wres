@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Topic;
@@ -258,6 +259,18 @@ public class Evaluation implements Closeable
     private final AtomicInteger exitCode = new AtomicInteger( -1 );
 
     /**
+     * A publisher connection for re-use.
+     */
+
+    private final Connection publisherConnection;
+
+    /**
+     * A subscriber connection for re-use.
+     */
+
+    private final Connection subscriberConnection;
+
+    /**
      * Returns the unique evaluation identifier.
      * 
      * @return the evaluation identifier
@@ -452,7 +465,7 @@ public class Evaluation implements Closeable
 
         // No further publication allowed by public methods
         this.publicationComplete.set( true );
-        
+
         // Information about groups is now redundant
         this.messageGroups.clear();
     }
@@ -597,7 +610,7 @@ public class Evaluation implements Closeable
             this.isStopped.set( true );
         }
 
-        LOGGER.debug( "Closed evaluation {}.", this.getEvaluationId() );
+        LOGGER.info( "Closed evaluation {}.", this.getEvaluationId() );
     }
 
     /**
@@ -683,6 +696,33 @@ public class Evaluation implements Closeable
             this.evaluationPublisher.close();
             this.evaluationStatusPublisher.close();
             this.statisticsPublisher.close();
+
+
+            try
+            {
+                this.publisherConnection.close();
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.error( "Encountered an error while attempting to close a broker connection for message "
+                              + "publishers associated with evaluation {}: {}.",
+                              this,
+                              e.getMessage() );
+            }
+
+            try
+            {
+                this.subscriberConnection.close();
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.error( "Encountered an error while attempting to close a broker connection for message "
+                              + "subscribers associated with evaluation {}: {}.",
+                              this,
+                              e.getMessage() );
+            }
+
+
         }
     }
 
@@ -1129,13 +1169,16 @@ public class Evaluation implements Closeable
 
         // Register publishers and subscribers
         ConnectionFactory factory = broker.get();
-
+        
         try
         {
+            this.publisherConnection = factory.createConnection();
+            this.subscriberConnection = factory.createConnection();
+
             Topic status = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
-            this.evaluationStatusPublisher = MessagePublisher.of( factory, status );
+            this.evaluationStatusPublisher = MessagePublisher.of( this.publisherConnection, status );
             this.evaluationStatusSubscribers =
-                    new MessageSubscriber.Builder<EvaluationStatus>().setConnectionFactory( factory )
+                    new MessageSubscriber.Builder<EvaluationStatus>().setConnection( this.subscriberConnection )
                                                                      .setTopic( status )
                                                                      .addSubscribers( statusSubs )
                                                                      .setEvaluationInfo( evaluationInfo )
@@ -1146,9 +1189,9 @@ public class Evaluation implements Closeable
                                                                      .build();
 
             Topic evaluation = (Topic) broker.getDestination( Evaluation.EVALUATION_QUEUE );
-            this.evaluationPublisher = MessagePublisher.of( factory, evaluation );
+            this.evaluationPublisher = MessagePublisher.of( this.publisherConnection, evaluation );
             this.evaluationSubscribers =
-                    new MessageSubscriber.Builder<wres.statistics.generated.Evaluation>().setConnectionFactory( factory )
+                    new MessageSubscriber.Builder<wres.statistics.generated.Evaluation>().setConnection( this.subscriberConnection )
                                                                                          .setTopic( evaluation )
                                                                                          .addSubscribers( evaluationSubs )
                                                                                          .setEvaluationInfo( evaluationInfo )
@@ -1159,9 +1202,9 @@ public class Evaluation implements Closeable
                                                                                          .build();
 
             Topic statistics = (Topic) broker.getDestination( Evaluation.STATISTICS_QUEUE );
-            this.statisticsPublisher = MessagePublisher.of( factory, statistics );
+            this.statisticsPublisher = MessagePublisher.of( this.publisherConnection, statistics );
             this.statisticsSubscribers =
-                    new MessageSubscriber.Builder<Statistics>().setConnectionFactory( factory )
+                    new MessageSubscriber.Builder<Statistics>().setConnection( this.subscriberConnection )
                                                                .setTopic( statistics )
                                                                .addSubscribers( statisticsSubs )
                                                                .setEvaluationInfo( evaluationInfo )
@@ -1176,9 +1219,9 @@ public class Evaluation implements Closeable
                                                                .build();
 
             Topic pairs = (Topic) broker.getDestination( Evaluation.PAIRS_QUEUE );
-            this.pairsPublisher = MessagePublisher.of( factory, pairs );
+            this.pairsPublisher = MessagePublisher.of( this.publisherConnection, pairs );
             this.pairsSubscribers =
-                    new MessageSubscriber.Builder<Pairs>().setConnectionFactory( factory )
+                    new MessageSubscriber.Builder<Pairs>().setConnection( this.subscriberConnection )
                                                           .setTopic( pairs )
                                                           .addSubscribers( pairsSubs )
                                                           .setEvaluationInfo( evaluationInfo )
@@ -1234,7 +1277,7 @@ public class Evaluation implements Closeable
             Topic status = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
             this.statusTrackerSubscriber =
-                    new MessageSubscriber.Builder<EvaluationStatus>().setConnectionFactory( factory )
+                    new MessageSubscriber.Builder<EvaluationStatus>().setConnection( this.subscriberConnection )
                                                                      .setTopic( status )
                                                                      .addSubscribers( List.of( this.statusTracker ) )
                                                                      .setEvaluationInfo( evaluationInfo )
@@ -1660,17 +1703,8 @@ public class Evaluation implements Closeable
             this.validateConsumerId( consumerId );
 
             // A real consumer, not the status tracker a.k.a. me
-            if ( !this.isThisConsumerMe( consumerId ) )
+            if ( !this.isThisConsumerMe( consumerId ) && this.expectedSubscribers.contains( consumerId ) )
             {
-                if ( !this.expectedSubscribers.contains( consumerId ) )
-                {
-                    throw new EvaluationEventException( "While completing a subscription for evaluation "
-                                                        + this.evaluation.getEvaluationId()
-                                                        + " received a message about a consumer event with a consumerId of "
-                                                        + consumerId
-                                                        + ", which is not registered with this evaluation." );
-                }
-
                 // Countdown the subscription as complete
                 this.subscribersReady.remove( consumerId );
                 TimedCountDownLatch subscriberLatch = this.getSubscriberLatch( consumerId );

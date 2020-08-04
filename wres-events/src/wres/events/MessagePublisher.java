@@ -8,7 +8,6 @@ import java.util.Objects;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -132,7 +131,7 @@ class MessagePublisher implements Closeable
     /**
      * Creates an instance with default settings.
      * 
-     * @param connectionFactory the source of connections to a broker
+     * @param connection a connection through which messages should be routed
      * @param destination the delivery destination
      * @throws JMSException if the JMS provider fails to create the connection due to some internal error
      * @throws JMSSecurityException if client authentication fails
@@ -140,11 +139,11 @@ class MessagePublisher implements Closeable
      * @return an instance
      */
 
-    static MessagePublisher of( ConnectionFactory connectionFactory,
+    static MessagePublisher of( Connection connection,
                                 Destination destination )
             throws JMSException
     {
-        return MessagePublisher.of( connectionFactory,
+        return MessagePublisher.of( connection,
                                     destination,
                                     DeliveryMode.NON_PERSISTENT,
                                     Message.DEFAULT_PRIORITY,
@@ -154,7 +153,7 @@ class MessagePublisher implements Closeable
     /**
      * Creates an instance.
      * 
-     * @param connectionFactory the source of connections to a broker
+     * @param connection a connection through which messages should be routed
      * @param destination the delivery destination
      * @param deliveryMode the delivery mode
      * @param messagePriority the message priority
@@ -165,14 +164,14 @@ class MessagePublisher implements Closeable
      * @return an instance
      */
 
-    static MessagePublisher of( ConnectionFactory connectionFactory,
+    static MessagePublisher of( Connection connection,
                                 Destination destination,
                                 int deliveryMode,
                                 int messagePriority,
                                 long messageTimeToLive )
             throws JMSException
     {
-        return new MessagePublisher( connectionFactory, destination, deliveryMode, messagePriority, messageTimeToLive );
+        return new MessagePublisher( connection, destination, deliveryMode, messagePriority, messageTimeToLive );
     }
 
     /**
@@ -270,16 +269,7 @@ class MessagePublisher implements Closeable
                           e.getMessage() );
         }
 
-        try
-        {
-            this.connection.close();
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a broker connection within client {}: {}",
-                          this,
-                          e.getMessage() );
-        }
+        // Do not close connection as it may be re-used.
     }
 
     /**
@@ -294,7 +284,7 @@ class MessagePublisher implements Closeable
     /**
      * Hidden constructor.
      * 
-     * @param connectionFactory the source of connections to a broker
+     * @param connection a connection through which messages should be routed
      * @param destination the delivery destination
      * @param deliveryMode the delivery mode
      * @param messagePriority the message priority
@@ -304,20 +294,20 @@ class MessagePublisher implements Closeable
      * @throws NullPointerException if the connectionFactory or destination is null
      */
 
-    private MessagePublisher( ConnectionFactory connectionFactory,
+    private MessagePublisher( Connection connection,
                               Destination destination,
                               int deliveryMode,
                               int messagePriority,
                               long messageTimeToLive )
             throws JMSException
     {
-        Objects.requireNonNull( connectionFactory );
+        Objects.requireNonNull( connection );
         Objects.requireNonNull( destination );
 
         // Create a unique identifier for the publisher
         this.identifier = Evaluation.getUniqueId();
 
-        this.connection = connectionFactory.createConnection();
+        this.connection = connection;
         this.destination = destination;
 
         // Register a listener for exceptions

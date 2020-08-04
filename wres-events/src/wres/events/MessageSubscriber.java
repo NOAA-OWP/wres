@@ -23,7 +23,6 @@ import java.util.function.ToIntFunction;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.JMSSecurityException;
 import javax.jms.Message;
@@ -207,7 +206,7 @@ class MessageSubscriber<T> implements Closeable
          * Broker connections.
          */
 
-        private ConnectionFactory connectionFactory;
+        private Connection connection;
 
         /**
          * Destination.
@@ -271,15 +270,15 @@ class MessageSubscriber<T> implements Closeable
         private String identifier;
 
         /**
-         * Sets the connection factory.
+         * Sets the connection.
          * 
-         * @param connectionFactory the connection factory
+         * @param connection the connection factory
          * @return this builder
          */
 
-        Builder<T> setConnectionFactory( ConnectionFactory connectionFactory )
+        Builder<T> setConnection( Connection connection )
         {
-            this.connectionFactory = connectionFactory;
+            this.connection = connection;
 
             return this;
         }
@@ -797,7 +796,7 @@ class MessageSubscriber<T> implements Closeable
                 {
                     this.failure = receivedBytes;
                 }
-
+                
                 // Create a stack trace to log
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter( sw );
@@ -991,29 +990,8 @@ class MessageSubscriber<T> implements Closeable
                           this,
                           e.getMessage() );
         }
-
-        try
-        {
-            this.consumerConnection.close();
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a broker connection within subscriber {}: {}",
-                          this,
-                          e.getMessage() );
-        }
-
-        try
-        {
-            this.statusConnection.close();
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a broker connection for evaluation status "
-                          + "messages within subscriber {}: {}",
-                          this,
-                          e.getMessage() );
-        }
+        
+        // Do not close connections as they may be re-used.
     }
 
     /**
@@ -1108,7 +1086,7 @@ class MessageSubscriber<T> implements Closeable
             this.statusPublisher.publish( message, Collections.unmodifiableMap( properties ) );
 
             LOGGER.info( "Published an evaluation status message with metadata {} for "
-                         + "evaluation {} with status {} to amq.topic/{}.",
+                         + "evaluation {} with status {} to amq.topic/{} with content {}.",
                          properties,
                          evaluationId,
                          status,
@@ -1198,7 +1176,7 @@ class MessageSubscriber<T> implements Closeable
 
             ByteBuffer message = ByteBuffer.wrap( ready.toByteArray() );
 
-            this.publishStatusInternal( message, messageId, CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS );
+            this.publishStatusInternal( message, messageId, status );
         }
     }
 
@@ -1415,9 +1393,10 @@ class MessageSubscriber<T> implements Closeable
         this.isComplete = new AtomicBoolean();
         this.expectedMessageCountSupplier = builder.expectedMessageCountSupplier;
         this.isIgnoreConsumerMessages = builder.isIgnoreConsumerMessages;
-
+        this.consumerConnection = builder.connection;
+        this.statusConnection = builder.connection;
+        
         Topic statusTopic = builder.statusTopic;
-        ConnectionFactory localFactory = builder.connectionFactory;
         String context = builder.context;
         Function<ByteBuffer, T> mapper = builder.mapper;
         List<Consumer<T>> subscribers = builder.subscribers;
@@ -1428,15 +1407,15 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( this.topic );
         Objects.requireNonNull( this.evaluationInfo );
         Objects.requireNonNull( this.expectedMessageCountSupplier );
-        Objects.requireNonNull( localFactory );
+        Objects.requireNonNull( this.consumerConnection );
+        Objects.requireNonNull( this.statusConnection );
+        
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
         Objects.requireNonNull( statusTopic,
                                 "Set the evaluation status topic for consumer " + this
                                              + ", which is "
                                              + "needed to report on consumption status." );
-
-        this.consumerConnection = localFactory.createConnection();
 
         // Create a connection for consumption and register a listener for exceptions
         this.consumerConnection.setExceptionListener( new ConnectionExceptionListener( this.getIdentifier() ) );
@@ -1450,6 +1429,8 @@ class MessageSubscriber<T> implements Closeable
         // Name the subscriber
         String name = this.getNextSubscriptionName( statusContext );
         MessageConsumer localStatusConsumer = this.getConsumer( statusTopic, selector, name );
+        this.registerEvaluationStatusListener( localStatusConsumer );     
+        
         this.statusConsumer = new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(),
                                                         name,
                                                         localStatusConsumer,
@@ -1492,19 +1473,17 @@ class MessageSubscriber<T> implements Closeable
         this.consumers = Collections.unmodifiableList( localConsumers );
 
         // Create the publisher for status messages
-        this.statusConnection = localFactory.createConnection();
-        this.statusPublisher = MessagePublisher.of( localFactory, statusTopic );
+        this.statusPublisher = MessagePublisher.of( this.statusConnection, statusTopic );
 
         // Start the connections
         this.consumerConnection.start();
         this.statusConnection.start();
 
-        // Notify status as ready to consume if there are consumers attached to this susbcriber, other than the
+        // Notify status as ready to consume if there are consumers attached to this subscriber, other than the
         // status consumer
         if ( !this.consumers.isEmpty() )
         {
             this.registerThisConsumer();
-            this.registerEvaluationStatusListener( localStatusConsumer );
         }
 
         LOGGER.debug( "Created message subscriber {}, which is ready to receive subscriptions.", this );

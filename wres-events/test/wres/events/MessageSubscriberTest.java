@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Topic;
 import javax.naming.NamingException;
@@ -65,10 +66,14 @@ public class MessageSubscriberTest
 
         EvaluationInfo evaluationInfo = EvaluationInfo.of( "someEvaluationId" );
 
-        try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
-                                                                destination );
+        try ( Connection publisherConnection = MessageSubscriberTest.connections.get().createConnection();
+              MessagePublisher publisher =
+                      MessagePublisher.of( publisherConnection,
+                                           destination );
+              Connection subscriberConnection = MessageSubscriberTest.connections.get()
+                                                                                 .createConnection();
               MessageSubscriber<Integer> subscriberOne =
-                      new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
+                      new MessageSubscriber.Builder<Integer>().setConnection( subscriberConnection )
                                                               .setTopic( destination )
                                                               .setMapper( mapper )
                                                               .setEvaluationInfo( evaluationInfo )
@@ -84,7 +89,9 @@ public class MessageSubscriberTest
             publisher.publish( sentOne, Collections.unmodifiableMap( properties ) );
 
             // Wait until one message was received
-            while( subscriberOne.getConsumptionCount() == 0 ) {}
+            while ( subscriberOne.getConsumptionCount() == 0 )
+            {
+            }
 
             assertEquals( 1695609641, actualOne.get() );
         }
@@ -129,12 +136,17 @@ public class MessageSubscriberTest
 
         EvaluationInfo evaluationInfo = EvaluationInfo.of( "someEvaluationId", completionTracker );
 
-        try ( MessagePublisher publisher = MessagePublisher.of( MessageSubscriberTest.connections.get(),
-                                                                statisticsDestination );
+        try ( Connection publisherConnection = MessageSubscriberTest.connections.get().createConnection();
+              MessagePublisher publisher =
+                      MessagePublisher.of( publisherConnection,
+                                           statisticsDestination );
               MessagePublisher statusPublisher =
-                      MessagePublisher.of( MessageSubscriberTest.connections.get(), statusDestination );
+                      MessagePublisher.of( publisherConnection,
+                                           statusDestination );
+              Connection subscriberConnection = MessageSubscriberTest.connections.get()
+                                                                                 .createConnection();
               MessageSubscriber<Integer> subscriberOne =
-                      new MessageSubscriber.Builder<Integer>().setConnectionFactory( MessageSubscriberTest.connections.get() )
+                      new MessageSubscriber.Builder<Integer>().setConnection( subscriberConnection )
                                                               .setTopic( statisticsDestination )
                                                               .setEvaluationStatusTopic( statusDestination )
                                                               .setExpectedMessageCountSupplier( message -> 2 )
@@ -163,7 +175,7 @@ public class MessageSubscriberTest
             // Start another group
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:789" );
             properties.put( MessageProperty.JMSX_GROUP_ID, "anotherGroupId" );
-            
+
             publisher.publish( sentThree, Collections.unmodifiableMap( properties ) );
 
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:101112" );
@@ -174,7 +186,9 @@ public class MessageSubscriberTest
             statusPublisher.publish( groupComplete, Collections.unmodifiableMap( properties ) );
 
             // Wait until four messages were received
-            while( subscriberOne.getConsumptionCount() < 4 ) {}
+            while ( subscriberOne.getConsumptionCount() < 4 )
+            {
+            }
         }
 
         List<Integer> expected = List.of( 1695609641 + 243, 1746072600 + 7 );
