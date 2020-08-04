@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -322,15 +323,31 @@ class NWMTimeSeries implements Closeable
 
                 String ncFilePartTwo = "." + profile.getTimeLabel();
 
-                long hours = profile.getDurationBetweenValidDatetimes()
-                                    .toHours()
-                             * j;
 
                 if ( profile.getTimeLabel()
                             .equals( NWMProfile.TimeLabel.f ) )
                 {
-                    String forecastLabel = String.format( "%03d", hours );
-                    ncFilePartTwo += forecastLabel;
+                    Duration validDatetimeStep = profile.getDurationBetweenValidDatetimes();
+                    Duration duration = validDatetimeStep.multipliedBy( j );
+                    long hours = duration.toHours();
+
+                    if ( profile.getDurationBetweenValidDatetimes()
+                                .compareTo( Duration.ofHours( 1 ) ) >= 0 )
+                    {
+                        String forecastLabel = String.format( "%03d", hours );
+                        ncFilePartTwo += forecastLabel;
+                    }
+                    else
+                    {
+                        // More-frequent-than-hourly means use 3-digit hour then
+                        // two digit minute
+                        long minutes = duration.minusHours( hours )
+                                               .toMinutes();
+                        String forecastLabel = String.format( "%03d%02d",
+                                                              hours,
+                                                              minutes );
+                        ncFilePartTwo += forecastLabel;
+                    }
                 }
                 else if ( profile.getTimeLabel()
                                  .equals( NWMProfile.TimeLabel.tm ))

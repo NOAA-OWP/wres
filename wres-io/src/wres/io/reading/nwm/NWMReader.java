@@ -584,14 +584,9 @@ public class NWMReader implements Callable<List<IngestResult>>
     /**
      * Get the reference datetimes for the given boundaries and NWMProfile.
      *
-     * As of 2019-12-12, all NWM data seen by WRES team has on-the-hour so this
-     * method rounds the "earliest" to the next hour. The reason for doing this
-     * is we use "earliest" exclusive throughout pooling and conditioning but
-     * "latest" inclusive through the same, and a user may want to specify
-     * earliest="2019-12-12T23:59:59Z" to get the "2019-12-13T00:00:00Z"
-     * reference datetime included in an evaluation and will not want additional
-     * forecasts ingested that will not be included in the evaluation when
-     * specifying earliest="2019-12-12T23:00:00Z".
+     * As of 2020-08-04, there are datasets that have reference datetimes one
+     * duration after T00Z but another duration between reference datetimes.
+     * The profile now distinguishes between these two.
      *
      * @param earliest The earliest reference datetime.
      * @param latest The latest reference datetime.
@@ -605,30 +600,31 @@ public class NWMReader implements Callable<List<IngestResult>>
     {
         
         Set<Instant> datetimes = new HashSet<>();
-        Duration modelRunStep = nwmProfile.getDurationBetweenReferenceDatetimes();
+        Duration issuedStep = nwmProfile.getDurationBetweenReferenceDatetimes();
         
-        //This assumes every type of NWM forecast generates forecasts at 0Z for 
-        //every day.  So, if I simply truncate earliest to be at time 0 for that
+        //Simply truncate earliest to be at time 0 for the earliest
         //day, that should be a good starting point for finding the first 
         //NWM forecast reference strictly after the provided earliest Instant.
-        Instant earliestOnHour = earliest.truncatedTo( ChronoUnit.DAYS );
-        while ( !earliestOnHour.isAfter( earliest ) )
+        // Then add the duration past midnight of the first forecast.
+        Instant forecastDatetime = earliest.truncatedTo( ChronoUnit.DAYS )
+                                           .plus( nwmProfile.getDurationPastMidnight() );
+
+        while ( !forecastDatetime.isAfter( earliest ) )
         {
-            earliestOnHour = earliestOnHour.plus( nwmProfile.getDurationBetweenReferenceDatetimes() )
-                                           .truncatedTo( ChronoUnit.HOURS );
+            forecastDatetime = forecastDatetime.plus( issuedStep );
         }
 
-        LOGGER.debug( "Rounded earliest {} to exact hour {}",
-                      earliest, earliestOnHour );
-        datetimes.add( earliestOnHour );
-        Instant additionalForecastDatetime = earliestOnHour.plus( modelRunStep );
+        LOGGER.debug( "Resolved earliest {} issued datetime given to first forecast at {}",
+                      earliest, forecastDatetime );
+        datetimes.add( forecastDatetime );
+        Instant additionalForecastDatetime = forecastDatetime.plus( issuedStep );
 
         //Why not use !additionalForecastDatetime.isAfter(latest)?  Less readable?
         while ( additionalForecastDatetime.isBefore( latest )
                 || additionalForecastDatetime.equals( latest ) )
         {
             datetimes.add( additionalForecastDatetime );
-            additionalForecastDatetime = additionalForecastDatetime.plus( modelRunStep );
+            additionalForecastDatetime = additionalForecastDatetime.plus( issuedStep );
         }
 
         return Collections.unmodifiableSet( datetimes );
