@@ -28,7 +28,7 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
  * <p>Constructs a {@link Metric} that returns the difference in time between the maximum values recorded in the left
  * and right side of each time-series in the {@link PoolOfPairs}. For multiple peaks with the same value, the 
  * peak with the latest {@link Instant} is chosen. The timing error is measured with a {@link Duration}. A negative 
- * {@link Duration} indicates that the predicted peak is after the observed peak.</p>
+ * {@link Duration} indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
  * 
  * @author james.brown@hydrosolved.com
  */

@@ -1,6 +1,6 @@
 {
     "name": "Embedded Broker",
-    "modelVersion": "7.0",
+    "modelVersion": "8.0",
     "authenticationproviders":
     [
         {
@@ -20,6 +20,8 @@
             ],
             "authenticationProvider": "externalAuthProvider",
             "needClientAuth": "false",
+            "maxOpenConnections": "-1",
+            "threadPoolSize": "4",
             "virtualhostaliases":
             [
                 {
@@ -48,7 +50,7 @@
                 "queue.defaultAlternateBinding": "{\"destination\": \"$${this:name}_DLQ\"} }",
                 "queue.maximumDeliveryAttempts": "2"
             },
-            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"5\"}}] }"
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"16\", \"numberOfSelectors\": \"2\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"5\"}}] }"
         }
     ]
 }

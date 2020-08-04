@@ -37,7 +37,7 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
  * <p>For multiple peaks with the same value, the peak with the latest {@link Instant} is chosen. The timing error is 
  * measured with a {@link Duration}. However, the fraction is measured in relative hours, i.e. the timing error 
  * is divided by a <code>long</code> value of hours using {@link Duration#dividedBy(long)}. A negative {@link Duration} 
- * indicates that the predicted peak is after the observed peak.</p>
+ * indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
  * 
  * @author james.brown@hydrosolved.com
  */
