@@ -17,7 +17,7 @@ buildscript
     dependencies
     {
         // For markdown -> html
-        classpath 'com.atlassian.commonmark:commonmark:0.15.1'
+        classpath 'com.atlassian.commonmark:commonmark:0.15.2'
         // To create a unified javadoc across submodules and top-level module:
         classpath 'com.netflix.nebula:gradle-aggregate-javadocs-plugin:3.0.1'
     }
@@ -55,10 +55,10 @@ plugins
     id 'org.owasp.dependencycheck' version '5.3.2.1'
     
     // Task to assist in downloading artifacts
-    id "de.undercouch.download" version "4.1.0"
+    id "de.undercouch.download" version "4.1.1"
 
     // To discover library versions with updates available
-    id 'com.github.ben-manes.versions' version '0.28.0'
+    id 'com.github.ben-manes.versions' version '0.29.0'
 
     // Run python scripts
     // TODO: cannot install miniconda in current build environment
@@ -255,7 +255,7 @@ project(':wres-system')
 
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.14'
-        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.10.1'
+        compile group: 'org.liquibase', name: 'liquibase-core', version: '3.10.2'
 
         // connection pooling:
         compile 'com.zaxxer:HikariCP:3.4.5'
@@ -270,7 +270,7 @@ project(':wres-system')
         testCompile 'junit:junit:4.13'
 
         // Use mockserver to test certificate utilities
-        testCompile 'org.mock-server:mockserver-netty:5.10'
+        testCompile 'org.mock-server:mockserver-netty:5.11.1'
     }
 
     test
@@ -287,7 +287,7 @@ project(':wres-datamodel')
         compile project(':wres-statistics')
         
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile 'org.apache.commons:commons-lang3:3.10'
+        compile 'org.apache.commons:commons-lang3:3.11'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile project(':wres-config')
         // JCIP annotations
@@ -313,12 +313,12 @@ project(':wres-io')
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        compile 'com.fasterxml.jackson.core:jackson-databind:2.11.1'
-        compile 'com.fasterxml.jackson.core:jackson-annotations:2.11.1'
-        compile 'com.fasterxml.jackson.core:jackson-core:2.11.1'
+        compile 'com.fasterxml.jackson.core:jackson-databind:2.11.2'
+        compile 'com.fasterxml.jackson.core:jackson-annotations:2.11.2'
+        compile 'com.fasterxml.jackson.core:jackson-core:2.11.2'
 
         // For Java 8 java.time support
-        compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.1'
+        compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.2'
 
         compile('edu.ucar:cdm-core:5.3.3')
         {
@@ -341,7 +341,7 @@ project(':wres-io')
         compile 'commons-codec:commons-codec:1.14'
 
         // Better-than-Java-11's HTTP client
-        compile 'com.squareup.okhttp3:okhttp:4.7.2'
+        compile 'com.squareup.okhttp3:okhttp:4.8.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtime 'org.slf4j:jul-to-slf4j:1.8.0-beta4'
@@ -354,7 +354,7 @@ project(':wres-io')
 
         testCompile 'junit:junit:4.13'
 
-        testCompile group: 'org.liquibase', name: 'liquibase-core', version: '3.10.1'
+        testCompile group: 'org.liquibase', name: 'liquibase-core', version: '3.10.2'
 
         // Mocking help
         testCompile 'org.mockito:mockito-core:3.3.3'
@@ -364,7 +364,7 @@ project(':wres-io')
         testCompile 'org.powermock:powermock-module-junit4:2.0.7'
 
         // Use mockserver as a mock server for mock API responses
-        testCompile 'org.mock-server:mockserver-netty:5.10'
+        testCompile 'org.mock-server:mockserver-netty:5.11.1'
 
         // Use H2 for truly embedded SQL db
         testCompile 'com.h2database:h2:1.4.200'
@@ -440,7 +440,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.12.3'
+            artifact = 'com.google.protobuf:protoc:3.12.4'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -712,7 +712,7 @@ project(':wres-statistics')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile 'com.google.protobuf:protobuf-java:3.12.2'
+        compile 'com.google.protobuf:protobuf-java:3.12.4'
         compile project(':wres-config')
 
         // Flatbuffers
@@ -798,7 +798,7 @@ project(':wres-vis')
         compile project(':wres-config')
         compile project(':wres-util')        
 
-        compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.10'
+        compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.18'
         compile 'com.google.guava:guava:29.0-jre'
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
@@ -832,9 +832,6 @@ project(':wres-config')
         // For Java 9+ compatibility:
         compile 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
 
-        // TODO: check that this is consistent with the declaration of dependencies elsewhere
-        // and update if not. Added in the context of #44996
-        // https://mvnrepository.com/artifact/org.jvnet.jaxb2_commons/jaxb2-basics-runtime
         compile group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-runtime', version: '0.12.0'
 
         // To know about @Location
@@ -957,7 +954,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.12.3'
+            artifact = 'com.google.protobuf:protoc:3.12.4'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -994,7 +991,7 @@ project(':wres-messages')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
-        compile 'com.google.protobuf:protobuf-java:3.12.2'
+        compile 'com.google.protobuf:protobuf-java:3.12.4'
 
         testCompile 'junit:junit:4.13'
     }
@@ -1057,16 +1054,16 @@ project(':wres-tasker')
         compile 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
 
         // Server library to run a web server:
-        compile 'org.eclipse.jetty:jetty-server:9.4.30.v20200611'
+        compile 'org.eclipse.jetty:jetty-server:9.4.31.v20200723'
 
         // Servlet container library to run a web application with:
-        compile 'org.eclipse.jetty:jetty-webapp:9.4.30.v20200611'
+        compile 'org.eclipse.jetty:jetty-webapp:9.4.31.v20200723'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
         compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.31'
         // Update the jetty-continuation depended upon by above jersey dep
-        compile 'org.eclipse.jetty:jetty-continuation:9.4.30.v20200611'
+        compile 'org.eclipse.jetty:jetty-continuation:9.4.31.v20200723'
 
         compile 'com.github.ben-manes.caffeine:caffeine:2.8.5'
 
@@ -1083,8 +1080,8 @@ project(':wres-tasker')
         testCompile 'junit:junit:4.13'
 
         // To generate fake certificates and keys for testing
-        testCompile 'org.bouncycastle:bcpkix-jdk15on:1.65'
-        testCompile 'org.bouncycastle:bcprov-jdk15on:1.65.01'
+        testCompile 'org.bouncycastle:bcpkix-jdk15on:1.66'
+        testCompile 'org.bouncycastle:bcprov-jdk15on:1.66'
 
         // To test against an embedded AMQP broker
         testCompile 'org.apache.qpid:qpid-broker-core:8.0.0'
@@ -1335,11 +1332,11 @@ dependencies
 
     compile 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     compile 'javax.annotation:javax.annotation-api:1.3.2'
-    compile 'org.eclipse.jetty:jetty-server:9.4.30.v20200611'
-    compile 'org.eclipse.jetty:jetty-webapp:9.4.30.v20200611'
+    compile 'org.eclipse.jetty:jetty-server:9.4.31.v20200723'
+    compile 'org.eclipse.jetty:jetty-webapp:9.4.31.v20200723'
     compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.31'
     // Update the jetty-continuation that above jersey dep depends on
-    compile 'org.eclipse.jetty:jetty-continuation:9.4.30.v20200611'
+    compile 'org.eclipse.jetty:jetty-continuation:9.4.31.v20200723'
 
     compile 'com.github.ben-manes.caffeine:caffeine:2.8.5'
 
