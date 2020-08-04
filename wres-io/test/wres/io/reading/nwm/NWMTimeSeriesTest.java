@@ -63,7 +63,8 @@ public class NWMTimeSeriesTest
                                                 "fake_dir_prefix",
                                                 "fake_location_label",
                                                 Duration.ofHours( 9001 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T08:00:00Z" ),
                                                        URI.create( "https://test/" ) );
@@ -89,7 +90,8 @@ public class NWMTimeSeriesTest
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T08:00:00Z" ),
                                                        URI.create( "https://test/" ) );
@@ -129,7 +131,8 @@ public class NWMTimeSeriesTest
                                                 MEDIUM_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 6 ),
-                                                true );
+                                                true,
+                                                Duration.ZERO );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T18:00:00Z" ),
                                                        URI.create( "file:///test/" ) );
@@ -172,7 +175,8 @@ public class NWMTimeSeriesTest
                                                 "analysis_assim_hawaii",
                                                 "hawaii",
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
         Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse(
                                                              T2019_10_06T02_00_00Z ),
@@ -203,7 +207,8 @@ public class NWMTimeSeriesTest
                                                 ANALYSIS_ASSIM,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
                                                                nwmProfile,
@@ -233,7 +238,8 @@ public class NWMTimeSeriesTest
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
@@ -270,7 +276,8 @@ public class NWMTimeSeriesTest
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
@@ -306,7 +313,8 @@ public class NWMTimeSeriesTest
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
@@ -343,7 +351,8 @@ public class NWMTimeSeriesTest
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
@@ -378,7 +387,8 @@ public class NWMTimeSeriesTest
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
@@ -412,7 +422,8 @@ public class NWMTimeSeriesTest
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
-                                                false );
+                                                false,
+                                                Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
         try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( this.mockSystemSettings,
@@ -449,7 +460,8 @@ public class NWMTimeSeriesTest
                                                 MEDIUM_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 6 ),
-                                                true );
+                                                true,
+                                                Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
@@ -495,7 +507,8 @@ public class NWMTimeSeriesTest
                                                 MEDIUM_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 6 ),
-                                                true );
+                                                true,
+                                                Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 

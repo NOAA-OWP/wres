@@ -123,7 +123,10 @@
             <xs:enumeration value="wrds_nwm" />
             <xs:enumeration value="usgs_nwis" />
             <xs:enumeration value="nwm_short_range_channel_rt_conus" />
+            <xs:enumeration value="nwm_short_range_channel_rt_hawaii" />
+            <xs:enumeration value="nwm_short_range_no_da_channel_rt_hawaii" />
             <xs:enumeration value="nwm_short_range_channel_rt_puertorico" />
+            <xs:enumeration value="nwm_short_range_no_da_channel_rt_puertorico" />
             <xs:enumeration value="nwm_medium_range_ensemble_channel_rt_conus" />
             <xs:enumeration value="nwm_medium_range_deterministic_channel_rt_conus" />
             <xs:enumeration value="nwm_analysis_assim_channel_rt_conus" />

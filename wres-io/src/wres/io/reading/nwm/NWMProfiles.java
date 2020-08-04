@@ -110,9 +110,21 @@ class NWMProfiles
         {
             return NWMProfiles.getLongRangeChannelRtConus();
         }
-        if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_PUERTORICO ) )
+        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_HAWAII ) )
+        {
+            return NWMProfiles.getShortRangeChannelRtHawaii();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_HAWAII ) )
+        {
+            return NWMProfiles.getShortRangeNoDaChannelRtHawaii();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_PUERTORICO ) )
         {
             return NWMProfiles.getShortRangeChannelRtPuertoRico();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_PUERTORICO ) )
+        {
+            return NWMProfiles.getShortRangeNoDaChannelRtPuertoRico();
         }
         else
         {
@@ -133,7 +145,8 @@ class NWMProfiles
                                "short_range",
                                "conus",
                                Duration.ofHours( 1 ),
-                               false );
+                               false,
+                               Duration.ZERO );
     }
 
 
@@ -149,7 +162,8 @@ class NWMProfiles
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
-                               true );
+                               true,
+                               Duration.ZERO );
     }
 
     private static NWMProfile getMediumRangeDeterministicChannelRtConus()
@@ -164,7 +178,8 @@ class NWMProfiles
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
-                               true );
+                               true,
+                               Duration.ZERO );
     }
 
     private static NWMProfile getAnalysisAssimChannelRtConus()
@@ -179,7 +194,8 @@ class NWMProfiles
                                "analysis_assim",
                                "conus",
                                Duration.ofHours( 1 ),
-                               false );
+                               false,
+                               Duration.ZERO );
     }
 
     private static NWMProfile getLongRangeChannelRtConus()
@@ -194,7 +210,8 @@ class NWMProfiles
                                "long_range",
                                "conus",
                                Duration.ofHours( 6 ),
-                               true );
+                               true,
+                               Duration.ZERO );
     }
 
 
@@ -209,8 +226,58 @@ class NWMProfiles
                                NWMProfile.TimeLabel.f,
                                "short_range_puertorico",
                                "puertorico",
-                               // Actually, T06Z and T18Z
-                               Duration.ofHours( 6 ),
-                               false );
+                               Duration.ofHours( 12 ),
+                               false,
+                               Duration.ofHours( 6 ) );
+    }
+
+
+    private static NWMProfile getShortRangeNoDaChannelRtPuertoRico()
+    {
+        return new NWMProfile( 48,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "short_range_no_da",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.f,
+                               "short_range_puertorico_no_da",
+                               "puertorico",
+                               Duration.ofHours( 12 ),
+                               false,
+                               Duration.ofHours( 6 ) );
+    }
+
+
+    private static NWMProfile getShortRangeChannelRtHawaii()
+    {
+        return new NWMProfile( 192,
+                               1,
+                               Duration.ofMinutes( 15 ),
+                               true,
+                               "short_range",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.f,
+                               "short_range_hawaii",
+                               "hawaii",
+                               Duration.ofHours( 12 ),
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getShortRangeNoDaChannelRtHawaii()
+    {
+        return new NWMProfile( 192,
+                               1,
+                               Duration.ofMinutes( 15 ),
+                               true,
+                               "short_range_no_da",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.f,
+                               "short_range_hawaii_no_da",
+                               "hawaii",
+                               Duration.ofHours( 12 ),
+                               false,
+                               Duration.ZERO );
     }
 }

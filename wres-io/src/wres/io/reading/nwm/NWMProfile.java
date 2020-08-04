@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Represents a profile of a NWM forecast
@@ -13,7 +14,7 @@ class NWMProfile
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "blobCount", blobCount )
                 .append( "memberCount", memberCount )
                 .append( "durationBetweenValidDatetimes",
@@ -24,6 +25,8 @@ class NWMProfile
                 .append( "nwmOutputType", nwmOutputType )
                 .append( "nwmSubdirectoryPrefix", nwmSubdirectoryPrefix )
                 .append( "nwmLocationLabel", nwmLocationLabel )
+                .append( "isEnsembleLike", isEnsembleLike )
+                .append( "durationPastMidnight", durationPastMidnight )
                 .append( "durationBetweenReferenceDatetimes",
                          durationBetweenReferenceDatetimes )
                 .toString();
@@ -100,13 +103,21 @@ class NWMProfile
      */
     private final boolean isEnsembleLike;
 
-
     /**
      * The duration between each NWM timeseries dataset reference datetime.
      * Assumes a fixed interval between executions of the NWM model software or
      * at least between each executions configured reference datetimes.
      */
     private final Duration durationBetweenReferenceDatetimes;
+
+    /**
+     * The duration past midnight Zulu when the first data appears.
+     *
+     * For example, Puerto Rico short-range forecasts are issued every 12 hours
+     * but the first forecast after midnight Zulu is at T06Z.
+     */
+    private final Duration durationPastMidnight;
+
 
     NWMProfile( int blobCount,
                 int memberCount,
@@ -118,7 +129,8 @@ class NWMProfile
                 String nwmSubdirectoryPrefix,
                 String nwmLocationLabel,
                 Duration durationBetweenReferenceDateTimes,
-                boolean isEnsembleLike )
+                boolean isEnsembleLike,
+                Duration durationPastMidnight )
     {
         Objects.requireNonNull( durationBetweenValidDatetimes );
         Objects.requireNonNull( nwmConfiguration );
@@ -127,6 +139,7 @@ class NWMProfile
         Objects.requireNonNull( nwmSubdirectoryPrefix );
         Objects.requireNonNull( nwmLocationLabel );
         Objects.requireNonNull( durationBetweenReferenceDateTimes );
+        Objects.requireNonNull( durationPastMidnight );
 
         if ( blobCount < 1 )
         {
@@ -172,6 +185,13 @@ class NWMProfile
                                                 + durationBetweenReferenceDateTimes );
         }
 
+        if ( durationPastMidnight.isNegative()
+             || durationPastMidnight.compareTo( Duration.ofHours( 24 ) ) >= 0 )
+        {
+            throw new IllegalArgumentException( "Must have duration past midnight of zero through 24 hours, not "
+                                                + durationPastMidnight );
+        }
+
         this.blobCount = blobCount;
         this.memberCount = memberCount;
         this.durationBetweenValidDatetimes = durationBetweenValidDatetimes;
@@ -183,6 +203,7 @@ class NWMProfile
         this.nwmLocationLabel = nwmLocationLabel;
         this.durationBetweenReferenceDatetimes = durationBetweenReferenceDateTimes;
         this.isEnsembleLike = isEnsembleLike;
+        this.durationPastMidnight = durationPastMidnight;
     }
 
     int getBlobCount()
@@ -263,5 +284,10 @@ class NWMProfile
     boolean isEnsembleLike()
     {
         return this.isEnsembleLike;
+    }
+
+    Duration getDurationPastMidnight()
+    {
+        return this.durationPastMidnight;
     }
 }
