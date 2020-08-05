@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
+import wres.control.Control.DatabaseServices;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -39,7 +40,6 @@ import wres.io.geography.FeatureFinder;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
-import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
@@ -47,7 +47,6 @@ import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.protobuf.ProtobufWriter;
-import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
@@ -68,6 +67,8 @@ class ProcessorHelper
      * thresholds and metrics.
      *
      * Assumes that a shared lock for evaluation has already been obtained.
+     * @param systemSettings the system settings
+     * @param databaseServices the database services
      * @param projectConfigPlus the project configuration
      * @param executors the executors
      * @param connections broker connections
@@ -77,20 +78,17 @@ class ProcessorHelper
      */
 
     static Set<Path> processEvaluation( SystemSettings systemSettings,
-                                        Database database,
-                                        Executor executor,
+                                        DatabaseServices databaseServices,
                                         ProjectConfigPlus projectConfigPlus,
-                                        ExecutorServices executors,
-                                        DatabaseLockManager lockManager,
+                                        Executors executors,
                                         BrokerConnectionFactory connections )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( executor );
+        Objects.requireNonNull( databaseServices );
         Objects.requireNonNull( projectConfigPlus );
         Objects.requireNonNull( executors );
-        Objects.requireNonNull( lockManager );
+        Objects.requireNonNull( connections );
 
         Set<Path> returnMe = new TreeSet<>();
 
@@ -99,6 +97,15 @@ class ProcessorHelper
         // Create a description of the evaluation
         wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
+        // Create output directory
+        Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
+
+        // Shared writers
+        SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
+                                                                        executors.getIoExecutor(),
+                                                                        projectConfig,
+                                                                        outputDirectory );
+
         // Create the consumers
         // Create a container for all the consumers
         // TODO: populate with real consumers, not no-op consumers.
@@ -106,7 +113,7 @@ class ProcessorHelper
         // Statistics that are consumed by feature and time window could be published by feature and time window group
         // or by feature group. The advantage of the former is more atomic consumption.
         // Statistic types for the consumer are set on construction. For example, see:
-        // Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
+        // "Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );"
         // This provides the set of statistics types that are grouped by feature
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
@@ -129,11 +136,11 @@ class ProcessorHelper
 
             Set<Path> pathsWritten = ProcessorHelper.processProjectConfig( evaluation,
                                                                            systemSettings,
-                                                                           database,
-                                                                           executor,
+                                                                           databaseServices,
                                                                            projectConfigPlus,
                                                                            executors,
-                                                                           lockManager );
+                                                                           sharedWriters,
+                                                                           outputDirectory );
             returnMe.addAll( pathsWritten );
         }
         catch ( IOException | ProjectConfigException | WresProcessingException
@@ -171,8 +178,13 @@ class ProcessorHelper
      * thresholds and metrics.
      *
      * Assumes that a shared lock for evaluation has already been obtained.
+     * @param evaluation the evaluation
+     * @param systemSettings the system settings
+     * @param databaseServices the database services
      * @param projectConfigPlus the project configuration
      * @param executors the executors
+     * @param sharedWriters for writing
+     * @param outputDirectory the output directory
      * @throws IOException when an issue occurs during ingest
      * @throws ProjectConfigException if the project configuration is invalid
      * @throws WresProcessingException when an issue occurs during processing
@@ -181,24 +193,21 @@ class ProcessorHelper
 
     private static Set<Path> processProjectConfig( Evaluation evaluation,
                                                    SystemSettings systemSettings,
-                                                   Database database,
-                                                   Executor executor,
+                                                   DatabaseServices databaseServices,
                                                    ProjectConfigPlus projectConfigPlus,
-                                                   ExecutorServices executors,
-                                                   DatabaseLockManager lockManager )
+                                                   Executors executors,
+                                                   SharedWriters sharedWriters,
+                                                   Path outputDirectory )
             throws IOException
     {
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
         ProgressMonitor.setShowStepDescription( false );
         ProgressMonitor.resetMonitor();
 
-        // Create output directory prior to ingest, fails early when it fails.
-        Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
-
         // Get a unit mapper for the declared measurement units
         PairConfig pairConfig = projectConfig.getPair();
         String desiredMeasurementUnit = pairConfig.getUnit();
-        UnitMapper unitMapper = UnitMapper.of( database, desiredMeasurementUnit );
+        UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
 
         // Look up any needed feature correlations, generate a new declaration.
         ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
@@ -210,10 +219,10 @@ class ProcessorHelper
 
         // Need to ingest first
         Project project = Operations.ingest( systemSettings,
-                                             database,
-                                             executor,
+                                             databaseServices.getDatabase(),
+                                             executors.getIoExecutor(),
                                              featurefulProjectConfig,
-                                             lockManager );
+                                             databaseServices.getDatabaseLockManager() );
 
         Operations.prepareForExecution( project );
 
@@ -267,6 +276,14 @@ class ProcessorHelper
                                        + "for any of those features." );
         }
 
+        // Create any netcdf blobs for writing. See #80267-137.
+        if ( sharedWriters.getStatisticsWriters().contains( DestinationType.NETCDF ) )
+        {
+            sharedWriters.getStatisticsWriters()
+                         .getNetcdfOutputWriter()
+                         .createBlobsForWriting( thresholds );
+        }
+
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( project.getInputCode() );
 
@@ -290,14 +307,6 @@ class ProcessorHelper
         // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
         // completion state of features has no value when reported in this way
         ProgressMonitor.deactivate();
-
-        // Shared writers
-        SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
-                                                                        executor,
-                                                                        project,
-                                                                        projectConfig,
-                                                                        thresholds,
-                                                                        outputDirectory );
 
         // Create one task per feature
         for ( FeatureTuple feature : decomposedFeatures )
@@ -379,9 +388,7 @@ class ProcessorHelper
      * 
      * @param systemSettings the system settings
      * @param executor the executor
-     * @param project the project that is aware of ingest
      * @param projectConfig the project declaration
-     * @param thresholds the thresholds
      * @param outputDirectory the output directory for writing
      * @return the shared writer instance
      * @throws IOException if the shared writer could not be created
@@ -389,9 +396,7 @@ class ProcessorHelper
 
     private static SharedWriters getSharedWriters( SystemSettings systemSettings,
                                                    Executor executor,
-                                                   Project project,
                                                    ProjectConfig projectConfig,
-                                                   Map<FeatureTuple, ThresholdsByMetric> thresholds,
                                                    Path outputDirectory )
             throws IOException
     {
@@ -418,9 +423,6 @@ class ProcessorHelper
                                                                      outputDirectory );
 
             sharedWritersBuilder.setNetcdfOutputWriter( netcdfWriter );
-            
-            // Create the blobs for writing. See #80267-137.
-            netcdfWriter.createBlobsForWriting( thresholds );
 
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
         }
@@ -446,12 +448,14 @@ class ProcessorHelper
         // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
         // Writing the same pairs, more than once, to that single destination does not make sense.
         // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
-        if ( !project.getPairDestinations().isEmpty() )
+        List<DestinationConfig> pairDestinations = ConfigHelper.getDestinationsOfType( projectConfig,
+                                                                                       DestinationType.PAIRS );
+        if ( !pairDestinations.isEmpty() )
         {
             DecimalFormat decimalFormatter = null;
-            if ( Objects.nonNull( project.getPairDestinations().get( 0 ).getDecimalFormat() ) )
+            if ( Objects.nonNull( pairDestinations.get( 0 ).getDecimalFormat() ) )
             {
-                decimalFormatter = ConfigHelper.getDecimalFormatter( project.getPairDestinations().get( 0 ) );
+                decimalFormatter = ConfigHelper.getDecimalFormatter( pairDestinations.get( 0 ) );
             }
 
             sharedSampleWriters =
@@ -555,9 +559,15 @@ class ProcessorHelper
      * dependencies clearly laid out in the method signature.
      */
 
-    static class ExecutorServices
+    static class Executors
     {
 
+        /**
+         * Executor for input/output operations, such as ingest.
+         */
+
+        private final Executor ioExecutor;
+        
         /**
          * The feature executor.
          */
@@ -586,18 +596,21 @@ class ProcessorHelper
         /**
          * Build. 
          * 
+         * @param ioExecutor the executor for io operations
          * @param featureExecutor the feature executor
          * @param pairExecutor the pair executor
          * @param thresholdExecutor the threshold executor
          * @param metricExecutor the metric executor
          * @param productExecutor the product executor
          */
-        ExecutorServices( ExecutorService featureExecutor,
-                          ExecutorService pairExecutor,
-                          ExecutorService thresholdExecutor,
-                          ExecutorService metricExecutor,
-                          ExecutorService productExecutor )
+        Executors( Executor ioExecutor,
+                   ExecutorService featureExecutor,
+                   ExecutorService pairExecutor,
+                   ExecutorService thresholdExecutor,
+                   ExecutorService metricExecutor,
+                   ExecutorService productExecutor )
         {
+            this.ioExecutor = ioExecutor;
             this.featureExecutor = featureExecutor;
             this.pairExecutor = pairExecutor;
             this.thresholdExecutor = thresholdExecutor;
@@ -654,6 +667,17 @@ class ProcessorHelper
         {
             return this.productExecutor;
         }
+
+        /**
+         * Returns the {@link Executor} for io operations.
+         * @return the io executor
+         */
+
+        Executor getIoExecutor()
+        {
+            return this.ioExecutor;
+        }
+
     }
 
     /**

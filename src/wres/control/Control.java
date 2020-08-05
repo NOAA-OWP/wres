@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
-import wres.control.ProcessorHelper.ExecutorServices;
+import wres.control.ProcessorHelper.Executors;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
@@ -60,7 +60,7 @@ public class Control implements Function<String[], Integer>,
 
     private final Set<Path> pathsWrittenTo = new HashSet<>();
     
-    private final BrokerConnectionFactory connections;
+    private final BrokerConnectionFactory brokerConnections;
 
     public Control( SystemSettings systemSettings,
                     Database database,
@@ -72,7 +72,7 @@ public class Control implements Function<String[], Integer>,
         this.systemSettings = systemSettings;
         this.database = database;
         this.executor = executor;
-        this.connections = BrokerConnectionFactory.of();
+        this.brokerConnections = BrokerConnectionFactory.of();
     }
 
     private SystemSettings getSystemSettings()
@@ -267,7 +267,7 @@ public class Control implements Function<String[], Integer>,
         ScheduledExecutorService monitoringService = new ScheduledThreadPoolExecutor( 1 );
 
         Database database = this.getDatabase();
-        Executor executor = this.getExecutor();
+        Executor ingestExecutor = this.getExecutor();
         QueueMonitor queueMonitor = new QueueMonitor( database,
                                                       executor,
                                                       featureQueue,
@@ -279,17 +279,20 @@ public class Control implements Function<String[], Integer>,
         Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( systemSettings );
         DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
 
+        // Compress database services into one object
+        DatabaseServices databaseServices = new DatabaseServices( database, lockManager );
         try
         {
             // Mark the WRES as doing an evaluation.
             lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
             // Reduce our set of executors to one object
-            ExecutorServices executors = new ExecutorServices( featureExecutor,
-                                                               pairExecutor,
-                                                               thresholdExecutor,
-                                                               metricExecutor,
-                                                               productExecutor );
+            Executors executors = new Executors( ingestExecutor,
+                                                 featureExecutor,
+                                                 pairExecutor,
+                                                 thresholdExecutor,
+                                                 metricExecutor,
+                                                 productExecutor );
 
             if ( System.getProperty( "wres.monitorTaskQueues" ) != null )
             {
@@ -302,12 +305,10 @@ public class Control implements Function<String[], Integer>,
             // Process the configuration
             Set<Path> innerPathsWrittenTo =
                     ProcessorHelper.processEvaluation( systemSettings,
-                                                       database,
-                                                       executor,
+                                                       databaseServices,
                                                        projectConfigPlus,
                                                        executors,
-                                                       lockManager,
-                                                       connections );
+                                                       this.getBrokerConnections() );
 
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             LOGGER.info( "Wrote the following output: {}", this.pathsWrittenTo );
@@ -483,7 +484,7 @@ public class Control implements Function<String[], Integer>,
         
         try
         {
-            this.connections.close();
+            this.brokerConnections.close();
             
             LOGGER.debug( "Broker connections closed." );   
         }
@@ -492,4 +493,60 @@ public class Control implements Function<String[], Integer>,
             LOGGER.error( "Failed to close broker connections." );
         }  
     }
+    
+    /**
+     * @return the broker connections.
+     */
+    
+    private BrokerConnectionFactory getBrokerConnections()
+    {
+        return this.brokerConnections;
+    }
+    
+    /**
+     * Small value object to collate a {@link Database} with an {@link DatabaseLockManager}. This may be disaggregated
+     * for transparency if we can reduce the number of input arguments to some methods.
+     */
+    
+    static class DatabaseServices
+    {
+        /**The database instance.**/
+        private final Database database;
+        
+        /**The Database lock manager instance.**/
+        private final DatabaseLockManager databaseLockManager;
+        
+        /**
+         * Build an instance.
+         * 
+         * @param database the database
+         * @param databaseLockManager the database lock manager
+         * @throws NullPointerException if either input is null
+         */
+        
+        DatabaseServices( Database database, DatabaseLockManager databaseLockManager )
+        {
+            this.database = database;
+            this.databaseLockManager = databaseLockManager;
+        }
+        
+        /**
+         * @return the database instance.
+         */
+        
+        Database getDatabase()
+        {
+            return this.database;
+        }
+        
+        /**
+         * @Return the database lock manager.
+         */
+        
+        DatabaseLockManager getDatabaseLockManager()
+        {
+            return this.databaseLockManager;
+        }     
+    }
+    
 }

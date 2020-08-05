@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
-import wres.control.ProcessorHelper.ExecutorServices;
+import wres.control.ProcessorHelper.Executors;
 import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureTuple;
@@ -89,7 +89,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * The executors services.
      */
 
-    private final ExecutorServices executors;
+    private final Executors executors;
 
     /**
      * The shared writers.
@@ -121,7 +121,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                       ResolvedProject resolvedProject,
                       Project project,
                       UnitMapper unitMapper,
-                      ExecutorServices executors,
+                      Executors executors,
                       SharedWriters sharedWriters )
     {
         Objects.requireNonNull( feature );
