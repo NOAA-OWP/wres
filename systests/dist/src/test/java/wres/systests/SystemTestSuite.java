@@ -91,7 +91,6 @@ import wres.system.SystemSettings;
 /**
  * Specify the suite of JUnit tests above.  The suite is executed in order.
  * @author Hank.Herr
- *
  */
 public class SystemTestSuite
 {

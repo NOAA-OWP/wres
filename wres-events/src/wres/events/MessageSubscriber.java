@@ -73,6 +73,12 @@ class MessageSubscriber<T> implements Closeable
             "While attempting to consume a message with identifier {} and correlation identifier {}, ";
 
     /**
+     * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
+     */
+    
+    private static final boolean DURABLE_SUBSCRIBERS = true;
+    
+    /**
      * A connection to the broker for consumption of messages.
      */
 
@@ -180,17 +186,6 @@ class MessageSubscriber<T> implements Closeable
     Message getFailedOn()
     {
         return this.failure;
-    }
-
-    /**
-     * Returns the number of messages consumed by this subscriber.
-     * 
-     * @return the number of messages consumed
-     */
-
-    int getConsumptionCount()
-    {
-        return this.actualMessageCount.get();
     }
 
     /**
@@ -597,7 +592,7 @@ class MessageSubscriber<T> implements Closeable
                     // Register the message with each grouped subscriber
                     subscribers.forEach( next -> next.accept( received ) );
                 }
-                
+
                 // Acknowledge
                 message.acknowledge();
 
@@ -662,7 +657,8 @@ class MessageSubscriber<T> implements Closeable
         return new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(),
                                          name,
                                          messageConsumer,
-                                         this.session );
+                                         this.session,
+                                         MessageSubscriber.DURABLE_SUBSCRIBERS );
     }
 
     /**
@@ -796,7 +792,7 @@ class MessageSubscriber<T> implements Closeable
                 {
                     this.failure = receivedBytes;
                 }
-                
+
                 // Create a stack trace to log
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter( sw );
@@ -831,7 +827,11 @@ class MessageSubscriber<T> implements Closeable
 
         LOGGER.debug( "Successfully registered consumer {} for evaluation {}.", this, evaluationId );
 
-        return new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(), name, consumer, this.session );
+        return new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(),
+                                         name,
+                                         consumer,
+                                         this.session,
+                                         MessageSubscriber.DURABLE_SUBSCRIBERS );
     }
 
     /**
@@ -930,6 +930,17 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
+     * Returns true if this consumer has completed consumption, otherwise false.
+     * 
+     * @return true if consumption is complete
+     */
+
+    boolean isComplete()
+    {
+        return this.isComplete.get();
+    }
+
+    /**
      * Internally closes resources.
      */
 
@@ -990,7 +1001,7 @@ class MessageSubscriber<T> implements Closeable
                           this,
                           e.getMessage() );
         }
-        
+
         // Do not close connections as they may be re-used.
     }
 
@@ -1017,9 +1028,12 @@ class MessageSubscriber<T> implements Closeable
 
     private MessageConsumer getConsumer( Topic topic, String selector, String name ) throws JMSException
     {
-        // For a non-durable subscriber, use: "return this.session.createConsumer( topic, selector );"
-        // Get a unique subscriber name, using the method in the evaluation class
-        return this.session.createDurableSubscriber( topic, name, selector, false );
+        if( MessageSubscriber.DURABLE_SUBSCRIBERS )
+        {
+            return this.session.createDurableSubscriber( topic, name, selector, false );
+        }
+        
+        return this.session.createConsumer( topic, selector );
     }
 
     /**
@@ -1108,17 +1122,6 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
-     * Returns true if this consumer has completed consumption, else false.
-     * 
-     * @return true if consumption is complete
-     */
-
-    private boolean isComplete()
-    {
-        return this.isComplete.get();
-    }
-
-    /**
      * Returns true if messages with consumer identifiers (i.e., updates about consumers) should be ignored. In general,
      * consumer messages are ignored unless this subscriber is intended to explicitly track them.
      * 
@@ -1138,6 +1141,7 @@ class MessageSubscriber<T> implements Closeable
 
     private void checkAndCompleteSubscription()
     {
+
         // Not already completed and completing now?
         if ( !this.isComplete() && this.expectedMessageCount.get() > -1
              && this.expectedMessageCount.get() == this.actualMessageCount.get() )
@@ -1395,7 +1399,7 @@ class MessageSubscriber<T> implements Closeable
         this.isIgnoreConsumerMessages = builder.isIgnoreConsumerMessages;
         this.consumerConnection = builder.connection;
         this.statusConnection = builder.connection;
-        
+
         Topic statusTopic = builder.statusTopic;
         String context = builder.context;
         Function<ByteBuffer, T> mapper = builder.mapper;
@@ -1409,7 +1413,7 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( this.expectedMessageCountSupplier );
         Objects.requireNonNull( this.consumerConnection );
         Objects.requireNonNull( this.statusConnection );
-        
+
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
         Objects.requireNonNull( statusTopic,
@@ -1429,12 +1433,13 @@ class MessageSubscriber<T> implements Closeable
         // Name the subscriber
         String name = this.getNextSubscriptionName( statusContext );
         MessageConsumer localStatusConsumer = this.getConsumer( statusTopic, selector, name );
-        this.registerEvaluationStatusListener( localStatusConsumer );     
-        
+        this.registerEvaluationStatusListener( localStatusConsumer );
+
         this.statusConsumer = new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(),
                                                         name,
                                                         localStatusConsumer,
-                                                        this.session );
+                                                        this.session,
+                                                        MessageSubscriber.DURABLE_SUBSCRIBERS  );
 
         this.groupConsumers = new ConcurrentHashMap<>();
 
@@ -1508,6 +1513,9 @@ class MessageSubscriber<T> implements Closeable
         /** The session.**/
         private final Session session;
 
+        /**Is true if the consumer refers to a durable subscriber.**/
+        private final boolean isDurable;
+        
         /**
          * Create an instance.
          * 
@@ -1521,7 +1529,8 @@ class MessageSubscriber<T> implements Closeable
         private NamedMessageConsumer( String evaluationId,
                                       String name,
                                       MessageConsumer consumer,
-                                      Session session )
+                                      Session session,
+                                      boolean isDurable )
         {
             Objects.requireNonNull( name );
             Objects.requireNonNull( consumer );
@@ -1532,6 +1541,7 @@ class MessageSubscriber<T> implements Closeable
             this.consumer = consumer;
             this.evaluationId = evaluationId;
             this.session = session;
+            this.isDurable = isDurable;
         }
 
         @Override
@@ -1546,8 +1556,11 @@ class MessageSubscriber<T> implements Closeable
                 // Close first according to docs
                 this.consumer.close();
 
-                // Then unsubscribe
-                this.session.unsubscribe( this.name );
+                // Then unsubscribe if the subscriber is durable
+                if ( this.isDurable )
+                {
+                    this.session.unsubscribe( this.name );
+                }
             }
             catch ( JMSException e )
             {
