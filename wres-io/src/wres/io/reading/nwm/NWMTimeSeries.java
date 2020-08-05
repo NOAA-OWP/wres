@@ -286,7 +286,7 @@ class NWMTimeSeries implements Closeable
     {
         LOGGER.debug( "Called getNetcdfUris with {}, {}, {}", profile,
                       referenceDatetime, baseUri );
-        Set<URI> uris = new HashSet<>();
+        Set<URI> uris = new TreeSet<>();
         final String NWM_DOT = "nwm.";
 
         // Formatter cannot handle Instant
@@ -323,16 +323,16 @@ class NWMTimeSeries implements Closeable
 
                 String ncFilePartTwo = "." + profile.getTimeLabel();
 
+                Duration validDatetimeStep = profile.getDurationBetweenValidDatetimes();
+                Duration oneHour = Duration.ofHours( 1 );
+                boolean subHourly = validDatetimeStep.compareTo( oneHour ) < 0;
+                Duration duration = validDatetimeStep.multipliedBy( j );
+                long hours = duration.toHours();
 
                 if ( profile.getTimeLabel()
                             .equals( NWMProfile.TimeLabel.f ) )
                 {
-                    Duration validDatetimeStep = profile.getDurationBetweenValidDatetimes();
-                    Duration duration = validDatetimeStep.multipliedBy( j );
-                    long hours = duration.toHours();
-
-                    if ( profile.getDurationBetweenValidDatetimes()
-                                .compareTo( Duration.ofHours( 1 ) ) >= 0 )
+                    if ( !subHourly )
                     {
                         String forecastLabel = String.format( "%03d", hours );
                         ncFilePartTwo += forecastLabel;
@@ -352,9 +352,25 @@ class NWMTimeSeries implements Closeable
                 else if ( profile.getTimeLabel()
                                  .equals( NWMProfile.TimeLabel.tm ))
                 {
-                    // Analysis files go back in valid datetime as j increases.
-                    String analysisLabel = String.format( "%02d", j - 1 );
-                    ncFilePartTwo += analysisLabel;
+                    if ( !subHourly )
+                    {
+                        long hourLabel = duration.minus( validDatetimeStep )
+                                                 .toHours();
+                        // Analysis files go back in valid datetime as j increases.
+                        String analysisLabel = String.format( "%02d", hourLabel );
+                        ncFilePartTwo += analysisLabel;
+                    }
+                    else
+                    {
+                        long analysisHour = duration.minus( validDatetimeStep )
+                                                    .toHours();
+                        long analysisMinute = duration.minusHours( hours )
+                                                      .toMinutes();
+                        String analysisLabel = String.format( "%02d%02d",
+                                                              analysisHour,
+                                                              analysisMinute );
+                        ncFilePartTwo += analysisLabel;
+                    }
                 }
 
                 String ncFilePartThree = "." + profile .getNwmLocationLabel()

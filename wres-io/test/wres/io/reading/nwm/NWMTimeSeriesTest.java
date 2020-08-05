@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
+import wres.config.generated.InterfaceShortHand;
 import wres.datamodel.time.TimeSeries;
 import wres.system.SystemSettings;
 
@@ -190,6 +191,90 @@ public class NWMTimeSeriesTest
                                             "file:///test/nwm.20191006/analysis_assim_hawaii/nwm.t02z.analysis_assim.reservoir.tm02.hawaii.nc" ) );
         assertEquals( expected, actual );
     }
+
+
+    @Test
+    public void generateAnalysisAssimHawaiiNames()
+    {
+        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII );
+        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+                                                       Instant.parse( "2020-08-05T04:00:00Z"),
+                                                       URI.create( "file:///test/" ) );
+
+        Set<URI> expected = Set.of(
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0000.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0015.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0030.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0045.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0100.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0115.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0130.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0145.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0200.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0215.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0230.hawaii.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_hawaii/nwm.t04z.analysis_assim.channel_rt.tm0245.hawaii.nc" ) );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
+    public void generateAnalysisAssimNoDaPuertoRicoNames()
+    {
+        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO );
+        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+                                                       Instant.parse( "2020-08-05T05:00:00Z"),
+                                                       URI.create( "file:///test/" ) );
+
+        Set<URI> expected = Set.of(
+                URI.create( "file:///test/nwm.20200805/analysis_assim_puertorico_no_da/nwm.t05z.analysis_assim_no_da.channel_rt.tm00.puertorico.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_puertorico_no_da/nwm.t05z.analysis_assim_no_da.channel_rt.tm01.puertorico.nc" ),
+                URI.create( "file:///test/nwm.20200805/analysis_assim_puertorico_no_da/nwm.t05z.analysis_assim_no_da.channel_rt.tm02.puertorico.nc" ) );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void generateAnalysisAssimExtendNoDaConusNames()
+    {
+        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS );
+        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+                                                       Instant.parse( "2020-08-04T16:00:00Z"),
+                                                       URI.create( "file:///test/" ) );
+
+        Set<URI> expected = Set.of(
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm00.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm01.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm02.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm03.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm04.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm05.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm06.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm07.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm08.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm09.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm10.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm11.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm12.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm13.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm14.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm15.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm16.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm17.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm18.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm19.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm20.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm21.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm22.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm23.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm24.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm25.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm26.conus.nc" ),
+                URI.create( "file:///test/nwm.20200804/analysis_assim_extend_no_da/nwm.t16z.analysis_assim_extend_no_da.channel_rt.tm27.conus.nc" ) );
+
+        assertEquals( expected, actual );
+    }
+
 
     @Test
     // To try this against the real service, use a new date, remove @Ignore
