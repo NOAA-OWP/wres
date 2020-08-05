@@ -599,6 +599,14 @@ public class Evaluation implements Closeable
         this.close();
     }
 
+    /**
+     * Closes the evaluation. After closure, the status of this evaluation can be acquired from {@link #getExitCode()}.
+     * However, this evaluation will only publish its completion status when the completion status is exceptional, i.e.,
+     * {@link CompletionStatus#EVALUATION_COMPLETE_REPORTED_FAILURE}. Indeed, a nominal closure only occurs after all
+     * registered consumers have reported {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS}. Thus, any 
+     * message about a nominal exit status would be unheard by any consumers.
+     */
+    
     @Override
     public void close() throws IOException
     {
@@ -627,6 +635,7 @@ public class Evaluation implements Closeable
 
         try
         {
+            // Await completion
             int exit = this.statusTracker.await();
 
             this.exitCode.set( exit );
@@ -675,8 +684,8 @@ public class Evaluation implements Closeable
 
                 throw new EvaluationEventException( "While closing evaluation " + this.getEvaluationId()
                                                     + ", discovered undeliverable messages after repeated delivery "
-                                                    + "attempts. These messages have been posted to their appropriate dead "
-                                                    + "letter queue (DLQ) for further inspection and removal." );
+                                                    + "attempts. These messages have been posted to their appropriate "
+                                                    + "dead letter queue (DLQ) for further inspection and removal." );
             }
         }
         catch ( InterruptedException e )
@@ -696,7 +705,6 @@ public class Evaluation implements Closeable
             this.evaluationPublisher.close();
             this.evaluationStatusPublisher.close();
             this.statisticsPublisher.close();
-
 
             try
             {
@@ -721,8 +729,6 @@ public class Evaluation implements Closeable
                               this,
                               e.getMessage() );
             }
-
-
         }
     }
 
@@ -1287,7 +1293,7 @@ public class Evaluation implements Closeable
                                                                      .setExpectedMessageCountSupplier( message -> 0 )
                                                                      .setEvaluationStatusTopic( status )
                                                                      .setContext( completionContext )
-                                                                     .setIgnoreConsumerMessages( false ) // Track consumption too
+                                                                     .setIgnoreConsumerMessages( false ) // Track messages about itself
                                                                      .build();
         }
         catch ( JMSException | NamingException e )
@@ -1547,7 +1553,7 @@ public class Evaluation implements Closeable
 
         /**
          * The consumer identifier of the subscriber to which this instance is attached. Helps me ignore messages that 
-         * refer to me.
+         * were reported by the subscriber to which I am attached.
          */
 
         private final String myConsumerId;
