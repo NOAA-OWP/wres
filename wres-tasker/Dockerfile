@@ -9,10 +9,12 @@ RUN yum install -y \
     # The following aren't direct dependencies of WRES, are updates post-7.8.2003
     bind-license-9.11.4-16.P2.el7_8.6 \
     binutils-2.27-43.base.el7_8.1 \
+    dbus-1.10.24-14.el7_8 \
+    dbus-libs-1.10.24-14.el7_8 \
     device-mapper-1.02.164-7.el7_8.2 \
     device-mapper-libs-1.02.164-7.el7_8.2 \
-    systemd-219-73.el7_8.6 \
-    systemd-libs-219-73.el7_8.6 \
+    systemd-219-73.el7_8.8 \
+    systemd-libs-219-73.el7_8.8 \
     tzdata-2020a-1.el7 \
     yum-plugin-fastestmirror-1.1.31-54.el7_8 \
     yum-plugin-ovl-1.1.31-54.el7_8 \
