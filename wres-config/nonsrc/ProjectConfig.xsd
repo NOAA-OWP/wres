@@ -130,6 +130,13 @@
             <xs:enumeration value="nwm_medium_range_ensemble_channel_rt_conus" />
             <xs:enumeration value="nwm_medium_range_deterministic_channel_rt_conus" />
             <xs:enumeration value="nwm_analysis_assim_channel_rt_conus" />
+            <xs:enumeration value="nwm_analysis_assim_no_da_channel_rt_conus" />
+            <xs:enumeration value="nwm_analysis_assim_extend_channel_rt_conus" />
+            <xs:enumeration value="nwm_analysis_assim_extend_no_da_channel_rt_conus" />
+            <xs:enumeration value="nwm_analysis_assim_channel_rt_hawaii" />
+            <xs:enumeration value="nwm_analysis_assim_no_da_channel_rt_hawaii" />
+            <xs:enumeration value="nwm_analysis_assim_channel_rt_puertorico" />
+            <xs:enumeration value="nwm_analysis_assim_no_da_channel_rt_puertorico" />
             <xs:enumeration value="nwm_long_range_channel_rt_conus" />
         </xs:restriction>
     </xs:simpleType>

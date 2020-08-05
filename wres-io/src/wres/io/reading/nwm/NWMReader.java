@@ -619,9 +619,7 @@ public class NWMReader implements Callable<List<IngestResult>>
         datetimes.add( forecastDatetime );
         Instant additionalForecastDatetime = forecastDatetime.plus( issuedStep );
 
-        //Why not use !additionalForecastDatetime.isAfter(latest)?  Less readable?
-        while ( additionalForecastDatetime.isBefore( latest )
-                || additionalForecastDatetime.equals( latest ) )
+        while ( !additionalForecastDatetime.isAfter( latest ) )
         {
             datetimes.add( additionalForecastDatetime );
             additionalForecastDatetime = additionalForecastDatetime.plus( issuedStep );

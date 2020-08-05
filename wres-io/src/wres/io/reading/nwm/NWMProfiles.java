@@ -106,6 +106,34 @@ class NWMProfiles
         {
             return NWMProfiles.getAnalysisAssimChannelRtConus();
         }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_CONUS ) )
+        {
+            return NWMProfiles.getAnalysisAssimNoDaChannelRtConus();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_CHANNEL_RT_CONUS ) )
+        {
+            return NWMProfiles.getAnalysisAssimExtendChannelRtConus();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS ) )
+        {
+            return NWMProfiles.getAnalysisAssimExtendNoDaChannelRtConus();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII ) )
+        {
+            return NWMProfiles.getAnalysisAssimChannelRtHawaii();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_HAWAII ) )
+        {
+            return NWMProfiles.getAnalysisAssimNoDaChannelRtHawaii();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_PUERTORICO ) )
+        {
+            return NWMProfiles.getAnalysisAssimChannelRtPuertoRico();
+        }
+        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO ) )
+        {
+            return NWMProfiles.getAnalysisAssimNoDaChannelRtPuertoRico();
+        }
         else if ( shortHand.equals( InterfaceShortHand.NWM_LONG_RANGE_CHANNEL_RT_CONUS ) )
         {
             return NWMProfiles.getLongRangeChannelRtConus();
@@ -279,5 +307,117 @@ class NWMProfiles
                                Duration.ofHours( 12 ),
                                false,
                                Duration.ZERO );
+    }
+
+    private static NWMProfile getAnalysisAssimChannelRtHawaii()
+    {
+        return new NWMProfile( 12,
+                               1,
+                               Duration.ofMinutes( 15 ),
+                               true,
+                               "analysis_assim",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.tm,
+                               "analysis_assim_hawaii",
+                               "hawaii",
+                               Duration.ofHours( 1 ),
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getAnalysisAssimNoDaChannelRtHawaii()
+    {
+        return new NWMProfile( 12,
+                               1,
+                               Duration.ofMinutes( 15 ),
+                               true,
+                               "analysis_assim_no_da",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.tm,
+                               "analysis_assim_hawaii_no_da",
+                               "hawaii",
+                               Duration.ofHours( 1 ),
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getAnalysisAssimChannelRtPuertoRico()
+    {
+        return new NWMProfile( 3,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "analysis_assim",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.tm,
+                               "analysis_assim_puertorico",
+                               "puertorico",
+                               Duration.ofHours( 1 ),
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getAnalysisAssimNoDaChannelRtPuertoRico()
+    {
+        return new NWMProfile( 3,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "analysis_assim_no_da",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.tm,
+                               "analysis_assim_puertorico_no_da",
+                               "puertorico",
+                               Duration.ofHours( 1 ),
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getAnalysisAssimNoDaChannelRtConus()
+    {
+        return new NWMProfile( 3,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "analysis_assim_no_da",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.tm,
+                               "analysis_assim_no_da",
+                               "conus",
+                               Duration.ofHours( 1 ),
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NWMProfile getAnalysisAssimExtendChannelRtConus()
+    {
+        return new NWMProfile( 28,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "analysis_assim_extend",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.tm,
+                               "analysis_assim_extend",
+                               "conus",
+                               Duration.ofDays( 1 ),
+                               false,
+                               Duration.ofHours( 16 ) );
+    }
+
+    private static NWMProfile getAnalysisAssimExtendNoDaChannelRtConus()
+    {
+        return new NWMProfile( 28,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "analysis_assim_extend_no_da",
+                               "channel_rt",
+                               NWMProfile.TimeLabel.tm,
+                               "analysis_assim_extend_no_da",
+                               "conus",
+                               Duration.ofDays( 1 ),
+                               false,
+                               Duration.ofHours( 16 ) );
     }
 }
