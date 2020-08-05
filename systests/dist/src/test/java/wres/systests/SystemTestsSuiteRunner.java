@@ -18,31 +18,30 @@ import org.slf4j.LoggerFactory;
  * A runner for executing classes in a test suite in random order.  
  * 
  * @author hank.herr
- *
  */
 public class SystemTestsSuiteRunner extends Suite
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestsSuiteRunner.class );   
+    private static final Logger LOGGER = LoggerFactory.getLogger( SystemTestsSuiteRunner.class );
 
     /** Super class constructor wrapper. */
-    public SystemTestsSuiteRunner(Class<?> klass, RunnerBuilder builder)
-            throws InitializationError 
+    public SystemTestsSuiteRunner( Class<?> klass, RunnerBuilder builder )
+            throws InitializationError
     {
-        super(klass, builder);
+        super( klass, builder );
     }
 
     /** Super class constructor wrapper. */
-    public SystemTestsSuiteRunner(RunnerBuilder builder, Class<?>[] classes)
-            throws InitializationError 
+    public SystemTestsSuiteRunner( RunnerBuilder builder, Class<?>[] classes )
+            throws InitializationError
     {
-        super(builder, classes);
+        super( builder, classes );
     }
 
     /** Super class constructor wrapper. */
-    protected SystemTestsSuiteRunner(Class<?> klass, List<Runner> runners)
-            throws InitializationError 
+    protected SystemTestsSuiteRunner( Class<?> klass, List<Runner> runners )
+            throws InitializationError
     {
-        super(klass, runners);
+        super( klass, runners );
     }
     
     /**
