@@ -755,7 +755,8 @@ class MessageSubscriber<T> implements Closeable
                 correlationId = message.getJMSCorrelationID();
                 consumerId = message.getStringProperty( MessageProperty.CONSUMER_ID.toString() );
 
-                // Do not consume status messages about subscribers unless this is tracking subscriber messages
+                // Do not consume messages about subscribers unless this subscriber is explicitly tracking subscriber 
+                // messages
                 if ( Objects.isNull( consumerId ) || !this.isIgnoreConsumerMessages() )
                 {
 
@@ -774,16 +775,16 @@ class MessageSubscriber<T> implements Closeable
 
                     // Increment the actual message count
                     this.actualMessageCount.incrementAndGet();
+                    
+                    LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
+                                  + "identifier {}.",
+                                  this,
+                                  messageId,
+                                  correlationId );
                 }
 
                 // Acknowledge
                 message.acknowledge();
-
-                LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
-                              + "identifier {}.",
-                              this,
-                              messageId,
-                              correlationId );
             }
             catch ( JMSException | EvaluationEventException e )
             {
@@ -1100,7 +1101,7 @@ class MessageSubscriber<T> implements Closeable
             this.statusPublisher.publish( message, Collections.unmodifiableMap( properties ) );
 
             LOGGER.info( "Published an evaluation status message with metadata {} for "
-                         + "evaluation {} with status {} to amq.topic/{} with content {}.",
+                         + "evaluation {} with status {} to amq.topic/{}.",
                          properties,
                          evaluationId,
                          status,

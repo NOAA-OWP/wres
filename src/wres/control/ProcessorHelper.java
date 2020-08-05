@@ -15,7 +15,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -27,6 +28,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.control.Control.DatabaseServices;
 import wres.datamodel.FeatureTuple;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.events.Consumers;
@@ -47,6 +49,7 @@ import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.protobuf.ProtobufWriter;
+import wres.statistics.generated.EvaluationStatus;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
@@ -106,24 +109,45 @@ class ProcessorHelper
                                                                         projectConfig,
                                                                         outputDirectory );
 
-        // Create the consumers
-        // Create a container for all the consumers
-        // TODO: populate with real consumers, not no-op consumers.
-        // Statistics that are consumed by feature should be published by feature group
-        // Statistics that are consumed by feature and time window could be published by feature and time window group
-        // or by feature group. The advantage of the former is more atomic consumption.
-        // Statistic types for the consumer are set on construction. For example, see:
-        // "Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );"
-        // This provides the set of statistics types that are grouped by feature
+        // Write some statistic types and formats as soon as they become available. Everything else is written on 
+        // group/feature completion.
+        // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
+        // a format that can be written incrementally
+        BiPredicate<StatisticType, DestinationType> incrementalTypes =
+                ( type, format ) -> type == StatisticType.BOXPLOT_PER_PAIR || type == StatisticType.DURATION_SCORE
+                                    || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
+
+        // All others
+        BiPredicate<StatisticType, DestinationType> nonIncrementalTypes = incrementalTypes.negate();
+
+        // Incremental consumer
+        StatisticsConsumer incrementalConsumer = StatisticsConsumer.of( evaluationDescription,
+                                                                        systemSettings,
+                                                                        projectConfigPlus,
+                                                                        incrementalTypes,
+                                                                        sharedWriters.getStatisticsWriters(),
+                                                                        outputDirectory );
+
+        // Group consumer (group = feature for now)
+        StatisticsConsumer groupConsumer = StatisticsConsumer.of( evaluationDescription,
+                                                                  systemSettings,
+                                                                  projectConfigPlus,
+                                                                  nonIncrementalTypes,
+                                                                  sharedWriters.getStatisticsWriters(),
+                                                                  outputDirectory );
+
+        // Currently there are only logging consumers for both evaluation description events and evaluation status 
+        // events. Both of these things will need to be exposed via the web service API and a corresponding consumer 
+        // provided as input to this method.
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
-                                       .addEvaluationConsumer( Function.identity()::apply )
+                new Consumers.Builder().addStatusConsumer( ProcessorHelper.getLoggerConsumerForStatusEvents() )
+                                       .addEvaluationConsumer( ProcessorHelper.getLoggerConsumerForEvaluationEvents() )
                                        // Add a regular consumer for statistics that are neither grouped by time window
                                        // nor feature. These include box plots per pair and statistics that can be 
                                        // written incrementally, such as netCDF and Protobuf
-                                       .addStatisticsConsumer( Function.identity()::apply )
+                                       .addStatisticsConsumer( next -> incrementalConsumer.accept( List.of( next ) ) )
                                        // Add a grouped consumer for statistics that are grouped by feature
-                                       .addGroupedStatisticsConsumer( Function.identity()::apply )
+                                       .addGroupedStatisticsConsumer( groupConsumer )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -567,7 +591,7 @@ class ProcessorHelper
          */
 
         private final Executor ioExecutor;
-        
+
         /**
          * The feature executor.
          */
@@ -825,6 +849,35 @@ class ProcessorHelper
             this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
         }
 
+    }
+
+    /**
+     * Returns a consumer that logs evaluation status messages. TODO: replace this with a real consumer that exposes 
+     * the status messages via the web service API. Most likely, this consumer should be supplied by 
+     * {@link wres.server.ProjectService}.
+     * 
+     * @param evaluationId the evaluation identifier
+     * @return a logger consumer for evaluation status messages
+     */
+
+    private static Consumer<EvaluationStatus> getLoggerConsumerForStatusEvents()
+    {
+        return statusMessage -> LOGGER.debug( "Encountered an evaluation status message: {}", statusMessage );
+    }
+
+    /**
+     * Returns a consumer that logs evaluation description messages. TODO: replace this with a real consumer that 
+     * exposes the evaluation description messages via the web service API. Most likely, this consumer should be 
+     * supplied by {@link wres.server.ProjectService}.
+     * 
+     * @param evaluationId the evaluation identifier
+     * @return a logger consumer for evaluation status messages
+     */
+
+    private static Consumer<wres.statistics.generated.Evaluation> getLoggerConsumerForEvaluationEvents()
+    {
+        return evaluationMessage -> LOGGER.debug( "Encountered an evaluation description message: {}",
+                                                  evaluationMessage );
     }
 
     private ProcessorHelper()
