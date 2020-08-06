@@ -1,25 +1,14 @@
-FROM centos:7.8.2003
+FROM centos:8.2.2004
 
-RUN yum install -y \
-    java-11-openjdk-headless-11.0.7.10-4.el7_8 \
-    unzip-6.0-21.el7 \
-    which-2.20-7.el7 \
-    # Use ss to view socket states. See #69947
-    iproute-4.11.0-25.el7_7.2 \
-    # The following aren't direct dependencies of WRES, are updates post-7.8.2003
-    bind-license-9.11.4-16.P2.el7_8.6 \
-    binutils-2.27-43.base.el7_8.1 \
-    dbus-1.10.24-14.el7_8 \
-    dbus-libs-1.10.24-14.el7_8 \
-    device-mapper-1.02.164-7.el7_8.2 \
-    device-mapper-libs-1.02.164-7.el7_8.2 \
-    systemd-219-73.el7_8.8 \
-    systemd-libs-219-73.el7_8.8 \
-    tzdata-2020a-1.el7 \
-    yum-plugin-fastestmirror-1.1.31-54.el7_8 \
-    yum-plugin-ovl-1.1.31-54.el7_8 \
-    yum-utils-1.1.31-54.el7_8 \
-    && yum clean all
+RUN dnf install -y \
+    java-11-openjdk-headless-11.0.8.10-0.el8_2 \
+    unzip-6.0-43.el8 \
+    which-2.21-12.el8 \
+    # The following aren't direct dependencies of WRES, are updates post-8.2.2004
+    bind-export-libs-9.11.13-5.el8_2 \
+    gnutls-3.6.8-11.el8_2 \
+    libnghttp2-1.33.0-3.el8_2.1 \
+    && dnf clean all
 
 # See comments in main/worker/root wres Dockerfile
 RUN groupadd --gid 1370800073 wres \
