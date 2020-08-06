@@ -18,8 +18,6 @@ services:
         # Tasker JVM should have 1305m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
         mem_limit: 1880m
-        # Lower share than broker, higher share than worker.
-        cpu_shares: 1024
         cap_drop:
          - ALL
         read_only: true
@@ -36,8 +34,6 @@ services:
          - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.config
         # rabbitmq.conf should have 360m specified as high watermark
         mem_limit: 720m
-        # Higher share than tasker, higher share than worker.
-        cpu_shares: 1025
         cap_drop:
          - ALL
     worker:
@@ -64,8 +60,6 @@ services:
          - INNER_JAVA_OPTS=-Dwres.url=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Shim JVM should have 32m max heap, core JVM should have 2180m max heap
         mem_limit: 2600m
-        # Lower share than broker, lower share than tasker.
-        cpu_shares: 1023
         cap_drop:
          - ALL
         read_only: true
