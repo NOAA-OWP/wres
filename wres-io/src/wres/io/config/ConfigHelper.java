@@ -1008,7 +1008,7 @@ public class ConfigHelper
      *
      * @param projectDeclaration The project declaration.
      * @param sourceDeclaration The source declared within the declaration.
-     * @return A Set of String from the given declaration.
+     * @return A Set of String from the given declaration or empty when none.
      * @throws UnsupportedOperationException When called with no features.
      */
 
@@ -1021,9 +1021,8 @@ public class ConfigHelper
 
         if ( featuresConfigured.isEmpty() )
         {
-            // TODO: decide whether to ingest ALL 2.7m features or throw
-            throw new UnsupportedOperationException( "Must configure features or specify a service to resolve features." );
-
+            LOGGER.debug( "No features found declared, returning empty set." );
+            return Collections.emptySet();
         }
 
         LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectDeclaration,
