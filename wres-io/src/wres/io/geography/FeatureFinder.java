@@ -97,13 +97,25 @@ public class FeatureFinder
         boolean hasBaseline = Objects.nonNull( projectDeclaration.getInputs()
                                                                  .getBaseline() );
 
+        PairConfig pairConfig = projectDeclaration.getPair();
+        boolean requiresFeatureRequests = false;
+
+        if ( Objects.nonNull( pairConfig.getFeatureService() )
+             && Objects.nonNull( pairConfig.getFeatureService()
+                                           .getGroup() ) )
+        {
+            requiresFeatureRequests = true;
+        }
+
         // In many cases, no need to declare features, such as evaluations where
         // all the feature names are identical in sources on both sides or in
         // gridded evaluations.
         if ( projectDeclaration.getPair()
                                .getFeature()
-                               .isEmpty() )
+                               .isEmpty()
+             && !requiresFeatureRequests )
         {
+            LOGGER.debug( "No need to fill features: empty features and no requests required." );
             return projectDeclaration;
         }
 
@@ -122,7 +134,8 @@ public class FeatureFinder
         // Common case: features are already declared fully, do no more!
         if ( !hasBaseline
              && leftNames.size() == featureList.size()
-             && leftNames.size() == rightNames.size() )
+             && leftNames.size() == rightNames.size()
+             && !requiresFeatureRequests )
         {
             LOGGER.debug( "No baseline, left and right feature count {}",
                           "matches original list. No need to fill features." );
@@ -132,7 +145,8 @@ public class FeatureFinder
         else if ( hasBaseline
                   && leftNames.size() == featureList.size()
                   && leftNames.size() == rightNames.size()
-                  && leftNames.size() == baselineNames.size() )
+                  && leftNames.size() == baselineNames.size()
+                  && !requiresFeatureRequests )
         {
             LOGGER.debug( "Baseline, left, and right feature count {}",
                           "matches original list. No need to fill features." );
@@ -148,6 +162,10 @@ public class FeatureFinder
                                                               .getFeature(),
                                             hasBaseline );
 
+        if ( filledFeatures.isEmpty() )
+        {
+            throw new PreIngestException( "No geographic features found to evaluate." );
+        }
 
         PairConfig originalPairDeclaration = projectDeclaration.getPair();
 

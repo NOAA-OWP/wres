@@ -94,6 +94,13 @@ public class WrdsLocationReader
     {
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
         {
+            if ( response.getStatusCode() != 200 )
+            {
+                throw new PreIngestException( "Failed to read location data from "
+                                              + uri + " due to HTTP status "
+                                              + response.getStatusCode() );
+            }
+
             return response.getResponse()
                            .readAllBytes();
         }
