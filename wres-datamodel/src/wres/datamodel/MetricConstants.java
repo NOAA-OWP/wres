@@ -39,7 +39,7 @@ public enum MetricConstants
      * Identifier for a Brier Skill Score.
      */
 
-    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
+    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for a box plot of errors by observed value.
@@ -81,7 +81,7 @@ public enum MetricConstants
      * Identifier for a Mean Continuous Ranked Probability Skill Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ),
+    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for a Contingency Table.
@@ -89,7 +89,7 @@ public enum MetricConstants
 
     CONTINGENCY_TABLE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS,
                                                SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+            StatisticType.DOUBLE_SCORE, false, MetricGroup.CONTINGENCY_TABLE ),
 
     /**
      * Identifier for Pearson's product-moment correlation coefficient.
@@ -107,7 +107,7 @@ public enum MetricConstants
      * Identifier for an Equitable Threat Score.
      */
 
-    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
+    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for a Frequency Bias.
@@ -125,7 +125,7 @@ public enum MetricConstants
      * Identifier for the Kling-Gupta Efficiency index.
      */
 
-    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for a Mean Absolute Error.
@@ -149,13 +149,13 @@ public enum MetricConstants
      * Identifier for a Mean Square Error Skill Score.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for a Mean Square Error Skill Score, normalized.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for a Median Error.
@@ -168,7 +168,7 @@ public enum MetricConstants
      */
 
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE ),
+            StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for a Probability Of Detection.
@@ -204,7 +204,7 @@ public enum MetricConstants
      * Identifier for the Relative Operating Characteristic Score.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true ),
 
     /**
      * Identifier for the Reliability Diagram.
@@ -231,7 +231,7 @@ public enum MetricConstants
 
     SAMPLE_SIZE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
                                          SampleDataGroup.ENSEMBLE },
-            StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC ),
+            StatisticType.DOUBLE_SCORE, false, MetricGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Identifier for a Sum of Square Error.
@@ -426,7 +426,13 @@ public enum MetricConstants
      */
 
     private final MetricGroup[] metricGroups;
+    
+    /**
+     * Is <code>true</code> if the metric measures skill relative to a baseline, otherwise <code>false</code>.
+     */
 
+    private final boolean isSkillMetric;
+    
     /**
      * Default constructor
      */
@@ -436,18 +442,20 @@ public enum MetricConstants
         this.inGroups = null;
         this.outGroup = null;
         this.metricGroups = null;
+        this.isSkillMetric = false;
     }
 
     /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticType}.
+     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
      * 
      * @param inputGroup the input group
      * @param outputGroup the output group
+     * @param isSkillMetric is true if the metric is a skill metric
      */
 
-    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup )
+    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, boolean isSkillMetric )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, (MetricGroup[]) null );
+        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric, (MetricGroup[]) null );
     }
 
     /**
@@ -460,7 +468,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, metricGroup );
+        this( new SampleDataGroup[] { inGroup }, outGroup, false, metricGroup );
     }
 
     /**
@@ -468,16 +476,19 @@ public enum MetricConstants
      * 
      * @param inGroups the input groups
      * @param outGroup the output group
+     * @param isSkillMetric is true if the metric measures skill, otherwise false
      * @param metricGroup the metric group
      */
 
     private MetricConstants( SampleDataGroup[] inGroups,
                              StatisticType outGroup,
+                             boolean isSkillMetric,
                              MetricGroup... metricGroup )
     {
         this.inGroups = inGroups;
         this.outGroup = outGroup;
         this.metricGroups = metricGroup;
+        this.isSkillMetric = isSkillMetric;
     }
 
     /**
@@ -491,6 +502,7 @@ public enum MetricConstants
         this.metricGroups = decGroup;
         this.inGroups = null;
         this.outGroup = null;
+        this.isSkillMetric = false;
     }
 
     /**
@@ -617,7 +629,18 @@ public enum MetricConstants
         all.removeIf( a -> Objects.isNull( a.outGroup ) || a.outGroup != outGroup );
         return Collections.unmodifiableSet( all );
     }
+    
+    /**
+     * Returns <code>true</code> if the metric measures skill, otherwise <code>false</code>.
+     * 
+     * @return true if the metric measures skill, otherwise false
+     */
 
+    public boolean isSkillMetric()
+    {
+        return this.isSkillMetric;
+    }
+    
     /**
      * Returns a string representation.
      * 

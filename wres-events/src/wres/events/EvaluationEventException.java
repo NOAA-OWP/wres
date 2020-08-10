@@ -1,7 +1,7 @@
 package wres.events;
 
 /**
- * Exception to throw when a statistics message could not be posted.
+ * Exception to throw when an evaluation event occurs. These events may be recoverable.
  * 
  * @author james.brown@hydrosolved.com
  */

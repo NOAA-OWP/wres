@@ -90,7 +90,7 @@ public class Executor {
 	 * @param task The thread whose task to execute
 	 * @return An object containing an empty value generated at the end of thread execution
 	 */
-    public Future execute(Runnable task)
+    public Future<?> execute(Runnable task)
 	{
         return service.submit( task);
 	}

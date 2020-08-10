@@ -124,12 +124,6 @@ public class IndexOfAgreement extends DoubleErrorScore<SampleData<Pair<Double, D
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.INDEX_OF_AGREEMENT;

@@ -1173,6 +1173,8 @@ project(':wres-events')
 
         // Mocking help
         testCompile 'org.mockito:mockito-core:3.3.3'
+        // Mocking final classes
+        testImplementation 'org.mockito:mockito-inline:3.4.6'
     }
 }
 

@@ -134,12 +134,6 @@ public class RelativeOperatingCharacteristicScore
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
-    @Override
     public boolean isDecomposable()
     {
         return false;

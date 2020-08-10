@@ -178,12 +178,6 @@ public class KlingGuptaEfficiency extends DecomposableScore<SampleData<Pair<Doub
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
-    @Override
     public boolean hasRealUnits()
     {
         return false;

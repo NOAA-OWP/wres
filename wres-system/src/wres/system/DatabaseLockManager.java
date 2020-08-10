@@ -187,7 +187,7 @@ public class DatabaseLockManager
                          this.sharedLockNames );
         }
 
-        if ( !this.sharedLockNames.isEmpty() )
+        if ( !this.exclusiveLockNames.isEmpty() )
         {
             LOGGER.warn( "WRES did not clean up by unlocking these exclusive locks: {}",
                          this.exclusiveLockNames );

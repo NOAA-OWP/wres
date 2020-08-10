@@ -101,12 +101,6 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore
         return MetricConstants.PROBABILITY_OF_FALSE_DETECTION;
     }
 
-    @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
     /**
      * Hidden constructor.
      */

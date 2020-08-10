@@ -128,12 +128,6 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
-    @Override
     public boolean isProper()
     {
         return false;

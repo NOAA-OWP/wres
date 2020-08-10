@@ -97,12 +97,6 @@ class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreSt
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.SAMPLE_SIZE;

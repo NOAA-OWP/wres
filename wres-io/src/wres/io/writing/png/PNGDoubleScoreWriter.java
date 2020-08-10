@@ -25,7 +25,6 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -175,8 +174,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
             SortedSet<ThresholdOuter> secondThreshold =
                     Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
 
-            if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
-                 && !secondThreshold.isEmpty() )
+            if ( !secondThreshold.isEmpty() )
             {
                 // Slice by the second threshold
                 secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( output,
@@ -202,7 +200,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
 
                 String append = null;
 
-                // Secondary threshold? If yes, only, one as this was sliced above
+                // Secondary threshold? If yes, only one, as this was sliced above
                 SortedSet<ThresholdOuter> second =
                         Slicer.discover( nextOutput,
                                          next -> next.getMetadata().getThresholds().second() );

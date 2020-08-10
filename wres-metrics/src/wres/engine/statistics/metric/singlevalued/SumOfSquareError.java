@@ -82,12 +82,6 @@ public class SumOfSquareError extends DecomposableScore<SampleData<Pair<Double, 
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.SUM_OF_SQUARE_ERROR;

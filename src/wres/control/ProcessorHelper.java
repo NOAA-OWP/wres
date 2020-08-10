@@ -1,5 +1,6 @@
 package wres.control;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -34,6 +35,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.events.Consumers;
 import wres.events.Evaluation;
 import wres.events.EvaluationEventException;
+import wres.events.EvaluationFailedToCompleteException;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
@@ -76,8 +78,10 @@ class ProcessorHelper
      * @param executors the executors
      * @param connections broker connections
      * @return the paths to which outputs were written
-     * @throws WresProcessingException if the evaluation fails for any reason
+     * @throws WresProcessingException if the evaluation processing fails
+     * @throws ProjectConfigException if the declaration is incorrect
      * @throws NullPointerException if any input is null
+     * @throws IOException if the creation of outputs fails
      */
 
     static Set<Path> processEvaluation( SystemSettings systemSettings,
@@ -95,27 +99,29 @@ class ProcessorHelper
 
         Set<Path> returnMe = new TreeSet<>();
 
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        // Create a description of the evaluation
-        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
-
         // Create output directory
         Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
 
-        // Shared writers
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        // Create some shared writers
         SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
                                                                         executors.getIoExecutor(),
                                                                         projectConfig,
                                                                         outputDirectory );
 
+        // Create a description of the evaluation
+        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+
         // Write some statistic types and formats as soon as they become available. Everything else is written on 
         // group/feature completion.
         // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
-        // a format that can be written incrementally
+        // a format that can be written incrementally. Duration scores are always written last because they are not
+        // computed until the end of the pipeline.
         BiPredicate<StatisticType, DestinationType> incrementalTypes =
-                ( type, format ) -> type == StatisticType.BOXPLOT_PER_PAIR || type == StatisticType.DURATION_SCORE
-                                    || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
+                ( type, format ) -> ( type == StatisticType.BOXPLOT_PER_PAIR
+                                      || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format ) )
+                                    && type != StatisticType.DURATION_SCORE;
 
         // All others
         BiPredicate<StatisticType, DestinationType> nonIncrementalTypes = incrementalTypes.negate();
@@ -150,14 +156,13 @@ class ProcessorHelper
                                        .addGroupedStatisticsConsumer( groupConsumer )
                                        .build();
 
-        // Create and start a broker and open an evaluation, closing on completion
-        Evaluation evaluation = null;
+        // Open an evaluation, to be closed on completion or stopped on exception
+        Evaluation evaluation = Evaluation.open( evaluationDescription,
+                                                 connections,
+                                                 consumerGroup );
+
         try
         {
-            evaluation = Evaluation.open( evaluationDescription,
-                                          connections,
-                                          consumerGroup );
-
             Set<Path> pathsWritten = ProcessorHelper.processProjectConfig( evaluation,
                                                                            systemSettings,
                                                                            databaseServices,
@@ -165,36 +170,62 @@ class ProcessorHelper
                                                                            executors,
                                                                            sharedWriters,
                                                                            outputDirectory );
+
             returnMe.addAll( pathsWritten );
+
+            // Wait for the evaluation to conclude
+            evaluation.await();
+
+            return Collections.unmodifiableSet( returnMe );
         }
-        catch ( IOException | ProjectConfigException | WresProcessingException
-                | IllegalArgumentException
-                | EvaluationEventException e )
+        // Internal error
+        catch ( EvaluationEventException | EvaluationFailedToCompleteException | WresProcessingException internalError )
         {
             String evaluationId = "unknown";
 
-            if ( Objects.nonNull( evaluation ) )
-            {
-                evaluation.stopOnException( e );
-                evaluationId = evaluation.getEvaluationId();
-            }
+            // Stop forcibly
+            evaluation.stop( internalError );
+            evaluationId = evaluation.getEvaluationId();
 
-            // Rethrow
+            // Decorate and rethrow
             throw new WresProcessingException( "Encountered an error while processing evaluation '"
                                                + evaluationId
                                                + "': ",
-                                               e );
+                                               internalError );
+        }
+        // Allow a user-error to be distinguished separately
+        catch ( ProjectConfigException userError )
+        {
+            // Stop forcibly
+            evaluation.stop( userError );
+
+            throw userError;
         }
         finally
         {
-            // Close the evaluation
-            if ( Objects.nonNull( evaluation ) )
-            {
-                evaluation.close();
-            }
-        }
+            // Close the evaluation always (even if stopped on exception)
+            evaluation.close();
 
-        return Collections.unmodifiableSet( returnMe );
+            // Add the consumer paths written, since consumers are now out-of-band to producers
+            returnMe.addAll( incrementalConsumer.get() );
+            returnMe.addAll( groupConsumer.get() );
+
+            // Clean-up an empty output directory: #67088
+            try ( Stream<Path> outputs = Files.list( outputDirectory ) )
+            {
+                if ( outputs.count() == 0 )
+                {
+                    // Will only succeed for an empty directory
+                    boolean status = Files.deleteIfExists( outputDirectory );
+
+                    LOGGER.debug( "Attempted to remove empty output directory {} with success status: {}",
+                                  outputDirectory,
+                                  status );
+                }
+            }
+
+            LOGGER.info( "Wrote the following output: {}", returnMe );
+        }
     }
 
     /**
@@ -209,9 +240,7 @@ class ProcessorHelper
      * @param executors the executors
      * @param sharedWriters for writing
      * @param outputDirectory the output directory
-     * @throws IOException when an issue occurs during ingest
-     * @throws ProjectConfigException if the project configuration is invalid
-     * @throws WresProcessingException when an issue occurs during processing
+     * @throws WresProcessingException if the processing failed for any reason
      * @return the paths to which outputs were written
      */
 
@@ -222,139 +251,122 @@ class ProcessorHelper
                                                    Executors executors,
                                                    SharedWriters sharedWriters,
                                                    Path outputDirectory )
-            throws IOException
     {
-        final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-        ProgressMonitor.setShowStepDescription( false );
-        ProgressMonitor.resetMonitor();
-
-        // Get a unit mapper for the declared measurement units
-        PairConfig pairConfig = projectConfig.getPair();
-        String desiredMeasurementUnit = pairConfig.getUnit();
-        UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
-
-        // Look up any needed feature correlations, generate a new declaration.
-        ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
-        LOGGER.debug( "Filled out features for project. Before: {} After: {}",
-                      projectConfig,
-                      featurefulProjectConfig );
-
-        LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
-
-        // Need to ingest first
-        Project project = Operations.ingest( systemSettings,
-                                             databaseServices.getDatabase(),
-                                             executors.getIoExecutor(),
-                                             featurefulProjectConfig,
-                                             databaseServices.getDatabaseLockManager() );
-
-        Operations.prepareForExecution( project );
-
-        LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
-
-        ProgressMonitor.setShowStepDescription( false );
-
-        Set<FeatureTuple> decomposedFeatures;
-
-        try
-        {
-            decomposedFeatures = project.getFeatures();
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "Failed to retrieve the set of features.", e );
-        }
-
-        if ( decomposedFeatures.isEmpty() )
-        {
-            throw new NoDataException( "There were no data correlated by "
-                                       + " geographic features specified "
-                                       + "available for evaluation." );
-        }
-
-        // Read external thresholds from the configuration, per feature
-        // Compare on left dataset's feature name only.
-        // TODO: consider how better to transmit these thresholds
-        // to wres-metrics, given that they are resolved by project configuration that is
-        // passed separately to wres-metrics. Options include moving MetricProcessor* to
-        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-        ThresholdReader thresholdReader = new ThresholdReader( systemSettings,
-                                                               projectConfig,
-                                                               unitMapper,
-                                                               decomposedFeatures,
-                                                               LeftOrRightOrBaseline.LEFT );
-        Map<FeatureTuple, ThresholdsByMetric> thresholds = thresholdReader.read();
-
-        // Features having thresholds as reported by the threshold reader.
-        Set<FeatureTuple> havingThresholds = thresholdReader.getEvaluatableFeatures();
-
-        // If the left dataset name exists in thresholds, keep it in the set.
-        decomposedFeatures = Collections.unmodifiableSet( havingThresholds );
-
-        if ( decomposedFeatures.isEmpty() )
-        {
-            throw new NoDataException( "There were data correlated by "
-                                       + "geographic features specified "
-                                       + "available for evaluation but "
-                                       + "there were no thresholds available "
-                                       + "for any of those features." );
-        }
-
-        // Create any netcdf blobs for writing. See #80267-137.
-        if ( sharedWriters.getStatisticsWriters().contains( DestinationType.NETCDF ) )
-        {
-            sharedWriters.getStatisticsWriters()
-                         .getNetcdfOutputWriter()
-                         .createBlobsForWriting( thresholds );
-        }
-
-        // The project code - ideally project hash
-        String projectIdentifier = String.valueOf( project.getInputCode() );
-
-        ResolvedProject resolvedProject = ResolvedProject.of(
-                                                              projectConfigPlus,
-                                                              decomposedFeatures,
-                                                              projectIdentifier,
-                                                              thresholds,
-                                                              outputDirectory );
-
         Set<Path> pathsWrittenTo = new HashSet<>();
 
-        // Tasks for features
-        List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
-
-        // Report on the completion state of all features
-        // Report detailed state by default (final arg = true)
-        // TODO: demote to summary report (final arg = false) for >> feature count
-        FeatureReporter featureReport = new FeatureReporter( projectConfigPlus, decomposedFeatures.size(), true );
-
-        // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
-        // completion state of features has no value when reported in this way
-        ProgressMonitor.deactivate();
-
-        // Create one task per feature
-        for ( FeatureTuple feature : decomposedFeatures )
-        {
-            Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluation,
-                                                                                       feature,
-                                                                                       resolvedProject,
-                                                                                       project,
-                                                                                       unitMapper,
-                                                                                       executors,
-                                                                                       sharedWriters );
-
-            CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
-                                                                                     executors.getFeatureExecutor() )
-                                                                       .thenAccept( featureReport );
-
-            // Add to list of tasks
-            featureTasks.add( nextFeatureTask );
-        }
-
-        // Run the tasks, and join on all tasks. The main thread will wait until all are completed successfully
-        // or one completes exceptionally for reasons other than lack of data
         try
         {
+            final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+            ProgressMonitor.setShowStepDescription( false );
+            ProgressMonitor.resetMonitor();
+
+            // Get a unit mapper for the declared measurement units
+            PairConfig pairConfig = projectConfig.getPair();
+            String desiredMeasurementUnit = pairConfig.getUnit();
+            UnitMapper unitMapper = UnitMapper.of( databaseServices.getDatabase(), desiredMeasurementUnit );
+
+            // Look up any needed feature correlations, generate a new declaration.
+            ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
+            LOGGER.debug( "Filled out features for project. Before: {} After: {}",
+                          projectConfig,
+                          featurefulProjectConfig );
+
+            LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
+
+            // Need to ingest first
+            Project project = Operations.ingest( systemSettings,
+                                                 databaseServices.getDatabase(),
+                                                 executors.getIoExecutor(),
+                                                 featurefulProjectConfig,
+                                                 databaseServices.getDatabaseLockManager() );
+
+            Operations.prepareForExecution( project );
+
+            LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
+
+            ProgressMonitor.setShowStepDescription( false );
+
+            Set<FeatureTuple> decomposedFeatures = ProcessorHelper.getDecomposedFeatures( project );
+
+            // Read external thresholds from the configuration, per feature
+            // Compare on left dataset's feature name only.
+            // TODO: consider how better to transmit these thresholds
+            // to wres-metrics, given that they are resolved by project configuration that is
+            // passed separately to wres-metrics. Options include moving MetricProcessor* to
+            // wres-control, since they make processing decisions, or passing ResolvedProject onwards
+            ThresholdReader thresholdReader = new ThresholdReader( systemSettings,
+                                                                   projectConfig,
+                                                                   unitMapper,
+                                                                   decomposedFeatures,
+                                                                   LeftOrRightOrBaseline.LEFT );
+            Map<FeatureTuple, ThresholdsByMetric> thresholds = thresholdReader.read();
+
+            // Features having thresholds as reported by the threshold reader.
+            Set<FeatureTuple> havingThresholds = thresholdReader.getEvaluatableFeatures();
+
+            // If the left dataset name exists in thresholds, keep it in the set.
+            decomposedFeatures = Collections.unmodifiableSet( havingThresholds );
+
+            if ( decomposedFeatures.isEmpty() )
+            {
+                throw new NoDataException( "There were data correlated by "
+                                           + "geographic features specified "
+                                           + "available for evaluation but "
+                                           + "there were no thresholds available "
+                                           + "for any of those features." );
+            }
+
+            // Create any netcdf blobs for writing. See #80267-137.
+            if ( sharedWriters.getStatisticsWriters().contains( DestinationType.NETCDF ) )
+            {
+                sharedWriters.getStatisticsWriters()
+                             .getNetcdfOutputWriter()
+                             .createBlobsForWriting( thresholds );
+            }
+
+            // The project code - ideally project hash
+            String projectIdentifier = String.valueOf( project.getInputCode() );
+
+            ResolvedProject resolvedProject = ResolvedProject.of(
+                                                                  projectConfigPlus,
+                                                                  decomposedFeatures,
+                                                                  projectIdentifier,
+                                                                  thresholds,
+                                                                  outputDirectory );
+
+            // Tasks for features
+            List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
+
+            // Report on the completion state of all features
+            // Report detailed state by default (final arg = true)
+            // TODO: demote to summary report (final arg = false) for >> feature count
+            FeatureReporter featureReport = new FeatureReporter( projectConfigPlus, decomposedFeatures.size(), true );
+
+            // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
+            // completion state of features has no value when reported in this way
+            ProgressMonitor.deactivate();
+
+            // Create one task per feature
+            for ( FeatureTuple feature : decomposedFeatures )
+            {
+                Supplier<FeatureProcessingResult> featureProcessor = new FeatureProcessor( evaluation,
+                                                                                           feature,
+                                                                                           resolvedProject,
+                                                                                           project,
+                                                                                           unitMapper,
+                                                                                           executors,
+                                                                                           sharedWriters );
+
+                CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
+                                                                                         executors.getFeatureExecutor() )
+                                                                           .thenAccept( featureReport );
+
+                // Add to list of tasks
+                featureTasks.add( nextFeatureTask );
+            }
+
+            // Run the tasks, and join on all tasks. The main thread will wait until all are completed successfully
+            // or one completes exceptionally for reasons other than lack of data
             // Complete the feature tasks
             ProcessorHelper.doAllOrException( featureTasks ).join();
 
@@ -380,31 +392,43 @@ class ProcessorHelper
             // Report on the features
             featureReport.report();
         }
-        catch ( CompletionException e )
+        catch ( CompletionException | IllegalArgumentException | IOException | NoDataException e )
         {
             throw new WresProcessingException( "Project failed to complete with the following error: ", e );
         }
-        finally
-        {
-            // Clean up by closing shared writers
-            sharedWriters.close();
-
-            // Clean-up an empty output directory: #67088
-            try ( Stream<Path> outputs = Files.list( outputDirectory ) )
-            {
-                if ( outputs.count() == 0 )
-                {
-                    // Will only succeed for an empty directory
-                    boolean status = Files.deleteIfExists( outputDirectory );
-
-                    LOGGER.debug( "Attempted to remove empty output directory {} with success status: {}",
-                                  outputDirectory,
-                                  status );
-                }
-            }
-        }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    /**
+     * Returns the decomposed features.
+     * 
+     * @param project the project
+     * @throws NoDataException if no features could be retrieved
+     */
+
+    private static Set<FeatureTuple> getDecomposedFeatures( Project project )
+    {
+
+        Set<FeatureTuple> decomposedFeatures;
+
+        try
+        {
+            decomposedFeatures = project.getFeatures();
+        }
+        catch ( SQLException e )
+        {
+            throw new NoDataException( "Failed to retrieve the set of features.", e );
+        }
+
+        if ( decomposedFeatures.isEmpty() )
+        {
+            throw new NoDataException( "There were no data correlated by "
+                                       + " geographic features specified "
+                                       + "available for evaluation." );
+        }
+
+        return decomposedFeatures;
     }
 
     /**
@@ -708,7 +732,7 @@ class ProcessorHelper
      * A value object for shared writers.
      */
 
-    static class SharedWriters
+    static class SharedWriters implements Closeable
     {
         /**
          * Shared writers for statstics.
@@ -815,7 +839,7 @@ class ProcessorHelper
          * @throws IOException when a resource could not be closed
          */
 
-        void close() throws IOException
+        public void close() throws IOException
         {
             if ( this.hasSharedStatisticsWriters() )
             {

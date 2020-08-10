@@ -46,8 +46,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMe
 /**
  * Registers a subscriber to a topic that is supplied on construction. There is one {@link Connection} per instance 
  * because connections are assumed to be expensive. Currently, there is also one {@link Session} per instance, but a 
- * pool of sessions might be better (to allow better message throughput, as a session is the work thread). Overall, it 
- * may be better to abstract connections and sessions away from specific helpers.
+ * pool of sessions might be better (to allow better message throughput, as a session is the work thread).
  * 
  * @param <T> the message type
  * @author james.brown@hydrosolved.com
@@ -60,24 +59,24 @@ class MessageSubscriber<T> implements Closeable
 
     private static final String UNKNOWN = "unknown";
 
-    private static final String ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY =
-            "encountered an error that prevented recovery: ";
-
-    private static final String WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION =
-            "While attempting to recover a session for evaluation {}, ";
-
-    private static final String ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION =
-            "encountered an error that prevented consumption: {} ";
-
-    private static final String WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER =
-            "While attempting to consume a message with identifier {} and correlation identifier {}, ";
-
     /**
      * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
      */
-    
+
     private static final boolean DURABLE_SUBSCRIBERS = true;
-    
+
+    /**
+     * Maximum number of retries on failed consumption across all consumers attached to this subscriber.
+     */
+
+    private static final int MAXIMUM_RETRIES = 2;
+
+    /**
+     * Actual number of retries attempted.
+     */
+
+    private final AtomicInteger retriesAttempted;
+
     /**
      * A connection to the broker for consumption of messages.
      */
@@ -91,7 +90,7 @@ class MessageSubscriber<T> implements Closeable
     private final Connection statusConnection;
 
     /**
-     * A session. TODO: this should probably be a pool of sessions.
+     * A session.
      */
 
     private final Session session;
@@ -150,7 +149,13 @@ class MessageSubscriber<T> implements Closeable
      */
 
     private final AtomicBoolean isComplete;
+    
+    /**
+     * Is <code>true</code> if the subscriber failed after all attempts to recover.
+     */
 
+    private final AtomicBoolean isFailedUnrecoverably;
+    
     /**
      * A function that retrieves the expected message count from an {@link EvaluationStatus} message for the type of
      * message consumed by this subscription.
@@ -183,7 +188,7 @@ class MessageSubscriber<T> implements Closeable
      * @return a message that was not consumed
      */
 
-    Message getFailedOn()
+    Message getFirstFailure()
     {
         return this.failure;
     }
@@ -558,7 +563,11 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( evaluationId );
 
-        // A listener acknowledges the message when the consumption completes 
+        // A listener acknowledges the message when the consumption completes
+        // According to Section 8.7 of the JMS 2 specification, it is considered a programming error for the onMessage 
+        // method associated with a MessageListener to throw a runtime exception. It should handle all exceptions. This 
+        // implies a catch-all exception, which we want to avoid.
+        // Instead, look for a ConsumerException and document that consumers should throw these.        
         MessageListener listener = message -> {
 
             BytesMessage receivedBytes = (BytesMessage) message;
@@ -604,8 +613,11 @@ class MessageSubscriber<T> implements Closeable
                               this,
                               messageId,
                               correlationId );
+
+                // Check and close early if group consumption is complete for one or more subscribers
+                this.checkAndCompleteGroup( groupId );
             }
-            catch ( JMSException | EvaluationEventException e )
+            catch ( JMSException | ConsumerException | EvaluationEventException e )
             {
                 // Messages are on the DLQ, but signal locally too
                 if ( Objects.isNull( this.failure ) )
@@ -613,32 +625,14 @@ class MessageSubscriber<T> implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                LOGGER.error( WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER
-                              + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION,
-                              messageId,
-                              correlationId,
-                              e.getMessage() );
-
-                try
-                {
-                    // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
-                    // messages should hit the dead letter queue/DLQ
-                    this.session.recover();
-                }
-                catch ( JMSException f )
-                {
-                    LOGGER.error( WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION
-                                  + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY,
-                                  evaluationId,
-                                  f.getMessage() );
-                }
+                // Attempt to recover
+                this.recover( messageId, correlationId, e );
             }
-
-            // Check completion
-            this.checkAndCompleteSubscription();
-
-            // Check and close early if group consumption is complete for one or more subscribers
-            this.checkAndCompleteGroup( groupId );
+            finally
+            {
+                // Check completion
+                this.checkAndCompleteSubscription();
+            }
         };
 
         // Only consume messages for the current evaluation based on JMSCorrelationID
@@ -775,7 +769,7 @@ class MessageSubscriber<T> implements Closeable
 
                     // Increment the actual message count
                     this.actualMessageCount.incrementAndGet();
-                    
+
                     LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
                                   + "identifier {}.",
                                   this,
@@ -786,7 +780,7 @@ class MessageSubscriber<T> implements Closeable
                 // Acknowledge
                 message.acknowledge();
             }
-            catch ( JMSException | EvaluationEventException e )
+            catch ( JMSException | ConsumerException | EvaluationEventException e )
             {
                 // Messages are on the DLQ, but signal locally too
                 if ( Objects.isNull( this.failure ) )
@@ -794,34 +788,14 @@ class MessageSubscriber<T> implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                // Create a stack trace to log
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter( sw );
-                e.printStackTrace( pw );
-
-                LOGGER.error( WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER
-                              + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION,
-                              messageId,
-                              correlationId,
-                              sw.toString() );
-
-                try
-                {
-                    // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
-                    // messages should hit the dead letter queue/DLQ
-                    this.session.recover();
-                }
-                catch ( JMSException f )
-                {
-                    LOGGER.error( WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION
-                                  + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY,
-                                  evaluationId,
-                                  f.getMessage() );
-                }
+                // Attempt to recover
+                this.recover( messageId, correlationId, e );
             }
-
-            // Check completion
-            this.checkAndCompleteSubscription();
+            finally
+            {
+                // Check completion
+                this.checkAndCompleteSubscription();
+            }
         };
 
         consumer.setMessageListener( listener );
@@ -1029,11 +1003,11 @@ class MessageSubscriber<T> implements Closeable
 
     private MessageConsumer getConsumer( Topic topic, String selector, String name ) throws JMSException
     {
-        if( MessageSubscriber.DURABLE_SUBSCRIBERS )
+        if ( MessageSubscriber.DURABLE_SUBSCRIBERS )
         {
             return this.session.createDurableSubscriber( topic, name, selector, false );
         }
-        
+
         return this.session.createConsumer( topic, selector );
     }
 
@@ -1100,12 +1074,15 @@ class MessageSubscriber<T> implements Closeable
         {
             this.statusPublisher.publish( message, Collections.unmodifiableMap( properties ) );
 
-            LOGGER.info( "Published an evaluation status message with metadata {} for "
-                         + "evaluation {} with status {} to amq.topic/{}.",
-                         properties,
-                         evaluationId,
-                         status,
-                         Evaluation.EVALUATION_STATUS_QUEUE );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Published an evaluation status message with metadata {} for "
+                              + "evaluation {} with status {} to amq.topic/{}.",
+                              properties,
+                              evaluationId,
+                              status,
+                              Evaluation.EVALUATION_STATUS_QUEUE );
+            }
         }
         catch ( JMSException e )
         {
@@ -1142,47 +1119,61 @@ class MessageSubscriber<T> implements Closeable
 
     private void checkAndCompleteSubscription()
     {
-
-        // Not already completed and completing now?
-        if ( !this.isComplete() && this.expectedMessageCount.get() > -1
-             && this.expectedMessageCount.get() == this.actualMessageCount.get() )
+        // Failed or not already completed and all messaging done? If so, close.
+        if ( this.failed() || !this.isComplete() && this.expectedMessageCount.get() > -1
+                              && this.expectedMessageCount.get() == this.actualMessageCount.get() )
         {
-            this.isComplete.set( true );
-
-            // Send the status message, then close 
-            // Create a message identifier 
-            String messageId = "ID:" + this.getIdentifier() + "-stop";
-
-            List<EvaluationStatusEvent> events = new ArrayList<>();
-            CompletionStatus status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS;
-
-            if ( Objects.nonNull( this.getFailedOn() ) )
+            // Send the status message only once
+            if ( !this.isComplete() )
             {
-                String message =
-                        "While consuming a message for evaluation " + this.getEvaluationInfo().getEvaluationId()
-                                 + " with subscriber "
-                                 + this.getIdentifier()
-                                 + " encountered an error. Failed to consume the following message: "
-                                 + this.getFailedOn()
-                                 + ".";
-                status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE;
-                EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
-                                                                   .setEventType( StatusMessageType.ERROR )
-                                                                   .setEventMessage( message )
-                                                                   .build();
-                events.add( event );
+                String messageId = "ID:" + this.getIdentifier() + "-stop";
+
+                List<EvaluationStatusEvent> events = new ArrayList<>();
+                CompletionStatus status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS;
+
+                if ( this.failed() )
+                {
+                    String message =
+                            "While consuming a message for evaluation " + this.getEvaluationInfo().getEvaluationId()
+                                     + " with subscriber "
+                                     + this.getIdentifier()
+                                     + " encountered an error. Failed to consume the following message: "
+                                     + this.getFirstFailure()
+                                     + ".";
+                    status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE;
+                    EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
+                                                                       .setEventType( StatusMessageType.ERROR )
+                                                                       .setEventMessage( message )
+                                                                       .build();
+                    events.add( event );
+                }
+
+                EvaluationStatus ready = EvaluationStatus.newBuilder()
+                                                         .setCompletionStatus( status )
+                                                         .setConsumerId( this.getIdentifier() )
+                                                         .addAllStatusEvents( events )
+                                                         .build();
+
+                ByteBuffer message = ByteBuffer.wrap( ready.toByteArray() );
+                
+                this.publishStatusInternal( message, messageId, status );
             }
 
-            EvaluationStatus ready = EvaluationStatus.newBuilder()
-                                                     .setCompletionStatus( status )
-                                                     .setConsumerId( this.getIdentifier() )
-                                                     .addAllStatusEvents( events )
-                                                     .build();
-
-            ByteBuffer message = ByteBuffer.wrap( ready.toByteArray() );
-
-            this.publishStatusInternal( message, messageId, status );
+            // Complete
+            this.isComplete.set( true );
         }
+    }
+
+    /**
+     * Returns <code>true</code> if an unrecoverable exception occurred during consumption, otherwise 
+     * <code>false</code> . Note that {@link #getFirstFailure()} may contain an exception that was recovered.
+     * 
+     * @return true if an unrecoverable exception occurred.
+     */
+
+    boolean failed()
+    {
+        return this.isFailedUnrecoverably.get();
     }
 
     /**
@@ -1245,7 +1236,7 @@ class MessageSubscriber<T> implements Closeable
                 // Acknowledge the message
                 message.acknowledge();
             }
-            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
+            catch ( JMSException | ConsumerException | EvaluationEventException | InvalidProtocolBufferException e )
             {
                 // Messages are on the DLQ, but signal locally too
                 if ( Objects.isNull( this.failure ) )
@@ -1253,28 +1244,14 @@ class MessageSubscriber<T> implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                LOGGER.error( WHILE_ATTEMPTING_TO_CONSUME_A_MESSAGE_WITH_IDENTIFIER_AND_CORRELATION_IDENTIFIER
-                              + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_CONSUMPTION,
-                              messageId,
-                              correlationId,
-                              e.getMessage() );
-
-                try
-                {
-                    // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
-                    // messages should hit the dead letter queue/DLQ
-                    this.session.recover();
-                }
-                catch ( JMSException f )
-                {
-                    LOGGER.error( WHILE_ATTEMPTING_TO_RECOVER_A_SESSION_FOR_EVALUATION
-                                  + ENCOUNTERED_AN_ERROR_THAT_PREVENTED_RECOVERY,
-                                  evaluationId,
-                                  f.getMessage() );
-                }
+                // Attempt to recover
+                this.recover( messageId, correlationId, e );
             }
-
-            this.checkAndCompleteSubscription();
+            finally
+            {
+                // Check completion
+                this.checkAndCompleteSubscription();
+            }
         };
 
         statusConsumer.setMessageListener( listener );
@@ -1285,6 +1262,88 @@ class MessageSubscriber<T> implements Closeable
                       evaluationId );
     }
 
+    /**
+     * Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}.
+     * 
+     * @param messageId the message identifier for the exceptional consumption
+     * @param correlationId the correlation identifier for the exceptional consumption
+     * @param exception the exception encountered
+     */
+
+    private void recover( String messageId, String correlationId, Exception e )
+    {
+        try ( StringWriter sw = new StringWriter();
+              PrintWriter pw = new PrintWriter( sw ); )
+        {
+
+            // Create a stack trace to log
+            e.printStackTrace( pw );
+            String message = sw.toString();
+
+            LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier {} in "
+                          + "subscriber {}, encountered an error. This is {} of {} allowed consumption failures before "
+                          + "the subscriber will notify an unrecoverable failure. The error is: {}",
+                          messageId,
+                          correlationId,
+                          this.getIdentifier(),
+                          this.getNumberOfRetriesAttempted().get() + 1,  // Counter starts at zero
+                          MessageSubscriber.MAXIMUM_RETRIES,
+                          message );
+
+            // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
+            // messages should hit the dead letter queue/DLQ
+            if ( this.getNumberOfRetriesAttempted().incrementAndGet() < MessageSubscriber.MAXIMUM_RETRIES )
+            {
+                int retries = this.getNumberOfRetriesAttempted().get();
+
+                LOGGER.debug( "Subscriber {} encountered an unrecoverable consumption failure. Attempting recovery {} of {}.",
+                              this.getIdentifier(),
+                              retries,
+                              MessageSubscriber.MAXIMUM_RETRIES );
+
+                this.session.recover();
+            }
+            else
+            {
+                LOGGER.error( "Subscriber {} encountered a consumption failure. Recovery failed after {} attempts.",
+                              this.getIdentifier(),
+                              MessageSubscriber.MAXIMUM_RETRIES );                
+                
+                this.markSubscriberFailed();
+            }
+        }
+        catch ( JMSException f )
+        {
+            LOGGER.error( "While attempting to recover a session for evaluation {}, encountered an error that "
+                          + "prevented recovery: ",
+                          correlationId,
+                          f.getMessage() );
+        }
+        catch ( IOException g )
+        {
+            LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception writer.",
+                          this.getIdentifier() );
+        }
+    }
+
+    /**
+     * @return the number of retries attempted sop far.
+     */
+
+    private AtomicInteger getNumberOfRetriesAttempted()
+    {
+        return this.retriesAttempted;
+    }
+
+    /**
+     * Marks the subscriber as failed after all recovery attempts.
+     */
+    
+    private void markSubscriberFailed()
+    {
+        this.isFailedUnrecoverably.getAndSet( true );
+    }
+    
     /**
      * Sets the expected message count for message groups.
      * 
@@ -1393,9 +1452,11 @@ class MessageSubscriber<T> implements Closeable
         this.topic = builder.topic;
         this.evaluationInfo = builder.evaluationInfo;
         this.actualMessageCount = new AtomicInteger();
+        this.retriesAttempted = new AtomicInteger();
         // Register the initial expectation as -1, because zero is a reasonable expectation too
         this.expectedMessageCount = new AtomicInteger( -1 );
         this.isComplete = new AtomicBoolean();
+        this.isFailedUnrecoverably = new AtomicBoolean();
         this.expectedMessageCountSupplier = builder.expectedMessageCountSupplier;
         this.isIgnoreConsumerMessages = builder.isIgnoreConsumerMessages;
         this.consumerConnection = builder.connection;
@@ -1440,7 +1501,7 @@ class MessageSubscriber<T> implements Closeable
                                                         name,
                                                         localStatusConsumer,
                                                         this.session,
-                                                        MessageSubscriber.DURABLE_SUBSCRIBERS  );
+                                                        MessageSubscriber.DURABLE_SUBSCRIBERS );
 
         this.groupConsumers = new ConcurrentHashMap<>();
 
@@ -1516,7 +1577,7 @@ class MessageSubscriber<T> implements Closeable
 
         /**Is true if the consumer refers to a durable subscriber.**/
         private final boolean isDurable;
-        
+
         /**
          * Create an instance.
          * 

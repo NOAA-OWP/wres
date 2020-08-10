@@ -50,7 +50,7 @@
                 "queue.defaultAlternateBinding": "{\"destination\": \"$${this:name}_DLQ\"} }",
                 "queue.maximumDeliveryAttempts": "2"
             },
-            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"16\", \"numberOfSelectors\": \"2\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"5\"}}] }"
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"5\"}}] }"
         }
     ]
 }

@@ -46,12 +46,6 @@ public class MedianError extends DoubleErrorScore<SampleData<Pair<Double, Double
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.MEDIAN_ERROR;

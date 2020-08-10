@@ -47,4 +47,19 @@ message Evaluation
     
     ValueFilter value_filter = 11;
     // Values that were not filtered when forming pairs.
+
+    enum DefaultData
+    {
+        // An enumeration of default datasets.
+        
+        NONE = 0;
+        // No default data.
+
+        OBSERVED_CLIMATOLOGY = 1;
+        // Observed climatology. 
+    }
+
+    DefaultData default_baseline = 12;
+    // A default baseline dataset used for some skill metrics that allow this when
+    // no explicit baseline is provided.
 }

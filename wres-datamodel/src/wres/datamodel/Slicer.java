@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -397,7 +398,7 @@ public final class Slicer
 
         return outputs.stream().filter( predicate ).collect( Collectors.toUnmodifiableList() );
     }
-    
+
     /**
      * <p>Discovers the unique instances of a given type of statistic. The mapper function identifies the type to 
      * discover. For example, to discover the unique thresholds contained in the list of outputs:</p>
@@ -453,10 +454,42 @@ public final class Slicer
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( metricIdentifier, NULL_INPUT_EXCEPTION );
-        
+
         return outputs.stream()
                       .filter( next -> metricIdentifier == next.getMetricName() )
                       .collect( Collectors.toUnmodifiableList() );
+    }
+
+    /**
+     * <p>Sorts the statistics by time window, then threshold, returning a new list with sorted statistics.
+     * 
+     * @param <T> the type of statistics
+     * @param statistics the statistics to sort    
+     * @throws NullPointerException if the input is null
+     * @return the sorted statistics
+     */
+
+    public static <T extends Statistic<?>> List<T> sortByTimeWindowAndThreshold( List<T> statistics )
+    {
+        Objects.requireNonNull( statistics, NULL_INPUT_EXCEPTION );
+
+        // Null-friendly comparator on time window
+        Comparator<T> twComparator =
+                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getMetadata().getTimeWindow(),
+                                                             TimeWindowOuter::compareTo ) );
+
+        // Null-friendly comparator on threshold
+        Comparator<T> trComparator =
+                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getMetadata().getThresholds(),
+                                                             OneOrTwoThresholds::compareTo ) );
+
+        // Combined comparator
+        Comparator<T> compare = twComparator.thenComparing( trComparator );
+
+        List<T> returnMe = new ArrayList<>( statistics );
+        returnMe.sort( compare );
+
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -503,13 +536,13 @@ public final class Slicer
             for ( S nextComponent : nextScore )
             {
                 List<S> listOfComponents = returnMe.get( nextComponent.getMetricName() );
-                
+
                 if ( Objects.isNull( listOfComponents ) )
                 {
                     listOfComponents = new ArrayList<>();
                     returnMe.put( nextComponent.getMetricName(), listOfComponents );
                 }
-                
+
                 listOfComponents.add( nextComponent );
             }
         }
@@ -681,11 +714,11 @@ public final class Slicer
                           + "measured quantile." );
 
             return ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),
-                                                  threshold.getProbabilities(),
-                                                  threshold.getOperator(),
-                                                  threshold.getDataType(),
-                                                  threshold.getLabel(),
-                                                  threshold.getUnits() );
+                                                       threshold.getProbabilities(),
+                                                       threshold.getOperator(),
+                                                       threshold.getDataType(),
+                                                       threshold.getLabel(),
+                                                       threshold.getUnits() );
         }
         DoubleUnaryOperator qF = Slicer.getQuantileFunction( sorted );
         Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
@@ -706,11 +739,11 @@ public final class Slicer
         }
 
         return ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
-                                              threshold.getProbabilities(),
-                                              threshold.getOperator(),
-                                              threshold.getDataType(),
-                                              threshold.getLabel(),
-                                              threshold.getUnits() );
+                                                   threshold.getProbabilities(),
+                                                   threshold.getOperator(),
+                                                   threshold.getDataType(),
+                                                   threshold.getLabel(),
+                                                   threshold.getUnits() );
     }
 
     /**

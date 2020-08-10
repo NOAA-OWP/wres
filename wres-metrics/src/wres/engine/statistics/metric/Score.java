@@ -13,7 +13,7 @@ import wres.datamodel.statistics.ScoreStatistic;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,?>> extends Metric<S,T>
+public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?, ?>> extends Metric<S, T>
 {
 
     /**
@@ -24,15 +24,19 @@ public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,?>> e
      * @return true if the score is decomposable, false otherwise
      */
 
-    boolean isDecomposable(); 
-    
+    boolean isDecomposable();
+
     /**
      * Returns <code>true</code> if the score is a relative measure or skill score, false for an absolute measure.
      * 
      * @return true if the score is a skill score
      */
 
-    boolean isSkillScore();
+    default boolean isSkillScore()
+    {
+        return this.getMetricName()
+                   .isSkillMetric();
+    }
 
     /**
      * Returns the group to which the score output belongs or {@link MetricGroup#NONE} if the score output does 
@@ -42,5 +46,5 @@ public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,?>> e
      */
 
     MetricGroup getScoreOutputGroup();
-    
+
 }

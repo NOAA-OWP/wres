@@ -169,7 +169,7 @@ class MetricFuturesByTime
          * {@link DiagramStatisticOuter} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DiagramStatisticOuter>>> multiVector =
+        private final ConcurrentLinkedQueue<Future<List<DiagramStatisticOuter>>> diagram =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -190,7 +190,7 @@ class MetricFuturesByTime
          * {@link DurationDiagramStatisticOuter} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DurationDiagramStatisticOuter>>> paired =
+        private final ConcurrentLinkedQueue<Future<List<DurationDiagramStatisticOuter>>> durationDiagram =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -228,9 +228,9 @@ class MetricFuturesByTime
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<List<DiagramStatisticOuter>> value )
+        MetricFuturesByTimeBuilder addDiagramOutput( Future<List<DiagramStatisticOuter>> value )
         {
-            this.multiVector.add( value );
+            this.diagram.add( value );
 
             return this;
         }
@@ -270,9 +270,9 @@ class MetricFuturesByTime
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addPairedOutput( Future<List<DurationDiagramStatisticOuter>> value )
+        MetricFuturesByTimeBuilder addDurationDiagramOutput( Future<List<DurationDiagramStatisticOuter>> value )
         {
-            this.paired.add( value );
+            this.durationDiagram.add( value );
 
             return this;
         }
@@ -348,7 +348,7 @@ class MetricFuturesByTime
                     }
                     else if ( nextGroup == StatisticType.DIAGRAM )
                     {
-                        this.multiVector.addAll( futures.multiVector );
+                        this.diagram.addAll( futures.multiVector );
                     }
                     else if ( nextGroup == StatisticType.BOXPLOT_PER_PAIR )
                     {
@@ -360,7 +360,7 @@ class MetricFuturesByTime
                     }
                     else if ( nextGroup == StatisticType.DURATION_DIAGRAM )
                     {
-                        this.paired.addAll( futures.paired );
+                        this.durationDiagram.addAll( futures.paired );
                     }
                 }
             }
@@ -378,10 +378,10 @@ class MetricFuturesByTime
     {
         doubleScore.addAll( builder.doubleScore );
         durationScore.addAll( builder.durationScore );
-        multiVector.addAll( builder.multiVector );
+        multiVector.addAll( builder.diagram );
         boxplotPerPair.addAll( builder.boxplotPerPair );
         boxplotPerPool.addAll( builder.boxplotPerPool );
-        paired.addAll( builder.paired );
+        paired.addAll( builder.durationDiagram );
     }
 
 }

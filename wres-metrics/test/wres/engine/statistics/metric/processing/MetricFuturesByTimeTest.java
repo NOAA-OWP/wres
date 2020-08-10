@@ -141,7 +141,7 @@ public final class MetricFuturesByTimeTest
                                                                                      .build(),
                                                                      SampleMetadata.of() ) );
 
-        builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( multivector ) );
 
         // Add paired output
         this.paired =
@@ -151,7 +151,7 @@ public final class MetricFuturesByTimeTest
                                                                                                      .build(),
                                                                              SampleMetadata.of() ) );
 
-        builder.addPairedOutput( CompletableFuture.completedFuture( this.paired ) );
+        builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
 
         this.futures = builder.build();
     }
@@ -217,14 +217,14 @@ public final class MetricFuturesByTimeTest
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( this.boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( this.durationScore ) );
-        builder.addMultiVectorOutput( CompletableFuture.completedFuture( this.multivector ) );
-        builder.addPairedOutput( CompletableFuture.completedFuture( this.paired ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( this.multivector ) );
+        builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
         // Add again
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( this.boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( this.durationScore ) );
-        builder.addMultiVectorOutput( CompletableFuture.completedFuture( this.multivector ) );
-        builder.addPairedOutput( CompletableFuture.completedFuture( this.paired ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( this.multivector ) );
+        builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
 
         // Check all expected output is present
         MetricFuturesByTime metricFutures = builder.build();
@@ -247,8 +247,8 @@ public final class MetricFuturesByTimeTest
         builder.addBoxPlotOutputPerPair( CompletableFuture.completedFuture( this.boxplot ) );
         builder.addDoubleScoreOutput( CompletableFuture.completedFuture( this.doubleScore ) );
         builder.addDurationScoreOutput( CompletableFuture.completedFuture( this.durationScore ) );
-        builder.addMultiVectorOutput( CompletableFuture.completedFuture( this.multivector ) );
-        builder.addPairedOutput( CompletableFuture.completedFuture( this.paired ) );
+        builder.addDiagramOutput( CompletableFuture.completedFuture( this.multivector ) );
+        builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
         builder.addFutures( this.futures );
 
         // Check all expected output is present

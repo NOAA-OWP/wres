@@ -125,12 +125,6 @@ public class BrierScore extends DecomposableScore<SampleData<Pair<Probability, P
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public boolean isProper()
     {
         return true;

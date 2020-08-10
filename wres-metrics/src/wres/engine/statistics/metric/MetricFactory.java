@@ -219,7 +219,7 @@ public final class MetricFactory
                     throws MetricParameterException
     {
         Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
-
+        
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                     thresholds,
                                                                     thresholdExecutor,

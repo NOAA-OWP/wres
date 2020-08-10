@@ -113,12 +113,6 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.PEARSON_CORRELATION_COEFFICIENT;

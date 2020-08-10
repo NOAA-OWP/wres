@@ -45,12 +45,6 @@ public class MeanAbsoluteError extends DoubleErrorScore<SampleData<Pair<Double, 
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_ABSOLUTE_ERROR;

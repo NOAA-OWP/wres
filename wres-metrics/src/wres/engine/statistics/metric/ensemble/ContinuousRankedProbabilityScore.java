@@ -165,12 +165,6 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public boolean isProper()
     {
         return true;

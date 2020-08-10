@@ -517,7 +517,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addMultiVectorOutput( this.processEnsemblePairs( input,
+            futures.addDiagramOutput( this.processEnsemblePairs( input,
                                                                      ensembleMultiVector,
                                                                      ignoreTheseMetrics ) );
         }
@@ -652,7 +652,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addMultiVectorOutput( processDiscreteProbabilityPairs( input,
+            futures.addDiagramOutput( processDiscreteProbabilityPairs( input,
                                                                            discreteProbabilityMultiVector,
                                                                            ignoreTheseMetrics ) );
         }

@@ -107,12 +107,6 @@ public class FrequencyBias extends ContingencyTableScore
         return MetricConstants.FREQUENCY_BIAS;
     }
 
-    @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
     /**
      * Hidden constructor.
      */

@@ -75,12 +75,6 @@ public class MeanSquareErrorSkillScoreNormalized extends MeanSquareErrorSkillSco
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED;
