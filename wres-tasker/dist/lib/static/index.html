@@ -1,22 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/hint/show-hint.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/foldgutter.min.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.min.js" ></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/mode/xml/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/closebrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/matchbrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/matchtags.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/closetag.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/foldcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/foldgutter.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/hint/show-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/hint/xml-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/indent-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/xml-fold.min.js"></script>
-
     <meta charset="UTF-8">
     <title>Water Resources Evaluation Service</title>
     <style type="text/css">
@@ -29,12 +13,15 @@
         .evaluation
         {
             width: 60em;
-            height: 70em;
+            height: 55em;
         }
-
-        .CodeMirror
+        p
         {
-            height: 500px;
+            max-width: 40em;
+        }
+        p, form, h1
+        {
+            margin: 16pt;
         }
     </style>
 </head>
@@ -52,8 +39,8 @@
 <p>
     If you are not writing a program to interact with the COWRES HTTP API, you
     may be looking for an instance of the WRES GUI at NWCAL which is at
-    <a href="https://***REMOVED***wresgui-ti01.***REMOVED***.***REMOVED***/">
-        https://***REMOVED***wresgui-ti01.***REMOVED***.***REMOVED***
+    <a href="https://***REMOVED***wresgui-prod01.***REMOVED***.***REMOVED***/">
+        https://***REMOVED***wresgui-prod01.***REMOVED***.***REMOVED***/
     </a>
 </p>
 <p>
@@ -86,8 +73,8 @@
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="DRRC2" />
-        <leadHours minimum="1" maximum="48" />
+        <feature left="DRRC2HSF" right="DRRC2HSF" />
+        <leadHours minimum="0" maximum="48" />
     </pair>
 
     <metrics>
@@ -116,303 +103,5 @@
     <br />
     <input type="submit" name="Submit" /><br/>
 </form>
-<script>
-            // Add Tag information here for autocomplete functionality
-            // See the markup from https://codemirror.net/demo/xmlcomplete.html for more details
-            var tags = {
-                "!top": ["project"],
-                project: {
-                    attrs: {
-                        label: null,
-                        name: null
-                    },
-                    children: ["inputs", "pair", "metrics", "outputs"]
-                },
-                inputs: {
-                    children: ["left", "right", "baseline"]
-                },
-                left: {
-                    attrs: {
-                        label: null
-                    },
-                    children: [
-                        "type",
-                        "source",
-                        "variable",
-                        "existingTimeScale",
-                        "ensemble",
-                        "timeShift"
-                    ]
-                },
-                right: {
-                    attrs: {
-                        label: null
-                    },
-                    children: [
-                        "type",
-                        "source",
-                        "variable",
-                        "existingTimeScale",
-                        "ensemble",
-                        "timeShift"
-                    ]
-                },
-                baseline: {
-                    attrs: {
-                        label: null
-                    },
-                    children: [
-                        "type",
-                        "source",
-                        "variable",
-                        "existingTimeScale",
-                        "ensemble",
-                        "timeShift"
-                    ]
-                },
-                source: {
-                    attrs: {
-                        format: ["PI-XML", "netCDF", "datacard", "usgs", "s3", "archive", "wrds", "csv"],
-                        pattern: "",
-                        unit: "",
-                        locationId: "",
-                        zoneOffset: null,
-                        missingValue: -999.0,
-                        has_header: [true, false],
-                        bucket: null
-                    }
-                },
-                ensemble: {
-                    attrs: {
-                        label: null,
-                        name: null,
-                        member_id: null,
-                        qualifier: null,
-                        exclude: [false, true]
-                    }
-                },
-                variable: {
-                    attrs: {
-                        label: null,
-                        unit: null
-                    }
-                },
-                existingTimeScale: {
-                    attrs: {
-                        label: null
-                    },
-                    children: ["function", "period", "frequency", "unit"]
-                },
-                timeShift: {
-                    children: ["width", "duration"]
-                },
-                pair: {
-                    attrs: {
-                        label: null
-                    },
-                    children: [
-                        "unit",
-                        "feature",
-                        "byTimeSeries",
-                        "leadHours",
-                        "dates",
-                        "issuedDates",
-                        "season",
-                        "values",
-                        "desiredTimeScale",
-                        "issuedDatesPoolingWindow",
-                        "leadTimesPoolingWindow"
-                    ]
-                },
-                feature: {
-                    attrs: {
-                        label: null,
-                        locationId: null,
-                        comid: null,
-                        gage_id: null,
-                        huc: null,
-                        name: null,
-                        rfc: null,
-                        state: null
-                    },
-                    children: [
-                        "alias",
-                        "coordinate",
-                        "polygon",
-                        "circle"
-                    ]
-                },
-                coordinate: {
-                    children: ["longitude", "latitude", "range"]
-                },
-                polygon: {
-                    attrs: {
-                        srid: 4326
-                    },
-                    children: ["point"]
-                },
-                point: {
-                    children: ["longitude", "latitude"]
-                },
-                circle: {
-                    attrs: {
-                        srid: 4326
-                    },
-                    children: ["longitude", "latitude", "diameter"]
-                },
-                issuedDatesPoolingWindow: {
-                    children: ["period", "frequency", "unit"]
-                },
-                leadTimesPoolingWindow: {
-                    children: ["period", "frequency", "unit"]
-                },
-                desiredTimeScale: {
-                    attrs: {
-                        label: null
-                    },
-                    children: ["function", "period", "frequency", "unit"]
-                },
-                values: {
-                    attrs: {
-                        minimum: null,
-                        maximum: null,
-                        default_minimum: null,
-                        default_maximum: null
-                    }
-                },
-                season: {
-                    children: ["earliestMonth", "earliestDay", "latestMonth", "latestDay"]
-                },
-                dates: {
-                    attrs: {
-                        earliest: "1900-01-01T00:00:00Z",
-                        latest: "2551-12-31T23:59:59Z"
-                    }
-                },
-                issuedDates: {
-                    attrs: {
-                        earliest: "1900-01-01T00:00:00Z",
-                        latest: "2551-12-31T23:59:59Z"
-                    }
-                },
-                leadHours: {
-                    attrs: {
-                        minimum: null,
-                        maximum: null
-                    }
-                },
-                metrics: {
-                    children: ["thresholds", "metric", "timeSeriesMetric"]
-                },
-                thresholds: {
-                    children: [
-                        "thresholdType",
-                        "applyTo",
-                        "commaSeparatedValues",
-                        "source",
-                        "operator"
-                    ]
-                },
-                metric: {
-                    children: ["name", "templateResourceName"]
-                },
-                timeSeriesMetric: {
-                    children: ["name", "summaryStatistics", "templateResourceName"]
-                },
-                summaryStatistics: {
-                    children: ["summaryStatisticsName"]
-                },
-                outputs: {
-                    children: ["destination"]
-                },
-                destination: {
-                    attrs: {
-                        type: "numeric",
-                        decimalFormat: null
-                    },
-                    children: ["outputType", "graphical", "netcdf"]
-                },
-                netcdf: {
-                    attrs: {
-                        vectorVariable: "feature_id",
-                        gridYVariable: "y",
-                        gridXVariable: "x",
-                        gridded: [false, true]
-                    },
-                    children: ["templatePath"]
-                },
-                graphical: {
-                    attrs: {
-                        width: null,
-                        height: null,
-                        template: null
-                    },
-                    children: ["config"]
-                }
-            };
-
-            // If the passed in predicate returns true, show the hint in 100ms
-            function completeAfter(cm, pred) {
-                var cur = cm.getCursor();
-                if (!pred || pred())
-                {
-                    setTimeout(
-                        function() {
-                            if(!cm.state.completionActive) {
-                                cm.showHint({completeSingle: false});
-                            }
-                        }, 100
-                    );
-                }
-                return CodeMirror.Pass;
-            }
-
-            // Show an autocomplete if the cursor is after a '<' character
-            function completeIfAfterLt(cm) {
-                return completeAfter (cm, function () {
-                        var cur = cm.getCursor();
-                        return cm.getRange(CodeMirror.Pos(cur.line, cur.ch - 1), cur) == "<";
-                });
-            }
-
-            // Show autocomplete options when within a tag
-            function completeIfInTag(cm) {
-                return completeAfter(cm, function() {
-                    var tok = cm.getTokenAt(cm.getCursor());
-                    if(tok.type == "string" && (!/['"]/.test(tok.string.charAt(tok.string.length - 1)) || tok.string.length == 1)) return false;
-                    var inner = CodeMirror.innerMode(cm.getMode(), tok.state).state;
-                    return inner.tagName;
-                });
-            }
-
-            var editor = CodeMirror.fromTextArea(
-                document.getElementById("projectConfig"),   // Base the editor around 'projectConfig'
-                {
-                    mode: "xml",                            // Edit XML
-                    lineNumbers: true,                      // Show line numbers in the gutter
-                    extraKeys: {                            // Assign custom key press event handles
-                        "'<'": completeAfter,               // Show autocomplete options when '<' is typed
-                        "'/'": completeIfAfterLt,           // Show autocomplete options when '/' is typed
-                        "' '": completeIfInTag,             // Show autocomplete options when ' ' is typed
-                        "'='": completeIfInTag,             // Show autocomplete options when '=' is typed
-                        "Ctrl-Space": "autocomplete"        // Add selected autocomplete suggestion
-                    },
-                    hintOptions: {schemaInfo: tags},        // Set the 'tags' object as the schema for hints
-                    matchTags: {bothTags: true},            // Highlight matching tags
-                    autoCloseTags: true,                    // Automatically close tags
-                    autoCloseBrackets: true,
-                    foldGutter: true,                       // Show the fold option in the gutters
-                    indentUnit: 4,                          // Always indent by 4 spaces
-                    gutters: [                              // Show the line number and fold gutters
-                        "CodeMirror-linenumbers",
-                        "CodeMirror-foldgutter"
-                    ]
-                });
-
-                // Update the projectConfig textarea whenever the code changes
-                editor.on("change", function(cm) {
-                    cm.save();
-                });
-        </script>
     </body>
 </html>
