@@ -107,12 +107,6 @@ public class VolumetricEfficiency extends DoubleErrorScore<SampleData<Pair<Doubl
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.VOLUMETRIC_EFFICIENCY;

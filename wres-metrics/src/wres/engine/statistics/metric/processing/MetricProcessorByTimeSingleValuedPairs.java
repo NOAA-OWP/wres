@@ -319,7 +319,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
 
             // Build the store of futures
-            futures.add( addFutures.build() );
+            this.futures.add( addFutures.build() );
         }
     }
 
@@ -466,11 +466,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // Build the future result
             final PoolOfPairs<Double, Double> finalPairs = pairs;
             Future<List<DurationDiagramStatisticOuter>> output =
-                    CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
-                                                   thresholdExecutor );
-
+                    CompletableFuture.supplyAsync( () -> this.timeSeries.apply( finalPairs, ignoreTheseMetrics ),
+                                                   this.thresholdExecutor );
+            
             // Add the future result to the store
-            futures.addPairedOutput( output );
+            futures.addDurationDiagramOutput( output );
         }
 
     }

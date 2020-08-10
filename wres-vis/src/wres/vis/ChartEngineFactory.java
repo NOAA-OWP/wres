@@ -902,8 +902,8 @@ public abstract class ChartEngineFactory
                                                                            usedPlotType,
                                                                            durationUnits );
 
-        //Setup plot specific arguments.
-        arguments.addBaselineArguments( metadata );
+        // Setup plot specific arguments for skill metrics that use an explicit baseline (dichotomous scores do not).
+        arguments.addBaselineArguments( metadata, metricName );
 
         //Build the source.
         XYChartDataSource source = null;
@@ -990,7 +990,6 @@ public abstract class ChartEngineFactory
                                                                            durationUnits );
 
         //Setup plot specific arguments.
-        arguments.addBaselineArguments( metadata );
         arguments.addDurationMetricArguments();
         arguments.addTimeToPeakArguments( input );
 
@@ -1054,7 +1053,6 @@ public abstract class ChartEngineFactory
                                                                            durationUnits );
 
         //Setup plot specific arguments.
-        arguments.addBaselineArguments( metadata );
         arguments.addDurationMetricArguments();
         arguments.addTimeToPeakArguments( input );
 

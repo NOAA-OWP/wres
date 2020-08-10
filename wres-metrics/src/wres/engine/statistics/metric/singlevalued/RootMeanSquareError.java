@@ -92,12 +92,6 @@ public class RootMeanSquareError extends DoubleErrorScore<SampleData<Pair<Double
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output )
     {
         double input = output.getComponent( MetricConstants.MAIN )

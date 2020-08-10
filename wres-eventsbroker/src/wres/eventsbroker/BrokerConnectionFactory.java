@@ -58,7 +58,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * Default jndi properties file on the classpath.
      */
 
-    private static final String DEFAULT_PROPERTIES = "jndi.properties";
+    private static final String DEFAULT_PROPERTIES = "eventbroker.properties";
 
     /**
      * Instance of an embedded broker managed by this factory instance, created as needed. There should be one instance 
@@ -372,7 +372,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
         ConnectionFactory factory = (ConnectionFactory) context.lookup( factoryName );
         
-        LOGGER.info( "Created a connection factory with name {} and URL connection string {}.",
+        LOGGER.debug( "Created a connection factory with name {} and URL connection string {}.",
                      factoryName,
                      connectionUrl );
 

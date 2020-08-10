@@ -71,8 +71,9 @@ import wres.system.SystemSettings;
  * 
  * @author james.brown@hydrosolved.com
  * @author jesse.bickel@***REMOVED***
+ * @deprecated replaced by {@link StatisticsConsumer}.
  */
-
+@Deprecated( since = "5.0", forRemoval = true )
 class ProduceOutputsFromStatistics implements Consumer<StatisticsForProject>,
         Closeable,
         Supplier<Set<Path>>

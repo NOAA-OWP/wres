@@ -106,12 +106,6 @@ public class BiasFraction extends DoubleErrorScore<SampleData<Pair<Double, Doubl
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.BIAS_FRACTION;

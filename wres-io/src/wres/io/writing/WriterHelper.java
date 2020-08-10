@@ -4,12 +4,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.statistics.Statistic;
 import wres.io.config.ConfigHelper;
 
@@ -53,12 +53,19 @@ public class WriterHelper
     public static <T extends Statistic<?>> Map<LeftOrRightOrBaseline, List<T>>
             getStatisticsGroupedByContext( List<T> input )
     {
-        // Move to WriteHelper                
+
+        Function<? super T, ? extends LeftOrRightOrBaseline> classifier = statistic -> {
+            if ( statistic.getMetadata().getPool().getIsBaselinePool() )
+            {
+                return LeftOrRightOrBaseline.BASELINE;
+            }
+
+            return LeftOrRightOrBaseline.RIGHT;
+        };
+
         Map<LeftOrRightOrBaseline, List<T>> groups =
                 input.stream()
-                     .collect( Collectors.groupingBy( a -> a.getMetadata()
-                                                            .getIdentifier()
-                                                            .getLeftOrRightOrBaseline() ) );
+                     .collect( Collectors.groupingBy( classifier ) );
 
         return Collections.unmodifiableMap( groups );
     }

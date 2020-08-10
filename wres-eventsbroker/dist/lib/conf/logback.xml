@@ -17,13 +17,18 @@
         <level value="WARN" />
     </logger>
 
+    <!-- Qpid messaging off.-->
+   <logger name="qpid.message">
+        <level value="OFF" />
+    </logger>
+
     <!-- Qpid AMQMessageDelegate off as the reported errors are not useful.-->
    <logger name="org.apache.qpid.client.message.AMQMessageDelegate">
         <level value="OFF" />
     </logger>
 
     <!-- Allow -Dwres.logLevel to set logging level, otherwise warn. -->
-    <root level="${wres.logLevel:-warn}">
+    <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

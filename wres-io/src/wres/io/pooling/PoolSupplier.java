@@ -303,7 +303,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
-        TimeScaleOuter desiredTimeScaleToUse = this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
+        TimeScaleOuter desiredTimeScaleToUse =
+                this.getDesiredTimeScale( leftData, rightData, baselineData, this.inputs );
 
         // Set the metadata, adjusted to include the desired time scale
         SampleMetadata sampleMetadata = SampleMetadata.of( this.metadata, desiredTimeScaleToUse );
@@ -326,14 +327,15 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData,
                                                                    rightData,
                                                                    desiredTimeScaleToUse,
-                                                                   pairedFrequency );
+                                                                   pairedFrequency,
+                                                                   false );
 
         // Create the baseline pairs
         if ( this.hasBaseline() )
         {
-            SampleMetadata baselineSampleMetadata = SampleMetadata.of( this.baselineMetadata, 
+            SampleMetadata baselineSampleMetadata = SampleMetadata.of( this.baselineMetadata,
                                                                        desiredTimeScaleToUse );
-            
+
             builder.setMetadataForBaseline( baselineSampleMetadata );
 
             LOGGER.debug( "Adding pairs for baseline to pool {}, which have metadata {}.",
@@ -349,7 +351,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData,
                                                                        baselineData,
                                                                        desiredTimeScaleToUse,
-                                                                       pairedFrequency );
+                                                                       pairedFrequency,
+                                                                       true );
 
             // Cross-pair?
             if ( Objects.nonNull( this.crossPairer ) )
@@ -700,6 +703,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * @param right the right data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
+     * @param isBaseline is true if the pool is a baseline pool (helps with logging)
      * @throws RescalingException if the pool data could not be rescaled
      * @throws PairingException if the pool data could not be paired
      * @throws NoSuchUnitConversionException if the data units could not be converted
@@ -709,7 +713,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private List<TimeSeries<Pair<L, R>>> createPairs( List<TimeSeries<L>> left,
                                                       List<TimeSeries<R>> right,
                                                       TimeScaleOuter desiredTimeScale,
-                                                      Duration frequency )
+                                                      Duration frequency,
+                                                      boolean isBaseline )
     {
         Objects.requireNonNull( left );
 
@@ -740,6 +745,28 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
         }
 
+        // Log the number of time-series available for pairing and the number of paried time-series created
+        if ( LOGGER.isDebugEnabled() )
+        {
+            SampleMetadata metaToReport = this.metadata;
+
+            String clarify = "";
+
+            if ( isBaseline )
+            {
+                metaToReport = this.baselineMetadata;
+                clarify = "baseline ";
+            }
+
+            LOGGER.debug( "While creating {}pool {}, discovered {} left time-series and {} right time-series from "
+                          + "which to create pairs. Created {} paired time-series from these inputs.",
+                          clarify,
+                          metaToReport,
+                          left.size(),
+                          right.size(),
+                          returnMe.size() );
+        }
+        
         return Collections.unmodifiableList( returnMe );
     }
 
@@ -977,9 +1004,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      */
 
     private TimeScaleOuter getDesiredTimeScale( List<TimeSeries<L>> leftData,
-                                           List<TimeSeries<R>> rightData,
-                                           List<TimeSeries<R>> baselineData,
-                                           Inputs inputDeclaration )
+                                                List<TimeSeries<R>> rightData,
+                                                List<TimeSeries<R>> baselineData,
+                                                Inputs inputDeclaration )
     {
         if ( Objects.nonNull( this.desiredTimeScale ) )
         {
@@ -1036,7 +1063,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             if ( Objects.nonNull( inputDeclaration.getBaseline() )
                  && Objects.nonNull( inputDeclaration.getBaseline().getExistingTimeScale() ) )
             {
-                declaredExistingTimeScales.add( TimeScaleOuter.of( inputDeclaration.getBaseline().getExistingTimeScale() ) );
+                declaredExistingTimeScales.add( TimeScaleOuter.of( inputDeclaration.getBaseline()
+                                                                                   .getExistingTimeScale() ) );
             }
 
             if ( !declaredExistingTimeScales.isEmpty() )
@@ -1432,9 +1460,9 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             // Snip datetimes first, because lead durations are only snipped with respect to 
             // the ReferenceTimeType.T0            
             TimeWindowOuter partialSnip = TimeWindowOuter.of( snipTo.getEarliestReferenceTime(),
-                                                    snipTo.getLatestReferenceTime(),
-                                                    snipTo.getEarliestValidTime(),
-                                                    snipTo.getLatestValidTime() );
+                                                              snipTo.getLatestReferenceTime(),
+                                                              snipTo.getEarliestValidTime(),
+                                                              snipTo.getLatestValidTime() );
 
             LOGGER.debug( "Snipping paired time-series {} to the pool boundaries of {}.",
                           toSnip.hashCode(),
@@ -1493,12 +1521,12 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
                 // No reference times? Then consolidate into one series
                 if ( referenceTimes.isEmpty() )
-                {                    
+                {
                     consolidatedbuilder.addEvents( next.getEvents() );
                     consolidatedbuilder.setMetadata( localMetadata );
 
                     this.validateMetadataMatchesForConsolidatedTimeSeries( previousMetadata, localMetadata );
-                    
+
                     previousMetadata = localMetadata;
                     countAdded++;
                 }
@@ -1528,7 +1556,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         return Collections.unmodifiableList( returnMe );
     }
-    
+
     /**
      * Throws an exception if the metadata instances are both non-null and do not match.
      * 

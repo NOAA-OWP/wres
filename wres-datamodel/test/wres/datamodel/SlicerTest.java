@@ -696,6 +696,85 @@ public final class SlicerTest
     }
 
     @Test
+    public void testSortStatisticsByTimeWindowAndThreshold()
+    {
+        // Populate a list of outputs
+        SampleMetadata metadata = SampleMetadata.of();
+
+        TimeWindowOuter windowOne =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+
+        TimeWindowOuter windowTwo =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+
+        TimeWindowOuter windowThree =
+                TimeWindowOuter.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+
+        OneOrTwoThresholds thresholdOne =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
+        OneOrTwoThresholds thresholdTwo =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
+        OneOrTwoThresholds thresholdThree =
+                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
+                                                          Operator.GREATER,
+                                                          ThresholdDataType.LEFT ) );
+
+        DoubleScoreStatistic one =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BIAS_FRACTION ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.1 )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                    .build();
+
+        DoubleScoreStatistic two =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BIAS_FRACTION ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.2 )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                    .build();
+
+        DoubleScoreStatistic three =
+                DoubleScoreStatistic.newBuilder()
+                                    .setMetric( DoubleScoreMetric.newBuilder()
+                                                                 .setName( MetricName.BIAS_FRACTION ) )
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.3 )
+                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                    .build();
+
+        List<DoubleScoreStatisticOuter> unorderedStatistics =
+                List.of( DoubleScoreStatisticOuter.of( three,
+                                                       SampleMetadata.of( metadata,
+                                                                          windowThree,
+                                                                          thresholdThree ) ),
+                         DoubleScoreStatisticOuter.of( one,
+                                                       SampleMetadata.of( metadata,
+                                                                          windowOne,
+                                                                          thresholdOne ) ),
+                         DoubleScoreStatisticOuter.of( two,
+                                                       SampleMetadata.of( metadata,
+                                                                          windowTwo,
+                                                                          thresholdTwo ) ) );
+
+        List<DoubleScoreStatisticOuter> actual = Slicer.sortByTimeWindowAndThreshold( unorderedStatistics );
+
+        List<DoubleScoreStatisticOuter> expected = List.of( unorderedStatistics.get( 1 ),
+                                                            unorderedStatistics.get( 2 ),
+                                                            unorderedStatistics.get( 0 ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     public void testFilterListOfMetricOutputsWithNullListProducesNPE()
     {
         assertThrows( NullPointerException.class,

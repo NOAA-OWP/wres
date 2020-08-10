@@ -17,6 +17,7 @@ import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -36,8 +37,11 @@ import wres.vis.ChartEngineFactory.ChartType;
  */
 public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 {
+    private static final String LEGEND_TITLE = "legendTitle";
+    private static final String LEGEND_UNITS_TEXT = "legendUnitsText";
+    private static final String DIAGRAM_INSTANCE_DESCRIPTION = "diagramInstanceDescription";
     private static final String SPECIFY_NON_NULL_DURATION_UNITS = "Specify non-null duration units.";
-    private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( WRESArgumentProcessor.class );
     private static final String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
     private static final String LATEST_DATE_TO_TEXT = "latestDateToText";
     private static final String POOLING_WINDOW = "dataPoolingWindow";
@@ -129,12 +133,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         // Plot per pool? See: #62374
         if ( metricName.isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
         {
-            addArgument( "diagramInstanceDescription",
+            addArgument( DIAGRAM_INSTANCE_DESCRIPTION,
                          "and for Threshold " + meta.getThresholds() );
         }
         else
         {
-            addArgument( "diagramInstanceDescription",
+            addArgument( DIAGRAM_INSTANCE_DESCRIPTION,
                          "and at Lead Time "
                                                        + durationString
                                                        + " and for Threshold "
@@ -353,15 +357,15 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             legendUnitsText += " [" + meta.getMeasurementUnit() + "]";
         }
 
-        addArgument( "legendTitle", legendTitle );
-        addArgument( "legendUnitsText", legendUnitsText );
+        addArgument( LEGEND_TITLE, legendTitle );
+        addArgument( LEGEND_UNITS_TEXT, legendUnitsText );
         if ( plotTimeWindow != null )
         {
             String durationString =
                     TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadDuration(), this.getDurationUnits() )
                                     + " "
                                     + this.getDurationUnits().name().toUpperCase();
-            addArgument( "diagramInstanceDescription", "at Lead Time " + durationString );
+            addArgument( DIAGRAM_INSTANCE_DESCRIPTION, "at Lead Time " + durationString );
             addArgument( "plotTitleVariable", "Thresholds" );
         }
     }
@@ -390,12 +394,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
 
         addArgument( "plotTitleSupplementary", supplementary );
-        addArgument( "legendTitle", "Lead Time" );
-        addArgument( "legendUnitsText", " [" + this.getDurationUnits().name().toUpperCase() + "]" );
+        addArgument( LEGEND_TITLE, "Lead Time" );
+        addArgument( LEGEND_UNITS_TEXT, " [" + this.getDurationUnits().name().toUpperCase() + "]" );
 
         if ( threshold != null )
         {
-            addArgument( "diagramInstanceDescription",
+            addArgument( DIAGRAM_INSTANCE_DESCRIPTION,
                          "and for Threshold " + threshold.toString() );
             addArgument( "plotTitleVariable", "Lead Times" );
         }
@@ -417,14 +421,14 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                   .getEarliestLeadDuration()
                   .equals( meta.getTimeWindow().getLatestLeadDuration() ) )
         {
-            addArgument( "legendTitle", "Lead time window " + durationUnitsString + ", Threshold " );
+            addArgument( LEGEND_TITLE, "Lead time window " + durationUnitsString + ", Threshold " );
         }
         else
         {
 
-            addArgument( "legendTitle", "Lead time " + durationUnitsString + ", Threshold " );
+            addArgument( LEGEND_TITLE, "Lead time " + durationUnitsString + ", Threshold " );
         }
-        addArgument( "legendUnitsText", "[" + meta.getMeasurementUnit() + "]" );
+        addArgument( LEGEND_UNITS_TEXT, "[" + meta.getMeasurementUnit() + "]" );
     }
 
     /**
@@ -444,25 +448,45 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     public <T extends Statistic<?>> void addTimeToPeakArguments( List<T> displayedPlotInput )
     {
         SampleMetadata meta = displayedPlotInput.get( 0 ).getMetadata();
-        addArgument( "legendTitle", "Threshold " );
-        addArgument( "legendUnitsText", "[" + meta.getMeasurementUnit() + "]" );
+        addArgument( LEGEND_TITLE, "Threshold " );
+        addArgument( LEGEND_UNITS_TEXT, "[" + meta.getMeasurementUnit() + "]" );
     }
 
     /**
      * Adds arguments related to the baseline forecasts for skill scores.
      * @param meta the output metadata
+     * @param metric the metric
      */
-    public void addBaselineArguments( SampleMetadata meta )
+    public void addBaselineArguments( SampleMetadata meta, MetricConstants metric )
     {
         Objects.requireNonNull( meta );
 
-        String baselineSuffix = meta.getEvaluation()
-                                    .getBaselineDataName();
-        if ( !baselineSuffix.isBlank() )
+        // TODO: need a less brittle way to identify skill measures that have used a default baseline vs. an explicit 
+        // one because a pool that includes an explicit baseline may have been used or not used for specific measures.
+        if ( metric.isSkillMetric()
+             && !metric.isInGroup( SampleDataGroup.DICHOTOMOUS )
+             && metric != MetricConstants.KLING_GUPTA_EFFICIENCY )
         {
+
+            String baselineSuffix = meta.getEvaluation()
+                                        .getBaselineDataName();
+            
+            // Skill scores for baseline use a default reference, which is climatology
+            // This is also potentially brittle, so consider a better way, such as adding the default baseline
+            // name into the evaluation description
+            if ( meta.getPool().getIsBaselinePool() )
+            {
+                baselineSuffix = meta.getEvaluation().getDefaultBaseline().name().replace( "_", " " );
+            }
+            
             baselineSuffix = " Against Predictions From " + baselineSuffix;
+
+            addArgument( "baselineLabelSuffix", baselineSuffix );
         }
-        addArgument( "baselineLabelSuffix", baselineSuffix );
+        else
+        {
+            addArgument( "baselineLabelSuffix", "" );
+        }
     }
 
     /**
@@ -517,8 +541,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         if ( dateInstant == null )
         {
-            LOGGER.warn( "Date for argument function " + argument.getArgumentName()
-                         + " is not provided with plotting meta data." );
+            LOGGER.warn( "Date for argument function {} is not provided with plotting meta data.",
+                         argument.getArgumentName() );
             return null;
         }
         if ( argument.getFunctionParameterValues().size() == 2 )
@@ -601,7 +625,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             return new String[] { "date format", "time zone" };
         }
-        return null;
+        return new String[] {};
     }
 
 

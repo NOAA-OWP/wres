@@ -55,7 +55,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     /**
      * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit} of 
-     * {@link MeasurementUnit#DIMENSIONLESS}.
+     * {@link MeasurementUnit#DIMENSIONLESS} and a default pool, {@link Pool#getDefaultInstance()}.
      * 
      * @return a {@link SampleMetadata} object
      */
@@ -463,11 +463,11 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         }
 
         LeftOrRightOrBaseline localContext = LeftOrRightOrBaseline.RIGHT;
-        
+
         String variableName = this.getEvaluation().getLeftVariableName();
         String scenario = null;
         String baselineScenario = null;
-        
+
         if ( variableName.isBlank() && !this.getEvaluation().getRightVariableName().isBlank() )
         {
             variableName = this.getEvaluation().getRightVariableName();
@@ -476,20 +476,26 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         if ( this.getPool().getIsBaselinePool() )
         {
             localContext = LeftOrRightOrBaseline.BASELINE;
-            
+
             // Use the baseline variable name for a baseline pool
             if ( !this.getEvaluation().getBaselineVariableName().isBlank() )
             {
                 variableName = this.getEvaluation().getBaselineVariableName();
             }
+            
+            // Use the baseline scenario name for a baseline pool
+            if ( !this.getEvaluation().getBaselineDataName().isBlank() )
+            {
+                scenario = this.getEvaluation().getBaselineDataName();
+            }
         }
 
-        if ( !this.getEvaluation().getRightDataName().isBlank() )
+        if ( Objects.isNull( scenario ) )
         {
             scenario = this.getEvaluation().getRightDataName();
         }
 
-        if ( !this.getEvaluation().getBaselineDataName().isBlank() )
+        if ( !this.getEvaluation().getBaselineDataName().isBlank() && !this.getPool().getIsBaselinePool() )
         {
             baselineScenario = this.getEvaluation().getBaselineDataName();
         }

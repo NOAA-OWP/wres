@@ -40,6 +40,7 @@ import wres.datamodel.time.TimeSeriesPairer.TimePairingType;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.events.Evaluation;
 import wres.io.config.ConfigHelper;
@@ -358,7 +359,7 @@ public class PoolFactory
                                                   LeftOrRightOrBaseline leftOrRightOrBaseline )
     {        
         Pool pool = MessageFactory.parse( featureTuple,
-                                          null,
+                                          TimeWindowOuter.of(),  // Default to start with
                                           desiredTimeScale,
                                           null,
                                           leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );

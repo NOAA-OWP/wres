@@ -116,12 +116,6 @@ public class BrierSkillScore extends BrierScore
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
-    @Override
     public boolean isProper()
     {
         return false;

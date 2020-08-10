@@ -1,7 +1,10 @@
 package wres.events;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -10,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -21,6 +25,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -168,6 +173,9 @@ public class EvaluationTest
 
             // Success
             evaluationOne.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            evaluationOne.await();
         }
 
         // Make assertions about the internal subscriptions
@@ -231,6 +239,10 @@ public class EvaluationTest
 
             // Success
             evaluationTwo.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            evaluationOne.await();
+            evaluationTwo.await();
         }
 
         List<wres.statistics.generated.Evaluation> expectedEvaluations =
@@ -281,6 +293,9 @@ public class EvaluationTest
 
             // Success
             evaluationOne.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            evaluationOne.await();
         }
 
         List<wres.statistics.generated.Evaluation> expectedEvaluations =
@@ -313,7 +328,7 @@ public class EvaluationTest
                                                     consumerGroup );
 
         // Stop the evaluation
-        evaluationOne.stopOnException( new Exception( "an exception" ) );
+        evaluationOne.stop( new Exception( "an exception" ) );
 
         EvaluationStatus message = EvaluationStatus.getDefaultInstance();
         assertThrows( IllegalStateException.class, () -> evaluationOne.publish( message ) );
@@ -375,6 +390,9 @@ public class EvaluationTest
 
             // Success
             evaluation.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            evaluation.await();
         }
 
         assertEquals( featureCount, actualAggregatedStatistics.size() );
@@ -460,6 +478,9 @@ public class EvaluationTest
 
             // Success
             evaluation.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            evaluation.await();
         }
 
         // Make some assertions
@@ -491,19 +512,16 @@ public class EvaluationTest
         List<Pairs> expectedPairs = List.of( this.somePairs, this.somePairs );
         assertEquals( expectedPairs, actualPairs );
     }
-    
+
     @Test
     public void testEmptyEvaluation() throws IOException
     {
         // Create the consumers
         // Create a container for all the consumers
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( consume -> {
-                } )
-                                       .addEvaluationConsumer( consume -> {
-                                       } )
-                                       .addStatisticsConsumer( consume -> {
-                                       } )
+                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
+                                       .addEvaluationConsumer( Function.identity()::apply )
+                                       .addStatisticsConsumer( Function.identity()::apply )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -514,17 +532,13 @@ public class EvaluationTest
             evaluation = Evaluation.open( this.oneEvaluation,
                                           EvaluationTest.connections,
                                           consumerGroup );
-            
+
             // Notify publication done, even though nothing published, as this 
             // has the expected message count
             evaluation.markPublicationCompleteReportedSuccess();
-        }
-        catch ( EvaluationEventException e )
-        {
-            if( Objects.nonNull( evaluation ) )
-            {
-                evaluation.stopOnException( e );
-            }
+
+            // Wait for the evaluation to complete
+            evaluation.await();
         }
         finally
         {
@@ -535,8 +549,149 @@ public class EvaluationTest
                 exitCode = evaluation.getExitCode();
             }
         }
-        
+
         assertEquals( (Integer) 0, exitCode );
+    }
+
+    @Test
+    public void testEvaluationWithUnrecoverableConsumerException() throws IOException
+    {
+        // Create a statistics consumer that fails always, together with some no-op consumers for other message types
+        Consumers consumerGroup =
+                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
+                                       .addEvaluationConsumer( Function.identity()::apply )
+                                       .addStatisticsConsumer( consume -> {
+                                           throw new ConsumerException( "Consumption failed!" );
+                                       } )
+                                       .build();
+
+        // Open an evaluation, closing on completion
+        Evaluation evaluation = null;
+        EvaluationFailedToCompleteException actualException = null;
+        try
+        {
+            evaluation = Evaluation.open( this.oneEvaluation,
+                                          EvaluationTest.connections,
+                                          consumerGroup );
+
+            // Publish a statistics message, which fails to be consumed after retries
+            evaluation.publish( Statistics.getDefaultInstance() );
+
+            // Notify publication done
+            evaluation.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            evaluation.await();
+        }
+        // All recovery attempts exhausted and now an exception is caught
+        catch ( EvaluationFailedToCompleteException e )
+        {
+            // No clean-up to do here, just flag the expected exception
+            actualException = e;
+        }
+        finally
+        {
+            // Close the evaluation
+            if ( Objects.nonNull( evaluation ) )
+            {
+                evaluation.close();
+            }
+        }
+
+        // Assert that the evaluation failed and that an expected exception was caught
+        assertNotEquals( 0, evaluation.getExitCode() );
+        assertNotNull( actualException );
+        assertTrue( actualException.getMessage()
+                                   .contains( "discovered undeliverable messages after repeated delivery attempts" ) );
+    }
+
+    @Test
+    public void testEvaluationWithRecoverableConsumerException() throws IOException
+    {
+        // Create a statistics consumer that fails one time only, together with some no-op consumers for other types
+        AtomicInteger failureCount = new AtomicInteger();
+        Consumers consumerGroup =
+                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
+                                       .addEvaluationConsumer( Function.identity()::apply )
+                                       .addStatisticsConsumer( statistics -> {
+                                           if ( failureCount.getAndIncrement() < 1 )
+                                           {
+                                               throw new ConsumerException( "Consumption failed!" );
+                                           }
+                                       } )
+                                       .build();
+
+        // Open an evaluation, closing on completion
+        try ( Evaluation evaluation = Evaluation.open( this.oneEvaluation,
+                                                       EvaluationTest.connections,
+                                                       consumerGroup ) )
+        {
+            // Publish a statistics message, triggering one failed consumption followed by recovery
+            evaluation.publish( Statistics.getDefaultInstance() );
+
+            // Notify publication complete
+            evaluation.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            int exitCode = evaluation.await();
+
+            // Assert that the evaluation succeeded
+            assertEquals( 0, exitCode );
+        }
+    }
+
+    @Test
+    public void testEvaluationWithUnrecoverablePublisherException() throws IOException
+    {
+        // Create the consumers
+        // Create a container for all the consumers
+        Consumers consumerGroup =
+                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
+                                       .addEvaluationConsumer( Function.identity()::apply )
+                                       .addStatisticsConsumer( Function.identity()::apply )
+                                       .build();
+
+        // Open an evaluation, closing on completion
+        Evaluation evaluation = null;
+        AtomicInteger exitCode = new AtomicInteger();
+        try
+        {
+            evaluation = Evaluation.open( this.oneEvaluation,
+                                          EvaluationTest.connections,
+                                          consumerGroup );
+
+            Statistics mockedStatistics = Mockito.mock( Statistics.class );
+            Mockito.when( mockedStatistics.toByteArray() )
+                   .thenThrow( new IllegalArgumentException( "An exception." ) );
+
+            // Publish one good message
+            evaluation.publish( Statistics.getDefaultInstance() );
+
+            // Publish one bad message
+            evaluation.publish( mockedStatistics );
+
+            // Notify publication done
+            evaluation.markPublicationCompleteReportedSuccess();
+
+            // Wait for the evaluation to complete
+            evaluation.await();
+        }
+        // Catch the exception thrown
+        catch ( IllegalArgumentException e )
+        {
+            evaluation.stop( e );
+            exitCode.set( evaluation.getExitCode() );
+        }
+        finally
+        {
+            // Close the evaluation
+            if ( Objects.nonNull( evaluation ) )
+            {
+                evaluation.close();
+            }
+        }
+
+        assertNotEquals( 0, exitCode.get() );
     }
 
     /**

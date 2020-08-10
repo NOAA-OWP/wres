@@ -38,7 +38,6 @@ import wres.control.ProcessorHelper.Executors;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.system.DatabaseConnectionSupplier;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -267,9 +266,9 @@ public class Control implements Function<String[], Integer>,
         ScheduledExecutorService monitoringService = new ScheduledThreadPoolExecutor( 1 );
 
         Database database = this.getDatabase();
-        Executor ingestExecutor = this.getExecutor();
+        Executor ioExecutor = this.getExecutor();
         QueueMonitor queueMonitor = new QueueMonitor( database,
-                                                      executor,
+                                                      ioExecutor,
                                                       featureQueue,
                                                       pairQueue,
                                                       thresholdQueue,
@@ -287,7 +286,7 @@ public class Control implements Function<String[], Integer>,
             lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
             // Reduce our set of executors to one object
-            Executors executors = new Executors( ingestExecutor,
+            Executors executors = new Executors( ioExecutor,
                                                  featureExecutor,
                                                  pairExecutor,
                                                  thresholdExecutor,
@@ -311,10 +310,9 @@ public class Control implements Function<String[], Integer>,
                                                        this.getBrokerConnections() );
 
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
-            LOGGER.info( "Wrote the following output: {}", this.pathsWrittenTo );
             lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
-        catch ( WresProcessingException | IOException | NoDataException | SQLException internalException )
+        catch ( WresProcessingException | IOException | SQLException internalException )
         {
             String message = "Could not complete project execution";
             LOGGER.error( "{} due to:", message, internalException );

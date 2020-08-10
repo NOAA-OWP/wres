@@ -101,12 +101,6 @@ public class PeirceSkillScore extends ContingencyTableScore
         return MetricConstants.PEIRCE_SKILL_SCORE;
     }
 
-    @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
     /**
      * Computes the score for the 2x2 contingency table.
      * 

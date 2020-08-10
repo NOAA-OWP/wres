@@ -130,12 +130,6 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<SampleData<P
         return false;
     }
 
-    @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
     /**
      * Hidden constructor.
      */

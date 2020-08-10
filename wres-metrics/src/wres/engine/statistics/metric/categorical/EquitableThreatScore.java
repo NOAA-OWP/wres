@@ -114,12 +114,6 @@ public class EquitableThreatScore extends ContingencyTableScore
         return MetricConstants.EQUITABLE_THREAT_SCORE;
     }
 
-    @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
     /**
      * Hidden constructor.
      */

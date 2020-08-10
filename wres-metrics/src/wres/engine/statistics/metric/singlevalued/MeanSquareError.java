@@ -85,12 +85,6 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_SQUARE_ERROR;

@@ -147,12 +147,6 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return true;
-    }
-
-    @Override
     public boolean hasRealUnits()
     {
         return false;

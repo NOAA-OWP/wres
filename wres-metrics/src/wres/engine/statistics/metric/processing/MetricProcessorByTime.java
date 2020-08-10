@@ -325,7 +325,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
                 break;
 
             case DIAGRAM:
-                futures.addMultiVectorOutput( this.processSingleValuedPairs( input,
+                futures.addDiagramOutput( this.processSingleValuedPairs( input,
                                                                              this.singleValuedMultiVector,
                                                                              ignoreTheseMetrics ) );
                 break;

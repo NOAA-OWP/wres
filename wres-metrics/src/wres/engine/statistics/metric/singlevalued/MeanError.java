@@ -44,12 +44,6 @@ public class MeanError extends DoubleErrorScore<SampleData<Pair<Double,Double>>>
     }
 
     @Override
-    public boolean isSkillScore()
-    {
-        return false;
-    }
-
-    @Override
     public MetricConstants getMetricName()
     {
         return MetricConstants.MEAN_ERROR;

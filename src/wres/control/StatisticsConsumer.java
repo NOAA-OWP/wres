@@ -29,6 +29,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.GraphicalType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
@@ -46,8 +47,10 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
+import wres.events.ConsumerException;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedStatisticsWriters;
+import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDurationDiagramWriter;
@@ -59,6 +62,7 @@ import wres.io.writing.png.PNGDurationScoreWriter;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
@@ -77,7 +81,7 @@ import wres.system.SystemSettings;
  * condition on {@link StatisticType} and {@link DestinationType}.</p>.
  * 
  * <p>TODO: break apart this large consumer into separate consumers for each output format. Eventually, these consumers
- * should be delivered in their own microservices.
+ * should be implemented in their own microservices.
  * 
  * @author james.brown@hydrosolved.com
  * @author jesse.bickel@***REMOVED***
@@ -238,20 +242,73 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * Produces graphical and numerical output for each type available in the input.
      * 
      * @param statistics the list of statistics
-     * @throws WresProcessingException if the outputs could not be written
-     * @throws NullPointerException if the input is null
+     * @throws ConsumerException if consumption fails for any reason
      */
 
     @Override
     public void accept( Collection<Statistics> statistics )
     {
+        if ( Objects.isNull( statistics ) )
+        {
+            throw new ConsumerException( "Cannot consumer null statistics." );
+        }
+
+        try
+        {
+            // Split the statistics into two groups as there may be separate statistics for a baseline
+            Function<? super Statistics, ? extends LeftOrRightOrBaseline> classifier = statistic -> {
+                if ( !statistic.hasPool() && statistic.hasBaselinePool() )
+                {
+                    return LeftOrRightOrBaseline.BASELINE;
+                }
+
+                return LeftOrRightOrBaseline.RIGHT;
+            };
+
+            Map<LeftOrRightOrBaseline, List<Statistics>> groups =
+                    statistics.stream()
+                              .collect( Collectors.groupingBy( classifier ) );
+
+            // Iterate the types
+            groups.forEach( ( ( a, b ) -> this.acceptInner( b, a == LeftOrRightOrBaseline.BASELINE ) ) );
+        }
+        // Better to throw a common type here as a JMS MessageListener is expected to handle all exceptions
+        // and it is better to aggregate them into one type than to catch a generic java.lang.Exception in 
+        // a MessageListener. It is possible that other types could occur, which could make the application
+        // hang on failing to consume all expected messages. This only applies to internal consumers that 
+        // can break the flow with exceptions. Eventually, all consumers will be external. 
+        catch ( NullPointerException | WresProcessingException | WriteException | ProjectConfigException e )
+        {
+            throw new ConsumerException( "While consuming evaluation statistics.", e );
+        }
+    }
+
+    /**
+     * Accept some statistics for consumption.
+     * @param statistics the statistics
+     * @param isBaselinePool is true if the statistics refer to a baseline pool (when generating separate statistics 
+     *            for both a main pool and baseline pool).
+     * @throws NullPointerException if the statistics are null
+     */
+
+    public void acceptInner( Collection<Statistics> statistics, boolean isBaselinePool )
+    {
         Objects.requireNonNull( statistics );
+
+        // Supplies the pool metadata from either the baseline pool or the main pool
+        Function<Statistics, Pool> poolSupplier = statistic -> {
+            if ( isBaselinePool )
+            {
+                return statistic.getBaselinePool();
+            }
+            return statistic.getPool();
+        };
 
         // Diagram output available
         if ( statistics.stream().anyMatch( next -> next.getDiagramsCount() > 0 ) )
         {
-            List<DiagramStatisticOuter> wrapped = this.getWrappedStatistics( statistics,
-                                                                             this.getDiagramMapper() );
+            List<DiagramStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
+                                                                                      this.getDiagramMapper( poolSupplier ) );
             this.processDiagramOutputs( wrapped );
         }
 
@@ -259,8 +316,9 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         if ( statistics.stream().anyMatch( next -> next.getOneBoxPerPairCount() > 0 ) )
         {
             Function<Statistics, List<BoxplotStatistic>> supplier = Statistics::getOneBoxPerPairList;
-            List<BoxplotStatisticOuter> wrapped = this.getWrappedStatistics( statistics,
-                                                                             this.getBoxplotMapper( supplier ) );
+            List<BoxplotStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
+                                                                                      this.getBoxplotMapper( supplier,
+                                                                                                             poolSupplier ) );
             this.processBoxPlotOutputsPerPair( wrapped );
         }
 
@@ -268,8 +326,9 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         if ( statistics.stream().anyMatch( next -> next.getOneBoxPerPoolCount() > 0 ) )
         {
             Function<Statistics, List<BoxplotStatistic>> supplier = Statistics::getOneBoxPerPoolList;
-            List<BoxplotStatisticOuter> wrapped = this.getWrappedStatistics( statistics,
-                                                                             this.getBoxplotMapper( supplier ) );
+            List<BoxplotStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
+                                                                                      this.getBoxplotMapper( supplier,
+                                                                                                             poolSupplier ) );
 
             this.processBoxPlotOutputsPerPool( wrapped );
         }
@@ -277,8 +336,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         // Ordinary scores available
         if ( statistics.stream().anyMatch( next -> next.getScoresCount() > 0 ) )
         {
-            List<DoubleScoreStatisticOuter> wrapped = this.getWrappedStatistics( statistics,
-                                                                                 this.getDoubleScoreMapper() );
+            List<DoubleScoreStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
+                                                                                          this.getDoubleScoreMapper( poolSupplier ) );
 
             this.processDoubleScoreOutputs( wrapped );
         }
@@ -286,8 +345,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         // Duration scores available
         if ( statistics.stream().anyMatch( next -> next.getDurationScoresCount() > 0 ) )
         {
-            List<DurationScoreStatisticOuter> wrapped = this.getWrappedStatistics( statistics,
-                                                                                   this.getDurationScoreMapper() );
+            List<DurationScoreStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
+                                                                                            this.getDurationScoreMapper( poolSupplier ) );
 
             this.processDurationScoreOutputs( wrapped );
         }
@@ -295,8 +354,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         // Duration diagrams available
         if ( statistics.stream().anyMatch( next -> next.getDurationDiagramsCount() > 0 ) )
         {
-            List<DurationDiagramStatisticOuter> wrapped = this.getWrappedStatistics( statistics,
-                                                                                     this.getDurationDiagramMapper() );
+            List<DurationDiagramStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
+                                                                                              this.getDurationDiagramMapper( poolSupplier ) );
 
             this.processDurationDiagramStatistic( wrapped );
         }
@@ -309,37 +368,45 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     }
 
     /**
-     * Returns wrapped statistics from unwrapped statistics.
+     * <p>Returns wrapped statistics from unwrapped statistics. Additionally sort the statistics by time window and 
+     * threshold. a
+     *
+     * <p>Some of the existing consumers, notably the PNG consumers, currently assume that the statistics are sorted. 
+     * The consumers should probably not make this assumption, else it should be clear in the API.
      * 
      * @param <W> the wrapped statistic type
      * @param statistics the statistics
      * @param mapper the supplier of unwrapped statistics from a bucket of many types
-     * @return wrapped statistics 
+     * @return the wrapped and sorted statistics 
      */
 
-    private <W> List<W> getWrappedStatistics( Collection<Statistics> statistics,
-                                              Function<Statistics, List<W>> mapper )
+    private <W extends Statistic<?>> List<W> getWrappedAndSortedStatistics( Collection<Statistics> statistics,
+                                                                            Function<Statistics, List<W>> mapper )
     {
-        return statistics.stream()
-                         .map( mapper )
-                         .flatMap( List::stream )
-                         .collect( Collectors.toUnmodifiableList() );
+        List<W> wrapped = statistics.stream()
+                                    .map( mapper )
+                                    .flatMap( List::stream )
+                                    .collect( Collectors.toUnmodifiableList() );
+
+        return Slicer.sortByTimeWindowAndThreshold( wrapped );
     }
 
     /**
      * Returns a mapper function that maps between raw statistics and wrapped diagrams.
      * 
+     * @param poolSupplier the pool supplier
      * @return the mapper
      */
 
-    private Function<Statistics, List<DiagramStatisticOuter>> getDiagramMapper()
+    private Function<Statistics, List<DiagramStatisticOuter>>
+            getDiagramMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DiagramStatistic> diagrams = someStats.getDiagramsList();
             Function<DiagramStatistic, DiagramStatisticOuter> innerMapper =
                     nextDiagram -> DiagramStatisticOuter.of( nextDiagram,
                                                              SampleMetadata.of( this.getEvaluationDescription(),
-                                                                                someStats.getPool() ) );
+                                                                                poolSupplier.apply( someStats ) ) );
             return diagrams.stream()
                            .map( innerMapper )
                            .collect( Collectors.toUnmodifiableList() );
@@ -350,18 +417,20 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * Returns a mapper function that maps between raw statistics and wrapped boxplot statistics.
      * 
      * @param supplier the supplier of boxplot statistics
+     * @param poolSupplier the pool supplier
      * @return the mapper
      */
 
     private Function<Statistics, List<BoxplotStatisticOuter>>
-            getBoxplotMapper( Function<Statistics, List<BoxplotStatistic>> supplier )
+            getBoxplotMapper( Function<Statistics, List<BoxplotStatistic>> supplier,
+                              Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<BoxplotStatistic> boxes = supplier.apply( someStats );
             Function<BoxplotStatistic, BoxplotStatisticOuter> innerMapper =
                     nextBoxplot -> BoxplotStatisticOuter.of( nextBoxplot,
                                                              SampleMetadata.of( this.getEvaluationDescription(),
-                                                                                someStats.getPool() ) );
+                                                                                poolSupplier.apply( someStats ) ) );
             return boxes.stream()
                         .map( innerMapper )
                         .collect( Collectors.toUnmodifiableList() );
@@ -371,17 +440,19 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     /**
      * Returns a mapper function that maps between raw statistics and wrapped double scores.
      * 
+     * @param poolSupplier the pool supplier
      * @return the mapper
      */
 
-    private Function<Statistics, List<DoubleScoreStatisticOuter>> getDoubleScoreMapper()
+    private Function<Statistics, List<DoubleScoreStatisticOuter>>
+            getDoubleScoreMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DoubleScoreStatistic> scores = someStats.getScoresList();
             Function<DoubleScoreStatistic, DoubleScoreStatisticOuter> innerMapper =
                     nextScore -> DoubleScoreStatisticOuter.of( nextScore,
                                                                SampleMetadata.of( this.getEvaluationDescription(),
-                                                                                  someStats.getPool() ) );
+                                                                                  poolSupplier.apply( someStats ) ) );
             return scores.stream()
                          .map( innerMapper )
                          .collect( Collectors.toUnmodifiableList() );
@@ -391,17 +462,19 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     /**
      * Returns a mapper function that maps between raw statistics and wrapped duration scores.
      * 
+     * @param poolSupplier the pool supplier
      * @return the mapper
      */
 
-    private Function<Statistics, List<DurationScoreStatisticOuter>> getDurationScoreMapper()
+    private Function<Statistics, List<DurationScoreStatisticOuter>>
+            getDurationScoreMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DurationScoreStatistic> scores = someStats.getDurationScoresList();
             Function<DurationScoreStatistic, DurationScoreStatisticOuter> innerMapper =
                     nextScore -> DurationScoreStatisticOuter.of( nextScore,
                                                                  SampleMetadata.of( this.getEvaluationDescription(),
-                                                                                    someStats.getPool() ) );
+                                                                                    poolSupplier.apply( someStats ) ) );
             return scores.stream()
                          .map( innerMapper )
                          .collect( Collectors.toUnmodifiableList() );
@@ -411,17 +484,19 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     /**
      * Returns a mapper function that maps between raw statistics and wrapped duration scores.
      * 
+     * @param poolSupplier the pool supplier
      * @return the mapper
      */
 
-    private Function<Statistics, List<DurationDiagramStatisticOuter>> getDurationDiagramMapper()
+    private Function<Statistics, List<DurationDiagramStatisticOuter>>
+            getDurationDiagramMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DurationDiagramStatistic> diagrams = someStats.getDurationDiagramsList();
             Function<DurationDiagramStatistic, DurationDiagramStatisticOuter> innerMapper =
                     nextDiagram -> DurationDiagramStatisticOuter.of( nextDiagram,
                                                                      SampleMetadata.of( this.getEvaluationDescription(),
-                                                                                        someStats.getPool() ) );
+                                                                                        poolSupplier.apply( someStats ) ) );
             return diagrams.stream()
                            .map( innerMapper )
                            .collect( Collectors.toUnmodifiableList() );
@@ -450,7 +525,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             paths.addAll( supplierOfPaths.get() );
         }
 
-        LOGGER.debug( "Returning paths from ProductProcessor {}: {}", this, paths );
+        LOGGER.debug( "Returning paths from {} {}: {}", this.getClass().getName(), this, paths );
         return Collections.unmodifiableSet( paths );
     }
 
@@ -772,7 +847,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * Processes {@link Statistics} for consumers of all statistics.
      * 
      * @param statistics the statistics to consume
-     * @throws InterruptedException if the parsing was interrupted
      * @throws NullPointerException if the input is null
      */
 

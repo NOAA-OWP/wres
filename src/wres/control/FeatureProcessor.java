@@ -2,6 +2,7 @@ package wres.control;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.function.BiPredicate;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -17,13 +18,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
-import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.Executors;
 import wres.control.ProcessorHelper.SharedWriters;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.Builder;
@@ -32,13 +33,12 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.events.Evaluation;
-import wres.io.config.ConfigHelper;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
-import wres.system.SystemSettings;
 import wres.util.IterationFailedException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
+import wres.statistics.generated.Statistics;
 
 /**
  * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeatureTuple}.
@@ -82,9 +82,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     /**
      * The evaluation description.
      */
-    
+
     private final Evaluation evaluation;
-    
+
     /**
      * The executors services.
      */
@@ -138,7 +138,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.executors = executors;
         this.sharedWriters = sharedWriters;
         this.evaluation = evaluation;
-        
+
         // Error message
         errorMessage = "While processing feature " + feature;
     }
@@ -192,7 +192,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                          this.executors.getMetricExecutor() );
 
                 return this.processFeature( this.evaluation,
-                                            this.project.getSystemSettings(),
                                             projectConfig,
                                             processor,
                                             pools,
@@ -229,7 +228,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                              this.executors.getMetricExecutor() );
 
                 return this.processFeature( this.evaluation,
-                                            this.project.getSystemSettings(),
                                             projectConfig,
                                             processor,
                                             pools,
@@ -259,7 +257,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      */
 
     private <L, R> FeatureProcessingResult processFeature( Evaluation evaluation,
-                                                           SystemSettings systemSettings,
                                                            ProjectConfig projectConfig,
                                                            MetricProcessor<PoolOfPairs<L, R>> processor,
                                                            List<Supplier<PoolOfPairs<L, R>>> pools,
@@ -267,16 +264,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                            PairsWriter<L, R> baselineSampleWriter )
     {
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
-        final List<CompletableFuture<Set<Path>>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
-
-        // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
-        // a format that can be written incrementally
-        BiPredicate<StatisticType, DestinationType> onlyWriteTheseTypes =
-                ( type, format ) -> !processor.getMetricOutputTypesToCache().contains( type )
-                                    || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
+        List<CompletableFuture<Set<Path>>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
 
         // The union of statistics types for which statistics were actually produced
         Set<StatisticType> typesProduced = new HashSet<>();
+
+        // Something published?
+        AtomicBoolean published = new AtomicBoolean();
 
         try
         {
@@ -292,18 +286,24 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                          .thenApplyAsync( this.getStatisticsProcessingTask( processor, projectConfig ),
                                                           this.executors.getPairExecutor() )
                                          .thenApplyAsync( statistics -> {
-                                             ProduceOutputsFromStatistics outputProcessor =
-                                                     ProduceOutputsFromStatistics.of( systemSettings,
-                                                                                      this.resolvedProject,
-                                                                                      onlyWriteTheseTypes,
-                                                                                      this.sharedWriters.getStatisticsWriters() );
-                                             outputProcessor.accept( statistics );
-                                             outputProcessor.close();
+                                             
+                                             boolean success = this.publish( evaluation,
+                                                                             statistics,
+                                                                             this.getGroupId(),
+                                                                             processor.getMetricOutputTypesToCache() );
 
+                                             // Notify that something was published
+                                             // This is needed to confirm group completion - cannot complete a message
+                                             // group if nothing was published to it.
+                                             if( success )
+                                             {
+                                                 published.set( true );
+                                             }
+                                             
                                              // Register statistics produced
                                              typesProduced.addAll( statistics.getStatisticTypes() );
 
-                                             return outputProcessor.get();
+                                             return Collections.emptySet();
                                          },
                                                           this.executors.getProductExecutor() );
 
@@ -343,18 +343,32 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         {
             // Wait for completion of all data slices
             ProcessorHelper.doAllOrException( listOfFutures ).join();
+            
+            // Publish any end of pipeline/cached statistics and notify complete
+            if ( published.get() )
+            {
+                this.publish( evaluation,
+                              processor.getCachedMetricOutput(),
+                              this.getGroupId(),
+                              Collections.emptySet() );
+
+                // Notify consumers that all statistics for this group have been published
+                evaluation.markGroupPublicationCompleteReportedSuccess( this.getGroupId() );
+            }
         }
         catch ( CompletionException e )
         {
             // Otherwise, chain and propagate the exception up to the top.
             throw new WresProcessingException( this.errorMessage, e );
         }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            
+            throw new WresProcessingException( this.errorMessage, e );
+        }
 
-        // Generate cached output if available
-        Set<Path> endOfPipelinePaths = this.generateEndOfPipelineProducts( systemSettings,
-                                                                           processor );
-
-        Set<Path> paths = new HashSet<>( endOfPipelinePaths );
+        Set<Path> paths = new HashSet<>();
 
         // Unearth the Set<Path> inside listOfFutures now that join() was called
         // above.
@@ -369,6 +383,74 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         return new FeatureProcessingResult( this.feature,
                                             allPaths,
                                             !typesProduced.isEmpty() );
+    }
+
+    /**
+     * Publishes the statistics to an evaluation.
+     * 
+     * @param evaluation the evaluation
+     * @param statistics the statistics
+     * @param groupId the statistics group identifier
+     * @param a set of statistics types to ignore when publishing because they are cached and published later
+     * @return true if something was published, otherwise false
+     * @throws EvaluationEventException if the statistics could not be published
+     */
+
+    private boolean publish( Evaluation evaluation,
+                             StatisticsForProject statistics,
+                             String groupId,
+                             Set<StatisticType> ignore )
+    {
+        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( groupId );
+        Objects.requireNonNull( ignore );
+
+        boolean returnMe = false;
+
+        try
+        {
+            Collection<Statistics> publishMe = MessageFactory.parse( statistics, ignore );
+
+            for ( Statistics next : publishMe )
+            {
+                evaluation.publish( next, groupId );
+                returnMe = true;
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            throw new WresProcessingException( "Interrupted while completing evaluation "
+                                               + evaluation.getEvaluationId()
+                                               + ".",
+                                               e );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns the group identifier for the feature. The identifier is composed of the l/r/b feature names.
+     * 
+     * @return a group identifier
+     */
+
+    private String getGroupId()
+    {
+        String left = this.feature.getLeftName();
+        String right = this.feature.getRightName();
+        String baseline = this.feature.getBaselineName();
+
+        String returnMe = left + "-" + right;
+
+        if ( Objects.nonNull( baseline ) )
+        {
+            returnMe = returnMe + "-" + baseline;
+        }
+
+        return returnMe;
     }
 
     /**
@@ -437,7 +519,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             }
 
             StatisticsForProject statistics = processor.apply( pool );
-
+            
             // Compute separate statistics for the baseline?
             if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
             {
@@ -462,54 +544,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
             return statistics;
         };
-    }
-
-    /**
-     * Generates products at the end of the processing pipeline.
-     * 
-     * @param <L> the left data type
-     * @param <R> the right data type
-     * 
-     * @param processor the processor from which to obtain the inputs for product generation
-     * @return a set of paths written
-     */
-
-    private <L, R> Set<Path> generateEndOfPipelineProducts( SystemSettings systemSettings,
-                                                            MetricProcessor<PoolOfPairs<L, R>> processor )
-    {
-        if ( processor.hasCachedMetricOutput() )
-        {
-            try
-            {
-                // Determine the cached types
-                Set<StatisticType> cachedTypes = processor.getCachedMetricOutputTypes();
-
-                // Only process cached types that were not written incrementally
-                BiPredicate<StatisticType, DestinationType> nowWriteTheseTypes =
-                        ( type, format ) -> cachedTypes.contains( type )
-                                            && !ConfigHelper.getIncrementalFormats( this.resolvedProject.getProjectConfig() )
-                                                            .contains( format );
-                try ( // End of pipeline processor
-                      ProduceOutputsFromStatistics endOfPipeline =
-                              ProduceOutputsFromStatistics.of( systemSettings,
-                                                               this.resolvedProject,
-                                                               nowWriteTheseTypes,
-                                                               this.sharedWriters.getStatisticsWriters()) )
-                {
-                    // Generate output
-                    endOfPipeline.accept( processor.getCachedMetricOutput() );
-                    return endOfPipeline.get();
-                }
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-
-                throw new WresProcessingException( this.errorMessage, e );
-            }
-        }
-
-        return Collections.emptySet();
     }
 
 }
