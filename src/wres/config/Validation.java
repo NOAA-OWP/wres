@@ -12,9 +12,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.bind.ValidationEvent;
@@ -30,9 +34,11 @@ import wres.config.generated.DateCondition;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
+import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -49,7 +55,6 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.system.SystemSettings;
-import wres.util.Collections;
 
 
 /**
@@ -201,7 +206,7 @@ public class Validation
         Objects.requireNonNull( destinations, NON_NULL );
 
         // Look for a Netcdf Destination config that has a template that doesn't exist
-        DestinationConfig templateMissing = Collections.find(destinations,
+        DestinationConfig templateMissing = wres.util.Collections.find(destinations,
                                             destinationConfig ->
                                                     destinationConfig.getNetcdf() != null &&
                                                     destinationConfig.getNetcdf().getTemplatePath() != null &&
@@ -220,7 +225,7 @@ public class Validation
         }
 
         // Look for destinations that aren't for Netcdf but have netcdf specifications
-        Collection<DestinationConfig> incorrectDestinations = Collections.where(
+        Collection<DestinationConfig> incorrectDestinations = wres.util.Collections.where(
                 destinations,
                 config -> config.getType() != DestinationType.NETCDF && config.getNetcdf() != null
         );
@@ -683,6 +688,9 @@ public class Validation
             result = false;
         }
 
+        result = Validation.areFeaturesValid( pairConfig.getFeature() )
+                 && result;
+
         result = Validation.areDatesValid( projectConfigPlus,
                                            pairConfig.getDates() )
                  && result;
@@ -707,6 +715,130 @@ public class Validation
                  && result;
 
         return result;
+    }
+
+    private static boolean areFeaturesValid( List<Feature> features )
+    {
+        boolean valid = true;
+
+        List<String> leftRawNames = Validation.getFeatureNames( features,
+                                                                LeftOrRightOrBaseline.LEFT );
+        List<String> rightRawNames = Validation.getFeatureNames( features,
+                                                                 LeftOrRightOrBaseline.RIGHT );
+        List<String> baselineRawNames = getFeatureNames( features,
+                                                         LeftOrRightOrBaseline.BASELINE );
+        valid = Validation.validateFeatureNames( leftRawNames,
+                                                 LeftOrRightOrBaseline.LEFT )
+                && valid;
+        valid = Validation.validateFeatureNames( rightRawNames,
+                                                 LeftOrRightOrBaseline.RIGHT )
+                && valid;
+        valid = Validation.validateFeatureNames( baselineRawNames,
+                                                 LeftOrRightOrBaseline.BASELINE )
+                && valid;
+        return valid;
+    }
+
+    /**
+     * Get the raw list of features on left or right or baseline, including null
+     * and including blank, in order of the original features list given.
+     * @param features The declared list of features.
+     * @param leftOrRightOrBaseline Which declaration to get.
+     * @return A list of features including null and blank.
+     */
+
+    private static List<String> getFeatureNames( List<Feature> features,
+                                                 LeftOrRightOrBaseline leftOrRightOrBaseline )
+
+    {
+        List<String> allNames = new ArrayList<>( features.size() );
+
+        if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
+        {
+            for ( Feature feature : features )
+            {
+                allNames.add( feature.getLeft() );
+            }
+        }
+        else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.RIGHT ) )
+        {
+            for ( Feature feature : features )
+            {
+                allNames.add( feature.getRight() );
+            }
+        }
+        else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.BASELINE ) )
+        {
+            for ( Feature feature : features )
+            {
+                allNames.add( feature.getBaseline() );
+            }
+        }
+
+        return Collections.unmodifiableList( allNames );
+    }
+
+    private static boolean validateFeatureNames( List<String> names,
+                                                 LeftOrRightOrBaseline leftOrRightOrBaseline )
+    {
+        boolean isValid = true;
+        Set<String> distinctNames = new HashSet<>( names.size() );
+        Set<String> duplicateNames = new HashSet<>( 1 );
+        int nullCount = 0;
+        int blankCount = 0;
+
+        for ( String name : names )
+        {
+            if ( Objects.nonNull( name )
+                 && distinctNames.contains( name ) )
+            {
+                duplicateNames.add( name );
+            }
+            else if ( Objects.isNull( name ) )
+            {
+                // As long as there is a service declared, OK, but don't add to
+                // the Set.
+                nullCount++;
+            }
+            else if ( name.isBlank() )
+            {
+                blankCount++;
+            }
+            else
+            {
+                distinctNames.add( name );
+            }
+        }
+
+        if ( !duplicateNames.isEmpty() )
+        {
+            isValid = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                // TODO: Enhance WRES to make this statement no longer true.
+                LOGGER.warn( "Found multiple instances of these names on the {}: {}. {}",
+                             leftOrRightOrBaseline.value(),
+                             duplicateNames,
+                             "This version of WRES requires that a feature be declared no more than once." );
+            }
+        }
+
+        if ( blankCount > 0 )
+        {
+            isValid = false;
+
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( "Found {} blank feature name(s) on {}. Instead of {}{}",
+                             blankCount,
+                             leftOrRightOrBaseline.value(),
+                             leftOrRightOrBaseline.value(),
+                             "=\"\", omit the attribute altogether." );
+            }
+        }
+
+        return isValid;
     }
 
     private static boolean areDatesValid( ProjectConfigPlus projectConfigPlus,
