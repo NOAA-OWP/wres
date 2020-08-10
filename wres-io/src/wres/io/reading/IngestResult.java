@@ -42,7 +42,7 @@ public class IngestResult
         if ( surrogateKey == 0 )
         {
             LOGGER.warn( "Suspicious surrogate key id=0 given for dataSource={} with l/r/b={} foundAlready={} requiresRetry={}",
-                         dataSource, leftOrRightOrBaseline, leftOrRightOrBaseline, foundAlready, requiresRetry );
+                         dataSource, leftOrRightOrBaseline, foundAlready, requiresRetry );
         }
 
         if ( surrogateKey < 0 )
