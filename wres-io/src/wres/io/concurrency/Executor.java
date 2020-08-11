@@ -46,7 +46,7 @@ public class Executor {
     private ThreadPoolExecutor createService()
 	{
         ThreadFactory factory = new BasicThreadFactory.Builder()
-                .namingPattern( "Executor Thread %d" )
+                .namingPattern( "Normal Priority I/O Thread %d" )
                 .build();
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 systemSettings.maximumThreadCount(),
@@ -64,7 +64,7 @@ public class Executor {
 	private static ThreadPoolExecutor createHighPriorityService()
 	{
         ThreadFactory factory = new BasicThreadFactory.Builder()
-                .namingPattern( "High Priority Database Thread %d" )
+                .namingPattern( "High Priority I/O Thread %d" )
                 .build();
 		return (ThreadPoolExecutor) Executors.newFixedThreadPool(10, factory);
 	}

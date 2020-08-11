@@ -830,7 +830,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
                 this.getThresholdsByMetric().getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
-        // Dichotomous
+        // Multicategory
         if ( this.hasMetrics( SampleDataGroup.MULTICATEGORY ) )
         {
             MetricConstants[] check = this.getMetrics( SampleDataGroup.MULTICATEGORY, null );
@@ -848,7 +848,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             }
         }
 
-        // Multicategory
+        // Dichotomous
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
             MetricConstants[] check = this.getMetrics( SampleDataGroup.DICHOTOMOUS, null );

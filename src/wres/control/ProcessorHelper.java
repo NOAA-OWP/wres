@@ -142,9 +142,11 @@ class ProcessorHelper
                                                                   sharedWriters.getStatisticsWriters(),
                                                                   outputDirectory );
 
-        // Currently there are only logging consumers for both evaluation description events and evaluation status 
-        // events. Both of these things will need to be exposed via the web service API and a corresponding consumer 
-        // provided as input to this method.
+        // TODO: currently there are only logging consumers for both evaluation description events and evaluation status 
+        // events. Both of these things could be exposed via the web service API and a corresponding consumer 
+        // provided as input to this method, allowing them to bubble up to that API. Also consider adding the 
+        // declaration parsing status events into the ProjectConfigPlus instance so they can be published once the 
+        // evaluation is created below. These need to be mapped from the ProjectConfigPlus::getValidationEvents.
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( ProcessorHelper.getLoggerConsumerForStatusEvents() )
                                        .addEvaluationConsumer( ProcessorHelper.getLoggerConsumerForEvaluationEvents() )

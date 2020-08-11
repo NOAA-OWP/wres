@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javax.xml.bind.ValidationEvent;
 
@@ -46,11 +47,13 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
@@ -75,13 +78,13 @@ public class Validation
     /** The warning message boilerplate for logger (includes 3 placeholders) */
     private static final String FILE_LINE_COLUMN_BOILERPLATE =
             "In file {}, near line {} and column {}, WRES found an issue with "
-            + "the project configuration.";
+                                                               + "the project configuration.";
 
     private static final String API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE =
             "One must specify issued dates with both earliest and latest (e.g. "
-            + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
-            + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
-            + "source for forecasts (see source near line {} and column {}";
+                                                                                + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
+                                                                                + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+                                                                                + "source for forecasts (see source near line {} and column {}";
 
 
     private Validation()
@@ -107,7 +110,7 @@ public class Validation
         // Assume valid until demonstrated otherwise
         boolean result = true;
 
-        for ( ValidationEvent ve: projectConfigPlus.getValidationEvents() )
+        for ( ValidationEvent ve : projectConfigPlus.getValidationEvents() )
         {
             if ( LOGGER.isWarnEnabled() )
             {
@@ -141,11 +144,12 @@ public class Validation
 
         // Validate pair section
         result = Validation.isPairConfigValid( projectConfigPlus ) && result;
-        
+
         // Validate metrics section
         result = Validation.isMetricsConfigValid( systemSettings,
-                                                  projectConfigPlus ) && result;
-        
+                                                  projectConfigPlus )
+                 && result;
+
         // Validate outputs section
         result = Validation.isOutputConfigValid( projectConfigPlus ) && result;
 
@@ -178,11 +182,11 @@ public class Validation
         // Check that any external thresholds refer to readable files
         result = result && Validation.areAllPathsToThresholdsReadable( systemSettings,
                                                                        projectConfigPlus );
-        
+
         return result;
-    }    
-    
-    
+    }
+
+
     /**
      * Validates the output portion of the project config.
      * 
@@ -196,26 +200,28 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
         return Validation.isNetcdfOutputConfigValid(
-                projectConfigPlus.toString(),
-                projectConfigPlus.getProjectConfig().getOutputs().getDestination()
-        );
+                                                     projectConfigPlus.toString(),
+                                                     projectConfigPlus.getProjectConfig()
+                                                                      .getOutputs()
+                                                                      .getDestination() );
     }
 
-    private static boolean isNetcdfOutputConfigValid(String path, List<DestinationConfig> destinations)
+    private static boolean isNetcdfOutputConfigValid( String path, List<DestinationConfig> destinations )
     {
         Objects.requireNonNull( destinations, NON_NULL );
 
         // Look for a Netcdf Destination config that has a template that doesn't exist
-        DestinationConfig templateMissing = wres.util.Collections.find(destinations,
-                                            destinationConfig ->
-                                                    destinationConfig.getNetcdf() != null &&
-                                                    destinationConfig.getNetcdf().getTemplatePath() != null &&
-                                                    Files.notExists(
-                                                            Paths.get( destinationConfig.getNetcdf().getTemplatePath() )
-                                                    )
-        );
+        DestinationConfig templateMissing = wres.util.Collections.find( destinations,
+                                                                        destinationConfig -> destinationConfig.getNetcdf() != null
+                                                                                             &&
+                                                                                             destinationConfig.getNetcdf()
+                                                                                                              .getTemplatePath() != null
+                                                                                             &&
+                                                                                             Files.notExists(
+                                                                                                              Paths.get( destinationConfig.getNetcdf()
+                                                                                                                                          .getTemplatePath() ) ) );
 
-        if (templateMissing != null)
+        if ( templateMissing != null )
         {
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                          + " The indicated Netcdf Output template does not exist.",
@@ -226,13 +232,13 @@ public class Validation
 
         // Look for destinations that aren't for Netcdf but have netcdf specifications
         Collection<DestinationConfig> incorrectDestinations = wres.util.Collections.where(
-                destinations,
-                config -> config.getType() != DestinationType.NETCDF && config.getNetcdf() != null
-        );
+                                                                                           destinations,
+                                                                                           config -> config.getType() != DestinationType.NETCDF
+                                                                                                     && config.getNetcdf() != null );
 
-        if ( !incorrectDestinations.isEmpty())
+        if ( !incorrectDestinations.isEmpty() )
         {
-            for (DestinationConfig destinationConfig : incorrectDestinations)
+            for ( DestinationConfig destinationConfig : incorrectDestinations )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " Netcdf output configurations are only valid for Netcdf Output.",
@@ -259,7 +265,7 @@ public class Validation
 
         // Assume valid
         boolean returnMe = true;
-        
+
         // Check all metrics config
         for ( MetricsConfig next : projectConfigPlus.getProjectConfig().getMetrics() )
         {
@@ -269,7 +275,7 @@ public class Validation
             }
         }
         return returnMe;
-    }    
+    }
 
     /**
      * Checks that the metric configuration is internally consistent.
@@ -287,7 +293,7 @@ public class Validation
 
         // Assume valid
         boolean returnMe = true;
-        
+
         // Must define one of metric or timeSeriesMetric per metrics
 
         List<MetricConfig> metricConfig = metrics.getMetric();
@@ -297,7 +303,7 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " No metrics are listed for calculation: add a regular metric or time-series metric.",
+                             + " No metrics are listed for calculation: add a regular metric or a time-series metric.",
                              projectConfigPlus,
                              metrics.sourceLocation()
                                     .getLineNumber(),
@@ -359,7 +365,7 @@ public class Validation
 
         // Assume valid
         boolean returnMe = true;
-        
+
         // Check all metrics config
         for ( MetricsConfig next : projectConfigPlus.getProjectConfig().getMetrics() )
         {
@@ -369,9 +375,9 @@ public class Validation
             }
         }
         return returnMe;
-    } 
-    
-    
+    }
+
+
     /**
      * Checks that the metric configuration is consistent with the other configuration.
      *
@@ -390,7 +396,7 @@ public class Validation
         AtomicBoolean result = new AtomicBoolean( true );
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
-        
+
         // Filter for non-null and not all valid
         metrics.getMetric()
                .stream()
@@ -425,7 +431,6 @@ public class Validation
                                         projectConfigPlus.getOrigin(),
                                         nextMetric.getName() );
                        }
-
                    }
                    // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
                    // unlikely and implies an incomplete implementation of a metric by the system  
@@ -438,9 +443,216 @@ public class Validation
                    }
                } );
 
+        // Check that each metric has the required thresholds to obtain the input data
+        if ( !doesEachMetricHaveExpectedThresholds( projectConfigPlus, metrics ) )
+        {
+            result.set( false );
+        }
+
+        // Check that each metric is consistent with the declared data type
+        if ( !isEachMetricConsistentWithTheDataTypeDeclared( projectConfigPlus, metrics ) )
+        {
+            result.set( false );
+        }
+
         return result.get();
     }
-    
+
+    /**
+     * Validates that each metric in the input group has the thresholds it expects within the same group. This 
+     * validation remains applicable while the software ingests time-series for continuous variables. If this 
+     * assumption changes to additionally support categorical variables, then this validation is no longer applicable.
+     * Also relies on the {@link DataSourceConfig#getType()} for the right data, which is brittle. See #65422.
+     * 
+     * @param projectConfigPlus the augmented declaration
+     * @param metricsConfig the metrics declaration
+     * @return true if the validation passes, false otherwise
+     */
+
+    private static boolean doesEachMetricHaveExpectedThresholds( ProjectConfigPlus projectConfigPlus,
+                                                                 MetricsConfig metricsConfig )
+    {
+        boolean isValid = true;
+
+        // Obtain the metrics as internal types, which self-identify, ignoring ALL_VALID which, by definition, selects
+        // valid metrics according to the other declaration.
+        Set<MetricConstants> metrics = metricsConfig.getMetric()
+                                                    .stream()
+                                                    .filter( next -> next.getName() != MetricConfigName.ALL_VALID )
+                                                    .map( next -> MetricConfigHelper.from( next.getName() ) )
+                                                    .collect( Collectors.toSet() );
+
+        // Filter categorical metrics
+        Set<MetricConstants> categorical = metrics.stream()
+                                                  .filter( next -> next.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                                                                   || next.isInGroup( SampleDataGroup.MULTICATEGORY ) )
+                                                  .collect( Collectors.toUnmodifiableSet() );
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        // By default, a missing type is interpreted as probability
+        boolean eventThresholds = metricsConfig.getThresholds()
+                                               .stream()
+                                               .anyMatch( next -> Objects.isNull( next.getType() )
+                                                                  || next.getType() != ThresholdType.VALUE
+                                                                  || next.getType() == ThresholdType.PROBABILITY );
+
+        // Input type declaration is ensemble
+        if ( !categorical.isEmpty()
+             && projectConfig.getInputs().getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            boolean decisionThresholds = metricsConfig.getThresholds()
+                                                      .stream()
+                                                      .anyMatch( next -> next.getType() == ThresholdType.PROBABILITY_CLASSIFIER );
+
+            // Order by number of failures - up to two possible
+            if ( !eventThresholds && !decisionThresholds )
+            {
+                isValid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The categorical metrics {} require two types of thresholds to obtain "
+                             + "categorical pairs from the ensemble pairs. First, event thresholds "
+                             + "are required to obtain probability pairs from the ensemble members. Second, "
+                             + "decision thresholds or 'probability classifiers' are required to obtain "
+                             + "categorical pairs from the probability pairs. Neither of these thresholds were "
+                             + "supplied. Add some thresholds of type {} or {} to the metrics declaration and, "
+                             + "separately, add some thresholds of type {}. Otherwise, remove these metrics.",
+                             projectConfigPlus.getOrigin(),
+                             metricsConfig.sourceLocation().getLineNumber(),
+                             metricsConfig.sourceLocation().getColumnNumber(),
+                             categorical,
+                             ThresholdType.VALUE.name(),
+                             ThresholdType.PROBABILITY.name(),
+                             ThresholdType.PROBABILITY_CLASSIFIER.name() );
+            }
+            else if ( !eventThresholds && decisionThresholds )
+            {
+                isValid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The categorical metrics {} require event thresholds to obtain categorical "
+                             + "pairs from the continuous numerical pairs, but no event thresholds were "
+                             + "supplied. Add some thresholds of type {} or {} to the metrics declaration or "
+                             + "remove these metrics before proceeding.",
+                             projectConfigPlus.getOrigin(),
+                             metricsConfig.sourceLocation().getLineNumber(),
+                             metricsConfig.sourceLocation().getColumnNumber(),
+                             categorical,
+                             ThresholdType.VALUE.name(),
+                             ThresholdType.PROBABILITY.name() );
+            }
+            else if ( !decisionThresholds )
+            {
+                isValid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The categorical metrics {} require decision thresholds or 'probability "
+                             + "classifiers' to obtain categorical pairs from the probability pairs, but no "
+                             + "decision thresholds were supplied. Add some thresholds of type {} to the "
+                             + "metrics declaration or remove these metrics before proceeding.",
+                             projectConfigPlus.getOrigin(),
+                             metricsConfig.sourceLocation().getLineNumber(),
+                             metricsConfig.sourceLocation().getColumnNumber(),
+                             categorical,
+                             ThresholdType.PROBABILITY_CLASSIFIER.name() );
+            }
+        }
+        // Other (single-valued) types
+        else if ( !categorical.isEmpty() )
+        {
+            if ( !eventThresholds )
+            {
+                isValid = false;
+
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The categorical metrics {} require event thresholds to obtain categorical pairs "
+                             + "from the continuous numerical pairs, but no event thresholds were supplied. Add "
+                             + "some thresholds of type {} or {} to the metrics declaration or remove these metrics "
+                             + "before proceeding.",
+                             projectConfigPlus.getOrigin(),
+                             metricsConfig.sourceLocation().getLineNumber(),
+                             metricsConfig.sourceLocation().getColumnNumber(),
+                             categorical,
+                             ThresholdType.VALUE,
+                             ThresholdType.PROBABILITY );
+            }
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Validates that each metric in the input group is consistent with the {@link DataSourceConfig#getType()} for 
+     * the right data. For example, cannot declare metrics for ensemble data unless the data type reflects that. 
+     * Assumes that all ingested time-series are continuous numerical variables. See #65422.
+     * 
+     * @param projectConfigPlus the augmented declaration
+     * @param metricsConfig the metrics declaration
+     * @return true if the validation passes, false otherwise
+     */
+
+    private static boolean isEachMetricConsistentWithTheDataTypeDeclared( ProjectConfigPlus projectConfigPlus,
+                                                                          MetricsConfig metricsConfig )
+    {
+        boolean isValid = true;
+
+        // Obtain the metrics as internal types, which self-identify, ignoring ALL_VALID which, by definition, selects
+        // valid metrics according to the other declaration.
+        Set<MetricConstants> metrics = metricsConfig.getMetric()
+                                                    .stream()
+                                                    .filter( next -> next.getName() != MetricConfigName.ALL_VALID )
+                                                    .map( next -> MetricConfigHelper.from( next.getName() ) )
+                                                    .collect( Collectors.toSet() );
+
+
+        Set<MetricConstants> ensemble = metrics.stream()
+                                               .filter( next -> next.isInGroup( SampleDataGroup.ENSEMBLE )
+                                                                && next != MetricConstants.SAMPLE_SIZE )
+                                               .collect( Collectors.toUnmodifiableSet() );
+
+        Set<MetricConstants> discreteProbability = metrics.stream()
+                                                          .filter( next -> next.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY ) )
+                                                          .collect( Collectors.toUnmodifiableSet() );
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        DatasourceType type = projectConfig.getInputs().getRight().getType();
+
+        // Ensemble metrics, but not ensemble type data
+        if ( !ensemble.isEmpty() && type != DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            isValid = false;
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The ensemble metrics {} require ensemble pairs, but the declared data type for the RIGHT "
+                         + "data source is '{}'. Either correct this data type to 'ensemble forecasts' or remove the "
+                         + "ensemble metrics before proceeding.",
+                         projectConfigPlus.getOrigin(),
+                         projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
+                         projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
+                         ensemble,
+                         type.name().toLowerCase() );
+        }
+
+        if ( !discreteProbability.isEmpty() && type != DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            isValid = false;
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The discrete probability metrics {} require ensemble pairs, but the declared data type for "
+                         + "the RIGHT data source is '{}'. Either correct this data type to 'ensemble forecasts' or "
+                         + "remove the discrete probability metrics before proceeding.",
+                         projectConfigPlus.getOrigin(),
+                         projectConfig.getInputs().getRight().sourceLocation().getLineNumber(),
+                         projectConfig.getInputs().getRight().sourceLocation().getColumnNumber(),
+                         discreteProbability,
+                         type.name().toLowerCase() );
+        }
+
+        return isValid;
+    }
+
     /**
      * Validates the paths to external thresholds.
      *
@@ -452,28 +664,28 @@ public class Validation
     private static boolean areAllPathsToThresholdsReadable( SystemSettings systemSettings,
                                                             ProjectConfigPlus projectConfigPlus )
     {
-        Objects.requireNonNull( projectConfigPlus, NON_NULL);
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
         boolean result = true;
 
         final String PLEASE_UPDATE = "Please update the project configuration "
-                + "with a readable source of external thresholds.";
-        
+                                     + "with a readable source of external thresholds.";
+
         // Iterate through the metric group
         for ( MetricsConfig nextMetric : projectConfigPlus.getProjectConfig().getMetrics() )
         {
-            
+
             // Iterate through the thresholds within each group
             for ( ThresholdsConfig nextThreshold : nextMetric.getThresholds() )
             {
-                
+
                 Object nextSource = nextThreshold.getCommaSeparatedValuesOrSource();
-                
+
                 // Locate a threshold with an external source
                 if ( nextSource instanceof ThresholdsConfig.Source )
                 {
                     URI thresholdData = ( (ThresholdsConfig.Source) nextSource ).getValue();
-                    
+
                     final Path destinationPath;
                     try
                     {
@@ -501,7 +713,7 @@ public class Validation
                                      nextThreshold.sourceLocation().getColumnNumber(),
                                      thresholdData,
                                      PLEASE_UPDATE );
-                            
+
                         result = false;
                         continue;
                     }
@@ -526,7 +738,7 @@ public class Validation
         }
 
         return result;
-    }    
+    }
 
 
     /**
@@ -575,9 +787,9 @@ public class Validation
                                                         DestinationConfig d,
                                                         String customString )
     {
-        Objects.requireNonNull( projectConfigPlus, NON_NULL);
-        Objects.requireNonNull( d, NON_NULL);
-        Objects.requireNonNull( customString, NON_NULL);
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( d, NON_NULL );
+        Objects.requireNonNull( customString, NON_NULL );
 
         boolean result = true;
 
@@ -593,8 +805,8 @@ public class Validation
         // starts with the correct tag or starts with a comment.
         String trimmedCustomString = customString.trim();
 
-        if( !trimmedCustomString.startsWith( BEGIN_TAG )
-            && !trimmedCustomString.startsWith( BEGIN_COMMENT ) )
+        if ( !trimmedCustomString.startsWith( BEGIN_TAG )
+             && !trimmedCustomString.startsWith( BEGIN_COMMENT ) )
         {
             if ( LOGGER.isWarnEnabled() )
             {
@@ -611,8 +823,8 @@ public class Validation
             result = false;
         }
 
-        if( !trimmedCustomString.endsWith( END_TAG )
-            && !trimmedCustomString.endsWith( END_COMMENT ) )
+        if ( !trimmedCustomString.endsWith( END_TAG )
+             && !trimmedCustomString.endsWith( END_COMMENT ) )
         {
             if ( LOGGER.isWarnEnabled() )
             {
@@ -668,7 +880,7 @@ public class Validation
                 pairConfig.getDesiredTimeScale();
 
         if ( aggregationConfig != null
-             && TimeScaleOuter.of( aggregationConfig ).isInstantaneous()  )
+             && TimeScaleOuter.of( aggregationConfig ).isInstantaneous() )
         {
             if ( LOGGER.isWarnEnabled() )
             {
@@ -882,14 +1094,16 @@ public class Validation
                         String msg = FILE_LINE_COLUMN_BOILERPLATE
                                      + " Data from the future cannot be"
                                      + " requested from USGS; the latest date"
-                                     + " specified was " + latestRaw
-                                     + " but it is currently " + now;
+                                     + " specified was "
+                                     + latestRaw
+                                     + " but it is currently "
+                                     + now;
 
                         LOGGER.warn( msg,
                                      projectConfigPlus.getOrigin(),
                                      dates.sourceLocation().getLineNumber(),
                                      dates.sourceLocation()
-                                              .getColumnNumber() );
+                                          .getColumnNumber() );
                     }
                 }
             }
@@ -978,7 +1192,8 @@ public class Validation
             {
                 String msg = FILE_LINE_COLUMN_BOILERPLATE
                              + " In the pair configuration, the text '"
-                             + date + "' was not able to be converted to an "
+                             + date
+                             + "' was not able to be converted to an "
                              + "Instant. Please use the ISO8601 format, the UTC"
                              + " zoneOffset, and second-precision, e.g. "
                              + "'2017-11-27 17:36:00Z'.";
@@ -1004,9 +1219,9 @@ public class Validation
      * @return true if the lead times are null or one-sided or the right is greater than 
      *            the left, otherwise false
      */
-    
+
     private static boolean areLeadTimesValid( ProjectConfigPlus projectConfigPlus,
-                                          IntBoundsType leadTimes )
+                                              IntBoundsType leadTimes )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
@@ -1017,7 +1232,7 @@ public class Validation
              && leadTimes.getMinimum() > leadTimes.getMaximum() )
         {
             isValid = false;
-            
+
             String msg = FILE_LINE_COLUMN_BOILERPLATE
                          + " The maximum lead time '{}' cannot be greater "
                          + "than the minimum lead time '{}'.";
@@ -1031,7 +1246,7 @@ public class Validation
         }
 
         return isValid;
-    }    
+    }
 
     /**
      * Returns true when seasonal verification config is valid, false otherwise
@@ -1051,7 +1266,7 @@ public class Validation
 
             MonthDay start = null;
             MonthDay end = null;
-            
+
             try
             {
                 start = MonthDay.of( season.getEarliestMonth(),
@@ -1091,7 +1306,7 @@ public class Validation
                              season.getLatestDay() );
                 result = false;
             }
-            
+
             // Is valid, but deserves a warning, 
             if ( Objects.nonNull( start ) && Objects.nonNull( end ) && start.isAfter( end ) )
             {
@@ -1114,7 +1329,7 @@ public class Validation
     }
 
     private static boolean isDesiredTimeScaleValid( ProjectConfigPlus projectConfigPlus,
-                                                          PairConfig pairConfig )
+                                                    PairConfig pairConfig )
     {
         DesiredTimeScaleConfig aggregationConfig = pairConfig.getDesiredTimeScale();
 
@@ -1132,7 +1347,7 @@ public class Validation
         if ( aggregationConfig.getFrequency() != null && aggregationConfig.getFrequency() < 0 )
         {
             valid = false;
-            
+
             if ( warning.length() > 0 )
             {
                 warning.append( System.lineSeparator() );
@@ -1160,18 +1375,18 @@ public class Validation
         }
 
         // TODO: validate time units
-        
+
         if ( !valid && LOGGER.isWarnEnabled() )
         {
             LOGGER.warn( warning.toString() );
         }
-        
+
         // Check that the time aggregation function is valid
         valid = isDesiredTimeScaleFunctionValid( projectConfigPlus, pairConfig ) && valid;
 
         // Check that the time aggregation period is valid 
         valid = isDesiredTimeScalePeriodValid( projectConfigPlus, pairConfig ) && valid;
-        
+
         return valid;
     }
 
@@ -1191,19 +1406,19 @@ public class Validation
      */
 
     private static boolean isDesiredTimeScaleFunctionValid( ProjectConfigPlus projectConfigPlus,
-                                                                  PairConfig pairConfig )
+                                                            PairConfig pairConfig )
     {
         boolean returnMe = true;
-        
+
         TimeScaleFunction desired = pairConfig.getDesiredTimeScale().getFunction();
         Inputs inputConfig = projectConfigPlus.getProjectConfig().getInputs();
-        
+
         // Time aggregation is a sum
         if ( TimeScaleFunction.TOTAL.equals( desired ) )
         {
             returnMe = isDesiredTimeScaleSumValid( projectConfigPlus, inputConfig );
         }
-        
+
         return returnMe;
     }
 
@@ -1217,30 +1432,30 @@ public class Validation
      */
 
     private static boolean isDesiredTimeScaleSumValid( ProjectConfigPlus projectConfigPlus,
-                                                             Inputs inputConfig )
+                                                       Inputs inputConfig )
     {
         boolean returnMe = true;
         // Sum for left must be valid
         if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeScale() != null )
         {
             returnMe = isDesiredTimeScaleSumValid( projectConfigPlus,
-                                                         inputConfig.getLeft().getExistingTimeScale(),
-                                                         "left" );
+                                                   inputConfig.getLeft().getExistingTimeScale(),
+                                                   "left" );
         }
         // Sum for right must be valid
         if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeScale() != null )
         {
             returnMe = isDesiredTimeScaleSumValid( projectConfigPlus,
-                                                         inputConfig.getRight().getExistingTimeScale(),
-                                                         "right" )
+                                                   inputConfig.getRight().getExistingTimeScale(),
+                                                   "right" )
                        && returnMe;
         }
         // Sum for baseline must be valid
         if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeScale() != null )
         {
             returnMe = isDesiredTimeScaleSumValid( projectConfigPlus,
-                                                         inputConfig.getBaseline().getExistingTimeScale(),
-                                                         "baseline" )
+                                                   inputConfig.getBaseline().getExistingTimeScale(),
+                                                   "baseline" )
                        && returnMe;
         }
         return returnMe;
@@ -1295,8 +1510,8 @@ public class Validation
                          TimeScaleFunction.TOTAL );
         }
         return returnMe;
-    }    
-    
+    }
+
     /**
      * Returns true if the time aggregation period associated with the desiredTimeScale is valid given the time
      * aggregation periods associated with the existingTimeScale for each source.
@@ -1313,7 +1528,7 @@ public class Validation
      */
 
     private static boolean isDesiredTimeScalePeriodValid( ProjectConfigPlus projectConfigPlus,
-                                                                PairConfig pairConfig )
+                                                          PairConfig pairConfig )
     {
         // Only proceed if the desiredTimeScale is non-null and one or more existingTimeScale
         // are non-null
@@ -1346,26 +1561,26 @@ public class Validation
                                                ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
         }
-        if ( right != null && !TimeScaleOuter.of( right ).isInstantaneous()  )
+        if ( right != null && !TimeScaleOuter.of( right ).isInstantaneous() )
         {
             Duration rightExists = Duration.of( right.getPeriod(),
                                                 ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus,
-                                                                 desired,
-                                                                 rightExists,
-                                                                 right,
-                                                                 "right" )
+                                                           desired,
+                                                           rightExists,
+                                                           right,
+                                                           "right" )
                        && returnMe;
         }
-        if ( baseline != null && !TimeScaleOuter.of( baseline ).isInstantaneous()  )
+        if ( baseline != null && !TimeScaleOuter.of( baseline ).isInstantaneous() )
         {
             Duration baselineExists = Duration.of( baseline.getPeriod(),
                                                    ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus,
-                                                                 desired,
-                                                                 baselineExists,
-                                                                 baseline,
-                                                                 "baseline" )
+                                                           desired,
+                                                           baselineExists,
+                                                           baseline,
+                                                           "baseline" )
                        && returnMe;
         }
         return returnMe;
@@ -1384,10 +1599,10 @@ public class Validation
      */
 
     private static boolean isDesiredTimeScalePeriodConsistent( ProjectConfigPlus projectConfigPlus,
-                                                                     Duration desired,
-                                                                     Duration existing,
-                                                                     TimeScaleConfig helper,
-                                                                     String helperString )
+                                                               Duration desired,
+                                                               Duration existing,
+                                                               TimeScaleConfig helper,
+                                                               String helperString )
     {
         boolean returnMe = true;
         // Disaggregation is not allowed
@@ -1435,7 +1650,7 @@ public class Validation
 
         return valid;
     }
-    
+
     /**
      * Checks for issued dates pooling windows and validates for consistency with other
      * declaration, as well as internal consistency.
@@ -1456,7 +1671,7 @@ public class Validation
 
             String issuedBoiler = " Error when evaluating the declaration for issued dates "
                                   + "pooling windows:";
-            
+
             // Check that the issued dates are defined
             if ( Objects.isNull( pairConfig.getIssuedDates() ) )
             {
@@ -1506,8 +1721,8 @@ public class Validation
         }
 
         return valid;
-    }          
-    
+    }
+
     /**
      * Checks for lead times pooling windows and validates for consistency with other
      * declaration, as well as internal consistency.
@@ -1528,7 +1743,7 @@ public class Validation
 
             String leadBoiler = " Error when evaluating the declaration for lead times " +
                                 "pooling windows:";
-            
+
             // Check that the lead times are defined
             if ( Objects.isNull( pairConfig.getLeadHours() ) )
             {
@@ -1629,7 +1844,7 @@ public class Validation
 
         return valid;
     }
-    
+
     private static boolean isInputsConfigValid( ProjectConfigPlus projectConfigPlus )
     {
         boolean result = true;
@@ -1642,14 +1857,14 @@ public class Validation
 
         // #72042
         if ( left.getType() == DatasourceType.ENSEMBLE_FORECASTS &&
-             right.getType() == DatasourceType.ENSEMBLE_FORECASTS)
+             right.getType() == DatasourceType.ENSEMBLE_FORECASTS )
         {
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                          + " Cannot evaluate ensemble forecasts against ensemble forecasts.",
                          projectConfigPlus,
                          left.sourceLocation().getLineNumber(),
                          left.sourceLocation().getColumnNumber() );
-            
+
             result = false;
         }
 
@@ -1744,7 +1959,7 @@ public class Validation
 
         return sourceValid;
     }
-    
+
     /**
      * <p>Returns <code>true</code> if the source has a URI when expected, otherwise
      * <code>false</code>. A URI is expected even when full path and parameters
@@ -1871,7 +2086,8 @@ public class Validation
                              + "include a zone offset in the data and will use "
                              + "that. If you wish to have data perform time "
                              + "travel for whatever reason, there is a "
-                             + "separate <timeShift> configuration option " +
+                             + "separate <timeShift> configuration option "
+                             +
                              "for that purpose.",
                              projectConfigPlus.getOrigin(),
                              source.sourceLocation().getLineNumber(),
