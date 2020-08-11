@@ -929,10 +929,12 @@ public class Validation
         return result;
     }
 
-    private static boolean areFeaturesValid( List<Feature> features )
+    static boolean areFeaturesValid( List<Feature> features )
     {
         boolean valid = true;
 
+        valid = Validation.doesEachFeatureHaveSomethingDeclared( features )
+                && valid;
         List<String> leftRawNames = Validation.getFeatureNames( features,
                                                                 LeftOrRightOrBaseline.LEFT );
         List<String> rightRawNames = Validation.getFeatureNames( features,
@@ -949,6 +951,37 @@ public class Validation
                                                  LeftOrRightOrBaseline.BASELINE )
                 && valid;
         return valid;
+    }
+
+    /**
+     * Each attribute is individually optional in feature, but at least one must
+     * be present.
+     * @param features The features to check.
+     * @return True when every feature has at least one of the attributes.
+     */
+
+    private static boolean doesEachFeatureHaveSomethingDeclared( List<Feature> features )
+    {
+        int countOfEmptyFeatures = 0;
+
+        for ( Feature feature : features )
+        {
+            if ( Objects.isNull( feature.getLeft() )
+                 && Objects.isNull( feature.getRight() )
+                 && Objects.isNull( feature.getBaseline() ) )
+            {
+                countOfEmptyFeatures++;
+            }
+        }
+
+        if ( countOfEmptyFeatures > 0 )
+        {
+            LOGGER.warn( "Found {} features with no left nor right nor baseline name declared.",
+                         countOfEmptyFeatures );
+            return false;
+        }
+
+        return true;
     }
 
     /**
