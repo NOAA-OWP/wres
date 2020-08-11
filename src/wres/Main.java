@@ -70,15 +70,6 @@ public class Main {
         Executor executor = new Executor( systemSettings );
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if ( exitCode.get() == MainFunctions.SUCCESS )
-            {
-                MainFunctions.shutdown( database, executor );
-            }
-            else
-            {
-                MainFunctions.forceShutdown( database, executor,6, TimeUnit.SECONDS );
-            }
-
             Instant endedExecution = Instant.now();
             Duration duration = Duration.between( beganExecution, endedExecution );
             LOGGER.info( "The function '{}' took {}", finalOperation, duration );
@@ -129,6 +120,18 @@ public class Main {
                                      exitCode.get() == MainFunctions.FAILURE,
                                      Main.combineExceptions( ),
                                      Main.getVersion() );
+        }
+        finally
+        {
+            // #81660
+            if ( exitCode.get() == MainFunctions.SUCCESS )
+            {
+                MainFunctions.shutdown( database, executor );
+            }
+            else
+            {
+                MainFunctions.forceShutdown( database, executor,6, TimeUnit.SECONDS );
+            }
         }
 
         Main.printLogFileInformation();
