@@ -138,6 +138,13 @@ final class ProjectScriptGenerator
                 // evaluation.
                 script.addTab().addLine( "L.name = B.name" );
             }
+            else if ( !addedBaselineFeature )
+            {
+                // To prevent invalid SQL (in case other code changes that
+                // would cause this block to be reached), flag it as a
+                // programming error. See #76998.
+                throw new IllegalStateException( "Baseline existed, features names existed for left and right, but no names for baseline." );
+            }
 
             script.addLine( ")" );
             script.addLine( "AND EXISTS" );
