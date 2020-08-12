@@ -1,6 +1,5 @@
 /**
- * A package for {@link wres.engine.statistics.metric.Metric} that consume discrete probability pairs and produce 
- * {@link wres.datamodel.statistics.Statistic}.
+ * A package for {@link wres.engine.statistics.metric.Metric} that consume discrete probability pairs.
  * 
  * @author james.brown@hydrosolved.com
  */

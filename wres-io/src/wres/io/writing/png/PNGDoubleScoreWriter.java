@@ -213,13 +213,20 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
                 {
 
+                    // Qualify with the component name unless there is one component and it is main
+                    MetricConstants componentName = null;
+                    if( nextEntry.getKey() != MetricConstants.MAIN || engines.size() > 0 )
+                    {
+                        componentName = nextEntry.getKey();
+                    }
+
                     // Build the output file name
                     Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                                           destinationConfig,
                                                                           metadata,
                                                                           append,
                                                                           metricName,
-                                                                          null );
+                                                                          componentName );
 
                     PNGWriter.writeChart( systemSettings, outputImage, nextEntry.getValue(), destinationConfig );
                     // Only if writeChart succeeded do we assume that it was written

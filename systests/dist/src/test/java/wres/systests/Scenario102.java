@@ -40,6 +40,7 @@ public class Scenario102
                     Path.of( "LGNN5_QME_ESP_INDEX_OF_AGREEMENT.csv" ),
                     Path.of( "LGNN5_QME_ESP_KLING_GUPTA_EFFICIENCY.csv" ),
                     Path.of( "LGNN5_QME_ESP_MEAN_ABSOLUTE_ERROR.csv" ),
+                    Path.of( "LGNN5_QME_ESP_MEAN.csv" ),
                     Path.of( "LGNN5_QME_ESP_MEAN_ERROR.csv" ),
                     Path.of( "LGNN5_QME_ESP_MEAN_SQUARE_ERROR.csv" ),
                     Path.of( "LGNN5_QME_ESP_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),

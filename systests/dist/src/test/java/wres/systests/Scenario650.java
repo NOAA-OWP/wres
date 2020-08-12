@@ -167,9 +167,9 @@ public class Scenario650
 
         assertEquals( "The actual set of file names does not match the expected set of file names."
                       + " These existed in expected, but not in actual: "
-                      + new TreeSet( Sets.difference( EXPECTED_FILE_NAMES, actualFileNamesThatExist ) )
+                      + new TreeSet<>( Sets.difference( EXPECTED_FILE_NAMES, actualFileNamesThatExist ) )
                       + " while these existed in actual, but not expected: "
-                      + new TreeSet( Sets.difference( actualFileNamesThatExist, EXPECTED_FILE_NAMES ) ),
+                      + new TreeSet<>( Sets.difference( actualFileNamesThatExist, EXPECTED_FILE_NAMES ) ),
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
 

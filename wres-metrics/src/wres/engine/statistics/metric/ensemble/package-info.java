@@ -1,6 +1,5 @@
 /**
- * A package for {@link wres.engine.statistics.metric.Metric} that consume ensemble pairs and produce 
- * {@link wres.datamodel.statistics.Statistic}.
+ * A package for {@link wres.engine.statistics.metric.Metric} that consume ensemble pairs.
  * 
  * @author james.brown@hydrosolved.com
  */

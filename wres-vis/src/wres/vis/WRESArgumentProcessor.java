@@ -15,8 +15,8 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.hefs.utils.arguments.Argument;
 import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.Slicer;
@@ -26,6 +26,8 @@ import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.GeometryTuple;
 import wres.util.TimeHelper;
 import wres.vis.ChartEngineFactory.ChartType;
 
@@ -37,6 +39,7 @@ import wres.vis.ChartEngineFactory.ChartType;
  */
 public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 {
+    private static final String VARIABLE_NAME = "variableName";
     private static final String LEGEND_TITLE = "legendTitle";
     private static final String LEGEND_UNITS_TEXT = "legendUnitsText";
     private static final String DIAGRAM_INSTANCE_DESCRIPTION = "diagramInstanceDescription";
@@ -86,7 +89,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "inputUnitsLabelSuffix", " [" + metricUnits + "]" );
         addArgument( "inputUnits", meta.getMeasurementUnit().toString() );
 
-        recordIdentifierArguments( meta );
+        recordIdentifierArguments( meta, null, null );
 
         recordWindowingArguments( meta.getTimeWindow() );
 
@@ -234,7 +237,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param meta the output metadata
      * @param metricUnits the metric units
      * @param metricName the metric name
-     * @poaram metricComponentName the optional metric component name
+     * @param metricComponentName the optional metric component name
      */
     private void extractStandardArgumentsFromMetadata( SampleMetadata meta,
                                                        String metricUnits,
@@ -249,7 +252,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "outputUnitsLabelSuffix", " [" + metricUnits + "]" );
         addArgument( "inputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
 
-        recordIdentifierArguments( meta );
+        recordIdentifierArguments( meta, metricName, metricComponentName );
 
         // Add conditional arguments
 
@@ -261,7 +264,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
         else
         {
-            addArgument( "metricComponentNameSuffix", " - " + metricComponentName.toString() );
+            addArgument( "metricComponentNameSuffix", " " + metricComponentName.toString() );
         }
 
         // Time scale arguments, where defined
@@ -270,42 +273,83 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Record the identifier arguments based on the metadata.  This will do nothing if the metadata provides no identifier.
-     * @param meta
+     * @param meta the metadata
+     * @param metric the metric context
+     * @param component the optional metric component name
      */
-    private void recordIdentifierArguments( final SampleMetadata meta )
+    private void recordIdentifierArguments( SampleMetadata meta, MetricConstants metric, MetricConstants component )
     {
-        if ( Objects.nonNull( meta.getIdentifier() ) )
+
+        List<GeometryTuple> tuples = meta.getPool().getGeometryTuplesList();
+
+        if ( !tuples.isEmpty() )
         {
-            final DatasetIdentifier identifier = meta.getIdentifier();
-            if ( Objects.nonNull( identifier.getFeatureTuple() )
-                 && identifier.getFeatureTuple().getBaselineName() != null )
+            // Assumes only one tuple for now
+            GeometryTuple tuple = tuples.get( 0 );
+            if ( tuple.hasBaseline() )
             {
                 addArgument( "locationName",
-                             "(left=" + identifier.getFeatureTuple().getLeftName()
+                             "(left=" + tuple.getLeft().getName()
                                              + ", right="
-                                             + identifier.getFeatureTuple().getRightName()
+                                             + tuple.getRight().getName()
                                              + ", baseline="
-                                             + identifier.getFeatureTuple().getBaselineName()
+                                             + tuple.getBaseline().getName()
                                              + ")" );
-            }
-            else if( Objects.nonNull( identifier.getFeatureTuple() ))
-            {
-                addArgument( "locationName",
-                             "(left=" + identifier.getFeatureTuple().getLeftName()
-                                             + ", right="
-                                             + identifier.getFeatureTuple().getRightName()
-                                             + ")" );
-            }
-            addArgument( "variableName", identifier.getVariableName() );
-            if ( identifier.hasScenarioName() )
-            {
-                addArgument( "primaryScenario", " " + identifier.getScenarioName() );
             }
             else
             {
-                addArgument( "primaryScenario", "" );
+                addArgument( "locationName",
+                             "(left=" + tuple.getLeft().getName()
+                                             + ", right="
+                                             + tuple.getRight().getName()
+                                             + ")" );
             }
         }
+        Evaluation evaluation = meta.getEvaluation();
+
+        // Addition to the primary scenario based on metric context. See #81790
+        String primaryScenario = "";
+        
+        if ( Objects.nonNull( metric ) )
+        {
+            // Not univariate statistics
+            if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
+            {
+                // Use the left name for paired statistics. Should probably use the triple of variable names for 
+                // accuracy. See #81790.
+                addArgument( VARIABLE_NAME, evaluation.getLeftVariableName() );
+                
+                String name = "";
+                if( !evaluation.getRightDataName().isBlank() )
+                {
+                    name = " " + evaluation.getRightDataName();
+                }
+                
+                primaryScenario = name + " predictions of ";
+            }
+            else if( Objects.nonNull( component ) )
+            {
+                // Get the name that corresponds to the side of the component. Again, should probably use the triple.
+                switch ( component )
+                {
+                    case LEFT:
+                        addArgument( VARIABLE_NAME, evaluation.getLeftVariableName() );
+                        break;
+                    case RIGHT:
+                        addArgument( VARIABLE_NAME, evaluation.getRightVariableName() );
+                        break;
+                    case BASELINE:
+                        addArgument( VARIABLE_NAME, evaluation.getBaselineVariableName() );
+                        break;
+                    default:
+                        break;
+                }
+                // Add a space to the name
+                primaryScenario = " ";
+            }
+        }
+        
+        addArgument( "primaryScenario", primaryScenario );
     }
 
     private void recordWindowingArguments( final TimeWindowOuter timeWindow )

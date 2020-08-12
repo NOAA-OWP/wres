@@ -4,7 +4,7 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>@metricName@ for@primaryScenario@ predictions of @variableName@
+		<text>@metricName@ for@primaryScenario@@variableName@
 at @locationName@ with Time Scale @timeScale@@diagramInstanceDescription@
 @referenceTime@@dataPoolingWindow(yyyy-MM-dd'T'HH:mm:ss zz;GMT)@</text>
 	</plotTitle>

@@ -34,8 +34,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.events.Consumers;
 import wres.events.Evaluation;
-import wres.events.EvaluationEventException;
-import wres.events.EvaluationFailedToCompleteException;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
@@ -177,11 +175,31 @@ class ProcessorHelper
 
             // Wait for the evaluation to conclude
             evaluation.await();
+            
+            // Close the shared writers: it is awkward to close these after awaiting an evaluation because some 
+            // serialization is delayed until the shared writers close. Since the writers are created here, they 
+            // should be destroyed here too. However, closing the shared writers could throw an exception without 
+            // completing all expected writes. The evaluation should not be closed until that outcome is known. 
+            // Ultimately, the low-level writer or something aware of this should report 
+            // CONSUMPTION_COMPLETE_REPORTED_FAILURE. The MessageSubscriber should not report success according to when 
+            // the consumer was supplied with all expected statistics (as now), rather it should delegate this to the 
+            // actual thing that does the serialization. In that case, the exception would happen more correctly on 
+            // await(), above. For now, allowing any exception to propagate by closing here, before the evaluation
+            // is closed. See #81790-21.
+            sharedWriters.close();
 
             return Collections.unmodifiableSet( returnMe );
         }
+        // Allow a user-error to be distinguished separately
+        catch ( ProjectConfigException userError )
+        {
+            // Stop forcibly
+            evaluation.stop( userError );
+
+            throw userError;
+        }
         // Internal error
-        catch ( EvaluationEventException | EvaluationFailedToCompleteException | WresProcessingException internalError )
+        catch ( RuntimeException internalError )
         {
             String evaluationId = "unknown";
 
@@ -195,19 +213,47 @@ class ProcessorHelper
                                                + "': ",
                                                internalError );
         }
-        // Allow a user-error to be distinguished separately
-        catch ( ProjectConfigException userError )
-        {
-            // Stop forcibly
-            evaluation.stop( userError );
-
-            throw userError;
-        }
         finally
         {
             // Close the evaluation always (even if stopped on exception)
-            evaluation.close();
-
+            try
+            {
+                evaluation.close();
+            }
+            catch( IOException e )
+            {
+                LOGGER.error( "Failed to close evaluation {}.", evaluation.getEvaluationId() );
+            }
+            
+            // Close the shared writers if they weren't closed already
+            try
+            {
+                sharedWriters.close();
+            }
+            catch( IOException e )
+            {
+                LOGGER.error( "Failed to close the shared writers for evaluation {}.", evaluation.getEvaluationId() );
+            }
+            
+            // Close the other closeable consumers
+            try
+            {
+                groupConsumer.close();
+            }
+            catch ( IOException e )
+            {
+                LOGGER.error( "Failed to close a group consumer for evaluation {}.", evaluation.getEvaluationId() );
+            }
+            try
+            {
+                incrementalConsumer.close();
+            }
+            catch ( IOException e )
+            {
+                LOGGER.error( "Failed to close an incremental consumer for evaluation {}.",
+                              evaluation.getEvaluationId() );
+            }
+            
             // Add the consumer paths written, since consumers are now out-of-band to producers
             returnMe.addAll( incrementalConsumer.get() );
             returnMe.addAll( groupConsumer.get() );

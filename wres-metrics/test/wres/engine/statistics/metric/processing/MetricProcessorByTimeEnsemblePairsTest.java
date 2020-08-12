@@ -1130,7 +1130,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         {
             if ( nextMetric.getMetricName() != MetricConstants.SAMPLE_SIZE )
             {
-                assertEquals( Double.NaN, nextMetric.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+                nextMetric.forEach( next -> assertEquals( Double.NaN, next.getData().getValue(), 0.0 ) );
             }
         }
     }

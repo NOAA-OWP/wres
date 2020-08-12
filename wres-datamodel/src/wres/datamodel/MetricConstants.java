@@ -6,6 +6,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
@@ -273,7 +274,7 @@ public enum MetricConstants
      * Mean statistic.
      */
 
-    MEAN( MetricGroup.UNIVARIATE_STATISTIC ),
+    MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC, MetricGroup.LRB ),
 
     /**
      * Median statistic.
@@ -406,10 +407,28 @@ public enum MetricConstants
      * Identifier for true negatives.
      */
 
-    TRUE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE );
+    TRUE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
 
     /**
-     * The {@link SampleDataGroup} or null if the {@link MetricConstants} does not belong to a group.
+     * Identifier for the component of a univariate statistic that applies to the left-sided data within a pairing.
+     */
+    
+    LEFT( MetricGroup.LRB ),
+    
+    /**
+     * Identifier for the component of a univariate statistic that applies to the right-sided data within a pairing.
+     */
+    
+    RIGHT( MetricGroup.LRB ),
+    
+    /**
+     * Identifier for the component of a univariate statistic that applies to the baseline-sided data within a pairing.
+     */
+    
+    BASELINE( MetricGroup.LRB );
+    
+    /**
+     * The {@link SampleDataGroup}.
      */
 
     private final SampleDataGroup[] inGroups;
@@ -421,8 +440,7 @@ public enum MetricConstants
     private final StatisticType outGroup;
 
     /**
-     * The array of {@link MetricGroup} to which this {@link MetricConstants} belongs or null if the
-     * {@link MetricConstants} does not belong to a {@link MetricGroup}.
+     * The array of {@link MetricGroup} to which this {@link MetricConstants} belongs.
      */
 
     private final MetricGroup[] metricGroups;
@@ -439,9 +457,9 @@ public enum MetricConstants
 
     private MetricConstants()
     {
-        this.inGroups = null;
+        this.inGroups = new SampleDataGroup[0];
         this.outGroup = null;
-        this.metricGroups = null;
+        this.metricGroups = new MetricGroup[0];
         this.isSkillMetric = false;
     }
 
@@ -455,7 +473,7 @@ public enum MetricConstants
 
     private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, boolean isSkillMetric )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric, (MetricGroup[]) null );
+        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric, new MetricGroup[0] );
     }
 
     /**
@@ -510,10 +528,13 @@ public enum MetricConstants
      * 
      * @param inGroup the {@link SampleDataGroup}
      * @return true if the input {@link SampleDataGroup} contains the current {@link MetricConstants}, false otherwise
+     * @throws NullPointerException if the input is null
      */
 
     public boolean isInGroup( SampleDataGroup inGroup )
     {
+        Objects.requireNonNull( inGroup );
+        
         return Arrays.asList( this.inGroups ).contains( inGroup );
     }
 
@@ -523,10 +544,13 @@ public enum MetricConstants
      * 
      * @param outGroup the {@link StatisticType}
      * @return true if the input {@link StatisticType} contains the current {@link MetricConstants}, false otherwise
+     * @throws NullPointerException if the input is null
      */
 
     public boolean isInGroup( StatisticType outGroup )
     {
+        Objects.requireNonNull( outGroup );
+        
         return this.outGroup == outGroup;
     }
 
@@ -535,10 +559,13 @@ public enum MetricConstants
      * 
      * @param inGroup the {@link MetricGroup}
      * @return true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise
+     * @throws NullPointerException if the input is null
      */
 
     public boolean isInGroup( MetricGroup inGroup )
     {
+        Objects.requireNonNull( inGroup );
+        
         return Arrays.asList( this.metricGroups ).contains( inGroup );
     }
 
@@ -550,6 +577,7 @@ public enum MetricConstants
      * @param outGroup the {@link StatisticType}
      * @return true if the input {@link SampleDataGroup} and {@link StatisticType} and both contain the current
      *         {@link MetricConstants}, false otherwise
+     * @throws NullPointerException if either input is null
      */
 
     public boolean isInGroup( SampleDataGroup inGroup, StatisticType outGroup )
@@ -569,7 +597,7 @@ public enum MetricConstants
     }
 
     /**
-     * Returns all metric components in the {@link MetricGroup} with which this constant is associated or
+     * Returns all metric components for all {@link MetricGroup} with which this constant is associated or
      * an empty set if none is defined.
      * 
      * @return the components in the {@link MetricGroup}
@@ -577,12 +605,14 @@ public enum MetricConstants
 
     public Set<MetricConstants> getAllComponents()
     {
-        if ( Objects.isNull( this.metricGroups ) || this.metricGroups.length == 0 )
+        if ( this.metricGroups.length == 0 )
         {
             return Collections.emptySet();
         }
 
-        return this.metricGroups[0].getAllComponents();
+        return Arrays.stream( this.metricGroups )
+                     .flatMap( next -> next.getAllComponents().stream() )
+                     .collect( Collectors.toUnmodifiableSet() );
     }
 
     /**
@@ -592,10 +622,14 @@ public enum MetricConstants
      * @param inGroup the {@link SampleDataGroup}
      * @param outGroup the {@link StatisticType}
      * @return the {@link MetricConstants} associated with the current {@link SampleDataGroup}
+     * @throws NullPointerException if either input is null
      */
 
     public static Set<MetricConstants> getMetrics( SampleDataGroup inGroup, StatisticType outGroup )
     {
+        Objects.requireNonNull( inGroup );
+        Objects.requireNonNull( outGroup );
+        
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.inGroups ) || !Arrays.asList( a.inGroups ).contains( inGroup )
                            || a.outGroup != outGroup );
@@ -607,10 +641,13 @@ public enum MetricConstants
      * 
      * @param inGroup the {@link SampleDataGroup}
      * @return the {@link MetricConstants} associated with the current {@link SampleDataGroup}
+     * @throws NullPointerException if the input is null
      */
 
     public static Set<MetricConstants> getMetrics( SampleDataGroup inGroup )
     {
+        Objects.requireNonNull( inGroup );
+        
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.inGroups ) || !Arrays.asList( a.inGroups ).contains( inGroup ) );
         return Collections.unmodifiableSet( all );
@@ -621,10 +658,13 @@ public enum MetricConstants
      * 
      * @param outGroup the {@link StatisticType}
      * @return the {@link MetricConstants} associated with the current {@link StatisticType}
+     * @throws NullPointerException if the input is null
      */
 
     public static Set<MetricConstants> getMetrics( StatisticType outGroup )
     {
+        Objects.requireNonNull( outGroup );
+        
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.outGroup ) || a.outGroup != outGroup );
         return Collections.unmodifiableSet( all );
@@ -861,7 +901,13 @@ public enum MetricConstants
          */
 
         UNIVARIATE_STATISTIC,
+        
+        /**
+         * Identifier for a Left/right/baseline decomposition.
+         */
 
+        LRB,
+        
         /**
          * Identifier for a contingency table group.
          */
