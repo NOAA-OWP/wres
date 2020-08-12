@@ -514,6 +514,7 @@
             <xs:enumeration value="index of agreement" />
             <xs:enumeration value="kling gupta efficiency" />
             <xs:enumeration value="mean absolute error" />
+            <xs:enumeration value="mean" />
             <xs:enumeration value="mean error" />
             <xs:enumeration value="mean square error" />
             <xs:enumeration value="mean square error skill score" />

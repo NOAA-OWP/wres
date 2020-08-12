@@ -42,6 +42,9 @@ message DoubleScoreMetric
             FALSE_POSITIVES = 9;
             FALSE_NEGATIVES = 10;
             TRUE_NEGATIVES = 11;
+            LEFT = 12;
+            RIGHT = 13;
+            BASELINE = 14;
         }
 
         ComponentName name = 1;

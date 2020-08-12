@@ -571,13 +571,6 @@ public class Evaluation implements Closeable
 
     public void stop( Exception exception ) throws IOException
     {
-        if ( this.isStopped() )
-        {
-            LOGGER.debug( "Evaluation {} has already been stopped.", this.getEvaluationId() );
-
-            return;
-        }
-
         LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
 
         CompletionStatus status = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
@@ -690,16 +683,14 @@ public class Evaluation implements Closeable
                           e.getMessage() );
         }
 
-        // Flag that the evaluation has stopped (if not already flagged), in order to obtain the exit code
-        this.isStopped.set( true );
+        // Flag that the evaluation has closed (if not already flagged), in order to obtain the exit code
+        this.isClosed.set( true );
         
         CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
         if ( this.getExitCode() != 0 )
         {
             onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
         }
-        
-        this.isClosed.set( true );
         
         LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained {} evaluation description "
                      + "message, {} statistics messages, {} pairs messages and {} evaluation status messages. The "
@@ -749,7 +740,7 @@ public class Evaluation implements Closeable
         {
             throw new EvaluationEventException( "While attempting to wait for evaluation " + this.getEvaluationId()
                                                 + ", encountered an error: this evaluation cannot be asked to wait "
-                                                + "because publication has not been marked completed." );
+                                                + "because publication has not been marked complete." );
         }
 
         LOGGER.debug( "Awaiting completion of evaluation {}...", this.getEvaluationId() );
@@ -847,7 +838,7 @@ public class Evaluation implements Closeable
     {
         int code = this.exitCode.get();
 
-        if ( ! this.isStopped()  )
+        if ( ! (this.isStopped() || this.isClosed() )  )
         {
             throw new IllegalStateException( "Cannot acquire the exit status of a running evaluation." );
         }
@@ -1097,7 +1088,7 @@ public class Evaluation implements Closeable
 
     private void validateRequestToPublish()
     {
-        if ( this.isStopped.get() )
+        if ( this.publicationComplete.get() )
         {
             throw new IllegalStateException( WHILE_ATTEMPTING_TO_PUBLISH_A_MESSAGE_TO_EVALUATION
                                              + this.getEvaluationId()
@@ -1105,7 +1096,7 @@ public class Evaluation implements Closeable
                                              + PUBLICATION_COMPLETE_ERROR );
         }
 
-        if ( this.publicationComplete.get() )
+        if ( this.isClosed() || this.isStopped() )
         {
             throw new IllegalStateException( WHILE_ATTEMPTING_TO_PUBLISH_A_MESSAGE_TO_EVALUATION
                                              + this.getEvaluationId()

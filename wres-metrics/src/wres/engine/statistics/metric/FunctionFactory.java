@@ -41,7 +41,7 @@ public class FunctionFactory
      * Median.
      */
 
-    private static final Median median = new Median();
+    private static final Median MEDIAN = new Median();
 
     /**
      * Return a function that computes the difference between the second and first entries in a single-valued pair.
@@ -170,7 +170,7 @@ public class FunctionFactory
 
     public static ToDoubleFunction<VectorOfDoubles> median()
     {
-        return a -> median.evaluate( a.getDoubles() );
+        return a -> MEDIAN.evaluate( a.getDoubles() );
     }
 
     /**

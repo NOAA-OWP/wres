@@ -54,6 +54,8 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -440,22 +442,25 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // Statistics for a separate baseline? If no, there's a single set of variables
         if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
         {
-            return this.getMetricVariablesForOneTimeWindow( timeWindow, thresholds, units, desiredTimeScale, null );
+            return this.getMetricVariablesForOneTimeWindow( timeWindow, thresholds, units, desiredTimeScale, null,
+                                                            Objects.nonNull( inputs.getBaseline( ) ) );
         }
 
-        // Two sets of variables, one for the right and one for the baseline with separate metrics
-        // FOr backwards compatibility, only clarify the baseline variable
+        // Two sets of variables, one for the right and one for the baseline with separate metrics.
+        // For backwards compatibility, only clarify the baseline variable
         Collection<MetricVariable> right = this.getMetricVariablesForOneTimeWindow( timeWindow,
                                                                                     thresholds,
                                                                                     units,
                                                                                     desiredTimeScale,
-                                                                                    null );
+                                                                                    null,
+                                                                                    Objects.nonNull( inputs.getBaseline() ) );
 
         Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( timeWindow,
                                                                                        thresholds,
                                                                                        units,
                                                                                        desiredTimeScale,
-                                                                                       LeftOrRightOrBaseline.BASELINE );
+                                                                                       LeftOrRightOrBaseline.BASELINE,
+                                                                                       Objects.nonNull( inputs.getBaseline( ) ) );
 
         Collection<MetricVariable> merged = new ArrayList<>( right );
         merged.addAll( baseline );
@@ -471,6 +476,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @param units the measurement units, if available
      * @param desiredTimeScale the desired time scale, if available
      * @param context optional context for the variable
+     * @param hasBaseline is true if a baseline is declared
      * @return the metric variables
      */
 
@@ -478,13 +484,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                            ThresholdsByMetric thresholds,
                                                                            String units,
                                                                            TimeScaleOuter desiredTimeScale,
-                                                                           LeftOrRightOrBaseline context )
+                                                                           LeftOrRightOrBaseline context,
+                                                                           boolean hasBaseline )
     {
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap = thresholds.getOneOrTwoThresholds();
 
         Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
-                this.decomposeThresholdsByMetricForBlobCreation( thresholdMap );
+                this.decomposeThresholdsByMetricForBlobCreation( thresholdMap, hasBaseline );
 
         Collection<MetricVariable> returnMe = new ArrayList<>();
 
@@ -538,11 +545,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * metric, because each part requires a separate variable in the netCDF.
      * 
      * @param thresholdsByMetric the thresholds-by-metric to expand
+     * @param hasBaseline is true if there is a baseline within the pairing
      * @return the expanded thresholds-by-metric
      */
 
     private Map<String, SortedSet<OneOrTwoThresholds>>
-            decomposeThresholdsByMetricForBlobCreation( Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsByMetric )
+            decomposeThresholdsByMetricForBlobCreation( Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsByMetric,
+                                                        boolean hasBaseline )
     {
 
         Map<String, SortedSet<OneOrTwoThresholds>> returnMe = new TreeMap<>();
@@ -553,6 +562,22 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             SortedSet<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
 
             Set<MetricConstants> components = nextMetric.getAllComponents();
+            
+            // Univariate scores are part of both their own group and a decomposition group. We are only interested
+            // in the decomposition group here, so filter out components that are also univariate scores
+            // #81790
+            if ( nextMetric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
+            {
+                components = components.stream()
+                                       .filter( next -> !next.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
+                                       .collect( Collectors.toSet() );
+                
+                // Remove the baseline component if there is no baseline: saves an empty variable
+                if( !hasBaseline )
+                {
+                    components.remove( MetricConstants.BASELINE );
+                }
+            }
 
             // Decompose, except for the sample size, which has a large number of associations
             // that are not relevant here
@@ -823,7 +848,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
 
                     String name = this.getVariableName( score.getMetricName(), componentScore, scores );
-
+   
                     // Figure out the location of all values and build the origin in each variable grid
                     FeatureKey location = score.getMetadata()
                                                .getIdentifier()
@@ -849,6 +874,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     }
 
                     Double actualValue = componentScore.getData().getValue();
+
                     this.saveValues( name, origin, actualValue );
                 }
             }

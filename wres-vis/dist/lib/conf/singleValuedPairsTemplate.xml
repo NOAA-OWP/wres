@@ -5,7 +5,7 @@
 
     <plotTitle>
         <font family="Dialog" size="12" style="1"/>
-        <text>Single valued pairs for @primaryScenario@ predictions of @variableName@@timeScale@ at @locationName@
+        <text>Single valued pairs for @primaryScenario@@variableName@@timeScale@ at @locationName@
 @referenceTime@@dataPoolingWindow(yyyy-MM-dd'T'HH:mm:ss zz;GMT)@</text>
     </plotTitle>
     

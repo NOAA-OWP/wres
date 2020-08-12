@@ -50,7 +50,6 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.events.ConsumerException;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedStatisticsWriters;
-import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDurationDiagramWriter;
@@ -277,7 +276,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         // a MessageListener. It is possible that other types could occur, which could make the application
         // hang on failing to consume all expected messages. This only applies to internal consumers that 
         // can break the flow with exceptions. Eventually, all consumers will be external. 
-        catch ( NullPointerException | WresProcessingException | WriteException | ProjectConfigException e )
+        catch ( RuntimeException e )
         {
             throw new ConsumerException( "While consuming evaluation statistics.", e );
         }
@@ -1046,11 +1045,15 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
 
     /**
      * Closes resources that were opened by this class.
+     * 
+     * @throws IOException if any one consumer could not be closed.
      */
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
+        int countFailedToClose = 0;
+        IOException reThrow = null;
         for ( Closeable resource : this.resourcesToClose )
         {
             LOGGER.debug( "About to close {}", resource );
@@ -1061,11 +1064,22 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             }
             catch ( IOException ioe )
             {
+                countFailedToClose++;
+                reThrow = ioe;
                 // Not much we can do at this point. We tried to close, but
                 // we need to try to close all the other resources too before
-                // the software exits.
+                // the software exits. Will rethrow the last one below.
                 LOGGER.warn( "Unable to close resource {}", resource, ioe );
             }
+        }
+
+        // Rethrow
+        if ( countFailedToClose > 0 )
+        {
+            throw new IOException( "While attempting to close a statistics consumer, failed to close "
+                                   + countFailedToClose
+                                   + " dependent resources. The last exception follows.",
+                                   reThrow );
         }
     }
 

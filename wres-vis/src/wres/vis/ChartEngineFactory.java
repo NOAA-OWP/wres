@@ -968,7 +968,6 @@ public abstract class ChartEngineFactory
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         // Find the metadata for the first element, which is sufficient here
-        SampleMetadata metadata = input.get( 0 ).getMetadata();
         MetricConstants metricName = input.get( 0 ).getMetricName();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
@@ -989,9 +988,12 @@ public abstract class ChartEngineFactory
                                                                            null,
                                                                            durationUnits );
 
+        SampleMetadata metadata = input.get( 0 ).getMetadata();
+
         //Setup plot specific arguments.
         arguments.addDurationMetricArguments();
         arguments.addTimeToPeakArguments( input );
+        arguments.addBaselineArguments( metadata, metricName );
 
         //Build the source.
         XYChartDataSource source = null;
@@ -1031,7 +1033,6 @@ public abstract class ChartEngineFactory
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         // Find the metadata for the first element, which is sufficient here
-        SampleMetadata metadata = input.get( 0 ).getMetadata();
         MetricConstants metricName = input.get( 0 ).getMetricName();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
@@ -1052,9 +1053,12 @@ public abstract class ChartEngineFactory
                                                                            null,
                                                                            durationUnits );
 
+        SampleMetadata metadata = input.get( 0 ).getMetadata(); 
+        
         //Setup plot specific arguments.
         arguments.addDurationMetricArguments();
         arguments.addTimeToPeakArguments( input );
+        arguments.addBaselineArguments( metadata, metricName );
 
         //Setup the assumed source and arguments.
         CategoricalXYChartDataSource source =
