@@ -864,7 +864,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     catch ( CoordinateNotFoundException e )
                     {
                         throw new CoordinateNotFoundException( "While trying to write the statistic " + componentScore
-                                                               + "to the variable "
+                                                               + " to the variable "
                                                                + name
                                                                + " at path "
                                                                + this.outputPath
@@ -1184,7 +1184,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 {
                     this.checkForCoordinateAndThrowExceptionIfNotFound( location, false );
 
-                    return this.vectorCoordinatesMap.get( Integer.parseInt( location.getName() ) );
+                    return this.vectorCoordinatesMap.get( Integer.valueOf( location.getName() ) );
                 }
             }
         }
@@ -1194,6 +1194,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * if the coordinate cannot be found.
          * 
          * @param location the location to check
+         * @param isLocationName is true if the feature is a named location
          * @throws CoordinateNotFoundException if a coordinate could not be found
          */
 
@@ -1203,6 +1204,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // Location name is the glue
             if ( isLocationName )
             {
+                // Exception if not mapped
                 if ( !this.vectorCoordinatesMap.containsKey( location.getName() ) )
                 {
                     throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
@@ -1213,44 +1215,45 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                            + location.getName()
                                                            + "." );
                 }
-                // Comid is the glue
-                else
+            }
+            // Comid is the glue
+            else
+            {
+                Long coordinate;
+
+                try
                 {
-                    Long coordinate;
+                    coordinate = Long.parseLong( location.getName() );
+                }
+                catch ( NumberFormatException nfe )
+                {
+                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
+                                                           + this.outputPath
+                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
+                                                           + location
+                                                           + " because the NWM feature id was not type long.",
+                                                           nfe );
+                }
 
-                    try
-                    {
-                        coordinate = Long.parseLong( location.getName() );
-                    }
-                    catch ( NumberFormatException nfe )
-                    {
-                        throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
-                                                               + this.outputPath
-                                                               + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
-                                                               + location
-                                                               + " because the NWM feature id was not type long.", nfe );
-                    }
+                if ( coordinate > Integer.MAX_VALUE || coordinate < Integer.MIN_VALUE )
+                {
+                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
+                                                           + this.outputPath
+                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
+                                                           + location
+                                                           + " because the NWM feature id was out of integer range." );
+                }
 
-                    if ( coordinate > Integer.MAX_VALUE || coordinate < Integer.MIN_VALUE )
-                    {
-                        throw new CoordinateNotFoundException ( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
-                                                                + this.outputPath
-                                                                + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
-                                                                + location
-                                                                + " because the NWM feature id was out of integer range." );
-                    }
+                if ( !this.vectorCoordinatesMap.containsKey( Integer.valueOf( coordinate.intValue() ) ) )
+                {
 
-                    if ( !this.vectorCoordinatesMap.containsKey( coordinate.intValue() ) )
-                    {
-
-                        throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
-                                                               + this.outputPath
-                                                               + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
-                                                               + location
-                                                               + " using the NWM location identifier (comid) "
-                                                               + location.getName()
-                                                               + "." );
-                    }
+                    throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO
+                                                           + this.outputPath
+                                                           + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
+                                                           + location
+                                                           + " using the NWM location identifier (comid) "
+                                                           + location.getName()
+                                                           + "." );
                 }
             }
         }

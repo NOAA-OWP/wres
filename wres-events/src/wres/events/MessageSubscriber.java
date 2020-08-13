@@ -1112,9 +1112,15 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
-     * Checks whether this subscription is complete. The subscription is complete when the {@link expectedMessageCount} 
+     * <p>Checks whether this subscription is complete. The subscription is complete when the {@link expectedMessageCount} 
      * has been determined and the {@link actualMessageCount} equals the {@link expectedMessageCount}. If complete, 
      * sends a message indicating completion but does not close the subscription.
+     * 
+     * <p> For context, read {@link Evaluation#await()}. This method reports its completion status with limited scope. 
+     * Specifically, it reports complete when all underlying consumers have received all messages. It makes no
+     * guarantees that any work attached to that consumption, such as a delayed write, has completed. If this limited 
+     * guarantee is insufficient for any inner consumer, then it should probably register as an "external subscriber".
+     * An external subscriber is responsible for reporting its own lifecycle, including its completion status.
      */
 
     private void checkAndCompleteSubscription()
@@ -1131,6 +1137,7 @@ class MessageSubscriber<T> implements Closeable
                 List<EvaluationStatusEvent> events = new ArrayList<>();
                 CompletionStatus status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS;
 
+                // If any one (inner) consumer fails, the whole subscriber fails 
                 if ( this.failed() )
                 {
                     String message =

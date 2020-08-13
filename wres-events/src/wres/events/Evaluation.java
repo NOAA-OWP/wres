@@ -719,9 +719,28 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Waits for the evaluation to complete.
+     * <p>Waits for the evaluation to complete. Complete in this context means two specific things:
+     * 
+     * <ol>
+     * <li>That publication has been marked completed; and</li>
+     * <li>That every subscriber has received all of the messages it expected to receive.</li>
+     * </ol>
+     * 
+     * <p>It does *not* mean that every inner consumer within a subscriber has completed all of its work. For example,
+     * consider the possibility of a consumer that implements a delayed write, as described in #81790-21. This method
+     * may (probably will) complete before that delayed write has occurred. Thus, an evaluation should not be 
+     * considered complete until all underlying consumers have reported complete.
+     *  
+     * <p>In short, this method awaits with limited scope and makes only the guarantees described herein. 
+     * 
+     * <p>To await with broader scope (e.g., to guarantee that consumers have finished their work), the inner consumers 
+     * would need to implement a reporting contract. The simplest way to achieve this would be to promote each inner 
+     * consumer to an external/outer subscriber that registers with an evaluation using a unique identifier. See 
+     * {@link Consumers.Builder#addExternalSubscriber(String)}. An outer subscriber is always responsible for messaging
+     * its own lifecycle and this evaluation will await those messages.
      * 
      * <p>Calling this method multiple times has no effect (other than logging the additional attempts).
+     * 
      * @return the exit code on completion.
      * @throws EvaluationFailedToCompleteException if the evaluation failed to complete while waiting
      * @throws EvaluationEventException if the evaluation is asked to wait before publication is complete.
