@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -592,7 +593,7 @@ public class Project
      */
     public List<DestinationConfig> getPairDestinations()
     {
-        return ConfigHelper.getDestinationsOfType( this.getProjectConfig(), DestinationType.PAIRS );
+        return ProjectConfigs.getDestinationsOfType( this.getProjectConfig(), DestinationType.PAIRS );
     }
 
     private String getProjectName()

@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.ProjectConfigs;
 import wres.config.generated.*;
 import wres.control.Control.DatabaseServices;
 import wres.datamodel.FeatureTuple;
@@ -126,7 +127,6 @@ class ProcessorHelper
 
         // Incremental consumer
         StatisticsConsumer incrementalConsumer = StatisticsConsumer.of( evaluationDescription,
-                                                                        systemSettings,
                                                                         projectConfigPlus,
                                                                         incrementalTypes,
                                                                         sharedWriters.getStatisticsWriters(),
@@ -134,7 +134,6 @@ class ProcessorHelper
 
         // Group consumer (group = feature for now)
         StatisticsConsumer groupConsumer = StatisticsConsumer.of( evaluationDescription,
-                                                                  systemSettings,
                                                                   projectConfigPlus,
                                                                   nonIncrementalTypes,
                                                                   sharedWriters.getStatisticsWriters(),
@@ -545,7 +544,7 @@ class ProcessorHelper
         // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
         // Writing the same pairs, more than once, to that single destination does not make sense.
         // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
-        List<DestinationConfig> pairDestinations = ConfigHelper.getDestinationsOfType( projectConfig,
+        List<DestinationConfig> pairDestinations = ProjectConfigs.getDestinationsOfType( projectConfig,
                                                                                        DestinationType.PAIRS );
         if ( !pairDestinations.isEmpty() )
         {

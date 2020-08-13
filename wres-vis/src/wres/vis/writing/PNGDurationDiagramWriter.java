@@ -1,4 +1,4 @@
-package wres.io.writing.png;
+package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -17,16 +17,15 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.io.config.ConfigHelper;
-import wres.io.writing.WriterHelper;
-import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
+import wres.vis.config.ConfigHelper;
 
 /**
  * Helps write charts comprising {@link DurationDiagramStatisticOuter} to a file in Portable Network Graphics (PNG) format.
@@ -43,7 +42,6 @@ public class PNGDurationDiagramWriter extends PNGWriter
     /**
      * Returns an instance of a writer.
      *
-     * @param systemSettings The system settings to use.
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -52,12 +50,11 @@ public class PNGDurationDiagramWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDurationDiagramWriter of( SystemSettings systemSettings,
-                                               ProjectConfigPlus projectConfigPlus,
+    public static PNGDurationDiagramWriter of( ProjectConfigPlus projectConfigPlus,
                                                ChronoUnit durationUnits,
                                                Path outputDirectory )
     {
-        return new PNGDurationDiagramWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
+        return new PNGDurationDiagramWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -75,7 +72,7 @@ public class PNGDurationDiagramWriter extends PNGWriter
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
+                ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -92,13 +89,12 @@ public class PNGDurationDiagramWriter extends PNGWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<DurationDiagramStatisticOuter>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( filtered );
+                        Slicer.getStatisticsGroupedByContext( filtered );
 
                 for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGDurationDiagramWriter.writePairedOutputByInstantDurationCharts( super.getSystemSettings(),
-                                                                                               super.getOutputDirectory(),
+                            PNGDurationDiagramWriter.writePairedOutputByInstantDurationCharts( super.getOutputDirectory(),
                                                                                                super.getProjectConfigPlus(),
                                                                                                destinationConfig,
                                                                                                nextGroup,
@@ -126,7 +122,6 @@ public class PNGDurationDiagramWriter extends PNGWriter
      * Writes a set of charts associated with {@link DurationDiagramStatisticOuter} for a single metric and time window,
      * stored in a {@link List}.
      *
-     * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -136,8 +131,7 @@ public class PNGDurationDiagramWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writePairedOutputByInstantDurationCharts( SystemSettings systemSettings,
-                                                                       Path outputDirectory,
+    private static Set<Path> writePairedOutputByInstantDurationCharts( Path outputDirectory,
                                                                        ProjectConfigPlus projectConfigPlus,
                                                                        DestinationConfig destinationConfig,
                                                                        List<DurationDiagramStatisticOuter> output,
@@ -155,10 +149,10 @@ public class PNGDurationDiagramWriter extends PNGWriter
 
             final ChartEngine engine =
                     ChartEngineFactory.buildDurationDiagramChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                              output,
-                                                                              helper.getTemplateResourceName(),
-                                                                              helper.getGraphicsString(),
-                                                                              durationUnits );
+                                                                        output,
+                                                                        helper.getTemplateResourceName(),
+                                                                        helper.getGraphicsString(),
+                                                                        durationUnits );
 
             // Build the output file name
             Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
@@ -167,7 +161,7 @@ public class PNGDurationDiagramWriter extends PNGWriter
                                                                   metricName,
                                                                   null );
 
-            PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
+            PNGWriter.writeChart( outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
         }
@@ -189,12 +183,11 @@ public class PNGDurationDiagramWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDurationDiagramWriter( SystemSettings systemSettings,
-                                      ProjectConfigPlus projectConfigPlus,
+    private PNGDurationDiagramWriter( ProjectConfigPlus projectConfigPlus,
                                       ChronoUnit durationUnits,
                                       Path outputDirectory )
     {
-        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
+        super( projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

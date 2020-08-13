@@ -2,10 +2,21 @@ package wres.config;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -16,6 +27,8 @@ import wres.config.generated.ProjectConfig.Inputs;
 
 public class ProjectConfigs
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( ProjectConfigs.class );
 
     /**
      * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
@@ -31,7 +44,7 @@ public class ProjectConfigs
 
         return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
     }
-    
+
     /**
      * Compares the input instances of {@link ProjectConfig}. Returns a negative, zero, or positive value when the first
      * input is less than, equal to, or greater than the second input, respectively. This is a minimal implementation
@@ -145,11 +158,11 @@ public class ProjectConfigs
         // Has a left source with a variable value
         return inputs.getLeft().getVariable().getValue();
     }
-    
+
     /**
      * <p>Returns the variable name from an {@link DataSourceConfig}. The identifier is one of the following in
      * order of precedent:</p>
-
+    
      * <ol>
      * <li>The label associated with the variable.</li>
      * <li>The value associated with the variable.</li>
@@ -164,19 +177,106 @@ public class ProjectConfigs
     {
         Objects.requireNonNull( dataSourceConfig );
         Objects.requireNonNull( dataSourceConfig.getVariable() );
-        
-        if( Objects.nonNull( dataSourceConfig.getVariable().getLabel() ) )
+
+        if ( Objects.nonNull( dataSourceConfig.getVariable().getLabel() ) )
         {
             return dataSourceConfig.getVariable().getLabel();
         }
-        
+
         return dataSourceConfig.getVariable().getValue();
     }
-    
+
     private ProjectConfigs()
     {
         // Prevent construction, this is a static helper class.
     }
+
+    /**
+     * Get all the destinations from a configuration for a particular type.
+     * @param config the config to search through
+     * @param type the type to look for
+     * @return a list of destinations with the type specified
+     * @throws NullPointerException when config or type is null
+     */
+
+    public static List<DestinationConfig> getDestinationsOfType( ProjectConfig config,
+                                                                 DestinationType type )
+    {
+        Objects.requireNonNull( config, "Config must not be null." );
+        Objects.requireNonNull( type, "Type must not be null." );
+
+        List<DestinationConfig> result = new ArrayList<>();
+
+        if ( config.getOutputs() == null
+             || config.getOutputs().getDestination() == null )
+        {
+            LOGGER.debug( "No destinations specified for config {}", config );
+            return java.util.Collections.unmodifiableList( result );
+        }
+
+        for ( DestinationConfig d : config.getOutputs().getDestination() )
+        {
+            if ( d.getType() == type )
+            {
+                result.add( d );
+            }
+        }
+
+        return java.util.Collections.unmodifiableList( result );
+    }
+
+    /**
+     * Get all the graphical destinations from a configuration.
+     *
+     * @param config the config to search through
+     * @return a list of graphical destinations
+     * @throws NullPointerException when config is null
+     */
+
+    public static List<DestinationConfig> getGraphicalDestinations( ProjectConfig config )
+    {
+        return getDestinationsOfType( config, DestinationType.GRAPHIC );
+    }
+
+    /**
+     * Get all the numerical destinations from a configuration.
+     *
+     * @param config the config to search through
+     * @return a list of numerical destinations
+     * @throws NullPointerException when config is null
+     */
+
+    public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
+    {
+        return getDestinationsOfType( config, DestinationType.NUMERIC );
+    }
+
+    /**
+     * Returns the first instance of the named metric configuration or null if no such configuration exists.
+     * 
+     * @param projectConfig the project configuration
+     * @param metricName the metric name
+     * @return the named metric configuration or null
+     * @throws NullPointerException if one or both of the inputs are null
+     */
     
+    public static MetricConfig getMetricConfigByName( ProjectConfig projectConfig, MetricConfigName metricName )
+    {
+        Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
+        Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
+    
+        for ( MetricsConfig next : projectConfig.getMetrics() )
+        {
+            Optional<MetricConfig> nextConfig =
+                    next.getMetric().stream().filter( metric -> metric.getName().equals( metricName ) ).findFirst();
+            if ( nextConfig.isPresent() )
+            {
+                return nextConfig.get();
+            }
+        }
+    
+        return null;
+    }
+
 }
 

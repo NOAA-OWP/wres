@@ -1,4 +1,4 @@
-package wres.io.writing.png;
+package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -17,16 +17,15 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.io.config.ConfigHelper;
-import wres.io.writing.WriterHelper;
-import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
+import wres.vis.config.ConfigHelper;
 
 /**
  * Helps write charts comprising {@link DurationScoreStatisticOuter} to a file in Portable Network Graphics (PNG) format.
@@ -43,7 +42,6 @@ public class PNGDurationScoreWriter extends PNGWriter
     /**
      * Returns an instance of a writer.
      *
-     * @param systemSettings The system settings to use.
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -52,13 +50,11 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDurationScoreWriter of( SystemSettings systemSettings,
-                                             ProjectConfigPlus projectConfigPlus,
+    public static PNGDurationScoreWriter of( ProjectConfigPlus projectConfigPlus,
                                              ChronoUnit durationUnits,
                                              Path outputDirectory )
     {
-        return new PNGDurationScoreWriter( systemSettings,
-                                           projectConfigPlus,
+        return new PNGDurationScoreWriter( projectConfigPlus,
                                            durationUnits,
                                            outputDirectory );
     }
@@ -78,7 +74,7 @@ public class PNGDurationScoreWriter extends PNGWriter
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
+                ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -93,13 +89,12 @@ public class PNGDurationScoreWriter extends PNGWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<DurationScoreStatisticOuter>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( filtered );
+                        Slicer.getStatisticsGroupedByContext( filtered );
 
                 for ( List<DurationScoreStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGDurationScoreWriter.writeScoreCharts( super.getSystemSettings(),
-                                                                     super.getOutputDirectory(),
+                            PNGDurationScoreWriter.writeScoreCharts( super.getOutputDirectory(),
                                                                      super.getProjectConfigPlus(),
                                                                      destinationConfig,
                                                                      nextGroup,
@@ -126,7 +121,6 @@ public class PNGDurationScoreWriter extends PNGWriter
      * Writes a set of charts associated with {@link DurationScoreStatisticOuter} for a single metric and time window,
      * stored in a {@link List}.
      *
-     * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -136,8 +130,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeScoreCharts( SystemSettings systemSettings,
-                                               Path outputDirectory,
+    private static Set<Path> writeScoreCharts( Path outputDirectory,
                                                ProjectConfigPlus projectConfigPlus,
                                                DestinationConfig destinationConfig,
                                                List<DurationScoreStatisticOuter> output,
@@ -168,7 +161,7 @@ public class PNGDurationScoreWriter extends PNGWriter
                                                                   metricName,
                                                                   null );
 
-            PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
+            PNGWriter.writeChart( outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
         }
@@ -190,12 +183,11 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDurationScoreWriter( SystemSettings systemSettings,
-                                    ProjectConfigPlus projectConfigPlus,
+    private PNGDurationScoreWriter( ProjectConfigPlus projectConfigPlus,
                                     ChronoUnit durationUnits,
                                     Path outputDirectory )
     {
-        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
+        super( projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }
