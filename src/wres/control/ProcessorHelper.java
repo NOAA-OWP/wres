@@ -176,16 +176,17 @@ class ProcessorHelper
             // Wait for the evaluation to conclude
             evaluation.await();
             
-            // Close the shared writers: it is awkward to close these after awaiting an evaluation because some 
-            // serialization is delayed until the shared writers close. Since the writers are created here, they 
-            // should be destroyed here too. However, closing the shared writers could throw an exception without 
-            // completing all expected writes. The evaluation should not be closed until that outcome is known. 
-            // Ultimately, the low-level writer or something aware of this should report 
-            // CONSUMPTION_COMPLETE_REPORTED_FAILURE. The MessageSubscriber should not report success according to when 
-            // the consumer was supplied with all expected statistics (as now), rather it should delegate this to the 
-            // actual thing that does the serialization. In that case, the exception would happen more correctly on 
-            // await(), above. For now, allowing any exception to propagate by closing here, before the evaluation
-            // is closed. See #81790-21.
+            // Since the shared writers are created here, they should be destroyed here. An attempt should be made to 
+            // close them before the finally block because some of these writers may employ a delayed write, which could 
+            // still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further context 
+            // see #81790-21 and the detailed description in Evaluation.await(), which clarifies that awaiting for an 
+            // evaluation to complete does not mean that all consumers have finished their work, only that they have 
+            // received all expected messages. If this contract is insufficient (e.g., because of a delayed write
+            // implementation), then it may be necessary to promote the underlying consumer/s to an external/outer 
+            // subscriber that is responsible for messaging its own lifecycle, rather than delegating that to the 
+            // Evaluation instance (which adopts the limited contract described here). An external subscriber within 
+            // this jvm/process has the same contract as an external subscriber running in another process/jvm. It 
+            // should only report completion when consumption is "done done".
             sharedWriters.close();
 
             return Collections.unmodifiableSet( returnMe );
