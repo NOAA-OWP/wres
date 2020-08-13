@@ -19,6 +19,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
@@ -32,7 +33,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
-import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
@@ -98,7 +98,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
+                ProjectConfigs.getNumericalDestinations( this.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
             // Write per time-window
@@ -108,7 +108,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<T>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( output );
+                        Slicer.getStatisticsGroupedByContext( output );
 
                 for ( List<T> nextGroup : groups.values() )
                 {

@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -29,7 +30,6 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
-import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
@@ -87,7 +87,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( super.getProjectConfig() );
+                ProjectConfigs.getNumericalDestinations( super.getProjectConfig() );
 
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
@@ -101,7 +101,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( output );
+                        Slicer.getStatisticsGroupedByContext( output );
 
                 for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {

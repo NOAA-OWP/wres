@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
@@ -31,7 +32,6 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
-import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
@@ -84,7 +84,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( super.getProjectConfig() );
+                ProjectConfigs.getNumericalDestinations( super.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -98,7 +98,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<DiagramStatisticOuter>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( output );
+                        Slicer.getStatisticsGroupedByContext( output );
 
                 for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
                 {

@@ -1,4 +1,4 @@
-package wres.io.writing.png;
+package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -20,6 +20,7 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
@@ -29,10 +30,8 @@ import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.config.ConfigHelper;
-import wres.io.writing.WriterHelper;
-import wres.system.SystemSettings;
 import wres.vis.ChartEngineFactory;
+import wres.vis.config.ConfigHelper;
 
 /**
  * Helps write charts comprising {@link BoxplotStatisticOuter} to a file in Portable Network Graphics (PNG) format.
@@ -44,12 +43,14 @@ public class PNGBoxPlotWriter extends PNGWriter
         implements Consumer<List<BoxplotStatisticOuter>>,
         Supplier<Set<Path>>
 {
+    private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS =
+            "Specify non-null input data when writing diagram outputs.";
+
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
      *
-     * @param systemSettings The system settings to use.
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
@@ -58,12 +59,11 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGBoxPlotWriter of( SystemSettings systemSettings,
-                                       ProjectConfigPlus projectConfigPlus,
+    public static PNGBoxPlotWriter of( ProjectConfigPlus projectConfigPlus,
                                        ChronoUnit durationUnits,
                                        Path outputDirectory )
     {
-        return new PNGBoxPlotWriter( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
+        return new PNGBoxPlotWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -77,7 +77,7 @@ public class PNGBoxPlotWriter extends PNGWriter
     @Override
     public void accept( final List<BoxplotStatisticOuter> output )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
 
         this.writeBoxPlotsPerPair( output );
         this.writeBoxPlotsPerPool( output );
@@ -93,11 +93,11 @@ public class PNGBoxPlotWriter extends PNGWriter
 
     private void writeBoxPlotsPerPair( List<BoxplotStatisticOuter> output )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
+                ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -117,13 +117,12 @@ public class PNGBoxPlotWriter extends PNGWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( filtered );
+                        Slicer.getStatisticsGroupedByContext( filtered );
 
                 for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGBoxPlotWriter.writeOneBoxPlotChartPerMetricAndPool( super.getSystemSettings(),
-                                                                                   super.getOutputDirectory(),
+                            PNGBoxPlotWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
                                                                                    super.getProjectConfigPlus(),
                                                                                    destinationConfig,
                                                                                    nextGroup,
@@ -144,11 +143,11 @@ public class PNGBoxPlotWriter extends PNGWriter
 
     private void writeBoxPlotsPerPool( List<BoxplotStatisticOuter> output )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
+                ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -168,13 +167,12 @@ public class PNGBoxPlotWriter extends PNGWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( filtered );
+                        Slicer.getStatisticsGroupedByContext( filtered );
 
                 for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGBoxPlotWriter.writeOneBoxPlotChartPerMetric( super.getSystemSettings(),
-                                                                            super.getOutputDirectory(),
+                            PNGBoxPlotWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
                                                                             super.getProjectConfigPlus(),
                                                                             destinationConfig,
                                                                             nextGroup,
@@ -212,8 +210,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeOneBoxPlotChartPerMetricAndPool( SystemSettings systemSettings,
-                                                                   Path outputDirectory,
+    private static Set<Path> writeOneBoxPlotChartPerMetricAndPool( Path outputDirectory,
                                                                    ProjectConfigPlus projectConfigPlus,
                                                                    DestinationConfig destinationConfig,
                                                                    List<BoxplotStatisticOuter> output,
@@ -247,7 +244,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                       metricName,
                                                                       null );
 
-                PNGWriter.writeChart( systemSettings, outputImage, nextEntry.getValue(), destinationConfig );
+                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
                 pathsWrittenTo.add( outputImage );
             }
@@ -273,8 +270,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeOneBoxPlotChartPerMetric( SystemSettings systemSettings,
-                                                            Path outputDirectory,
+    private static Set<Path> writeOneBoxPlotChartPerMetric( Path outputDirectory,
                                                             ProjectConfigPlus projectConfigPlus,
                                                             DestinationConfig destinationConfig,
                                                             List<BoxplotStatisticOuter> output,
@@ -304,7 +300,7 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                   metricName,
                                                                   null );
 
-            PNGWriter.writeChart( systemSettings, outputImage, engine, destinationConfig );
+            PNGWriter.writeChart( outputImage, engine, destinationConfig );
 
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
@@ -328,12 +324,11 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGBoxPlotWriter( SystemSettings systemSettings,
-                              ProjectConfigPlus projectConfigPlus,
+    private PNGBoxPlotWriter( ProjectConfigPlus projectConfigPlus,
                               ChronoUnit durationUnits,
                               Path outputDirectory )
     {
-        super( systemSettings, projectConfigPlus, durationUnits, outputDirectory );
+        super( projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

@@ -1,6 +1,4 @@
-package wres.io.writing.png;
-
-import wres.io.writing.WriteException;
+package wres.vis.writing;
 
 /**
  * A runtime exception associated with writing metric outputs in Portable Network Graphics (PNG) format.
@@ -8,7 +6,7 @@ import wres.io.writing.WriteException;
  * @author james.brown@hydrosolved.com
  */
 
-public class PNGWriteException extends WriteException
+public class PNGWriteException extends RuntimeException
 {
 
     /**

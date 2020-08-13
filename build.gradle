@@ -305,7 +305,6 @@ project(':wres-io')
         compile project(':wres-system')
         compile project(':wres-datamodel')
         compile project(':wres-config')
-        compile project(':wres-vis')
         compile project(':wres-grid')
         compile project(':wres-events')
 
@@ -817,6 +816,10 @@ project(':wres-vis')
         testCompile files('../libs/external/jfreechart-1.0.9.jar')
         testCompile files('../libs/external/ohdcommonchps.jar')
         testCompile 'junit:junit:4.13'
+
+        // Mocking help
+        testCompile 'org.mockito:mockito-core:3.3.3'
+
         testRuntime files('dist/lib/conf')
     }
 }

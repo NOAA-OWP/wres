@@ -197,7 +197,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         LOGGER.debug( "Created NetcdfOutputWriter {}", this );
         this.executor = executor;
-        this.destinationConfig = ConfigHelper.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
+        this.destinationConfig = ProjectConfigs.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
         this.netcdfConfiguration = this.destinationConfig.getNetcdf();
         this.durationUnits = durationUnits;
         this.outputDirectory = outputDirectory;

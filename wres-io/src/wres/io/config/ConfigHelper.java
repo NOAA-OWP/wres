@@ -12,12 +12,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
@@ -68,7 +66,7 @@ public class ConfigHelper
     private static final String ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING =
             "Enter non-null metadata to establish a path for writing.";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
+    public static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
 
     /**
      * Default exception message when a destination cannot be established.
@@ -239,67 +237,6 @@ public class ConfigHelper
         Path actualPath = Paths.get( path );
         ProjectConfigPlus configPlus = ProjectConfigPlus.from( actualPath );
         return configPlus.getProjectConfig();
-    }
-
-
-    /**
-     * Get all the destinations from a configuration for a particular type.
-     * @param config the config to search through
-     * @param type the type to look for
-     * @return a list of destinations with the type specified
-     * @throws NullPointerException when config or type is null
-     */
-
-    public static List<DestinationConfig> getDestinationsOfType( ProjectConfig config,
-                                                                 DestinationType type )
-    {
-        Objects.requireNonNull( config, "Config must not be null." );
-        Objects.requireNonNull( type, "Type must not be null." );
-
-        List<DestinationConfig> result = new ArrayList<>();
-
-        if ( config.getOutputs() == null
-             || config.getOutputs().getDestination() == null )
-        {
-            LOGGER.debug( "No destinations specified for config {}", config );
-            return java.util.Collections.unmodifiableList( result );
-        }
-
-        for ( DestinationConfig d : config.getOutputs().getDestination() )
-        {
-            if ( d.getType() == type )
-            {
-                result.add( d );
-            }
-        }
-
-        return java.util.Collections.unmodifiableList( result );
-    }
-
-    /**
-     * Get all the graphical destinations from a configuration.
-     *
-     * @param config the config to search through
-     * @return a list of graphical destinations
-     * @throws NullPointerException when config is null
-     */
-
-    public static List<DestinationConfig> getGraphicalDestinations( ProjectConfig config )
-    {
-        return getDestinationsOfType( config, DestinationType.GRAPHIC );
-    }
-
-    /**
-     * Get all the numerical destinations from a configuration.
-     *
-     * @param config the config to search through
-     * @return a list of numerical destinations
-     * @throws NullPointerException when config is null
-     */
-
-    public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
-    {
-        return getDestinationsOfType( config, DestinationType.NUMERIC );
     }
 
     /**
@@ -516,33 +453,6 @@ public class ConfigHelper
                                                 + " source config "
                                                 + config );
         }
-    }
-
-    /**
-     * Returns the first instance of the named metric configuration or null if no such configuration exists.
-     * 
-     * @param projectConfig the project configuration
-     * @param metricName the metric name
-     * @return the named metric configuration or null
-     * @throws NullPointerException if one or both of the inputs are null
-     */
-
-    public static MetricConfig getMetricConfigByName( ProjectConfig projectConfig, MetricConfigName metricName )
-    {
-        Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
-        Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
-
-        for ( MetricsConfig next : projectConfig.getMetrics() )
-        {
-            Optional<MetricConfig> nextConfig =
-                    next.getMetric().stream().filter( metric -> metric.getName().equals( metricName ) ).findFirst();
-            if ( nextConfig.isPresent() )
-            {
-                return nextConfig.get();
-            }
-        }
-
-        return null;
     }
 
     /**

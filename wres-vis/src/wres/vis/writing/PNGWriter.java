@@ -1,4 +1,4 @@
-package wres.io.writing.png;
+package wres.vis.writing;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +12,7 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.config.ProjectConfigPlus;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -19,8 +20,6 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.io.config.ConfigHelper;
-import wres.system.SystemSettings;
 
 /**
  * Helps to write a {@link ChartEngine} to a graphical product file in Portable Network Graphics (PNG) format.
@@ -36,13 +35,24 @@ import wres.system.SystemSettings;
 
 abstract class PNGWriter
 {
-    private final SystemSettings systemSettings;
 
+    /**
+     * Default chart height in pixels.
+     */
+    
+    private static final int DEFAULT_CHART_HEIGHT = 600;
+    
+    /**
+     * Default chart width in pixels.
+     */
+    
+    private static final int DEFAULT_CHART_WIDTH = 800;
+    
     /**
      * Resolution for writing duration outputs.
      */
 
-    private final ChronoUnit durationUnits; 
+    private final ChronoUnit durationUnits;
 
     /**
      * The project configuration to write.
@@ -55,32 +65,27 @@ abstract class PNGWriter
      */
     private final Path outputDirectory;
 
-    protected SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
     /**
      * Returns the duration units for writing lead durations.
      * 
      * @return the duration units
      */
-    
+
     ChronoUnit getDurationUnits()
     {
         return this.durationUnits;
     }
-    
+
     /**
      * Returns the project declaration
      * 
      * @return the project declaration
      */
-    
+
     ProjectConfigPlus getProjectConfigPlus()
     {
         return this.projectConfigPlus;
-    }    
+    }
 
     Path getOutputDirectory()
     {
@@ -97,17 +102,14 @@ abstract class PNGWriter
      * @throws PNGWriteException if the chart could not be written
      */
 
-    static void writeChart( SystemSettings systemSettings,
-                            final Path outputImage,
+    static void writeChart( final Path outputImage,
                             final ChartEngine engine,
                             final DestinationConfig dest )
-            throws PNGWriteException
     {
         final File outputImageFile = outputImage.toFile();
 
-        // TODO: these defaults should be provided in the declaration
-        int width = systemSettings.getDefaultChartWidth();
-        int height = systemSettings.getDefaultChartHeight();
+        int width = PNGWriter.DEFAULT_CHART_WIDTH;
+        int height = PNGWriter.DEFAULT_CHART_HEIGHT;
 
         if ( dest.getGraphical() != null && dest.getGraphical().getWidth() != null )
         {
@@ -183,37 +185,34 @@ abstract class PNGWriter
                                 MetricConstants metricId )
         {
             ProjectConfig config = projectConfigPlus.getProjectConfig();
-            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            String innerGraphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
 
             // Build the chart engine
             MetricConfig nextConfig =
                     getNamedConfigOrAllValid( metricId, config );
 
             // Default to global type parameter
-            OutputTypeSelection outputType = OutputTypeSelection.DEFAULT;
+            OutputTypeSelection innerOutputType = OutputTypeSelection.DEFAULT;
             if ( Objects.nonNull( destConfig.getOutputType() ) )
             {
-                outputType = destConfig.getOutputType();
+                innerOutputType = destConfig.getOutputType();
             }
-            String templateResourceName = null;
-            
-            if( Objects.nonNull( destConfig.getGraphical() ) )
+            String innerTemplateResourceName = null;
+
+            if ( Objects.nonNull( destConfig.getGraphical() ) )
             {
-                templateResourceName = destConfig.getGraphical().getTemplate();
+                innerTemplateResourceName = destConfig.getGraphical().getTemplate();
             }
 
-            if ( Objects.nonNull( nextConfig ) )
+            // Override template name with metric specific name.
+            if ( Objects.nonNull( nextConfig ) && Objects.nonNull( nextConfig.getTemplateResourceName() ) )
             {
-
-                // Override template name with metric specific name.
-                if ( Objects.nonNull( nextConfig.getTemplateResourceName() ) )
-                {
-                    templateResourceName = nextConfig.getTemplateResourceName();
-                }
+                innerTemplateResourceName = nextConfig.getTemplateResourceName();
             }
-            this.templateResourceName = templateResourceName;
-            this.outputType = outputType;
-            this.graphicsString = graphicsString;
+
+            this.templateResourceName = innerTemplateResourceName;
+            this.outputType = innerOutputType;
+            this.graphicsString = innerGraphicsString;
         }
 
         /**
@@ -261,7 +260,7 @@ abstract class PNGWriter
         {
 
             // Deal with MetricConfigName.ALL_VALID first
-            MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
+            MetricConfig allValid = ProjectConfigs.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
             if ( Objects.nonNull( allValid ) )
             {
                 return allValid;
@@ -291,17 +290,14 @@ abstract class PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    PNGWriter( SystemSettings systemSettings,
-               ProjectConfigPlus projectConfigPlus,
+    PNGWriter( ProjectConfigPlus projectConfigPlus,
                ChronoUnit durationUnits,
                Path outputDirectory )
     {
-        Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfigPlus, "Specify a non-null project declaration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
-        this.systemSettings = systemSettings;
         this.projectConfigPlus = projectConfigPlus;
         this.durationUnits = durationUnits;
         this.outputDirectory = outputDirectory;

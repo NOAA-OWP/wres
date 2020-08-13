@@ -25,6 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -782,6 +783,34 @@ public final class Slicer
     }
 
     /**
+     * Returns a map of statistics grouped by their {@link LeftOrRightOrBaseline}.
+     * 
+     * @param <T> the type of statistic
+     * @param input the input list of statistics
+     * @return the statistics grouped by context
+     */
+    
+    public static <T extends Statistic<?>> Map<LeftOrRightOrBaseline, List<T>>
+            getStatisticsGroupedByContext( List<T> input )
+    {
+    
+        Function<? super T, ? extends LeftOrRightOrBaseline> classifier = statistic -> {
+            if ( statistic.getMetadata().getPool().getIsBaselinePool() )
+            {
+                return LeftOrRightOrBaseline.BASELINE;
+            }
+    
+            return LeftOrRightOrBaseline.RIGHT;
+        };
+    
+        Map<LeftOrRightOrBaseline, List<T>> groups =
+                input.stream()
+                     .collect( Collectors.groupingBy( classifier ) );
+    
+        return Collections.unmodifiableMap( groups );
+    }
+
+    /**
      * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
      * 
      * @return a function that rounds to a prescribed number of decimal places
@@ -803,5 +832,4 @@ public final class Slicer
     private Slicer()
     {
     }
-
 }

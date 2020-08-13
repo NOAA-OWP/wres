@@ -36,8 +36,6 @@ public class SystemSettings extends XMLReader
     private int poolObjectLifespan = 30000;
     private int fetchSize = 100;
     private int maximumCopies = 200;
-    private int defaultChartWidth = 800;
-    private int defaultChartHeight = 600;
     private int netcdfCachePeriod = 90;
     private int minimumCachedNetcdf = 100;
     private int maximumCachedNetcdf = 200;
@@ -131,12 +129,6 @@ public class SystemSettings extends XMLReader
                         ProgressMonitor.setShouldUpdate(
                                 Strings.isTrue( XMLHelper.getXMLText( reader))
                         );
-                        break;
-                    case "default_chart_width":
-                        this.setDefaultChartWidth( reader );
-                        break;
-                    case "default_chart_height":
-                        this.setDefaultChartHeight( reader );
                         break;
                     case "netcdf_store_path":
                         this.setNetcdfStorePath( reader );
@@ -308,26 +300,6 @@ public class SystemSettings extends XMLReader
         }
     }
 
-    private void setDefaultChartWidth(XMLStreamReader reader)
-            throws XMLStreamException
-    {
-        String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
-        {
-            this.defaultChartWidth = Integer.parseInt(value);
-        }
-    }
-
-    private void setDefaultChartHeight(XMLStreamReader reader)
-        throws XMLStreamException
-    {
-        String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
-        {
-            this.defaultChartHeight = Integer.parseInt(value);
-        }
-    }
-
     private void setNetcdfStorePath(XMLStreamReader reader)
         throws XMLStreamException
     {
@@ -408,22 +380,6 @@ public class SystemSettings extends XMLReader
 	 */
     public int getMaximumCopies() {
         return this.maximumCopies;
-    }
-
-    /**
-     * @return The default to use for chart width
-     */
-    public int getDefaultChartWidth()
-    {
-        return this.defaultChartWidth;
-    }
-
-	/**
-	 * @return The default to use for chart height
-	 */
-    public int getDefaultChartHeight()
-    {
-        return this.defaultChartHeight;
     }
 
     /**
@@ -641,8 +597,6 @@ public class SystemSettings extends XMLReader
                 .append( "poolObjectLifespan", poolObjectLifespan )
                 .append( "fetchSize", fetchSize )
                 .append( "maximumCopies", maximumCopies )
-                .append( "defaultChartWidth", defaultChartWidth )
-                .append( "defaultChartHeight", defaultChartHeight )
                 .append( "netcdfCachePeriod", netcdfCachePeriod )
                 .append( "minimumCachedNetcdf", minimumCachedNetcdf )
                 .append( "maximumCachedNetcdf", maximumCachedNetcdf )

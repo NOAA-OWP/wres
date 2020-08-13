@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -31,7 +32,6 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
-import wres.io.writing.WriterHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
@@ -85,7 +85,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( super.getProjectConfig() );
+                ProjectConfigs.getNumericalDestinations( super.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -99,7 +99,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<LeftOrRightOrBaseline, List<DurationDiagramStatisticOuter>> groups =
-                        WriterHelper.getStatisticsGroupedByContext( output );
+                        Slicer.getStatisticsGroupedByContext( output );
 
                 for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
                 {
