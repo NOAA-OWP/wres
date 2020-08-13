@@ -286,7 +286,8 @@ public enum MetricConstants
      * Standard deviation statistic.
      */
 
-    STANDARD_DEVIATION( MetricGroup.UNIVARIATE_STATISTIC ),
+    STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
+            MetricGroup.LRB ),
 
     /**
      * Minimum statistic.
