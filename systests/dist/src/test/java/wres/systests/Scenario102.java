@@ -55,6 +55,7 @@ public class Scenario102
                     Path.of( "LGNN5_QME_ESP_ROOT_MEAN_SQUARE_ERROR.csv" ),
                     Path.of( "LGNN5_QME_ESP_ROOT_MEAN_SQUARE_ERROR_NORMALIZED.csv" ),
                     Path.of( "LGNN5_QME_ESP_SAMPLE_SIZE.csv" ),
+                    Path.of( "LGNN5_QME_ESP_STANDARD_DEVIATION.csv" ),
                     Path.of( "LGNN5_QME_ESP_SUM_OF_SQUARE_ERROR.csv" ),
                     Path.of( "LGNN5_QME_ESP_VOLUMETRIC_EFFICIENCY.csv" ),
                     Path.of( "pairs.csv" ) );

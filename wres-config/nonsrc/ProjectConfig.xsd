@@ -532,6 +532,7 @@
             <xs:enumeration value="root mean square error normalized" />
             <xs:enumeration value="sample size" />
             <xs:enumeration value="sum of square error" />
+            <xs:enumeration value="standard deviation" />
             <xs:enumeration value="volumetric efficiency" />
         </xs:restriction>
     </xs:simpleType>

@@ -65,6 +65,7 @@ import wres.engine.statistics.metric.singlevalued.RootMeanSquareErrorNormalized;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.singlevalued.univariate.Mean;
+import wres.engine.statistics.metric.singlevalued.univariate.StandardDeviation;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
 
@@ -811,6 +812,8 @@ public final class MetricFactory
                 return SumOfSquareError.of();
             case MEAN:
                 return Mean.of();
+            case STANDARD_DEVIATION:
+                return StandardDeviation.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }

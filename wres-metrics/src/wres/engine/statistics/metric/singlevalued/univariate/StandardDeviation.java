@@ -17,11 +17,12 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 
 /**
- * <p>Computes the mean value for each side of a pairing. The mean is computed with the {@link FunctionFactory#mean()}.
+ * <p>Computes the standard deviation for each side of a pairing. The standard deviation is computed with the 
+ * {@link FunctionFactory#standardDeviation()}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
+public class StandardDeviation extends DecomposableScore<SampleData<Pair<Double, Double>>>
 {
 
     /**
@@ -36,9 +37,9 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
      * @return an instance
      */
 
-    public static Mean of()
+    public static StandardDeviation of()
     {
-        return new Mean();
+        return new StandardDeviation();
     }
 
     @Override
@@ -57,7 +58,7 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
     @Override
     public MetricConstants getMetricName()
     {
-        return MetricConstants.MEAN;
+        return MetricConstants.STANDARD_DEVIATION;
     }
 
     @Override
@@ -85,22 +86,22 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
      * Hidden constructor.
      */
 
-    private Mean()
+    private StandardDeviation()
     {
         super();
 
         // Metric
         DoubleScoreMetric metric = DoubleScoreMetric.newBuilder()
-                                                    .setName( MetricName.MEAN )
+                                                    .setName( MetricName.STANDARD_DEVIATION )
                                                     .build();
 
         // Template for the l/r/b components of the score
         DoubleScoreMetricComponent template = DoubleScoreMetricComponent.newBuilder()
-                                                                        .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                        .setMinimum( 0 )
                                                                         .setMaximum( Double.POSITIVE_INFINITY )
                                                                         .build();
 
-        this.score = new UnivariateScore( FunctionFactory.mean(), metric, template, true );
+        this.score = new UnivariateScore( FunctionFactory.standardDeviation(), metric, template, true );
     }
 
 }
