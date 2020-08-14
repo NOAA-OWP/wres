@@ -22,18 +22,12 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 
 /**
- * Helps to write a {@link ChartEngine} to a graphical product file in Portable Network Graphics (PNG) format.
- * 
- * TODO: implementations of this class are currently building a graphical interchange format {@link ChartEngine},
- * which doesn't make sense. For example, implementing a new output format, such as JPEG, would require that the new 
- * writer generated its own copy in the interchange format. Instead, rhe interchange format should be passed to the 
- * format writers. More generally, the graphical interchange format should be something other than {@link ChartEngine}. 
- * The numerical data interchange format is different. See #54731.  
+ * Helps to write a {@link ChartEngine} to a graphic in various formats.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-abstract class PNGWriter
+abstract class GraphicsWriter
 {
 
     /**
@@ -99,7 +93,7 @@ abstract class PNGWriter
      * @param outputImage the path to the output image
      * @param engine the chart engine
      * @param dest the destination configuration
-     * @throws PNGWriteException if the chart could not be written
+     * @throws GraphicsWriteException if the chart could not be written
      */
 
     static void writeChart( final Path outputImage,
@@ -108,8 +102,8 @@ abstract class PNGWriter
     {
         final File outputImageFile = outputImage.toFile();
 
-        int width = PNGWriter.DEFAULT_CHART_WIDTH;
-        int height = PNGWriter.DEFAULT_CHART_HEIGHT;
+        int width = GraphicsWriter.DEFAULT_CHART_WIDTH;
+        int height = GraphicsWriter.DEFAULT_CHART_HEIGHT;
 
         if ( dest.getGraphical() != null && dest.getGraphical().getWidth() != null )
         {
@@ -125,7 +119,7 @@ abstract class PNGWriter
         }
         catch ( IOException | ChartEngineException | XYChartDataSourceException e )
         {
-            throw new PNGWriteException( "Error while writing chart:", e );
+            throw new GraphicsWriteException( "Error while writing chart:", e );
         }
     }
 
@@ -290,7 +284,7 @@ abstract class PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    PNGWriter( ProjectConfigPlus projectConfigPlus,
+    GraphicsWriter( ProjectConfigPlus projectConfigPlus,
                ChronoUnit durationUnits,
                Path outputDirectory )
     {

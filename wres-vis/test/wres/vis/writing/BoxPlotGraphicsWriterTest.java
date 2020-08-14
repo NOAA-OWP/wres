@@ -11,11 +11,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -48,14 +46,11 @@ import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
- * Tests the {@link PNGBoxPlotWriter}. There are not checks on the content of the PNG outputs,
+ * Tests the {@link BoxPlotGraphicsWriter}. There are not checks on the content of the PNG outputs,
  * only that outputs were written.
- * 
- * TODO: add the templates from dist/lib/conf in wres-vis to the test path for these 
- * tests to pass in gradle, then unignore
  */
-@Ignore
-public class PNGBoxPlotWriterTest
+
+public class BoxPlotGraphicsWriterTest
 {
 
     /**
@@ -84,17 +79,18 @@ public class PNGBoxPlotWriterTest
     {
 
         // Construct a fake configuration file
-        Feature feature = PNGBoxPlotWriterTest.getMockedFeature( PNGBoxPlotWriterTest.LOCATION_ID );
-        ProjectConfig projectConfig = PNGBoxPlotWriterTest.getMockedProjectConfig( feature, DestinationType.GRAPHIC );
+        Feature feature = BoxPlotGraphicsWriterTest.getMockedFeature( BoxPlotGraphicsWriterTest.LOCATION_ID );
+        ProjectConfig projectConfig =
+                BoxPlotGraphicsWriterTest.getMockedProjectConfig( feature, DestinationType.GRAPHIC );
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
 
         // Begin the actual test now that we have constructed dependencies.
-        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( projectConfigPlus,
-                                                       ChronoUnit.SECONDS,
-                                                       this.outputDirectory );
+        BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( projectConfigPlus,
+                                                                 ChronoUnit.SECONDS,
+                                                                 this.outputDirectory );
 
-        writer.accept( PNGBoxPlotWriterTest.getBoxPlotPerPairForOnePool() );
+        writer.accept( BoxPlotGraphicsWriterTest.getBoxPlotPerPairForOnePool() );
 
         // Determine the paths written
         Set<Path> pathsToFile = writer.get();
@@ -125,17 +121,18 @@ public class PNGBoxPlotWriterTest
     {
 
         // Construct a fake configuration file.
-        Feature feature = PNGBoxPlotWriterTest.getMockedFeature( PNGBoxPlotWriterTest.LOCATION_ID );
-        ProjectConfig projectConfig = PNGBoxPlotWriterTest.getMockedProjectConfig( feature, DestinationType.GRAPHIC );
+        Feature feature = BoxPlotGraphicsWriterTest.getMockedFeature( BoxPlotGraphicsWriterTest.LOCATION_ID );
+        ProjectConfig projectConfig =
+                BoxPlotGraphicsWriterTest.getMockedProjectConfig( feature, DestinationType.GRAPHIC );
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
 
         // Begin the actual test now that we have constructed dependencies.
-        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( projectConfigPlus,
-                                                       ChronoUnit.SECONDS,
-                                                       this.outputDirectory );
+        BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( projectConfigPlus,
+                                                                 ChronoUnit.SECONDS,
+                                                                 this.outputDirectory );
 
-        writer.accept( PNGBoxPlotWriterTest.getBoxPlotPerPoolForTwoPools() );
+        writer.accept( BoxPlotGraphicsWriterTest.getBoxPlotPerPoolForTwoPools() );
 
         // Determine the paths written
         Set<Path> pathsToFile = writer.get();
@@ -147,76 +144,6 @@ public class PNGBoxPlotWriterTest
 
         // Check the expected path: #61841
         assertTrue( pathToFile.endsWith( "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS.png" ) );
-
-        // If all succeeded, remove the file, otherwise leave to help debugging.
-        Files.deleteIfExists( pathToFile );
-    }
-
-    /**
-     * <p>Tests for the writing of no box plot statistics, without exception, when no box 
-     * plot statistics are available.
-     * 
-     * <p>See #62863.
-     * @throws IOException if the path containing output cannot be deleted
-     */
-
-    @Test
-    public void writeWithoutExceptionWhenNothingIsAvailable() throws IOException
-    {
-
-        // Construct the fake metadata for the nothing output
-        TimeWindowOuter timeOne = TimeWindowOuter.of();
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        Pool pool = MessageFactory.parse( new FeatureTuple( FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
-                                                            FeatureKey.of( PNGBoxPlotWriterTest.LOCATION_ID ),
-                                                            null ),
-                                          timeOne,
-                                          null,
-                                          threshold,
-                                          false );
-
-        SampleMetadata fakeMetadata = SampleMetadata.of( evaluation, pool );
-
-        // Construct the fake declaration
-        Feature feature = PNGBoxPlotWriterTest.getMockedFeature( PNGBoxPlotWriterTest.LOCATION_ID );
-        ProjectConfig projectConfig = PNGBoxPlotWriterTest.getMockedProjectConfig( feature, DestinationType.GRAPHIC );
-
-        // Mock the return of the fake declaration when required
-        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
-
-        // Construct the nothing data
-        BoxplotStatisticOuter emptyFakeStatistics = BoxplotStatisticOuter.of( BoxplotStatistic.getDefaultInstance(),
-                                                                              fakeMetadata );
-        List<BoxplotStatisticOuter> fakeStatistics = Collections.singletonList( emptyFakeStatistics );
-
-        // Begin the actual test now that we have the dependencies.
-        PNGBoxPlotWriter writer = PNGBoxPlotWriter.of( projectConfigPlus,
-                                                       ChronoUnit.SECONDS,
-                                                       this.outputDirectory );
-
-        // Attempt to write empty output
-        writer.accept( fakeStatistics );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
-
-        // Check the expected number of paths: #61841
-        assertEquals( 1, pathsToFile.size() );
-
-        Path pathToFile = pathsToFile.iterator().next();
-
-        // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_BOX_PLOT_OF_ERRORS.png" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
@@ -289,6 +216,7 @@ public class PNGBoxPlotWriterTest
                             featureName,
                             null );
     }
+
     /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
      * 
@@ -453,5 +381,5 @@ public class PNGBoxPlotWriterTest
 
         return List.of( BoxplotStatisticOuter.of( boxOne, fakeMetadata ) );
     }
-    
+
 }

@@ -22,6 +22,7 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -239,13 +240,14 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( next, headerRow ) ) );
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
-                                                                 destinationConfig,
-                                                                 meta,
-                                                                 nextWindow,
-                                                                 durationUnits,
-                                                                 metricName,
-                                                                 null );
+            Path outputPath =
+                    DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                           destinationConfig,
+                                                           meta,
+                                                           nextWindow,
+                                                           durationUnits,
+                                                           metricName,
+                                                           null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume
@@ -292,11 +294,11 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( output, headerRow ) ) );
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
-                                                                 destinationConfig,
-                                                                 meta,
-                                                                 metricName,
-                                                                 null );
+            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                     destinationConfig,
+                                                                     meta,
+                                                                     metricName,
+                                                                     null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume

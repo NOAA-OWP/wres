@@ -136,7 +136,9 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
 
         this.metadata = metadata;
         this.statistic = statistic;
-        this.metricName = MetricConstants.valueOf( statistic.getMetric().getName().name() );
+        this.metricName = MetricConstants.valueOf( statistic.getMetric()
+                                                            .getName()
+                                                            .name() );
     }
 
 }

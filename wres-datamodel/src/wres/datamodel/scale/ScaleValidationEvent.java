@@ -2,7 +2,7 @@ package wres.datamodel.scale;
 
 import java.util.Objects;
 
-import wres.datamodel.EvaluationEvent;
+import wres.statistics.generated.EvaluationStatus;
 
 /**
  * <p>Records a validation event related to scale information or rescaling. There are two types of validation event, 
@@ -16,12 +16,45 @@ import wres.datamodel.EvaluationEvent;
  * a path towards a more general messaging API for exceptions, warnings, and assumptions that are intended for users 
  * (rather than developers), it is more likely that a messaging API will replace this abstraction.
  * 
+ * TODO: update 20200814. This class should wrap an {@link EvaluationStatus} message. The reason to wrap rather than 
+ * replace is its implementation of {@link Comparable}.
+ * 
  * @author james.brown@hydrosolved.com
  */
 
-public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>, EvaluationEvent
+public class ScaleValidationEvent implements Comparable<ScaleValidationEvent>
 {
 
+    /**
+     * Describes a type of scale validation event.
+     * 
+     * @author james.brown@hydrosolved.com
+     */
+
+    public enum EventType
+    {
+        /**
+         * An event that represents a warning.
+         */
+        WARN,
+        
+        /**
+         * An event that represents a debug level of information, but still externally facing, i.e. not intended for 
+         * developers.
+         */
+        DEBUG,
+        
+        /**
+         * An event that represents an error.
+         */
+        ERROR,
+        
+        /**
+         * A neutral information message.
+         */
+        INFO;
+    }    
+    
     /**
      * The event type.
      */
