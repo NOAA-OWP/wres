@@ -640,6 +640,7 @@
         <xs:restriction base="xs:string">
 	    <xs:enumeration value="csv" />
             <xs:enumeration value="png" />
+            <xs:enumeration value="svg" />
             <xs:enumeration value="netcdf" />
             <xs:enumeration value="numeric" />
             <xs:enumeration value="graphic" />

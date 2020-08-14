@@ -809,7 +809,10 @@ project(':wres-vis')
         compile files('../libs/external/jcommon-1.0.12.jar')
         compile files('../libs/external/jfreechart-1.0.9.jar')
         compile files('../libs/external/ohdcommonchps.jar')
-
+        
+        // SVG graphics from JFreeChart instances
+        compile group: 'org.jfree', name: 'jfreesvg', version: '3.4'
+        
         testCompile project (':wres-datamodel')
         testRuntime group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.8.0-beta4'
         
