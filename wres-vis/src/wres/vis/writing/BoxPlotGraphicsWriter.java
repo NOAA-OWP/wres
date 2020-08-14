@@ -23,6 +23,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -31,15 +32,14 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.vis.ChartEngineFactory;
-import wres.vis.config.ConfigHelper;
 
 /**
- * Helps write charts comprising {@link BoxplotStatisticOuter} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link BoxplotStatisticOuter} to graphics formats.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class PNGBoxPlotWriter extends PNGWriter
+public class BoxPlotGraphicsWriter extends GraphicsWriter
         implements Consumer<List<BoxplotStatisticOuter>>,
         Supplier<Set<Path>>
 {
@@ -59,11 +59,11 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGBoxPlotWriter of( ProjectConfigPlus projectConfigPlus,
-                                       ChronoUnit durationUnits,
-                                       Path outputDirectory )
+    public static BoxPlotGraphicsWriter of( ProjectConfigPlus projectConfigPlus,
+                                            ChronoUnit durationUnits,
+                                            Path outputDirectory )
     {
-        return new PNGBoxPlotWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new BoxPlotGraphicsWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -71,7 +71,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      *
      * @param output the box plot output
      * @throws NullPointerException if the input is null
-     * @throws PNGWriteException if the output cannot be written
+     * @throws GraphicsWriteException if the output cannot be written
      */
 
     @Override
@@ -88,7 +88,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      *
      * @param output the box plot output
      * @throws NullPointerException if the input is null
-     * @throws PNGWriteException if the output cannot be written
+     * @throws GraphicsWriteException if the output cannot be written
      */
 
     private void writeBoxPlotsPerPair( List<BoxplotStatisticOuter> output )
@@ -122,11 +122,11 @@ public class PNGBoxPlotWriter extends PNGWriter
                 for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGBoxPlotWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
-                                                                                   super.getProjectConfigPlus(),
-                                                                                   destinationConfig,
-                                                                                   nextGroup,
-                                                                                   super.getDurationUnits() );
+                            BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
+                                                                                        super.getProjectConfigPlus(),
+                                                                                        destinationConfig,
+                                                                                        nextGroup,
+                                                                                        super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
@@ -138,7 +138,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      *
      * @param output the box plot output
      * @throws NullPointerException if the input is null
-     * @throws PNGWriteException if the output cannot be written
+     * @throws GraphicsWriteException if the output cannot be written
      */
 
     private void writeBoxPlotsPerPool( List<BoxplotStatisticOuter> output )
@@ -172,11 +172,11 @@ public class PNGBoxPlotWriter extends PNGWriter
                 for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGBoxPlotWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
-                                                                            super.getProjectConfigPlus(),
-                                                                            destinationConfig,
-                                                                            nextGroup,
-                                                                            super.getDurationUnits() );
+                            BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
+                                                                                 super.getProjectConfigPlus(),
+                                                                                 destinationConfig,
+                                                                                 nextGroup,
+                                                                                 super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
@@ -206,7 +206,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results, which contains all results for one metric across several pools
      * @param durationUnits the time units for durations
-     * @throws PNGWriteException when an error occurs during writing
+     * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
@@ -236,7 +236,7 @@ public class PNGBoxPlotWriter extends PNGWriter
             // Build the outputs
             for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
             {
-                Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                       destinationConfig,
                                                                       metadata,
                                                                       nextEntry.getKey().getLeft(),
@@ -244,14 +244,14 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                       metricName,
                                                                       null );
 
-                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
                 pathsWrittenTo.add( outputImage );
             }
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new PNGWriteException( "Error while generating box plot charts: ", e );
+            throw new GraphicsWriteException( "Error while generating box plot charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -266,7 +266,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results, which contains all results for one metric across several pools
      * @param durationUnits the time units for durations
-     * @throws PNGWriteException when an error occurs during writing
+     * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
@@ -294,13 +294,13 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                 helper.getGraphicsString(),
                                                                 durationUnits );
 
-            Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+            Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                   destinationConfig,
                                                                   metadata,
                                                                   metricName,
                                                                   null );
 
-            PNGWriter.writeChart( outputImage, engine, destinationConfig );
+            GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
 
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
@@ -308,7 +308,7 @@ public class PNGBoxPlotWriter extends PNGWriter
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new PNGWriteException( "Error while generating box plot charts: ", e );
+            throw new GraphicsWriteException( "Error while generating box plot charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -324,9 +324,9 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGBoxPlotWriter( ProjectConfigPlus projectConfigPlus,
-                              ChronoUnit durationUnits,
-                              Path outputDirectory )
+    private BoxPlotGraphicsWriter( ProjectConfigPlus projectConfigPlus,
+                                   ChronoUnit durationUnits,
+                                   Path outputDirectory )
     {
         super( projectConfigPlus, durationUnits, outputDirectory );
     }

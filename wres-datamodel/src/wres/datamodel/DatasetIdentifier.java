@@ -8,13 +8,16 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.Statistic;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Pool;
 
 /**
  * A class that uniquely identifies a {@link SampleData} or a {@link Statistic} to a user.
  * 
  * @author james.brown@hydrosolved.com
+ * @deprecated The {@link Evaluation} and {@link Pool} replace this representation.
  */
-
+@Deprecated( since = "5.0", forRemoval = true )
 public class DatasetIdentifier
 {
     /**

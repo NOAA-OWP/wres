@@ -26,12 +26,12 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.io.config.ConfigHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
@@ -185,11 +185,11 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             SampleMetadata meta = nextOutput.get( 0 ).getMetadata();
             MetricConstants metricName = nextOutput.get( 0 ).getMetricName();
 
-            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
-                                                                 destinationConfig,
-                                                                 meta,
-                                                                 metricName,
-                                                                 null );
+            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                     destinationConfig,
+                                                                     meta,
+                                                                     metricName,
+                                                                     null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 

@@ -20,20 +20,20 @@ import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.vis.ChartEngineFactory;
-import wres.vis.config.ConfigHelper;
 
 /**
- * Helps write charts comprising {@link DurationScoreStatisticOuter} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DurationScoreStatisticOuter} to graphics formats.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class PNGDurationScoreWriter extends PNGWriter
+public class DurationScoreGraphicsWriter extends GraphicsWriter
         implements Consumer<List<DurationScoreStatisticOuter>>,
         Supplier<Set<Path>>
 {
@@ -50,13 +50,13 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDurationScoreWriter of( ProjectConfigPlus projectConfigPlus,
-                                             ChronoUnit durationUnits,
-                                             Path outputDirectory )
+    public static DurationScoreGraphicsWriter of( ProjectConfigPlus projectConfigPlus,
+                                                  ChronoUnit durationUnits,
+                                                  Path outputDirectory )
     {
-        return new PNGDurationScoreWriter( projectConfigPlus,
-                                           durationUnits,
-                                           outputDirectory );
+        return new DurationScoreGraphicsWriter( projectConfigPlus,
+                                                durationUnits,
+                                                outputDirectory );
     }
 
     /**
@@ -64,7 +64,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      *
      * @param output the score output
      * @throws NullPointerException if the input is null
-     * @throws PNGWriteException if the output cannot be written
+     * @throws GraphicsWriteException if the output cannot be written
      */
 
     @Override
@@ -94,11 +94,11 @@ public class PNGDurationScoreWriter extends PNGWriter
                 for ( List<DurationScoreStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGDurationScoreWriter.writeScoreCharts( super.getOutputDirectory(),
-                                                                     super.getProjectConfigPlus(),
-                                                                     destinationConfig,
-                                                                     nextGroup,
-                                                                     super.getDurationUnits() );
+                            DurationScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
+                                                                          super.getProjectConfigPlus(),
+                                                                          destinationConfig,
+                                                                          nextGroup,
+                                                                          super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
@@ -126,7 +126,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric output
      * @param durationUnits the time units for durations
-     * @throws PNGWriteException when an error occurs during writing
+     * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
@@ -155,19 +155,19 @@ public class PNGDurationScoreWriter extends PNGWriter
 
 
             // Build the output file name
-            Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+            Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                   destinationConfig,
                                                                   metadata,
                                                                   metricName,
                                                                   null );
 
-            PNGWriter.writeChart( outputImage, engine, destinationConfig );
+            GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written
             pathsWrittenTo.add( outputImage );
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
+            throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -183,9 +183,9 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDurationScoreWriter( ProjectConfigPlus projectConfigPlus,
-                                    ChronoUnit durationUnits,
-                                    Path outputDirectory )
+    private DurationScoreGraphicsWriter( ProjectConfigPlus projectConfigPlus,
+                                         ChronoUnit durationUnits,
+                                         Path outputDirectory )
     {
         super( projectConfigPlus, durationUnits, outputDirectory );
     }

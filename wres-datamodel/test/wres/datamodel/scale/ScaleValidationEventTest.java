@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import wres.datamodel.EvaluationEvent.EventType;
+import wres.datamodel.scale.ScaleValidationEvent.EventType;
 
 /**
  * Tests the {@link ScaleValidationEvent}.

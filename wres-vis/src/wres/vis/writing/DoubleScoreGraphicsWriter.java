@@ -26,27 +26,27 @@ import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.vis.ChartEngineFactory;
-import wres.vis.config.ConfigHelper;
 
 /**
- * Helps write charts comprising {@link DoubleScoreStatisticOuter} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DoubleScoreStatisticOuter} to graphics formats.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class PNGDoubleScoreWriter extends PNGWriter
+public class DoubleScoreGraphicsWriter extends GraphicsWriter
         implements Consumer<List<DoubleScoreStatisticOuter>>,
         Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( PNGDoubleScoreWriter.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( DoubleScoreGraphicsWriter.class );
 
     /**
      * Returns an instance of a writer.
@@ -59,11 +59,11 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDoubleScoreWriter of( ProjectConfigPlus projectConfigPlus,
-                                           ChronoUnit durationUnits,
-                                           Path outputDirectory )
+    public static DoubleScoreGraphicsWriter of( ProjectConfigPlus projectConfigPlus,
+                                                ChronoUnit durationUnits,
+                                                Path outputDirectory )
     {
-        return new PNGDoubleScoreWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new DoubleScoreGraphicsWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -71,7 +71,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      *
      * @param output the score output
      * @throws NullPointerException if the input is null
-     * @throws PNGWriteException if the output cannot be written
+     * @throws GraphicsWriteException if the output cannot be written
      */
 
     @Override
@@ -108,11 +108,11 @@ public class PNGDoubleScoreWriter extends PNGWriter
                     for ( List<DoubleScoreStatisticOuter> nextGroup : groups.values() )
                     {
                         Set<Path> innerPathsWrittenTo =
-                                PNGDoubleScoreWriter.writeScoreCharts( super.getOutputDirectory(),
-                                                                       super.getProjectConfigPlus(),
-                                                                       destinationConfig,
-                                                                       nextGroup,
-                                                                       super.getDurationUnits() );
+                                DoubleScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
+                                                                            super.getProjectConfigPlus(),
+                                                                            destinationConfig,
+                                                                            nextGroup,
+                                                                            super.getDurationUnits() );
                         this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                     }
                 }
@@ -141,7 +141,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric output
      * @param durationUnits the time units for durations
-     * @throws PNGWriteException when an error occurs during writing
+     * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
@@ -215,14 +215,14 @@ public class PNGDoubleScoreWriter extends PNGWriter
                     }
 
                     // Build the output file name
-                    Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                    Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                           destinationConfig,
                                                                           metadata,
                                                                           append,
                                                                           metricName,
                                                                           componentName );
 
-                    PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                    GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                     // Only if writeChart succeeded do we assume that it was written
                     pathsWrittenTo.add( outputImage );
                 }
@@ -231,7 +231,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
+            throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -247,9 +247,9 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDoubleScoreWriter( ProjectConfigPlus projectConfigPlus,
-                                  ChronoUnit durationUnits,
-                                  Path outputDirectory )
+    private DoubleScoreGraphicsWriter( ProjectConfigPlus projectConfigPlus,
+                                       ChronoUnit durationUnits,
+                                       Path outputDirectory )
     {
         super( projectConfigPlus, durationUnits, outputDirectory );
     }

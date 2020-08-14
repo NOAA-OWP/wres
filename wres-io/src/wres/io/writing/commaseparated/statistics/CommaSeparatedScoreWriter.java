@@ -24,6 +24,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
@@ -32,7 +33,6 @@ import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.config.ConfigHelper;
 import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
@@ -231,12 +231,12 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 }
 
                 SampleMetadata meta = nextOutput.get( 0 ).getMetadata();
-                Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
-                                                                     destinationConfig,
-                                                                     meta,
-                                                                     append,
-                                                                     m,
-                                                                     null );
+                Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                         destinationConfig,
+                                                                         meta,
+                                                                         append,
+                                                                         m,
+                                                                         null );
 
                 CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 

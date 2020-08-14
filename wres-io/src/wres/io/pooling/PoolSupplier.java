@@ -36,7 +36,7 @@ import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.EvaluationEvent.EventType;
+import wres.datamodel.scale.ScaleValidationEvent.EventType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;

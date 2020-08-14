@@ -24,7 +24,6 @@ import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.Ensemble;
-import wres.datamodel.EvaluationEvent;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants.StatisticType;
@@ -40,10 +39,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.EvaluationStatus;
-import wres.statistics.generated.EvaluationStatus.CompletionStatus;
-import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
-import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
@@ -245,47 +240,6 @@ public class MessageFactory
         builder.setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY );
         LOGGER.debug( "Populated the evaluation with a default baseline of {}.",
                       DefaultData.OBSERVED_CLIMATOLOGY );
-
-        return builder.build();
-    }
-
-    /**
-     * Creates a {@link EvaluationStatus} message from a list of {@link EvaluationEvent} and other metadata.
-     * 
-     * @param time an optional time associated with the status event
-     * @param status the completion status
-     * @param events a list of evaluation events
-     * @return a status message
-     * @throws NullPointerException if the status or list of events is null
-     */
-
-    public static EvaluationStatus parse( Instant time,
-                                          CompletionStatus status,
-                                          List<EvaluationEvent> events )
-    {
-        Objects.requireNonNull( status );
-        Objects.requireNonNull( events );
-
-        EvaluationStatus.Builder builder = EvaluationStatus.newBuilder();
-
-        if ( Objects.nonNull( time ) )
-        {
-            Timestamp aTime = Timestamp.newBuilder()
-                                       .setSeconds( time.getEpochSecond() )
-                                       .setNanos( time.getNano() )
-                                       .build();
-            builder.setTime( aTime );
-        }
-
-        builder.setCompletionStatus( status );
-
-        for ( EvaluationEvent event : events )
-        {
-            EvaluationStatusEvent.Builder statusEvent = EvaluationStatusEvent.newBuilder();
-            statusEvent.setEventType( StatusMessageType.valueOf( event.getEventType().name() ) )
-                       .setEventMessage( event.getMessage() );
-            builder.addStatusEvents( statusEvent );
-        }
 
         return builder.build();
     }

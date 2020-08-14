@@ -14,7 +14,7 @@ import wres.statistics.generated.GeometryTuple;
  * climatology.
  * 
  * TODO: This class should probably compose a canonical {@link GeometryTuple} as it is 1:1 with the canonical 
- * representation.
+ * representation. See #73842-38 - #73842-40.
  */
 
 public class FeatureTuple implements Comparable<FeatureTuple>

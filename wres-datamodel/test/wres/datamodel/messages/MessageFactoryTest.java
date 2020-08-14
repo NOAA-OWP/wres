@@ -29,8 +29,6 @@ import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.EvaluationEvent;
-import wres.datamodel.EvaluationEvent.EventType;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
@@ -38,7 +36,6 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
-import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -65,8 +62,6 @@ import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
-import wres.statistics.generated.EvaluationStatus;
-import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
@@ -342,40 +337,6 @@ public class MessageFactoryTest
         }
 
         assertEquals( statisticsOut, statisticsIn );
-
-        // Delete if succeeded
-        Files.deleteIfExists( path );
-    }
-
-    @Test
-    public void testCreationOfOneEvaluationStatusMessage() throws IOException
-    {
-        EvaluationEvent warning = ScaleValidationEvent.of( EventType.WARN, "This is a warning event." );
-        EvaluationEvent error = ScaleValidationEvent.of( EventType.ERROR, "This is an error event." );
-        EvaluationEvent info = ScaleValidationEvent.of( EventType.INFO, "This is an info event." );
-
-        // Create a message
-        EvaluationStatus statusOut =
-                MessageFactory.parse( TWELFTH_TIME,
-                                      CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS,
-                                      List.of( warning, error, info ) );
-
-        Path path = this.outputDirectory.resolve( "status.pb3" );
-
-        try ( OutputStream stream =
-                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
-        {
-            statusOut.writeTo( stream );
-        }
-
-        EvaluationStatus statusIn = null;
-        try ( InputStream stream =
-                Files.newInputStream( path ) )
-        {
-            statusIn = EvaluationStatus.parseFrom( stream );
-        }
-
-        assertEquals( statusOut, statusIn );
 
         // Delete if succeeded
         Files.deleteIfExists( path );

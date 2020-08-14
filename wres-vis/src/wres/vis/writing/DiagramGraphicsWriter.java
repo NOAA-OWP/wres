@@ -21,6 +21,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -28,15 +29,14 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.vis.ChartEngineFactory;
-import wres.vis.config.ConfigHelper;
 
 /**
- * Helps write charts comprising {@link DiagramStatisticOuter} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DiagramStatisticOuter} to graphics formats.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class PNGDiagramWriter extends PNGWriter
+public class DiagramGraphicsWriter extends GraphicsWriter
         implements Consumer<List<DiagramStatisticOuter>>,
         Supplier<Set<Path>>
 {
@@ -53,11 +53,11 @@ public class PNGDiagramWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDiagramWriter of( ProjectConfigPlus projectConfigPlus,
-                                       ChronoUnit durationUnits,
-                                       Path outputDirectory )
+    public static DiagramGraphicsWriter of( ProjectConfigPlus projectConfigPlus,
+                                            ChronoUnit durationUnits,
+                                            Path outputDirectory )
     {
-        return new PNGDiagramWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new DiagramGraphicsWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -65,7 +65,7 @@ public class PNGDiagramWriter extends PNGWriter
      *
      * @param output the diagram output
      * @throws NullPointerException if the input is null
-     * @throws PNGWriteException if the output cannot be written
+     * @throws GraphicsWriteException if the output cannot be written
      */
 
     @Override
@@ -95,11 +95,11 @@ public class PNGDiagramWriter extends PNGWriter
                 for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            PNGDiagramWriter.writeDiagrams( super.getOutputDirectory(),
-                                                            super.getProjectConfigPlus(),
-                                                            destinationConfig,
-                                                            nextGroup,
-                                                            super.getDurationUnits() );
+                            DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
+                                                                 super.getProjectConfigPlus(),
+                                                                 destinationConfig,
+                                                                 nextGroup,
+                                                                 super.getDurationUnits() );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
@@ -127,7 +127,7 @@ public class PNGDiagramWriter extends PNGWriter
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
      * @param durationUnits the time units for durations
-     * @throws PNGWriteException when an error occurs during writing
+     * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
@@ -163,7 +163,7 @@ public class PNGDiagramWriter extends PNGWriter
                 Object append = nextEntry.getKey();
                 if ( append instanceof TimeWindowOuter )
                 {
-                    outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                    outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                      destinationConfig,
                                                                      metadata,
                                                                      (TimeWindowOuter) append,
@@ -173,7 +173,7 @@ public class PNGDiagramWriter extends PNGWriter
                 }
                 else if ( append instanceof OneOrTwoThresholds )
                 {
-                    outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                    outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                      destinationConfig,
                                                                      metadata,
                                                                      (OneOrTwoThresholds) append,
@@ -185,14 +185,14 @@ public class PNGDiagramWriter extends PNGWriter
                     throw new UnsupportedOperationException( "Unexpected situation where WRES could not create outputImage path" );
                 }
 
-                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
                 pathsWrittenTo.add( outputImage );
             }
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
+            throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -208,9 +208,9 @@ public class PNGDiagramWriter extends PNGWriter
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDiagramWriter( ProjectConfigPlus projectConfigPlus,
-                              ChronoUnit durationUnits,
-                              Path outputDirectory )
+    private DiagramGraphicsWriter( ProjectConfigPlus projectConfigPlus,
+                                   ChronoUnit durationUnits,
+                                   Path outputDirectory )
     {
         super( projectConfigPlus, durationUnits, outputDirectory );
     }

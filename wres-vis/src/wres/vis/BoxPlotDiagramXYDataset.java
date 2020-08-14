@@ -33,12 +33,18 @@ public class BoxPlotDiagramXYDataset extends
                              .mapToInt( next -> next.getData().getStatisticsCount() )
                              .sum();
 
-        this.seriesCount = this.getPlotData()
-                               .get( 0 )
-                               .getData()
-                               .getStatisticsList()
-                               .get( 0 )
-                               .getQuantilesCount();
+        List<Box> innerBoxes = this.getPlotData()
+                                   .get( 0 )
+                                   .getData()
+                                   .getStatisticsList();
+
+        if ( innerBoxes.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot write a box plot series with no boxes." );
+        }
+        
+        this.seriesCount = innerBoxes.get( 0 )
+                .getQuantilesCount();
 
         this.boxes = this.getPlotData()
                          .stream()

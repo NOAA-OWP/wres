@@ -27,7 +27,7 @@ import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
-import wres.datamodel.EvaluationEvent.EventType;
+import wres.datamodel.scale.ScaleValidationEvent.EventType;
 
 /**
  * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Double} 

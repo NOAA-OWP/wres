@@ -23,6 +23,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -241,13 +242,13 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                                          headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
-                                                                 destinationConfig,
-                                                                 meta,
-                                                                 timeWindow,
-                                                                 durationUnits,
-                                                                 metricName,
-                                                                 null );
+            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                     destinationConfig,
+                                                                     meta,
+                                                                     timeWindow,
+                                                                     durationUnits,
+                                                                     metricName,
+                                                                     null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -304,12 +305,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                            CommaSeparatedDiagramWriter.getDiagramHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
-                                                                 destinationConfig,
-                                                                 meta,
-                                                                 threshold,
-                                                                 metricName,
-                                                                 null );
+            Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                     destinationConfig,
+                                                                     meta,
+                                                                     threshold,
+                                                                     metricName,
+                                                                     null );
 
             CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
