@@ -3,6 +3,7 @@ package wres.vis.writing;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -77,31 +78,27 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         List<DestinationConfig> destinations =
                 ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
-        // Iterate through destinations
-        for ( DestinationConfig destinationConfig : destinations )
+        // Iterate through each metric 
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, DiagramStatisticOuter::getMetricName );
+        for ( MetricConstants next : metrics )
         {
-            // Iterate through each metric 
-            SortedSet<MetricConstants> metrics = Slicer.discover( output, DiagramStatisticOuter::getMetricName );
-            for ( MetricConstants next : metrics )
+            List<DiagramStatisticOuter> filtered = Slicer.filter( output, next );
+
+            // Group the statistics by the LRB context in which they appear. There will be one path written
+            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+            Map<LeftOrRightOrBaseline, List<DiagramStatisticOuter>> groups =
+                    Slicer.getStatisticsGroupedByContext( filtered );
+
+            for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
             {
-                List<DiagramStatisticOuter> filtered = Slicer.filter( output, next );
-
-                // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<DiagramStatisticOuter>> groups =
-                        Slicer.getStatisticsGroupedByContext( filtered );
-
-                for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
-                {
-                    Set<Path> innerPathsWrittenTo =
-                            DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
-                                                                 super.getProjectConfigPlus(),
-                                                                 destinationConfig,
-                                                                 nextGroup,
-                                                                 super.getDurationUnits() );
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
-                }
+                Set<Path> innerPathsWrittenTo =
+                        DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
+                                                             super.getProjectConfigPlus(),
+                                                             destinations,
+                                                             nextGroup,
+                                                             super.getDurationUnits() );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
     }
@@ -124,7 +121,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
-     * @param destinationConfig the destination configuration for the written output
+     * @param destinations the destinations for the written output
      * @param output the metric results
      * @param durationUnits the time units for durations
      * @throws GraphicsWriteException when an error occurs during writing
@@ -133,7 +130,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
     private static Set<Path> writeDiagrams( Path outputDirectory,
                                             ProjectConfigPlus projectConfigPlus,
-                                            DestinationConfig destinationConfig,
+                                            List<DestinationConfig> destinations,
                                             List<DiagramStatisticOuter> output,
                                             ChronoUnit durationUnits )
     {
@@ -145,47 +142,60 @@ public class DiagramGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = output.get( 0 ).getMetricName();
             SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
+            // Map by graphics parameters. Each pair requires a separate chart, written N times across N formats.
+            Collection<List<DestinationConfig>> destinationMap =
+                    GraphicsWriter.getDestinationsGroupedByGraphicsParameters( destinations );
 
-            final Map<Object, ChartEngine> engines =
-                    ChartEngineFactory.buildDiagramChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                output,
-                                                                helper.getOutputType(),
-                                                                helper.getTemplateResourceName(),
-                                                                helper.getGraphicsString(),
-                                                                durationUnits );
-
-            // Build the outputs
-            for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+            for ( List<DestinationConfig> nextDestinations : destinationMap )
             {
-                // Build the output file name
-                Path outputImage = null;
-                Object append = nextEntry.getKey();
-                if ( append instanceof TimeWindowOuter )
-                {
-                    outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                         metadata,
-                                                                         (TimeWindowOuter) append,
-                                                                         durationUnits,
-                                                                         metricName,
-                                                                         null );
-                }
-                else if ( append instanceof OneOrTwoThresholds )
-                {
-                    outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                         metadata,
-                                                                         (OneOrTwoThresholds) append,
-                                                                         metricName,
-                                                                         null );
-                }
-                else
-                {
-                    throw new UnsupportedOperationException( "Unexpected situation where WRES could not create outputImage path" );
-                }
+                // Each of the inner lists has common graphics parameters, so a common helper
+                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, nextDestinations.get( 0 ), metricName );
 
-                Path finishedPath = GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
-                // Only if writeChart succeeded do we assume that it was written
-                pathsWrittenTo.add( finishedPath );
+                Map<Object, ChartEngine> engines =
+                        ChartEngineFactory.buildDiagramChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                    output,
+                                                                    helper.getOutputType(),
+                                                                    helper.getTemplateResourceName(),
+                                                                    helper.getGraphicsString(),
+                                                                    durationUnits );
+
+                // Build the outputs
+                for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+                {
+                    // Build the output file name
+                    Path outputImage = null;
+                    Object append = nextEntry.getKey();
+                    if ( append instanceof TimeWindowOuter )
+                    {
+                        outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                             metadata,
+                                                                             (TimeWindowOuter) append,
+                                                                             durationUnits,
+                                                                             metricName,
+                                                                             null );
+                    }
+                    else if ( append instanceof OneOrTwoThresholds )
+                    {
+                        outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                             metadata,
+                                                                             (OneOrTwoThresholds) append,
+                                                                             metricName,
+                                                                             null );
+                    }
+                    else
+                    {
+                        throw new UnsupportedOperationException( "Unexpected situation where WRES could not create outputImage path" );
+                    }
+
+                    // Iterate through destinations
+                    for ( DestinationConfig destinationConfig : nextDestinations )
+                    {
+                        Path finishedPath =
+                                GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                        // Only if writeChart succeeded do we assume that it was written
+                        pathsWrittenTo.add( finishedPath );
+                    }
+                }
             }
         }
         catch ( ChartEngineException | IOException e )

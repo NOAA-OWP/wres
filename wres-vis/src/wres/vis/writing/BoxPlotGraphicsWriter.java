@@ -3,6 +3,7 @@ package wres.vis.writing;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -99,36 +100,31 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
         List<DestinationConfig> destinations =
                 ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
-        // Iterate through destinations
-        for ( DestinationConfig destinationConfig : destinations )
+        // Iterate through types per pair
+        List<BoxplotStatisticOuter> perPair =
+                Slicer.filter( output, next -> next.getMetricName().isInGroup( StatisticType.BOXPLOT_PER_PAIR ) );
+
+        SortedSet<MetricConstants> metricsPerPair =
+                Slicer.discover( perPair, BoxplotStatisticOuter::getMetricName );
+        for ( MetricConstants next : metricsPerPair )
         {
+            List<BoxplotStatisticOuter> filtered = Slicer.filter( perPair, next );
 
-            // Iterate through types per pair
-            List<BoxplotStatisticOuter> perPair =
-                    Slicer.filter( output, next -> next.getMetricName().isInGroup( StatisticType.BOXPLOT_PER_PAIR ) );
+            // Group the statistics by the LRB context in which they appear. There will be one path written
+            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+            Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
+                    Slicer.getStatisticsGroupedByContext( filtered );
 
-            SortedSet<MetricConstants> metricsPerPair =
-                    Slicer.discover( perPair, BoxplotStatisticOuter::getMetricName );
-            for ( MetricConstants next : metricsPerPair )
+            for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
-                List<BoxplotStatisticOuter> filtered = Slicer.filter( perPair, next );
-
-                // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
-                        Slicer.getStatisticsGroupedByContext( filtered );
-
-                for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
-                {
-                    Set<Path> innerPathsWrittenTo =
-                            BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
-                                                                                        super.getProjectConfigPlus(),
-                                                                                        destinationConfig,
-                                                                                        nextGroup,
-                                                                                        super.getDurationUnits() );
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
-                }
+                Set<Path> innerPathsWrittenTo =
+                        BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
+                                                                                    super.getProjectConfigPlus(),
+                                                                                    destinations,
+                                                                                    nextGroup,
+                                                                                    super.getDurationUnits() );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
     }
@@ -149,36 +145,31 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
         List<DestinationConfig> destinations =
                 ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
-        // Iterate through destinations
-        for ( DestinationConfig destinationConfig : destinations )
+        // Iterate through the pool types
+        List<BoxplotStatisticOuter> perPool =
+                Slicer.filter( output, next -> next.getMetricName().isInGroup( StatisticType.BOXPLOT_PER_POOL ) );
+
+        SortedSet<MetricConstants> metricsPerPool =
+                Slicer.discover( perPool, BoxplotStatisticOuter::getMetricName );
+        for ( MetricConstants next : metricsPerPool )
         {
+            List<BoxplotStatisticOuter> filtered = Slicer.filter( perPool, next );
 
-            // Iterate through the pool types
-            List<BoxplotStatisticOuter> perPool =
-                    Slicer.filter( output, next -> next.getMetricName().isInGroup( StatisticType.BOXPLOT_PER_POOL ) );
+            // Group the statistics by the LRB context in which they appear. There will be one path written
+            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+            Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
+                    Slicer.getStatisticsGroupedByContext( filtered );
 
-            SortedSet<MetricConstants> metricsPerPool =
-                    Slicer.discover( perPool, BoxplotStatisticOuter::getMetricName );
-            for ( MetricConstants next : metricsPerPool )
+            for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
-                List<BoxplotStatisticOuter> filtered = Slicer.filter( perPool, next );
-
-                // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
-                        Slicer.getStatisticsGroupedByContext( filtered );
-
-                for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
-                {
-                    Set<Path> innerPathsWrittenTo =
-                            BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
-                                                                                 super.getProjectConfigPlus(),
-                                                                                 destinationConfig,
-                                                                                 nextGroup,
-                                                                                 super.getDurationUnits() );
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
-                }
+                Set<Path> innerPathsWrittenTo =
+                        BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
+                                                                             super.getProjectConfigPlus(),
+                                                                             destinations,
+                                                                             nextGroup,
+                                                                             super.getDurationUnits() );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
     }
@@ -202,7 +193,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
-     * @param destinationConfig the destination configuration for the written output
+     * @param destinations the destinations for the written output
      * @param output the metric results, which contains all results for one metric across several pools
      * @param durationUnits the time units for durations
      * @throws GraphicsWriteException when an error occurs during writing
@@ -211,7 +202,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
 
     private static Set<Path> writeOneBoxPlotChartPerMetricAndPool( Path outputDirectory,
                                                                    ProjectConfigPlus projectConfigPlus,
-                                                                   DestinationConfig destinationConfig,
+                                                                   List<DestinationConfig> destinations,
                                                                    List<BoxplotStatisticOuter> output,
                                                                    ChronoUnit durationUnits )
     {
@@ -223,28 +214,40 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = output.get( 0 ).getMetricName();
             SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
+            // Map by graphics parameters. Each pair requires a separate chart, written N times across N formats.
+            Collection<List<DestinationConfig>> destinationMap =
+                    GraphicsWriter.getDestinationsGroupedByGraphicsParameters( destinations );
 
-            Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engines =
-                    ChartEngineFactory.buildBoxPlotChartEnginePerPool( projectConfigPlus.getProjectConfig(),
-                                                                       output,
-                                                                       helper.getTemplateResourceName(),
-                                                                       helper.getGraphicsString(),
-                                                                       durationUnits );
-
-            // Build the outputs
-            for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
+            for ( List<DestinationConfig> nextDestinations : destinationMap )
             {
-                Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                          metadata,
-                                                                          nextEntry.getKey().getLeft(),
-                                                                          durationUnits,
-                                                                          metricName,
-                                                                          null );
+                // Each of the inner lists has common graphics parameters, so a common helper
+                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, nextDestinations.get( 0 ), metricName );
 
-                Path finishedPath = GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
-                // Only if writeChart succeeded do we assume that it was written
-                pathsWrittenTo.add( finishedPath );
+                Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engines =
+                        ChartEngineFactory.buildBoxPlotChartEnginePerPool( projectConfigPlus.getProjectConfig(),
+                                                                           output,
+                                                                           helper.getTemplateResourceName(),
+                                                                           helper.getGraphicsString(),
+                                                                           durationUnits );
+
+                // Build the outputs
+                for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
+                {
+                    Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                              metadata,
+                                                                              nextEntry.getKey().getLeft(),
+                                                                              durationUnits,
+                                                                              metricName,
+                                                                              null );
+                    // Iterate through destinations
+                    for ( DestinationConfig destinationConfig : nextDestinations )
+                    {
+                        Path finishedPath =
+                                GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                        // Only if writeChart succeeded do we assume that it was written
+                        pathsWrittenTo.add( finishedPath );
+                    }
+                }
             }
         }
         catch ( ChartEngineException | IOException e )
@@ -261,7 +264,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
-     * @param destinationConfig the destination configuration for the written output
+     * @param destinations the destinations for the written output
      * @param output the metric results, which contains all results for one metric across several pools
      * @param durationUnits the time units for durations
      * @throws GraphicsWriteException when an error occurs during writing
@@ -270,7 +273,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
 
     private static Set<Path> writeOneBoxPlotChartPerMetric( Path outputDirectory,
                                                             ProjectConfigPlus projectConfigPlus,
-                                                            DestinationConfig destinationConfig,
+                                                            List<DestinationConfig> destinations,
                                                             List<BoxplotStatisticOuter> output,
                                                             ChronoUnit durationUnits )
     {
@@ -282,26 +285,37 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = output.get( 0 ).getMetricName();
             SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
+            // Map by graphics parameters. Each pair requires a separate chart, written N times across N formats.
+            Collection<List<DestinationConfig>> destinationMap =
+                    GraphicsWriter.getDestinationsGroupedByGraphicsParameters( destinations );
 
-            // Build the chart engine
-            ChartEngine engine =
-                    ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                output,
-                                                                helper.getTemplateResourceName(),
-                                                                helper.getGraphicsString(),
-                                                                durationUnits );
+            for ( List<DestinationConfig> nextDestinations : destinationMap )
+            {
+                // Each of the inner lists has common graphics parameters, so a common helper
+                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, nextDestinations.get( 0 ), metricName );
 
-            Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                      metadata,
-                                                                      metricName,
-                                                                      null );
+                // Build the chart engine
+                ChartEngine engine =
+                        ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                    output,
+                                                                    helper.getTemplateResourceName(),
+                                                                    helper.getGraphicsString(),
+                                                                    durationUnits );
 
-            Path finishedPath = GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
+                Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                          metadata,
+                                                                          metricName,
+                                                                          null );
 
-            // Only if writeChart succeeded do we assume that it was written
-            pathsWrittenTo.add( finishedPath );
+                // Iterate through destinations
+                for ( DestinationConfig destinationConfig : nextDestinations )
+                {
+                    Path finishedPath = GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
 
+                    // Only if writeChart succeeded do we assume that it was written
+                    pathsWrittenTo.add( finishedPath );
+                }
+            }
         }
         catch ( ChartEngineException | IOException e )
         {

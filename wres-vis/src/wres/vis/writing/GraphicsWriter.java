@@ -4,8 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.jfree.chart.ChartUtilities;
 
@@ -142,7 +146,27 @@ abstract class GraphicsWriter
             throw new GraphicsWriteException( "Error while writing chart:", e );
         }
     }
+    
+    /**
+     * Helper that groups destinations by their common graphics parameters. Each inner list requires one set of 
+     * graphics, which may be written across N formats.
+     * 
+     * @param destinations the destinations
+     * @return the groups of destinations by common graphics parameters
+     */
 
+    static Collection<List<DestinationConfig>>
+            getDestinationsGroupedByGraphicsParameters( List<DestinationConfig> destinations )
+    {
+        Objects.requireNonNull( destinations );
+        
+        // Use the string representation of the GraphicalType
+        Map<String, List<DestinationConfig>> destinationsPerGraphic = destinations.stream()
+                .collect(Collectors.groupingBy( next -> next.getGraphical().toString(), Collectors.toList()));
+
+        return destinationsPerGraphic.values();
+    }
+    
     /**
      * A helper class that builds the parameters required for graphics generation.
      * 

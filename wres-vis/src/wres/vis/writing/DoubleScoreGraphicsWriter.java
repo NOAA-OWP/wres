@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -83,38 +84,33 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         List<DestinationConfig> destinations =
                 ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
-        // Iterate through destinations
-        for ( DestinationConfig destinationConfig : destinations )
+        // Iterate through each metric 
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, DoubleScoreStatisticOuter::getMetricName );
+        for ( MetricConstants next : metrics )
         {
-
-            // Iterate through each metric 
-            SortedSet<MetricConstants> metrics = Slicer.discover( output, DoubleScoreStatisticOuter::getMetricName );
-            for ( MetricConstants next : metrics )
+            if ( next == MetricConstants.CONTINGENCY_TABLE )
             {
-                if ( next == MetricConstants.CONTINGENCY_TABLE )
-                {
-                    LOGGER.debug( "Discovered contingency table output while writing PNGs: ignoring these outputs." );
-                }
-                else
-                {
-                    List<DoubleScoreStatisticOuter> filtered = Slicer.filter( output, next );
+                LOGGER.debug( "Discovered contingency table output while writing PNGs: ignoring these outputs." );
+            }
+            else
+            {
+                List<DoubleScoreStatisticOuter> filtered = Slicer.filter( output, next );
 
-                    // Group the statistics by the LRB context in which they appear. There will be one path written
-                    // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                    // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                    Map<LeftOrRightOrBaseline, List<DoubleScoreStatisticOuter>> groups =
-                            Slicer.getStatisticsGroupedByContext( filtered );
+                // Group the statistics by the LRB context in which they appear. There will be one path written
+                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+                Map<LeftOrRightOrBaseline, List<DoubleScoreStatisticOuter>> groups =
+                        Slicer.getStatisticsGroupedByContext( filtered );
 
-                    for ( List<DoubleScoreStatisticOuter> nextGroup : groups.values() )
-                    {
-                        Set<Path> innerPathsWrittenTo =
-                                DoubleScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
-                                                                            super.getProjectConfigPlus(),
-                                                                            destinationConfig,
-                                                                            nextGroup,
-                                                                            super.getDurationUnits() );
-                        this.pathsWrittenTo.addAll( innerPathsWrittenTo );
-                    }
+                for ( List<DoubleScoreStatisticOuter> nextGroup : groups.values() )
+                {
+                    Set<Path> innerPathsWrittenTo =
+                            DoubleScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
+                                                                        super.getProjectConfigPlus(),
+                                                                        destinations,
+                                                                        nextGroup,
+                                                                        super.getDurationUnits() );
+                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
         }
@@ -138,7 +134,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
-     * @param destinationConfig the destination configuration for the written output
+     * @param destinations the destinations for the written output
      * @param output the metric output
      * @param durationUnits the time units for durations
      * @throws GraphicsWriteException when an error occurs during writing
@@ -147,7 +143,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
     private static Set<Path> writeScoreCharts( Path outputDirectory,
                                                ProjectConfigPlus projectConfigPlus,
-                                               DestinationConfig destinationConfig,
+                                               List<DestinationConfig> destinations,
                                                List<DoubleScoreStatisticOuter> output,
                                                ChronoUnit durationUnits )
     {
@@ -159,78 +155,124 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = output.get( 0 ).getMetricName();
             SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, metricName );
+            // Map by graphics parameters. Each pair requires a separate chart, written N times across N formats.
+            Collection<List<DestinationConfig>> destinationMap =
+                    GraphicsWriter.getDestinationsGroupedByGraphicsParameters( destinations );
 
-            // As many outputs as secondary thresholds if secondary thresholds are defined
-            // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-            List<List<DoubleScoreStatisticOuter>> allOutputs = new ArrayList<>();
-
-            SortedSet<ThresholdOuter> secondThreshold =
-                    Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
-
-            if ( !secondThreshold.isEmpty() )
+            for ( List<DestinationConfig> nextDestinations : destinationMap )
             {
-                // Slice by the second threshold
-                secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( output,
-                                                                                value -> next.equals( value.getMetadata()
-                                                                                                           .getThresholds()
-                                                                                                           .second() ) ) ) );
-            }
-            // One output only
-            else
-            {
-                allOutputs.add( output );
-            }
+                // Each of the inner lists has common graphics parameters, so a common helper
+                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, nextDestinations.get( 0 ), metricName );
 
-            for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
-            {
-                ConcurrentMap<MetricConstants, ChartEngine> engines =
-                        ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                        nextOutput,
-                                                                        helper.getOutputType(),
-                                                                        helper.getTemplateResourceName(),
-                                                                        helper.getGraphicsString(),
-                                                                        durationUnits );
+                // As many outputs as secondary thresholds if secondary thresholds are defined
+                // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
+                List<List<DoubleScoreStatisticOuter>> allOutputs = new ArrayList<>();
 
-                String append = null;
+                SortedSet<ThresholdOuter> secondThreshold =
+                        Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
 
-                // Secondary threshold? If yes, only one, as this was sliced above
-                SortedSet<ThresholdOuter> second =
-                        Slicer.discover( nextOutput,
-                                         next -> next.getMetadata().getThresholds().second() );
-                if ( !second.isEmpty() )
+                if ( !secondThreshold.isEmpty() )
                 {
-                    append = second.iterator().next().toStringSafe();
+                    // Slice by the second threshold
+                    secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( output,
+                                                                                    value -> next.equals( value.getMetadata()
+                                                                                                               .getThresholds()
+                                                                                                               .second() ) ) ) );
+                }
+                // One output only
+                else
+                {
+                    allOutputs.add( output );
                 }
 
-                // Build the outputs
-                for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+                for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
                 {
+                    ConcurrentMap<MetricConstants, ChartEngine> engines =
+                            ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                            nextOutput,
+                                                                            helper.getOutputType(),
+                                                                            helper.getTemplateResourceName(),
+                                                                            helper.getGraphicsString(),
+                                                                            durationUnits );
 
-                    // Qualify with the component name unless there is one component and it is main
-                    MetricConstants componentName = null;
-                    if ( nextEntry.getKey() != MetricConstants.MAIN || engines.size() > 0 )
+                    String append = null;
+
+                    // Secondary threshold? If yes, only one, as this was sliced above
+                    SortedSet<ThresholdOuter> second =
+                            Slicer.discover( nextOutput,
+                                             next -> next.getMetadata().getThresholds().second() );
+                    if ( !second.isEmpty() )
                     {
-                        componentName = nextEntry.getKey();
+                        append = second.iterator().next().toStringSafe();
                     }
 
-                    // Build the output file name
-                    Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                              metadata,
-                                                                              append,
-                                                                              metricName,
-                                                                              componentName );
-
-                    Path finishedPath = GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
-                    // Only if writeChart succeeded do we assume that it was written
-                    pathsWrittenTo.add( finishedPath );
+                    Set<Path> paths = DoubleScoreGraphicsWriter.writeNextGroupOfDestinations( outputDirectory,
+                                                                                              metadata,
+                                                                                              engines,
+                                                                                              metricName,
+                                                                                              append,
+                                                                                              nextDestinations );
+                    pathsWrittenTo.addAll( paths );
                 }
             }
-
         }
         catch ( ChartEngineException | IOException e )
         {
             throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
+        }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    /**
+     *  Writes a group of destinations.
+     * 
+     * @param outputDirectory the output directory
+     * @param metadata the sample metadata
+     * @param engines the graphics engines
+     * @param metricName the metric name
+     * @param append a string to append to the path
+     * @param destinations the destinations to write
+     * @return the paths written
+     * @throws IOException if the graphic could not be created or written
+     */
+
+    private static Set<Path> writeNextGroupOfDestinations( Path outputDirectory,
+                                                           SampleMetadata metadata,
+                                                           ConcurrentMap<MetricConstants, ChartEngine> engines,
+                                                           MetricConstants metricName,
+                                                           String append,
+                                                           List<DestinationConfig> destinations )
+            throws IOException
+    {
+        Set<Path> pathsWrittenTo = new HashSet<>();
+
+        // Build the outputs
+        for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+        {
+
+            // Qualify with the component name unless there is one component and it is main
+            MetricConstants componentName = null;
+            if ( nextEntry.getKey() != MetricConstants.MAIN || engines.size() > 0 )
+            {
+                componentName = nextEntry.getKey();
+            }
+
+            // Build the output file name
+            Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
+                                                                      metadata,
+                                                                      append,
+                                                                      metricName,
+                                                                      componentName );
+
+            // Iterate through destinations
+            for ( DestinationConfig destinationConfig : destinations )
+            {
+                Path finishedPath =
+                        GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                // Only if writeChart succeeded do we assume that it was written
+                pathsWrittenTo.add( finishedPath );
+            }
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
