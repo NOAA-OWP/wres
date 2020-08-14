@@ -1,5 +1,6 @@
 package wres.vis.writing;
 
+import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -9,9 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+import org.jfree.graphics2d.svg.SVGGraphics2D;
+import org.jfree.graphics2d.svg.SVGUtils;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -117,10 +122,9 @@ abstract class GraphicsWriter
         {
             height = dest.getGraphical().getHeight();
         }
-        
+
         try
         {
-
             Path resolvedPath = outputImage;
 
             // Default is png
@@ -128,9 +132,23 @@ abstract class GraphicsWriter
             {
                 resolvedPath = resolvedPath.resolveSibling( resolvedPath.getFileName() + ".png" );
                 File outputImageFile = resolvedPath.toFile();
-                
+
                 // #58735-18
-                ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );               
+                ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
+            }
+            else if ( dest.getType() == DestinationType.SVG )
+            {
+                resolvedPath = resolvedPath.resolveSibling( resolvedPath.getFileName() + ".svg" );
+                File outputImageFile = resolvedPath.toFile();
+
+                // Create the chart
+                JFreeChart chart = engine.buildChart();
+
+                // Create the svg string
+                SVGGraphics2D svg2d = new SVGGraphics2D( width, height );
+                chart.draw( svg2d, new Rectangle2D.Double( 0, 0, width, height ) );
+                String svgElement = svg2d.getSVGElement();
+                SVGUtils.writeToSVG( outputImageFile, svgElement );
             }
             // No others supported
             else
@@ -138,7 +156,7 @@ abstract class GraphicsWriter
                 throw new UnsupportedOperationException( "The destination type '" + dest.getType()
                                                          + "' is not supported for graphics writing." );
             }
-            
+
             return resolvedPath;
         }
         catch ( IOException | ChartEngineException | XYChartDataSourceException e )
@@ -146,7 +164,7 @@ abstract class GraphicsWriter
             throw new GraphicsWriteException( "Error while writing chart:", e );
         }
     }
-    
+
     /**
      * Helper that groups destinations by their common graphics parameters. Each inner list requires one set of 
      * graphics, which may be written across N formats.
@@ -159,14 +177,25 @@ abstract class GraphicsWriter
             getDestinationsGroupedByGraphicsParameters( List<DestinationConfig> destinations )
     {
         Objects.requireNonNull( destinations );
-        
+
+        // Map the destination to a string representation of the graphics parameters
+        Function<DestinationConfig, String> mapper = destination -> {
+            if ( Objects.nonNull( destination.getGraphical() ) )
+            {
+                return destination.toString();
+            }
+
+            return "defaultGraphics";
+        };
+
         // Use the string representation of the GraphicalType
         Map<String, List<DestinationConfig>> destinationsPerGraphic = destinations.stream()
-                .collect(Collectors.groupingBy( next -> next.getGraphical().toString(), Collectors.toList()));
+                                                                                  .collect( Collectors.groupingBy( mapper,
+                                                                                                                   Collectors.toList() ) );
 
         return destinationsPerGraphic.values();
     }
-    
+
     /**
      * A helper class that builds the parameters required for graphics generation.
      * 

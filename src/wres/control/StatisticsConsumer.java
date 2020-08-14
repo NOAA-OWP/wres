@@ -545,11 +545,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             this.buildCommaSeparatedConsumers();
         }
 
-        // Register consumers for the PNG output type
-        if ( this.configNeedsThisTypeOfOutput( DestinationType.PNG ) )
-        {
-            this.buildPortableNetworkGraphicsConsumers();
-        }
+        // Register consumers for graphics output types, which filters by type already
+        this.buildGraphicsConsumers(); 
 
         if ( this.configNeedsThisTypeOfOutput( DestinationType.PROTOBUF ) )
         {
@@ -676,74 +673,107 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildPortableNetworkGraphicsConsumers()
+    private void buildGraphicsConsumers()
+    {
+        ProjectConfig config = this.getProjectConfig();
+
+        Set<DestinationType> types = config.getOutputs()
+                                           .getDestination()
+                                           .stream()
+                                           .map( next -> next.getType() )
+                                           .filter( StatisticsConsumer::isGraphicsType )
+                                           .collect( Collectors.toSet() );
+
+        // Add consumers for each type
+        for ( DestinationType type : types )
+        {
+            this.buildGraphicsConsumersForOneFormatType( type );
+        }
+    }
+
+    /**
+     * @param destinationType the destination type
+     * @return true if the destination type is a graphics type, otherwise false
+     */
+
+    private static boolean isGraphicsType( DestinationType destinationType )
+    {
+        return destinationType == DestinationType.PNG || destinationType == DestinationType.SVG
+               || destinationType == DestinationType.GRAPHIC;
+    }
+    
+    /**
+     * Adds a graphic consumer for each type of statistical output and for one format type.
+     * @param type the format type
+     */
+
+    private void buildGraphicsConsumersForOneFormatType( DestinationType type )
     {
         ProjectConfigPlus pcPlus = this.getProjectConfigPlus();
         Path pathToWrite = this.getOutputDirectory();
 
         // Build the consumers conditionally
-        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, type ) )
         {
             DiagramGraphicsWriter diagramWriter = DiagramGraphicsWriter.of( pcPlus,
-                                                                  this.getDurationUnits(),
-                                                                  pathToWrite );
-            this.diagramConsumers.put( DestinationType.PNG,
+                                                                            this.getDurationUnits(),
+                                                                            pathToWrite );
+            this.diagramConsumers.put( type,
                                        diagramWriter );
             this.writersToPaths.add( diagramWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, type ) )
         {
-            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( projectConfigPlus,
-                                                                  this.getDurationUnits(),
-                                                                  outputDirectory );
-            this.boxPlotConsumersPerPair.put( DestinationType.PNG,
+            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( pcPlus,
+                                                                            this.getDurationUnits(),
+                                                                            pathToWrite );
+            this.boxPlotConsumersPerPair.put( type,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, type ) )
         {
-            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( projectConfigPlus,
-                                                                  this.getDurationUnits(),
-                                                                  outputDirectory );
-            this.boxPlotConsumersPerPool.put( DestinationType.PNG,
+            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( pcPlus,
+                                                                            this.getDurationUnits(),
+                                                                            pathToWrite );
+            this.boxPlotConsumersPerPool.put( type,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, type ) )
         {
-            DurationDiagramGraphicsWriter pairedWriter = DurationDiagramGraphicsWriter.of( projectConfigPlus,
-                                                                                 this.getDurationUnits(),
-                                                                                 outputDirectory );
-            this.pairedConsumers.put( DestinationType.PNG,
+            DurationDiagramGraphicsWriter pairedWriter = DurationDiagramGraphicsWriter.of( pcPlus,
+                                                                                           this.getDurationUnits(),
+                                                                                           pathToWrite );
+            this.pairedConsumers.put( type,
                                       pairedWriter );
             this.writersToPaths.add( pairedWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, type ) )
         {
             DoubleScoreGraphicsWriter doubleScoreWriter =
-                    DoubleScoreGraphicsWriter.of( projectConfigPlus,
-                                             this.getDurationUnits(),
-                                             outputDirectory );
-            this.doubleScoreConsumers.put( DestinationType.PNG,
+                    DoubleScoreGraphicsWriter.of( pcPlus,
+                                                  this.getDurationUnits(),
+                                                  pathToWrite );
+            this.doubleScoreConsumers.put( type,
                                            doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, DestinationType.PNG ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, type ) )
         {
             DurationScoreGraphicsWriter durationScoreWriter =
-                    DurationScoreGraphicsWriter.of( projectConfigPlus,
-                                               this.getDurationUnits(),
-                                               outputDirectory );
-            this.durationScoreConsumers.put( DestinationType.PNG,
+                    DurationScoreGraphicsWriter.of( pcPlus,
+                                                    this.getDurationUnits(),
+                                                    pathToWrite );
+            this.durationScoreConsumers.put( type,
                                              durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }
-
     }
 
     /**
@@ -1023,7 +1053,10 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             allTypes.add( DestinationType.NUMERIC );
         }
         // Return true if any destination types appear in allTypes, otherwise false
-        return output.getDestination().stream().map( DestinationConfig::getType ).anyMatch( allTypes::contains );
+        return output.getDestination()
+                     .stream()
+                     .map( DestinationConfig::getType )
+                     .anyMatch( allTypes::contains );
     }
 
 

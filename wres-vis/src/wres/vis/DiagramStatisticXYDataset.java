@@ -81,17 +81,18 @@ public class DiagramStatisticXYDataset
     public int getItemCount( final int series )
     {
         Optional<DiagramStatisticComponent> number = getPlotData().get( series )
-                .getData()
-                .getStatisticsList()
-                .stream()
-                .filter( next -> this.xConstant == next.getMetric().getName() )
-                .findFirst();
-        
-        if( number.isPresent() )
+                                                                  .getData()
+                                                                  .getStatisticsList()
+                                                                  .stream()
+                                                                  .filter( next -> this.xConstant == next.getMetric()
+                                                                                                         .getName() )
+                                                                  .findFirst();
+
+        if ( number.isPresent() )
         {
             return number.get().getValuesCount();
         }
-        
+
         return 0;
     }
 
@@ -99,17 +100,18 @@ public class DiagramStatisticXYDataset
     public Number getX( final int series, final int item )
     {
         Optional<DiagramStatisticComponent> number = getPlotData().get( series )
-                .getData()
-                .getStatisticsList()
-                .stream()
-                .filter( next -> this.xConstant == next.getMetric().getName() )
-                .findFirst();
-        
-        if( number.isPresent() )
+                                                                  .getData()
+                                                                  .getStatisticsList()
+                                                                  .stream()
+                                                                  .filter( next -> this.xConstant == next.getMetric()
+                                                                                                         .getName() )
+                                                                  .findFirst();
+
+        if ( number.isPresent() )
         {
             return number.get().getValues( item );
         }
-        
+
         return Double.NaN;
     }
 
@@ -117,17 +119,18 @@ public class DiagramStatisticXYDataset
     public Number getY( final int series, final int item )
     {
         Optional<DiagramStatisticComponent> number = getPlotData().get( series )
-                .getData()
-                .getStatisticsList()
-                .stream()
-                .filter( next -> this.yConstant == next.getMetric().getName() )
-                .findFirst();
-        
-        if( number.isPresent() )
+                                                                  .getData()
+                                                                  .getStatisticsList()
+                                                                  .stream()
+                                                                  .filter( next -> this.yConstant == next.getMetric()
+                                                                                                         .getName() )
+                                                                  .findFirst();
+
+        if ( number.isPresent() )
         {
             return number.get().getValues( item );
         }
-        
+
         return Double.NaN;
     }
 
@@ -150,11 +153,16 @@ public class DiagramStatisticXYDataset
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( getPlotData(), meta -> meta.getMetadata().getThresholds() );
 
-        if ( ( timeWindows.size() == 1 ) && ( thresholds.size() == 1 ) )
+        // One time window and one or more thresholds: label by threshold
+        if ( timeWindows.size() == 1 )
         {
-            return "All Data"; //All of the data is in a single series.
+            return getPlotData().get( series )
+                                .getMetadata()
+                                .getThresholds()
+                                .toStringWithoutUnits();
         }
-        else if ( ( !timeWindows.isEmpty() ) && ( thresholds.size() == 1 ) )
+        // One threshold and one or more time windows: label by time window
+        else if ( thresholds.size() == 1 )
         {
             return Long.toString( TimeHelper.durationToLongUnits( getPlotData().get( series )
                                                                                .getMetadata()
@@ -164,10 +172,7 @@ public class DiagramStatisticXYDataset
         }
         else
         {
-            return getPlotData().get( series )
-                                .getMetadata()
-                                .getThresholds()
-                                .toStringWithoutUnits();
+            throw new IllegalStateException( "Unexpected data configuration for the diagram." );
         }
     }
 

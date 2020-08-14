@@ -194,16 +194,16 @@ public class ProjectConfigs
     /**
      * Get all the destinations from a configuration for a particular type.
      * @param config the config to search through
-     * @param type the type to look for
+     * @param types the types to look for
      * @return a list of destinations with the type specified
      * @throws NullPointerException when config or type is null
      */
 
     public static List<DestinationConfig> getDestinationsOfType( ProjectConfig config,
-                                                                 DestinationType type )
+                                                                 DestinationType... types )
     {
         Objects.requireNonNull( config, "Config must not be null." );
-        Objects.requireNonNull( type, "Type must not be null." );
+        Objects.requireNonNull( types, "Type must not be null." );
 
         List<DestinationConfig> result = new ArrayList<>();
 
@@ -216,9 +216,12 @@ public class ProjectConfigs
 
         for ( DestinationConfig d : config.getOutputs().getDestination() )
         {
-            if ( d.getType() == type )
+            for ( DestinationType nextType : types )
             {
-                result.add( d );
+                if ( d.getType() == nextType )
+                {
+                    result.add( d );
+                }
             }
         }
 
@@ -235,7 +238,10 @@ public class ProjectConfigs
 
     public static List<DestinationConfig> getGraphicalDestinations( ProjectConfig config )
     {
-        return getDestinationsOfType( config, DestinationType.GRAPHIC );
+        return ProjectConfigs.getDestinationsOfType( config,
+                                                     DestinationType.GRAPHIC,
+                                                     DestinationType.PNG,
+                                                     DestinationType.SVG );
     }
 
     /**
@@ -248,7 +254,7 @@ public class ProjectConfigs
 
     public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
     {
-        return getDestinationsOfType( config, DestinationType.NUMERIC );
+        return ProjectConfigs.getDestinationsOfType( config, DestinationType.NUMERIC );
     }
 
     /**
@@ -259,12 +265,12 @@ public class ProjectConfigs
      * @return the named metric configuration or null
      * @throws NullPointerException if one or both of the inputs are null
      */
-    
+
     public static MetricConfig getMetricConfigByName( ProjectConfig projectConfig, MetricConfigName metricName )
     {
         Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
         Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
-    
+
         for ( MetricsConfig next : projectConfig.getMetrics() )
         {
             Optional<MetricConfig> nextConfig =
@@ -274,7 +280,7 @@ public class ProjectConfigs
                 return nextConfig.get();
             }
         }
-    
+
         return null;
     }
 

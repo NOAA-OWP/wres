@@ -158,9 +158,9 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             // Map by graphics parameters. Each pair requires a separate chart, written N times across N formats.
             Collection<List<DestinationConfig>> destinationMap =
                     GraphicsWriter.getDestinationsGroupedByGraphicsParameters( destinations );
-
+            
             for ( List<DestinationConfig> nextDestinations : destinationMap )
-            {
+            {                
                 // Each of the inner lists has common graphics parameters, so a common helper
                 GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, nextDestinations.get( 0 ), metricName );
 

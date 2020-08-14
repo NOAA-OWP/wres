@@ -312,8 +312,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         
         if ( Objects.nonNull( metric ) )
         {
-            // Not univariate statistics
-            if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
+            // Not univariate statistics, except the sample size
+            if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) || metric == MetricConstants.SAMPLE_SIZE )
             {
                 // Use the left name for paired statistics. Should probably use the triple of variable names for 
                 // accuracy. See #81790.
