@@ -232,18 +232,17 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
                 SampleMetadata meta = nextOutput.get( 0 ).getMetadata();
                 Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                         destinationConfig,
                                                                          meta,
                                                                          append,
                                                                          m,
                                                                          null );
 
-                CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
+                Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
                 // If writeTabularOutputToFile did not throw an exception, assume
                 // it succeeded in writing to the file, track outputs now (add must
                 // be called after the above call).
-                pathsWrittenTo.add( outputPath );
+                pathsWrittenTo.add( finishedPath );
             }
         }
 

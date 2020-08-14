@@ -69,7 +69,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      */
 
     @Override
-    public void accept( final List<DiagramStatisticOuter> output )
+    public void accept( List<DiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -164,30 +164,28 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 if ( append instanceof TimeWindowOuter )
                 {
                     outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                     destinationConfig,
-                                                                     metadata,
-                                                                     (TimeWindowOuter) append,
-                                                                     durationUnits,
-                                                                     metricName,
-                                                                     null );
+                                                                         metadata,
+                                                                         (TimeWindowOuter) append,
+                                                                         durationUnits,
+                                                                         metricName,
+                                                                         null );
                 }
                 else if ( append instanceof OneOrTwoThresholds )
                 {
                     outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                     destinationConfig,
-                                                                     metadata,
-                                                                     (OneOrTwoThresholds) append,
-                                                                     metricName,
-                                                                     null );
+                                                                         metadata,
+                                                                         (OneOrTwoThresholds) append,
+                                                                         metricName,
+                                                                         null );
                 }
                 else
                 {
                     throw new UnsupportedOperationException( "Unexpected situation where WRES could not create outputImage path" );
                 }
 
-                GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                Path finishedPath = GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
-                pathsWrittenTo.add( outputImage );
+                pathsWrittenTo.add( finishedPath );
             }
         }
         catch ( ChartEngineException | IOException e )

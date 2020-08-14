@@ -30,7 +30,7 @@ public class GraphicsWriteException extends RuntimeException
      * @param message the message.
      */
 
-    public GraphicsWriteException( final String message )
+    public GraphicsWriteException( String message )
     {
         super( message );
     }
@@ -42,7 +42,7 @@ public class GraphicsWriteException extends RuntimeException
      * @param cause the cause of the exception
      */
 
-    public GraphicsWriteException( final String message, final Throwable cause )
+    public GraphicsWriteException( String message, Throwable cause )
     {
         super( message, cause );
     }

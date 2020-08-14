@@ -216,15 +216,14 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
                     // Build the output file name
                     Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                          destinationConfig,
-                                                                          metadata,
-                                                                          append,
-                                                                          metricName,
-                                                                          componentName );
+                                                                              metadata,
+                                                                              append,
+                                                                              metricName,
+                                                                              componentName );
 
-                    GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                    Path finishedPath = GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                     // Only if writeChart succeeded do we assume that it was written
-                    pathsWrittenTo.add( outputImage );
+                    pathsWrittenTo.add( finishedPath );
                 }
             }
 

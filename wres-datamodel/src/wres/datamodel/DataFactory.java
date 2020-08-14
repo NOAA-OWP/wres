@@ -25,7 +25,6 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -544,19 +543,17 @@ public final class DataFactory
      * associated with the results and a {@link TimeWindowOuter}.
      *
      * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param timeWindow the time window
      * @param leadUnits the time units to use for the lead durations
      * @param metricName the metric name
      * @param metricComponentName name the optional component name
-     * @return a path to write
+     * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  DestinationConfig destinationConfig,
                                                   SampleMetadata meta,
                                                   TimeWindowOuter timeWindow,
                                                   ChronoUnit leadUnits,
@@ -564,8 +561,6 @@ public final class DataFactory
                                                   MetricConstants metricComponentName )
             throws IOException
     {
-        Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
-
         Objects.requireNonNull( meta, DataFactory.ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
         Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
@@ -574,7 +569,6 @@ public final class DataFactory
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
         return DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                      destinationConfig,
                                                       meta,
                                                       DataFactory.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                                                       leadUnits )
@@ -589,12 +583,11 @@ public final class DataFactory
      * additional string that should be appended to the path (e.g. lead time or threshold). 
      *
      * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param append an optional string to append to the end of the path, may be null
      * @param metricName the metric name
      * @param metricComponentName name the optional component name
-     * @return a path to write
+     * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated 
      *            with the sample metadata
      * @throws IOException if the path cannot be produced
@@ -602,17 +595,12 @@ public final class DataFactory
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  DestinationConfig destinationConfig,
                                                   SampleMetadata meta,
                                                   String append,
                                                   MetricConstants metricName,
                                                   MetricConstants metricComponentName )
             throws IOException
     {
-        Objects.requireNonNull( destinationConfig,
-                                "Enter non-null destination configuration to establish "
-                                                   + "a path for writing." );
-
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
         Objects.requireNonNull( metricName, "Specify a non-null metric name." );
@@ -688,28 +676,9 @@ public final class DataFactory
         {
             joinElements.add( append );
         }
-
-        // Add extension
-        String extension;
-
-        // Default graphic extension type
-        if ( destinationConfig.getType() == DestinationType.GRAPHIC )
-        {
-            extension = ".png";
-        }
-        // Default numeric extension type
-        else if ( destinationConfig.getType() == DestinationType.NUMERIC )
-        {
-            extension = ".csv";
-        }
-        // Specific type
-        else
-        {
-            extension = destinationConfig.getType().name().toLowerCase();
-        }
-
+        
         // Derive a sanitized name
-        String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ) + extension, "UTF-8" );
+        String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ), "UTF-8" );
 
         return Paths.get( outputDirectory.toString(), safeName );
     }
@@ -719,18 +688,16 @@ public final class DataFactory
      * associated with the results and a {@link OneOrTwoThresholds}.
      *
      * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param threshold the threshold
      * @param metricName the metric name
      * @param metricComponentName name the optional component name
-     * @return a path to write
+     * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  DestinationConfig destinationConfig,
                                                   SampleMetadata meta,
                                                   OneOrTwoThresholds threshold,
                                                   MetricConstants metricName,
@@ -742,7 +709,6 @@ public final class DataFactory
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
         return getPathFromSampleMetadata( outputDirectory,
-                                          destinationConfig,
                                           meta,
                                           threshold.toStringSafe(),
                                           metricName,
@@ -753,24 +719,21 @@ public final class DataFactory
      * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link SampleMetadata}.
      *
      * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param metricName the metric name
      * @param metricComponentName name the optional component name
-     * @return a path to write
+     * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
      */
 
     public static Path getPathFromSampleMetadata( Path outputDirectory,
-                                                  DestinationConfig destinationConfig,
                                                   SampleMetadata meta,
                                                   MetricConstants metricName,
                                                   MetricConstants metricComponentName )
             throws IOException
     {
         return getPathFromSampleMetadata( outputDirectory,
-                                          destinationConfig,
                                           meta,
                                           (String) null,
                                           metricName,
