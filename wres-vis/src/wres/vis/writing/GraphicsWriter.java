@@ -7,13 +7,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.jfree.chart.ChartUtilities;
+
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -33,15 +35,15 @@ abstract class GraphicsWriter
     /**
      * Default chart height in pixels.
      */
-    
+
     private static final int DEFAULT_CHART_HEIGHT = 600;
-    
+
     /**
      * Default chart width in pixels.
      */
-    
+
     private static final int DEFAULT_CHART_WIDTH = 800;
-    
+
     /**
      * Resolution for writing duration outputs.
      */
@@ -89,19 +91,17 @@ abstract class GraphicsWriter
     /**
      * Writes an output chart to a specified path.
      *
-     * @param systemSettings The system settings to use.
      * @param outputImage the path to the output image
      * @param engine the chart engine
      * @param dest the destination configuration
+     * @return the path actually written
      * @throws GraphicsWriteException if the chart could not be written
      */
 
-    static void writeChart( final Path outputImage,
-                            final ChartEngine engine,
-                            final DestinationConfig dest )
+    static Path writeChart( Path outputImage,
+                            ChartEngine engine,
+                            DestinationConfig dest )
     {
-        final File outputImageFile = outputImage.toFile();
-
         int width = GraphicsWriter.DEFAULT_CHART_WIDTH;
         int height = GraphicsWriter.DEFAULT_CHART_HEIGHT;
 
@@ -113,9 +113,29 @@ abstract class GraphicsWriter
         {
             height = dest.getGraphical().getHeight();
         }
+        
         try
         {
-            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), width, height );
+
+            Path resolvedPath = outputImage;
+
+            // Default is png
+            if ( dest.getType() == DestinationType.GRAPHIC || dest.getType() == DestinationType.PNG )
+            {
+                resolvedPath = resolvedPath.resolveSibling( resolvedPath.getFileName() + ".png" );
+                File outputImageFile = resolvedPath.toFile();
+                
+                // #58735-18
+                ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );               
+            }
+            // No others supported
+            else
+            {
+                throw new UnsupportedOperationException( "The destination type '" + dest.getType()
+                                                         + "' is not supported for graphics writing." );
+            }
+            
+            return resolvedPath;
         }
         catch ( IOException | ChartEngineException | XYChartDataSourceException e )
         {
@@ -285,8 +305,8 @@ abstract class GraphicsWriter
      */
 
     GraphicsWriter( ProjectConfigPlus projectConfigPlus,
-               ChronoUnit durationUnits,
-               Path outputDirectory )
+                    ChronoUnit durationUnits,
+                    Path outputDirectory )
     {
         Objects.requireNonNull( projectConfigPlus, "Specify a non-null project declaration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );

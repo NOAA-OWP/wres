@@ -243,19 +243,18 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
             // Write the output
             Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                     destinationConfig,
                                                                      meta,
                                                                      timeWindow,
                                                                      durationUnits,
                                                                      metricName,
                                                                      null );
 
-            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
+            Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now (add must
             // be called after the above call).
-            pathsWrittenTo.add( outputPath );
+            pathsWrittenTo.add( finishedPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -306,18 +305,17 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
             // Write the output
             Path outputPath = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                     destinationConfig,
                                                                      meta,
                                                                      threshold,
                                                                      metricName,
                                                                      null );
 
-            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
+            Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now (add must
             // be called after the above call).
-            pathsWrittenTo.add( outputPath );
+            pathsWrittenTo.add( finishedPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );

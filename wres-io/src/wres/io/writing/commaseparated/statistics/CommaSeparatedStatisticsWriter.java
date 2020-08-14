@@ -102,12 +102,13 @@ abstract class CommaSeparatedStatisticsWriter
      *
      * @param rows the tabular data to write (non null, not empty!)
      * @param outputPath the path to which the file should be written
+     * @return the path actually written
      * @throws IOException if the output cannot be written
      * @throws IllegalArgumentException when any arg is null
      * @throws IllegalArgumentException when rows is empty
      */
 
-    static void writeTabularOutputToFile( List<RowCompareByLeft> rows,
+    static Path writeTabularOutputToFile( List<RowCompareByLeft> rows,
                                           Path outputPath )
             throws IOException
     {
@@ -121,8 +122,11 @@ abstract class CommaSeparatedStatisticsWriter
 
         // Sort the rows before writing them
         Collections.sort( rows );
+        
+        // Append a file extension to the path
+        Path extendedPath = outputPath.resolveSibling( outputPath.getFileName() + ".csv" );
 
-        try ( BufferedWriter w = Files.newBufferedWriter( outputPath,
+        try ( BufferedWriter w = Files.newBufferedWriter( extendedPath,
                                                           StandardCharsets.UTF_8,
                                                           StandardOpenOption.CREATE,
                                                           StandardOpenOption.TRUNCATE_EXISTING ) )
@@ -133,6 +137,8 @@ abstract class CommaSeparatedStatisticsWriter
                 w.write( System.lineSeparator() );
             }
         }
+        
+        return extendedPath;
     }
 
     /**

@@ -68,7 +68,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      */
 
     @Override
-    public void accept( final List<DurationScoreStatisticOuter> output )
+    public void accept( List<DurationScoreStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -156,14 +156,13 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
 
             // Build the output file name
             Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                  destinationConfig,
-                                                                  metadata,
-                                                                  metricName,
-                                                                  null );
+                                                                      metadata,
+                                                                      metricName,
+                                                                      null );
 
-            GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
+            Path finishedPath = GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written
-            pathsWrittenTo.add( outputImage );
+            pathsWrittenTo.add( finishedPath );
         }
         catch ( ChartEngineException | IOException e )
         {

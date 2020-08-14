@@ -75,7 +75,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      */
 
     @Override
-    public void accept( final List<BoxplotStatisticOuter> output )
+    public void accept( List<BoxplotStatisticOuter> output )
     {
         Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
 
@@ -183,7 +183,6 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
         }
     }
 
-
     /**
      * Return a snapshot of the paths written to (so far)
      * 
@@ -237,16 +236,15 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
             for ( final Entry<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
             {
                 Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                      destinationConfig,
-                                                                      metadata,
-                                                                      nextEntry.getKey().getLeft(),
-                                                                      durationUnits,
-                                                                      metricName,
-                                                                      null );
+                                                                          metadata,
+                                                                          nextEntry.getKey().getLeft(),
+                                                                          durationUnits,
+                                                                          metricName,
+                                                                          null );
 
-                GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                Path finishedPath = GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written
-                pathsWrittenTo.add( outputImage );
+                pathsWrittenTo.add( finishedPath );
             }
         }
         catch ( ChartEngineException | IOException e )
@@ -295,15 +293,14 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                                                                 durationUnits );
 
             Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
-                                                                  destinationConfig,
-                                                                  metadata,
-                                                                  metricName,
-                                                                  null );
+                                                                      metadata,
+                                                                      metricName,
+                                                                      null );
 
-            GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
+            Path finishedPath = GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
 
             // Only if writeChart succeeded do we assume that it was written
-            pathsWrittenTo.add( outputImage );
+            pathsWrittenTo.add( finishedPath );
 
         }
         catch ( ChartEngineException | IOException e )
