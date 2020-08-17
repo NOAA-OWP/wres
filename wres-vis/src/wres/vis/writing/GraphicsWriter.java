@@ -146,8 +146,12 @@ abstract class GraphicsWriter
 
                 // Create the svg string
                 SVGGraphics2D svg2d = new SVGGraphics2D( width, height );
+                // Need to set this to a fixed value as it will otherwise use the system time in nanos, preventing
+                // automated testing. #81628-21.
+                svg2d.setDefsKeyPrefix( "4744385419576815639" );
                 chart.draw( svg2d, new Rectangle2D.Double( 0, 0, width, height ) );
                 String svgElement = svg2d.getSVGElement();
+                
                 SVGUtils.writeToSVG( outputImageFile, svgElement );
             }
             // No others supported

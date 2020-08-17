@@ -115,12 +115,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         this.durationUnits = durationUnits;
 
         String metricUnits = displayPlotInput.getMetadata().getEvaluation().getMeasurementUnit();
-        
-        if( !displayPlotInput.getData().getMetric().getUnits().isBlank() )
+
+        if ( !displayPlotInput.getData().getMetric().getUnits().isBlank() )
         {
             metricUnits = displayPlotInput.getData().getMetric().getUnits();
         }
-        
+
         SampleMetadata meta = displayPlotInput.getMetadata();
         MetricConstants metricName = displayPlotInput.getMetricName();
         extractStandardArgumentsFromMetadata( meta, metricUnits, metricName, null );
@@ -309,7 +309,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         // Addition to the primary scenario based on metric context. See #81790
         String primaryScenario = "";
-        
+
         if ( Objects.nonNull( metric ) )
         {
             // Not univariate statistics, except the sample size
@@ -318,16 +318,16 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                 // Use the left name for paired statistics. Should probably use the triple of variable names for 
                 // accuracy. See #81790.
                 addArgument( VARIABLE_NAME, evaluation.getLeftVariableName() );
-                
+
                 String name = "";
-                if( !evaluation.getRightDataName().isBlank() )
+                if ( !evaluation.getRightDataName().isBlank() )
                 {
                     name = " " + evaluation.getRightDataName();
                 }
-                
+
                 primaryScenario = name + " predictions of ";
             }
-            else if( Objects.nonNull( component ) )
+            else if ( Objects.nonNull( component ) )
             {
                 // Get the name that corresponds to the side of the component. Again, should probably use the triple.
                 switch ( component )
@@ -348,7 +348,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                 primaryScenario = " ";
             }
         }
-        
+
         addArgument( "primaryScenario", primaryScenario );
     }
 
@@ -514,15 +514,18 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
             String baselineSuffix = meta.getEvaluation()
                                         .getBaselineDataName();
-            
+
             // Skill scores for baseline use a default reference, which is climatology
             // This is also potentially brittle, so consider a better way, such as adding the default baseline
             // name into the evaluation description
             if ( meta.getPool().getIsBaselinePool() )
             {
-                baselineSuffix = meta.getEvaluation().getDefaultBaseline().name().replace( "_", " " );
+                baselineSuffix = meta.getEvaluation()
+                                     .getDefaultBaseline()
+                                     .name()
+                                     .replace( "_", " " );
             }
-            
+
             baselineSuffix = " Against Predictions From " + baselineSuffix;
 
             addArgument( "baselineLabelSuffix", baselineSuffix );
