@@ -79,6 +79,26 @@ public class Query
 
     private List<Long> insertedIds = Collections.emptyList();
 
+
+    /**
+     * Whether the Query has multiple statements, auto-detected on construction
+     * by the presence of a semicolon with text following it.
+     * When there are multiple statements, no prepared statements are supported,
+     * the first N-1 statements will be executed as a batch, the last statement
+     * is assumed to have a ResultSet, and only the "call()" method supports
+     * multipleStatements, and the inserted ids are not kept as of 2020-08-14.
+     */
+
+    private final boolean hasMultipleStatements;
+
+    /**
+     * Each statement for multiple-statement queries, populated on construction
+     * when multiple statements are detected or null when only one statement is
+     * detected. Use boolean multipleStatements before looking here.
+     */
+
+    private final String[] statements;
+
     /**
      * Constructor
      * @param script The script that the query will run
@@ -86,8 +106,76 @@ public class Query
     Query( SystemSettings systemSettings,
            final String script )
     {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( script );
+
+        if ( script.isBlank() )
+        {
+            throw new IllegalArgumentException( "Non-blank script required." );
+        }
+
+        final int MIN_QUERY_CHARS = 5;
+
+        if ( script.length() <= MIN_QUERY_CHARS )
+        {
+            throw new IllegalArgumentException( "Expected SQL script over 4 chars, got: "
+                                                + script );
+        }
+
         this.systemSettings = systemSettings;
         this.script = script;
+
+        // Detect multiple statements by looking at semi-colons.
+        // First check of char-within-string should be faster than regex etc.
+        int indexOfFirstSemicolon = script.indexOf( ';' );
+
+        // If a semicolon exists and the semicolon is not the last char of the
+        // whole script, check further.
+        if ( indexOfFirstSemicolon > 0
+             && indexOfFirstSemicolon < script.length() - 1 )
+        {
+            // Now more sophisticated check required. Suppose whitespace occurs
+            // to either side of a semi-colon with no other chars. That is not
+            // multiple statements, then.
+            String[] chunks = script.split( ";" );
+            List<String> statements = new ArrayList<>( chunks.length );
+
+            for ( String chunk : chunks )
+            {
+                String stripped = chunk.strip();
+
+                if ( stripped.length() >= MIN_QUERY_CHARS
+                     && !stripped.startsWith( "'" )
+                     && !stripped.endsWith( "'" ) )
+                {
+                    statements.add( chunk );
+                }
+                else
+                {
+                    LOGGER.debug( "Treating the given query as single query." );
+                    statements.clear();
+                    break;
+                }
+            }
+
+            if ( statements.size() > 1 )
+            {
+                this.hasMultipleStatements = true;
+                this.statements = statements.toArray( new String[0] );
+            }
+            else
+            {
+                // After a closer look, there is actually only one statement.
+                this.hasMultipleStatements = false;
+                this.statements = null;
+            }
+        }
+        else
+        {
+            // After a minimal look, there is only one statement.
+            this.hasMultipleStatements = false;
+            this.statements = null;
+        }
     }
 
     /**
@@ -122,6 +210,11 @@ public class Query
             );
         }
 
+        if ( this.hasMultipleStatements )
+        {
+            throw new UnsupportedOperationException( "Parameters not supported for multi-statement queries." );
+        }
+
         this.parameters = parameters;
         return this;
     }
@@ -139,6 +232,11 @@ public class Query
             throw new IllegalArgumentException(
                     "Batch parameters cannot be set if there is already a single set of parameters to use."
             );
+        }
+
+        if ( this.hasMultipleStatements )
+        {
+            throw new UnsupportedOperationException( "Batch parameters not supported for multi-statement queries." );
         }
 
         this.batchParameters = batchParameters;
@@ -219,6 +317,7 @@ public class Query
         // Avoid recording the initial state of connection: reduces round trips.
         final boolean disableAutoCommit = this.forceTransaction || this.useCursor;
         final boolean useSerializable = this.forceTransaction;
+        final boolean multipleStatements = this.script.startsWith( "CREATE TEMPORARY" );
 
         // In the case of transactions that conflict, retries are needed.
         boolean completed = false;
@@ -257,7 +356,31 @@ public class Query
                 // If we don't need to add parameters, we can just call the script and get the results
                 if ( this.parameters == null )
                 {
-                    results = this.simpleCall( connection );
+                    // Common case first, only single statement. Do simpleCall.
+                    if ( !this.hasMultipleStatements )
+                    {
+                        results = this.simpleCall( connection );
+                    }
+                    else
+                    {
+                        Statement statement = this.createStatement( connection );
+                        int lastStatement = this.statements.length - 1;
+                        String[] allButLastStatement = Arrays.copyOfRange( this.statements, 0, lastStatement );
+                        int result = this.executeBatch( statement, allButLastStatement );
+                        LOGGER.debug( "Result of multiple statements? {}",
+                                      result );
+                        boolean resultTwo = statement.execute( this.statements[lastStatement] );
+
+                        if ( !resultTwo )
+                        {
+                            throw new SQLException( "Expected statement to have a ResultSet but it did not." );
+                        }
+
+                        ResultSet resultSet = statement.getResultSet();
+                        LOGGER.debug( "Found these results: {}",
+                                      resultSet );
+                        results = resultSet;
+                    }
                 }
                 else
                 {
@@ -338,6 +461,11 @@ public class Query
         if ( this.useCursor )
         {
             throw new IllegalStateException( "It does not make sense to 'execute' with a cursor. Use 'call' instead." );
+        }
+
+        if ( this.hasMultipleStatements )
+        {
+            throw new UnsupportedOperationException( "Only 'call' method is supported for multi-statement queries. (Feel free to add 'execute' support if needed." );
         }
 
         // Avoid recording the initial state of connection: reduces round trips.
@@ -608,6 +736,38 @@ public class Query
     private ResultSet simpleCall(final Connection connection) throws SQLException
     {
         return this.createStatement( connection ).executeQuery( this.script );
+    }
+
+
+    /**
+     * Add and execute the included statements as a single batch.
+     *
+     *     <p>
+     *         The statement that retrieves the results is left open to keep
+     *         the {@link ResultSet} open
+     *     </p>
+     * @param jdbcStatement The Statement to run the batch of statements on
+     * @throws SQLException When anything goes wrong.
+     */
+    private int executeBatch( Statement jdbcStatement, String[] sqlStatements )
+            throws SQLException
+    {
+        for ( String singleSqlStatement : sqlStatements )
+        {
+            jdbcStatement.addBatch( singleSqlStatement );
+        }
+
+        int[] countAffected = jdbcStatement.executeBatch();
+        jdbcStatement.clearBatch();
+
+        int total = 0;
+
+        for ( int count : countAffected )
+        {
+            total += count;
+        }
+
+        return total;
     }
 
 
