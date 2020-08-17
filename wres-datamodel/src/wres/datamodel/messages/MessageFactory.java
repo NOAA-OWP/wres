@@ -204,6 +204,14 @@ public class MessageFactory
             LOGGER.debug( "Populated the evaluation with a baseline source name of {}.",
                           name );
         }
+        else
+        {
+            String name = Evaluation.DefaultData.OBSERVED_CLIMATOLOGY.name().replace( "_", " " );
+            builder.setBaselineDataName( name );
+
+            LOGGER.debug( "Populated the evaluation with a default baseline source name of {}.",
+                          name );
+        }
 
         if ( Objects.nonNull( project.getPair() ) && Objects.nonNull( project.getPair().getSeason() ) )
         {

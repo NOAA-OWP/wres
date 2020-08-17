@@ -42,6 +42,7 @@
             <!--Optional: -->
             <graphical width="800" height="600" />
         </destination>
+        <destination type="svg" />
     </outputs>
 
 </project>

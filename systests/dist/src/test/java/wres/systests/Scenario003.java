@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.control.Control;
+
 public class Scenario003
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario003.class );
@@ -296,10 +297,180 @@ public class Scenario003
                     Path.of( "DRRC2HSF_QINE_HEFS_SUM_OF_SQUARE_ERROR.png" ),
                     Path.of( "DRRC2HSF_QINE_HEFS_VOLUMETRIC_EFFICIENCY.csv" ),
                     Path.of( "DRRC2HSF_QINE_HEFS_VOLUMETRIC_EFFICIENCY.png" ),
-                    Path.of( "pairs.csv" ) );
-    
+                    Path.of( "pairs.csv" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BIAS_FRACTION.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_10800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_14400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_18000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_21600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_25200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_28800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_32400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_3600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_36000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_39600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_43200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_46800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_50400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_54000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_57600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_61200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_64800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_68400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_7200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_72000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_75600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_79200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_82800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_86400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_10800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_14400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_18000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_21600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_25200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_28800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_32400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_3600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_36000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_39600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_43200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_46800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_50400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_54000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_57600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_61200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_64800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_68400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_7200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_72000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_75600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_79200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_82800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BOX_PLOT_OF_PERCENTAGE_ERRORS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BRIER_SCORE.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_BRIER_SKILL_SCORE.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_COEFFICIENT_OF_DETERMINATION.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_CONTINUOUS_RANKED_PROBABILITY_SCORE.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_INDEX_OF_AGREEMENT.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_KLING_GUPTA_EFFICIENCY.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_ABSOLUTE_ERROR.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_ERROR.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_LEFT.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_RIGHT.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_SQUARE_ERROR.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_SQUARE_ERROR_SKILL_SCORE.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_MEDIAN_ERROR.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_PEARSON_CORRELATION_COEFFICIENT.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_10800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_14400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_18000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_21600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_25200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_28800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_32400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_3600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_36000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_39600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_43200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_46800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_50400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_54000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_57600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_61200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_64800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_68400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_7200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_72000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_75600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_79200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_82800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_QUANTILE_QUANTILE_DIAGRAM_86400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_10800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_14400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_18000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_21600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_25200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_28800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_32400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_3600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_36000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_39600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_43200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_46800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_50400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_54000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_57600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_61200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_64800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_68400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_7200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_72000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_75600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_79200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_82800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RANK_HISTOGRAM_86400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_10800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_14400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_18000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_21600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_25200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_28800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_32400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_3600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_36000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_39600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_43200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_46800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_50400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_54000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_57600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_61200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_64800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_68400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_7200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_72000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_75600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_79200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_82800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_86400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_SCORE.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_10800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_14400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_18000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_21600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_25200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_28800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_32400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_3600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_36000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_39600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_43200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_46800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_50400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_54000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_57600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_61200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_64800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_68400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_7200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_72000_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_75600_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_79200_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_82800_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_ROOT_MEAN_SQUARE_ERROR.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_ROOT_MEAN_SQUARE_ERROR_NORMALIZED.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_SAMPLE_SIZE.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_STANDARD_DEVIATION_LEFT.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_STANDARD_DEVIATION_RIGHT.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_SUM_OF_SQUARE_ERROR.svg" ),
+                    Path.of( "DRRC2HSF_QINE_HEFS_VOLUMETRIC_EFFICIENCY.svg" ) );
+
     private ScenarioInformation scenarioInfo;
-    
+
     /**
      * Watch for any failed assertions and log them.
      */
@@ -312,8 +483,8 @@ public class Scenario003
         {
             LOGGER.error( description.toString(), e );
         }
-    };      
-    
+    };
+
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
     {
@@ -321,9 +492,9 @@ public class Scenario003
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
         this.scenarioInfo = new ScenarioInformation( this.getClass()
-                                              .getSimpleName()
-                                              .toLowerCase(),
-                                              ScenarioHelper.getBaseDirectory() );
+                                                         .getSimpleName()
+                                                         .toLowerCase(),
+                                                     ScenarioHelper.getBaseDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
     }
 
@@ -331,7 +502,7 @@ public class Scenario003
     public void testScenario()
     {
         Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
+
         // Collect the file names actually written and that exist
         Set<Path> pathsWritten = control.get();
         Set<Path> actualFileNamesThatExist = pathsWritten.stream()
@@ -346,11 +517,12 @@ public class Scenario003
         assertEquals( "The actual set of file names does not match the expected set of file names.",
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
-        
-        LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );        
-        
+
+        LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
+
         ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
         LOGGER.info( "########################################################## COMPLETED "
-                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
+                     + this.getClass().getSimpleName().toLowerCase()
+                     + NEWLINE );
     }
 }
