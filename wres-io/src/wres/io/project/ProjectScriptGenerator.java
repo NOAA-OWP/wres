@@ -1,7 +1,10 @@
 package wres.io.project;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
+import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
 import wres.io.utilities.DataScripter;
@@ -30,6 +33,29 @@ final class ProjectScriptGenerator
                                                           boolean hasBaseline )
     {
         DataScripter script = new DataScripter( database );
+        String tempTableName = ProjectScriptGenerator.generateTempTableName( projectId,
+                                                                             featureDeclarations );
+        boolean featuresDeclared = !featureDeclarations.isEmpty();
+
+        if ( featuresDeclared )
+        {
+            if ( hasBaseline )
+            {
+                script.addLine( "CREATE TEMPORARY TABLE " + tempTableName
+                                + " ( left_name VARCHAR, right_name VARCHAR, baseline_name VARCHAR ) ;" );
+            }
+            else
+            {
+                script.addLine( "CREATE TEMPORARY TABLE " + tempTableName
+                                + " ( left_name VARCHAR, right_name VARCHAR ) ;" );
+            }
+
+            String insertStatement = ProjectScriptGenerator.generateInsertStatement( tempTableName,
+                                                                                     featureDeclarations,
+                                                                                     hasBaseline );
+            script.addLine( insertStatement );
+        }
+
 
         if ( hasBaseline )
         {
@@ -40,42 +66,21 @@ final class ProjectScriptGenerator
             script.addLine( "SELECT L.feature_id left_id, R.feature_id right_id" );
         }
 
-        script.addLine( "FROM wres.Feature L");
-        script.addLine( "INNER JOIN wres.Feature R ON" );
-        script.addLine( "(" );
-
-        boolean addedFeature = false;
-
-        for ( Feature featureDeclaration : featureDeclarations )
+        if ( featuresDeclared )
         {
-            if ( Objects.nonNull( featureDeclaration.getLeft() )
-                 && Objects.nonNull( featureDeclaration.getRight() ) )
-            {
-                if ( addedFeature )
-                {
-                    script.addTab().addLine( "OR" );
-                }
-
-                script.addTab().addLine( "(" );
-                script.addTab( 2 ).add( "L.name = '" );
-                script.add( validateStringForSql( featureDeclaration.getLeft() ) );
-                script.add( "' AND R.name = '" );
-                script.add( validateStringForSql( featureDeclaration.getRight() ) );
-                script.addLine( "'" );
-                script.addTab().addLine( ")" );
-                addedFeature = true;
-            }
+            script.addLine( "FROM " + tempTableName + " X" );
+            script.addLine( "INNER JOIN wres.Feature L ON X.left_name = L.name" );
         }
-
-        if ( !addedFeature )
+        else
         {
             // When no features are specified, default to matching names in both
             // the left and right datasets. This assumes that a name is used
             // consistently within a dataset ingested for an evaluation.
+            script.addLine( "FROM wres.Feature L");
+            script.addLine( "INNER JOIN wres.Feature R ON" );
             script.addTab().addLine( "L.name = R.name" );
         }
 
-        script.addLine( ")" );
         script.addLine( "AND EXISTS" );
         script.addLine( "(" );
         script.addTab().addLine( "SELECT 1" );
@@ -87,6 +92,11 @@ final class ProjectScriptGenerator
         script.addTab( 2 ).addLine( "AND TS.feature_id = L.feature_id" );
         // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
         script.addLine( ")" );
+
+        if ( featuresDeclared )
+        {
+            script.addLine( "INNER JOIN wres.Feature R ON X.right_name = R.name" );
+        }
 
         script.addLine( "AND EXISTS" );
         script.addLine( "(" );
@@ -105,48 +115,21 @@ final class ProjectScriptGenerator
             // Baseline is optional for a given declaration, but when there is
             // a baseline dataset, require there be data for the baseline for a
             // feature for any pairs to be generated for that feature.
-            script.addLine( "INNER JOIN wres.Feature B ON " );
-            script.addLine( "(" );
-            boolean addedBaselineFeature = false;
 
-            for ( Feature featureDeclaration : featureDeclarations )
+            if ( featuresDeclared )
             {
-                if ( Objects.nonNull( featureDeclaration.getLeft() )
-                     && Objects.nonNull( featureDeclaration.getBaseline() ) )
-                {
-                    if ( addedBaselineFeature )
-                    {
-                        script.addTab().addLine( "OR" );
-                    }
-
-                    script.addTab().addLine( "(" );
-                    script.addTab( 2 ).add( "L.name = '" );
-                    script.add( validateStringForSql( featureDeclaration.getLeft() ) );
-                    script.add( "' AND B.name = '" );
-                    script.add( validateStringForSql( featureDeclaration.getBaseline() ) );
-                    script.addLine( "'" );
-                    script.addTab().addLine( ")" );
-                    addedBaselineFeature = true;
-                }
+                script.addLine( "INNER JOIN wres.Feature B ON X.baseline_name = B.name" );
             }
-
-            if ( !addedFeature && !addedBaselineFeature )
+            else
             {
                 // When no features are specified, default to matching names in
                 // both the left and baseline datasets. This assumes that a name
                 // is used consistently within each dataset ingested for an
                 // evaluation.
+                script.addLine( "INNER JOIN wres.Feature B ON " );
                 script.addTab().addLine( "L.name = B.name" );
             }
-            else if ( !addedBaselineFeature )
-            {
-                // To prevent invalid SQL (in case other code changes that
-                // would cause this block to be reached), flag it as a
-                // programming error. See #76998.
-                throw new IllegalStateException( "Baseline existed, features names existed for left and right, but no names for baseline." );
-            }
 
-            script.addLine( ")" );
             script.addLine( "AND EXISTS" );
             script.addLine( "(" );
             script.addTab().addLine( "SELECT 1" );
@@ -159,7 +142,113 @@ final class ProjectScriptGenerator
             script.addLine( ")" );
         }
 
+        // Cannot drop here because we need the script to return data. Let the
+        // database system remove the temp table when it sees fit, e.g. at
+        // end of session or restart of database server or whatever.
+        // script.addLine( "DROP TABLE " + tempTableName + ";" );
+
         return script;
+    }
+
+    /**
+     * Returns a temporary table name. Can't use the current time in millis as
+     * sole seed because the collision to avoid would be when this method runs
+     * at the same millisecond-on-the-clock. Try to avoid collision by using
+     * nanos and some attribute of the project datasets and features given.
+     * @return A temporary table name.
+     */
+
+    private static String generateTempTableName( int projectId,
+                                                 List<Feature> features )
+    {
+        Random random = new Random( Instant.now()
+                                           .getNano()
+                                    + features.hashCode() );
+        long someNumber = random.nextLong();
+
+        while ( someNumber < 0 )
+        {
+            someNumber = random.nextLong();
+        }
+
+        return "wres_project_" + projectId + "_feature_correlation_"
+               + someNumber;
+    }
+
+    /**
+     * Create an insert statement for feature correlations. May be two or three
+     * columns, depending on no-baseline vs has-baseline respectively.
+     * @param tempTableName The name of the temporary table to use.
+     * @param features The list of features declared (or generated).
+     * @param hasBaseline True if baseline is used, false otherwise.
+     * @return The SQL INSERT statement or a blank string if no features added.
+     */
+
+    private static String generateInsertStatement( String tempTableName,
+                                                   List<Feature> features,
+                                                   boolean hasBaseline )
+    {
+        String start = "INSERT INTO "
+                       + tempTableName;
+
+        if ( hasBaseline )
+        {
+            start += " ( left_name, right_name, baseline_name ) ";
+        }
+        else
+        {
+            start += " ( left_name, right_name ) ";
+        }
+
+        start += "VALUES" + System.lineSeparator() + "( ";
+
+        StringJoiner joiner = new StringJoiner( " ),"
+                                                + System.lineSeparator()
+                                                + "( ",
+                                                start,
+                                                " );" );
+        boolean anyFeaturesWereAdded = false;
+        for ( Feature feature : features )
+        {
+            String toAdd;
+            String leftName = feature.getLeft();
+            String rightName = feature.getRight();
+            String baselineName = feature.getBaseline();
+
+            if ( Objects.nonNull( leftName )
+                 && Objects.nonNull( rightName ) )
+            {
+                toAdd = "'" + validateStringForSql( leftName ) + "', "
+                        + "'" + validateStringForSql( rightName ) + "'";
+
+                if ( hasBaseline )
+                {
+                    if ( Objects.nonNull( baselineName ) )
+                    {
+                        toAdd += ", '" + validateStringForSql( baselineName )
+                                 + "'";
+                        joiner.add( toAdd );
+                        anyFeaturesWereAdded = true;
+                    }
+                }
+                else
+                {
+                    joiner.add( toAdd );
+                    anyFeaturesWereAdded = true;
+                }
+            }
+        }
+
+        if ( anyFeaturesWereAdded )
+        {
+            return joiner.toString();
+        }
+        else
+        {
+            // In the case where no features were added, return empty string.
+            // No features will be inserted (if features were declared).
+            return "";
+        }
     }
 
     /**
