@@ -149,13 +149,13 @@ class MessageSubscriber<T> implements Closeable
      */
 
     private final AtomicBoolean isComplete;
-    
+
     /**
      * Is <code>true</code> if the subscriber failed after all attempts to recover.
      */
 
     private final AtomicBoolean isFailedUnrecoverably;
-    
+
     /**
      * A function that retrieves the expected message count from an {@link EvaluationStatus} message for the type of
      * message consumed by this subscription.
@@ -648,7 +648,7 @@ class MessageSubscriber<T> implements Closeable
                       this,
                       evaluationId );
 
-        return new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(),
+        return new NamedMessageConsumer( this.getEvaluationId(),
                                          name,
                                          messageConsumer,
                                          this.session,
@@ -802,7 +802,7 @@ class MessageSubscriber<T> implements Closeable
 
         LOGGER.debug( "Successfully registered consumer {} for evaluation {}.", this, evaluationId );
 
-        return new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(),
+        return new NamedMessageConsumer( evaluationId,
                                          name,
                                          consumer,
                                          this.session,
@@ -829,8 +829,9 @@ class MessageSubscriber<T> implements Closeable
             {
                 for ( OneGroupConsumer<T> next : check )
                 {
-                    Integer expected = this.evaluationInfo.getCompletionTracker()
-                                                          .getExpectedMessagesPerGroup( next.getGroupId() );
+                    Integer expected = this.getEvaluationInfo()
+                                           .getCompletionTracker()
+                                           .getExpectedMessagesPerGroup( next.getGroupId() );
 
                     if ( Objects.nonNull( expected ) && expected == next.size() && !next.hasBeenUsed() )
                     {
@@ -866,7 +867,9 @@ class MessageSubscriber<T> implements Closeable
             String groupId = next.getKey();
             Queue<OneGroupConsumer<T>> consumersToClose = next.getValue();
 
-            Integer expectedCount = this.evaluationInfo.getCompletionTracker().getExpectedMessagesPerGroup( groupId );
+            Integer expectedCount = this.getEvaluationInfo()
+                                        .getCompletionTracker()
+                                        .getExpectedMessagesPerGroup( groupId );
 
             int total = 0;
 
@@ -992,6 +995,17 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
+     * Returns the evaluation identifier to which this subscriber subscribes.
+     * 
+     * @return the evaluation identifier
+     */
+
+    private String getEvaluationId()
+    {
+        return this.getEvaluationInfo().getEvaluationId();
+    }
+
+    /**
      * Returns a consumer.
      * 
      * @param topic the topic
@@ -1022,10 +1036,10 @@ class MessageSubscriber<T> implements Closeable
     {
         // For a non-durable subscriber, use: "return this.session.createConsumer( topic, selector );"
         // Get a unique subscriber name, using the method in the evaluation class
-        String uniqueId = this.evaluationInfo.getEvaluationId() + "-"
+        String uniqueId = this.getEvaluationId() + "-"
                           + this.getIdentifier()
                           + "-c"
-                          + this.evaluationInfo.getNextQueueNumber();
+                          + this.getEvaluationInfo().getNextQueueNumber();
 
         return prepend + "-" + uniqueId;
     }
@@ -1064,7 +1078,7 @@ class MessageSubscriber<T> implements Closeable
                                         CompletionStatus status )
     {
         // Create the metadata
-        String evaluationId = this.getEvaluationInfo().getEvaluationId();
+        String evaluationId = this.getEvaluationId();
         Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
         properties.put( MessageProperty.JMS_MESSAGE_ID, messageId );
         properties.put( MessageProperty.JMS_CORRELATION_ID, evaluationId );
@@ -1141,7 +1155,7 @@ class MessageSubscriber<T> implements Closeable
                 if ( this.failed() )
                 {
                     String message =
-                            "While consuming a message for evaluation " + this.getEvaluationInfo().getEvaluationId()
+                            "While consuming a message for evaluation " + this.getEvaluationId()
                                      + " with subscriber "
                                      + this.getIdentifier()
                                      + " encountered an error. Failed to consume the following message: "
@@ -1162,7 +1176,7 @@ class MessageSubscriber<T> implements Closeable
                                                          .build();
 
                 ByteBuffer message = ByteBuffer.wrap( ready.toByteArray() );
-                
+
                 this.publishStatusInternal( message, messageId, status );
             }
 
@@ -1192,7 +1206,7 @@ class MessageSubscriber<T> implements Closeable
 
     private void registerEvaluationStatusListener( MessageConsumer statusConsumer ) throws JMSException
     {
-        String evaluationId = this.getEvaluationInfo().getEvaluationId();
+        String evaluationId = this.getEvaluationId();
 
         // Now listen for status messages when a group completes
         MessageListener listener = message -> {
@@ -1293,7 +1307,7 @@ class MessageSubscriber<T> implements Closeable
                           messageId,
                           correlationId,
                           this.getIdentifier(),
-                          this.getNumberOfRetriesAttempted().get() + 1,  // Counter starts at zero
+                          this.getNumberOfRetriesAttempted().get() + 1, // Counter starts at zero
                           MessageSubscriber.MAXIMUM_RETRIES,
                           message );
 
@@ -1314,8 +1328,8 @@ class MessageSubscriber<T> implements Closeable
             {
                 LOGGER.error( "Subscriber {} encountered a consumption failure. Recovery failed after {} attempts.",
                               this.getIdentifier(),
-                              MessageSubscriber.MAXIMUM_RETRIES );                
-                
+                              MessageSubscriber.MAXIMUM_RETRIES );
+
                 this.markSubscriberFailed();
             }
         }
@@ -1345,12 +1359,12 @@ class MessageSubscriber<T> implements Closeable
     /**
      * Marks the subscriber as failed after all recovery attempts.
      */
-    
+
     private void markSubscriberFailed()
     {
         this.isFailedUnrecoverably.getAndSet( true );
     }
-    
+
     /**
      * Sets the expected message count for message groups.
      * 
@@ -1368,7 +1382,9 @@ class MessageSubscriber<T> implements Closeable
                                                    String correlationId )
     {
         // Set the expected number of messages per group
-        this.evaluationInfo.getCompletionTracker().registerGroupComplete( status, messageGroupId );
+        this.getEvaluationInfo()
+            .getCompletionTracker()
+            .registerGroupComplete( status, messageGroupId );
         int completed = this.checkAndCompleteGroup( messageGroupId );
 
         if ( completed > 0 && LOGGER.isDebugEnabled() )
@@ -1475,7 +1491,7 @@ class MessageSubscriber<T> implements Closeable
         List<Consumer<T>> subscribers = builder.subscribers;
         List<Consumer<Collection<T>>> groupSubscribers = builder.groupSubscribers;
 
-        String evaluationId = this.evaluationInfo.getEvaluationId();
+        String evaluationId = this.getEvaluationId();
 
         Objects.requireNonNull( this.topic );
         Objects.requireNonNull( this.evaluationInfo );
@@ -1504,7 +1520,7 @@ class MessageSubscriber<T> implements Closeable
         MessageConsumer localStatusConsumer = this.getConsumer( statusTopic, selector, name );
         this.registerEvaluationStatusListener( localStatusConsumer );
 
-        this.statusConsumer = new NamedMessageConsumer( this.getEvaluationInfo().getEvaluationId(),
+        this.statusConsumer = new NamedMessageConsumer( evaluationId,
                                                         name,
                                                         localStatusConsumer,
                                                         this.session,
