@@ -494,7 +494,7 @@ public class Validation
         boolean eventThresholds = metricsConfig.getThresholds()
                                                .stream()
                                                .anyMatch( next -> Objects.isNull( next.getType() )
-                                                                  || next.getType() != ThresholdType.VALUE
+                                                                  || next.getType() == ThresholdType.VALUE
                                                                   || next.getType() == ThresholdType.PROBABILITY );
 
         // Input type declaration is ensemble
