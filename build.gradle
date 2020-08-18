@@ -791,11 +791,42 @@ boolean isMac()
 
 project(':wres-vis')
 {
+    apply plugin: 'application'
+
+    mainClassName = 'wres.vis.server.GraphicsServer'
+    applicationDefaultJvmArgs = ['-Xms128m','-Xmx128m',
+                                 '-XX:+HeapDumpOnOutOfMemoryError']
+
+    // Add logging configuration to the classpath when running via script
+    startScripts
+    {
+        // Note: see lengthy note in main application below
+        classpath += files('conf')
+    }
+
+    // Make available logging configuration to the classpath
+    distributions
+    {
+        main
+        {
+            contents
+            {
+                from
+                {
+                    // Note: see lengthy note in main application below
+                    ['dist']
+                }
+            }
+        }
+    }
+
     dependencies
     {
         compile project(':wres-datamodel')
         compile project(':wres-config')
-        compile project(':wres-util')        
+        compile project(':wres-util')
+        compile project(':wres-eventsbroker')
+        compile project(':wres-events')
 
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '1.2.18'

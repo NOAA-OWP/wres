@@ -179,7 +179,6 @@ class MessagePublisher implements Closeable
      * 
      * @param messageBytes the message bytes to publish
      * @param metadata the message metadata, minimally including a message identifier and correlation identifier
-     * @param correlationId an identifier to correlate statistics messages to an evaluation
      * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if expected input is missing
@@ -324,9 +323,14 @@ class MessagePublisher implements Closeable
 
         this.connection.start();
 
-        LOGGER.debug( "Created a messager publisher, {}, which is ready to receive messages to publish. "
-                      + "The messager publisher is configured with the following properties.",
-                      this );
+        LOGGER.debug( "Created a messager publisher, {}, which is ready to receive messages to publish to destination "
+                      + "{}. The messager publisher is configured with delivery mode {}, message priority {} and "
+                      + "message time-to-live {}.",
+                      this,
+                      this.destination,
+                      this.deliveryMode,
+                      this.messagePriority,
+                      this.messageTimeToLive );
     }
 
 }

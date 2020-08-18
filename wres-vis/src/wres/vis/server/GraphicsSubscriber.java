@@ -1,8 +1,8 @@
-package wres.events;
+package wres.vis.server;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,38 +24,36 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import wres.events.MessagePublisher.MessageProperty;
+import wres.events.EvaluationEventException;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
+import wres.vis.server.GraphicsPublisher.MessageProperty;
+import wres.vis.server.GraphicsServer.ServerStatus;
 import wres.statistics.generated.Evaluation;
 
-
 /**
- * Simulates a long-running subscription to evaluation messages from an amqp message broker. Start this subscriber by
- * calling the main method. This is for out-of-band testing of external subscriptions and messaging with a long-running 
- * broker instance.
+ * Subscribes to evaluation messages and serializes {@link Statistics} to graphics in a prescribed format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class LongRunningSubscriber
+class GraphicsSubscriber implements Closeable
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( LongRunningSubscriber.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsSubscriber.class );
 
     private static final String ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID =
             "Acknowledged message {} with correlationId {}.";
 
     private static final String UNKNOWN = "unknown";
 
-
     /**
      * A unique identifier for the subscriber.
      */
 
-    private static final String UNIQUE_ID = "4mOgkGkse3gWIGKuIhzVnl5ZPCM";
+    private final String uniqueId;
 
     /**
      * Default name for the queue on the amq.topic that accepts evaluation status messages.
@@ -79,7 +77,7 @@ class LongRunningSubscriber
      * A publisher for {@link EvaluationStatus} messages.
      */
 
-    private final MessagePublisher evaluationStatusPublisher;
+    private final GraphicsPublisher evaluationStatusPublisher;
 
     /**
      * Status message consumer.
@@ -127,7 +125,19 @@ class LongRunningSubscriber
      * A consumer connection.
      */
 
-    private final Connection consumerConnection;
+    private final Connection connection;
+
+    /**
+     * Broker connections.
+     */
+
+    private final BrokerConnectionFactory broker;
+
+    /**
+     * Server status.
+     */
+
+    private final ServerStatus status;
 
     /**
      * The evaluations by unique id.
@@ -135,47 +145,148 @@ class LongRunningSubscriber
 
     Map<String, EvaluationConsumer> evaluations = new ConcurrentHashMap<>();
 
-    /**
-     * Create the long-running subscriber.
-     * 
-     * @param args input args
-     * @throws InterruptedException if the subscriber is interrupted
-     * @throws NamingException if the message destination could not be found
-     * @throws JMSException if the subscriber could not be created for any other reason
-     */
-
-    public static void main( String[] args ) throws InterruptedException, JMSException, NamingException
+    @Override
+    public void close()
     {
-        new LongRunningSubscriber();
+        try
+        {
+            if ( Objects.nonNull( this.evaluationStatusConsumer ) )
+            {
+                this.evaluationStatusConsumer.close();
+            }
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation status "
+                          + "messages within graphics subscriber {}: {}",
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
 
-        // Keep alive indefinitely
-        Thread.currentThread().join();
+        try
+        {
+            if ( Objects.nonNull( this.evaluationConsumer ) )
+            {
+                this.evaluationConsumer.close();
+            }
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation messages "
+                          + "within graphics subscriber {}: {}",
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        try
+        {
+            if ( Objects.nonNull( this.statisticsConsumer ) )
+            {
+                this.statisticsConsumer.close();
+            }
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer of statistics messages "
+                          + "within graphics subscriber {}: {}",
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        try
+        {
+            if ( Objects.nonNull( this.evaluationStatusPublisher ) )
+            {
+                this.evaluationStatusPublisher.close();
+            }
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a registered publisher of evaluation status "
+                          + "messages within graphics subscriber {}: {}",
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        try
+        {
+            this.session.close();
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a broker session within graphics subscriber "
+                          + "{}: {}",
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        try
+        {
+            this.connection.close();
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a broker connection within graphics "
+                          + "subscriber {}: {}",
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        try
+        {
+            this.broker.close();
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a broker connection factory within graphics "
+                          + "subscriber {}: {}",
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
     }
 
-    private LongRunningSubscriber() throws JMSException, NamingException
+    /**
+     * Builds a subscriber.
+     * 
+     * @param identifier a unique identifier for the subscriber
+     * @param status a graphics server whose status can be updated with subscriber progress
+     * @throws JMSException if the subscriber components could not be constructed or started.
+     * @throws NamingException if the expected broker destinations could not be discovere
+     * @throws NullPointerException if any input is null
+     */
+
+    GraphicsSubscriber( String uniqueId, ServerStatus status ) throws JMSException, NamingException
     {
-        LOGGER.info( "Creating long-running subscriber {} to listen for evaluation messages...",
-                     LongRunningSubscriber.UNIQUE_ID );
+        Objects.requireNonNull( uniqueId );
+        Objects.requireNonNull( status );
 
-        BrokerConnectionFactory factory = BrokerConnectionFactory.of();
+        LOGGER.info( "Building a long-running graphics subscriber {} to listen for evaluation messages...",
+                     uniqueId );
 
-        this.evaluationStatusTopic = (Topic) factory.getDestination( EVALUATION_STATUS_QUEUE );
-        this.evaluationTopic = (Topic) factory.getDestination( EVALUATION_QUEUE );
-        this.statisticsTopic = (Topic) factory.getDestination( STATISTICS_QUEUE );
+        this.uniqueId = uniqueId;
+        this.status = status;
+        this.broker = BrokerConnectionFactory.of();
 
-        this.consumerConnection = factory.get().createConnection();
-        
-        this.evaluationStatusPublisher = MessagePublisher.of( this.consumerConnection, this.evaluationStatusTopic );
+        this.evaluationStatusTopic = (Topic) this.broker.getDestination( EVALUATION_STATUS_QUEUE );
+        this.evaluationTopic = (Topic) this.broker.getDestination( EVALUATION_QUEUE );
+        this.statisticsTopic = (Topic) this.broker.getDestination( STATISTICS_QUEUE );
+
+        this.connection = this.broker.get().createConnection();
+
+        this.evaluationStatusPublisher = GraphicsPublisher.of( this.connection,
+                                                               this.evaluationStatusTopic,
+                                                               this.getIdentifier() );
 
         // Create a connection for consumption and register a listener for exceptions
-        this.consumerConnection.setExceptionListener( new EvaluationEventExceptionListener() );
+        this.connection.setExceptionListener( new EvaluationEventExceptionListener() );
 
         // Client acknowledges
-        this.session = this.consumerConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
+        this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 
 
         this.evaluationStatusConsumer = this.session.createDurableSubscriber( this.evaluationStatusTopic,
-                                                                              LongRunningSubscriber.UNIQUE_ID
+                                                                              this.getIdentifier()
                                                                                                           + "-EXTERNAL-status",
                                                                               null,
                                                                               false );
@@ -183,7 +294,7 @@ class LongRunningSubscriber
         this.evaluationStatusConsumer.setMessageListener( this.getStatusListener() );
 
         this.evaluationConsumer = this.session.createDurableSubscriber( this.evaluationTopic,
-                                                                        LongRunningSubscriber.UNIQUE_ID
+                                                                        this.getIdentifier()
                                                                                               + "-EXTERNAL-evaluation",
                                                                         null,
                                                                         false );
@@ -191,7 +302,7 @@ class LongRunningSubscriber
         this.evaluationConsumer.setMessageListener( this.getEvaluationListener() );
 
         this.statisticsConsumer = this.session.createDurableSubscriber( this.statisticsTopic,
-                                                                        LongRunningSubscriber.UNIQUE_ID
+                                                                        this.getIdentifier()
                                                                                               + "-EXTERNAL-statistics",
                                                                         null,
                                                                         false );
@@ -200,14 +311,23 @@ class LongRunningSubscriber
 
         // Start the consumer connection
         LOGGER.info( "Started the consumer connection for long-running subscriber {}...",
-                     LongRunningSubscriber.UNIQUE_ID );
-        this.consumerConnection.start();
+                     this.getIdentifier() );
+        this.connection.start();
 
-        LOGGER.info( "Created long-running subscriber {}. Waiting for messages...", LongRunningSubscriber.UNIQUE_ID );
+        LOGGER.info( "Created long-running subscriber {}", this.getIdentifier() );
     }
 
     /**
-     * Awaits evaluation messages and then consumes them. 
+     * @return the subscriber identifier.
+     */
+
+    private String getIdentifier()
+    {
+        return this.uniqueId;
+    }
+
+    /**
+     * Awaits evaluation status messages and then consumes them. 
      */
 
     private MessageListener getStatusListener()
@@ -216,33 +336,37 @@ class LongRunningSubscriber
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
-
+            String consumerId = UNKNOWN;
             try
             {
                 messageId = message.getJMSMessageID();
                 correlationId = message.getJMSCorrelationID();
+                consumerId = message.getStringProperty( MessageProperty.CONSUMER_ID.toString() );
 
-                EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
-
-                // Create the byte array to hold the message
-                int messageLength = (int) receivedBytes.getBodyLength();
-
-                byte[] messageContainer = new byte[messageLength];
-
-                receivedBytes.readBytes( messageContainer );
-
-                ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
-
-                EvaluationStatus status = EvaluationStatus.parseFrom( buffer );
-
-                consumer.acceptStatusMessage( status, messageId );
-
-                // Complete?
-                if ( consumer.isComplete() )
+                // Ignore status messages about consumers, including this one
+                if ( Objects.isNull( consumerId ) )
                 {
-                    consumer.registerComplete();
-                }
+                    int messageLength = (int) receivedBytes.getBodyLength();
 
+                    // Create the byte array to hold the message
+                    byte[] messageContainer = new byte[messageLength];
+
+                    receivedBytes.readBytes( messageContainer );
+
+                    ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
+
+                    EvaluationStatus statusEvent = EvaluationStatus.parseFrom( buffer );
+
+                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+
+                    consumer.acceptStatusMessage( statusEvent, messageId );
+
+                    // Complete?
+                    if ( consumer.isComplete() )
+                    {
+                        consumer.registerComplete();
+                    }
+                }
                 message.acknowledge();
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
@@ -251,7 +375,7 @@ class LongRunningSubscriber
             {
                 LOGGER.error( "External subscriber {} failed to consume an evaluation status message {} for "
                               + "evaluation {}",
-                              LongRunningSubscriber.UNIQUE_ID,
+                              this.getIdentifier(),
                               messageId,
                               correlationId );
             }
@@ -288,6 +412,7 @@ class LongRunningSubscriber
                 Statistics statistics = Statistics.parseFrom( buffer );
 
                 consumer.acceptStatisticsMessage( statistics, messageId );
+                this.status.registerStatistics( messageId );
 
                 // Complete?
                 if ( consumer.isComplete() )
@@ -301,9 +426,11 @@ class LongRunningSubscriber
             }
             catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
             {
+                this.status.registerFailedEvaluation( correlationId );
+
                 LOGGER.error( "External subscriber {} failed to consume an evaluation description message {} for "
                               + "evaluation {}",
-                              LongRunningSubscriber.UNIQUE_ID,
+                              this.getIdentifier(),
                               messageId,
                               correlationId );
             }
@@ -353,8 +480,10 @@ class LongRunningSubscriber
             }
             catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
             {
+                this.status.registerFailedEvaluation( correlationId );
+
                 LOGGER.error( "External subscriber {} failed to consume a statistics message {} for evaluation {}",
-                              LongRunningSubscriber.UNIQUE_ID,
+                              this.getIdentifier(),
                               messageId,
                               correlationId );
             }
@@ -369,12 +498,17 @@ class LongRunningSubscriber
 
     private EvaluationConsumer getEvaluationConsumer( String evaluationId )
     {
+        Objects.requireNonNull( evaluationId,
+                                "Cannot request an evaluation consumer for an evaluation with a "
+                                              + "missing identifier." );
+
         // Check initially
         EvaluationConsumer consumer = this.evaluations.get( evaluationId );
 
         if ( Objects.isNull( consumer ) )
         {
-            consumer = new EvaluationConsumer( evaluationId, this.evaluationStatusPublisher );
+            consumer = new EvaluationConsumer( evaluationId, this.getIdentifier(), this.evaluationStatusPublisher );
+            this.status.registerEvaluation( evaluationId );
         }
 
         // Check atomically
@@ -388,7 +522,7 @@ class LongRunningSubscriber
     }
 
     /**
-     * Evaluation consumer.
+     * Consumer of messages for one evaluation.
      * 
      * @author james.brown@hydrosolved.com
      */
@@ -402,13 +536,19 @@ class LongRunningSubscriber
         private final String evaluationId;
 
         /**
+         * Consumer identifier.
+         */
+
+        private final String consumerId;
+
+        /**
          * Actual number of messages consumed.
          */
 
         private final AtomicInteger consumed;
 
         /**
-         * Expected number of messages consumed.
+         * Expected number of messages.
          */
 
         private final AtomicInteger expected;
@@ -423,14 +563,27 @@ class LongRunningSubscriber
          * To notify when consumption complete.
          */
 
-        private final MessagePublisher evaluationStatusPublisher;
+        private final GraphicsPublisher evaluationStatusPublisher;
 
-        private EvaluationConsumer( String evaluationId, MessagePublisher evaluationStatusPublisher )
+        /**
+         * Builds a consumer.
+         * 
+         * @param evaluationId the evaluation identifier
+         * @param consumerId the consumer identifier
+         * @param evaluationStatusPublisher the evaluation status publisher
+         * @throws NullPointerException if any input is null
+         */
+
+        private EvaluationConsumer( String evaluationId,
+                                    String consumerId,
+                                    GraphicsPublisher evaluationStatusPublisher )
         {
             Objects.requireNonNull( evaluationId );
+            Objects.requireNonNull( consumerId );
             Objects.requireNonNull( evaluationStatusPublisher );
 
             this.evaluationId = evaluationId;
+            this.consumerId = consumerId;
             this.evaluationStatusPublisher = evaluationStatusPublisher;
             this.consumed = new AtomicInteger();
             this.expected = new AtomicInteger();
@@ -443,7 +596,7 @@ class LongRunningSubscriber
 
             LOGGER.info( "External subscriber {} received and consumed a statistics message with identifier {} "
                          + "for evaluation {}.",
-                         LongRunningSubscriber.UNIQUE_ID,
+                         this.consumerId,
                          messageId,
                          this.evaluationId );
 
@@ -456,7 +609,7 @@ class LongRunningSubscriber
 
             LOGGER.info( "External subscriber {} received and consumed an evaluation description message with "
                          + "identifier {} for evaluation {}.",
-                         LongRunningSubscriber.UNIQUE_ID,
+                         this.consumerId,
                          messageId,
                          this.evaluationId );
 
@@ -469,7 +622,7 @@ class LongRunningSubscriber
 
             LOGGER.info( "External subscriber {} received and consumed an evaluation status message with identifier {} "
                          + "for evaluation {}.",
-                         LongRunningSubscriber.UNIQUE_ID,
+                         this.consumerId,
                          messageId,
                          this.evaluationId );
 
@@ -480,7 +633,7 @@ class LongRunningSubscriber
 
                 LOGGER.info( "External subscriber {} received notification of publication complete for evaluation {}. "
                              + "The message indicated an expected message count of {}.",
-                             LongRunningSubscriber.UNIQUE_ID,
+                             this.consumerId,
                              this.evaluationId,
                              this.expected.get() );
             }
@@ -499,10 +652,17 @@ class LongRunningSubscriber
 
         private boolean isComplete()
         {
-            LOGGER.info( "External subscriber {} has consumed {} messages of an expected {} messages.",
-                         LongRunningSubscriber.UNIQUE_ID,
+            String append = "of an expected message count that is not yet known";
+            if ( this.expected.get() > 0 )
+            {
+                append = "of an expected " + this.expected.get() + " messages";
+            }
+
+            LOGGER.info( "For evaluation {}, external subscriber {} has consumed {} messages {}.",
+                         this.evaluationId,
+                         this.consumerId,
                          this.consumed.get(),
-                         this.expected.get() );
+                         append );
 
             return this.expected.get() > 0 && this.consumed.get() == this.expected.get();
         }
@@ -520,21 +680,18 @@ class LongRunningSubscriber
 
                 EvaluationStatus message = EvaluationStatus.newBuilder()
                                                            .setCompletionStatus( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS )
-                                                           .setConsumerId( LongRunningSubscriber.UNIQUE_ID )
+                                                           .setConsumerId( this.consumerId )
                                                            .build();
 
                 // Create the metadata
-                Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
-                properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:" + LongRunningSubscriber.UNIQUE_ID + "-complete" );
-                properties.put( MessageProperty.JMS_CORRELATION_ID, this.evaluationId );
-                properties.put( MessageProperty.CONSUMER_ID, LongRunningSubscriber.UNIQUE_ID );
+                String messageId = "ID:" + this.consumerId + "-complete";
 
                 ByteBuffer buffer = ByteBuffer.wrap( message.toByteArray() );
 
-                this.evaluationStatusPublisher.publish( buffer, Collections.unmodifiableMap( properties ) );
+                this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.consumerId );
 
                 LOGGER.debug( "External subscriber {} completed evaluation {}, which contained {} messages.",
-                              LongRunningSubscriber.UNIQUE_ID,
+                              this.consumerId,
                               this.evaluationId,
                               this.consumed.get() );
             }
@@ -556,5 +713,4 @@ class LongRunningSubscriber
                                                 exception );
         }
     }
-
 }

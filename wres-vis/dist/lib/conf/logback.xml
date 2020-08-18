@@ -1,0 +1,85 @@
+<configuration>
+    <!-- Some prefer timestamps, thread name, level, class name, etc. -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+        <!-- Stop multiple JVMs from stepping on one another, see #52867 -->
+        <prudent>true</prudent>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+
+          <!-- Store in a consistent location relative to user.
+               Odds are the user has write access to user.home, also avoids
+               interleaving multiple users running wres at same time.
+               Does not prevent multiple instances of wres from interleaving. -->
+          <!-- Roll over when a new day starts. -->
+          <fileNamePattern>${user.home}/wres_logs/wres.%d{yyyy-MM-dd}.log</fileNamePattern>
+          <!-- Keep at most 10 years of rolled files (see next comment) -->
+          <maxHistory>3653</maxHistory>
+          <!-- When size of all rolled files exceeds 2GiB, delete oldest files,
+               requires the maxHistory to be set to work. The idea is that
+               totalSizeCap will be hit more frequently than maxHistory. -->
+          <totalSizeCap>2048MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+          <!-- %exception{full}: full stacktrace in log file.
+               %X{pid}: pid disambiguates multiple wres processes running. -->
+          <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger - %msg%n%exception{full}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- some prefer the message to be printed as formatted in the code -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
+        <!-- To allow DEBUG in FILE but only INFO on STDOUT, uncomment the
+             following filter, then set the root level to be DEBUG (either by
+             editing the root appender below or by setting
+             -Dwres.logLevel=debug at runtime) -->
+        <!--
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        -->
+        <encoder>
+
+          <!-- %nopexception: suppress stacktrace here -->
+          <!-- %exception{short}: just the first line for each exception -->
+          <!-- %exception{full}: full stacktrace for each exception -->
+          <!-- %logger{0}: show only rightmost part of logger name (class) -->
+          <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %level %logger{0} %msg%n%exception{full}</pattern>
+        </encoder>
+    </appender>
+
+
+    <!-- Quiet the cdm hdf5 library until it is quieter by default -->
+    <logger name="ucar.nc2.iosp.hdf5">
+      <level value="error" />
+    </logger>
+
+    <!-- Quiet the logger used for ucar.nc2.util.cache; it will spit out a
+    warning for every acquire/release above the configured limit, resulting in
+    thousands of unneccessary messages -->
+    <logger name="cacheLogger">
+        <level value="error" />
+    </logger>
+
+    <!-- Qpid message logs with level "warn" or "error" -->
+    <logger name="qpid.message">
+        <level value="warn" />
+    </logger>
+
+    <!-- Qpid logs with level "warn" or "error" -->
+    <logger name="org.apache.qpid">
+        <level value="warn" />
+    </logger>
+
+    <!-- Qpid AMQMessageDelegate off as the reported errors are not useful.-->
+    <logger name="org.apache.qpid.client.message.AMQMessageDelegate">
+        <level value="off" />
+    </logger>
+
+    <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
+    <root level="${wres.logLevel:-info}">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>

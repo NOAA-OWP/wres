@@ -224,7 +224,7 @@ public class Control implements Function<String[], Integer>,
                                                                   TimeUnit.MILLISECONDS,
                                                                   featureQueue,
                                                                   featureFactory );
-        
+
         // Processes pairs       
         ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
                                                                   systemSettings.maximumThreadCount(),
