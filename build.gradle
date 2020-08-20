@@ -292,6 +292,7 @@ project(':wres-datamodel')
         compile project(':wres-config')
         // JCIP annotations
         compile group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
+        compile 'com.github.ben-manes.caffeine:caffeine:2.8.5'
 
         testCompile 'junit:junit:4.13'
     }
