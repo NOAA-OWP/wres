@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -17,6 +19,25 @@ import wres.datamodel.scale.TimeScaleOuter;
 
 public class TimeSeriesMetadata
 {
+    /**
+     * Use six because the common case would be up to three variable names and
+     * up to three unit names, one for each of L/R/B.
+     */
+
+    private static final Cache<String,String> STRING_CACHE =
+            Caffeine.newBuilder()
+                    .maximumSize( 6 )
+                    .build();
+
+    /**
+     * Use one hundred arbitrarily. There are usually more than a handful.
+     */
+
+    private static final Cache<FeatureKey,FeatureKey> FEATURE_KEY_CACHE =
+            Caffeine.newBuilder()
+                    .maximumSize( 100 )
+                    .build();
+
     /**
      * The {@link TimeScaleOuter} associated with the events in the time-series.
      */
@@ -309,12 +330,45 @@ public class TimeSeriesMetadata
         {
             localTimes = Collections.unmodifiableMap( localTimes );
         }
-        
+
         this.referenceTimes = localTimes;
         this.timeScale = builder.timeScale;
-        this.variableName = builder.variableName;
-        this.feature = builder.feature;
-        this.unit = builder.unit;
+
+        String cachedVariableName = STRING_CACHE.getIfPresent( builder.variableName );
+
+        if ( Objects.nonNull( cachedVariableName ) )
+        {
+            this.variableName = cachedVariableName;
+        }
+        else
+        {
+            this.variableName = builder.variableName;
+            STRING_CACHE.put( this.variableName, this.variableName );
+        }
+
+        FeatureKey cachedFeatureKey = FEATURE_KEY_CACHE.getIfPresent( builder.feature );
+
+        if ( Objects.nonNull( cachedFeatureKey ) )
+        {
+            this.feature = cachedFeatureKey;
+        }
+        else
+        {
+            this.feature = builder.feature;
+            FEATURE_KEY_CACHE.put( this.feature, this.feature );
+        }
+
+        String cachedUnit = STRING_CACHE.getIfPresent( builder.unit );
+
+        if ( Objects.nonNull( cachedUnit ) )
+        {
+            this.unit = cachedUnit;
+        }
+        else
+        {
+            this.unit = builder.unit;
+            STRING_CACHE.put( this.unit, this.unit );
+        }
         
         Objects.requireNonNull( this.getReferenceTimes() );
         // Often the timescale is not available: in that case valid to use null.
