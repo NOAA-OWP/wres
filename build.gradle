@@ -1454,8 +1454,15 @@ distributions
                 // Must also add the new directory to classpath under
                 // startScripts below. For each module that adds to dist,
                 // add here for now until we can make it grab all of em.
-                ['dist', 'wres-vis/dist', 'wres-io/dist', 'wres-statistics/dist', 'LICENSE']
+                ['dist', 'wres-io/dist', 'wres-statistics/dist', 'LICENSE']
             }
+
+            // vis will be split into its own application eventually.
+	    from ( 'wres-vis/dist' )
+	    {
+	        exclude 'lib/conf/eventbroker.properties'
+		exclude 'lib/conf/logback.xml'
+	    }
         }
     }
 }
