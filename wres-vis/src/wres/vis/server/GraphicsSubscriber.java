@@ -42,12 +42,23 @@ import wres.statistics.generated.Evaluation;
 class GraphicsSubscriber implements Closeable
 {
 
+    private static final String EVALUATION = "evaluation {}";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsSubscriber.class );
 
     private static final String ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID =
             "Acknowledged message {} with correlationId {}.";
 
     private static final String UNKNOWN = "unknown";
+
+    private static final String MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER = "messages within graphics subscriber {}: {}";
+
+    /**
+     * If <code>true</code>, do not allow the durable subscriptions to survive graphics server restarts - remove the 
+     * subscriptions when closing this subscriber.
+     */
+
+    private static final boolean REMOVE_SUBSCRIPTIONS_ON_CLOSURE = false;
 
     /**
      * A unique identifier for the subscriber.
@@ -148,50 +159,10 @@ class GraphicsSubscriber implements Closeable
     @Override
     public void close()
     {
-        try
-        {
-            if ( Objects.nonNull( this.evaluationStatusConsumer ) )
-            {
-                this.evaluationStatusConsumer.close();
-            }
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation status "
-                          + "messages within graphics subscriber {}: {}",
-                          this.getIdentifier(),
-                          e.getMessage() );
-        }
+        LOGGER.debug( "Closing and then removing subscriptions for {}.",
+                      this.getIdentifier() );
 
-        try
-        {
-            if ( Objects.nonNull( this.evaluationConsumer ) )
-            {
-                this.evaluationConsumer.close();
-            }
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation messages "
-                          + "within graphics subscriber {}: {}",
-                          this.getIdentifier(),
-                          e.getMessage() );
-        }
-
-        try
-        {
-            if ( Objects.nonNull( this.statisticsConsumer ) )
-            {
-                this.statisticsConsumer.close();
-            }
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer of statistics messages "
-                          + "within graphics subscriber {}: {}",
-                          this.getIdentifier(),
-                          e.getMessage() );
-        }
+        this.closeSubscriptions();
 
         try
         {
@@ -203,7 +174,7 @@ class GraphicsSubscriber implements Closeable
         catch ( IOException e )
         {
             LOGGER.error( "Encountered an error while attempting to close a registered publisher of evaluation status "
-                          + "messages within graphics subscriber {}: {}",
+                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
                           this.getIdentifier(),
                           e.getMessage() );
         }
@@ -243,7 +214,98 @@ class GraphicsSubscriber implements Closeable
                           this.getIdentifier(),
                           e.getMessage() );
         }
+    }
 
+    /**
+     * Closes and, where necessary, removes the subscriptions.
+     */
+
+    private void closeSubscriptions()
+    {
+        try
+        {
+            if ( Objects.nonNull( this.evaluationStatusConsumer ) )
+            {
+                this.evaluationStatusConsumer.close();
+            }
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation status "
+                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        try
+        {
+            if ( Objects.nonNull( this.evaluationConsumer ) )
+            {
+                this.evaluationConsumer.close();
+            }
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation "
+                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        try
+        {
+            if ( Objects.nonNull( this.statisticsConsumer ) )
+            {
+                this.statisticsConsumer.close();
+            }
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "Encountered an error while attempting to close a registered consumer of statistics "
+                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
+                          this.getIdentifier(),
+                          e.getMessage() );
+        }
+
+        // Remove durable subscriptions: any messages that arrive when the subscriber is down will be lost
+        if ( GraphicsSubscriber.REMOVE_SUBSCRIPTIONS_ON_CLOSURE )
+        {
+            try
+            {
+                this.session.unsubscribe( this.getEvaluationStatusSubscriberName() );
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.error( "Encountered an error while attempting to remove a durable subscription for evaluation status "
+                              + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
+                              this.getIdentifier(),
+                              e.getMessage() );
+            }
+
+            try
+            {
+                this.session.unsubscribe( this.getEvaluationSubscriberName() );
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.error( "Encountered an error while attempting to remove a durable subscription for evaluation "
+                              + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
+                              this.getIdentifier(),
+                              e.getMessage() );
+            }
+
+            try
+            {
+                this.session.unsubscribe( this.getStatisticsSubscriberName() );
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.error( "Encountered an error while attempting to remove a durable subscription for statistics "
+                              + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
+                              this.getIdentifier(),
+                              e.getMessage() );
+            }
+        }
     }
 
     /**
@@ -279,31 +341,28 @@ class GraphicsSubscriber implements Closeable
                                                                this.getIdentifier() );
 
         // Create a connection for consumption and register a listener for exceptions
-        this.connection.setExceptionListener( new EvaluationEventExceptionListener() );
+        this.connection.setExceptionListener( new ConnectionExceptionListener() );
 
         // Client acknowledges
         this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 
 
         this.evaluationStatusConsumer = this.session.createDurableSubscriber( this.evaluationStatusTopic,
-                                                                              this.getIdentifier()
-                                                                                                          + "-EXTERNAL-status",
+                                                                              this.getEvaluationStatusSubscriberName(),
                                                                               null,
                                                                               false );
 
         this.evaluationStatusConsumer.setMessageListener( this.getStatusListener() );
 
         this.evaluationConsumer = this.session.createDurableSubscriber( this.evaluationTopic,
-                                                                        this.getIdentifier()
-                                                                                              + "-EXTERNAL-evaluation",
+                                                                        this.getEvaluationSubscriberName(),
                                                                         null,
                                                                         false );
 
         this.evaluationConsumer.setMessageListener( this.getEvaluationListener() );
 
         this.statisticsConsumer = this.session.createDurableSubscriber( this.statisticsTopic,
-                                                                        this.getIdentifier()
-                                                                                              + "-EXTERNAL-statistics",
+                                                                        this.getStatisticsSubscriberName(),
                                                                         null,
                                                                         false );
 
@@ -324,6 +383,33 @@ class GraphicsSubscriber implements Closeable
     private String getIdentifier()
     {
         return this.uniqueId;
+    }
+
+    /**
+     * @return the name of the durable subscriber to the evaluation status message queue.
+     */
+
+    private String getEvaluationStatusSubscriberName()
+    {
+        return this.getIdentifier() + "-EXTERNAL-status";
+    }
+
+    /**
+     * @return the name of the durable subscriber to the evaluation message queue.
+     */
+
+    private String getEvaluationSubscriberName()
+    {
+        return this.getIdentifier() + "-EXTERNAL-evaluation";
+    }
+
+    /**
+     * @return the name of the durable subscriber to the statistics message queue.
+     */
+
+    private String getStatisticsSubscriberName()
+    {
+        return this.getIdentifier() + "-EXTERNAL-statistics";
     }
 
     /**
@@ -374,7 +460,7 @@ class GraphicsSubscriber implements Closeable
             catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
             {
                 LOGGER.error( "External subscriber {} failed to consume an evaluation status message {} for "
-                              + "evaluation {}",
+                              + EVALUATION,
                               this.getIdentifier(),
                               messageId,
                               correlationId );
@@ -428,8 +514,8 @@ class GraphicsSubscriber implements Closeable
             {
                 this.status.registerFailedEvaluation( correlationId );
 
-                LOGGER.error( "External subscriber {} failed to consume an evaluation description message {} for "
-                              + "evaluation {}",
+                LOGGER.error( "External subscriber {} failed to consume a statistics message {} for "
+                              + EVALUATION,
                               this.getIdentifier(),
                               messageId,
                               correlationId );
@@ -482,7 +568,8 @@ class GraphicsSubscriber implements Closeable
             {
                 this.status.registerFailedEvaluation( correlationId );
 
-                LOGGER.error( "External subscriber {} failed to consume a statistics message {} for evaluation {}",
+                LOGGER.error( "External subscriber {} failed to consume an evaluation description message {} for "
+                              + EVALUATION,
                               this.getIdentifier(),
                               messageId,
                               correlationId );
@@ -702,15 +789,16 @@ class GraphicsSubscriber implements Closeable
      * Listen for failures on a connection.
      */
 
-    private static class EvaluationEventExceptionListener implements ExceptionListener
+    private static class ConnectionExceptionListener implements ExceptionListener
     {
 
         @Override
         public void onException( JMSException exception )
         {
-            throw new EvaluationEventException( "Encountered an error while attempting to complete an evaluation "
-                                                + "message.",
-                                                exception );
+            exception.printStackTrace();
+
+            LOGGER.error( "Encountered an error on a connection owned by a graphics subscriber: {}.",
+                          exception.getMessage() );
         }
     }
 }

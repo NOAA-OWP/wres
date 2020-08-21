@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.GraphicalType;
@@ -198,7 +199,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private final Path outputDirectory;
 
     /**
-     * Build a product processor.
+     * Build the consumer.
      * 
      * TODO: when abstracting consumers from the core of wres to their own subscribers that run in separate processes,
      * the output path for writing will need to be packaged in the AMQP metadata. The system settings will disappear 
@@ -546,7 +547,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         }
 
         // Register consumers for graphics output types, which filters by type already
-        this.buildGraphicsConsumers(); 
+        this.buildGraphicsConsumers();
 
         if ( this.configNeedsThisTypeOfOutput( DestinationType.PROTOBUF ) )
         {
@@ -668,7 +669,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     }
 
     /**
-     * Builds a set of consumers for writing files in Portable Network Graphics (PNG) format.
+     * Builds a set of consumers for writing graphics to destinations.
      *
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
@@ -680,8 +681,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Set<DestinationType> types = config.getOutputs()
                                            .getDestination()
                                            .stream()
-                                           .map( next -> next.getType() )
-                                           .filter( StatisticsConsumer::isGraphicsType )
+                                           .map( DestinationConfig::getType )
+                                           .filter( ProjectConfigs::isGraphicsType )
                                            .collect( Collectors.toSet() );
 
         // Add consumers for each type
@@ -691,17 +692,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         }
     }
 
-    /**
-     * @param destinationType the destination type
-     * @return true if the destination type is a graphics type, otherwise false
-     */
-
-    private static boolean isGraphicsType( DestinationType destinationType )
-    {
-        return destinationType == DestinationType.PNG || destinationType == DestinationType.SVG
-               || destinationType == DestinationType.GRAPHIC;
-    }
-    
     /**
      * Adds a graphic consumer for each type of statistical output and for one format type.
      * @param type the format type
@@ -1199,10 +1189,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             if ( Objects.nonNull( graphical ) )
             {
                 Set<MetricConstants> suppressMe = this.translate( graphical.getSuppressMetric(), allMetrics );
-                returnMe.put( DestinationType.GRAPHIC, suppressMe );
-                returnMe.put( DestinationType.PNG, suppressMe );
+                returnMe.put( next.getType(), suppressMe );
             }
-
         }
 
         returnMe = Collections.unmodifiableMap( returnMe );

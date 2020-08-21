@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
+import wres.config.ProjectConfigPlus;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
@@ -63,6 +64,11 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.CsvFormat;
+import wres.statistics.generated.Outputs.GraphicFormat;
+import wres.statistics.generated.Outputs.NumericFormat;
+import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
@@ -343,7 +349,7 @@ public class MessageFactoryTest
     }
 
     @Test
-    public void testParseByPool() throws Exception
+    public void testParseByPool() throws InterruptedException
     {
         // Create a statistics message composed of scores and diagrams
         StatisticsForProject statistics =
@@ -372,6 +378,173 @@ public class MessageFactoryTest
         // Assert set-like equality
         assertTrue( expected.containsAll( actual ) );
         assertTrue( actual.containsAll( expected ) );
+    }
+
+    @Test
+    public void testParseProjectToEvaluation() throws InterruptedException, IOException
+    {
+
+        // Project from system test scenario007
+        String projectString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
+                               "\r\n"
+                               +
+                               "<project label=\"ExampleProject\" name=\"scenario007\">\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "    <inputs>\r\n"
+                               +
+                               "        <left label=\"\">\r\n"
+                               +
+                               "            <type>observations</type>\r\n"
+                               +
+                               "            <source format=\"PI-XML\">data/DRRC2QINE.xml</source>\r\n"
+                               +
+                               "            <variable label=\"discharge1\">QINE</variable>\r\n"
+                               +
+                               "        </left>\r\n"
+                               +
+                               "        <right label=\"HEFS\">\r\n"
+                               +
+                               "            <type>ensemble forecasts</type>\r\n"
+                               +
+                               "            <source format=\"PI-XML\">data/drrc2ForecastsOneMonth/</source>\r\n"
+                               +
+                               "            <variable label=\"discharge2\">SQIN</variable>\r\n"
+                               +
+                               "        </right>\r\n"
+                               +
+                               "    </inputs>\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "    <pair label=\"Pairs by location and lead time\"> \r\n"
+                               +
+                               "        <unit>CMS</unit>\r\n"
+                               +
+                               "        <feature left=\"DRRC2HSF\" right=\"DRRC2HSF\" />\r\n"
+                               +
+                               "        <leadHours minimum=\"1\" maximum=\"24\" />\r\n"
+                               +
+                               "        <issuedDates earliest=\"1985-01-01T00:00:00Z\" latest=\"1985-06-15T00:00:00Z\"/>\r\n"
+                               +
+                               "        <leadTimesPoolingWindow>\r\n"
+                               +
+                               "            <period>0</period>\r\n"
+                               +
+                               "            <frequency>1</frequency>\r\n"
+                               +
+                               "            <unit>hours</unit>\r\n"
+                               +
+                               "        </leadTimesPoolingWindow>\r\n"
+                               +
+                               "    </pair>\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "    <metrics>\r\n"
+                               +
+                               "        <thresholds>\r\n"
+                               +
+                               "            <applyTo>left</applyTo>\r\n"
+                               +
+                               "            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>\r\n"
+                               +
+                               "            <operator>greater than or equal to</operator>\r\n"
+                               +
+                               "        </thresholds>\r\n"
+                               +
+                               "        <metric><name>mean error</name></metric>\r\n"
+                               +
+                               "        <metric><name>sample size</name></metric>\r\n"
+                               +
+                               "    </metrics>\r\n"
+                               +
+                               "    <outputs>\r\n"
+                               +
+                               "        <destination type=\"numeric\" decimalFormat=\"0.000000\" />\r\n"
+                               +
+                               "        <destination type=\"pairs\" decimalFormat=\"0.000000\" />\r\n"
+                               +
+                               "        <destination type=\"graphic\">\r\n"
+                               +
+                               "            <graphical width=\"800\" height=\"600\" template=\"template/scenario007/testTemplateCopiedFromDefault.xml\">\r\n"
+                               +
+                               "                <!-- Test of the capability to override chart template options in project configuration. -->\r\n"
+                               +
+                               "                <config>\r\n"
+                               +
+                               "                    <chartDrawingParameters>\r\n"
+                               +
+                               "                        <plotTitle>\r\n"
+                               +
+                               "                            <text>OVERRIDDEN CHART DRAWING PARAMETERS TEST!\r\n"
+                               +
+                               "@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>\r\n"
+                               +
+                               "                        </plotTitle>\r\n"
+                               +
+                               "                    </chartDrawingParameters>\r\n"
+                               +
+                               "                </config>\r\n"
+                               +
+                               "                <!-- Test the supression of graphical output for one metric -->\r\n"
+                               +
+                               "                <suppressMetric>sample size</suppressMetric>\r\n"
+                               +
+                               "            </graphical>\r\n"
+                               +
+                               "        </destination>\r\n"
+                               +
+                               "    </outputs>\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "</project>\r\n"
+                               +
+                               "\r\n"
+                               +
+                               "";
+
+        ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
+        Evaluation actual = MessageFactory.parse( projectConfigPlus );
+
+        // Create the expected evaluation
+        Evaluation.Builder expected = Evaluation.newBuilder();
+
+        Outputs.Builder outputs = Outputs.newBuilder();
+        outputs.setCsv( CsvFormat.newBuilder()
+                                 .setOptions( NumericFormat.newBuilder()
+                                                           .setDecimalFormat( "0.000000" ) ) )
+               .setPng( PngFormat.newBuilder()
+                                 .setOptions( GraphicFormat.newBuilder()
+                                                           .setHeight( 600 )
+                                                           .setWidth( 800 )
+                                                           .addIgnore( MetricName.SAMPLE_SIZE )
+                                                           .setTemplateName( "template/scenario007/"
+                                                                             + "testTemplateCopiedFromDefault.xml" )
+                                                           .setConfiguration( "\r\n                    "
+                                                                              + "<chartDrawingParameters>"
+                                                                              + "\r\n                        "
+                                                                              + "<plotTitle>"
+                                                                              + "\r\n                            "
+                                                                              + "<text>OVERRIDDEN CHART DRAWING "
+                                                                              + "PARAMETERS TEST!\r\n@referenceTime@ "
+                                                                              + "Evaluation Period: "
+                                                                              + "@dataPoolingWindow(yyyy-MM-dd;GMT)"
+                                                                              + "@</text>\r\n                        "
+                                                                              + "</plotTitle>\r\n                    "
+                                                                              + "</chartDrawingParameters>"
+                                                                              + "\r\n                " ) ) );
+
+        expected.setRightDataName( "HEFS" )
+                .setLeftVariableName( "discharge1" )
+                .setRightVariableName( "discharge2" )
+                .setMeasurementUnit( "CMS" )
+                .setMetricCount( 2 )
+                .setOutputs( outputs );
+
+        assertEquals( expected.build(), actual );
     }
 
     /**

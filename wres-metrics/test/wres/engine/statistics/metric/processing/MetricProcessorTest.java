@@ -167,7 +167,7 @@ public final class MetricProcessorTest
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -195,7 +195,7 @@ public final class MetricProcessorTest
 
         // Check dichotomous metric
         metrics.clear();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.FREQUENCY_BIAS ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) );
         ProjectConfig dichotomous =
                 new ProjectConfig( null,
                                    null,
@@ -214,7 +214,7 @@ public final class MetricProcessorTest
 
         // Check for single-valued metric
         metrics.clear();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
         ProjectConfig singleValued =
                 new ProjectConfig( null,
                                    null,
@@ -233,7 +233,7 @@ public final class MetricProcessorTest
 
         // Check multicategory metric
         metrics.clear();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
         ProjectConfig multicategory =
                 new ProjectConfig( null,
                                    null,

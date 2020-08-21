@@ -4,6 +4,7 @@ package wres.statistics.generated;
 
 import "wresproto/season.proto";
 import "wresproto/value_filter.proto";
+import "wresproto/outputs.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "EvaluationProto";
@@ -24,28 +25,33 @@ message Evaluation
         
     string baseline_data_name = 4;
     // User-friendly name for the baseline data sources.
-    
-    string left_variable_name = 5;
+
+    DefaultData baseline_data_for_baseline_pool = 5;
+    // A default baseline dataset used to compute skill metrics for
+    // pools that only contain baseline pairs when statistics are computed 
+    // separately for a baseline.
+
+    string left_variable_name = 6;
     // Variable name for the left data.
     
-    string right_variable_name = 6;
+    string right_variable_name = 7;
     // Variable name for the right data.
     
-    string baseline_variable_name = 7;
+    string baseline_variable_name = 8;
     // Variable name for the baseline data.
     
-    string measurement_unit = 8;
+    string measurement_unit = 9;
     /*Measurement units associated with the pairs, real-valued thresholds, and 
     any statistics that are expressed in real units.*/
     
-    Season season = 9;
+    Season season = 10;
     // A season filter.
     
-    repeated string ensemble_member_subset = 10;
+    repeated string ensemble_member_subset = 11;
     /*A set of ensemble members by name that were included. If absent, all were
     included.*/
     
-    ValueFilter value_filter = 11;
+    ValueFilter value_filter = 12;
     // Values that were not filtered when forming pairs.
 
     enum DefaultData
@@ -59,7 +65,7 @@ message Evaluation
         // Observed climatology. 
     }
 
-    DefaultData default_baseline = 12;
-    // A default baseline dataset used for some skill metrics that allow this when
-    // no explicit baseline is provided.
+    Outputs outputs = 13;
+    // The outputs requested for the evaluation.
+    
 }

@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,14 +21,9 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.config.ProjectConfigPlus;
-import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 
 /**
@@ -255,12 +249,7 @@ abstract class GraphicsWriter
                                 DestinationConfig destConfig,
                                 MetricConstants metricId )
         {
-            ProjectConfig config = projectConfigPlus.getProjectConfig();
             String innerGraphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
-
-            // Build the chart engine
-            MetricConfig nextConfig =
-                    getNamedConfigOrAllValid( metricId, config );
 
             // Default to global type parameter
             OutputTypeSelection innerOutputType = OutputTypeSelection.DEFAULT;
@@ -273,12 +262,6 @@ abstract class GraphicsWriter
             if ( Objects.nonNull( destConfig.getGraphical() ) )
             {
                 innerTemplateResourceName = destConfig.getGraphical().getTemplate();
-            }
-
-            // Override template name with metric specific name.
-            if ( Objects.nonNull( nextConfig ) && Objects.nonNull( nextConfig.getTemplateResourceName() ) )
-            {
-                innerTemplateResourceName = nextConfig.getTemplateResourceName();
             }
 
             this.templateResourceName = innerTemplateResourceName;
@@ -316,40 +299,6 @@ abstract class GraphicsWriter
             return templateResourceName;
         }
 
-        /**
-         * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
-         * configuration could be found. If the configuration contains a {@link MetricConfigName#ALL_VALID}, the
-         * prescribed metric identifier is ignored and the configuration is returned for
-         * {@link MetricConfigName#ALL_VALID}.
-         *
-         * @param metric the metric
-         * @param config the project configuration
-         * @return the metric configuration or null
-         */
-
-        private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
-        {
-
-            // Deal with MetricConfigName.ALL_VALID first
-            MetricConfig allValid = ProjectConfigs.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
-            if ( Objects.nonNull( allValid ) )
-            {
-                return allValid;
-            }
-
-            // Find the corresponding configuration
-            for ( MetricsConfig next : config.getMetrics() )
-            {
-                Optional<MetricConfig> test =
-                        next.getMetric().stream().filter( a -> metric.name().equals( a.getName().name() ) ).findFirst();
-                if ( test.isPresent() )
-                {
-                    return test.get();
-                }
-            }
-
-            return null;
-        }
     }
 
     /**

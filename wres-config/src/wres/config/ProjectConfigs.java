@@ -245,6 +245,16 @@ public class ProjectConfigs
     }
 
     /**
+     * @return Returns <code>true</code> if the input type is a graphical type, else <code>false</code>.
+     */
+
+    public static boolean isGraphicsType( DestinationType destinationType )
+    {
+        return destinationType == DestinationType.GRAPHIC || destinationType == DestinationType.PNG
+               || destinationType == DestinationType.SVG;
+    }
+
+    /**
      * Get all the numerical destinations from a configuration.
      *
      * @param config the config to search through

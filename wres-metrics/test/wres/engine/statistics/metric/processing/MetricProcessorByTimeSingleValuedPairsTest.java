@@ -308,7 +308,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         // Mock some metrics
         List<TimeSeriesMetricConfig> metrics = new ArrayList<>();
-        metrics.add( new TimeSeriesMetricConfig( null, null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
+        metrics.add( new TimeSeriesMetricConfig( null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
 
         // Check discrete probability metric
         ProjectConfig mockedConfig =
@@ -411,7 +411,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         // Mock some metrics
         List<TimeSeriesMetricConfig> metrics = new ArrayList<>();
-        metrics.add( new TimeSeriesMetricConfig( null, null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
+        metrics.add( new TimeSeriesMetricConfig( null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -1040,7 +1040,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         MetricsConfig metrics =
                 new MetricsConfig( null,
-                                   Arrays.asList( new MetricConfig( null, null, MetricConfigName.FREQUENCY_BIAS ) ),
+                                   Arrays.asList( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null );
 
         MetricConfigException actual =
@@ -1065,7 +1065,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.THREAT_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.THREAT_SCORE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -1103,7 +1103,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SCORE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -1137,11 +1137,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.THREAT_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.THREAT_SCORE ) );
 
         List<TimeSeriesMetricConfig> timeMetrics = new ArrayList<>();
         timeMetrics.add( new TimeSeriesMetricConfig( null,
-                                                     null,
                                                      TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
                                                      null ) );
 

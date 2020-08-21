@@ -53,7 +53,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -190,9 +189,9 @@ public abstract class ChartEngineFactory
      * @param userSpecifiedOutputType A user specified plot type; null means the user did not provide one.
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
      */
-    private static <T extends Statistic<?>> ChartType determineChartType( ProjectConfig config,
-                                                                          MetricConstants metricName,
-                                                                          OutputTypeSelection userSpecifiedOutputType )
+    private static ChartType determineChartType( ProjectConfig config,
+                                                 MetricConstants metricName,
+                                                 OutputTypeSelection userSpecifiedOutputType )
     {
         //Pooling window case.
         if ( Objects.nonNull( config ) && Objects.nonNull( config.getPair() )
