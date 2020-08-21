@@ -384,7 +384,7 @@ public class MessageFactoryTest
     public void testParseProjectToEvaluation() throws InterruptedException, IOException
     {
 
-        // Project from system test scenario007
+        // Project from system test scenario007 with simplified override for drawing parameters
         String projectString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
                                "\r\n"
                                +
@@ -472,21 +472,7 @@ public class MessageFactoryTest
                                +
                                "                <!-- Test of the capability to override chart template options in project configuration. -->\r\n"
                                +
-                               "                <config>\r\n"
-                               +
-                               "                    <chartDrawingParameters>\r\n"
-                               +
-                               "                        <plotTitle>\r\n"
-                               +
-                               "                            <text>OVERRIDDEN CHART DRAWING PARAMETERS TEST!\r\n"
-                               +
-                               "@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>\r\n"
-                               +
-                               "                        </plotTitle>\r\n"
-                               +
-                               "                    </chartDrawingParameters>\r\n"
-                               +
-                               "                </config>\r\n"
+                               "                <config>fake drawing parameters</config>\r\n"
                                +
                                "                <!-- Test the supression of graphical output for one metric -->\r\n"
                                +
@@ -500,11 +486,7 @@ public class MessageFactoryTest
                                +
                                "\r\n"
                                +
-                               "</project>\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "";
+                               "</project>\r\n";
 
         ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
         Evaluation actual = MessageFactory.parse( projectConfigPlus );
@@ -523,19 +505,7 @@ public class MessageFactoryTest
                                                            .addIgnore( MetricName.SAMPLE_SIZE )
                                                            .setTemplateName( "template/scenario007/"
                                                                              + "testTemplateCopiedFromDefault.xml" )
-                                                           .setConfiguration( "\r\n                    "
-                                                                              + "<chartDrawingParameters>"
-                                                                              + "\r\n                        "
-                                                                              + "<plotTitle>"
-                                                                              + "\r\n                            "
-                                                                              + "<text>OVERRIDDEN CHART DRAWING "
-                                                                              + "PARAMETERS TEST!\r\n@referenceTime@ "
-                                                                              + "Evaluation Period: "
-                                                                              + "@dataPoolingWindow(yyyy-MM-dd;GMT)"
-                                                                              + "@</text>\r\n                        "
-                                                                              + "</plotTitle>\r\n                    "
-                                                                              + "</chartDrawingParameters>"
-                                                                              + "\r\n                " ) ) );
+                                                           .setConfiguration( "fake drawing parameters" ) ) );
 
         expected.setRightDataName( "HEFS" )
                 .setLeftVariableName( "discharge1" )
