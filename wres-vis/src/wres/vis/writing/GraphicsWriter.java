@@ -25,6 +25,9 @@ import org.jfree.graphics2d.svg.SVGUtils;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
+import ohd.hseb.charter.parameters.SubPlotParameters;
+import ohd.hseb.charter.parameters.SubtitleParameters;
+import ohd.hseb.charter.parameters.ThresholdParameters;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -127,8 +130,6 @@ abstract class GraphicsWriter
             //#81628 change.  Create the chart and force it to use a Liberation Sans font.  Below is a test run.
             //It will need to be enhanced later to modify *all* fonts in the JFreeChart.
             // Create the chart
-            JFreeChart chart = engine.buildChart();
-
             String fontResource = "LiberationSans-Regular.ttf";
             URL fontUrl = GraphicsWriter.class.getClassLoader().getResource( fontResource );
 
@@ -145,15 +146,23 @@ abstract class GraphicsWriter
                 // Register font with graphics env
                 GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
                 graphics.registerFont( font );
-
-                // Register font with chart (this is a bit ugly - is there something more universal?)
-                if (chart.getLegend() != null)
+                
+                engine.getChartParameters().getPlotTitle().setFont( font );
+                engine.getChartParameters().getLegend().getLegendTitle().setFont( font );
+                engine.getChartParameters().getLegend().getLegendEntryFont().setFont( font );
+                engine.getChartParameters().getDomainAxis().getLabel().setFont( font );  //One shared domain axis.
+                for (SubPlotParameters subPlot : engine.getChartParameters().getSubPlotParameters()) //Range axes by subplot.
                 {
-                    chart.getLegend().setItemFont( font );
+                    subPlot.getLeftAxis().getLabel().setFont( font ); //Font is used for axis label and tick marks.
+                    subPlot.getRightAxis().getLabel().setFont( font ); //Font is used for axis label and ticks marks.
                 }
-                if (chart.getTitle() != null)
+                for ( SubtitleParameters parms : engine.getChartParameters().getSubtitleList().getSubtitleList() )
                 {
-                    chart.getTitle().setFont( font );
+                    parms.setFont( font );
+                }
+                for (ThresholdParameters parms : engine.getChartParameters().getThresholdList().getThresholdParametersList() )
+                {
+                    parms.getLabel().setFont( font );
                 }
             }
             catch ( FontFormatException e )
@@ -161,7 +170,7 @@ abstract class GraphicsWriter
                 throw new GraphicsWriteException( "Error while loading font for writing chart:", e );
             }
 
-
+            JFreeChart chart = engine.buildChart();
             Path resolvedPath = outputImage;
 
             // Default is png
