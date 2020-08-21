@@ -323,8 +323,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.THREAT_SCORE ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.THREAT_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -544,7 +544,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         MetricsConfig metrics =
                 new MetricsConfig( null,
-                                   Arrays.asList( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) ),
+                                   Arrays.asList( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
@@ -567,7 +567,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -603,7 +603,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) );
 
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
@@ -628,7 +628,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.THREAT_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.THREAT_SCORE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -662,7 +662,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEIRCE_SKILL_SCORE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -1139,9 +1139,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testThatSampleSizeIsConstructedForEnsembleInput() throws MetricParameterException
     {
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SCORE ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.SAMPLE_SIZE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.CONTINUOUS_RANKED_PROBABILITY_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.SAMPLE_SIZE ) );
 
         ProjectConfig mock =
                 new ProjectConfig( new Inputs( null,
@@ -1188,9 +1188,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             throws MetricParameterException
     {
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.SAMPLE_SIZE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.SAMPLE_SIZE ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();

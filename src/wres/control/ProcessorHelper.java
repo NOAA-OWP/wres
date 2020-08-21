@@ -103,14 +103,15 @@ class ProcessorHelper
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
+        // Create a description of the evaluation
+        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
+
         // Create some shared writers
         SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
                                                                         executors.getIoExecutor(),
                                                                         projectConfig,
+                                                                        evaluationDescription,
                                                                         outputDirectory );
-
-        // Create a description of the evaluation
-        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
         // Write some statistic types and formats as soon as they become available. Everything else is written on 
         // group/feature completion.
@@ -174,7 +175,7 @@ class ProcessorHelper
 
             // Wait for the evaluation to conclude
             evaluation.await();
-            
+
             // Since the shared writers are created here, they should be destroyed here. An attempt should be made to 
             // close them before the finally block because some of these writers may employ a delayed write, which could 
             // still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further context 
@@ -220,21 +221,21 @@ class ProcessorHelper
             {
                 evaluation.close();
             }
-            catch( IOException e )
+            catch ( IOException e )
             {
                 LOGGER.error( "Failed to close evaluation {}.", evaluation.getEvaluationId() );
             }
-            
+
             // Close the shared writers if they weren't closed already
             try
             {
                 sharedWriters.close();
             }
-            catch( IOException e )
+            catch ( IOException e )
             {
                 LOGGER.error( "Failed to close the shared writers for evaluation {}.", evaluation.getEvaluationId() );
             }
-            
+
             // Close the other closeable consumers
             try
             {
@@ -253,7 +254,7 @@ class ProcessorHelper
                 LOGGER.error( "Failed to close an incremental consumer for evaluation {}.",
                               evaluation.getEvaluationId() );
             }
-            
+
             // Add the consumer paths written, since consumers are now out-of-band to producers
             returnMe.addAll( incrementalConsumer.get() );
             returnMe.addAll( groupConsumer.get() );
@@ -485,6 +486,7 @@ class ProcessorHelper
      * @param systemSettings the system settings
      * @param executor the executor
      * @param projectConfig the project declaration
+     * @param evaluationDescription the evaluation description
      * @param outputDirectory the output directory for writing
      * @return the shared writer instance
      * @throws IOException if the shared writer could not be created
@@ -493,6 +495,7 @@ class ProcessorHelper
     private static SharedWriters getSharedWriters( SystemSettings systemSettings,
                                                    Executor executor,
                                                    ProjectConfig projectConfig,
+                                                   wres.statistics.generated.Evaluation evaluationDescription,
                                                    Path outputDirectory )
             throws IOException
     {
@@ -525,15 +528,10 @@ class ProcessorHelper
 
         if ( incrementalFormats.contains( DestinationType.PROTOBUF ) )
         {
-            // TODO: abstract the creation of an evaluation description to the outermost caller that creates
-            // an evaluation. For now, it is only used here.
-
-            wres.statistics.generated.Evaluation evaluation = MessageFactory.parse( projectConfig );
-
             // Use a standard name for the protobuf
             // Eventually, this should probably correspond to the unique evaluation identifier
             Path protobufPath = outputDirectory.resolve( "evaluation.pb3" );
-            sharedWritersBuilder.setProtobufWriter( ProtobufWriter.of( protobufPath, evaluation ) );
+            sharedWritersBuilder.setProtobufWriter( ProtobufWriter.of( protobufPath, evaluationDescription ) );
 
             LOGGER.debug( "Added a shared protobuf writer to the evaluation." );
         }
@@ -545,7 +543,7 @@ class ProcessorHelper
         // Writing the same pairs, more than once, to that single destination does not make sense.
         // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
         List<DestinationConfig> pairDestinations = ProjectConfigs.getDestinationsOfType( projectConfig,
-                                                                                       DestinationType.PAIRS );
+                                                                                         DestinationType.PAIRS );
         if ( !pairDestinations.isEmpty() )
         {
             DecimalFormat decimalFormatter = null;

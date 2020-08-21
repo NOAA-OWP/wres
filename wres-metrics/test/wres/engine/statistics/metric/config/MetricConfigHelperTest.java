@@ -80,9 +80,9 @@ public final class MetricConfigHelperTest
     {
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -214,7 +214,7 @@ public final class MetricConfigHelperTest
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -387,7 +387,6 @@ public final class MetricConfigHelperTest
         SummaryStatisticsConfig statsConfig = new SummaryStatisticsConfig( stats );
 
         timeSeriesMetrics.add( new TimeSeriesMetricConfig( null,
-                                                           null,
                                                            TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
                                                            statsConfig ) );
 
@@ -438,7 +437,6 @@ public final class MetricConfigHelperTest
         SummaryStatisticsConfig statsConfig = new SummaryStatisticsConfig( stats );
 
         timeSeriesMetrics.add( new TimeSeriesMetricConfig( null,
-                                                           null,
                                                            TimeSeriesMetricConfigName.ALL_VALID,
                                                            statsConfig ) );
 
@@ -460,7 +458,6 @@ public final class MetricConfigHelperTest
         timeSeriesMetrics.clear();
 
         timeSeriesMetrics.add( new TimeSeriesMetricConfig( null,
-                                                           null,
                                                            TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR,
                                                            null ) );
 
@@ -517,7 +514,7 @@ public final class MetricConfigHelperTest
 
         // No outputs configuration defined
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
 
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
@@ -563,7 +560,7 @@ public final class MetricConfigHelperTest
     {
         // No outputs configuration defined
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.RELIABILITY_DIAGRAM ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.RELIABILITY_DIAGRAM ) );
 
         // Output configuration defined, but is not by threshold then lead
         ProjectConfig mockedConfigWithOutput =

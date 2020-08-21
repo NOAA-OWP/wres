@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class GraphicsServer implements Runnable, Closeable
+class GraphicsServer implements Runnable, Closeable
 {
 
     /**
@@ -97,11 +97,13 @@ public class GraphicsServer implements Runnable, Closeable
             Instant started = Instant.now();
 
             // Add a shutdown hook to respond gracefully to SIGINT signals
+            // Given the try-with-resources, this may initiate close twice, 
+            // but a shutdown hook works in more circumstances than a try/finally.
             Runtime.getRuntime().addShutdownHook( new Thread( () -> {
                 Instant ended = Instant.now();
                 Duration duration = Duration.between( started, ended );
                 server.stop();
-                LOGGER.info( "Stopping the WRES Graphics Server, which ran for '{}' and processed {} packets of "
+                LOGGER.info( "Stopped the WRES Graphics Server, which ran for '{}' and processed {} packets of "
                              + "statistics across {} evaluations.",
                              duration,
                              server.getServerStatus().getStatisticsCount(),
@@ -179,26 +181,29 @@ public class GraphicsServer implements Runnable, Closeable
 
     private void stop()
     {
-        // Shutdown
-        this.server.shutdown();
-
-        try
+        // Not stopped already?
+        if ( this.latch.getCount() != 0 )
         {
-            this.server.awaitTermination( 1, TimeUnit.SECONDS );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
+            if ( Objects.nonNull( this.subscriber ) )
+            {
+                this.subscriber.close();
+            }
 
-            LOGGER.error( "Failed to close all resources used by the WRES Graphics Server." );
-        }
+            this.timer.cancel();
+            this.server.shutdown();
 
-        this.timer.cancel();
-        this.latch.countDown();
+            try
+            {
+                this.server.awaitTermination( 1, TimeUnit.SECONDS );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
 
-        if ( Objects.nonNull( subscriber ) )
-        {
-            this.subscriber.close();
+                LOGGER.error( "Failed to close all resources used by the WRES Graphics Server." );
+            }
+            
+            this.latch.countDown();
         }
     }
 

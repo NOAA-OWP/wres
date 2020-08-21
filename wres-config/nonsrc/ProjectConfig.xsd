@@ -590,10 +590,6 @@
             </xs:appinfo>
         </xs:annotation>
 
-        <xs:sequence>
-            <xs:element name="templateResourceName" type="xs:string" minOccurs="0" />
-        </xs:sequence>
-
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 

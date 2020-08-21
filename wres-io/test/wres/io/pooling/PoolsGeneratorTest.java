@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
@@ -128,11 +129,15 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( projectConfigPlus.getProjectConfig() )
+               .thenReturn( projectConfig );
+
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
         wres.events.Evaluation mockEvaluation = Mockito.mock( wres.events.Evaluation.class );
         Mockito.when( mockEvaluation.getEvaluationDescription() )
                .thenReturn( evaluationDescription );
-        
+
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Double>>> actual =
                 PoolFactory.getSingleValuedPools( mockEvaluation,
@@ -224,11 +229,15 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( projectConfigPlus.getProjectConfig() )
+               .thenReturn( projectConfig );
+
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
         wres.events.Evaluation mockEvaluation = Mockito.mock( wres.events.Evaluation.class );
         Mockito.when( mockEvaluation.getEvaluationDescription() )
                .thenReturn( evaluationDescription );
-        
+
         // Create the actual output
         List<Supplier<PoolOfPairs<Double, Ensemble>>> actual =
                 PoolFactory.getEnsemblePools( mockEvaluation,

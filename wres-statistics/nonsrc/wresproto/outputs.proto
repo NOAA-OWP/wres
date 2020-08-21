@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "wresproto/metric_name.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "OutputsProto";
+option java_multiple_files = true;
+
+message Outputs
+{
+    /*A message that describes the formats to write for one evaluation. Most 
+    formats are special snowflakes. However, common format options are 
+    abstracted out, where possible. For example, the GraphicFormat contains 
+    options that are common to all graphic formats. Each format and associated
+    options can appear only once per evaluation.*/
+
+    message GraphicFormat
+    {
+        // A raster or vector graphic with common format options.
+
+        enum GraphicShape
+        {
+            // The shape of the graphic.
+
+            DEFAULT = 0;
+            // The application or service decides.
+            
+            LEAD_THRESHOLD = 1;
+            // Create a graphic that contains one series for each threshold 
+            // against one or more lead durations.
+
+            THRESHOLD_LEAD = 2;
+            // Create a graphic that contains one series for each lead duration
+            // against one or more thresholds.
+            
+            ISSUED_DATE_POOLS = 3;
+            // Create a graphic that contains one series for each threshold 
+            // against one or more issued datetime pools.
+        }
+
+        GraphicShape shape = 1;
+        // The shape of the graphic to create.
+
+        int32 height = 2;
+        // Graphic height in pixels.
+
+        int32 width = 3;
+        // Graphic width in pixels.
+
+        string template_name = 4;
+        // The name of a drawing template to use when creating the graphic.
+
+        string configuration = 5;
+        // An inband configuration string that is understood by the application 
+        // or service that delivers this graphic.
+
+        enum DurationUnit
+        {
+             // Display lead durations in these units.
+
+             SECONDS = 0;
+             MINUTES = 1;
+             HOURS = 2;
+             DAYS = 3;
+        }
+
+        DurationUnit lead_unit = 6;
+        // The units of the lead durations.
+
+        repeated MetricName ignore = 7;
+        // Zero or more metrics for which graphics should be suppressed.
+    }
+
+    message PngFormat 
+    {
+        // Portable Network Graphics (PNG).
+    
+        GraphicFormat options = 1;
+        // General format options.
+    }
+
+    PngFormat png = 1;
+    // Portable Network Graphics.
+    
+    message SvgFormat
+    {
+        // Scalable Vector Graphics (SVG).
+    
+        GraphicFormat options = 1;
+        // General format options.
+    }
+    
+    SvgFormat svg = 2;
+    // Scalable Vector Graphics.
+
+    message NumericFormat
+    {
+        // A numerical format with common format options.
+
+        string decimal_format = 1;
+        // A decimal format mask, such as 0.000000 or #.######.
+    }
+
+    message CsvFormat
+    {
+        // Comma Separated Values (CSV).
+    
+        NumericFormat options = 1;
+        // General format options.
+    }
+
+    CsvFormat csv = 3;
+    // Comma Separated Values.
+
+    message NetcdfFormat
+    {
+        // Network Common Data Form (NetCDF) without any default options.
+    }
+
+    NetcdfFormat netcdf = 4;
+    // Network Common Data Form (NetCDF).
+
+    message ProtobufFormat
+    {
+        // Protocol Buffers format without any default options.
+    }
+
+    ProtobufFormat protobuf = 6;
+    // Protocol Buffers format.
+
+}

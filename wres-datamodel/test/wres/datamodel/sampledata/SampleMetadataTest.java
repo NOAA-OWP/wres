@@ -13,7 +13,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
@@ -434,7 +436,6 @@ public class SampleMetadataTest
                                                    null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
-                                                                                                      null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
                                                                      null ) ),
                                    null,
@@ -473,7 +474,6 @@ public class SampleMetadataTest
                                                    null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
-                                                                                                      null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
                                                                      null ) ),
                                    null,
@@ -482,7 +482,11 @@ public class SampleMetadataTest
         TimeWindowOuter timeWindow = thirdWindow;
         OneOrTwoThresholds thresholds1 = thresholds;
 
-        Evaluation evaluationSix = MessageFactory.parse( mockConfigOne );
+        ProjectConfigPlus mockConfigOnePlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( mockConfigOnePlus.getProjectConfig() )
+               .thenReturn( mockConfigOne );
+
+        Evaluation evaluationSix = MessageFactory.parse( mockConfigOnePlus );
 
         Pool poolEleven = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
                                                 timeWindow,
@@ -495,7 +499,11 @@ public class SampleMetadataTest
         TimeWindowOuter timeWindow1 = thirdWindow;
         OneOrTwoThresholds thresholds2 = thresholds;
 
-        Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwo );
+        ProjectConfigPlus mockConfigTwoPlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( mockConfigTwoPlus.getProjectConfig() )
+               .thenReturn( mockConfigTwo );
+
+        Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwoPlus );
 
         Pool poolTwelve = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
                                                 timeWindow1,
@@ -551,19 +559,19 @@ public class SampleMetadataTest
 
         // Different evaluations
         Evaluation evaluationOne = Evaluation.newBuilder()
-                .setRightVariableName( SQIN )
-                .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                .build();
-        
+                                             .setRightVariableName( SQIN )
+                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                             .build();
+
         Evaluation evaluationTwo = Evaluation.newBuilder()
-                .setRightVariableName( SQIN )
-                .setRightDataName( HEFS )
-                .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                .build();
-        
+                                             .setRightVariableName( SQIN )
+                                             .setRightDataName( HEFS )
+                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
+                                             .build();
+
         SampleMetadata one = SampleMetadata.of( evaluationOne, Pool.getDefaultInstance() );
         SampleMetadata two = SampleMetadata.of( evaluationTwo, Pool.getDefaultInstance() );
-     
+
         assertFalse( one.equalsWithoutTimeWindowOrThresholds( two ) );
     }
 
@@ -717,7 +725,6 @@ public class SampleMetadataTest
                                                    null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
-                                                                                                      null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
                                                                      null ) ),
                                    null,
@@ -756,7 +763,6 @@ public class SampleMetadataTest
                                                    null ),
                                    Arrays.asList( new MetricsConfig( null,
                                                                      Arrays.asList( new MetricConfig( null,
-                                                                                                      null,
                                                                                                       MetricConfigName.BIAS_FRACTION ) ),
                                                                      null ) ),
                                    null,
@@ -765,7 +771,11 @@ public class SampleMetadataTest
         TimeWindowOuter timeWindow = thirdWindow;
         OneOrTwoThresholds thresholds1 = thresholds;
 
-        Evaluation evaluationFour = MessageFactory.parse( mockConfigOne );
+        ProjectConfigPlus mockConfigOnePlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( mockConfigOnePlus.getProjectConfig() )
+               .thenReturn( mockConfigOne );
+
+        Evaluation evaluationFour = MessageFactory.parse( mockConfigOnePlus );
 
         Pool poolNine = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
                                               timeWindow,
@@ -775,7 +785,11 @@ public class SampleMetadataTest
 
         SampleMetadata m11 = SampleMetadata.of( evaluationFour, poolNine );
 
-        Evaluation evaluationFive = MessageFactory.parse( mockConfigTwo );
+        ProjectConfigPlus mockConfigTwoPlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( mockConfigTwoPlus.getProjectConfig() )
+               .thenReturn( mockConfigTwo );
+
+        Evaluation evaluationFive = MessageFactory.parse( mockConfigTwoPlus );
 
         Pool poolTen = MessageFactory.parse( new FeatureTuple( l8, l8, l8 ),
                                              thirdWindow,

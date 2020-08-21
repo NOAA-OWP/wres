@@ -37,13 +37,13 @@ public class ProjectConfigsTest
         // that differ on name
         
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.VOLUMETRIC_EFFICIENCY ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.SUM_OF_SQUARE_ERROR ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_SQUARE_ERROR ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.ROOT_MEAN_SQUARE_ERROR ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.COEFFICIENT_OF_DETERMINATION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.VOLUMETRIC_EFFICIENCY ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.SUM_OF_SQUARE_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_SQUARE_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.ROOT_MEAN_SQUARE_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.COEFFICIENT_OF_DETERMINATION ) );
 
         ProjectConfig mockOne =
                 new ProjectConfig( new Inputs( null,

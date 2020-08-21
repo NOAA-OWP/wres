@@ -294,6 +294,9 @@ project(':wres-datamodel')
         compile group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
         compile 'com.github.ben-manes.caffeine:caffeine:2.8.5'
 
+        // Mocking help
+        testCompile 'org.mockito:mockito-core:3.3.3'
+
         testCompile 'junit:junit:4.13'
     }
 }

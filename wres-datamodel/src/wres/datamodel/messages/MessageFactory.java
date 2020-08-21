@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -19,13 +20,21 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.ProjectConfigs;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.DoubleBoundsType;
+import wres.config.generated.GraphicalType;
+import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.DataFactory;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -45,6 +54,17 @@ import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.CsvFormat;
+import wres.statistics.generated.Outputs.GraphicFormat;
+import wres.statistics.generated.Outputs.NumericFormat;
+import wres.statistics.generated.Outputs.GraphicFormat.DurationUnit;
+import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.Outputs.NetcdfFormat;
+import wres.statistics.generated.Outputs.PngFormat;
+import wres.statistics.generated.Outputs.ProtobufFormat;
+import wres.statistics.generated.Outputs.SvgFormat;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Season;
@@ -122,132 +142,57 @@ public class MessageFactory
     /**
      * Creates an evaluation from a project declaration.
      * 
-     * @param project the project declaration
+     * @param projectConfigPlus the project declaration plus graphics strings
      * @return an evaluation
      * @throws NullPointerException if the project is null
      */
 
-    public static Evaluation parse( ProjectConfig project )
+    public static Evaluation parse( ProjectConfigPlus projectConfigPlus )
     {
-        Objects.requireNonNull( project );
+        Objects.requireNonNull( projectConfigPlus );
 
         Evaluation.Builder builder = Evaluation.newBuilder();
 
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        // Add the inputs and default baseline, as needed
+        MessageFactory.addInputs( projectConfig.getInputs(), builder );
+        MessageFactory.addDefaultBaseline( projectConfig, builder );
+
         // Populate the evaluation from the supplied information as reasonably as possible
-        if ( Objects.nonNull( project.getPair() ) && Objects.nonNull( project.getPair().getUnit() ) )
+        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            builder.setMeasurementUnit( project.getPair().getUnit() );
+            builder.setMeasurementUnit( projectConfig.getPair().getUnit() );
 
             LOGGER.debug( "Populated the evaluation with a measurement unit of {}.",
-                          project.getPair().getUnit() );
+                          projectConfig.getPair().getUnit() );
         }
 
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getLeft() )
-             && Objects.nonNull( project.getInputs().getLeft().getVariable() ) )
+        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getSeason() ) )
         {
-            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
-                                                                                           .getLeft() );
-            builder.setLeftVariableName( variableName );
-
-            LOGGER.debug( "Populated the evaluation with a left variable name of {}.",
-                          variableName );
-        }
-
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getRight() )
-             && Objects.nonNull( project.getInputs().getRight().getVariable() ) )
-        {
-            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
-                                                                                           .getRight() );
-            builder.setRightVariableName( variableName );
-
-            LOGGER.debug( "Populated the evaluation with a right variable name of {}.",
-                          variableName );
-        }
-
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getBaseline() )
-             && Objects.nonNull( project.getInputs().getBaseline().getVariable() ) )
-        {
-            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( project.getInputs()
-                                                                                           .getBaseline() );
-            builder.setBaselineVariableName( variableName );
-
-            LOGGER.debug( "Populated the evaluation with a baseline variable name of {}.",
-                          variableName );
-        }
-
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getLeft() )
-             && Objects.nonNull( project.getInputs().getLeft().getLabel() ) )
-        {
-            String name = project.getInputs().getLeft().getLabel();
-            builder.setLeftDataName( name );
-
-            LOGGER.debug( "Populated the evaluation with a left source name of {}.",
-                          name );
-        }
-
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getRight() )
-             && Objects.nonNull( project.getInputs().getRight().getLabel() ) )
-        {
-            String name = project.getInputs().getRight().getLabel();
-            builder.setRightDataName( name );
-
-            LOGGER.debug( "Populated the evaluation with a right source name of {}.",
-                          name );
-        }
-
-        if ( Objects.nonNull( project.getInputs() ) && Objects.nonNull( project.getInputs().getBaseline() )
-             && Objects.nonNull( project.getInputs().getBaseline().getLabel() ) )
-        {
-            String name = project.getInputs().getBaseline().getLabel();
-            builder.setBaselineDataName( name );
-
-            LOGGER.debug( "Populated the evaluation with a baseline source name of {}.",
-                          name );
-        }
-        else
-        {
-            String name = Evaluation.DefaultData.OBSERVED_CLIMATOLOGY.name().replace( "_", " " );
-            builder.setBaselineDataName( name );
-
-            LOGGER.debug( "Populated the evaluation with a default baseline source name of {}.",
-                          name );
-        }
-
-        if ( Objects.nonNull( project.getPair() ) && Objects.nonNull( project.getPair().getSeason() ) )
-        {
-            Season season = MessageFactory.parse( project.getPair().getSeason() );
+            Season season = MessageFactory.parse( projectConfig.getPair().getSeason() );
             builder.setSeason( season );
 
             LOGGER.debug( "Populated the evaluation with a season of {}.",
                           season );
         }
 
-        if ( Objects.nonNull( project.getPair() ) && Objects.nonNull( project.getPair().getValues() ) )
+        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getValues() ) )
         {
-            ValueFilter filter = MessageFactory.parse( project.getPair().getValues() );
+            ValueFilter filter = MessageFactory.parse( projectConfig.getPair().getValues() );
             builder.setValueFilter( filter );
 
             LOGGER.debug( "Populated the evaluation with a value filter of {}.",
-                          project.getPair().getValues() );
+                          projectConfig.getPair().getValues() );
         }
 
-        if ( Objects.nonNull( project.getMetrics() ) )
+        if ( Objects.nonNull( projectConfig.getOutputs() ) )
         {
+            MessageFactory.addOutputs( projectConfigPlus, builder );
 
-            int metricCount = project.getMetrics()
-                                     .stream()
-                                     .mapToInt( a -> DataFactory.getMetricsFromMetricsConfig( a, project ).size() )
-                                     .sum();
-
-            builder.setMetricCount( metricCount );
-
-            LOGGER.debug( "Populated the evaluation with a metric count of {}.",
-                          metricCount );
+            LOGGER.debug( "Populated the evaluation with outputs of {}.",
+                          builder.getOutputs() );
         }
-
-        builder.setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY );
-        LOGGER.debug( "Populated the evaluation with a default baseline of {}.",
-                      DefaultData.OBSERVED_CLIMATOLOGY );
 
         return builder.build();
     }
@@ -1112,6 +1057,312 @@ public class MessageFactory
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addInstantDurationPairStatistics( future );
         }
+    }
+
+    /**
+     * Adds the inputs declaration to an evaluation builder.
+     * 
+     * @param project the project declaration
+     * 
+     * @return an evaluation
+     * @throws NullPointerException if the project is null
+     */
+
+    private static void addInputs( Inputs inputs, Evaluation.Builder builder )
+    {
+        Objects.requireNonNull( builder );
+
+        if ( Objects.isNull( inputs ) )
+        {
+            LOGGER.debug( "No inputs were discovered." );
+
+            return;
+        }
+
+        if ( Objects.nonNull( inputs.getLeft() )
+             && Objects.nonNull( inputs.getLeft().getVariable() ) )
+        {
+            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( inputs.getLeft() );
+            builder.setLeftVariableName( variableName );
+
+            LOGGER.debug( "Populated the evaluation with a left variable name of {}.",
+                          variableName );
+        }
+
+        if ( Objects.nonNull( inputs.getRight() )
+             && Objects.nonNull( inputs.getRight().getVariable() ) )
+        {
+            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( inputs.getRight() );
+            builder.setRightVariableName( variableName );
+
+            LOGGER.debug( "Populated the evaluation with a right variable name of {}.",
+                          variableName );
+        }
+
+        if ( Objects.nonNull( inputs.getBaseline() )
+             && Objects.nonNull( inputs.getBaseline().getVariable() ) )
+        {
+            String variableName = ProjectConfigs.getVariableIdFromDataSourceConfig( inputs.getBaseline() );
+            builder.setBaselineVariableName( variableName );
+
+            LOGGER.debug( "Populated the evaluation with a baseline variable name of {}.",
+                          variableName );
+        }
+
+        if ( Objects.nonNull( inputs.getLeft() )
+             && Objects.nonNull( inputs.getLeft().getLabel() ) )
+        {
+            String name = inputs.getLeft().getLabel();
+            builder.setLeftDataName( name );
+
+            LOGGER.debug( "Populated the evaluation with a left source name of {}.",
+                          name );
+        }
+
+        if ( Objects.nonNull( inputs.getRight() )
+             && Objects.nonNull( inputs.getRight().getLabel() ) )
+        {
+            String name = inputs.getRight().getLabel();
+            builder.setRightDataName( name );
+
+            LOGGER.debug( "Populated the evaluation with a right source name of {}.",
+                          name );
+        }
+
+        if ( Objects.nonNull( inputs.getBaseline() )
+             && Objects.nonNull( inputs.getBaseline().getLabel() ) )
+        {
+            String name = inputs.getBaseline().getLabel();
+            builder.setBaselineDataName( name );
+
+            LOGGER.debug( "Populated the evaluation with a baseline source name of {}.",
+                          name );
+        }
+    }
+
+    /**
+     * Adds a default baseline, as requried by the project declaration.
+     * 
+     * @param projectConfig the project declaration
+     * @return an evaluation
+     * @throws NullPointerException if the project is null
+     */
+
+    private static void addDefaultBaseline( ProjectConfig projectConfig, Evaluation.Builder builder )
+    {
+        Objects.requireNonNull( builder );
+
+        if ( Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            List<MetricsConfig> declaredMetrics = projectConfig.getMetrics();
+            Set<MetricConstants> metrics = declaredMetrics.stream()
+                                                          .flatMap( a -> DataFactory.getMetricsFromMetricsConfig( a,
+                                                                                                                  projectConfig )
+                                                                                    .stream() )
+                                                          .collect( Collectors.toSet() );
+
+            builder.setMetricCount( metrics.size() );
+
+            LOGGER.debug( "Populated the evaluation with a metric count of {}.",
+                          metrics.size() );
+
+            // Inputs declaration available?
+            boolean hasInputs = Objects.nonNull( projectConfig.getInputs() );
+
+            // Skill metrics, so add a default baseline as needed
+            if ( metrics.parallelStream().anyMatch( MetricConstants::isSkillMetric ) )
+            {
+
+                // Explicit baseline absent, so add the baseline name
+                if ( hasInputs && Objects.isNull( projectConfig.getInputs().getBaseline() ) )
+                {
+                    // Set the name for the baseline dataset as the default baseline
+                    String name = DefaultData.OBSERVED_CLIMATOLOGY.name().replace( "_", " " );
+                    builder.setBaselineDataName( name );
+                    LOGGER.debug( "Populated the evaluation with a default baseline source name of {}.",
+                                  name );
+                }
+
+                // Explicit baseline present and separate pools for baseline data, so add default baseline for 
+                // baseline pool 
+                if ( hasInputs && Objects.nonNull( projectConfig.getInputs().getBaseline() )
+                     && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+                {
+                    builder.setBaselineDataForBaselinePool( DefaultData.OBSERVED_CLIMATOLOGY );
+
+                    LOGGER.debug( "Populated the default baseline for a baseline pool with {}.",
+                                  DefaultData.OBSERVED_CLIMATOLOGY );
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.Outputs} from a {@link ProjectConfigPlus}.
+     * 
+     * @param projectConfigPlus the project declaration plus graphics string from which to create a message
+     * @param evaluation the evaluation builder
+     */
+
+    private static void addOutputs( ProjectConfigPlus projectConfigPlus, Evaluation.Builder evaluation )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( projectConfigPlus.getProjectConfig().getOutputs() );
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        ProjectConfig.Outputs outputs = projectConfig.getOutputs();
+
+        Outputs.Builder builder = Outputs.newBuilder();
+
+        wres.config.generated.DurationUnit durationFormat = outputs.getDurationFormat();
+
+        boolean issuedDatesPools = Objects.nonNull( projectConfig.getPair() )
+                                   && Objects.nonNull( projectConfig.getPair().getIssuedDatesPoolingWindow() );
+
+        // Iterate the destinations
+        for ( DestinationConfig destination : outputs.getDestination() )
+        {
+            String override = null;
+            if ( projectConfigPlus.getGraphicsStrings().containsKey( destination ) )
+            {
+                override = projectConfigPlus.getGraphicsStrings().get( destination );
+            }
+
+            MessageFactory.addDestination( destination,
+                                           durationFormat,
+                                           builder,
+                                           issuedDatesPools,
+                                           override );
+        }
+
+        evaluation.setOutputs( builder );
+    }
+
+    /**
+     * Adds a destination to an outputs builder.
+     * @param destination the destination
+     * @param durationFormat the optional duration format
+     * @param builder the builder
+     * @param issuedDatesPools is true if there are issued dates pools
+     * @param override optional overrides
+     */
+    private static void addDestination( DestinationConfig destination,
+                                        wres.config.generated.DurationUnit durationFormat,
+                                        Outputs.Builder builder,
+                                        boolean issuedDatesPools,
+                                        String override )
+    {
+        DestinationType destinationType = destination.getType();
+
+        // Graphic formats
+        if ( ProjectConfigs.isGraphicsType( destinationType ) )
+        {
+            GraphicFormat generalOptions = MessageFactory.getGeneralGraphicOptions( destination,
+                                                                                    durationFormat,
+                                                                                    issuedDatesPools,
+                                                                                    override );
+
+            if ( destinationType == DestinationType.PNG || destinationType == DestinationType.GRAPHIC )
+            {
+                builder.setPng( PngFormat.newBuilder()
+                                         .setOptions( generalOptions ) );
+            }
+            else if ( destinationType == DestinationType.SVG )
+            {
+                builder.setSvg( SvgFormat.newBuilder()
+                                         .setOptions( generalOptions ) );
+            }
+        }
+        // Numeric formats
+        else
+        {
+            NumericFormat.Builder generalOptions = NumericFormat.newBuilder();
+
+            if ( Objects.nonNull( destination.getDecimalFormat() ) )
+            {
+                generalOptions.setDecimalFormat( destination.getDecimalFormat() );
+            }
+
+            if ( destinationType == DestinationType.CSV || destinationType == DestinationType.NUMERIC )
+            {
+                builder.setCsv( CsvFormat.newBuilder()
+                                         .setOptions( generalOptions ) );
+            }
+            else if ( destinationType == DestinationType.PROTOBUF )
+            {
+                builder.setProtobuf( ProtobufFormat.newBuilder() );
+            }
+            else if ( destinationType == DestinationType.NETCDF )
+            {
+                builder.setNetcdf( NetcdfFormat.newBuilder() );
+            }
+        }
+    }
+
+    /**
+     * Returns the general graphic format options that apply to all graphics.
+     * @param destination the destination
+     * @param durationFormat the optional duration format
+     * @param issuedDatesPools is true if there are issued dates pools
+     * @param override optional overrides
+     * @return the graphic format options
+     */
+    private static GraphicFormat getGeneralGraphicOptions( DestinationConfig destination,
+                                                           wres.config.generated.DurationUnit durationFormat,
+                                                           boolean issuedDatesPools,
+                                                           String override )
+    {
+        GraphicalType graphics = destination.getGraphical();
+
+        GraphicFormat.Builder generalOptions = GraphicFormat.newBuilder();
+
+        // No graphics options declared
+        if ( Objects.isNull( graphics ) )
+        {
+            return generalOptions.build();
+        }
+
+        if ( Objects.nonNull( graphics.getHeight() ) )
+        {
+            generalOptions.setHeight( graphics.getHeight() );
+        }
+
+        if ( Objects.nonNull( graphics.getWidth() ) )
+        {
+            generalOptions.setWidth( graphics.getWidth() );
+        }
+
+        // Add any metrics to ignore
+        for ( MetricConfigName ignore : graphics.getSuppressMetric() )
+        {
+            generalOptions.addIgnore( MetricName.valueOf( ignore.name() ) );
+        }
+
+        if ( Objects.nonNull( override ) )
+        {
+            generalOptions.setConfiguration( override );
+        }
+
+        if ( Objects.nonNull( graphics.getTemplate() ) )
+        {
+            generalOptions.setTemplateName( graphics.getTemplate() );
+        }
+
+        if ( Objects.nonNull( durationFormat ) )
+        {
+            generalOptions.setLeadUnit( DurationUnit.valueOf( durationFormat.name() ) );
+        }
+
+        if ( issuedDatesPools )
+        {
+            generalOptions.setShape( GraphicShape.ISSUED_DATE_POOLS );
+        }
+        else if ( Objects.nonNull( destination.getOutputType() ) )
+        {
+            generalOptions.setShape( GraphicShape.valueOf( destination.getOutputType().name() ) );
+        }
+
+        return generalOptions.build();
     }
 
     /**

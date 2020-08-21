@@ -521,7 +521,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             if ( meta.getPool().getIsBaselinePool() )
             {
                 baselineSuffix = meta.getEvaluation()
-                                     .getDefaultBaseline()
+                                     .getBaselineDataForBaselinePool()
                                      .name()
                                      .replace( "_", " " );
             }

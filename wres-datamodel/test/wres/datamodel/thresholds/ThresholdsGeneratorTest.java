@@ -56,9 +56,9 @@ public final class ThresholdsGeneratorTest
     {
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
 
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -116,9 +116,9 @@ public final class ThresholdsGeneratorTest
         // Check for the same result when specifying an explicit pair configuration with null dimension
         // Create some metrics
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
-        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
 
         // Create some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
@@ -165,7 +165,7 @@ public final class ThresholdsGeneratorTest
     public void testGetThresholdsFromConfigWhenNoThresholdsPresent()
     {
         List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
 
         ProjectConfig mockedConfigWithoutThresholds =
                 new ProjectConfig( null,
