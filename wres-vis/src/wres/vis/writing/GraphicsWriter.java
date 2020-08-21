@@ -1,8 +1,13 @@
 package wres.vis.writing;
 
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.GraphicsEnvironment;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -119,6 +124,44 @@ abstract class GraphicsWriter
 
         try
         {
+            //#81628 change.  Create the chart and force it to use a Liberation Sans font.  Below is a test run.
+            //It will need to be enhanced later to modify *all* fonts in the JFreeChart.
+            // Create the chart
+            JFreeChart chart = engine.buildChart();
+
+            String fontResource = "LiberationSans-Regular.ttf";
+            URL fontUrl = GraphicsWriter.class.getClassLoader().getResource( fontResource );
+
+            // Load the font and force it into the chart.
+            if ( Objects.isNull( fontUrl ) )
+            {
+               throw new CouldNotLoadRequiredFontException( "Could not find the " + fontResource + " file on the class path." );
+            }
+
+            try ( InputStream fontStream = fontUrl.openStream() )
+            {
+                Font font = Font.createFont( Font.TRUETYPE_FONT, fontStream ).deriveFont(10.0f);
+
+                // Register font with graphics env
+                GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                graphics.registerFont( font );
+
+                // Register font with chart (this is a bit ugly - is there something more universal?)
+                if (chart.getLegend() != null)
+                {
+                    chart.getLegend().setItemFont( font );
+                }
+                if (chart.getTitle() != null)
+                {
+                    chart.getTitle().setFont( font );
+                }
+            }
+            catch ( FontFormatException e )
+            {
+                throw new GraphicsWriteException( "Error while loading font for writing chart:", e );
+            }
+
+
             Path resolvedPath = outputImage;
 
             // Default is png
@@ -128,16 +171,16 @@ abstract class GraphicsWriter
                 File outputImageFile = resolvedPath.toFile();
 
                 // #58735-18
-                ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
+                ChartUtilities.saveChartAsPNG( outputImageFile, chart /*engine.buildChart() - commented for #81628 change, above*/, width, height );
             }
             else if ( dest.getType() == DestinationType.SVG )
             {
                 resolvedPath = resolvedPath.resolveSibling( resolvedPath.getFileName() + ".svg" );
                 File outputImageFile = resolvedPath.toFile();
-
-                // Create the chart
-                JFreeChart chart = engine.buildChart();
-
+                
+                // Create the chart -- Commented out for change related to #81628, above.
+                //JFreeChart chart = engine.buildChart();
+                
                 // Create the svg string
                 SVGGraphics2D svg2d = new SVGGraphics2D( width, height );
                 // Need to set this to a fixed value as it will otherwise use the system time in nanos, preventing
@@ -157,10 +200,11 @@ abstract class GraphicsWriter
 
             return resolvedPath;
         }
-        catch ( IOException | ChartEngineException | XYChartDataSourceException e )
+        catch ( IOException | ChartEngineException | XYChartDataSourceException | CouldNotLoadRequiredFontException e )
         {
             throw new GraphicsWriteException( "Error while writing chart:", e );
         }
+
     }
 
     /**
