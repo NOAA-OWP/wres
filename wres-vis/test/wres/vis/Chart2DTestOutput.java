@@ -17,11 +17,6 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import wres.config.generated.DurationUnit;
-import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.PairConfig;
-import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -30,6 +25,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -65,9 +61,8 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdOne();
 
         //Call the factory.
-        final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( null,
-                                                                                                         input,
-                                                                                                         OutputTypeSelection.LEAD_THRESHOLD,
+        final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                                                         GraphicShape.LEAD_THRESHOLD,
                                                                                                          null,
                                                                                                          null,
                                                                                                          ChronoUnit.HOURS );
@@ -100,9 +95,8 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdTwo();
 
         //Call the factory.
-        final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( null,
-                                                                                                         input,
-                                                                                                         OutputTypeSelection.THRESHOLD_LEAD,
+        final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                                                         GraphicShape.LEAD_THRESHOLD,
                                                                                                          null,
                                                                                                          null,
                                                                                                          ChronoUnit.HOURS );
@@ -142,12 +136,11 @@ public class Chart2DTestOutput
 //        });
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.LEAD_THRESHOLD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.LEAD_THRESHOLD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -180,12 +173,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.THRESHOLD_LEAD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.THRESHOLD_LEAD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object thresh : engineMap.keySet() )
@@ -220,9 +212,8 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final ConcurrentMap<MetricConstants, ChartEngine> engineMap =
-                ChartEngineFactory.buildScoreOutputChartEngine( null,
-                                                                input,
-                                                                OutputTypeSelection.LEAD_THRESHOLD,
+                ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                GraphicShape.LEAD_THRESHOLD,
                                                                 null,
                                                                 null,
                                                                 ChronoUnit.HOURS );
@@ -257,12 +248,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.LEAD_THRESHOLD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.LEAD_THRESHOLD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -295,12 +285,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.THRESHOLD_LEAD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.THRESHOLD_LEAD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object thresh : engineMap.keySet() )
@@ -332,12 +321,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.LEAD_THRESHOLD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.LEAD_THRESHOLD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -369,12 +357,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.THRESHOLD_LEAD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.THRESHOLD_LEAD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object thresh : engineMap.keySet() )
@@ -405,12 +392,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.LEAD_THRESHOLD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.LEAD_THRESHOLD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -444,12 +430,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.
-        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( null,
-                                                                                                         results,
-                                                                                                         OutputTypeSelection.THRESHOLD_LEAD,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         ChronoUnit.HOURS );
+        final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildDiagramChartEngine( results,
+                                                                                               GraphicShape.THRESHOLD_LEAD,
+                                                                                               null,
+                                                                                               null,
+                                                                                               ChronoUnit.HOURS );
 
         for ( final Object thresh : engineMap.keySet() )
         {
@@ -491,8 +476,8 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engineMap =
-                ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
-                                                                   results,
+                ChartEngineFactory.buildBoxPlotChartEnginePerPool( results,
+                                                                   GraphicShape.DEFAULT,
                                                                    null,
                                                                    null,
                                                                    ChronoUnit.HOURS );
@@ -543,8 +528,8 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<Pair<TimeWindowOuter, OneOrTwoThresholds>, ChartEngine> engineMap =
-                ChartEngineFactory.buildBoxPlotChartEnginePerPool( null,
-                                                                   results,
+                ChartEngineFactory.buildBoxPlotChartEnginePerPool( results,
+                                                                   GraphicShape.DEFAULT,
                                                                    null,
                                                                    null,
                                                                    ChronoUnit.HOURS );
@@ -589,32 +574,8 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<MetricConstants, ChartEngine> engine =
-                ChartEngineFactory.buildScoreOutputChartEngine( new ProjectConfig( null,
-                                                                                   new PairConfig( null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   new PoolingWindowConfig( 1,
-                                                                                                                            1,
-                                                                                                                            DurationUnit.HOURS ),
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null ),
-                                                                                   null,
-                                                                                   null,
-                                                                                   null,
-                                                                                   null ),
-                                                                input,
-                                                                null,
+                ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                GraphicShape.ISSUED_DATE_POOLS,
                                                                 null,
                                                                 null,
                                                                 ChronoUnit.HOURS );
@@ -643,11 +604,11 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getTimeToPeakErrors();
 
         //Call the factory.
-        final ChartEngine engine = ChartEngineFactory.buildDurationDiagramChartEngine( null,
-                                                                                             input,
-                                                                                             null,
-                                                                                             null,
-                                                                                             ChronoUnit.HOURS );
+        final ChartEngine engine = ChartEngineFactory.buildDurationDiagramChartEngine( input,
+                                                                                       GraphicShape.DEFAULT,
+                                                                                       null,
+                                                                                       null,
+                                                                                       ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" +
@@ -674,8 +635,8 @@ public class Chart2DTestOutput
                 Chart2DTestDataGenerator.getTimeToPeakErrorStatistics();
 
         //Call the factory.
-        final ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( null,
-                                                                                                input,
+        final ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( input,
+                                                                                                GraphicShape.DEFAULT,
                                                                                                 null,
                                                                                                 null,
                                                                                                 ChronoUnit.HOURS );
@@ -705,33 +666,8 @@ public class Chart2DTestOutput
 
         //Call the factory.
         final Map<MetricConstants, ChartEngine> engine =
-                ChartEngineFactory.buildScoreOutputChartEngine( new ProjectConfig( null,
-                                                                                   new PairConfig( null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   new PoolingWindowConfig( 1,
-                                                                                                                            1,
-                                                                                                                            DurationUnit.HOURS ),
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   null ),
-                                                                                   null,
-                                                                                   null,
-                                                                                   null,
-                                                                                   null ),
-
-                                                                input,
-                                                                null,
+                ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                GraphicShape.ISSUED_DATE_POOLS,
                                                                 null,
                                                                 null,
                                                                 ChronoUnit.HOURS );

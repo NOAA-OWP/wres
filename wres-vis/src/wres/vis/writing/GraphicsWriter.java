@@ -10,12 +10,13 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
@@ -28,11 +29,11 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.charter.parameters.SubPlotParameters;
 import ohd.hseb.charter.parameters.SubtitleParameters;
 import ohd.hseb.charter.parameters.ThresholdParameters;
-import wres.config.ProjectConfigPlus;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.OutputTypeSelection;
-import wres.datamodel.MetricConstants;
+import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.GraphicFormat;
+import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.Outputs.PngFormat;
+import wres.statistics.generated.Outputs.SvgFormat;
 
 /**
  * Helps to write a {@link ChartEngine} to a graphic in various formats.
@@ -47,25 +48,19 @@ abstract class GraphicsWriter
      * Default chart height in pixels.
      */
 
-    private static final int DEFAULT_CHART_HEIGHT = 600;
+    private static final int DEFAULT_GRAPHIC_HEIGHT = 600;
 
     /**
      * Default chart width in pixels.
      */
 
-    private static final int DEFAULT_CHART_WIDTH = 800;
+    private static final int DEFAULT_GRAPHIC_WIDTH = 800;
 
     /**
-     * Resolution for writing duration outputs.
+     * A description of the outputs required.
      */
 
-    private final ChronoUnit durationUnits;
-
-    /**
-     * The project configuration to write.
-     */
-
-    private final ProjectConfigPlus projectConfigPlus;
+    private final Outputs outputs;
 
     /**
      * The output directory to use to write
@@ -73,41 +68,102 @@ abstract class GraphicsWriter
     private final Path outputDirectory;
 
     /**
-     * Returns the duration units for writing lead durations.
+     * Returns the outputs description
      * 
-     * @return the duration units
+     * @return the outputs description
      */
 
-    ChronoUnit getDurationUnits()
+    Outputs getOutputsDescription()
     {
-        return this.durationUnits;
-    }
-
-    /**
-     * Returns the project declaration
-     * 
-     * @return the project declaration
-     */
-
-    ProjectConfigPlus getProjectConfigPlus()
-    {
-        return this.projectConfigPlus;
+        return this.outputs;
     }
 
     Path getOutputDirectory()
     {
         return this.outputDirectory;
     }
-    
+
+    /**
+     * Writes an output chart to a prescribed set of graphics formats.
+     *
+     * @param path the path to write, without the image format extension
+     * @param engine the chart engine
+     * @param dest the destination configuration
+     * @return the path actually written
+     * @throws GraphicsWriteException if the chart could not be written
+     */
+
+    static Set<Path> writeGraphic( Path path,
+                                   ChartEngine engine,
+                                   Outputs outputs )
+    {
+        Objects.requireNonNull( path );
+        Objects.requireNonNull( engine );
+        Objects.requireNonNull( outputs );
+
+        try
+        {
+            // Adjust the chart engine
+            GraphicsWriter.prepareChartEngineForWriting( engine );
+   
+            Set<Path> returnMe = new TreeSet<>();
+
+            // Default is png
+            if ( outputs.hasPng() )
+            {
+                int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
+                int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
+                Path resolvedPath = path.resolveSibling( path.getFileName() + ".png" );
+                File outputImageFile = resolvedPath.toFile();
+
+                // #58735-18
+                ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
+
+                returnMe.add( resolvedPath );
+            }
+            if ( outputs.hasSvg() )
+            {
+                int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
+                int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
+                Path resolvedPath = path.resolveSibling( path.getFileName() + ".svg" );
+                File outputImageFile = resolvedPath.toFile();
+
+                // Create the chart
+                JFreeChart chart = engine.buildChart();
+
+                // Create the svg string
+                SVGGraphics2D svg2d = new SVGGraphics2D( width, height );
+                // Need to set this to a fixed value as it will otherwise use the system time in nanos, preventing
+                // automated testing. #81628-21.
+                svg2d.setDefsKeyPrefix( "4744385419576815639" );
+                chart.draw( svg2d, new Rectangle2D.Double( 0, 0, width, height ) );
+                String svgElement = svg2d.getSVGElement();
+
+                SVGUtils.writeToSVG( outputImageFile, svgElement );
+
+                returnMe.add( resolvedPath );
+            }
+
+            return Collections.unmodifiableSet( returnMe );
+        }
+        catch ( IOException | ChartEngineException | XYChartDataSourceException | FontFormatException
+                | CouldNotLoadRequiredFontException e )
+        {
+            throw new GraphicsWriteException( "Error while writing chart:", e );
+        }
+    }
+
     /**
      * Overrides the appearance of the chart to support comparisons between SVG and image outputs across platforms.  
      * 
      * @param engine The charting engine to modify.  This is modified in place.
-     * @throws CouldNotLoadRequiredFontException If the liberation font, captured in LiberationSans-Regular.ttf, which should be on the classpath when this is executed, cannot be found.
+     * @throws CouldNotLoadRequiredFontException If the liberation font, captured in LiberationSans-Regular.ttf, 
+     *            which should be on the classpath when this is executed, cannot be found.
      * @throws IOException The font file cannot be opened and used to create a font for whatever reason.
      * @throws FontFormatException The format of the font information cannot be understood.
      */
-    static void prepareChartEngineForWriting(ChartEngine engine) throws CouldNotLoadRequiredFontException, IOException, FontFormatException
+    private static void prepareChartEngineForWriting( ChartEngine engine )
+            throws IOException, FontFormatException
     {
         //#81628 change.  Create the chart and force it to use a Liberation Sans font.  Below is a test run.
         //It will need to be enhanced later to modify *all* fonts in the JFreeChart.
@@ -118,23 +174,24 @@ abstract class GraphicsWriter
         // Load the font and force it into the chart.
         if ( Objects.isNull( fontUrl ) )
         {
-           throw new CouldNotLoadRequiredFontException( "Could not find the " + fontResource + " file on the class path." );
+            throw new CouldNotLoadRequiredFontException( "Could not find the " + fontResource
+                                                         + " file on the class path." );
         }
 
         try ( InputStream fontStream = fontUrl.openStream() )
         {
-            Font font = Font.createFont( Font.TRUETYPE_FONT, fontStream ).deriveFont(10.0f);
+            Font font = Font.createFont( Font.TRUETYPE_FONT, fontStream ).deriveFont( 10.0f );
 
             // Register font with graphics env
             GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
             graphics.registerFont( font );
-            
+
             //Set all ChartEngine fonts to be the liberation font with size 10.
             engine.getChartParameters().getPlotTitle().setFont( font );
             engine.getChartParameters().getLegend().getLegendTitle().setFont( font );
             engine.getChartParameters().getLegend().getLegendEntryFont().setFont( font );
-            engine.getChartParameters().getDomainAxis().getLabel().setFont( font );  //One shared domain axis.
-            for (SubPlotParameters subPlot : engine.getChartParameters().getSubPlotParameters()) //Range axes by subplot.
+            engine.getChartParameters().getDomainAxis().getLabel().setFont( font ); //One shared domain axis.
+            for ( SubPlotParameters subPlot : engine.getChartParameters().getSubPlotParameters() ) //Range axes by subplot.
             {
                 subPlot.getLeftAxis().getLabel().setFont( font ); //Font is used for axis label and tick marks.
                 subPlot.getRightAxis().getLabel().setFont( font ); //Font is used for axis label and ticks marks.
@@ -143,121 +200,93 @@ abstract class GraphicsWriter
             {
                 parms.setFont( font );
             }
-            for (ThresholdParameters parms : engine.getChartParameters().getThresholdList().getThresholdParametersList() )
+            for ( ThresholdParameters parms : engine.getChartParameters()
+                                                    .getThresholdList()
+                                                    .getThresholdParametersList() )
             {
                 parms.getLabel().setFont( font );
             }
         }
+    }   
+    
+    /**
+     * @param height the height
+     * @return the height if the height is greater than zero, else the {@link GraphicWriter#DEFAULT_GRAPHIC_HEIGHT}.
+     */
+
+    private static int getGraphicHeight( int height )
+    {
+        if ( height > 0 )
+        {
+            return height;
+        }
+
+        return GraphicsWriter.DEFAULT_GRAPHIC_HEIGHT;
     }
 
     /**
-     * Writes an output chart to a specified path.
-     *
-     * @param outputImage the path to the output image
-     * @param engine the chart engine.  Note that the method {@link #prepareChartEngineForWriting(ChartEngine)} will modify the drawing parameters of this chart engine in place.
-     * @param dest the destination configuration
-     * @return the path actually written
-     * @throws GraphicsWriteException if the chart could not be written
+     * @param width the height
+     * @return the width if the width is greater than zero, else the {@link GraphicWriter#DEFAULT_GRAPHIC_WIDTH}.
      */
 
-    static Path writeChart( Path outputImage,
-                            ChartEngine engine,
-                            DestinationConfig dest )
+    private static int getGraphicWidth( int width )
     {
-        int width = GraphicsWriter.DEFAULT_CHART_WIDTH;
-        int height = GraphicsWriter.DEFAULT_CHART_HEIGHT;
-
-        if ( dest.getGraphical() != null && dest.getGraphical().getWidth() != null )
+        if ( width > 0 )
         {
-            width = dest.getGraphical().getWidth();
-        }
-        if ( dest.getGraphical() != null && dest.getGraphical().getHeight() != null )
-        {
-            height = dest.getGraphical().getHeight();
+            return width;
         }
 
-        try
+        return GraphicsWriter.DEFAULT_GRAPHIC_WIDTH;
+    }
+
+    /**
+     * Helper that groups destinations by their common graphics parameters. Each inner outputs requires one set of 
+     * graphics, written for each format present.
+     * 
+     * @param outputs the outputs
+     * @return the groups of outputs by common graphics parameters
+     */
+
+    static Collection<Outputs> getOutputsGroupedByGraphicsParameters( Outputs outputs )
+    {
+        Objects.requireNonNull( outputs );
+
+        // If there is only one format requested, then there is only one group
+        Collection<Outputs> returnMe = new ArrayList<>();
+        if ( outputs.hasPng() && outputs.hasSvg() )
         {
-            prepareChartEngineForWriting( engine );
-            JFreeChart chart = engine.buildChart();
-            Path resolvedPath = outputImage;
+            PngFormat png = outputs.getPng();
+            SvgFormat svg = outputs.getSvg();
 
-            // Default is png
-            if ( dest.getType() == DestinationType.GRAPHIC || dest.getType() == DestinationType.PNG )
+            // Both have the same graphics parameters, so keep in one outputs
+            if ( png.getOptions().equals( svg.getOptions() ) )
             {
-                resolvedPath = resolvedPath.resolveSibling( resolvedPath.getFileName() + ".png" );
-                File outputImageFile = resolvedPath.toFile();
-
-                // #58735-18
-                ChartUtilities.saveChartAsPNG( outputImageFile, chart /*engine.buildChart() - commented for #81628 change, above*/, width, height );
+                returnMe.add( outputs );
             }
-            else if ( dest.getType() == DestinationType.SVG )
-            {
-                resolvedPath = resolvedPath.resolveSibling( resolvedPath.getFileName() + ".svg" );
-                File outputImageFile = resolvedPath.toFile();
-                
-                // Create the chart -- Commented out for change related to #81628, above.
-                //JFreeChart chart = engine.buildChart();
-                
-                // Create the svg string
-                SVGGraphics2D svg2d = new SVGGraphics2D( width, height );
-                // Need to set this to a fixed value as it will otherwise use the system time in nanos, preventing
-                // automated testing. #81628-21.
-                svg2d.setDefsKeyPrefix( "4744385419576815639" );
-                chart.draw( svg2d, new Rectangle2D.Double( 0, 0, width, height ) );
-                String svgElement = svg2d.getSVGElement();
-                
-                SVGUtils.writeToSVG( outputImageFile, svgElement );
-            }
-            // No others supported
             else
             {
-                throw new UnsupportedOperationException( "The destination type '" + dest.getType()
-                                                         + "' is not supported for graphics writing." );
+                Outputs pngToAdd = outputs.toBuilder()
+                                          .clearSvg()
+                                          .build();
+                Outputs svgToAdd = outputs.toBuilder()
+                                          .clearPng()
+                                          .build();
+                returnMe.add( pngToAdd );
+                returnMe.add( svgToAdd );
             }
-
-            return resolvedPath;
         }
-        catch ( IOException | ChartEngineException | XYChartDataSourceException | CouldNotLoadRequiredFontException | FontFormatException e )
+        else
         {
-            throw new GraphicsWriteException( "Error while writing chart:", e );
+            returnMe.add( outputs );
         }
 
+        return Collections.unmodifiableCollection( returnMe );
     }
 
     /**
-     * Helper that groups destinations by their common graphics parameters. Each inner list requires one set of 
-     * graphics, which may be written across N formats.
-     * 
-     * @param destinations the destinations
-     * @return the groups of destinations by common graphics parameters
-     */
-
-    static Collection<List<DestinationConfig>>
-            getDestinationsGroupedByGraphicsParameters( List<DestinationConfig> destinations )
-    {
-        Objects.requireNonNull( destinations );
-
-        // Map the destination to a string representation of the graphics parameters
-        Function<DestinationConfig, String> mapper = destination -> {
-            if ( Objects.nonNull( destination.getGraphical() ) )
-            {
-                return destination.toString();
-            }
-
-            return "defaultGraphics";
-        };
-
-        // Use the string representation of the GraphicalType
-        Map<String, List<DestinationConfig>> destinationsPerGraphic = destinations.stream()
-                                                                                  .collect( Collectors.groupingBy( mapper,
-                                                                                                                   Collectors.toList() ) );
-
-        return destinationsPerGraphic.values();
-    }
-
-    /**
-     * A helper class that builds the parameters required for graphics generation.
+     * Uncovers the graphic parameters from a description of the outputs. Assumes that all graphics contain the same
+     * graphics declarations. Use {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(List)} to obtain output 
+     * groups.
      * 
      * @author james.brown@hydrosolved.com
      */
@@ -278,110 +307,170 @@ abstract class GraphicsWriter
         private final String graphicsString;
 
         /**
-         * The output type.
+         * The shape of graphic.
          */
 
-        private final OutputTypeSelection outputType;
+        private final GraphicShape graphicShape;
+        
+        /**
+         * The duration units.
+         */
 
+        private final ChronoUnit durationUnits;
+        
         /**
          * Returns a graphics helper.
          *
-         * @param projectConfigPlus the project configuration
-         * @param destConfig the destination configuration
-         * @param metricId the metric identifier
+         * @param outputs a description of the required outputs
          * @return a graphics helper
          */
 
-        static GraphicsHelper of( ProjectConfigPlus projectConfigPlus,
-                                  DestinationConfig destConfig,
-                                  MetricConstants metricId )
+        static GraphicsHelper of( Outputs outputs )
         {
-            return new GraphicsHelper( projectConfigPlus, destConfig, metricId );
+            return new GraphicsHelper( outputs );
         }
 
         /**
          * Builds a helper.
          *
-         * @param projectConfigPlus the project configuration
-         * @param destConfig the destination configuration
-         * @param metricId the metric identifier
+         * @param outputs a description of the required outputs
+         * @throws NullPointerException if the outputs is null
          */
 
-        private GraphicsHelper( ProjectConfigPlus projectConfigPlus,
-                                DestinationConfig destConfig,
-                                MetricConstants metricId )
+        private GraphicsHelper( Outputs outputs )
         {
-            String innerGraphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            Objects.requireNonNull( outputs );
+
+            GraphicFormat graphicsOptions = null;
+
+            if ( outputs.hasPng() && outputs.getPng().hasOptions() )
+            {
+                graphicsOptions = outputs.getPng().getOptions();
+            }
+            else if ( outputs.hasSvg() && outputs.getSvg().hasOptions() )
+            {
+                graphicsOptions = outputs.getSvg().getOptions();
+            }
 
             // Default to global type parameter
-            OutputTypeSelection innerOutputType = OutputTypeSelection.DEFAULT;
-            if ( Objects.nonNull( destConfig.getOutputType() ) )
-            {
-                innerOutputType = destConfig.getOutputType();
-            }
+            GraphicShape innerGraphicShape = GraphicShape.DEFAULT;
             String innerTemplateResourceName = null;
-
-            if ( Objects.nonNull( destConfig.getGraphical() ) )
+            String innerGraphicsString = null;
+            if ( Objects.nonNull( graphicsOptions ) )
             {
-                innerTemplateResourceName = destConfig.getGraphical().getTemplate();
+                innerGraphicShape = graphicsOptions.getShape();
+
+                if ( !graphicsOptions.getTemplateName().isBlank() )
+                {
+                    innerTemplateResourceName = graphicsOptions.getTemplateName();
+                }
+
+                if ( !graphicsOptions.getConfiguration().isBlank() )
+                {
+                    innerGraphicsString = graphicsOptions.getConfiguration();
+                }
             }
 
             this.templateResourceName = innerTemplateResourceName;
-            this.outputType = innerOutputType;
+            this.graphicShape = innerGraphicShape;
             this.graphicsString = innerGraphicsString;
+            this.durationUnits = this.getDurationUnitsFromOutputs( outputs );
         }
-
+        
         /**
-         * Returns the output type.
-         * @return the output type
+         * Uncovers the duration units from an {@link Outputs} message. Throws an exception if more than one duration unit
+         * is present. Formats should be written for common graphics parameters. See 
+         * {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(Outputs)}. Returns a default of 
+         * {@link ChronoUnit#HOURS} if no units are present.
+         * 
+         * @param outputs the outputs
+         * @return the duration units for graphics writing
+         * @throws NullPointerException if the input is null
+         * @throws IllegalArgumentException if there are multiple duration units 
          */
 
-        OutputTypeSelection getOutputType()
+        private ChronoUnit getDurationUnitsFromOutputs( Outputs outputs )
         {
-            return outputType;
+            Objects.requireNonNull( outputs );
+
+            ChronoUnit returnMe = ChronoUnit.HOURS;
+
+            if ( outputs.hasPng() && outputs.hasSvg()
+                 && outputs.getSvg().hasOptions()
+                 && outputs.getPng().hasOptions()
+                 && !outputs.getPng().getOptions().getLeadUnit().equals( outputs.getSvg().getOptions().getLeadUnit() ) )
+            {
+                throw new IllegalArgumentException( "Discovered more than one lead duration unit in the outputs message ("
+                                                    + outputs.getPng().getOptions().getLeadUnit()
+                                                    + ", "
+                                                    + outputs.getSvg().getOptions().getLeadUnit()
+                                                    + ")." );
+            }
+
+            if ( outputs.hasPng() )
+            {
+                returnMe = ChronoUnit.valueOf( outputs.getPng().getOptions().getLeadUnit().name() );
+            }
+            else if ( outputs.hasSvg() )
+            {
+                returnMe = ChronoUnit.valueOf( outputs.getSvg().getOptions().getLeadUnit().name() );
+            }
+
+            return returnMe;
         }
 
         /**
-         * Returns the graphics string.
-         * @return the graphics string
+         * @return the shape of graphic.
+         */
+
+        GraphicShape getGraphicShape()
+        {
+            return this.graphicShape;
+        }
+
+        /**
+         * @return the graphics string.
          */
 
         String getGraphicsString()
         {
-            return graphicsString;
+            return this.graphicsString;
         }
 
         /**
-         * Returns the template resource name.
-         * @return the template resource name
+         * @return the template resource name.
          */
 
         String getTemplateResourceName()
         {
-            return templateResourceName;
+            return this.templateResourceName;
         }
 
+        /**
+         * @return the duration units.
+         */
+        
+        ChronoUnit getDurationUnits()
+        {
+            return this.durationUnits;
+        }
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param outputs a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null
      */
 
-    GraphicsWriter( ProjectConfigPlus projectConfigPlus,
-                    ChronoUnit durationUnits,
+    GraphicsWriter( Outputs outputs,
                     Path outputDirectory )
     {
-        Objects.requireNonNull( projectConfigPlus, "Specify a non-null project declaration." );
-        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        Objects.requireNonNull( outputs, "Specify a non-null outputs description." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
-        this.projectConfigPlus = projectConfigPlus;
-        this.durationUnits = durationUnits;
+        this.outputs = outputs;
         this.outputDirectory = outputDirectory;
     }
 }

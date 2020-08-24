@@ -33,7 +33,6 @@ import wres.config.generated.GraphicalType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
@@ -58,6 +57,7 @@ import wres.io.writing.commaseparated.statistics.CommaSeparatedScoreWriter;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -525,10 +525,11 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * <p>Edit this method as new consumer types are supported by the project configuration.</p>
      * 
      * @param sharedWriters an optional set of shared writers
+     * @param outputs the description of outputs required
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers( SharedStatisticsWriters sharedWriters )
+    private void buildConsumers( SharedStatisticsWriters sharedWriters, Outputs outputs )
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -547,7 +548,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         }
 
         // Register consumers for graphics output types, which filters by type already
-        this.buildGraphicsConsumers();
+        this.buildGraphicsConsumers( outputs );
 
         if ( this.configNeedsThisTypeOfOutput( DestinationType.PROTOBUF ) )
         {
@@ -671,10 +672,11 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     /**
      * Builds a set of consumers for writing graphics to destinations.
      *
+     * @param outputs the description of outputs required
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildGraphicsConsumers()
+    private void buildGraphicsConsumers( Outputs outputs )
     {
         ProjectConfig config = this.getProjectConfig();
 
@@ -688,25 +690,24 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         // Add consumers for each type
         for ( DestinationType type : types )
         {
-            this.buildGraphicsConsumersForOneFormatType( type );
+            this.buildGraphicsConsumersForOneFormatType( outputs, type );
         }
     }
 
     /**
      * Adds a graphic consumer for each type of statistical output and for one format type.
+     * @param outputs the description of outputs required
      * @param type the format type
      */
 
-    private void buildGraphicsConsumersForOneFormatType( DestinationType type )
+    private void buildGraphicsConsumersForOneFormatType( Outputs outputs, DestinationType type )
     {
-        ProjectConfigPlus pcPlus = this.getProjectConfigPlus();
         Path pathToWrite = this.getOutputDirectory();
 
         // Build the consumers conditionally
         if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, type ) )
         {
-            DiagramGraphicsWriter diagramWriter = DiagramGraphicsWriter.of( pcPlus,
-                                                                            this.getDurationUnits(),
+            DiagramGraphicsWriter diagramWriter = DiagramGraphicsWriter.of( outputs,
                                                                             pathToWrite );
             this.diagramConsumers.put( type,
                                        diagramWriter );
@@ -715,8 +716,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
 
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, type ) )
         {
-            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( pcPlus,
-                                                                            this.getDurationUnits(),
+            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
                                                                             pathToWrite );
             this.boxPlotConsumersPerPair.put( type,
                                               boxPlotWriter );
@@ -725,8 +725,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
 
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, type ) )
         {
-            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( pcPlus,
-                                                                            this.getDurationUnits(),
+            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
                                                                             pathToWrite );
             this.boxPlotConsumersPerPool.put( type,
                                               boxPlotWriter );
@@ -735,8 +734,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
 
         if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, type ) )
         {
-            DurationDiagramGraphicsWriter pairedWriter = DurationDiagramGraphicsWriter.of( pcPlus,
-                                                                                           this.getDurationUnits(),
+            DurationDiagramGraphicsWriter pairedWriter = DurationDiagramGraphicsWriter.of( outputs,
                                                                                            pathToWrite );
             this.pairedConsumers.put( type,
                                       pairedWriter );
@@ -746,8 +744,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, type ) )
         {
             DoubleScoreGraphicsWriter doubleScoreWriter =
-                    DoubleScoreGraphicsWriter.of( pcPlus,
-                                                  this.getDurationUnits(),
+                    DoubleScoreGraphicsWriter.of( outputs,
                                                   pathToWrite );
             this.doubleScoreConsumers.put( type,
                                            doubleScoreWriter );
@@ -757,8 +754,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, type ) )
         {
             DurationScoreGraphicsWriter durationScoreWriter =
-                    DurationScoreGraphicsWriter.of( pcPlus,
-                                                    this.getDurationUnits(),
+                    DurationScoreGraphicsWriter.of( outputs,
                                                     pathToWrite );
             this.durationScoreConsumers.put( type,
                                              durationScoreWriter );
@@ -1024,7 +1020,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private boolean configNeedsThisTypeOfOutput( DestinationType type )
     {
         ProjectConfig projectConfig = this.getProjectConfig();
-        Outputs output = projectConfig.getOutputs();
+        wres.config.generated.ProjectConfig.Outputs output = projectConfig.getOutputs();
         if ( Objects.isNull( output ) || output.getDestination().isEmpty() )
         {
             LOGGER.debug( "No destinations specified for config {}", projectConfig );
@@ -1344,7 +1340,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         try
         {
             // implicitly passing resolvedProject via shared state
-            this.buildConsumers( sharedWriters );
+            this.buildConsumers( sharedWriters, evaluationDescription.getOutputs() );
         }
         catch ( ProjectConfigException e )
         {

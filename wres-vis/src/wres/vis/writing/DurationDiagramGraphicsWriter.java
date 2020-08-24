@@ -2,7 +2,6 @@ package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,15 +16,13 @@ import java.util.function.Supplier;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigPlus;
-import wres.config.ProjectConfigs;
-import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.statistics.generated.Outputs;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -43,19 +40,17 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
     /**
      * Returns an instance of a writer.
      *
-     * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for durations
+     * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static DurationDiagramGraphicsWriter of( ProjectConfigPlus projectConfigPlus,
-                                                    ChronoUnit durationUnits,
+    public static DurationDiagramGraphicsWriter of( Outputs outputsDescription,
                                                     Path outputDirectory )
     {
-        return new DurationDiagramGraphicsWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new DurationDiagramGraphicsWriter( outputsDescription, outputDirectory );
     }
 
     /**
@@ -70,10 +65,6 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
     public void accept( List<DurationDiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
-
-        // Write output
-        List<DestinationConfig> destinations =
-                ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics =
@@ -92,10 +83,8 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
             {
                 Set<Path> innerPathsWrittenTo =
                         DurationDiagramGraphicsWriter.writePairedOutputByInstantDurationCharts( super.getOutputDirectory(),
-                                                                                                super.getProjectConfigPlus(),
-                                                                                                destinations,
-                                                                                                nextGroup,
-                                                                                                super.getDurationUnits() );
+                                                                                                super.getOutputsDescription(),
+                                                                                                nextGroup );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
@@ -118,19 +107,15 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
      * stored in a {@link List}.
      *
      * @param outputDirectory the directory into which to write
-     * @param projectConfigPlus the project configuration
-     * @param destinations the destinations for the written output
+     * @param outputsDescription a description of the outputs required
      * @param output the metric results
-     * @param durationUnits the time units for durations
      * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
     private static Set<Path> writePairedOutputByInstantDurationCharts( Path outputDirectory,
-                                                                       ProjectConfigPlus projectConfigPlus,
-                                                                       List<DestinationConfig> destinations,
-                                                                       List<DurationDiagramStatisticOuter> output,
-                                                                       ChronoUnit durationUnits )
+                                                                       Outputs outputsDescription,
+                                                                       List<DurationDiagramStatisticOuter> output )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -140,34 +125,33 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = output.get( 0 ).getMetricName();
             SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            // Map by graphics parameters. Each pair requires a separate chart, written N times across N formats.
-            Collection<List<DestinationConfig>> destinationMap =
-                    GraphicsWriter.getDestinationsGroupedByGraphicsParameters( destinations );
+            // Collection of graphics parameters, one for each set of charts to write across N formats.
+            Collection<Outputs> outputsMap =
+                    GraphicsWriter.getOutputsGroupedByGraphicsParameters( outputsDescription );
 
-            for ( List<DestinationConfig> nextDestinations : destinationMap )
+            for ( Outputs nextOutput : outputsMap )
             {
-                // Each of the inner lists has common graphics parameters, so a common helper
-                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, nextDestinations.get( 0 ), metricName );
+                // One helper per set of graphics parameters.
+                GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
-                final ChartEngine engine =
-                        ChartEngineFactory.buildDurationDiagramChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                            output,
+                ChartEngine engine =
+                        ChartEngineFactory.buildDurationDiagramChartEngine( output,
+                                                                            helper.getGraphicShape(),
                                                                             helper.getTemplateResourceName(),
                                                                             helper.getGraphicsString(),
-                                                                            durationUnits );
+                                                                            helper.getDurationUnits() );
 
                 // Build the output file name
                 Path outputImage = DataFactory.getPathFromSampleMetadata( outputDirectory,
                                                                           metadata,
                                                                           metricName,
                                                                           null );
-                // Iterate through destinations
-                for ( DestinationConfig destinationConfig : nextDestinations )
-                {
-                    Path finishedPath = GraphicsWriter.writeChart( outputImage, engine, destinationConfig );
-                    // Only if writeChart succeeded do we assume that it was written
-                    pathsWrittenTo.add( finishedPath );
-                }
+                // Write formats
+                Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
+                                                                       engine,
+                                                                       nextOutput );
+
+                pathsWrittenTo.addAll( finishedPaths );
             }
         }
         catch ( ChartEngineException | IOException e )
@@ -181,18 +165,16 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
     /**
      * Hidden constructor.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for durations
+     * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 
-    private DurationDiagramGraphicsWriter( ProjectConfigPlus projectConfigPlus,
-                                           ChronoUnit durationUnits,
+    private DurationDiagramGraphicsWriter( Outputs outputsDescription,
                                            Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits, outputDirectory );
+        super( outputsDescription, outputDirectory );
     }
 
 }

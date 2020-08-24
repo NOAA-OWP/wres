@@ -124,7 +124,9 @@ public class ScenarioHelper
                 }
             }
             
-            LOGGER.info("For scenario " + scenarioInfo.getName() + " all outputs were written to " + firstPath);
+            LOGGER.info( "For scenario " + scenarioInfo.getName()
+                         + " all outputs were written to "
+                         + firstPath.getParent() );
         }
 
         //Anything else to validate about the output?

@@ -1,7 +1,10 @@
 package wres.vis.writing;
 
+/**
+ * Exception that indicates a required font could not be loaded.
+ */
 
-public class CouldNotLoadRequiredFontException extends Exception
+public class CouldNotLoadRequiredFontException extends RuntimeException
 {
     /**
      * Serial identifier.

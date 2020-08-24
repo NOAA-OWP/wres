@@ -827,7 +827,6 @@ project(':wres-vis')
     dependencies
     {
         compile project(':wres-datamodel')
-        compile project(':wres-config')
         compile project(':wres-util')
         compile project(':wres-eventsbroker')
         compile project(':wres-events')

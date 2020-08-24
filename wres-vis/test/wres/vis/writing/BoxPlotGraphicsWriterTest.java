@@ -9,22 +9,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigPlus;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.Feature;
-import wres.config.generated.GraphicalType;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
@@ -40,6 +30,8 @@ import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
@@ -60,12 +52,6 @@ public class BoxPlotGraphicsWriterTest
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
-     * Fake location for testing.
-     */
-
-    private static final String LOCATION_ID = "JUNP1";
-
-    /**
      * Tests the writing of {@link BoxplotStatisticOuter} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
@@ -77,17 +63,12 @@ public class BoxPlotGraphicsWriterTest
     public void writeBoxPlotOutputPerPair()
             throws IOException, InterruptedException
     {
-
-        // Construct a fake configuration file
-        Feature feature = BoxPlotGraphicsWriterTest.getMockedFeature( BoxPlotGraphicsWriterTest.LOCATION_ID );
-        ProjectConfig projectConfig =
-                BoxPlotGraphicsWriterTest.getMockedProjectConfig( feature, DestinationType.GRAPHIC );
-        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
+        Outputs outputs = Outputs.newBuilder()
+                                 .setPng( PngFormat.getDefaultInstance() )
+                                 .build();
 
         // Begin the actual test now that we have constructed dependencies.
-        BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( projectConfigPlus,
-                                                                 ChronoUnit.SECONDS,
+        BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( outputs,
                                                                  this.outputDirectory );
 
         writer.accept( BoxPlotGraphicsWriterTest.getBoxPlotPerPairForOnePool() );
@@ -119,17 +100,12 @@ public class BoxPlotGraphicsWriterTest
     public void writeBoxPlotOutputPerPool()
             throws IOException, InterruptedException
     {
-
-        // Construct a fake configuration file.
-        Feature feature = BoxPlotGraphicsWriterTest.getMockedFeature( BoxPlotGraphicsWriterTest.LOCATION_ID );
-        ProjectConfig projectConfig =
-                BoxPlotGraphicsWriterTest.getMockedProjectConfig( feature, DestinationType.GRAPHIC );
-        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( projectConfigPlus.getProjectConfig() ).thenReturn( projectConfig );
-
+        Outputs outputs = Outputs.newBuilder()
+                .setPng( PngFormat.getDefaultInstance() )
+                .build();
+        
         // Begin the actual test now that we have constructed dependencies.
-        BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( projectConfigPlus,
-                                                                 ChronoUnit.SECONDS,
+        BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( outputs,
                                                                  this.outputDirectory );
 
         writer.accept( BoxPlotGraphicsWriterTest.getBoxPlotPerPoolForTwoPools() );
@@ -147,74 +123,6 @@ public class BoxPlotGraphicsWriterTest
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
-    }
-
-    /**
-     * Returns a fake project configuration for a specified feature.
-     * 
-     * @param feature the feature
-     * @param destinationType the destination type
-     * @return fake project configuration
-     */
-
-    private static ProjectConfig getMockedProjectConfig( Feature feature, DestinationType destinationType )
-    {
-        // Use the system temp directory so that checks for writeability pass.
-        GraphicalType graphics = new GraphicalType( null, null, 800, 600, null );
-        DestinationConfig destinationConfig =
-                new DestinationConfig( null,
-                                       graphics,
-                                       null,
-                                       destinationType,
-                                       null );
-
-        List<DestinationConfig> destinations = new ArrayList<>();
-        destinations.add( destinationConfig );
-
-        ProjectConfig.Outputs outputsConfig =
-                new ProjectConfig.Outputs( destinations, null );
-
-        List<Feature> features = new ArrayList<>();
-        features.add( feature );
-
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                features,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
-
-        ProjectConfig projectConfig = new ProjectConfig( null,
-                                                         pairConfig,
-                                                         null,
-                                                         outputsConfig,
-                                                         null,
-                                                         "test" );
-        return projectConfig;
-    }
-
-    /**
-     * Returns a fake feature for a specified location identifier.
-     * 
-     * @param featureName the location identifier
-     */
-
-    private static Feature getMockedFeature( String featureName )
-    {
-        return new Feature( featureName,
-                            featureName,
-                            null );
     }
 
     /**
