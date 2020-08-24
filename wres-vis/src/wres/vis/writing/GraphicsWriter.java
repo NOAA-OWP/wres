@@ -98,12 +98,63 @@ abstract class GraphicsWriter
     {
         return this.outputDirectory;
     }
+    
+    /**
+     * Overrides the appearance of the chart to support comparisons between SVG and image outputs across platforms.  
+     * 
+     * @param engine The charting engine to modify.  This is modified in place.
+     * @throws CouldNotLoadRequiredFontException If the liberation font, captured in LiberationSans-Regular.ttf, which should be on the classpath when this is executed, cannot be found.
+     * @throws IOException The font file cannot be opened and used to create a font for whatever reason.
+     * @throws FontFormatException The format of the font information cannot be understood.
+     */
+    static void prepareChartEngineForWriting(ChartEngine engine) throws CouldNotLoadRequiredFontException, IOException, FontFormatException
+    {
+        //#81628 change.  Create the chart and force it to use a Liberation Sans font.  Below is a test run.
+        //It will need to be enhanced later to modify *all* fonts in the JFreeChart.
+        // Create the chart
+        String fontResource = "LiberationSans-Regular.ttf";
+        URL fontUrl = GraphicsWriter.class.getClassLoader().getResource( fontResource );
+
+        // Load the font and force it into the chart.
+        if ( Objects.isNull( fontUrl ) )
+        {
+           throw new CouldNotLoadRequiredFontException( "Could not find the " + fontResource + " file on the class path." );
+        }
+
+        try ( InputStream fontStream = fontUrl.openStream() )
+        {
+            Font font = Font.createFont( Font.TRUETYPE_FONT, fontStream ).deriveFont(10.0f);
+
+            // Register font with graphics env
+            GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            graphics.registerFont( font );
+            
+            //Set all ChartEngine fonts to be the liberation font with size 10.
+            engine.getChartParameters().getPlotTitle().setFont( font );
+            engine.getChartParameters().getLegend().getLegendTitle().setFont( font );
+            engine.getChartParameters().getLegend().getLegendEntryFont().setFont( font );
+            engine.getChartParameters().getDomainAxis().getLabel().setFont( font );  //One shared domain axis.
+            for (SubPlotParameters subPlot : engine.getChartParameters().getSubPlotParameters()) //Range axes by subplot.
+            {
+                subPlot.getLeftAxis().getLabel().setFont( font ); //Font is used for axis label and tick marks.
+                subPlot.getRightAxis().getLabel().setFont( font ); //Font is used for axis label and ticks marks.
+            }
+            for ( SubtitleParameters parms : engine.getChartParameters().getSubtitleList().getSubtitleList() )
+            {
+                parms.setFont( font );
+            }
+            for (ThresholdParameters parms : engine.getChartParameters().getThresholdList().getThresholdParametersList() )
+            {
+                parms.getLabel().setFont( font );
+            }
+        }
+    }
 
     /**
      * Writes an output chart to a specified path.
      *
      * @param outputImage the path to the output image
-     * @param engine the chart engine
+     * @param engine the chart engine.  Note that the method {@link #prepareChartEngineForWriting(ChartEngine)} will modify the drawing parameters of this chart engine in place.
      * @param dest the destination configuration
      * @return the path actually written
      * @throws GraphicsWriteException if the chart could not be written
@@ -127,49 +178,7 @@ abstract class GraphicsWriter
 
         try
         {
-            //#81628 change.  Create the chart and force it to use a Liberation Sans font.  Below is a test run.
-            //It will need to be enhanced later to modify *all* fonts in the JFreeChart.
-            // Create the chart
-            String fontResource = "LiberationSans-Regular.ttf";
-            URL fontUrl = GraphicsWriter.class.getClassLoader().getResource( fontResource );
-
-            // Load the font and force it into the chart.
-            if ( Objects.isNull( fontUrl ) )
-            {
-               throw new CouldNotLoadRequiredFontException( "Could not find the " + fontResource + " file on the class path." );
-            }
-
-            try ( InputStream fontStream = fontUrl.openStream() )
-            {
-                Font font = Font.createFont( Font.TRUETYPE_FONT, fontStream ).deriveFont(10.0f);
-
-                // Register font with graphics env
-                GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                graphics.registerFont( font );
-                
-                engine.getChartParameters().getPlotTitle().setFont( font );
-                engine.getChartParameters().getLegend().getLegendTitle().setFont( font );
-                engine.getChartParameters().getLegend().getLegendEntryFont().setFont( font );
-                engine.getChartParameters().getDomainAxis().getLabel().setFont( font );  //One shared domain axis.
-                for (SubPlotParameters subPlot : engine.getChartParameters().getSubPlotParameters()) //Range axes by subplot.
-                {
-                    subPlot.getLeftAxis().getLabel().setFont( font ); //Font is used for axis label and tick marks.
-                    subPlot.getRightAxis().getLabel().setFont( font ); //Font is used for axis label and ticks marks.
-                }
-                for ( SubtitleParameters parms : engine.getChartParameters().getSubtitleList().getSubtitleList() )
-                {
-                    parms.setFont( font );
-                }
-                for (ThresholdParameters parms : engine.getChartParameters().getThresholdList().getThresholdParametersList() )
-                {
-                    parms.getLabel().setFont( font );
-                }
-            }
-            catch ( FontFormatException e )
-            {
-                throw new GraphicsWriteException( "Error while loading font for writing chart:", e );
-            }
-
+            prepareChartEngineForWriting( engine );
             JFreeChart chart = engine.buildChart();
             Path resolvedPath = outputImage;
 
@@ -209,7 +218,7 @@ abstract class GraphicsWriter
 
             return resolvedPath;
         }
-        catch ( IOException | ChartEngineException | XYChartDataSourceException | CouldNotLoadRequiredFontException e )
+        catch ( IOException | ChartEngineException | XYChartDataSourceException | CouldNotLoadRequiredFontException | FontFormatException e )
         {
             throw new GraphicsWriteException( "Error while writing chart:", e );
         }
