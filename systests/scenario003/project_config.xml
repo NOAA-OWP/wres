@@ -42,8 +42,7 @@
             <!--Optional: -->
             <graphical width="800" height="600" />
         </destination>
-        <!--Uncomment if we can get them to write in a platform-independent way. See #81628.-->
-        <!--<destination type="svg" />-->
+        <destination type="svg" />
     </outputs>
 
 </project>
