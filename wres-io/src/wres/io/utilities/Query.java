@@ -317,7 +317,6 @@ public class Query
         // Avoid recording the initial state of connection: reduces round trips.
         final boolean disableAutoCommit = this.forceTransaction || this.useCursor;
         final boolean useSerializable = this.forceTransaction;
-        final boolean multipleStatements = this.script.startsWith( "CREATE TEMPORARY" );
 
         // In the case of transactions that conflict, retries are needed.
         boolean completed = false;
