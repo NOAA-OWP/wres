@@ -2,7 +2,6 @@ package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,9 +22,6 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigPlus;
-import wres.config.ProjectConfigs;
-import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -33,6 +29,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.statistics.generated.Outputs;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -52,19 +49,17 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
     /**
      * Returns an instance of a writer.
      *
-     * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for durations
+     * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static DoubleScoreGraphicsWriter of( ProjectConfigPlus projectConfigPlus,
-                                                ChronoUnit durationUnits,
+    public static DoubleScoreGraphicsWriter of( Outputs outputsDescription,
                                                 Path outputDirectory )
     {
-        return new DoubleScoreGraphicsWriter( projectConfigPlus, durationUnits, outputDirectory );
+        return new DoubleScoreGraphicsWriter( outputsDescription, outputDirectory );
     }
 
     /**
@@ -79,10 +74,6 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
     public void accept( List<DoubleScoreStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
-
-        // Write output
-        List<DestinationConfig> destinations =
-                ProjectConfigs.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DoubleScoreStatisticOuter::getMetricName );
@@ -106,10 +97,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 {
                     Set<Path> innerPathsWrittenTo =
                             DoubleScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
-                                                                        super.getProjectConfigPlus(),
-                                                                        destinations,
-                                                                        nextGroup,
-                                                                        super.getDurationUnits() );
+                                                                        super.getOutputsDescription(),
+                                                                        nextGroup );
                     this.pathsWrittenTo.addAll( innerPathsWrittenTo );
                 }
             }
@@ -133,19 +122,15 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * stored in a {@link List}.
      *
      * @param outputDirectory the directory into which to write
-     * @param projectConfigPlus the project configuration
-     * @param destinations the destinations for the written output
+     * @param outputsDescription a description of the outputs required
      * @param output the metric output
-     * @param durationUnits the time units for durations
      * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
     private static Set<Path> writeScoreCharts( Path outputDirectory,
-                                               ProjectConfigPlus projectConfigPlus,
-                                               List<DestinationConfig> destinations,
-                                               List<DoubleScoreStatisticOuter> output,
-                                               ChronoUnit durationUnits )
+                                               Outputs outputsDescription,
+                                               List<DoubleScoreStatisticOuter> output )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -155,15 +140,15 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = output.get( 0 ).getMetricName();
             SampleMetadata metadata = output.get( 0 ).getMetadata();
 
-            // Map by graphics parameters. Each pair requires a separate chart, written N times across N formats.
-            Collection<List<DestinationConfig>> destinationMap =
-                    GraphicsWriter.getDestinationsGroupedByGraphicsParameters( destinations );
-            
-            for ( List<DestinationConfig> nextDestinations : destinationMap )
-            {                
-                // Each of the inner lists has common graphics parameters, so a common helper
-                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, nextDestinations.get( 0 ), metricName );
+            // Collection of graphics parameters, one for each set of charts to write across N formats.
+            Collection<Outputs> outputsMap =
+                    GraphicsWriter.getOutputsGroupedByGraphicsParameters( outputsDescription );
 
+            for ( Outputs nextOutputs : outputsMap )
+            {
+                // One helper per set of graphics parameters.
+                GraphicsHelper helper = GraphicsHelper.of( nextOutputs );
+                
                 // As many outputs as secondary thresholds if secondary thresholds are defined
                 // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
                 List<List<DoubleScoreStatisticOuter>> allOutputs = new ArrayList<>();
@@ -188,12 +173,11 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
                 {
                     ConcurrentMap<MetricConstants, ChartEngine> engines =
-                            ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                            nextOutput,
-                                                                            helper.getOutputType(),
+                            ChartEngineFactory.buildScoreOutputChartEngine( nextOutput,
+                                                                            helper.getGraphicShape(),
                                                                             helper.getTemplateResourceName(),
                                                                             helper.getGraphicsString(),
-                                                                            durationUnits );
+                                                                            helper.getDurationUnits() );
 
                     String append = null;
 
@@ -211,7 +195,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                                                               engines,
                                                                                               metricName,
                                                                                               append,
-                                                                                              nextDestinations );
+                                                                                              nextOutputs );
                     pathsWrittenTo.addAll( paths );
                 }
             }
@@ -232,7 +216,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * @param engines the graphics engines
      * @param metricName the metric name
      * @param append a string to append to the path
-     * @param destinations the destinations to write
+     * @param outputsDescription a description of the outputs required
      * @return the paths written
      * @throws IOException if the graphic could not be created or written
      */
@@ -242,7 +226,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                            ConcurrentMap<MetricConstants, ChartEngine> engines,
                                                            MetricConstants metricName,
                                                            String append,
-                                                           List<DestinationConfig> destinations )
+                                                           Outputs outputsDescription )
             throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -265,14 +249,12 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                                       metricName,
                                                                       componentName );
 
-            // Iterate through destinations
-            for ( DestinationConfig destinationConfig : destinations )
-            {
-                Path finishedPath =
-                        GraphicsWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
-                // Only if writeChart succeeded do we assume that it was written
-                pathsWrittenTo.add( finishedPath );
-            }
+            // Write formats
+            Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
+                                                                   nextEntry.getValue(),
+                                                                   outputsDescription );
+
+            pathsWrittenTo.addAll( finishedPaths );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -281,18 +263,16 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
     /**
      * Hidden constructor.
      * 
-     * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for durations
+     * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 
-    private DoubleScoreGraphicsWriter( ProjectConfigPlus projectConfigPlus,
-                                       ChronoUnit durationUnits,
+    private DoubleScoreGraphicsWriter( Outputs outputsDescription,
                                        Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits, outputDirectory );
+        super( outputsDescription, outputDirectory );
     }
 
 }

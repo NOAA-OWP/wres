@@ -1,12 +1,10 @@
 package wres.vis;
 
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -52,6 +50,5 @@ public class XYChartDataSourceFactoryTest
 
         XYChartDataSourceFactory.ofBoxPlotOutput( 0, List.of( input ), null, ChronoUnit.SECONDS );
     }
-
 
 }
