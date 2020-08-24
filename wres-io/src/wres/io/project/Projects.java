@@ -162,43 +162,26 @@ public class Projects
         uniqueSourcesUsed.addAll( finalRightIds );
         uniqueSourcesUsed.addAll( finalBaselineIds );
         int countOfUniqueHashes = uniqueSourcesUsed.size();
-        StringJoiner idJoiner = new StringJoiner( ",", "(", ");" );
+        final int MAX_PARAMETER_COUNT = 999;
+        Map<Integer,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
+        Set<Integer> batchOfIds = new HashSet<>( MAX_PARAMETER_COUNT );
 
         for ( Integer rawId : uniqueSourcesUsed )
         {
-            String id = rawId.toString();
-            idJoiner.add( id );
-        }
-
-        String query = "SELECT source_id, hash "
-                       + "FROM wres.Source "
-                       + "WHERE source_id in "
-                       + idJoiner.toString();
-        DataScripter script = new DataScripter( database, query );
-        Map<Integer,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
-
-        try ( DataProvider dataProvider = script.getData() )
-        {
-            while ( dataProvider.next() )
+            // If appending this id is <= max, add it.
+            if ( batchOfIds.size() + 1 > MAX_PARAMETER_COUNT )
             {
-                Integer id = dataProvider.getInt( "source_id" );
-                String hash = dataProvider.getString( "hash" );
-
-                if ( Objects.nonNull( id )
-                     && Objects.nonNull( hash ) )
-                {
-                    idsToHashes.put( id, hash );
-                }
-                else
-                {
-                    boolean idNull = Objects.isNull( id );
-                    boolean hashNull = Objects.isNull( hash );
-                    throw new PreIngestException( "Found a null value in db when expecting a value. idNull="
-                                                  + idNull + " hashNull="
-                                                  + hashNull );
-                }
+                LOGGER.debug( "Query would exceed {} params, running it now and building a new one.",
+                              MAX_PARAMETER_COUNT );
+                Projects.selectIdsAndHashes( database, batchOfIds, idsToHashes );
+                batchOfIds.clear();
             }
+
+            batchOfIds.add( rawId );
         }
+
+        // The last query with the remainder of ids.
+        Projects.selectIdsAndHashes( database, batchOfIds, idsToHashes );
 
         // "select hash from wres.Source S inner join ( select ... ) I on S.source_id = I.source_id"
         List<String> leftHashes = new ArrayList<>( finalLeftIds.size() );
@@ -377,5 +360,62 @@ public class Projects
         }
 
         return details;
+    }
+
+
+    /**
+     * Select source ids and hashes and put them into the given Map.
+     * @param database The database to use.
+     * @param ids The ids to use for selection of hashes.
+     * @param idsToHashes MUTATED by this method, results go into this Map.
+     * @throws SQLException When something goes wrong related to database.
+     * @throws PreIngestException When a null value is found in result set.
+     */
+
+    private static void selectIdsAndHashes( Database database,
+                                            Set<Integer> ids,
+                                            Map<Integer,String> idsToHashes )
+            throws SQLException
+    {
+        String queryStart = "SELECT source_id, hash "
+                            + "FROM wres.Source "
+                            + "WHERE source_id in ";
+        StringJoiner idJoiner = new StringJoiner( ",", "(", ");" );
+
+        for ( int i = 0; i < ids.size(); i++ )
+        {
+            idJoiner.add( "?" );
+        }
+
+        String query = queryStart + idJoiner.toString();
+        DataScripter script = new DataScripter( database, query );
+
+        for ( Integer id : ids )
+        {
+            script.addArgument( id );
+        }
+
+        try ( DataProvider dataProvider = script.getData() )
+        {
+            while ( dataProvider.next() )
+            {
+                Integer id = dataProvider.getInt( "source_id" );
+                String hash = dataProvider.getString( "hash" );
+
+                if ( Objects.nonNull( id )
+                     && Objects.nonNull( hash ) )
+                {
+                    idsToHashes.put( id, hash );
+                }
+                else
+                {
+                    boolean idNull = Objects.isNull( id );
+                    boolean hashNull = Objects.isNull( hash );
+                    throw new PreIngestException( "Found a null value in db when expecting a value. idNull="
+                                                  + idNull + " hashNull="
+                                                  + hashNull );
+                }
+            }
+        }
     }
 }
