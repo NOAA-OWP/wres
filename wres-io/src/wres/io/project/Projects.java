@@ -57,7 +57,6 @@ public class Projects
         Objects.requireNonNull( rightHashes );
         Objects.requireNonNull( baselineHashes );
         Integer inputCode = ConfigHelper.hashProject(
-                projectConfig,
                 leftHashes,
                 rightHashes,
                 baselineHashes

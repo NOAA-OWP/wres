@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
@@ -22,6 +24,8 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +36,7 @@ import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.reading.PreIngestException;
 import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 
@@ -108,13 +113,12 @@ public class ConfigHelper
 
     /**
      * Creates a hash for the indicated project configuration based on its
-     * specifications and the data it has ingested
+     * data ingested.
      *
      * TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
      * baseline separately, treat each as a dataset. Link dataset to project.
      *
      * TODO: store less collision-prone value, e.g. 128bit hash instead of int.
-     * @param projectConfig The configuration for the project
      * @param leftHashesIngested A collection of the hashes for the left sided
      *                           source data
      * @param rightHashesIngested A collection of the hashes for the right sided
@@ -123,24 +127,20 @@ public class ConfigHelper
      *                               source data
      * @return A unique hash code for the project's circumstances
      */
-    public static Integer hashProject( final ProjectConfig projectConfig,
-                                       final List<String> leftHashesIngested,
+    public static Integer hashProject( final List<String> leftHashesIngested,
                                        final List<String> rightHashesIngested,
                                        final List<String> baselineHashesIngested )
     {
-        StringBuilder hashBuilder = new StringBuilder();
+        MessageDigest md5Digest;
 
-        DataSourceConfig left = projectConfig.getInputs().getLeft();
-        DataSourceConfig right = projectConfig.getInputs().getRight();
-        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
-
-        hashBuilder.append( left.getType().value() );
-
-        for ( EnsembleCondition ensembleCondition : left.getEnsemble() )
+        try
         {
-            hashBuilder.append( ensembleCondition.getName() );
-            hashBuilder.append( ensembleCondition.getMemberId() );
-            hashBuilder.append( ensembleCondition.getQualifier() );
+            md5Digest = MessageDigest.getInstance( "MD5" );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new PreIngestException( "Couldn't use MD5 algorithm.",
+                                          nsae );
         }
 
         // Sort for deterministic hash result for same list of ingested
@@ -149,18 +149,7 @@ public class ConfigHelper
 
         for ( String leftHash : sortedLeftHashes )
         {
-            hashBuilder.append( leftHash );
-        }
-
-        hashBuilder.append( left.getVariable().getValue() );
-
-        hashBuilder.append( right.getType().value() );
-
-        for ( EnsembleCondition ensembleCondition : right.getEnsemble() )
-        {
-            hashBuilder.append( ensembleCondition.getName() );
-            hashBuilder.append( ensembleCondition.getMemberId() );
-            hashBuilder.append( ensembleCondition.getQualifier() );
+            DigestUtils.updateDigest( md5Digest, leftHash );
         }
 
         // Sort for deterministic hash result for same list of ingested
@@ -169,45 +158,23 @@ public class ConfigHelper
 
         for ( String rightHash : sortedRightHashes )
         {
-            hashBuilder.append( rightHash );
+            DigestUtils.updateDigest( md5Digest, rightHash );
         }
 
-        hashBuilder.append( right.getVariable().getValue() );
+        // Sort for deterministic hash result for same list of ingested
+        Collection<String> sortedBaselineHashes =
+                wres.util.Collections.copyAndSort( baselineHashesIngested );
 
-        if ( baseline != null )
+        for ( String baselineHash : sortedBaselineHashes )
         {
-
-            hashBuilder.append( baseline.getType().value() );
-
-            for ( EnsembleCondition ensembleCondition : baseline.getEnsemble() )
-            {
-                hashBuilder.append( ensembleCondition.getName() );
-                hashBuilder.append( ensembleCondition.getMemberId() );
-                hashBuilder.append( ensembleCondition.getQualifier() );
-            }
-
-
-            // Sort for deterministic hash result for same list of ingested
-            Collection<String> sortedBaselineHashes =
-                    wres.util.Collections.copyAndSort( baselineHashesIngested );
-
-            for ( String baselineHash : sortedBaselineHashes )
-            {
-                hashBuilder.append( baselineHash );
-            }
-
-            hashBuilder.append( baseline.getVariable().getValue() );
+            DigestUtils.updateDigest( md5Digest, baselineHash );
         }
 
-        for ( Feature feature : projectConfig.getPair()
-                                             .getFeature() )
-        {
-            hashBuilder.append( feature.getLeft() );
-            hashBuilder.append( feature.getRight() );
-            hashBuilder.append( feature.getBaseline() );
-        }
+        byte[] digestAsHex = md5Digest.digest();
+        String digestAsString = Hex.encodeHexString( digestAsHex );
 
-        return hashBuilder.toString().hashCode();
+        // TODO, return the digest/hash rather than a hashcode of the digest.
+        return digestAsString.hashCode();
     }
 
     /**
