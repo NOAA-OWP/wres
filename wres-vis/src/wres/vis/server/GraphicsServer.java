@@ -28,6 +28,8 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.eventsbroker.BrokerConnectionFactory;
+
 /**
  * A long-running server process that encapsulates one graphics subscriber that consumes statistics and writes them to 
  * graphics.
@@ -113,7 +115,8 @@ class GraphicsServer implements Runnable, Closeable
     public static void main( String[] args ) throws IOException
     {
         // Create the server
-        try ( GraphicsServer server = new GraphicsServer() )
+        try ( BrokerConnectionFactory broker = BrokerConnectionFactory.of();
+              GraphicsServer server = GraphicsServer.of( broker ) )
         {
             Instant started = Instant.now();
 
@@ -193,6 +196,17 @@ class GraphicsServer implements Runnable, Closeable
     public void close() throws IOException
     {
         this.stop();
+    }
+
+    /**
+     * Creates an instance.
+     * @param broker the broker
+     * @return an instance of the server
+     */
+
+    static GraphicsServer of( BrokerConnectionFactory broker )
+    {
+        return new GraphicsServer( broker );
     }
 
     /**
@@ -308,9 +322,10 @@ class GraphicsServer implements Runnable, Closeable
 
     /**
      * Do not construct.
+     * @param broker the broker
      */
 
-    private GraphicsServer()
+    private GraphicsServer( BrokerConnectionFactory broker )
     {
         LOGGER.info( "Creating a new WRES Graphics Server..." );
 
@@ -337,7 +352,8 @@ class GraphicsServer implements Runnable, Closeable
         {
             this.graphicsSubscriber = new GraphicsSubscriber( this.getSubscriberId(),
                                                               this.getServerStatus(),
-                                                              this.getGraphicsExecutor() );
+                                                              this.getGraphicsExecutor(),
+                                                              broker );
         }
         catch ( NamingException constructionException )
         {
@@ -387,15 +403,15 @@ class GraphicsServer implements Runnable, Closeable
         BlockingQueue<Runnable> graphicsQueue = new ArrayBlockingQueue<>( GraphicsServer.MAXIMUM_THREAD_COUNT * 5 );
 
         ThreadPoolExecutor pool = new ThreadPoolExecutor( GraphicsServer.MAXIMUM_THREAD_COUNT,
-                                       GraphicsServer.MAXIMUM_THREAD_COUNT,
-                                       GraphicsServer.MAXIMUM_THREAD_COUNT,
-                                       TimeUnit.MILLISECONDS,
-                                       graphicsQueue,
-                                       graphicsFactory );
-        
+                                                          GraphicsServer.MAXIMUM_THREAD_COUNT,
+                                                          GraphicsServer.MAXIMUM_THREAD_COUNT,
+                                                          TimeUnit.MILLISECONDS,
+                                                          graphicsQueue,
+                                                          graphicsFactory );
+
         // Punt to the main thread to slow progress when rejected
         pool.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        
+
         return pool;
     }
 

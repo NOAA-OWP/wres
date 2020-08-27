@@ -1347,7 +1347,7 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
-     * @return the number of retries attempted sop far.
+     * @return the number of retries attempted so far.
      */
 
     private AtomicInteger getNumberOfRetriesAttempted()

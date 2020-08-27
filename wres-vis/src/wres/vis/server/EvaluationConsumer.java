@@ -254,6 +254,39 @@ class EvaluationConsumer
             // This instance is not responsible for closing the executor service.
         }
     }
+    
+    /**
+     * Marks an evaluation as failed unrecoverably after exhausting all attempts to recover the subscriber that 
+     * delivers messages to this consumer. Sends a status message indicating 
+     * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}.
+     * @throws JMSException if the status update failed to send
+     */
+
+    void markEvaluationFailed() throws JMSException
+    {
+        // Collect the paths written
+        List<String> addThesePaths = new ArrayList<>();
+        this.consumer.get().forEach( next -> addThesePaths.add( next.toString() ) );
+        this.groupConsumer.get().forEach( next -> addThesePaths.add( next.toString() ) );
+
+        // Create the status message to publish
+        EvaluationStatus message = EvaluationStatus.newBuilder()
+                                                   .setCompletionStatus( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
+                                                   .setConsumerId( this.consumerId )
+                                                   .addAllResourcesCreated( addThesePaths )
+                                                   .build();
+
+        // Create the metadata
+        String messageId = "ID:" + this.consumerId + "-complete";
+
+        ByteBuffer buffer = ByteBuffer.wrap( message.toByteArray() );
+
+        this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.consumerId );
+
+        LOGGER.warn( "External graphics subscriber {} has marked evaluation {} as failed unrecoverably.",
+                     this.consumerId,
+                     this.evaluationId );
+    }
 
     /**
      * Accepts a statistics messages for consumption.
