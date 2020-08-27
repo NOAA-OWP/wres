@@ -245,7 +245,8 @@ public class ProjectConfigs
     }
 
     /**
-     * @return Returns <code>true</code> if the input type is a graphical type, else <code>false</code>.
+     * @param destinationType the destination type
+     * @return Returns <code>true</code> if the input type is a graphical type, otherwise <code>false</code>
      */
 
     public static boolean isGraphicsType( DestinationType destinationType )

@@ -18,7 +18,7 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
  * @author james.brown@hydrosolved.com
  */
 
-class GroupCompletionTracker
+public class GroupCompletionTracker
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( GroupCompletionTracker.class );
@@ -35,7 +35,7 @@ class GroupCompletionTracker
      * @return an instance
      */
 
-    static GroupCompletionTracker of()
+    public static GroupCompletionTracker of()
     {
         return new GroupCompletionTracker();
     }
@@ -49,19 +49,19 @@ class GroupCompletionTracker
      * @throws IllegalArgumentException if the message is missing expected content
      */
 
-    void registerGroupComplete( EvaluationStatus completionState, String groupId )
+    public void registerGroupComplete( EvaluationStatus completionState, String groupId )
     {
         Objects.requireNonNull( completionState );
         Objects.requireNonNull( groupId );
 
-        if ( completionState.getCompletionStatus() != CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
+        if ( completionState.getCompletionStatus() != CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS )
         {
             throw new IllegalArgumentException( "While registered the completion of group " + groupId
                                                 + ", received an unexpected completion "
                                                 + "status  "
                                                 + completionState.getCompletionStatus()
                                                 + ". Expected "
-                                                + CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS );
+                                                + CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS );
         }
 
         if ( completionState.getMessageCount() == 0 )
@@ -90,7 +90,7 @@ class GroupCompletionTracker
      * @throws NullPointerException if the input is null
      */
 
-    Integer getExpectedMessagesPerGroup( String groupId )
+    public Integer getExpectedMessagesPerGroup( String groupId )
     {
         Objects.requireNonNull( groupId );
 

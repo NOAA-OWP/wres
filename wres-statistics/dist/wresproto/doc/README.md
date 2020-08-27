@@ -89,6 +89,43 @@ print( "Serialized scale as json string:" )
 print( json_string )
 ```
 
+When reading multiple messages from a stream or a file, those messages are 
+framed by a varint that contains the number of bytes in the proceeding message.
+Reading of framed messages is not supported out-of-the-box with the Python
+bindings. Thus, the varint must be parsed explicitly. The following example
+reads an "evaluation.pb3" file that contains one evaluation description 
+message followed by N statistics messages.
+
+```python
+import sys
+from wresproto import evaluation_pb2 as evaluation
+from wresproto import statistics_pb2 as statistics
+from google.protobuf.internal.decoder import _DecodeVarint32 as varint
+
+file_name = "path_to_file/evaluation.pb3" 
+
+data = open( file_name, "rb" ).read()
+
+eval = evaluation.Evaluation()                   
+next_pos, pos = 0, 0
+next_pos, pos = varint( data, pos )
+eval.ParseFromString( data[pos:pos + next_pos] )
+pos += next_pos                      
+
+print( "The evaluation description message:" )
+print ( eval )
+
+# Loop through the statistics messages
+while pos < len( data ):
+    nextStatistics = statistics.Statistics()                    
+    next_pos, pos = varint( data, pos )
+    nextStatistics.ParseFromString( data[pos:pos + next_pos] )
+    pos += next_pos
+
+    print( "A statistics message:" )
+    print ( nextStatistics ) 
+```
+
 ## License
 
 United States Department of Commerce

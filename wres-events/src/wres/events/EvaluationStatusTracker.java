@@ -1,11 +1,16 @@
 package wres.events;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,6 +19,8 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.protobuf.ProtocolStringList;
 
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -29,7 +36,13 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationStatusTracker.class );
+    
+    /**
+     * The frequency between logging updates in milliseconds upon awaiting a subscriber. 
+     */
 
+    private static final long TIMEOUT_UPDATE_FREQUENCY = 10_000;
+    
     /**
      * A latch that records the completion of publication. There is no timeout on publication.
      */
@@ -91,6 +104,12 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
     private final AtomicInteger exitCode = new AtomicInteger();
 
+    /**
+     * Strings that represents paths or URIs to resources written during the evaluation.
+     */
+
+    private final Set<String> resourcesWritten;
+
     @Override
     public void accept( EvaluationStatus message )
     {
@@ -124,6 +143,17 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     }
 
     /**
+     * Returns the strings (paths or URIs) that represent resources written.
+     * 
+     * @return the resources written
+     */
+
+    Set<String> getResourcesWritten()
+    {
+        return Collections.unmodifiableSet( this.resourcesWritten );
+    }
+
+    /**
      * Stops all tracking on failure.
      * @param failure the failure message.
      * @throws EvaluationFailedToCompleteException always
@@ -135,6 +165,14 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         // Stop waiting
         this.publicationLatch.countDown();
         this.subscriberLatches.forEach( ( a, b ) -> b.countDown() );
+
+        // Add any paths written
+        ProtocolStringList resources = failure.getResourcesCreatedList();
+        this.resourcesWritten.addAll( resources );
+
+        LOGGER.debug( "While processing evaluation {}, discovered {} resources that were created by subscribers.",
+                      this.evaluation.getEvaluationId(),
+                      resources.size() );
 
         // Non-zero exit code
         this.exitCode.set( 1 );
@@ -162,6 +200,8 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         LOGGER.debug( "While processing evaluation {}, received confirmation that publication has completed.",
                       this.evaluation.getEvaluationId() );
 
+        String evaluationId = this.evaluation.getEvaluationId();
+        
         for ( Map.Entry<String, TimedCountDownLatch> nextEntry : this.subscriberLatches.entrySet() )
         {
             String consumerId = nextEntry.getKey();
@@ -171,19 +211,56 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                           + "for subscription {}.",
                           this.evaluation.getEvaluationId(),
                           consumerId );
+            
+            // Create a timer task to log progress while awaiting the subscriber
+            Instant then = Instant.now();
+            Duration periodToWait = Duration.of( this.timeout, ChronoUnit.valueOf( this.timeoutUnits.name() ) );
+            AtomicInteger resetCount = new AtomicInteger(); 
+            TimerTask updater = new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    Duration timeElapsed = Duration.between( then, Instant.now() );
+                    Duration timeLeft = periodToWait.minus( timeElapsed );
+                 
+                    // Latch was reset, so report the new time left
+                    String append = "";
+                    if( nextLatch.getResetCount() > resetCount.get() )
+                    {
+                        append = " (the subscriber just registered an update, which reset the timeout)";
+                        timeLeft = periodToWait;
+                        resetCount.incrementAndGet();
+                    }
+                    
+                    LOGGER.info( "While completing evaluation {}, awaiting subscriber {}. There is {} remaining before "
+                                 + "the subscriber timeout occurs, unless the subscriber provides an update sooner{}.",
+                                 evaluationId,
+                                 consumerId,
+                                 timeLeft,
+                                 append );
+                }
+            };
+            
+            // Log progress
+            Timer timer = new Timer();
+            timer.schedule( updater, 0, EvaluationStatusTracker.TIMEOUT_UPDATE_FREQUENCY );
 
             // Wait for a fixed period unless there is progress
             nextLatch.await( this.timeout, this.timeoutUnits );
+            
+            // Stop logging progress
+            timer.cancel();
 
             LOGGER.debug( "While processing evaluation {}, received confirmation that consumption has completed "
                           + "for subscription {}.",
-                          this.evaluation.getEvaluationId(),
+                          evaluationId,
                           consumerId );
         }
 
         LOGGER.debug( "While processing evaluation {}, received confirmation that consumption has stopped "
                       + "across all {} registered subscriptions.",
-                      this.evaluation.getEvaluationId(),
+                      evaluationId,
                       this.expectedSubscribers.size() );
 
         // Throw an exception if any consumers failed to complete consumption
@@ -196,7 +273,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         if ( !identifiers.isEmpty() )
         {
             throw new SubscriberTimedOutException( "While processing evaluation "
-                                                   + this.evaluation.getEvaluationId()
+                                                   + evaluationId
                                                    + ", the following subscribers failed to show progress within a "
                                                    + "timeout period of "
                                                    + this.timeout
@@ -258,6 +335,15 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         // A real consumer, not the status tracker a.k.a. me
         if ( !this.isThisConsumerMe( consumerId ) && this.expectedSubscribers.contains( consumerId ) )
         {
+
+            // Add any paths written
+            ProtocolStringList resources = message.getResourcesCreatedList();
+            this.resourcesWritten.addAll( resources );
+
+            LOGGER.debug( "While processing evaluation {}, discovered {} resources that were created by subscribers.",
+                          this.evaluation.getEvaluationId(),
+                          resources.size() );
+
             // Countdown the subscription as complete
             this.subscribersReady.remove( consumerId );
             TimedCountDownLatch subscriberLatch = this.getSubscriberLatch( consumerId );
@@ -377,5 +463,6 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         this.expectedSubscribers.forEach( next -> internalLatches.put( next, new TimedCountDownLatch( 1 ) ) );
         this.subscriberLatches = Collections.unmodifiableMap( internalLatches );
         this.myConsumerId = myConsumerId;
+        this.resourcesWritten = new HashSet<>();
     }
 }

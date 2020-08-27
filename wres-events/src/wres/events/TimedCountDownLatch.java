@@ -1,5 +1,6 @@
 package wres.events;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
@@ -16,7 +17,8 @@ class TimedCountDownLatch
 
     private final Sync sync;
     private AtomicLong timestamp;
-
+    private int resetCount;
+    
     /**
      * Constructs a {@link TimedCountDownLatch} initialized to the prescribed count.
      * 
@@ -36,9 +38,7 @@ class TimedCountDownLatch
     }
 
     /**
-     * Decrements the count of the latch, releasing all waiting threads if the count reaches zero. However, if the
-     * count is already zero, it will allow for the accumulation of a negative count to be applied at the next
-     * {@link #addCount(int)}. 
+     * Decrements the count of the latch, releasing all waiting threads if the count reaches zero.
      *
      * @see CountDownLatch#countDown()
      */
@@ -46,7 +46,6 @@ class TimedCountDownLatch
     void countDown()
     {
         this.sync.releaseShared( -1 );
-        resetClock();
     }
 
     /**
@@ -55,15 +54,25 @@ class TimedCountDownLatch
 
     void resetClock()
     {
-        this.timestamp = new AtomicLong( System.nanoTime() );
+        this.timestamp.set( System.nanoTime() );
+        this.resetCount++;
     }
 
+    /**
+     * @return the number of times the timeout was reset
+     */
+    
+    int getResetCount()
+    {
+        return this.resetCount;
+    }
+    
     /**
      * Returns the current count.
      *
      * @see CountDownLatch#getCount()
      */
-    public int getCount()
+    int getCount()
     {
         return this.sync.getCount();
     }
@@ -91,16 +100,20 @@ class TimedCountDownLatch
     boolean await( long timeout, TimeUnit unit ) throws InterruptedException
     {
         long start = this.getTime();
-        long difference = 0;
+        long periodToWait = unit.toNanos( timeout );
         for ( ;; )
         {
-            boolean result = this.waitFor( unit.toNanos( timeout ) - difference, TimeUnit.NANOSECONDS );
-            if ( this.getTime() == start )
+            // Wait until the timeout occurs or the count reaches zero, whichever is sooner
+            boolean acquired = this.waitFor( periodToWait, TimeUnit.NANOSECONDS );
+            
+            // If the count reached zero or the original timeout occurred, then return
+            if ( acquired || start == this.getTime() )
             {
-                return result;
+                return acquired;
             }
-            start = this.getTime();
-            difference = System.nanoTime() - start;
+            
+            // Subtract the time already waited from the period to wait
+            periodToWait = periodToWait - ( System.nanoTime() - start );
         }
     }
 

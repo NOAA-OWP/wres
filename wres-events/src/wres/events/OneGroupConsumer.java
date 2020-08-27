@@ -24,7 +24,7 @@ import net.jcip.annotations.ThreadSafe;
  */
 
 @ThreadSafe
-class OneGroupConsumer<T> implements Consumer<T>
+public class OneGroupConsumer<T> implements Consumer<T>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( OneGroupConsumer.class );
@@ -76,7 +76,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * @throws NullPointerException if any input is null
      */
 
-    static <T> OneGroupConsumer<T> of( Consumer<Collection<T>> innerConsumer,
+    public static <T> OneGroupConsumer<T> of( Consumer<Collection<T>> innerConsumer,
                                        String groupId )
     {
         return new OneGroupConsumer<>( innerConsumer, groupId );
@@ -88,7 +88,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * @return the number of messages
      */
 
-    int size()
+    public int size()
     {
         return this.cache.size();
     }
@@ -134,7 +134,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * Flushes the cache of statistics to the inner consumer.
      */
 
-    void acceptGroup()
+    public void acceptGroup()
     {
         if ( this.hasBeenUsed.getAndSet( true ) )
         {
@@ -159,7 +159,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * @return the groupId
      */
 
-    String getGroupId()
+    public String getGroupId()
     {
         return this.groupId;
     }
@@ -170,7 +170,7 @@ class OneGroupConsumer<T> implements Consumer<T>
      * @return true if the consumer has consumed
      */
 
-    boolean hasBeenUsed()
+    public boolean hasBeenUsed()
     {
         return this.hasBeenUsed.get();
     }
