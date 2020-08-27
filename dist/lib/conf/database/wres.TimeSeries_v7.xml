@@ -3,10 +3,14 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
                    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Delete from wres.TimeSeries before adding non-null columns."
+    <changeSet id="Delete from wres.TimeSeries (and related tables) before adding non-null columns."
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="TimeSeries"
+                         schemaName="wres" />
+            <tableExists tableName="Source"
+                         schemaName="wres" />
+            <tableExists tableName="Project"
                          schemaName="wres" />
             <not>
                 <columnExists columnName="variable_name"
@@ -18,6 +22,8 @@
             </not>
         </preConditions>
         <delete tableName="TimeSeries" schemaName="wres" />
+        <delete tableName="Source" schemaName="wres" />
+        <delete tableName="Project" schemaName="wres" />
     </changeSet>
     <changeSet id="Add variable_name to wres.TimeSeries table."
                author="Jesse Bickel">
