@@ -469,6 +469,8 @@ public class Evaluation implements Closeable
 
     public void markPublicationCompleteReportedSuccess()
     {
+        this.completeAllMessageGroups();
+
         CompletionStatus status = CompletionStatus.PUBLICATION_COMPLETE_REPORTED_SUCCESS;
 
         EvaluationStatus complete = EvaluationStatus.newBuilder()
@@ -1086,6 +1088,27 @@ public class Evaluation implements Closeable
     static String getUniqueId()
     {
         return Evaluation.ID_GENERATOR.generate();
+    }
+
+    /**
+     * Completes any outstanding message groups.
+     */
+
+    private void completeAllMessageGroups()
+    {
+        // Complete any message groups that have not been marked complete
+        for ( Map.Entry<String, AtomicInteger> nextGroup : this.messageGroups.entrySet() )
+        {
+            // Unfinished group flagged as -1
+            if ( nextGroup.getValue().get() != -1 )
+            {
+                LOGGER.debug( "Marked message group {} associated with evaluation {} as complete.",
+                             nextGroup.getKey(),
+                             this.getEvaluationId() );
+                
+                this.markGroupPublicationCompleteReportedSuccess( nextGroup.getKey() );
+            }
+        }
     }
 
     /**
