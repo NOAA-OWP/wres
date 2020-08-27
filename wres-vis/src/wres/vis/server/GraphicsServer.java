@@ -9,11 +9,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,10 +51,28 @@ class GraphicsServer implements Runnable, Closeable
     private static final long STATUS_UPDATE_MILLISECONDS = 10_000;
 
     /**
+     * The frequency with which to publish a subscriber-alive message in ms.
+     */
+
+    private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
+
+    /**
+     * Maximum number of threads for graphics writing.
+     */
+
+    private static final int MAXIMUM_THREAD_COUNT = 5;
+
+    /**
      * An executor to execute the graphics server.
      */
 
-    private final ExecutorService server;
+    private final ExecutorService serverExecutor;
+
+    /**
+     * An executor to do the graphics work.
+     */
+
+    private final ExecutorService graphicsWorker;
 
     /**
      * A timer task to print information about the status of the server.
@@ -75,7 +96,7 @@ class GraphicsServer implements Runnable, Closeable
      * The graphics subscriber;
      */
 
-    private final GraphicsSubscriber subscriber;
+    private final GraphicsSubscriber graphicsSubscriber;
 
     /**
      * The unique identifier of the subscriber encapsulated by this server.
@@ -137,18 +158,35 @@ class GraphicsServer implements Runnable, Closeable
     {
         // The status is mutable and is updated by the subscriber
         ServerStatus status = this.getServerStatus();
+        GraphicsSubscriber subscriber = this.getGraphicsSubscriber();
 
         // Create a timer task to log the server status
-        TimerTask timed = new TimerTask()
+        TimerTask sweeper = new TimerTask()
         {
             @Override
             public void run()
             {
+                // Sweep any complete evaluations
+                subscriber.sweep();
+
+                // Log status
                 LOGGER.info( "{}", status );
             }
         };
 
-        this.timer.schedule( timed, 0, GraphicsServer.STATUS_UPDATE_MILLISECONDS );
+        // Create a timer task to log the server status
+        TimerTask updater = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                // Sweep any complete evaluations
+                subscriber.notifyAlive();
+            }
+        };
+
+        this.timer.schedule( sweeper, 0, GraphicsServer.STATUS_UPDATE_MILLISECONDS );
+        this.timer.schedule( updater, 0, GraphicsServer.NOTIFY_ALIVE_MILLISECONDS );
     }
 
     @Override
@@ -167,12 +205,21 @@ class GraphicsServer implements Runnable, Closeable
     }
 
     /**
+     * @return the graphics subscriber.
+     */
+
+    private GraphicsSubscriber getGraphicsSubscriber()
+    {
+        return this.graphicsSubscriber;
+    }
+
+    /**
      * Starts the server.
      */
 
     private void start()
     {
-        this.server.execute( this );
+        this.serverExecutor.execute( this );
     }
 
     /**
@@ -184,25 +231,40 @@ class GraphicsServer implements Runnable, Closeable
         // Not stopped already?
         if ( this.latch.getCount() != 0 )
         {
-            if ( Objects.nonNull( this.subscriber ) )
+            if ( Objects.nonNull( this.graphicsSubscriber ) )
             {
-                this.subscriber.close();
+                this.graphicsSubscriber.close();
             }
 
             this.timer.cancel();
-            this.server.shutdown();
+            this.serverExecutor.shutdown();
 
             try
             {
-                this.server.awaitTermination( 1, TimeUnit.SECONDS );
+                this.getServerExecutor().awaitTermination( 1, TimeUnit.SECONDS );
             }
             catch ( InterruptedException e )
             {
-                Thread.currentThread().interrupt();
+                LOGGER.warn( "Failed to close all resources used by the WRES Graphics Server." );
 
-                LOGGER.error( "Failed to close all resources used by the WRES Graphics Server." );
+                Thread.currentThread().interrupt();
             }
-            
+            // Close the executor service gracefully
+            this.getGraphicsExecutor().shutdown();
+
+            try
+            {
+                this.getGraphicsExecutor().awaitTermination( 5, TimeUnit.SECONDS );
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while shutting down the graphics executor service {} in graphics client {}.",
+                             this.getGraphicsExecutor(),
+                             this.getSubscriberId() );
+
+                Thread.currentThread().interrupt();
+            }
+
             this.latch.countDown();
         }
     }
@@ -215,6 +277,33 @@ class GraphicsServer implements Runnable, Closeable
     private void await() throws InterruptedException
     {
         this.latch.await();
+    }
+
+    /**
+     * @return the subscriber identifier.
+     */
+
+    private String getSubscriberId()
+    {
+        return this.subscriberId;
+    }
+
+    /**
+     * @return the executor to do graphics writing work.
+     */
+
+    private ExecutorService getGraphicsExecutor()
+    {
+        return this.graphicsWorker;
+    }
+
+    /**
+     * @return the executor that runs the service.
+     */
+
+    private ExecutorService getServerExecutor()
+    {
+        return this.serverExecutor;
     }
 
     /**
@@ -238,14 +327,17 @@ class GraphicsServer implements Runnable, Closeable
                                                                         .uncaughtExceptionHandler( handler )
                                                                         .build();
 
-        this.server = Executors.newSingleThreadExecutor( graphicsFactory );
+        this.serverExecutor = Executors.newSingleThreadExecutor( graphicsFactory );
         this.timer = new Timer();
         this.serverStatus = new ServerStatus();
         this.latch = new CountDownLatch( 1 );
+        this.graphicsWorker = this.createGraphicsExecutor();
 
         try
         {
-            this.subscriber = new GraphicsSubscriber( subscriberId, this.serverStatus );
+            this.graphicsSubscriber = new GraphicsSubscriber( this.getSubscriberId(),
+                                                              this.getServerStatus(),
+                                                              this.getGraphicsExecutor() );
         }
         catch ( NamingException constructionException )
         {
@@ -282,6 +374,32 @@ class GraphicsServer implements Runnable, Closeable
     }
 
     /**
+     * Creates an executor service.
+     * @return the created service
+     */
+
+    private ExecutorService createGraphicsExecutor()
+    {
+        ThreadFactory graphicsFactory = new BasicThreadFactory.Builder()
+                                                                        .namingPattern( "Graphics Worker Thread %d" )
+                                                                        .build();
+
+        BlockingQueue<Runnable> graphicsQueue = new ArrayBlockingQueue<>( GraphicsServer.MAXIMUM_THREAD_COUNT * 5 );
+
+        ThreadPoolExecutor pool = new ThreadPoolExecutor( GraphicsServer.MAXIMUM_THREAD_COUNT,
+                                       GraphicsServer.MAXIMUM_THREAD_COUNT,
+                                       GraphicsServer.MAXIMUM_THREAD_COUNT,
+                                       TimeUnit.MILLISECONDS,
+                                       graphicsQueue,
+                                       graphicsFactory );
+        
+        // Punt to the main thread to slow progress when rejected
+        pool.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        
+        return pool;
+    }
+
+    /**
      * A mutable container that records the status of the server and the jobs completed so far. All status information 
      * is updated atomically.
      * 
@@ -306,11 +424,15 @@ class GraphicsServer implements Runnable, Closeable
         /** The evaluations that failed.*/
         private final Set<String> evaluationFailed = ConcurrentHashMap.newKeySet();
 
+        /** The evaluations that have completed.*/
+        private final Set<String> evaluationComplete = ConcurrentHashMap.newKeySet();
+
         @Override
         public String toString()
         {
             String addSucceeded = "";
             String addFailed = "";
+            String addComplete = "";
 
             if ( Objects.nonNull( this.evaluationId.get() ) && Objects.nonNull( this.statisticsMessageId.get() ) )
             {
@@ -331,13 +453,22 @@ class GraphicsServer implements Runnable, Closeable
                             + ".";
             }
 
+            if ( !this.evaluationComplete.isEmpty() )
+            {
+                addComplete = " Completed " + this.evaluationComplete.size()
+                              + " of the "
+                              + this.evaluationCount.get()
+                              + " evaluations that were started.";
+            }
+
             return "Waiting for statistics. Until now, received "
                    + this.statisticsCount.get()
                    + " packets of statistics across "
                    + this.evaluationCount.get()
                    + " evaluations."
                    + addSucceeded
-                   + addFailed;
+                   + addFailed
+                   + addComplete;
         }
 
         /**
@@ -345,10 +476,20 @@ class GraphicsServer implements Runnable, Closeable
          * @param evaluationId the evaluation identifier
          */
 
-        void registerEvaluation( String evaluationId )
+        void registerEvaluationStarted( String evaluationId )
         {
             this.evaluationCount.incrementAndGet();
             this.evaluationId.set( evaluationId );
+        }
+
+        /**
+         * Registers an evaluation completed.
+         * @param evaluationId the evaluation identifier
+         */
+
+        void registerEvaluationCompleted( String evaluationId )
+        {
+            this.evaluationComplete.add( evaluationId );
         }
 
         /**

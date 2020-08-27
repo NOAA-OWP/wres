@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -64,7 +66,8 @@ import wres.statistics.generated.Statistics;
  * 
  * <p> The lifecycle for an evaluation is composed of three parts:
  * <ol>
- * <li>Opening, which corresponds to {@link #open(wres.statistics.generated.Evaluation, BrokerConnectionFactory, Consumers)}</li>
+ * <li>Opening, which corresponds to 
+ * {@link #open(wres.statistics.generated.Evaluation, BrokerConnectionFactory, Consumers, Path)}</li>
  * <li>Awaiting completion {@link #await()}; and</li>
  * <li>Closing, either forcibly ({@link #stop(Exception)}) or nominally {@link #close()}.</li>
  * </ol>
@@ -248,7 +251,7 @@ public class Evaluation implements Closeable
      */
 
     private final AtomicBoolean isStopped;
-    
+
     /**
      * Is <code>true</code> if the evaluation has been closed.
      */
@@ -282,6 +285,12 @@ public class Evaluation implements Closeable
     private final Connection subscriberConnection;
 
     /**
+     * A path to which outputs should be written.
+     */
+
+    private final Path outputPath;
+
+    /**
      * Returns the unique evaluation identifier.
      * 
      * @return the evaluation identifier
@@ -298,6 +307,7 @@ public class Evaluation implements Closeable
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
      * @param consumers the consumers to subscribe
+     * @param outputPath the output path, which must be writable
      * @return an open evaluation
      * @throws NullPointerException if any input is null
      * @throws EvaluationEventException if the evaluation could not be constructed
@@ -306,15 +316,13 @@ public class Evaluation implements Closeable
 
     public static Evaluation open( wres.statistics.generated.Evaluation evaluationDescription,
                                    BrokerConnectionFactory broker,
-                                   Consumers consumers )
+                                   Consumers consumers,
+                                   Path outputPath )
     {
-        Objects.requireNonNull( evaluationDescription );
-        Objects.requireNonNull( broker );
-        Objects.requireNonNull( consumers );
-
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
                             .setConsumers( consumers )
+                            .setOutputPath( outputPath )
                             .build();
     }
 
@@ -360,7 +368,7 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( pairs.toByteArray() );
 
-        this.internalPublish( body, this.pairsPublisher, Evaluation.PAIRS_QUEUE, null );
+        this.internalPublish( body, this.pairsPublisher, Evaluation.PAIRS_QUEUE, null, null );
 
         this.pairsMessageCount.getAndIncrement();
     }
@@ -383,7 +391,7 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( status.toByteArray() );
 
-        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, groupId );
+        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, groupId, null );
 
         this.statusMessageCount.getAndIncrement();
 
@@ -413,7 +421,7 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
 
-        this.internalPublish( body, this.statisticsPublisher, Evaluation.STATISTICS_QUEUE, groupId );
+        this.internalPublish( body, this.statisticsPublisher, Evaluation.STATISTICS_QUEUE, groupId, null );
 
         this.messageCount.getAndIncrement();
 
@@ -514,7 +522,7 @@ public class Evaluation implements Closeable
                                                 + "messages were published to this group." );
         }
 
-        CompletionStatus status = CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS;
+        CompletionStatus status = CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS;
 
         AtomicInteger count = this.messageGroups.get( groupId );
 
@@ -610,7 +618,11 @@ public class Evaluation implements Closeable
         try
         {
             // Internal publish in case publication has already been completed for this instance      
-            this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, null );
+            this.internalPublish( body,
+                                  this.evaluationStatusPublisher,
+                                  Evaluation.EVALUATION_STATUS_QUEUE,
+                                  null,
+                                  null );
         }
         catch ( EvaluationEventException e )
         {
@@ -642,11 +654,11 @@ public class Evaluation implements Closeable
     public void close() throws IOException
     {
         LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
-        
-        if( this.isClosed() )
+
+        if ( this.isClosed() )
         {
             LOGGER.debug( "Evaluation {} has already been closed.", this.getEvaluationId() );
-            
+
             return;
         }
 
@@ -685,13 +697,13 @@ public class Evaluation implements Closeable
 
         // Flag that the evaluation has closed (if not already flagged), in order to obtain the exit code
         this.isClosed.set( true );
-        
+
         CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
         if ( this.getExitCode() != 0 )
         {
             onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
         }
-        
+
         LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained {} evaluation description "
                      + "message, {} statistics messages, {} pairs messages and {} evaluation status messages. The "
                      + "exit code was {}.",
@@ -705,17 +717,19 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Uncovers all paths written by consumers that reported 
-     * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS}. TODO: implement this when external consumers are
-     * required.
+     * Uncovers all paths written by external subscribers.
      * 
-     * @return the paths written.
-     * @throws UnsupportedOperationException always (until implemented)
+     * @return the paths written
      */
 
-    public Set<Path> getPathsWrittenByConsumers()
+    public Set<Path> getPathsWrittenByExternalSubscribers()
     {
-        throw new UnsupportedOperationException( "To be implemented when external consumers are fully supported." );
+        Set<String> resourcesWritten = this.statusTracker.getResourcesWritten();
+
+        // Attempt to create paths from the resource strings
+        return resourcesWritten.stream()
+                               .map( Paths::get )
+                               .collect( Collectors.toUnmodifiableSet() );
     }
 
     /**
@@ -839,10 +853,10 @@ public class Evaluation implements Closeable
                           + "stop the evaluation.",
                           this.getEvaluationId() );
         }
-        
+
         // Evaluation finished (but not yet closed)
         this.isStopped.set( true );
-        
+
         return this.getExitCode();
     }
 
@@ -857,7 +871,7 @@ public class Evaluation implements Closeable
     {
         int code = this.exitCode.get();
 
-        if ( ! (this.isStopped() || this.isClosed() )  )
+        if ( ! ( this.isStopped() || this.isClosed() ) )
         {
             throw new IllegalStateException( "Cannot acquire the exit status of a running evaluation." );
         }
@@ -890,6 +904,12 @@ public class Evaluation implements Closeable
          */
 
         private Consumers consumers;
+
+        /**
+         * Path to write.
+         */
+
+        private Path outputPath;
 
         /**
          * Sets the broker.
@@ -929,6 +949,20 @@ public class Evaluation implements Closeable
         public Builder setConsumers( Consumers consumers )
         {
             this.consumers = consumers;
+
+            return this;
+        }
+
+        /**
+         * Sets the output path.
+         * 
+         * @param outputPath the output path
+         * @return this builder 
+         */
+
+        public Builder setOutputPath( Path outputPath )
+        {
+            this.outputPath = outputPath;
 
             return this;
         }
@@ -1133,7 +1167,7 @@ public class Evaluation implements Closeable
     {
         return this.isStopped.get();
     }
-    
+
     /**
      * @return true if closed, otherwise false.
      */
@@ -1156,7 +1190,7 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( message );
 
         // Group identifier required in some cases
-        if ( message.getCompletionStatus() == CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS )
+        if ( message.getCompletionStatus() == CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS )
         {
             this.validateGroupId( groupId );
 
@@ -1166,7 +1200,7 @@ public class Evaluation implements Closeable
                                                     + DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION
                                                     + "The expected message count is required when the completion "
                                                     + "status reports "
-                                                    + CompletionStatus.GROUP_COMPLETE_REPORTED_SUCCESS );
+                                                    + CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS );
             }
         }
 
@@ -1239,6 +1273,15 @@ public class Evaluation implements Closeable
     }
 
     /**
+     * @return returns the output path to write
+     */
+
+    private Path getOutputPath()
+    {
+        return this.outputPath;
+    }
+
+    /**
      * Builds an exception with the specified message.
      * 
      * @param builder the builder
@@ -1266,7 +1309,9 @@ public class Evaluation implements Closeable
         Set<String> externalSubs = builder.consumers.getExternalSubscribers();
 
         this.evaluationDescription = builder.evaluationDescription;
+        this.outputPath = builder.outputPath;
 
+        Objects.requireNonNull( this.outputPath, "Cannot create an evaluation without a path for outputs." );
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
         Objects.requireNonNull( this.evaluationDescription,
                                 "Cannot create an evaluation without an evaluation "
@@ -1544,9 +1589,14 @@ public class Evaluation implements Closeable
      * @param publisher the publisher
      * @param queue the queue name on the amq.topic
      * @param groupId the optional message group identifier
+     * @param outputPath an optional output path string
      */
 
-    private void internalPublish( ByteBuffer body, MessagePublisher publisher, String queue, String groupId )
+    private void internalPublish( ByteBuffer body,
+                                  MessagePublisher publisher,
+                                  String queue,
+                                  String groupId,
+                                  String outputPath )
     {
         // Published below, so increment by 1 here 
         String messageId = "ID:" + this.getEvaluationId() + "-m" + ( publisher.getMessageCount() + 1 );
@@ -1555,6 +1605,11 @@ public class Evaluation implements Closeable
         Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
         properties.put( MessageProperty.JMS_MESSAGE_ID, messageId );
         properties.put( MessageProperty.JMS_CORRELATION_ID, this.getEvaluationId() );
+
+        if ( Objects.nonNull( outputPath ) )
+        {
+            properties.put( MessageProperty.OUTPUT_PATH, outputPath );
+        }
 
         if ( Objects.nonNull( groupId ) )
         {
@@ -1596,7 +1651,10 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( evaluation.toByteArray() );
 
-        this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null );
+        // Get the output path
+        String innerOutputPath = this.getOutputPath().toString();
+
+        this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null, innerOutputPath );
 
         this.messageCount.getAndIncrement();
     }

@@ -656,8 +656,7 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
-     * Creates a map of grouped subscriptions by group identifier. Returns a mutable queue, so do not expose more 
-     * generally.
+     * Creates a queue of grouped subscriptions. Returns a mutable queue, so do not expose more generally.
      * 
      * @param <T> the type of message
      * @param innerConsumer the inner consumer that accepts aggregate messages
@@ -810,11 +809,11 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
-     * Checks for complete groups and finalizes them.
+     * Checks for a complete group and finalizes it.
      * 
      * @param group the grouped consumers whose consumption should be completed
      * @param consumer the message consumer whose resources should be closed
-     * @return the number of groups completed
+     * @return the number of consumers completed
      */
 
     private int checkAndCompleteGroup( String groupId )
@@ -1237,7 +1236,7 @@ class MessageSubscriber<T> implements Closeable
                 // statistics messages
                 switch ( status.getCompletionStatus() )
                 {
-                    case GROUP_COMPLETE_REPORTED_SUCCESS:
+                    case GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS:
                         this.setExpectedMessageCountForGroups( status,
                                                                evaluationId,
                                                                messageId,

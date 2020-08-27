@@ -35,23 +35,31 @@ class GraphicsPublisher implements Closeable
 
     enum MessageProperty
     {
+        JMSX_GROUP_ID,
+
         JMS_CORRELATION_ID,
 
         JMS_MESSAGE_ID,
 
-        CONSUMER_ID;
+        CONSUMER_ID,
+        
+        OUTPUT_PATH;
 
         @Override
         public String toString()
         {
             switch ( this )
             {
+                case JMSX_GROUP_ID:
+                    return "JMSXGroupID";
                 case JMS_CORRELATION_ID:
                     return "JMSCorrelationID";
                 case JMS_MESSAGE_ID:
                     return "JMSMessageID";
                 case CONSUMER_ID:
                     return "ConsumerID";
+                case OUTPUT_PATH:
+                    return "OutputPath";
                 default:
                     throw new IllegalStateException( "Implement the string identifier for " + this );
             }

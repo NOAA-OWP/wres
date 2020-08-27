@@ -155,11 +155,12 @@ class ProcessorHelper
                                        // Add a grouped consumer for statistics that are grouped by feature
                                        .addGroupedStatisticsConsumer( groupConsumer )
                                        .build();
-
+        
         // Open an evaluation, to be closed on completion or stopped on exception
         Evaluation evaluation = Evaluation.open( evaluationDescription,
                                                  connections,
-                                                 consumerGroup );
+                                                 consumerGroup,
+                                                 outputDirectory );
 
         try
         {
@@ -175,7 +176,7 @@ class ProcessorHelper
 
             // Wait for the evaluation to conclude
             evaluation.await();
-
+            
             // Since the shared writers are created here, they should be destroyed here. An attempt should be made to 
             // close them before the finally block because some of these writers may employ a delayed write, which could 
             // still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further context 
@@ -236,7 +237,7 @@ class ProcessorHelper
                 LOGGER.error( "Failed to close the shared writers for evaluation {}.", evaluation.getEvaluationId() );
             }
 
-            // Close the other closeable consumers
+            // Close the other closable consumers
             try
             {
                 groupConsumer.close();
@@ -258,6 +259,9 @@ class ProcessorHelper
             // Add the consumer paths written, since consumers are now out-of-band to producers
             returnMe.addAll( incrementalConsumer.get() );
             returnMe.addAll( groupConsumer.get() );
+            
+            // Add the paths written by external subscribers
+            returnMe.addAll( evaluation.getPathsWrittenByExternalSubscribers() );
 
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )

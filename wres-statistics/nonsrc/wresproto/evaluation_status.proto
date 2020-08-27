@@ -66,7 +66,7 @@ message EvaluationStatus
         CONSUMPTION_COMPLETE_REPORTED_FAILURE = 10;
         // A consumer reports completion with errors.
 
-        GROUP_COMPLETE_REPORTED_SUCCESS = 11;
+        GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS = 11;
         // A message group has been completed. The group identifier is assumed 
         // to be part of the protocol metadata.
     }
@@ -76,32 +76,6 @@ message EvaluationStatus
     string consumer_id = 3;
     // The unique identifier of the consumer when the status update is about
     // a message consumer. Must be present when a consumer reports.
-    
-    repeated EvaluationStatusEvent status_events = 4;
-    // Zero or more caller-facing status events.
-    
-    int32 message_count = 5;
-    // Number of statistics messages that were published, plus one (for the 
-    // evaluation message description that accompanies every evaluation). This 
-    // is the expected number of messages a client consumer should receive. 
-    // Always set when the completion status indicates that publication is 
-    // complete (from that point onwards).
-
-    int32 status_message_count = 6;
-    // Number of evaluation status messages (like this one) that were published, 
-    // where applicable. This is the expected number of messages a client 
-    // consumer should receive. Always set when the completion status indicates 
-    // that publication is complete (from that point onwards).
-
-    int32 pairs_message_count = 7;
-    // The number of pairs messages that were published, where applicable. This 
-    // is the expected number of messages a client consumer should receive.
-    // Always set when the completion status indicates that publication is 
-    // complete (from that point onwards).
-
-    int32 group_count = 8;
-    // The number of groups within the evaluation. Always set when the completion 
-    // status indicates that publication is complete (from that point onwards).
 
     message EvaluationStatusEvent
     {
@@ -137,5 +111,35 @@ message EvaluationStatus
 
         int32 status_code = 3;
         // A status code, such as an HTTP status code.
-    }
+    }    
+
+    repeated EvaluationStatusEvent status_events = 4;
+    // Zero or more caller-facing status events.
+    
+    int32 message_count = 5;
+    // Number of statistics messages that were published, plus one (for the 
+    // evaluation message description that accompanies every evaluation). This 
+    // is the expected number of messages a client consumer should receive. 
+    // Always set when the completion status indicates that publication is 
+    // complete (from that point onwards).
+
+    int32 status_message_count = 6;
+    // Number of evaluation status messages (like this one) that were published, 
+    // where applicable. This is the expected number of messages a client 
+    // consumer should receive. Always set when the completion status indicates 
+    // that publication is complete (from that point onwards).
+
+    int32 pairs_message_count = 7;
+    // The number of pairs messages that were published, where applicable. This 
+    // is the expected number of messages a client consumer should receive.
+    // Always set when the completion status indicates that publication is 
+    // complete (from that point onwards).
+
+    int32 group_count = 8;
+    // The number of groups within the evaluation. Always set when the completion 
+    // status indicates that publication is complete (from that point onwards).
+
+    repeated string resources_created = 9;
+    // Paths or URIs to resources created during an evaluation event.
+
 }

@@ -7,6 +7,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -80,6 +82,12 @@ public class EvaluationTest
 
     private static BrokerConnectionFactory connections = null;
 
+    /**
+     * Fake path to write.
+     */
+
+    private Path outputPath;
+
     @BeforeClass
     public static void runBeforeAllTests()
     {
@@ -93,6 +101,7 @@ public class EvaluationTest
         wres.statistics.generated.Evaluation.Builder oneEvaluationBuilder =
                 wres.statistics.generated.Evaluation.newBuilder();
 
+        this.outputPath = Paths.get( System.getProperty( "java.io.tmpdir" ) );
         this.oneEvaluation = oneEvaluationBuilder.build();
         this.oneStatistics = new ArrayList<>();
 
@@ -163,7 +172,8 @@ public class EvaluationTest
         // Create and start a broker and open an evaluation, closing on completion
         try ( Evaluation evaluationOne = Evaluation.open( this.oneEvaluation,
                                                           EvaluationTest.connections,
-                                                          consumerGroup ); )
+                                                          consumerGroup,
+                                                          this.outputPath ); )
         {
             // First evaluation
             for ( Statistics next : this.oneStatistics )
@@ -218,9 +228,15 @@ public class EvaluationTest
 
         // Create and start a broker and open an evaluation, closing on completion
         try ( Evaluation evaluationOne =
-                Evaluation.open( this.oneEvaluation, EvaluationTest.connections, consumerGroup );
+                Evaluation.open( this.oneEvaluation,
+                                 EvaluationTest.connections,
+                                 consumerGroup,
+                                 this.outputPath );
               Evaluation evaluationTwo =
-                      Evaluation.open( this.anotherEvaluation, EvaluationTest.connections, otherConsumerGroup ) )
+                      Evaluation.open( this.anotherEvaluation,
+                                       EvaluationTest.connections,
+                                       otherConsumerGroup,
+                                       this.outputPath ) )
         {
             // First evaluation
             for ( Statistics next : this.oneStatistics )
@@ -283,7 +299,10 @@ public class EvaluationTest
 
         // Create and start a broker and open an evaluation, closing on completion
         try ( Evaluation evaluationOne =
-                Evaluation.open( this.oneEvaluation, EvaluationTest.connections, consumerGroup ); )
+                Evaluation.open( this.oneEvaluation,
+                                 EvaluationTest.connections,
+                                 consumerGroup,
+                                 this.outputPath ); )
         {
             // First evaluation
             for ( Statistics next : this.oneStatistics )
@@ -325,7 +344,8 @@ public class EvaluationTest
         // Create and start a broker and open an evaluation, closing on completion
         Evaluation evaluationOne = Evaluation.open( this.oneEvaluation,
                                                     EvaluationTest.connections,
-                                                    consumerGroup );
+                                                    consumerGroup,
+                                                    this.outputPath );
 
         // Stop the evaluation
         evaluationOne.stop( new Exception( "an exception" ) );
@@ -373,7 +393,8 @@ public class EvaluationTest
         // Create and start a broker and open an evaluation, closing on completion
         try ( Evaluation evaluation = Evaluation.open( this.oneEvaluation,
                                                        EvaluationTest.connections,
-                                                       consumerGroup ); )
+                                                       consumerGroup,
+                                                       this.outputPath ); )
         {
             // Iterate the groups/features
             for ( int i = 0; i < featureCount; i++ )
@@ -450,7 +471,8 @@ public class EvaluationTest
         // Create and start a broker and open an evaluation, closing on completion
         try ( Evaluation evaluation = Evaluation.open( this.oneEvaluation,
                                                        EvaluationTest.connections,
-                                                       consumerGroup ); )
+                                                       consumerGroup,
+                                                       this.outputPath ); )
         {
             // First group
             for ( Statistics next : this.oneStatistics )
@@ -531,7 +553,8 @@ public class EvaluationTest
         {
             evaluation = Evaluation.open( this.oneEvaluation,
                                           EvaluationTest.connections,
-                                          consumerGroup );
+                                          consumerGroup,
+                                          this.outputPath );
 
             // Notify publication done, even though nothing published, as this 
             // has the expected message count
@@ -572,7 +595,8 @@ public class EvaluationTest
         {
             evaluation = Evaluation.open( this.oneEvaluation,
                                           EvaluationTest.connections,
-                                          consumerGroup );
+                                          consumerGroup,
+                                          this.outputPath );
 
             // Publish a statistics message, which fails to be consumed after retries
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -624,7 +648,8 @@ public class EvaluationTest
         // Open an evaluation, closing on completion
         try ( Evaluation evaluation = Evaluation.open( this.oneEvaluation,
                                                        EvaluationTest.connections,
-                                                       consumerGroup ) )
+                                                       consumerGroup,
+                                                       this.outputPath ) )
         {
             // Publish a statistics message, triggering one failed consumption followed by recovery
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -658,7 +683,8 @@ public class EvaluationTest
         {
             evaluation = Evaluation.open( this.oneEvaluation,
                                           EvaluationTest.connections,
-                                          consumerGroup );
+                                          consumerGroup,
+                                          this.outputPath );
 
             Statistics mockedStatistics = Mockito.mock( Statistics.class );
             Mockito.when( mockedStatistics.toByteArray() )

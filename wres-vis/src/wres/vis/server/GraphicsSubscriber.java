@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -27,8 +29,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import wres.events.EvaluationEventException;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
-import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.vis.server.GraphicsPublisher.MessageProperty;
 import wres.vis.server.GraphicsServer.ServerStatus;
 import wres.statistics.generated.Evaluation;
@@ -83,6 +85,24 @@ class GraphicsSubscriber implements Closeable
      */
 
     private static final String STATISTICS_QUEUE = "statistics";
+
+    /**
+     * String representation of the {@link MessageProperty#CONSUMER_ID}.
+     */
+
+    private static final String CONSUMER_ID_STRING = MessageProperty.CONSUMER_ID.toString();
+
+    /**
+     * String representation of the {@link MessageProperty#GROUP_ID}.
+     */
+
+    private static final String GROUP_ID_STRING = MessageProperty.JMSX_GROUP_ID.toString();
+
+    /**
+     * String representation of the {@link MessageProperty#OUTPUT_PATH}.
+     */
+
+    private static final String OUTPUT_PATH_STRING = MessageProperty.OUTPUT_PATH.toString();
 
     /**
      * A publisher for {@link EvaluationStatus} messages.
@@ -154,7 +174,20 @@ class GraphicsSubscriber implements Closeable
      * The evaluations by unique id.
      */
 
-    Map<String, EvaluationConsumer> evaluations = new ConcurrentHashMap<>();
+    private final Map<String, EvaluationConsumer> evaluations;
+
+    /**
+     * An executor service for graphics writing work.
+     */
+
+    private final ExecutorService executorService;
+
+    /**
+     * A lock that guards the evaluations. This is needed to sweep evaluations that have been completed, otherwise
+     * the map will grow infinitely.
+     */
+
+    private final ReentrantLock evaluationsLock = new ReentrantLock();
 
     @Override
     public void close()
@@ -213,6 +246,75 @@ class GraphicsSubscriber implements Closeable
                           + "subscriber {}: {}",
                           this.getIdentifier(),
                           e.getMessage() );
+        }
+    }
+
+    /**
+     * Removes completed evaluations from the cache.
+     */
+
+    void sweep()
+    {
+        // Lock for sweeping
+        this.getEvaluationsLock().lock();
+
+        Set<String> completed = this.evaluations.entrySet()
+                                                .stream()
+                                                .filter( next -> next.getValue().isComplete() )
+                                                .map( Map.Entry::getKey )
+                                                .collect( Collectors.toSet() );
+
+        completed.forEach( this.evaluations::remove );
+
+        LOGGER.debug( "The sweeper for subscriber {} removed {} completed evaluation, including {}.",
+                      this.getIdentifier(),
+                      completed.size(),
+                      completed );
+
+        this.getEvaluationsLock().unlock();
+    }
+
+    /**
+     * Sends an evaluation status message with a status of {@link CompletionStatus#READY_TO_CONSUME} for each open
+     * evaluation so that any listening listening client knows that the subscriber is still alive.
+     * @throws EvaluationEventException if the notification failed
+     */
+
+    void notifyAlive()
+    {
+        // Create the status message to publish
+        EvaluationStatus message = EvaluationStatus.newBuilder()
+                                                   .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
+                                                   .setConsumerId( this.getIdentifier() )
+                                                   .build();
+
+        // Iterate the evaluations
+        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
+        {
+            // Consider only open evaluations
+            if ( !next.getValue().isComplete() )
+            {
+                String messageId = "ID:" + this.getIdentifier();
+
+                String evaluationId = next.getKey();
+
+                ByteBuffer buffer = ByteBuffer.wrap( message.toByteArray() );
+
+                try
+                {
+                    this.evaluationStatusPublisher.publish( buffer, messageId, evaluationId, this.getIdentifier() );
+                }
+                catch ( JMSException e )
+                {
+                    throw new EvaluationEventException( "Subscriber "
+                                                        + this.getIdentifier()
+                                                        + " failed to publish an evaluation status message about "
+                                                        + "evaluation "
+                                                        + evaluationId
+                                                        + ".",
+                                                        e );
+                }
+            }
         }
     }
 
@@ -309,16 +411,289 @@ class GraphicsSubscriber implements Closeable
     }
 
     /**
+     * @return the subscriber identifier.
+     */
+
+    private String getIdentifier()
+    {
+        return this.uniqueId;
+    }
+
+    /**
+     * @return the name of the durable subscriber to the evaluation status message queue.
+     */
+
+    private String getEvaluationStatusSubscriberName()
+    {
+        return this.getIdentifier() + "-EXTERNAL-status";
+    }
+
+    /**
+     * @return the name of the durable subscriber to the evaluation message queue.
+     */
+
+    private String getEvaluationSubscriberName()
+    {
+        return this.getIdentifier() + "-EXTERNAL-evaluation";
+    }
+
+    /**
+     * @return the name of the durable subscriber to the statistics message queue.
+     */
+
+    private String getStatisticsSubscriberName()
+    {
+        return this.getIdentifier() + "-EXTERNAL-statistics";
+    }
+
+    /**
+     * Awaits evaluation status messages and then consumes them. 
+     */
+
+    private MessageListener getStatusListener()
+    {
+        return message -> {
+            BytesMessage receivedBytes = (BytesMessage) message;
+            String messageId = UNKNOWN;
+            String correlationId = UNKNOWN;
+            String consumerId = UNKNOWN;
+            String groupId = null;
+
+            try
+            {
+                messageId = message.getJMSMessageID();
+                correlationId = message.getJMSCorrelationID();
+                consumerId = message.getStringProperty( GraphicsSubscriber.CONSUMER_ID_STRING );
+                groupId = message.getStringProperty( GraphicsSubscriber.GROUP_ID_STRING );
+
+                // Ignore status messages about consumers, including this one
+                if ( Objects.isNull( consumerId ) )
+                {
+                    int messageLength = (int) receivedBytes.getBodyLength();
+
+                    // Create the byte array to hold the message
+                    byte[] messageContainer = new byte[messageLength];
+
+                    receivedBytes.readBytes( messageContainer );
+
+                    ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
+
+                    EvaluationStatus statusEvent = EvaluationStatus.parseFrom( buffer );
+
+                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+
+                    consumer.acceptStatusMessage( statusEvent, groupId, messageId );
+
+                    // Complete?
+                    if ( consumer.isComplete() )
+                    {
+                        // Yes, then close
+                        consumer.close();
+                        this.status.registerEvaluationCompleted( correlationId );
+                    }
+                }
+                message.acknowledge();
+
+                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
+            }
+            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
+            {
+                LOGGER.error( "External subscriber {} failed to consume an evaluation status message {} for "
+                              + EVALUATION,
+                              this.getIdentifier(),
+                              messageId,
+                              correlationId );
+            }
+        };
+    }
+
+    /**
+     * Awaits evaluation messages and then consumes them. 
+     */
+
+    private MessageListener getStatisticsListener()
+    {
+        return message -> {
+            BytesMessage receivedBytes = (BytesMessage) message;
+            String messageId = UNKNOWN;
+            String correlationId = UNKNOWN;
+            String groupId = null;
+
+            try
+            {
+                messageId = message.getJMSMessageID();
+                correlationId = message.getJMSCorrelationID();
+                groupId = message.getStringProperty( GraphicsSubscriber.GROUP_ID_STRING );
+
+                EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+
+                // Create the byte array to hold the message
+                int messageLength = (int) receivedBytes.getBodyLength();
+
+                byte[] messageContainer = new byte[messageLength];
+
+                receivedBytes.readBytes( messageContainer );
+
+                ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
+
+                Statistics statistics = Statistics.parseFrom( buffer );
+
+                consumer.acceptStatisticsMessage( statistics, groupId, messageId );
+                this.status.registerStatistics( messageId );
+
+                // Complete?
+                if ( consumer.isComplete() )
+                {
+                    // Yes, then close
+                    consumer.close();
+                    this.status.registerEvaluationCompleted( correlationId );
+                }
+
+                message.acknowledge();
+
+                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
+            }
+            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
+            {
+                this.status.registerFailedEvaluation( correlationId );
+
+                LOGGER.error( "External subscriber {} failed to consume a statistics message {} for "
+                              + EVALUATION,
+                              this.getIdentifier(),
+                              messageId,
+                              correlationId );
+            }
+        };
+    }
+
+    /**
+     * Awaits evaluation messages and then consumes them. 
+     */
+
+    private MessageListener getEvaluationListener()
+    {
+        return message -> {
+            BytesMessage receivedBytes = (BytesMessage) message;
+            String messageId = UNKNOWN;
+            String correlationId = UNKNOWN;
+            String outputPath = null;
+
+            try
+            {
+                messageId = message.getJMSMessageID();
+                correlationId = message.getJMSCorrelationID();
+                outputPath = message.getStringProperty( GraphicsSubscriber.OUTPUT_PATH_STRING );
+
+                EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+
+                // Create the byte array to hold the message
+                int messageLength = (int) receivedBytes.getBodyLength();
+
+                byte[] messageContainer = new byte[messageLength];
+
+                receivedBytes.readBytes( messageContainer );
+
+                ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
+
+                Evaluation evaluation = Evaluation.parseFrom( buffer );
+
+                consumer.acceptEvaluationMessage( evaluation, outputPath, messageId );
+
+                // Complete?
+                if ( consumer.isComplete() )
+                {
+                    // Yes, then close
+                    consumer.close();
+                    this.status.registerEvaluationCompleted( correlationId );
+                }
+
+                message.acknowledge();
+
+                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
+            }
+            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
+            {
+                this.status.registerFailedEvaluation( correlationId );
+
+                LOGGER.error( "External subscriber {} failed to consume an evaluation description message {} for "
+                              + EVALUATION,
+                              this.getIdentifier(),
+                              messageId,
+                              correlationId );
+            }
+        };
+    }
+
+    /**
+     * Returns a consumer for a prescribed evaluation identifier.
+     * @param evaluationId the evaluation identifier
+     * @return the consumer
+     */
+
+    private EvaluationConsumer getEvaluationConsumer( String evaluationId )
+    {
+        Objects.requireNonNull( evaluationId,
+                                "Cannot request an evaluation consumer for an evaluation with a "
+                                              + "missing identifier." );
+
+        // Lock to avoid sweeping
+        this.getEvaluationsLock().lock();
+
+        // Check initially
+        EvaluationConsumer consumer = this.evaluations.get( evaluationId );
+
+        if ( Objects.isNull( consumer ) )
+        {
+            consumer = new EvaluationConsumer( evaluationId,
+                                               this.getIdentifier(),
+                                               this.evaluationStatusPublisher,
+                                               this.getGraphicsExecutor() );
+            this.status.registerEvaluationStarted( evaluationId );
+        }
+
+        // Check atomically
+        EvaluationConsumer added = this.evaluations.putIfAbsent( evaluationId, consumer );
+        if ( Objects.nonNull( added ) )
+        {
+            consumer = added;
+        }
+
+        // Unlock to allow sweeping
+        this.getEvaluationsLock().unlock();
+
+        return consumer;
+    }
+
+    /**
+     * @return the evaluations lock
+     */
+
+    private ReentrantLock getEvaluationsLock()
+    {
+        return this.evaluationsLock;
+    }
+    
+    /**
+     * @return the executor to do graphics writing work.
+     */
+
+    private ExecutorService getGraphicsExecutor()
+    {
+        return this.executorService;
+    }
+
+    /**
      * Builds a subscriber.
      * 
      * @param identifier a unique identifier for the subscriber
      * @param status a graphics server whose status can be updated with subscriber progress
+     * @param executorService the executor for completing graphics work
      * @throws JMSException if the subscriber components could not be constructed or started.
-     * @throws NamingException if the expected broker destinations could not be discovere
+     * @throws NamingException if the expected broker destinations could not be discovered
      * @throws NullPointerException if any input is null
      */
 
-    GraphicsSubscriber( String uniqueId, ServerStatus status ) throws JMSException, NamingException
+    GraphicsSubscriber( String uniqueId, ServerStatus status, ExecutorService executorService ) throws JMSException, NamingException
     {
         Objects.requireNonNull( uniqueId );
         Objects.requireNonNull( status );
@@ -368,6 +743,10 @@ class GraphicsSubscriber implements Closeable
 
         this.statisticsConsumer.setMessageListener( this.getStatisticsListener() );
 
+        this.evaluations = new ConcurrentHashMap<>();
+
+        this.executorService = executorService;
+
         // Start the consumer connection
         LOGGER.info( "Started the consumer connection for long-running subscriber {}...",
                      this.getIdentifier() );
@@ -375,416 +754,7 @@ class GraphicsSubscriber implements Closeable
 
         LOGGER.info( "Created long-running subscriber {}", this.getIdentifier() );
     }
-
-    /**
-     * @return the subscriber identifier.
-     */
-
-    private String getIdentifier()
-    {
-        return this.uniqueId;
-    }
-
-    /**
-     * @return the name of the durable subscriber to the evaluation status message queue.
-     */
-
-    private String getEvaluationStatusSubscriberName()
-    {
-        return this.getIdentifier() + "-EXTERNAL-status";
-    }
-
-    /**
-     * @return the name of the durable subscriber to the evaluation message queue.
-     */
-
-    private String getEvaluationSubscriberName()
-    {
-        return this.getIdentifier() + "-EXTERNAL-evaluation";
-    }
-
-    /**
-     * @return the name of the durable subscriber to the statistics message queue.
-     */
-
-    private String getStatisticsSubscriberName()
-    {
-        return this.getIdentifier() + "-EXTERNAL-statistics";
-    }
-
-    /**
-     * Awaits evaluation status messages and then consumes them. 
-     */
-
-    private MessageListener getStatusListener()
-    {
-        return message -> {
-            BytesMessage receivedBytes = (BytesMessage) message;
-            String messageId = UNKNOWN;
-            String correlationId = UNKNOWN;
-            String consumerId = UNKNOWN;
-            try
-            {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-                consumerId = message.getStringProperty( MessageProperty.CONSUMER_ID.toString() );
-
-                // Ignore status messages about consumers, including this one
-                if ( Objects.isNull( consumerId ) )
-                {
-                    int messageLength = (int) receivedBytes.getBodyLength();
-
-                    // Create the byte array to hold the message
-                    byte[] messageContainer = new byte[messageLength];
-
-                    receivedBytes.readBytes( messageContainer );
-
-                    ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
-
-                    EvaluationStatus statusEvent = EvaluationStatus.parseFrom( buffer );
-
-                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
-
-                    consumer.acceptStatusMessage( statusEvent, messageId );
-
-                    // Complete?
-                    if ( consumer.isComplete() )
-                    {
-                        consumer.registerComplete();
-                    }
-                }
-                message.acknowledge();
-
-                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
-            }
-            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
-            {
-                LOGGER.error( "External subscriber {} failed to consume an evaluation status message {} for "
-                              + EVALUATION,
-                              this.getIdentifier(),
-                              messageId,
-                              correlationId );
-            }
-        };
-    }
-
-    /**
-     * Awaits evaluation messages and then consumes them. 
-     */
-
-    private MessageListener getStatisticsListener()
-    {
-        return message -> {
-            BytesMessage receivedBytes = (BytesMessage) message;
-            String messageId = UNKNOWN;
-            String correlationId = UNKNOWN;
-
-            try
-            {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-
-                EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
-
-                // Create the byte array to hold the message
-                int messageLength = (int) receivedBytes.getBodyLength();
-
-                byte[] messageContainer = new byte[messageLength];
-
-                receivedBytes.readBytes( messageContainer );
-
-                ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
-
-                Statistics statistics = Statistics.parseFrom( buffer );
-
-                consumer.acceptStatisticsMessage( statistics, messageId );
-                this.status.registerStatistics( messageId );
-
-                // Complete?
-                if ( consumer.isComplete() )
-                {
-                    consumer.registerComplete();
-                }
-
-                message.acknowledge();
-
-                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
-            }
-            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
-            {
-                this.status.registerFailedEvaluation( correlationId );
-
-                LOGGER.error( "External subscriber {} failed to consume a statistics message {} for "
-                              + EVALUATION,
-                              this.getIdentifier(),
-                              messageId,
-                              correlationId );
-            }
-        };
-    }
-
-    /**
-     * Awaits evaluation messages and then consumes them. 
-     */
-
-    private MessageListener getEvaluationListener()
-    {
-        return message -> {
-            BytesMessage receivedBytes = (BytesMessage) message;
-            String messageId = UNKNOWN;
-            String correlationId = UNKNOWN;
-
-            try
-            {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-
-                EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
-
-                // Create the byte array to hold the message
-                int messageLength = (int) receivedBytes.getBodyLength();
-
-                byte[] messageContainer = new byte[messageLength];
-
-                receivedBytes.readBytes( messageContainer );
-
-                ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
-
-                Evaluation evaluation = Evaluation.parseFrom( buffer );
-
-                consumer.acceptEvaluationMessage( evaluation, messageId );
-
-                // Complete?
-                if ( consumer.isComplete() )
-                {
-                    consumer.registerComplete();
-                }
-
-                message.acknowledge();
-
-                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
-            }
-            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
-            {
-                this.status.registerFailedEvaluation( correlationId );
-
-                LOGGER.error( "External subscriber {} failed to consume an evaluation description message {} for "
-                              + EVALUATION,
-                              this.getIdentifier(),
-                              messageId,
-                              correlationId );
-            }
-        };
-    }
-
-    /**
-     * Returns a consumer for a prescribed evaluation identifier.
-     * @param evaluationId the evaluation identifier
-     * @return the consumer
-     */
-
-    private EvaluationConsumer getEvaluationConsumer( String evaluationId )
-    {
-        Objects.requireNonNull( evaluationId,
-                                "Cannot request an evaluation consumer for an evaluation with a "
-                                              + "missing identifier." );
-
-        // Check initially
-        EvaluationConsumer consumer = this.evaluations.get( evaluationId );
-
-        if ( Objects.isNull( consumer ) )
-        {
-            consumer = new EvaluationConsumer( evaluationId, this.getIdentifier(), this.evaluationStatusPublisher );
-            this.status.registerEvaluation( evaluationId );
-        }
-
-        // Check atomically
-        EvaluationConsumer added = this.evaluations.putIfAbsent( evaluationId, consumer );
-        if ( Objects.nonNull( added ) )
-        {
-            consumer = added;
-        }
-
-        return consumer;
-    }
-
-    /**
-     * Consumer of messages for one evaluation.
-     * 
-     * @author james.brown@hydrosolved.com
-     */
-
-    private class EvaluationConsumer
-    {
-        /**
-         * Evaluation identifier.
-         */
-
-        private final String evaluationId;
-
-        /**
-         * Consumer identifier.
-         */
-
-        private final String consumerId;
-
-        /**
-         * Actual number of messages consumed.
-         */
-
-        private final AtomicInteger consumed;
-
-        /**
-         * Expected number of messages.
-         */
-
-        private final AtomicInteger expected;
-
-        /**
-         * Registered complete.
-         */
-
-        private final AtomicBoolean registeredComplete;
-
-        /**
-         * To notify when consumption complete.
-         */
-
-        private final GraphicsPublisher evaluationStatusPublisher;
-
-        /**
-         * Builds a consumer.
-         * 
-         * @param evaluationId the evaluation identifier
-         * @param consumerId the consumer identifier
-         * @param evaluationStatusPublisher the evaluation status publisher
-         * @throws NullPointerException if any input is null
-         */
-
-        private EvaluationConsumer( String evaluationId,
-                                    String consumerId,
-                                    GraphicsPublisher evaluationStatusPublisher )
-        {
-            Objects.requireNonNull( evaluationId );
-            Objects.requireNonNull( consumerId );
-            Objects.requireNonNull( evaluationStatusPublisher );
-
-            this.evaluationId = evaluationId;
-            this.consumerId = consumerId;
-            this.evaluationStatusPublisher = evaluationStatusPublisher;
-            this.consumed = new AtomicInteger();
-            this.expected = new AtomicInteger();
-            this.registeredComplete = new AtomicBoolean();
-        }
-
-        private void acceptStatisticsMessage( Statistics statistics, String messageId )
-        {
-            Objects.requireNonNull( statistics );
-
-            LOGGER.info( "External subscriber {} received and consumed a statistics message with identifier {} "
-                         + "for evaluation {}.",
-                         this.consumerId,
-                         messageId,
-                         this.evaluationId );
-
-            this.consumed.incrementAndGet();
-        }
-
-        private void acceptEvaluationMessage( Evaluation evaluation, String messageId )
-        {
-            Objects.requireNonNull( evaluation );
-
-            LOGGER.info( "External subscriber {} received and consumed an evaluation description message with "
-                         + "identifier {} for evaluation {}.",
-                         this.consumerId,
-                         messageId,
-                         this.evaluationId );
-
-            this.consumed.incrementAndGet();
-        }
-
-        private void acceptStatusMessage( EvaluationStatus status, String messageId )
-        {
-            Objects.requireNonNull( status );
-
-            LOGGER.info( "External subscriber {} received and consumed an evaluation status message with identifier {} "
-                         + "for evaluation {}.",
-                         this.consumerId,
-                         messageId,
-                         this.evaluationId );
-
-            // If publication is complete, then set the expected message count for this evaluation
-            if ( status.getCompletionStatus() == CompletionStatus.PUBLICATION_COMPLETE_REPORTED_SUCCESS )
-            {
-                this.setExpectedMessageCount( status );
-
-                LOGGER.info( "External subscriber {} received notification of publication complete for evaluation {}. "
-                             + "The message indicated an expected message count of {}.",
-                             this.consumerId,
-                             this.evaluationId,
-                             this.expected.get() );
-            }
-        }
-
-        private void setExpectedMessageCount( EvaluationStatus status )
-        {
-            Objects.requireNonNull( status );
-
-            this.expected.addAndGet( status.getMessageCount() );
-        }
-
-        /** 
-         * @return true if consumption is complete, otherwise false.
-         */
-
-        private boolean isComplete()
-        {
-            String append = "of an expected message count that is not yet known";
-            if ( this.expected.get() > 0 )
-            {
-                append = "of an expected " + this.expected.get() + " messages";
-            }
-
-            LOGGER.info( "For evaluation {}, external subscriber {} has consumed {} messages {}.",
-                         this.evaluationId,
-                         this.consumerId,
-                         this.consumed.get(),
-                         append );
-
-            return this.expected.get() > 0 && this.consumed.get() == this.expected.get();
-        }
-
-        /**
-         * Registers this consumer complete, notifying others that may want to track its progress.
-         * @throws JMSException if the completion failed
-         */
-
-        private void registerComplete() throws JMSException
-        {
-            if ( !registeredComplete.get() )
-            {
-                this.registeredComplete.set( true );
-
-                EvaluationStatus message = EvaluationStatus.newBuilder()
-                                                           .setCompletionStatus( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS )
-                                                           .setConsumerId( this.consumerId )
-                                                           .build();
-
-                // Create the metadata
-                String messageId = "ID:" + this.consumerId + "-complete";
-
-                ByteBuffer buffer = ByteBuffer.wrap( message.toByteArray() );
-
-                this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.consumerId );
-
-                LOGGER.debug( "External subscriber {} completed evaluation {}, which contained {} messages.",
-                              this.consumerId,
-                              this.evaluationId,
-                              this.consumed.get() );
-            }
-        }
-    }
-
+    
     /**
      * Listen for failures on a connection.
      */
