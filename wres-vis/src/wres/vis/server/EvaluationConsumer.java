@@ -20,7 +20,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -135,13 +137,13 @@ class EvaluationConsumer
      */
 
     private final Queue<StatisticsCache> statisticsCache;
-    
+
     /**
      * Thread pool to do graphics writing work.
      */
 
     private final ExecutorService executorService;
-    
+
     /**
      * Builds a consumer.
      * 
@@ -173,7 +175,7 @@ class EvaluationConsumer
         this.groupConsumers = new ConcurrentHashMap<>();
         this.statisticsCache = new ConcurrentLinkedQueue<>();
         this.executorService = executorService;
-        
+
         LOGGER.info( "External graphics subscriber {} opened evaluation {}, which is ready to consume messages.",
                      this.consumerId,
                      this.evaluationId );
@@ -234,27 +236,28 @@ class EvaluationConsumer
                     }
 
                     // Submit acceptance task
-                    this.getExecutorService().submit( consumerToClose::acceptGroup );
+                    this.execute( consumerToClose::acceptGroup );
                 }
 
-                LOGGER.trace( "On closing subscriber {}, discovered a consumer associated with group {} whose consumption "
-                              + "was ready to complete, but had not yet completed. This were completed.",
+                LOGGER.trace( "On closing subscriber {}, discovered a consumer associated with group {} whose "
+                              + "consumption was ready to complete, but had not yet completed. This were completed.",
                               this,
                               groupId );
 
             }
-            
+
             this.isClosed.set( true );
 
-            LOGGER.info( "External graphics subscriber {} closed evaluation {}, which contained {} messages.",
+            LOGGER.info( "External graphics subscriber {} closed evaluation {}, which contained {} messages (not "
+                         + "including any evaluation status messages).",
                          this.consumerId,
                          this.evaluationId,
                          this.consumed.get() );
-            
+
             // This instance is not responsible for closing the executor service.
         }
     }
-    
+
     /**
      * Marks an evaluation as failed unrecoverably after exhausting all attempts to recover the subscriber that 
      * delivers messages to this consumer. Sends a status message indicating 
@@ -296,7 +299,7 @@ class EvaluationConsumer
      */
 
     void acceptStatisticsMessage( Statistics statistics, String groupId, String messageId )
-    {        
+    {
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( messageId );
 
@@ -304,8 +307,8 @@ class EvaluationConsumer
         if ( this.getAreConsumersReady() )
         {
             // Accept the incremental types
-            this.getExecutorService().submit( () -> this.getConsumer().accept( List.of( statistics ) ) );
-            
+            this.execute( () -> this.getConsumer().accept( List.of( statistics ) ) );
+
             // Accept the grouped types
             if ( Objects.nonNull( groupId ) )
             {
@@ -420,12 +423,47 @@ class EvaluationConsumer
     /**
      * @return the executor to do graphics writing work.
      */
-    
+
     private ExecutorService getExecutorService()
     {
         return this.executorService;
     }
-    
+
+    /**
+     * Executes a graphics writing task
+     * @param task the task to execute
+     * @throws GraphicsWriteException if the task fails exceptionally
+     */
+
+    private void execute( Runnable task )
+    {
+        Future<?> future = this.getExecutorService().submit( task );
+
+        // Get and propagate any exception
+        try
+        {
+            future.get();
+        }
+        catch ( ExecutionException e )
+        {
+            throw new GraphicsWriteException( "Graphics subscriber " + this.consumerId
+                                              + " failed to complete a graphics writing task for evaluation "
+                                              + this.evaluationId
+                                              + ".",
+                                              e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            throw new GraphicsWriteException( "Graphics subscriber " + this.consumerId
+                                              + " failed to complete a graphics writing task for evaluation "
+                                              + this.evaluationId
+                                              + ".",
+                                              e );
+        }
+    }
+
     /**
      * Sets the expected message count.
      * @param status the evaluation status message with the expected message count
@@ -549,7 +587,7 @@ class EvaluationConsumer
                 if ( Objects.nonNull( expectedGroupCount ) && expectedGroupCount == check.size()
                      && !check.hasBeenUsed() )
                 {
-                    this.getExecutorService().submit( check::acceptGroup );
+                    this.execute( check::acceptGroup );
                     completed = true;
                 }
             }
@@ -599,10 +637,10 @@ class EvaluationConsumer
                 // Flag that the consumers are ready
                 this.areConsumersReady.set( true );
             }
-        }
 
-        // Consume any messages that arrived early
-        this.consumeCachedStatisticsMessages();
+            // Consume any messages that arrived early
+            this.consumeCachedStatisticsMessages();
+        }
     }
 
     /**

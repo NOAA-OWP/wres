@@ -251,19 +251,7 @@ class GraphicsServer implements Runnable, Closeable
             }
 
             this.timer.cancel();
-            this.serverExecutor.shutdown();
-
-            try
-            {
-                this.getServerExecutor().awaitTermination( 1, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException e )
-            {
-                LOGGER.warn( "Failed to close all resources used by the WRES Graphics Server." );
-
-                Thread.currentThread().interrupt();
-            }
-            // Close the executor service gracefully
+            
             this.getGraphicsExecutor().shutdown();
 
             try
@@ -275,6 +263,19 @@ class GraphicsServer implements Runnable, Closeable
                 LOGGER.warn( "Interrupted while shutting down the graphics executor service {} in graphics client {}.",
                              this.getGraphicsExecutor(),
                              this.getSubscriberId() );
+
+                Thread.currentThread().interrupt();
+            }
+            
+            this.getServerExecutor().shutdown();
+            
+            try
+            {
+                this.getServerExecutor().awaitTermination( 1, TimeUnit.SECONDS );
+            }
+            catch ( InterruptedException e )
+            {
+                LOGGER.warn( "Failed to close all resources used by the WRES Graphics Server." );
 
                 Thread.currentThread().interrupt();
             }

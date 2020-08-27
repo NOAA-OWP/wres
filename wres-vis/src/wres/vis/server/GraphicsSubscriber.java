@@ -36,6 +36,7 @@ import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.vis.server.GraphicsPublisher.MessageProperty;
 import wres.vis.server.GraphicsServer.ServerStatus;
+import wres.vis.writing.GraphicsWriteException;
 import wres.statistics.generated.Evaluation;
 
 /**
@@ -505,7 +506,8 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
+            catch ( JMSException | EvaluationEventException | GraphicsWriteException
+                    | InvalidProtocolBufferException e )
             {
                 // Attempt to recover
                 this.recover( messageId, correlationId, e );
@@ -559,7 +561,8 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
+            catch ( JMSException | EvaluationEventException | GraphicsWriteException
+                    | InvalidProtocolBufferException e )
             {
                 // Attempt to recover
                 this.recover( messageId, correlationId, e );
@@ -612,7 +615,8 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            catch ( JMSException | EvaluationEventException | InvalidProtocolBufferException e )
+            catch ( JMSException | EvaluationEventException | GraphicsWriteException
+                    | InvalidProtocolBufferException e )
             {
                 // Attempt to recover
                 this.recover( messageId, correlationId, e );
@@ -814,7 +818,7 @@ class GraphicsSubscriber implements Closeable
         Objects.requireNonNull( status );
         Objects.requireNonNull( executorService );
         Objects.requireNonNull( broker );
-        
+
         LOGGER.info( "Building a long-running graphics subscriber {} to listen for evaluation messages...",
                      uniqueId );
 

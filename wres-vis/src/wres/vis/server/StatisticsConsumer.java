@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -151,6 +152,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      */
 
     private final Path outputDirectory;
+    
+    final AtomicBoolean consumerBuilt = new AtomicBoolean(); 
 
     /**
      * Build the consumer.
@@ -477,6 +480,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         {
             this.buildGraphicsConsumersForOneFormatType( outputs, DestinationType.SVG );
         }
+        
+        consumerBuilt.set( true );
     }
 
     /**
@@ -647,7 +652,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private void processDoubleScoreOutputs( List<DoubleScoreStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
-
+        
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> next : this.doubleScoreConsumers.entrySet() )
         {
@@ -665,7 +670,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                 log( outputs, next.getKey(), false );
             }
         }
-
     }
 
     /**
