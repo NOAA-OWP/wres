@@ -761,10 +761,10 @@ class WebSource implements Callable<List<IngestResult>>
      * @return The URI to use to get data.
      */
 
-    private URI createUri( URI baseUri,
-                           DataSource dataSource,
-                           Pair<Instant,Instant> range,
-                           String[] featureNames )
+    URI createUri( URI baseUri,
+                   DataSource dataSource,
+                   Pair<Instant,Instant> range,
+                   String[] featureNames )
     {
         if ( this.isWrdsNwmSource( dataSource ) )
         {
@@ -1135,7 +1135,7 @@ class WebSource implements Callable<List<IngestResult>>
     }
 
 
-    private void shutdownNow()
+    void shutdownNow()
     {
         List<Runnable> abandoned = this.ingestSaverExecutor.shutdownNow();
 
