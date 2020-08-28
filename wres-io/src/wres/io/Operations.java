@@ -804,8 +804,14 @@ public final class Operations {
      */
     private static boolean shouldAnalyze( List<IngestResult> ingestResults )
     {
+        // See if any ill effects still occur when disabling explicit analyze.
+        // The schema and process for ingest is quite different now. See #76787.
+        return false;
+
+        /*
         return wres.util.Collections.exists( ingestResults,
                                              ingestResult -> !ingestResult.wasFoundAlready() );
+         */
     }
 
     public static void createNetCDFOutputTemplate(final String sourceName, final String templateName)
