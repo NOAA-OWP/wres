@@ -113,4 +113,111 @@ public class WebSourceTest
         assertTrue( generatedPath.contains( FEATURE_NAME_ONE ) );
         assertTrue( generatedPath.contains( FEATURE_NAME_TWO ) );
     }
+
+
+    @Test
+    public void wrdsAhpsSourceAddsUserSpecifiedParameters()
+    {
+        UrlParameter urlParameterOne = new UrlParameter( URL_PARAM_NAME_ONE, URL_PARAM_VALUE_ONE );
+        UrlParameter urlParameterTwo = new UrlParameter( URL_PARAM_NAME_TWO, URL_PARAM_VALUE_TWO );
+        DataSourceConfig.Source source = new DataSourceConfig.Source( BASE_URI,
+                                                                      InterfaceShortHand.WRDS_AHPS,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null );
+        DataSourceConfig sourceConfig = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                              List.of( source ),
+                                                              new DataSourceConfig.Variable( "QR", null ),
+                                                              null,
+                                                              null,
+                                                              null,
+                                                              null,
+                                                              null,
+                                                              List.of( urlParameterOne, urlParameterTwo ),
+                                                              null,
+                                                              null );
+        DataSource dataSource = DataSource.of( source,
+                                               sourceConfig,
+                                               Collections.emptySet(),
+                                               BASE_URI );
+        WebSource webSource = WebSource.of( mockSystemSettings,
+                                            mockDatabase,
+                                            mockDataSourcesCache,
+                                            mockFeaturesCache,
+                                            variablesCache,
+                                            ensemblesCache,
+                                            measurementUnitsCache,
+                                            fakeProjectConfig,
+                                            dataSource,
+                                            lockManager );
+        URI generatedUri = webSource.createUri( source.getValue(),
+                                                dataSource,
+                                                Pair.of( START_INSTANT, END_INSTANT ),
+                                                FEATURE_NAME_ONE );
+        webSource.shutdownNow();
+        String queryOne = URL_PARAM_NAME_ONE + "=" + URL_PARAM_VALUE_ONE;
+        String queryTwo = URL_PARAM_NAME_TWO + "=" + URL_PARAM_VALUE_TWO;
+        String generatedQueryParts = generatedUri.getQuery();
+        String generatedPath = generatedUri.getPath();
+        LOGGER.info( "Created this url: {} with query parts: {} with path: {}",
+                     generatedUri, generatedQueryParts, generatedPath );
+        assertTrue( generatedQueryParts.contains( queryOne ) );
+        assertTrue( generatedQueryParts.contains( queryTwo ) );
+        assertTrue( generatedPath.contains( FEATURE_NAME_ONE ) );
+    }
+
+
+    @Test
+    public void usgsNwisSourceAddsUserSpecifiedParameters()
+    {
+        UrlParameter urlParameterOne = new UrlParameter( URL_PARAM_NAME_ONE, URL_PARAM_VALUE_ONE );
+        UrlParameter urlParameterTwo = new UrlParameter( URL_PARAM_NAME_TWO, URL_PARAM_VALUE_TWO );
+        DataSourceConfig.Source source = new DataSourceConfig.Source( BASE_URI,
+                                                                      InterfaceShortHand.USGS_NWIS,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null );
+        DataSourceConfig sourceConfig = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                              List.of( source ),
+                                                              new DataSourceConfig.Variable( "00060", null ),
+                                                              null,
+                                                              null,
+                                                              null,
+                                                              null,
+                                                              null,
+                                                              List.of( urlParameterOne, urlParameterTwo ),
+                                                              null,
+                                                              null );
+        DataSource dataSource = DataSource.of( source,
+                                               sourceConfig,
+                                               Collections.emptySet(),
+                                               BASE_URI );
+        WebSource webSource = WebSource.of( mockSystemSettings,
+                                            mockDatabase,
+                                            mockDataSourcesCache,
+                                            mockFeaturesCache,
+                                            variablesCache,
+                                            ensemblesCache,
+                                            measurementUnitsCache,
+                                            fakeProjectConfig,
+                                            dataSource,
+                                            lockManager );
+        URI generatedUri = webSource.createUri( source.getValue(),
+                                                dataSource,
+                                                Pair.of( START_INSTANT, END_INSTANT ),
+                                                new String[] { FEATURE_NAME_ONE, FEATURE_NAME_TWO } );
+        webSource.shutdownNow();
+        String queryOne = URL_PARAM_NAME_ONE + "=" + URL_PARAM_VALUE_ONE;
+        String queryTwo = URL_PARAM_NAME_TWO + "=" + URL_PARAM_VALUE_TWO;
+        String generatedQueryParts = generatedUri.getQuery();
+        String generatedPath = generatedUri.getPath();
+        LOGGER.info( "Created this url: {} with query parts: {} with path: {}",
+                     generatedUri, generatedQueryParts, generatedPath );
+        assertTrue( generatedQueryParts.contains( queryOne ) );
+        assertTrue( generatedQueryParts.contains( queryTwo ) );
+        assertTrue( generatedQueryParts.contains( FEATURE_NAME_ONE ) );
+        assertTrue( generatedQueryParts.contains( FEATURE_NAME_TWO ) );
+    }
 }

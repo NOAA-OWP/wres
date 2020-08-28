@@ -721,10 +721,10 @@ class WebSource implements Callable<List<IngestResult>>
      * @return The URI to use to get data.
      */
 
-    private URI createUri( URI baseUri,
-                           DataSource dataSource,
-                           Pair<Instant,Instant> range,
-                           String featureName )
+    URI createUri( URI baseUri,
+                   DataSource dataSource,
+                   Pair<Instant,Instant> range,
+                   String featureName )
     {
         if ( this.isWrdsAhpsSource( dataSource ) )
         {
@@ -809,11 +809,12 @@ class WebSource implements Callable<List<IngestResult>>
         // example "?format=json&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:0
         if ( !baseUri.getHost()
                      .toLowerCase()
-                     .contains( "usgs.gov" ) )
+                     .contains( "usgs.gov" )
+             && LOGGER.isWarnEnabled() )
         {
-            throw new IllegalArgumentException( "Expected URI like '"
-                                                + "https://nwis.waterservices.usgs.gov/nwis/iv"
-                                                + " but instead got " + baseUri.toString() );
+            LOGGER.warn( "Expected URI like '"
+                         + "https://nwis.waterservices.usgs.gov/nwis/iv'"
+                         + " but instead got " + baseUri.toString() );
         }
 
         Map<String, String> urlParameters = createUsgsUrlParameters( range,
@@ -844,11 +845,12 @@ class WebSource implements Callable<List<IngestResult>>
                      .endsWith( "ahps" ) &&
              !baseUri.getPath()
                      .toLowerCase()
-                     .endsWith( "ahps/" ) )
+                     .endsWith( "ahps/" )
+             && LOGGER.isWarnEnabled() )
         {
-            throw new IllegalArgumentException( "Expected URI like '" +
-                                                "http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps'"
-                                                + " but instead got " + baseUri.toString() );
+            LOGGER.warn( "Expected URI like '" +
+                         "https://***REMOVED***.***REMOVED***.***REMOVED***/api/prod/forecasts/streamflow/ahps'"
+                         + " but instead got " + baseUri.toString() );
         }
 
         String basePath = baseUri.getPath();
