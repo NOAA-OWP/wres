@@ -44,6 +44,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.UrlParameter;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -727,7 +728,11 @@ class WebSource implements Callable<List<IngestResult>>
     {
         if ( this.isWrdsAhpsSource( dataSource ) )
         {
-            return this.createWrdsAhpsUri( baseUri, range, featureName );
+            return this.createWrdsAhpsUri( baseUri,
+                                           range,
+                                           featureName,
+                                           dataSource.getContext()
+                                                     .getUrlParameter() );
         }
         else
         {
@@ -831,7 +836,8 @@ class WebSource implements Callable<List<IngestResult>>
 
     private URI createWrdsAhpsUri( URI baseUri,
                                    Pair<Instant,Instant> issuedRange,
-                                   String nwsLocationId )
+                                   String nwsLocationId,
+                                   List<UrlParameter> additionalParameters )
     {
         if ( !baseUri.getPath()
                      .toLowerCase()
@@ -853,7 +859,8 @@ class WebSource implements Callable<List<IngestResult>>
             basePath = basePath + "/";
         }
 
-        Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange );
+        Map<String, String> wrdsParameters = createWrdsAhpsUrlParameters( issuedRange,
+                                                                          additionalParameters );
         String pathWithLocation = basePath + "nwsLocations/"
                                   + nwsLocationId;
         URIBuilder uriBuilder = new URIBuilder( this.getBaseUri() );
@@ -916,7 +923,9 @@ class WebSource implements Callable<List<IngestResult>>
                                        .equals( DatasourceType.ENSEMBLE_FORECASTS );
 
         Map<String, String> wrdsParameters = createWrdsAhpsNwmParameters( issuedRange,
-                                                                          isEnsemble );
+                                                                          isEnsemble,
+                                                                          dataSource.getContext()
+                                                                                    .getUrlParameter() );
         StringJoiner joiner = new StringJoiner( "," );
 
         for ( String featureName : featureNames )
@@ -990,12 +999,23 @@ class WebSource implements Callable<List<IngestResult>>
         // For some reason, 1 to 999 milliseconds are not enough.
         Instant startDateTime = range.getLeft()
                                      .plusSeconds( 1 );
+        Map<String,String> urlParameters = new HashMap<>( 5 );
 
-        return Map.of( "format", "json",
-                       "parameterCd", dataSource.getVariable().getValue(),
-                       "startDT", startDateTime.toString(),
-                       "endDT", range.getRight().toString(),
-                       "sites", siteJoiner.toString() );
+        // Caller-supplied additional parameters are lower precedence, put first
+        for ( UrlParameter parameter : dataSource.getContext()
+                                                 .getUrlParameter() )
+        {
+            urlParameters.put( parameter.getName(), parameter.getValue() );
+        }
+
+        urlParameters.put( "format", "json" );
+        urlParameters.put( "parameterCd", dataSource.getVariable()
+                                                    .getValue() );
+        urlParameters.put( "startDT", startDateTime.toString() );
+        urlParameters.put( "endDT", range.getRight().toString() );
+        urlParameters.put( "sites", siteJoiner.toString() );
+
+        return Collections.unmodifiableMap( urlParameters );
     }
 
 
@@ -1005,13 +1025,23 @@ class WebSource implements Callable<List<IngestResult>>
      * @return the key/value parameters
      */
 
-    private Map<String,String> createWrdsAhpsUrlParameters( Pair<Instant,Instant> issuedRange )
+    private Map<String,String> createWrdsAhpsUrlParameters( Pair<Instant,Instant> issuedRange,
+                                                            List<UrlParameter> additionalParameters )
     {
-        Map<String,String> urlParameters = new HashMap<>();
+        Map<String,String> urlParameters = new HashMap<>( 2 );
+
+        // Caller-supplied additional parameters are lower precedence, put first
+        for ( UrlParameter parameter : additionalParameters )
+        {
+            urlParameters.put( parameter.getName(), parameter.getValue() );
+        }
+
         urlParameters.put( "issuedTime", "[" + issuedRange.getLeft().toString()
                                          + "," + issuedRange.getRight().toString()
                                          + "]" );
         urlParameters.put( "validTime", "all" );
+
+
         return Collections.unmodifiableMap( urlParameters );
     }
 
@@ -1023,9 +1053,17 @@ class WebSource implements Callable<List<IngestResult>>
      */
 
     private Map<String,String> createWrdsAhpsNwmParameters( Pair<Instant,Instant> issuedRange,
-                                                            boolean isEnsemble )
+                                                            boolean isEnsemble,
+                                                            List<UrlParameter> additionalParameters )
     {
-        Map<String,String> urlParameters = new HashMap<>();
+        Map<String,String> urlParameters = new HashMap<>( 3 );
+
+        // Caller-supplied additional parameters are lower precedence, put first
+        for ( UrlParameter parameter : additionalParameters )
+        {
+            urlParameters.put( parameter.getName(), parameter.getValue() );
+        }
+
         String leftWrdsFormattedDate = iso8601TruncatedToHourFromInstant( issuedRange.getLeft() );
         String rightWrdsFormattedDate = iso8601TruncatedToHourFromInstant( issuedRange.getRight() );
         urlParameters.put( "reference_time", "(" + leftWrdsFormattedDate

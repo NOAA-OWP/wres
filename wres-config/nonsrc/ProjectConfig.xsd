@@ -23,6 +23,18 @@
         <xs:attribute name="unit" type="durationUnit" default="hours" />
     </xs:complexType>
 
+    <xs:complexType name="urlParameterType">
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="UrlParameter" />
+            </xs:appinfo>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="value" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+
     <xs:simpleType name="datasourceType">
         <xs:annotation>
             <xs:documentation>
@@ -378,6 +390,7 @@
                 </xs:complexType>
             </xs:element>
             <xs:element name="existingTimeScale" type="timeScale" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="urlParameter" type="urlParameterType" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="featureDimension" type="featureDimension" />
