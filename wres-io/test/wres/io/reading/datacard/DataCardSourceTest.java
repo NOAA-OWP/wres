@@ -135,6 +135,7 @@ public class DataCardSourceTest
                                                        null,
                                                        null,
                                                        null,
+                                                       null,
                                                        null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( config,
@@ -229,6 +230,7 @@ public class DataCardSourceTest
         DataSourceConfig config = new DataSourceConfig(DatasourceType.fromValue("observations"),
                                                        sourceList,
                                                        new Variable("QINE", "test" ),
+                                                       null,
                                                        null,
                                                        null,
                                                        null,
