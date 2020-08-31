@@ -621,6 +621,20 @@ public class MessageFactory
     }
 
     /**
+     * Returns <code>true</code> if the outputs contains graphics type, otherwise <code>false</code>.
+     * 
+     * @return true if graphics are required
+     * @throws NullPointerException if the input is null 
+     */
+    
+    public static boolean hasGraphicsTypes( Outputs outputs )
+    {
+        Objects.requireNonNull( outputs );
+        
+        return outputs.hasPng() || outputs.hasSvg();
+    }
+    
+    /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsForProject}. Optionally ignores some statistic types.
      * 

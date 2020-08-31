@@ -113,18 +113,27 @@ class ProcessorHelper
                                                                         evaluationDescription,
                                                                         outputDirectory );
 
+        // Obtain any external subscribers that are required for this evaluation.
+        Map<DestinationType, Set<String>> externalSubscribers =
+                ProcessorHelper.getExternalSubscribers( evaluationDescription,
+                                                        systemSettings );
+
         // Write some statistic types and formats as soon as they become available. Everything else is written on 
         // group/feature completion.
         // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
         // a format that can be written incrementally. Duration scores are always written last because they are not
         // computed until the end of the pipeline.
+        // Also ignore formats for which external subscribers are available.
         BiPredicate<StatisticType, DestinationType> incrementalTypes =
                 ( type, format ) -> ( type == StatisticType.BOXPLOT_PER_PAIR
                                       || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format ) )
-                                    && type != StatisticType.DURATION_SCORE;
+                                    && type != StatisticType.DURATION_SCORE
+                                    && !externalSubscribers.containsKey( format );
 
-        // All others
-        BiPredicate<StatisticType, DestinationType> nonIncrementalTypes = incrementalTypes.negate();
+        // All others types, but again ignoring those for which external subscribers are available 
+        BiPredicate<StatisticType, DestinationType> nonIncrementalTypes =
+                ( type, format ) -> !externalSubscribers.containsKey( format )
+                                    && incrementalTypes.negate().test( type, format );
 
         // Incremental consumer
         StatisticsConsumer incrementalConsumer = StatisticsConsumer.of( evaluationDescription,
@@ -145,17 +154,24 @@ class ProcessorHelper
         // provided as input to this method, allowing them to bubble up to that API. Also consider adding the 
         // declaration parsing status events into the ProjectConfigPlus instance so they can be published once the 
         // evaluation is created below. These need to be mapped from the ProjectConfigPlus::getValidationEvents.
+        Consumers.Builder consumerBuilder = new Consumers.Builder();
+        // Add the external subscribers
+        externalSubscribers.values()
+                           .stream()
+                           .flatMap( Set::stream )
+                           .forEach( consumerBuilder::addExternalSubscriber );
+        // Add the remaining subscribers and build
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( ProcessorHelper.getLoggerConsumerForStatusEvents() )
-                                       .addEvaluationConsumer( ProcessorHelper.getLoggerConsumerForEvaluationEvents() )
-                                       // Add a regular consumer for statistics that are neither grouped by time window
-                                       // nor feature. These include box plots per pair and statistics that can be 
-                                       // written incrementally, such as netCDF and Protobuf
-                                       .addStatisticsConsumer( next -> incrementalConsumer.accept( List.of( next ) ) )
-                                       // Add a grouped consumer for statistics that are grouped by feature
-                                       .addGroupedStatisticsConsumer( groupConsumer )
-                                       .build();
-        
+                consumerBuilder.addStatusConsumer( ProcessorHelper.getLoggerConsumerForStatusEvents() )
+                               .addEvaluationConsumer( ProcessorHelper.getLoggerConsumerForEvaluationEvents() )
+                               // Add a regular consumer for statistics that are neither grouped by time window
+                               // nor feature. These include box plots per pair and statistics that can be 
+                               // written incrementally, such as netCDF and Protobuf
+                               .addStatisticsConsumer( next -> incrementalConsumer.accept( List.of( next ) ) )
+                               // Add a grouped consumer for statistics that are grouped by feature
+                               .addGroupedStatisticsConsumer( groupConsumer )
+                               .build();
+
         // Open an evaluation, to be closed on completion or stopped on exception
         Evaluation evaluation = Evaluation.open( evaluationDescription,
                                                  connections,
@@ -176,7 +192,7 @@ class ProcessorHelper
 
             // Wait for the evaluation to conclude
             evaluation.await();
-            
+
             // Since the shared writers are created here, they should be destroyed here. An attempt should be made to 
             // close them before the finally block because some of these writers may employ a delayed write, which could 
             // still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further context 
@@ -259,7 +275,7 @@ class ProcessorHelper
             // Add the consumer paths written, since consumers are now out-of-band to producers
             returnMe.addAll( incrementalConsumer.get() );
             returnMe.addAll( groupConsumer.get() );
-            
+
             // Add the paths written by external subscribers
             returnMe.addAll( evaluation.getPathsWrittenByExternalSubscribers() );
 
@@ -952,6 +968,36 @@ class ProcessorHelper
     {
         return evaluationMessage -> LOGGER.debug( "Encountered an evaluation description message: {}",
                                                   evaluationMessage );
+    }
+
+    /**
+     * Returns a map of external subscribers that are required by the evaluation provided.
+     * 
+     * @param evaluationDescription the evaluation description
+     * @param systemSettings the system settings where external subscribers are registered
+     * @return the external subscribers
+     */
+
+    private static Map<DestinationType, Set<String>>
+            getExternalSubscribers( wres.statistics.generated.Evaluation evaluationDescription,
+                                    SystemSettings systemSettings )
+    {
+        Objects.requireNonNull( evaluationDescription );
+        Objects.requireNonNull( systemSettings );
+
+        Map<DestinationType, Set<String>> returnMe = new EnumMap<>( DestinationType.class );
+
+        // Only add subscribers when a subscription is required
+        if ( MessageFactory.hasGraphicsTypes( evaluationDescription.getOutputs() ) )
+        {
+            Set<String> graphics = systemSettings.getGraphicsSubscribers();
+            if ( !graphics.isEmpty() )
+            {
+                returnMe.put( DestinationType.GRAPHIC, graphics );
+            }
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
     private ProcessorHelper()

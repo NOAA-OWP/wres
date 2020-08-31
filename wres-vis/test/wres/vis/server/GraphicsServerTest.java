@@ -24,6 +24,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.events.Consumers;
 import wres.events.Evaluation;
 import wres.eventsbroker.BrokerConnectionFactory;
@@ -125,7 +126,7 @@ public class GraphicsServerTest
                                        .addExternalSubscriber( "4mOgkGkse3gWIGKuIhzVnl5ZPCM" )
                                        .build();
 
-        // Create and start a broker and open an evaluation, closing on completion
+        // Open an evaluation, closing on completion
         try ( // This is the graphics server instance, which normally runs in a separate process
               GraphicsServer server = GraphicsServer.of( GraphicsServerTest.connections );
               // This is the evaluation instance that declares png output
@@ -191,13 +192,13 @@ public class GraphicsServerTest
         Duration earliestLead = Duration.ofHours( 1 );
         Duration latestLead = Duration.ofHours( 7 );
 
-        wres.datamodel.time.TimeWindowOuter timeWindow =
-                wres.datamodel.time.TimeWindowOuter.of( earliestReference,
-                                                        latestReference,
-                                                        earliestValid,
-                                                        latestValid,
-                                                        earliestLead,
-                                                        latestLead );
+        TimeWindowOuter timeWindow =
+                TimeWindowOuter.of( earliestReference,
+                                    latestReference,
+                                    earliestValid,
+                                    latestValid,
+                                    earliestLead,
+                                    latestLead );
 
         Pool pool = MessageFactory.parse( new FeatureTuple( location,
                                                             location,

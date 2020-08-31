@@ -303,7 +303,7 @@ public class ProgressMonitor
 
 
         update = update || (!this.showStepDescription && this.getCompletion() > 99.0);
-
+        
         return update;
     }
 

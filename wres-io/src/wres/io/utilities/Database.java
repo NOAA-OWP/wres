@@ -162,7 +162,8 @@ public class Database {
         try
         {
             // Make sure that feedback gets displayed
-            ProgressMonitor.setShouldUpdate( true );
+            ProgressMonitor.setShouldUpdate( this.getSystemSettings()
+                                                 .getUpdateProgressMonitor() );
 
             // Process every stored task
             for ( Future<List<IngestResult>> task : this.storedIngestTasks )
