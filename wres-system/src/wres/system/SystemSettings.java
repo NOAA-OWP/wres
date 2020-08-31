@@ -6,6 +6,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -45,6 +49,8 @@ public class SystemSettings extends XMLReader
 	private int maximumWebClientThreads = 3;
 	private int maximumNwmIngestThreads = 6;
 	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
+	private final Set<String> graphicsSubscribers = new HashSet<>();
+	private boolean updateProgressMonitor = false;
 
     public static SystemSettings fromDefaultClasspathXmlFile()
     {
@@ -63,7 +69,28 @@ public class SystemSettings extends XMLReader
     {
         return new SystemSettings();
     }
+    
+    public static SystemSettings fromUri( URI uri )
+    {
+        try
+        {
+            return new SystemSettings( uri );
+        }
+        catch ( IOException e )
+        {
+            throw new IllegalStateException( "Could not read system settings from " + uri, e );
+        }
+    }
 
+    /**
+     * @return the graphics subscribers.
+     */
+    
+    public Set<String> getGraphicsSubscribers()
+    {
+        return Collections.unmodifiableSet( this.graphicsSubscribers );
+    }
+    
 	/**
 	 * The Default constructor
 	 * 
@@ -126,9 +153,7 @@ public class SystemSettings extends XMLReader
                         this.setFetchSize( reader );
                         break;
                     case "update_progress_monitor":
-                        ProgressMonitor.setShouldUpdate(
-                                Strings.isTrue( XMLHelper.getXMLText( reader))
-                        );
+                        this.setUpdateProgressMonitor( reader );
                         break;
                     case "netcdf_store_path":
                         this.setNetcdfStorePath( reader );
@@ -147,6 +172,9 @@ public class SystemSettings extends XMLReader
                         break;
                     case "data_directory":
                         this.setDataDirectory( reader );
+                        break;
+                    case "subscribers":
+                        this.setSubscribers( reader );
                         break;
                     case "wresconfig":
                         //Do nothing, but make sure no debug message implying it is skipped is output.
@@ -320,7 +348,71 @@ public class SystemSettings extends XMLReader
             this.dataDirectory = Paths.get( dir );
         }
     }
+    
+    private void setSubscribers( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        try
+        {
+            while ( reader.hasNext() )
+            {
+                if ( reader.isStartElement() && reader.getLocalName()
+                                                      .equalsIgnoreCase(
+                                                                         "subscribers" ) )
+                {
+                    reader.next();
+                }
+                else if ( reader.isEndElement() && reader.getLocalName()
+                                                         .equalsIgnoreCase(
+                                                                            "subscribers" ) )
+                {
+                    break;
+                }
+                else
+                {
+                    parseSubscriberElement( reader );
+                    reader.next();
+                }
+            }
+        }
+        catch ( XMLStreamException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
+    
+    private void parseSubscriberElement( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        if ( reader.isStartElement() )
+        {
+            String tagName = reader.getLocalName();
+            reader.next();
+            if ( reader.isCharacters() )
+            {
+                int beginIndex = reader.getTextStart();
+                int endIndex = reader.getTextLength();
+                String value = new String( reader.getTextCharacters(), beginIndex, endIndex ).trim();
 
+                if ( tagName.equalsIgnoreCase( "graphics" ) )
+                {
+                    this.graphicsSubscribers.add( value );
+                }
+                else
+                {
+                    LOGGER.warn( "Subscriber configuration option '{}'{}",
+                                 tagName,
+                                 " was skipped because it's not used." );
+                }
+            }
+        }
+    }
+    
+    private void setUpdateProgressMonitor( XMLStreamReader reader ) throws XMLStreamException
+    {
+        this.updateProgressMonitor = Strings.isTrue( XMLHelper.getXMLText( reader) );
+        ProgressMonitor.setShouldUpdate( this.getUpdateProgressMonitor() );
+    }
     /**
      * @return The path where the system should store NetCDF files internally
      */
@@ -447,6 +539,15 @@ public class SystemSettings extends XMLReader
         return this.databaseConfiguration.getQueryTimeout();
     }
 
+    /**
+     * @return Return <code>true</code> if progress monitoring is turned on, <code>false</code> if turned off.
+     */
+    
+    public boolean getUpdateProgressMonitor()
+    {
+        return this.updateProgressMonitor;
+    }
+    
     Connection getRawDatabaseConnection() throws SQLException
     {
         return this.databaseConfiguration.getRawConnection(null);
@@ -605,6 +706,7 @@ public class SystemSettings extends XMLReader
                 .append( "maximumArchiveThreads", maximumArchiveThreads )
                 .append( "maximumWebClientThreads", maximumWebClientThreads )
                 .append( "dataDirectory", dataDirectory )
+                .append( "graphicsSubscribers", this.graphicsSubscribers )
                 .toString();
     }
 
