@@ -385,14 +385,12 @@ public class SingleValuedRetrieverFactoryTest
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
                                                       sourceList,
                                                       new Variable( STREAMFLOW, null ),
-                                                      null,
                                                       null,
                                                       null,
                                                       null,
@@ -406,7 +404,6 @@ public class SingleValuedRetrieverFactoryTest
                 new DataSourceBaselineConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                               sourceList,
                                               new Variable( STREAMFLOW, null ),
-                                              null,
                                               null,
                                               null,
                                               null,
