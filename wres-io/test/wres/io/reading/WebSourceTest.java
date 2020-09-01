@@ -79,7 +79,6 @@ public class WebSourceTest
                                                               null,
                                                               null,
                                                               null,
-                                                              null,
                                                               List.of( urlParameterOne, urlParameterTwo ),
                                                               null,
                                                               null );
@@ -133,7 +132,6 @@ public class WebSourceTest
                                                               null,
                                                               null,
                                                               null,
-                                                              null,
                                                               List.of( urlParameterOne, urlParameterTwo ),
                                                               null,
                                                               null );
@@ -182,7 +180,6 @@ public class WebSourceTest
         DataSourceConfig sourceConfig = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                               List.of( source ),
                                                               new DataSourceConfig.Variable( "00060", null ),
-                                                              null,
                                                               null,
                                                               null,
                                                               null,
