@@ -13,7 +13,7 @@
     [
         {
             "name": "wres-statistics-AMQP",
-            "port": "0",
+            "port": "${qpid.amqp_port}",
             "protocols":
             [
                 "AMQP_0_9_1"
@@ -47,7 +47,7 @@
             "defaultVirtualHostNode": "true",
             "context": 
             { 
-                "queue.defaultAlternateBinding": "{\"destination\": \"$${this:name}_DLQ\"} }",
+                "uncomment_for_dlqs:queue.defaultAlternateBinding": "{\"destination\": \"$${this:name}_DLQ\"} }",
                 "queue.maximumDeliveryAttempts": "2"
             },
             "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"5\"}}] }"

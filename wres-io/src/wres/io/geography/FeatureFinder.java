@@ -183,7 +183,6 @@ public class FeatureFinder
                                                                originalPairDeclaration.getDesiredTimeScale(),
                                                                originalPairDeclaration.getIssuedDatesPoolingWindow(),
                                                                originalPairDeclaration.getLeadTimesPoolingWindow(),
-                                                               originalPairDeclaration.getMask(),
                                                                originalPairDeclaration.getCrossPair(),
                                                                originalPairDeclaration.getLabel() );
         return new ProjectConfig( projectDeclaration.getInputs(),

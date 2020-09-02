@@ -89,7 +89,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
-                                                 null,
                                                  null );
 
         // Generate the expected windows
@@ -162,7 +161,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
-                                                 null,
                                                  null );
 
         // Generate the expected windows
@@ -217,7 +215,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
                                                  leadTimesPoolingWindowConfig,
-                                                 null,
                                                  null,
                                                  null );
 
@@ -339,7 +336,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
-                                                 null,
                                                  null );
 
         // Generate the expected windows
@@ -373,7 +369,6 @@ public final class TimeWindowGeneratorTest
     {
         // Mock the sufficient elements of the ProjectConfig
         PairConfig pairsConfig = new PairConfig( null,
-                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -461,7 +456,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
                                                  leadTimesPoolingWindowConfig,
-                                                 null,
                                                  null,
                                                  null );
 
@@ -634,7 +628,6 @@ public final class TimeWindowGeneratorTest
                                                        issuedDatesPoolingWindowConfigNoFreq,
                                                        leadTimesPoolingWindowConfig,
                                                        null,
-                                                       null,
                                                        null );
 
         // Generate the actual time windows for the implicit test
@@ -674,7 +667,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  datesConfig,
                                                  issuedDatesConfig,
-                                                 null,
                                                  null,
                                                  null,
                                                  null,
@@ -736,7 +728,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
-                                                 null,
                                                  null,
                                                  null,
                                                  null );
@@ -827,7 +818,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
-                                                 null,
                                                  null );
 
         // Generate the expected windows
@@ -875,7 +865,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
-                                                 null,
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
@@ -912,7 +901,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  leadTimesPoolingWindowConfig,
-                                                 null,
                                                  null,
                                                  null );
 
@@ -951,7 +939,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  leadTimesPoolingWindowConfig,
                                                  null,
-                                                 null,
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
@@ -985,7 +972,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
-                                                 null,
                                                  null,
                                                  null,
                                                  null );
@@ -1025,7 +1011,6 @@ public final class TimeWindowGeneratorTest
                                                  issuedDatesPoolingWindowConfig,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
 
         ProjectConfigException thrown = assertThrows( ProjectConfigException.class,
@@ -1061,7 +1046,6 @@ public final class TimeWindowGeneratorTest
                                                  null,
                                                  null,
                                                  issuedDatesPoolingWindowConfig,
-                                                 null,
                                                  null,
                                                  null,
                                                  null );

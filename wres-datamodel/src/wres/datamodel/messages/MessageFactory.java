@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -629,9 +630,34 @@ public class MessageFactory
     
     public static boolean hasGraphicsTypes( Outputs outputs )
     {
+        return ! MessageFactory.getGraphicsTypes( outputs ).isEmpty();
+    }
+    
+    /**
+     * Returns the graphical destinations associated with the outputs message.
+     * 
+     * @return the graphical destinations
+     * @throws NullPointerException if the input is null 
+     */
+    
+    public static Set<DestinationType> getGraphicsTypes( Outputs outputs )
+    {
         Objects.requireNonNull( outputs );
         
-        return outputs.hasPng() || outputs.hasSvg();
+        Set<DestinationType> returnMe = new HashSet<>();
+        
+        if( outputs.hasPng() )
+        {
+            returnMe.add( DestinationType.PNG );
+            returnMe.add( DestinationType.GRAPHIC );
+        }
+        
+        if( outputs.hasSvg() )
+        {
+            returnMe.add( DestinationType.SVG );
+        }
+        
+        return Collections.unmodifiableSet( returnMe );
     }
     
     /**

@@ -65,7 +65,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
     @Override
     public void accept( List<DurationScoreStatisticOuter> output )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, "Specify non-null input data when writing duration score outputs." );
 
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DurationScoreStatisticOuter::getMetricName );
@@ -158,7 +158,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
+            throw new GraphicsWriteException( "Error while generating duration score charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );

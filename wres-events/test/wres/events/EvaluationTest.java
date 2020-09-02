@@ -516,6 +516,8 @@ public class EvaluationTest
         assertEquals( expectedWithoutGroups, actualStatistics );
 
         // Assertions about the aggregated statistics
+        assertEquals( 2, actualAggregatedStatistics.size() );
+
         Statistics.Builder expectedOneBuilder = Statistics.newBuilder();
         this.oneStatistics.forEach( next -> expectedOneBuilder.mergeFrom( next ) );
 
@@ -625,8 +627,9 @@ public class EvaluationTest
         // Assert that the evaluation failed and that an expected exception was caught
         assertNotEquals( 0, evaluation.getExitCode() );
         assertNotNull( actualException );
+
         assertTrue( actualException.getMessage()
-                                   .contains( "discovered undeliverable messages after repeated delivery attempts" ) );
+                                   .contains( "Failed to complete evaluation" ) );
     }
 
     @Test
@@ -721,7 +724,8 @@ public class EvaluationTest
     }
 
     /**
-     * Helper that returns an aggregator for statistics messages.
+     * Helper that returns an aggregator for statistics messages, which collects and sorts according to the first 
+     * score.
      * 
      * @return a statistics aggregator
      */
@@ -733,8 +737,22 @@ public class EvaluationTest
             // Build the aggregate statistics
             Statistics.Builder aggregate = Statistics.newBuilder();
 
+            // Sort the statistics
+            List<Statistics> sortedStatistics = new ArrayList<>( statistics );
+            sortedStatistics.sort( ( a,
+                                     b ) -> Double.compare( a.getScoresList()
+                                                             .get( 0 )
+                                                             .getStatisticsList()
+                                                             .get( 0 )
+                                                             .getValue(),
+                                                            b.getScoresList()
+                                                             .get( 0 )
+                                                             .getStatisticsList()
+                                                             .get( 0 )
+                                                             .getValue() ) );
+
             // Merge the cached statistics
-            for ( Statistics next : statistics )
+            for ( Statistics next : sortedStatistics )
             {
                 aggregate.mergeFrom( next );
             }

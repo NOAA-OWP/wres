@@ -51,6 +51,7 @@ import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.protobuf.ProtobufWriter;
 import wres.statistics.generated.EvaluationStatus;
+import wres.statistics.generated.Outputs;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
@@ -104,7 +105,9 @@ class ProcessorHelper
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         // Create a description of the evaluation
-        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
+        wres.statistics.generated.Evaluation evaluationDescription =
+                ProcessorHelper.getEvaluationDescription( systemSettings,
+                                                          projectConfigPlus );
 
         // Create some shared writers
         SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
@@ -631,6 +634,11 @@ class ProcessorHelper
             outputDirectory = Files.createTempDirectory( "wres_evaluation_output_" );
         }
 
+        if ( !outputDirectory.isAbsolute() )
+        {
+            return outputDirectory.toAbsolutePath();
+        }
+
         return outputDirectory;
     }
 
@@ -991,13 +999,84 @@ class ProcessorHelper
         if ( MessageFactory.hasGraphicsTypes( evaluationDescription.getOutputs() ) )
         {
             Set<String> graphics = systemSettings.getGraphicsSubscribers();
+
             if ( !graphics.isEmpty() )
             {
-                returnMe.put( DestinationType.GRAPHIC, graphics );
+                // Add the subscribers for each graphics type
+                Set<DestinationType> types = MessageFactory.getGraphicsTypes( evaluationDescription.getOutputs() );
+                types.forEach( type -> returnMe.put( type, graphics ) );
             }
         }
 
         return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * @param systemSettings the system settings to help resolve the path
+     * @param projectConfigPlus the project declaration with graphics information
+     * @return a description of the evaluation.
+     */
+
+    private static wres.statistics.generated.Evaluation getEvaluationDescription( SystemSettings systemSettings,
+                                                                                  ProjectConfigPlus projectConfigPlus )
+    {
+        wres.statistics.generated.Evaluation returnMe = MessageFactory.parse( projectConfigPlus );
+
+        Outputs outputs = returnMe.getOutputs();
+
+        if ( outputs.hasPng() && outputs.getPng().hasOptions() )
+        {
+            String template = outputs.getPng().getOptions().getTemplateName();
+
+            template = ProcessorHelper.getAbsolutePathFromRelativePath( systemSettings, template );
+
+            Outputs.Builder builder = outputs.toBuilder();
+            builder.getPngBuilder()
+                   .getOptionsBuilder()
+                   .setTemplateName( template );
+            returnMe = returnMe.toBuilder()
+                               .setOutputs( builder )
+                               .build();
+        }
+
+        if ( outputs.hasSvg() && outputs.getSvg().hasOptions() )
+        {
+            String template = outputs.getSvg().getOptions().getTemplateName();
+
+            template = ProcessorHelper.getAbsolutePathFromRelativePath( systemSettings, template );
+
+            Outputs.Builder builder = outputs.toBuilder();
+            builder.getSvgBuilder()
+                   .getOptionsBuilder()
+                   .setTemplateName( template );
+            returnMe = returnMe.toBuilder()
+                               .setOutputs( builder )
+                               .build();
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * @param systemSettings the system settings to help resolve the path
+     * @return an absolute path string from a relative one.
+     */
+
+    private static String getAbsolutePathFromRelativePath( SystemSettings systemSettings, String pathString )
+    {
+        if ( Objects.isNull( pathString ) || pathString.isBlank() )
+        {
+            return pathString;
+        }
+
+        Path path = Path.of( pathString );
+
+        if ( !path.isAbsolute() )
+        {
+            return path.toAbsolutePath().toString();
+        }
+
+        return pathString;
     }
 
     private ProcessorHelper()
