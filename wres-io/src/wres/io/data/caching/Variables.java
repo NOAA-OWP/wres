@@ -35,44 +35,21 @@ public class Variables
                                                final String projectMember )
             throws SQLException
     {
-        String member = projectMember;
-
-        if (!member.startsWith( "'" ))
-        {
-            member = "'" + member;
-        }
-
-        if (!member.endsWith( "'" ))
-        {
-            member += "'";
-        }
-
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
 
-        script.addLine("SELECT variable_name");
-        script.addLine("FROM wres.Variable V");
-        script.addLine("WHERE EXISTS (");
-        script.addTab().addLine("SELECT 1");
-        script.addTab().addLine("FROM wres.VariableFeature VF");
-        script.addTab().addLine("WHERE V.variable_id = VF.variable_id");
-        script.addTab(  2  ).addLine("AND EXISTS (");
-        script.addTab(   3   ).addLine("SELECT 1");
-        script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
-        script.addTab(   3   ).addLine("WHERE TS.variablefeature_id = VF.variablefeature_id");
-        script.addTab(    4    ).addLine("AND EXISTS (");
-        script.addTab(     5     ).addLine("SELECT 1");
-        script.addTab(     5     ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(     5     ).addLine("WHERE PS.project_id = ", projectID);
-        script.addTab(      6      ).addLine("AND PS.member = ", member);
-        script.addTab(      6      ).addLine("AND TS.source_id = PS.source_id");
-        script.addTab(    4    ).addLine(") AND EXISTS (");
-        script.addTab(     5     ).addLine("SELECT 1");
-        script.addTab(     5     ).addLine("FROM wres.TimeSeriesValue TSV");
-        script.addTab(     5     ).addLine("WHERE TSV.timeseries_id = TS.timeseries_id");
-        script.addTab(    4    ).addLine(")");
-        script.addTab(  2  ).addLine(")");
-        script.add(");");
+        script.addLine( "SELECT DISTINCT( variable_name )" );
+        script.addLine( "FROM wres.TimeSeries TS" );
+        script.addLine( "WHERE EXISTS" );
+        script.addLine( "(" );
+        script.addTab().addLine( "SELECT 1" );
+        script.addTab().addLine( "FROM wres.ProjectSource PS" );
+        script.addTab().addLine( "WHERE PS.project_id = ?" );
+        script.addArgument( projectID );
+        script.addTab().addLine( "AND PS.member = ( ? )::operating_member" );
+        script.addArgument( projectMember );
+        script.addTab().addLine( "AND TS.source_id = PS.source_id" );
+        script.addLine( ")" );
 
         return script.interpret( resultSet -> resultSet.getString("variable_name") );
     }
