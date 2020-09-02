@@ -42,7 +42,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
         Supplier<Set<Path>>
 {
     private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS =
-            "Specify non-null input data when writing diagram outputs.";
+            "Specify non-null input data when writing box plot outputs.";
 
     private Set<Path> pathsWrittenTo = new HashSet<>();
 

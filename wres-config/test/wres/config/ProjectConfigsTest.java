@@ -56,7 +56,6 @@ public class ProjectConfigsTest
                                                                      null,
                                                                      null,
                                                                      null,
-                                                                     null,
                                                                      null ),
                                                null ),
                                    null,
@@ -76,7 +75,6 @@ public class ProjectConfigsTest
                                                                      null,
                                                                      null,
                                                                      null,
-                                                                     null,
                                                                      null ),
                                                null ),
                                    null,
@@ -88,7 +86,6 @@ public class ProjectConfigsTest
         ProjectConfig mockThree =
                 new ProjectConfig( new Inputs( null,
                                                new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     null,
                                                                      null,
                                                                      null,
                                                                      null,

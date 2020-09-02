@@ -64,7 +64,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
     @Override
     public void accept( List<DurationDiagramStatisticOuter> output )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, "Specify non-null input data when writing duration diagram outputs." );
 
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics =
@@ -156,7 +156,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
+            throw new GraphicsWriteException( "Error while generating duration diagram charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );

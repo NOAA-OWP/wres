@@ -397,14 +397,12 @@ public class EnsembleRetrieverFactoryTest
                                                  null,
                                                  null,
                                                  null,
-                                                 null,
                                                  null );
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
 
         DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
                                                       sourceList,
                                                       new Variable( STREAMFLOW, null ),
-                                                      null,
                                                       null,
                                                       null,
                                                       null,
@@ -418,7 +416,6 @@ public class EnsembleRetrieverFactoryTest
                 new DataSourceBaselineConfig( DatasourceType.fromValue( "ensemble forecasts" ),
                                               sourceList,
                                               new Variable( STREAMFLOW, null ),
-                                              null,
                                               null,
                                               null,
                                               null,

@@ -585,7 +585,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             CommaSeparatedBoxPlotWriter boxPlotWriter =
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
                                                     this.getDurationUnits(),
-                                                    outputDirectory );
+                                                    this.outputDirectory );
             this.boxPlotConsumersPerPair.put( DestinationType.CSV,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
@@ -596,7 +596,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             CommaSeparatedBoxPlotWriter boxPlotWriter =
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
                                                     this.getDurationUnits(),
-                                                    outputDirectory );
+                                                    this.outputDirectory );
             this.boxPlotConsumersPerPool.put( DestinationType.CSV,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
@@ -608,7 +608,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             CommaSeparatedDurationDiagramWriter pairedWriter =
                     CommaSeparatedDurationDiagramWriter.of( projectConfig,
                                                             this.getDurationUnits(),
-                                                            outputDirectory );
+                                                            this.outputDirectory );
             this.pairedConsumers.put( DestinationType.CSV, pairedWriter );
             this.writersToPaths.add( pairedWriter );
         }
@@ -629,7 +629,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             CommaSeparatedScoreWriter<DoubleScoreComponentOuter, DoubleScoreStatisticOuter> doubleScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
                                                   this.getDurationUnits(),
-                                                  outputDirectory,
+                                                  this.outputDirectory,
                                                   mapper );
             this.doubleScoreConsumers.put( DestinationType.CSV,
                                            doubleScoreWriter );
@@ -641,7 +641,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             CommaSeparatedScoreWriter<DurationScoreComponentOuter, DurationScoreStatisticOuter> durationScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
                                                   this.getDurationUnits(),
-                                                  outputDirectory,
+                                                  this.outputDirectory,
                                                   next -> MessageFactory.parse( next.getData().getValue() )
                                                                         .toString() );
             this.durationScoreConsumers.put( DestinationType.CSV,

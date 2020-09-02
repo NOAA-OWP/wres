@@ -168,7 +168,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                     }
                     else
                     {
-                        throw new UnsupportedOperationException( "Unexpected situation where WRES could not create outputImage path" );
+                        throw new UnsupportedOperationException( "Unexpected situation where WRES could not create "
+                                + "outputImage path" );
                     }
 
                     // Write formats
@@ -182,7 +183,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
+            throw new GraphicsWriteException( "Error while generating diagram charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
