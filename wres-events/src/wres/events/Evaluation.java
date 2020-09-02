@@ -796,49 +796,55 @@ public class Evaluation implements Closeable
                           this.getEvaluationId(),
                           Duration.between( then, now ) );
 
-            // Exceptions uncovered?
-            // Perhaps failing on the delivery of evaluation status messages is too high a bar?
-            boolean failed = this.evaluationSubscribers.failed()
-                             || this.evaluationStatusSubscribers.failed()
-                             || this.statisticsSubscribers.failed()
-                             || this.pairsSubscribers.failed()
-                             || this.statusTrackerSubscriber.failed();
-
-            if ( failed )
+            if ( exit != 0 )
             {
-                String separator = System.getProperty( "line.separator" );
+                // Exceptions uncovered?
+                // Perhaps failing on the delivery of evaluation status messages is too high a bar?
+                boolean internalSubscriberFailed = this.evaluationSubscribers.failed()
+                                                   || this.evaluationStatusSubscribers.failed()
+                                                   || this.statisticsSubscribers.failed()
+                                                   || this.pairsSubscribers.failed()
+                                                   || this.statusTrackerSubscriber.failed();
 
-                LOGGER.debug( "While awaiting evaluation {}, discovered one or more undeliverable messages. The first "
-                              + "undeliverable evaluation message is:{}{}{}The first undeliverable evaluation status "
-                              + "message is:{}{}{}The first undeliverable statistics message is:{}{}{}The first "
-                              + "undeliverable pairs message is:{}{}{}The first undeliverable evaluation completion "
-                              + "message is:{}{}",
-                              this.getEvaluationId(),
-                              separator,
-                              this.evaluationSubscribers.getFirstFailure(),
-                              separator,
-                              separator,
-                              this.evaluationStatusSubscribers.getFirstFailure(),
-                              separator,
-                              separator,
-                              this.statisticsSubscribers.getFirstFailure(),
-                              separator,
-                              separator,
-                              this.pairsSubscribers.getFirstFailure(),
-                              separator,
-                              separator,
-                              this.statusTrackerSubscriber.getFirstFailure() );
+                if ( internalSubscriberFailed )
+                {
+                    String separator = System.getProperty( "line.separator" );
+
+                    LOGGER.debug( "While awaiting evaluation {}, discovered one or more undeliverable messages. If the "
+                                  + "broker has been configured with a dead letter queue (DLQ), these messages will "
+                                  + "appear on the DLQ for further inspection and removal. The first undeliverable "
+                                  + "evaluation message is:{}{}{}The first undeliverable evaluation status message "
+                                  + "is:{}{}{}The first undeliverable statistics message is:{}{}{}The first "
+                                  + "undeliverable pairs message is:{}{}{}The first undeliverable evaluation "
+                                  + "completion message is:{}{}",
+                                  this.getEvaluationId(),
+                                  separator,
+                                  this.evaluationSubscribers.getFirstFailure(),
+                                  separator,
+                                  separator,
+                                  this.evaluationStatusSubscribers.getFirstFailure(),
+                                  separator,
+                                  separator,
+                                  this.statisticsSubscribers.getFirstFailure(),
+                                  separator,
+                                  separator,
+                                  this.pairsSubscribers.getFirstFailure(),
+                                  separator,
+                                  separator,
+                                  this.statusTrackerSubscriber.getFirstFailure() );
+                }
 
                 EvaluationFailedToCompleteException exception =
-                        new EvaluationFailedToCompleteException( "While awaiting evaluation " + this.getEvaluationId()
-                                                                 + ", discovered undeliverable messages after repeated "
-                                                                 + "delivery attempts. If the broker has been "
-                                                                 + "configured with a dead letter queue (DLQ), these "
-                                                                 + "messages will appear on the DLQ for "
-                                                                 + "further inspection and removal." );
+                        new EvaluationFailedToCompleteException( "Failed to complete evaluation "
+                                                                 + this.getEvaluationId()
+                                                                 + " due to a subscriber error. The failing "
+                                                                 + "subscribers are "
+                                                                 + this.statusTracker.getFailedSubscribers()
+                                                                 + "." );
+
                 this.stop( exception );
 
-                // Notify locally
+                // Rethrow
                 throw exception;
             }
         }
@@ -1103,9 +1109,9 @@ public class Evaluation implements Closeable
             if ( nextGroup.getValue().get() != -1 )
             {
                 LOGGER.debug( "Marked message group {} associated with evaluation {} as complete.",
-                             nextGroup.getKey(),
-                             this.getEvaluationId() );
-                
+                              nextGroup.getKey(),
+                              this.getEvaluationId() );
+
                 this.markGroupPublicationCompleteReportedSuccess( nextGroup.getKey() );
             }
         }
@@ -1332,7 +1338,7 @@ public class Evaluation implements Closeable
         Set<String> externalSubs = builder.consumers.getExternalSubscribers();
 
         this.evaluationDescription = builder.evaluationDescription;
-        this.outputPath = builder.outputPath;
+        this.outputPath = this.getAbsoluteOutputPath( builder.outputPath );
 
         Objects.requireNonNull( this.outputPath, "Cannot create an evaluation without a path for outputs." );
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
@@ -1606,6 +1612,29 @@ public class Evaluation implements Closeable
     }
 
     /**
+     * Resolves a relative path to an absolute path, which is necessary to correctly inform external subscribers about
+     * where to write outputs. 
+     * @param path the output path
+     * @return an absolute path or null if the input is null
+     */
+
+    private Path getAbsoluteOutputPath( Path path )
+    {
+        Path returnMe = path;
+        if ( Objects.nonNull( path ) && !path.isAbsolute() )
+        {
+            returnMe = path.toAbsolutePath();
+
+            LOGGER.debug( "While creating evaluation {}, resolved the output path from {} to {}.",
+                          this.getEvaluationId(),
+                          path,
+                          returnMe );
+        }
+
+        return returnMe;
+    }
+
+    /**
      * Internal publish, do not expose.
      * 
      * @param body the message body
@@ -1675,13 +1704,15 @@ public class Evaluation implements Closeable
         ByteBuffer body = ByteBuffer.wrap( evaluation.toByteArray() );
 
         // Get the output path
-        String innerOutputPath = this.getOutputPath().toString();
+        Path path = this.getOutputPath();
+
+        String innerOutputPath = path.toString();
 
         this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null, innerOutputPath );
 
         this.messageCount.getAndIncrement();
     }
-
+    
     /**
      * Generate a compact, unique, identifier for an evaluation. Thanks to: 
      * https://neilmadden.blog/2018/08/30/moving-away-from-uuids/

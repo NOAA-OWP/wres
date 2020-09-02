@@ -73,7 +73,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
     @Override
     public void accept( List<DoubleScoreStatisticOuter> output )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, "Specify non-null input data when writing duration score outputs." );
 
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DoubleScoreStatisticOuter::getMetricName );
@@ -202,7 +202,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         }
         catch ( ChartEngineException | IOException e )
         {
-            throw new GraphicsWriteException( "Error while generating multi-vector charts: ", e );
+            throw new GraphicsWriteException( "Error while generating double score charts: ", e );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );

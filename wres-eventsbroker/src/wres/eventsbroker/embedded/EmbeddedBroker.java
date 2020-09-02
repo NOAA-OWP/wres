@@ -7,11 +7,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.SystemConfig;
 import org.slf4j.Logger;
@@ -54,6 +56,12 @@ public class EmbeddedBroker implements Closeable
      */
 
     private final Map<String, Object> launchOptions;
+    
+    /**
+     * Is <code>true</code> if the broker is started, <code>false</code> otherwise.
+     */
+    
+    private final AtomicBoolean isStarted; 
 
     /**
      * Returns a broker instance with default launch options.
@@ -62,6 +70,18 @@ public class EmbeddedBroker implements Closeable
      */
 
     public static EmbeddedBroker of()
+    {
+        return EmbeddedBroker.of( 0 );
+    }
+
+    /**
+     * Returns a broker instance with default launch options.
+     * 
+     * @param port an explicit port on which to start the broker
+     * @return a broker instance with default options.
+     */
+
+    public static EmbeddedBroker of( int port )
     {
         URL initialConfig = EmbeddedBroker.class.getClassLoader()
                                                 .getResource( INITIAL_CONFIGURATION );
@@ -72,11 +92,30 @@ public class EmbeddedBroker implements Closeable
                                                             + INITIAL_CONFIGURATION
                                                             + "' on the classpath." );
         }
+
         Map<String, Object> options = new HashMap<>();
-        options.put( "type", "Memory" );
-        options.put( "initialConfigurationLocation",
-                     initialConfig.toExternalForm() );
-        options.put( "startupLoggedToSystemOut", true );
+        String initialConfigLocation = initialConfig.toExternalForm();
+        options.put( ConfiguredObject.TYPE, "Memory" );
+        options.put( SystemConfig.INITIAL_CONFIGURATION_LOCATION,
+                     initialConfigLocation );
+        options.put( SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, true );
+
+        if ( port == 0 )
+        {
+            LOGGER.debug( "On creating an embedded broker, setting the value of the qpid.amqp_port to TCP "
+                          + "reserved port 0, which instructs the broker to choose a port dynamically (assuming that "
+                          + "the initial configuration at {} binds to amqp port '${qpid.amqp_port}').",
+                          initialConfigLocation );
+        }
+        else
+        {
+            LOGGER.debug( "On creating an embedded broker, setting the value of the qpid.amqp_port to {}, which will "
+                          + "be respected if the the initial configuration at {} binds to amqp port "
+                          + "'${qpid.amqp_port}'.",
+                          initialConfigLocation );
+        }
+
+        options.put( ConfiguredObject.CONTEXT, Collections.singletonMap( "qpid.amqp_port", port ) );
 
         LOGGER.debug( "Created new embedded broker with options {}.", options );
 
@@ -91,25 +130,40 @@ public class EmbeddedBroker implements Closeable
 
     public void start()
     {
-        LOGGER.debug( "Starting embedded broker with launch options {}.", this.launchOptions );
-
-        try
+        if ( !isStarted.get() )
         {
-            this.systemLauncher.startup( this.launchOptions );
-        }
-        catch ( Exception e )
-        {
-            throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker using the initial "
-                                                            + "configuration in '"
-                                                            + INITIAL_CONFIGURATION
-                                                            + "'.",
-                                                            e );
-        }
 
-        LOGGER.info( "Started an embedded broker with the following bound ports {}.",
-                      this.getBoundPorts() );
+            LOGGER.debug( "Starting embedded broker with launch options {}.", this.launchOptions );
 
-        LOGGER.debug( "Finished starting embedded broker with launch options {}.", this.launchOptions );
+            try
+            {
+                this.systemLauncher.startup( this.launchOptions );
+            }
+            catch ( Exception e )
+            {
+                throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker using the initial "
+                                                                + "configuration in '"
+                                                                + INITIAL_CONFIGURATION
+                                                                + "'.",
+                                                                e );
+            }
+
+            // Port available?
+            if ( this.getBoundPorts().values().contains( -1 ) )
+            {
+                throw new CouldNotStartEmbeddedBrokerException( "Failed to start an embedded broker using the initial "
+                                                                + "configuration in '"
+                                                                + INITIAL_CONFIGURATION
+                                                                + "'. Could not discover a bound port." );
+            }
+
+            LOGGER.info( "Started an embedded broker with the following bound ports {}.",
+                         this.getBoundPorts() );
+
+            LOGGER.debug( "Finished starting embedded broker with launch options {}.", this.launchOptions );
+            
+            this.isStarted.set( true );
+        }
     }
 
     /**
@@ -167,6 +221,8 @@ public class EmbeddedBroker implements Closeable
         this.listener = new PortExtractingLauncherListener();
 
         this.systemLauncher = new SystemLauncher( listener );
+        
+        this.isStarted = new AtomicBoolean();
     }
 
     /**

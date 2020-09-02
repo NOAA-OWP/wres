@@ -37,7 +37,7 @@ import wres.eventsbroker.BrokerConnectionFactory;
  * @author james.brown@hydrosolved.com
  */
 
-class GraphicsServer implements Runnable, Closeable
+class GraphicsServer implements Closeable
 {
 
     /**
@@ -50,7 +50,7 @@ class GraphicsServer implements Runnable, Closeable
      * The frequency with which to log the status of the server in ms.
      */
 
-    private static final long STATUS_UPDATE_MILLISECONDS = 10_000;
+    private static final long STATUS_UPDATE_MILLISECONDS = 60_000;
 
     /**
      * The frequency with which to publish a subscriber-alive message in ms.
@@ -156,8 +156,7 @@ class GraphicsServer implements Runnable, Closeable
      * Creates a timer task, which tracks the status of the server.
      */
 
-    @Override
-    public void run()
+    private void run()
     {
         // The status is mutable and is updated by the subscriber
         ServerStatus status = this.getServerStatus();
@@ -177,13 +176,14 @@ class GraphicsServer implements Runnable, Closeable
             }
         };
 
-        // Create a timer task to log the server status
+        // Create a timer task to update any listening clients that the subscriber is alive in case of long-running 
+        // writing tasks
         TimerTask updater = new TimerTask()
         {
             @Override
             public void run()
             {
-                // Sweep any complete evaluations
+                // I am still alive
                 subscriber.notifyAlive();
             }
         };
@@ -233,7 +233,7 @@ class GraphicsServer implements Runnable, Closeable
 
     private void start()
     {
-        this.serverExecutor.execute( this );
+        this.serverExecutor.execute( this::run );
     }
 
     /**
@@ -331,11 +331,11 @@ class GraphicsServer implements Runnable, Closeable
         LOGGER.info( "Creating a new WRES Graphics Server..." );
 
         // This identifier is registered with the wres-core as a graphics subscriber. For now, it is manually declared
-        // here, but it needs to come from configuration (each one starting a new server).
+        // here, but it needs to come from configuration
         this.subscriberId = "4mOgkGkse3gWIGKuIhzVnl5ZPCM";
 
         UncaughtExceptionHandler handler = ( a, b ) -> {
-            LOGGER.error( "Encountered an internal error in a WRES Graphics Server: {}", b.getMessage() );
+            LOGGER.error( "Encountered an internal error in a WRES Graphics Server.", b );
             this.stop();
         };
 
@@ -356,35 +356,14 @@ class GraphicsServer implements Runnable, Closeable
                                                               this.getGraphicsExecutor(),
                                                               broker );
         }
-        catch ( NamingException constructionException )
+        catch ( NamingException | JMSException | RuntimeException e )
         {
             this.stop();
 
             throw new GraphicsServerException( "While attempting to build graphics server "
-                                               + subscriberId
+                                               + this.getSubscriberId()
                                                + ", encountered an error.",
-                                               constructionException );
-        }
-        catch ( JMSException messagingException )
-        {
-            this.stop();
-
-            throw new GraphicsServerException( "While attempting to subscribe to statistics, encountered an error in "
-                                               + "graphics server "
-                                               + subscriberId
-                                               + ".",
-                                               messagingException );
-        }
-        // Other internal exceptions to propagate
-        catch ( RuntimeException internalException )
-        {
-            this.stop();
-
-            throw new GraphicsServerException( "While attempting to subscribe to statistics, encountered an internal "
-                                               + "error in graphics server "
-                                               + subscriberId
-                                               + ".",
-                                               internalException );
+                                               e );
         }
 
         LOGGER.info( "Finished creating a new WRES Graphics Server." );
@@ -520,7 +499,7 @@ class GraphicsServer implements Runnable, Closeable
         }
 
         /**
-         * Increment the evaluation count and last evaluation identifier.
+         * Increment the statistics count and last statistics message identifier.
          * @param messageId the identifier of the message that contained the statistics.
          */
 

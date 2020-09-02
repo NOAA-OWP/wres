@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.StatisticType;
-import wres.events.EvaluationEventException;
 import wres.events.GroupCompletionTracker;
 import wres.events.OneGroupConsumer;
 import wres.statistics.generated.Evaluation;
@@ -127,7 +126,7 @@ class EvaluationConsumer
     private final AtomicBoolean areConsumersReady;
 
     /**
-     * Is <code>true</code> if the evaluation has been closed, otherwise false.
+     * Is <code>true</code> if the evaluation has been closed, otherwise <code>false</code>.
      */
 
     private final AtomicBoolean isClosed;
@@ -143,6 +142,12 @@ class EvaluationConsumer
      */
 
     private final ExecutorService executorService;
+
+    /**
+     * Is <code>true</code> if the evaluation has failed, otherwise <code>false</code>.
+     */
+
+    private final AtomicBoolean isFailed;
 
     /**
      * Builds a consumer.
@@ -171,6 +176,7 @@ class EvaluationConsumer
         this.isComplete = new AtomicBoolean();
         this.areConsumersReady = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
+        this.isFailed = new AtomicBoolean();
         this.groupTracker = GroupCompletionTracker.of();
         this.groupConsumers = new ConcurrentHashMap<>();
         this.statisticsCache = new ConcurrentLinkedQueue<>();
@@ -189,70 +195,42 @@ class EvaluationConsumer
     {
         if ( !this.isClosed() )
         {
-            // Collect the paths written
-            List<String> addThesePaths = new ArrayList<>();
-            this.consumer.get().forEach( next -> addThesePaths.add( next.toString() ) );
-            this.groupConsumer.get().forEach( next -> addThesePaths.add( next.toString() ) );
 
-            // Create the status message to publish
-            EvaluationStatus message = EvaluationStatus.newBuilder()
-                                                       .setCompletionStatus( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS )
-                                                       .setConsumerId( this.consumerId )
-                                                       .addAllResourcesCreated( addThesePaths )
-                                                       .build();
-
-            // Create the metadata
-            String messageId = "ID:" + this.consumerId + "-complete";
-
-            ByteBuffer buffer = ByteBuffer.wrap( message.toByteArray() );
-
-            this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.consumerId );
-
-            LOGGER.debug( "External graphics subscriber {} is closing evaluation {}.",
-                          this.consumerId,
-                          this.evaluationId );
-
-            // Check for group subscriptions that have not completed
-            for ( Map.Entry<String, OneGroupConsumer<Statistics>> next : this.groupConsumers.entrySet() )
-            {
-                String groupId = next.getKey();
-                OneGroupConsumer<Statistics> consumerToClose = next.getValue();
-
-                Integer expectedCount = this.getGroupTracker()
-                                            .getExpectedMessagesPerGroup( groupId );
-
-                if ( Objects.nonNull( expectedCount ) && !consumerToClose.hasBeenUsed() )
-                {
-                    if ( consumerToClose.size() != expectedCount )
-                    {
-                        throw new EvaluationEventException( "While attempting to gracefully close subscriber " + this
-                                                            + " , encountered an error. A consumer of grouped messages "
-                                                            + "attached to this subscription expected to receive "
-                                                            + expectedCount
-                                                            + " but had only received "
-                                                            + consumerToClose.size()
-                                                            + " messages on closing. A subscriber should not be closed "
-                                                            + "until consumption is complete." );
-                    }
-
-                    // Submit acceptance task
-                    this.execute( consumerToClose::acceptGroup );
-                }
-
-                LOGGER.trace( "On closing subscriber {}, discovered a consumer associated with group {} whose "
-                              + "consumption was ready to complete, but had not yet completed. This were completed.",
-                              this,
-                              groupId );
-
-            }
-
+            // Flag closed, regardless of what happens next
             this.isClosed.set( true );
 
-            LOGGER.info( "External graphics subscriber {} closed evaluation {}, which contained {} messages (not "
-                         + "including any evaluation status messages).",
-                         this.consumerId,
-                         this.evaluationId,
-                         this.consumed.get() );
+            try
+            {
+
+                LOGGER.debug( "External graphics subscriber {} is closing evaluation {}.",
+                              this.consumerId,
+                              this.evaluationId );
+
+                this.completeAllGroups();
+
+                LOGGER.info( "External graphics subscriber {} closed evaluation {}, which contained {} messages (not "
+                             + "including any evaluation status messages).",
+                             this.consumerId,
+                             this.evaluationId,
+                             this.consumed.get() );
+            }
+            catch ( RuntimeException e )
+            {
+                this.markEvaluationFailed();
+
+                LOGGER.error( "Encountered an error on closing an evaluation consumer.", e );
+            }
+            finally
+            {
+                CompletionStatus status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS;
+
+                if ( this.failed() )
+                {
+                    status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE;
+                }
+
+                this.publishCompletionState( status );
+            }
 
             // This instance is not responsible for closing the executor service.
         }
@@ -260,13 +238,25 @@ class EvaluationConsumer
 
     /**
      * Marks an evaluation as failed unrecoverably after exhausting all attempts to recover the subscriber that 
-     * delivers messages to this consumer. Sends a status message indicating 
-     * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}.
-     * @throws JMSException if the status update failed to send
+     * delivers messages to this consumer.
      */
 
-    void markEvaluationFailed() throws JMSException
+    void markEvaluationFailed()
     {
+        this.isFailed.set( true );
+    }
+
+    /**
+     * Publishes the completion status of the consumer.
+     * @param completionStatus the completion status
+     * @throws NullPointerException if the input is null
+     * @throws JMSException if the status could not be published
+     */
+
+    void publishCompletionState( CompletionStatus completionStatus ) throws JMSException
+    {
+        Objects.requireNonNull( completionStatus );
+
         // Collect the paths written
         List<String> addThesePaths = new ArrayList<>();
         this.consumer.get().forEach( next -> addThesePaths.add( next.toString() ) );
@@ -274,7 +264,7 @@ class EvaluationConsumer
 
         // Create the status message to publish
         EvaluationStatus message = EvaluationStatus.newBuilder()
-                                                   .setCompletionStatus( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
+                                                   .setCompletionStatus( completionStatus )
                                                    .setConsumerId( this.consumerId )
                                                    .addAllResourcesCreated( addThesePaths )
                                                    .build();
@@ -286,9 +276,12 @@ class EvaluationConsumer
 
         this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.consumerId );
 
-        LOGGER.warn( "External graphics subscriber {} has marked evaluation {} as failed unrecoverably.",
-                     this.consumerId,
-                     this.evaluationId );
+        if ( completionStatus == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
+        {
+            LOGGER.warn( "External graphics subscriber {} has marked evaluation {} as failed unrecoverably.",
+                         this.consumerId,
+                         this.evaluationId );
+        }
     }
 
     /**
@@ -303,16 +296,19 @@ class EvaluationConsumer
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( messageId );
 
-        // Consumers ready to consume?
+        // Consumers ready to consume? 
+        // Yes.
         if ( this.getAreConsumersReady() )
         {
             // Accept the incremental types
-            this.execute( () -> this.getConsumer().accept( List.of( statistics ) ) );
+            this.execute( () -> this.getConsumer()
+                                    .accept( List.of( statistics ) ) );
 
             // Accept the grouped types
             if ( Objects.nonNull( groupId ) )
             {
-                this.getGroupConsumer( groupId ).accept( statistics );
+                this.getGroupConsumer( groupId )
+                    .accept( messageId, statistics );
                 this.checkAndCompleteGroup( groupId );
             }
 
@@ -324,7 +320,7 @@ class EvaluationConsumer
                           messageId,
                           this.evaluationId );
         }
-        // Cache until they are ready
+        // No. Cache until the consumers are ready.
         else
         {
             this.statisticsCache.add( new StatisticsCache( statistics, groupId, messageId ) );
@@ -336,10 +332,21 @@ class EvaluationConsumer
      * @param evaluationDescription the evaluation description message
      * @param suggestedPath a suggested path string for writing, which is optional
      * @param messageId the message identifier to help with logging
+     * @throws IllegalStateException if an evaluation description has already been received
      */
 
     void acceptEvaluationMessage( Evaluation evaluationDescription, String suggestedPath, String messageId )
     {
+        if ( this.getAreConsumersReady() )
+        {
+            throw new IllegalStateException( "While processing evaluation "
+                                             + this.evaluationId
+                                             + " in subscriber "
+                                             + this.consumerId
+                                             + ", encountered two instances of an evaluation description message, "
+                                             + "which is not allowed." );
+        }
+
         Objects.requireNonNull( evaluationDescription );
 
         this.createConsumers( evaluationDescription, suggestedPath );
@@ -401,11 +408,11 @@ class EvaluationConsumer
             append = "of an expected " + this.expected.get() + " messages";
         }
 
-        LOGGER.info( "For evaluation {}, external graphics subscriber {} has consumed {} messages {}.",
-                     this.evaluationId,
-                     this.consumerId,
-                     this.consumed.get(),
-                     append );
+        LOGGER.debug( "For evaluation {}, external graphics subscriber {} has consumed {} messages {}.",
+                      this.evaluationId,
+                      this.consumerId,
+                      this.consumed.get(),
+                      append );
 
         this.isComplete.set( this.expected.get() > 0 && this.consumed.get() == this.expected.get() );
 
@@ -418,6 +425,14 @@ class EvaluationConsumer
     boolean isClosed()
     {
         return this.isClosed.get();
+    }
+
+    /**
+     * @return true if the evaluation failed, otherwise false
+     */
+    boolean failed()
+    {
+        return this.isFailed.get();
     }
 
     /**
@@ -516,6 +531,53 @@ class EvaluationConsumer
                           groupId,
                           this.evaluationId,
                           status.getMessageCount() );
+        }
+    }
+
+    /**
+     * Completes all message groups prior to closing the consumer.
+     * @throws IllegalStateException if the number of messages within the group does not match the expected number
+     */
+
+    private void completeAllGroups()
+    {
+        // Check for group subscriptions that have not completed and complete them, unless this consumer is
+        // already in a failure state
+        if ( !this.failed() )
+        {
+            for ( Map.Entry<String, OneGroupConsumer<Statistics>> next : this.groupConsumers.entrySet() )
+            {
+                String groupId = next.getKey();
+                OneGroupConsumer<Statistics> consumerToClose = next.getValue();
+
+                Integer expectedCount = this.getGroupTracker()
+                                            .getExpectedMessagesPerGroup( groupId );
+
+                if ( Objects.nonNull( expectedCount ) && !consumerToClose.hasBeenUsed() )
+                {
+                    if ( consumerToClose.size() != expectedCount )
+                    {
+                        throw new IllegalStateException( "While attempting to gracefully close subscriber "
+                                                         + this
+                                                         + " , encountered an error. A consumer of grouped messages "
+                                                         + "attached to this subscription expected to receive "
+                                                         + expectedCount
+                                                         + " messages but actually received "
+                                                         + consumerToClose.size()
+                                                         + " messages on closing. A subscriber should not be closed "
+                                                         + "until consumption is complete." );
+                    }
+
+                    // Submit acceptance task
+                    this.execute( consumerToClose::acceptGroup );
+                }
+
+                LOGGER.trace( "On closing subscriber {}, discovered a consumer associated with group {} whose "
+                              + "consumption was ready to complete, but had not yet completed. This were completed.",
+                              this,
+                              groupId );
+
+            }
         }
     }
 
@@ -644,7 +706,7 @@ class EvaluationConsumer
     }
 
     /**
-     * Consumes any statistics messages that were arrived before the consumers were ready.
+     * Consumes any statistics messages that arrived before the consumers were ready.
      */
 
     private void consumeCachedStatisticsMessages()

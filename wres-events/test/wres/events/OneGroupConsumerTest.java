@@ -35,10 +35,10 @@ public class OneGroupConsumerTest
         Consumer<Collection<Integer>> consumer = aList -> sum.set( aggregator.apply( aList ) );
         OneGroupConsumer<Integer> group = OneGroupConsumer.of( consumer, "someGroupId" );
 
-        group.accept( 23 );
-        group.accept( 17 );
-        group.accept( 5 );
-        group.accept( -12 );
+        group.accept( "a", 23 );
+        group.accept( "b", 17 );
+        group.accept( "c", 5 );
+        group.accept( "d", -12 );
 
         // Compute sum
         group.acceptGroup();
@@ -65,7 +65,7 @@ public class OneGroupConsumerTest
         DoubleScoreStatistic.Builder scoreBuilder = DoubleScoreStatistic.newBuilder().addStatistics( componentBuilder );
         one.addScores( scoreBuilder );
 
-        group.accept( one.build() );
+        group.accept( "a", one.build() );
 
         Statistics.Builder another = Statistics.newBuilder();
         DoubleScoreStatisticComponent.Builder anotherComponentBuilder =
@@ -74,7 +74,7 @@ public class OneGroupConsumerTest
                 DoubleScoreStatistic.newBuilder().addStatistics( anotherComponentBuilder );
         another.addScores( anotherScoreBuilder );
 
-        group.accept( another.build() );
+        group.accept( "b", another.build() );
 
         // Compute aggregate
         group.acceptGroup();
@@ -115,7 +115,7 @@ public class OneGroupConsumerTest
         Statistics defaultInstance = Statistics.getDefaultInstance();
 
         IllegalStateException expected = assertThrows( IllegalStateException.class,
-                                                       () -> group.accept( defaultInstance ) );
+                                                       () -> group.accept( "a", defaultInstance ) );
 
         String expectedMessage = "Attempted to reuse a one-use consumer, which is not allowed.";
 
