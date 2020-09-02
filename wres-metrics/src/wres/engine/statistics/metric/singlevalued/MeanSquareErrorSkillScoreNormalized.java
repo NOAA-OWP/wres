@@ -19,7 +19,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
- * Computes the Mean Square Error Skill Score Normalized to (0,1] (MSESSN), which is related to the 
+ * Computes the Mean Square Error Skill Score Normalized (MSESSN) to (0,1]. It is related to the 
  * {@link MeanSquareErrorSkillScore} (MSESS) as: MSESSN = 1.0 / (2.0 - MSESS). 
  * 
  * @author james.brown@hydrosolved.com

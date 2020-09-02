@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,14 +36,18 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 {
 
+    private static final String ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER = ", encountered an attempt to mark subscriber ";
+
+    private static final String WHILE_PROCESSING_EVALUATION = "While processing evaluation ";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationStatusTracker.class );
-    
+
     /**
      * The frequency between logging updates in milliseconds upon awaiting a subscriber. 
      */
 
     private static final long TIMEOUT_UPDATE_FREQUENCY = 10_000;
-    
+
     /**
      * A latch that records the completion of publication. There is no timeout on publication.
      */
@@ -78,6 +83,18 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
      */
 
     private final Set<String> expectedSubscribers;
+
+    /**
+     * A set of subscribers that succeeded.
+     */
+
+    private final Set<String> success;
+
+    /**
+     * A set of subscribers that failed.
+     */
+
+    private final Set<String> failure;
 
     /**
      * The timeout duration.
@@ -123,16 +140,16 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                 this.publicationLatch.countDown();
                 break;
             case PUBLICATION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailureAndThrowException( message );
+                this.stopOnFailure( message );
                 break;
             case READY_TO_CONSUME:
                 this.registerSubscriberReady( message );
                 break;
             case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
-                this.registerSubscriberComplete( message );
+                this.registerSubscriberCompleteReportedSuccess( message );
                 break;
             case CONSUMPTION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailureAndThrowException( message );
+                this.stopOnFailure( message );
                 break;
             case CONSUMPTION_ONGOING:
                 this.registerConsumptionOngoing( message );
@@ -156,15 +173,48 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     /**
      * Stops all tracking on failure.
      * @param failure the failure message.
-     * @throws EvaluationFailedToCompleteException always
+     * @throws IllegalStateException if stopping a consumer that has previously been reported as failed or succeeded
      */
 
-    private void stopOnFailureAndThrowException( EvaluationStatus failure )
+    private void stopOnFailure( EvaluationStatus failure )
     {
+        // Non-zero exit code
+        this.exitCode.set( 1 );
 
-        // Stop waiting
-        this.publicationLatch.countDown();
-        this.subscriberLatches.forEach( ( a, b ) -> b.countDown() );
+        String consumerId = failure.getConsumerId();
+        if ( !consumerId.isBlank() )
+        {
+            // Failed previously. Probably a subscriber notification error.
+            if ( this.failure.contains( consumerId ) )
+            {
+                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
+                                                 + this.evaluation.getEvaluationId()
+                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
+                                                 + consumerId
+                                                 + " as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                                 + " when it has already been marked as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                                 + ". This probably represents an error in the subscriber that should "
+                                                 + "be fixed." );
+            }
+
+            this.failure.add( consumerId );
+
+            // Succeeded previously. Definitely a subscriber notification failure.
+            if ( this.success.contains( consumerId ) )
+            {
+                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
+                                                 + this.evaluation.getEvaluationId()
+                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
+                                                 + consumerId
+                                                 + " as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                                 + " when it has previously been marked as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
+                                                 + ". This is an error in the subscriber that should be fixed." );
+            }
+        }
 
         // Add any paths written
         ProtocolStringList resources = failure.getResourcesCreatedList();
@@ -174,13 +224,14 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                       this.evaluation.getEvaluationId(),
                       resources.size() );
 
-        // Non-zero exit code
-        this.exitCode.set( 1 );
+        LOGGER.error( "While tracking evaluation {}, encountered an error that prevented completion. The failure "
+                      + "message is {}.",
+                      this.evaluation.getEvaluationId(),
+                      failure );
 
-        throw new EvaluationFailedToCompleteException( "While tracking evaluation " + this.evaluation.getEvaluationId()
-                                                       + ", encountered an error that prevented completion. The "
-                                                       + "failure message is: "
-                                                       + failure );
+        // Stop waiting
+        this.publicationLatch.countDown();
+        this.subscriberLatches.forEach( ( a, b ) -> b.countDown() );
     }
 
     /**
@@ -201,7 +252,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                       this.evaluation.getEvaluationId() );
 
         String evaluationId = this.evaluation.getEvaluationId();
-        
+
         for ( Map.Entry<String, TimedCountDownLatch> nextEntry : this.subscriberLatches.entrySet() )
         {
             String consumerId = nextEntry.getKey();
@@ -211,11 +262,11 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                           + "for subscription {}.",
                           this.evaluation.getEvaluationId(),
                           consumerId );
-            
+
             // Create a timer task to log progress while awaiting the subscriber
             Instant then = Instant.now();
             Duration periodToWait = Duration.of( this.timeout, ChronoUnit.valueOf( this.timeoutUnits.name() ) );
-            AtomicInteger resetCount = new AtomicInteger(); 
+            AtomicInteger resetCount = new AtomicInteger();
             TimerTask updater = new TimerTask()
             {
                 @Override
@@ -223,16 +274,16 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                 {
                     Duration timeElapsed = Duration.between( then, Instant.now() );
                     Duration timeLeft = periodToWait.minus( timeElapsed );
-                 
+
                     // Latch was reset, so report the new time left
                     String append = "";
-                    if( nextLatch.getResetCount() > resetCount.get() )
+                    if ( nextLatch.getResetCount() > resetCount.get() )
                     {
                         append = " (the subscriber just registered an update, which reset the timeout)";
                         timeLeft = periodToWait;
                         resetCount.incrementAndGet();
                     }
-                    
+
                     LOGGER.info( "While completing evaluation {}, awaiting subscriber {}. There is {} remaining before "
                                  + "the subscriber timeout occurs, unless the subscriber provides an update sooner{}.",
                                  evaluationId,
@@ -241,14 +292,14 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                                  append );
                 }
             };
-            
+
             // Log progress
             Timer timer = new Timer();
             timer.schedule( updater, 0, EvaluationStatusTracker.TIMEOUT_UPDATE_FREQUENCY );
 
             // Wait for a fixed period unless there is progress
             nextLatch.await( this.timeout, this.timeoutUnits );
-            
+
             // Stop logging progress
             timer.cancel();
 
@@ -272,7 +323,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
         if ( !identifiers.isEmpty() )
         {
-            throw new SubscriberTimedOutException( "While processing evaluation "
+            throw new SubscriberTimedOutException( WHILE_PROCESSING_EVALUATION
                                                    + evaluationId
                                                    + ", the following subscribers failed to show progress within a "
                                                    + "timeout period of "
@@ -289,6 +340,15 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     }
 
     /**
+     * @return the set of failed susbcribers.
+     */
+    
+    Set<String> getFailedSubscribers()
+    {
+        return Collections.unmodifiableSet( this.failure );
+    }
+    
+    /**
      * Registers a new consumer as ready to consume.
      * 
      * @param message the status message containing the subscriber event
@@ -297,10 +357,10 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     private void registerSubscriberReady( EvaluationStatus message )
     {
         String consumerId = message.getConsumerId();
-        this.validateConsumerId( consumerId );
+        boolean isBeingTracked = this.validateConsumerId( consumerId );
 
-        // A real consumer, not the status tracker a.k.a. me
-        if ( !this.isThisConsumerMe( consumerId ) )
+        // A real consumer
+        if ( isBeingTracked )
         {
             LOGGER.debug( "Registering a message subscriber {} for evaluation {} as {}.",
                           consumerId,
@@ -322,19 +382,31 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     }
 
     /**
-     * Registers a new consumer as ready to consume.
+     * Registers a subscriber as completed successfully.
      * 
      * @param message the status message containing the subscriber event
+     * @throws IllegalStateException if the consumer has already been marked as failed
      */
 
-    private void registerSubscriberComplete( EvaluationStatus message )
+    private void registerSubscriberCompleteReportedSuccess( EvaluationStatus message )
     {
         String consumerId = message.getConsumerId();
-        this.validateConsumerId( consumerId );
+        boolean isBeingTracked = this.validateConsumerId( consumerId );
 
-        // A real consumer, not the status tracker a.k.a. me
-        if ( !this.isThisConsumerMe( consumerId ) && this.expectedSubscribers.contains( consumerId ) )
+        // A real consumer
+        if ( isBeingTracked )
         {
+            if ( this.failure.contains( consumerId ) )
+            {
+                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION + this.evaluation.getEvaluationId()
+                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
+                                                 + consumerId
+                                                 + " as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
+                                                 + " when it has previously been marked as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                                 + "." );
+            }
 
             // Add any paths written
             ProtocolStringList resources = message.getResourcesCreatedList();
@@ -346,6 +418,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
             // Countdown the subscription as complete
             this.subscribersReady.remove( consumerId );
+            this.success.add( consumerId );
             TimedCountDownLatch subscriberLatch = this.getSubscriberLatch( consumerId );
             subscriberLatch.countDown();
 
@@ -365,10 +438,10 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     private void registerConsumptionOngoing( EvaluationStatus message )
     {
         String consumerId = message.getConsumerId();
-        this.validateConsumerId( consumerId );
+        boolean isBeingTracked = this.validateConsumerId( consumerId );
 
-        // A real consumer, not the status tracker a.k.a. me
-        if ( !this.isThisConsumerMe( consumerId ) )
+        // A real consumer
+        if ( isBeingTracked )
         {
             // Reset the countdown
             this.getSubscriberLatch( consumerId ).resetClock();
@@ -384,9 +457,10 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
      * Throws an exception if the consumer identifier is blank.
      * @param consumerId the consumer identifier
      * @throws EvaluationEventException if the consumer identifier is blank
+     * @return true if the consumer is not me and is being tracked by this tracker instance, false otherwise
      */
 
-    private void validateConsumerId( String consumerId )
+    private boolean validateConsumerId( String consumerId )
     {
         if ( consumerId.isBlank() )
         {
@@ -395,6 +469,8 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                                                 + " received a message about a consumer event that did not "
                                                 + "contain the consumerId, which is not allowed." );
         }
+
+        return !this.isThisConsumerMe( consumerId ) && this.expectedSubscribers.contains( consumerId );
     }
 
     /**
@@ -447,6 +523,8 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
         this.evaluation = evaluation;
         this.subscribersReady = new HashSet<>();
+        this.success = ConcurrentHashMap.newKeySet();
+        this.failure = ConcurrentHashMap.newKeySet();
         this.expectedSubscribers = expectedSubscribers;
 
         LOGGER.info( "Registering the following messages subscribers for evaluation {}: {}.",

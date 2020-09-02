@@ -29,9 +29,14 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
 /**
  * <p>Manages connections to an AMQP broker. The broker configuration is contained in a jndi properties file on the 
  * classpath. If the configuration contains the loopback address (localhost, 127.0.0.1), then the factory creates an 
- * instance of an {@link EmbeddedBroker} unless a broker is already active on that address and port. Any embedded 
- * broker instance is managed by this class and must be closed when the application exits. For this reason, the class 
- * implements {@link Closeable} and it is recommended to instantiate using a try-with-resources. For example:
+ * instance of an {@link EmbeddedBroker} unless a broker is already active on that address and port. If the configured 
+ * port is free, then the embedded broker will attempt to bind to this port first. If the configured port is TCP 
+ * reserved port zero or the configured port is not free, the embedded broker will choose a port and report this 
+ * via the broker instance, but only after {@link EmbeddedBroker#start()} has been called.
+ * 
+ * <p>Any embedded broker instance is managed by this class and must be closed when the application exits. For this 
+ * reason, the class implements {@link Closeable} and it is recommended to instantiate using a try-with-resources. 
+ * For example:
  * 
  * <pre>
  * {@code
@@ -242,7 +247,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                               key,
                               value );
 
-                returnMe = EmbeddedBroker.of();
+                returnMe = this.createEmbeddedBroker( properties );
             }
             // Look for an active broker, fall back on an embedded one
             else
@@ -262,7 +267,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                   + "instead.",
                                   value );
 
-                    returnMe = EmbeddedBroker.of();
+                    returnMe = this.createEmbeddedBroker( properties );
                 }
             }
         }
@@ -351,6 +356,48 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
+     * Attempts to create an embedded broker in two stages:
+     * 
+     * <ol>
+     * <li>First, attempts to bind a broker on the configured port. If that fails, move the the second stage.</ol>
+     * <li>Second, attempts to bind a broker to a broker-chosen (free) port, which may be discovered from the embedded
+     * broker instance after startup.<li>
+     * </ol>
+     * 
+     * @param properties the properties
+     * @return an embedded broker instance
+     */
+
+    private EmbeddedBroker createEmbeddedBroker( Properties properties )
+    {
+        Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
+        String connectionUrl = connectionProperty.getValue();
+
+        String replace = connectionUrl.replaceAll( "[^\\d]+", "" );
+
+        int port = Integer.parseInt( replace );
+
+        EmbeddedBroker returnMe = null;
+
+        try
+        {
+            returnMe = EmbeddedBroker.of( port );
+            
+            // Attempt to bind, which may fail
+            returnMe.start();
+        }
+        catch ( CouldNotStartEmbeddedBrokerException e )
+        {
+            LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}. Choosing another port, "
+                          + "which will be available from the broker instance after startup." );
+
+            returnMe = EmbeddedBroker.of();
+        }
+
+        return returnMe;
+    }
+
+    /**
      * Creates a connection factory.
      * 
      * @param context the context
@@ -365,18 +412,18 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     {
         Objects.requireNonNull( context );
         Objects.requireNonNull( properties );
-        
+
         Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
         String factoryName = connectionProperty.getKey().replace( "connectionfactory.", "" );
         String connectionUrl = connectionProperty.getValue();
 
         ConnectionFactory factory = (ConnectionFactory) context.lookup( factoryName );
-        
+
         LOGGER.debug( "Created a connection factory with name {} and URL connection string {}.",
-                     factoryName,
-                     connectionUrl );
+                      factoryName,
+                      connectionUrl );
 
         return factory;
     }
-    
+
 }

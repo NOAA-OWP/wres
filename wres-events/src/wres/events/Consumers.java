@@ -209,9 +209,7 @@ public class Consumers
         }
 
         /**
-         * Adds a grouped subscribers for evaluation events.
-         * 
-         * @param groupStatisticsConsumer the subscriber for groups of evaluation events
+         * @param groupStatisticsConsumer the consumer for groups of evaluation events
          * @return this builder
          * @throws NullPointerException if the input is null
          */
@@ -282,7 +280,7 @@ public class Consumers
         this.statusConsumers = Collections.unmodifiableList( builder.statusConsumers );
         this.groupedStatisticsConsumers = Collections.unmodifiableList( builder.groupedStatisticsConsumers );
         this.pairsConsumers = Collections.unmodifiableList( builder.pairsConsumers );
-        this.externalSubscribers = builder.externalSubscribers;
+        this.externalSubscribers = Collections.unmodifiableSet( builder.externalSubscribers );
 
         LOGGER.debug( "Successfully constructed a consumer group with {} evaluation consumers, {} evaluation status "
                       + "consumers, {} statistics consumers, {} pairs consumers and {} external subscribers.",

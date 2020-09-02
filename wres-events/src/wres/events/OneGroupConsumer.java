@@ -1,15 +1,16 @@
 package wres.events;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 
 /**
@@ -19,12 +20,16 @@ import net.jcip.annotations.ThreadSafe;
  * <p>This consumer is intended to consume one group only. Upon attempting to re-use the consumer, after calling 
  * {@link #acceptGroup()}, an exception will be thrown.
  * 
+ * <p>Consumes messages by unique message identifier. A message with a given identifier is mapped. As such, this 
+ * consumer is "retry friendly". Retries will replace an already mapped message, but will not duplicate messages by
+ * identifier.
+ * 
  * @param <T> the type of message to be consumed
  * @author james.brown@hydrosolved.com
  */
 
 @ThreadSafe
-public class OneGroupConsumer<T> implements Consumer<T>
+public class OneGroupConsumer<T> implements BiConsumer<String, T>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( OneGroupConsumer.class );
@@ -43,12 +48,6 @@ public class OneGroupConsumer<T> implements Consumer<T>
     private final Consumer<Collection<T>> innerConsumer;
 
     /**
-     * Cache lock for mutation of the cache.
-     */
-
-    private final Object cacheLock = new Object();
-
-    /**
      * Group identifier.
      */
 
@@ -57,8 +56,7 @@ public class OneGroupConsumer<T> implements Consumer<T>
     /**
      * Cache of statistics.
      */
-    @GuardedBy( "cacheLock" )
-    private final Collection<T> cache;
+    private final Map<String, T> cache;
 
     /**
      * Is <code>true</code> if this consumer has been used once.
@@ -77,7 +75,7 @@ public class OneGroupConsumer<T> implements Consumer<T>
      */
 
     public static <T> OneGroupConsumer<T> of( Consumer<Collection<T>> innerConsumer,
-                                       String groupId )
+                                              String groupId )
     {
         return new OneGroupConsumer<>( innerConsumer, groupId );
     }
@@ -107,14 +105,16 @@ public class OneGroupConsumer<T> implements Consumer<T>
     /**
      * Accept a message.
      * 
+     * @param messageId the message identifier
      * @param message the message to accept
-     * @throws NullPointerException if the input is null
+     * @throws NullPointerException if either input is null
      * @throws IllegalStateException if an attempt is made to re-use this consumer
      */
 
     @Override
-    public void accept( T message )
+    public void accept( String messageId, T message )
     {
+        Objects.requireNonNull( messageId );
         Objects.requireNonNull( message );
 
         if ( this.hasBeenUsed() )
@@ -122,10 +122,20 @@ public class OneGroupConsumer<T> implements Consumer<T>
             throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
         }
 
-        synchronized ( this.cacheLock )
-        {
-            this.cache.add( message );
+        // Do atomic put if absent and, if present, then do atomic replace.
+        T cachedMessage = this.cache.putIfAbsent( messageId, message );
 
+        if ( Objects.nonNull( cachedMessage ) )
+        {
+            this.cache.replace( messageId, message );
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Grouped consumer {} replaced an existing message with identifier {}.", this, messageId );
+            }
+        }
+        else if ( LOGGER.isTraceEnabled() )
+        {
             LOGGER.trace( "Grouped consumer {} accepted a new message, {}.", this, message );
         }
     }
@@ -136,21 +146,20 @@ public class OneGroupConsumer<T> implements Consumer<T>
 
     public void acceptGroup()
     {
-        if ( this.hasBeenUsed.getAndSet( true ) )
+        if ( this.hasBeenUsed.get() )
         {
             throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
         }
 
-        synchronized ( this.cacheLock )
-        {
-            LOGGER.trace( "Grouped consumer {} consumed a new group of {} message.", this, this.cache.size() );
+        LOGGER.trace( "Grouped consumer {} consumed a new group of {} message.", this, this.size() );
 
-            // Propagate
-            this.innerConsumer.accept( this.cache );
+        // Propagate
+        this.innerConsumer.accept( this.cache.values() );
 
-            // Clear the cache
-            this.cache.clear();
-        }
+        // Clear the cache
+        this.cache.clear();
+
+        this.hasBeenUsed.set( true );
     }
 
     /**
@@ -189,7 +198,7 @@ public class OneGroupConsumer<T> implements Consumer<T>
         Objects.requireNonNull( innerConsumer );
 
         this.innerConsumer = innerConsumer;
-        this.cache = new ArrayList<>();
+        this.cache = new ConcurrentHashMap<>();
         this.hasBeenUsed = new AtomicBoolean();
         this.groupId = groupId;
     }

@@ -41,7 +41,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
- * Tests the {@link Evaluation}.
+ * Tests the {@link GraphicsServer}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -69,7 +69,7 @@ public class GraphicsServerTest
     private static BrokerConnectionFactory connections = null;
 
     /**
-     * Fake path to write.
+     * Path to write.
      */
 
     private Path outputPath;

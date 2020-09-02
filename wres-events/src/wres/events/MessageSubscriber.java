@@ -599,7 +599,8 @@ class MessageSubscriber<T> implements Closeable
                                                                                       groupId );
 
                     // Register the message with each grouped subscriber
-                    subscribers.forEach( next -> next.accept( received ) );
+                    String messageIdFinal = messageId;
+                    subscribers.forEach( next -> next.accept( messageIdFinal, received ) );
                 }
 
                 // Acknowledge
@@ -1634,7 +1635,7 @@ class MessageSubscriber<T> implements Closeable
             LOGGER.debug( "Closing and then unsubscribing consumer {} for evaluation {}.",
                           this.name,
                           this.evaluationId );
-
+            
             try
             {
                 // Close first according to docs
@@ -1650,7 +1651,7 @@ class MessageSubscriber<T> implements Closeable
             {
                 throw new IOException( "Unable to close message consumer " + this.name
                                        + " for evaluation "
-                                       + this.evaluationId );
+                                       + this.evaluationId, e );
             }
         }
     }

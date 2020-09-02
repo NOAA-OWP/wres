@@ -634,66 +634,63 @@ class GraphicsSubscriber implements Closeable
 
     private void recover( String messageId, String correlationId, Exception e )
     {
-        try ( StringWriter sw = new StringWriter();
-              PrintWriter pw = new PrintWriter( sw ); )
+        // Only try to recover if an evaluation hasn't already failed
+        if ( !this.getEvaluationConsumer( correlationId ).failed() )
         {
-
-            // Create a stack trace to log
-            e.printStackTrace( pw );
-            String message = sw.toString();
-
-            LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier {} in "
-                          + "graphics subscriber {}, encountered an error. This is {} of {} allowed consumption "
-                          + "failures before the subscriber will notify an unrecoverable failure for evaluation {}. "
-                          + "The error is: {}",
-                          messageId,
-                          correlationId,
-                          this.getIdentifier(),
-                          this.getNumberOfRetriesAttempted( correlationId ).get() + 1, // Counter starts at zero
-                          GraphicsSubscriber.MAXIMUM_RETRIES,
-                          correlationId,
-                          message );
-
-            // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
-            // messages should hit the dead letter queue/DLQ
-            if ( this.getNumberOfRetriesAttempted( correlationId )
-                     .incrementAndGet() < GraphicsSubscriber.MAXIMUM_RETRIES )
+            try ( StringWriter sw = new StringWriter();
+                  PrintWriter pw = new PrintWriter( sw ); )
             {
-                int retries = this.getNumberOfRetriesAttempted( correlationId ).get();
+                // Create a stack trace to log
+                e.printStackTrace( pw );
+                String message = sw.toString();
 
-                LOGGER.debug( "Graphics subscriber {} encountered an unrecoverable consumption failure for evaluation "
-                              + "{}. Attempting recovery {} of {}.",
-                              this.getIdentifier(),
-                              correlationId,
-                              retries,
-                              GraphicsSubscriber.MAXIMUM_RETRIES );
+                // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
+                // messages should hit the dead letter queue/DLQ
+                if ( this.getNumberOfRetriesAttempted( correlationId )
+                         .incrementAndGet() <= GraphicsSubscriber.MAXIMUM_RETRIES )
+                {
+                    int retries = this.getNumberOfRetriesAttempted( correlationId ).get();
 
-                this.session.recover();
+                    LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
+                                  + "{} in graphics subscriber {}, encountered an error. This is {} of {} allowed "
+                                  + "consumption failures before the subscriber will notify an unrecoverable failure "
+                                  + "for evaluation {}. The error is: {}",
+                                  messageId,
+                                  correlationId,
+                                  this.getIdentifier(),
+                                  retries, // Counter starts at zero
+                                  GraphicsSubscriber.MAXIMUM_RETRIES,
+                                  correlationId,
+                                  message );
+
+                    this.session.recover();
+                }
+                else
+                {
+                    LOGGER.error( "Graphics subscriber {} encountered a consumption failure for evaluation {}. "
+                                  + "Recovery failed after {} attempts.",
+                                  this.getIdentifier(),
+                                  correlationId,
+                                  GraphicsSubscriber.MAXIMUM_RETRIES );
+
+                    // Register the evaluation as failed
+                    this.markEvaluationFailed( correlationId );
+                }
             }
-            else
+            catch ( JMSException f )
             {
-                LOGGER.error( "Graphics subscriber {} encountered a consumption failure for evaluation {}. Recovery "
-                              + "failed after {} attempts.",
-                              this.getIdentifier(),
+                LOGGER.error( "While attempting to recover a session for evaluation {} in graphics subscriber {}, "
+                              + "encountered an error that prevented recovery: ",
                               correlationId,
-                              GraphicsSubscriber.MAXIMUM_RETRIES );
-
-                // Register the evaluation as failed
-                this.markEvaluationFailed( correlationId );
+                              this.getIdentifier(),
+                              f.getMessage() );
             }
-        }
-        catch ( JMSException f )
-        {
-            LOGGER.error( "While attempting to recover a session for evaluation {} in graphics subscriber {}, "
-                          + "encountered an error that prevented recovery: ",
-                          correlationId,
-                          this.getIdentifier(),
-                          f.getMessage() );
-        }
-        catch ( IOException g )
-        {
-            LOGGER.error( "While attempting recovery in graphics subscriber {}, failed to close an exception writer.",
-                          this.getIdentifier() );
+            catch ( IOException g )
+            {
+                LOGGER.error( "While attempting recovery in graphics subscriber {}, failed to close an exception "
+                              + "writer.",
+                              this.getIdentifier() );
+            }
         }
     }
 
@@ -724,18 +721,7 @@ class GraphicsSubscriber implements Closeable
     private void markEvaluationFailed( String evaluationId )
     {
         this.status.registerFailedEvaluation( evaluationId );
-        try
-        {
-            this.getEvaluationConsumer( evaluationId ).markEvaluationFailed();
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Graphics subscriber {} attempted to mark evaluation {} as failed unrecoverably. However, "
-                          + "the failure could not be propagated: {}.",
-                          this.getIdentifier(),
-                          evaluationId,
-                          e.getMessage() );
-        }
+        this.getEvaluationConsumer( evaluationId ).markEvaluationFailed();
     }
 
     /**
