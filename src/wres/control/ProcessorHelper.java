@@ -1073,12 +1073,10 @@ class ProcessorHelper
 
         if ( !path.isAbsolute() )
         {
-            path = systemSettings.getDataDirectory()
-                                 .getParent()
-                                 .resolve( path );
+            return path.toAbsolutePath().toString();
         }
 
-        return path.toString();
+        return pathString;
     }
 
     private ProcessorHelper()
