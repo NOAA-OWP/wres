@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.time.ZoneOffset.UTC;
 
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ZippedPIXMLIngest;
@@ -151,7 +152,7 @@ public final class Operations {
             {
                 List<String> availableVariables = variables.getAvailableVariables(
                         project.getId(),
-                        Project.LEFT_MEMBER
+                        LeftOrRightOrBaseline.LEFT.value()
                 );
 
                 StringBuilder message = new StringBuilder(  );
@@ -208,7 +209,7 @@ public final class Operations {
             {
                 List<String> availableVariables = variables.getAvailableVariables(
                         project.getId(),
-                        Project.RIGHT_MEMBER
+                        LeftOrRightOrBaseline.RIGHT.value()
                 );
 
                 String message = "There is no '"
@@ -270,7 +271,7 @@ public final class Operations {
             {
                 List<String> availableVariables = variables.getAvailableVariables(
                         project.getId(),
-                        Project.BASELINE_MEMBER
+                        LeftOrRightOrBaseline.BASELINE.value()
                 );
                 String message = "There is no '"
                                  + project.getBaseline().getVariable().getValue()
