@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,12 +57,12 @@ public class EmbeddedBroker implements Closeable
      */
 
     private final Map<String, Object> launchOptions;
-    
+
     /**
      * Is <code>true</code> if the broker is started, <code>false</code> otherwise.
      */
-    
-    private final AtomicBoolean isStarted; 
+
+    private final AtomicBoolean isStarted;
 
     /**
      * Returns a broker instance with default launch options.
@@ -161,7 +162,7 @@ public class EmbeddedBroker implements Closeable
                          this.getBoundPorts() );
 
             LOGGER.debug( "Finished starting embedded broker with launch options {}.", this.launchOptions );
-            
+
             this.isStarted.set( true );
         }
     }
@@ -175,7 +176,7 @@ public class EmbeddedBroker implements Closeable
 
     public Map<String, Integer> getBoundPorts()
     {
-        Map<String, Integer> ports = this.listener.ports;
+        Map<String, Integer> ports = this.listener.getPorts();
 
         if ( Objects.isNull( ports ) )
         {
@@ -193,6 +194,52 @@ public class EmbeddedBroker implements Closeable
         this.shutdown();
 
         LOGGER.info( "The embedded broker instance has been closed." );
+    }
+
+    /**
+     * Returns the maximum number of retries or null if not configured.
+     * 
+     * @return the number of retries or null
+     */
+
+    public Integer getMaximumRetries()
+    {
+        Integer returnMe = null;
+
+        // Witness the horror of this nested configuration.
+        Object vhn = this.listener.getBrokerConfiguration().get( "virtualhostnodes" );
+        if ( Objects.nonNull( vhn ) && vhn instanceof List )
+        {
+            List<?> virtualHosts = (List<?>) vhn;
+            if ( !virtualHosts.isEmpty() && virtualHosts.get( 0 ) instanceof Map )
+            {
+                Map<?, ?> firstHost = (Map<?, ?>) virtualHosts.get( 0 );
+                Object context = firstHost.get( "context" );
+
+                if ( Objects.nonNull( context ) && context instanceof Map )
+                {
+                    Map<?, ?> contextMap = (Map<?, ?>) context;
+
+                    Object deliveryAttempts = contextMap.get( "queue.maximumDeliveryAttempts" );
+
+                    try
+                    {
+                        returnMe = Integer.valueOf( deliveryAttempts + "" );
+
+                        LOGGER.debug( "Discovered configuration for the maximum number of retries, which is {}. ",
+                                      returnMe );
+                    }
+                    catch ( NumberFormatException e )
+                    {
+                        LOGGER.debug( "Unrecognized data type associated with queue.maximumDeliveryAttempts. "
+                                      + "Expected an integer, but got {}.",
+                                      deliveryAttempts );
+                    }
+                }
+            }
+        }
+
+        return returnMe;
     }
 
     /**
@@ -221,7 +268,7 @@ public class EmbeddedBroker implements Closeable
         this.listener = new PortExtractingLauncherListener();
 
         this.systemLauncher = new SystemLauncher( listener );
-        
+
         this.isStarted = new AtomicBoolean();
     }
 
@@ -239,6 +286,8 @@ public class EmbeddedBroker implements Closeable
         private SystemConfig<?> systemConfig;
 
         private Map<String, Integer> ports;
+
+        private Map<String, Object> configuration;
 
         @Override
         public void beforeStartup()
@@ -266,6 +315,8 @@ public class EmbeddedBroker implements Closeable
                                .stream()
                                .collect( Collectors.toUnmodifiableMap( Port::getName,
                                                                        Port::getBoundPort ) );
+
+            this.configuration = Collections.unmodifiableMap( broker.extractConfig( false ) );
         }
 
         @Override
@@ -290,6 +341,24 @@ public class EmbeddedBroker implements Closeable
         public void exceptionOnShutdown( final Exception e )
         {
             // Not needed
+        }
+
+        /**
+         * @return the ports.
+         */
+
+        private Map<String, Integer> getPorts()
+        {
+            return this.ports;
+        }
+
+        /**
+         * @return the broker configuration.
+         */
+
+        private Map<String, Object> getBrokerConfiguration()
+        {
+            return this.configuration;
         }
     }
 

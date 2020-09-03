@@ -66,10 +66,10 @@ class MessageSubscriber<T> implements Closeable
     private static final boolean DURABLE_SUBSCRIBERS = true;
 
     /**
-     * Maximum number of retries on failed consumption across all consumers attached to this subscriber.
+     * Maximum number of retries allowed.
      */
 
-    private static final int MAXIMUM_RETRIES = 2;
+    private final int maximumRetries;
 
     /**
      * Actual number of retries attempted.
@@ -270,6 +270,12 @@ class MessageSubscriber<T> implements Closeable
         private String identifier;
 
         /**
+         * Maximum retries allowed.
+         */
+
+        private int maximumRetries = 0;
+
+        /**
          * Sets the connection.
          * 
          * @param connection the connection factory
@@ -427,6 +433,20 @@ class MessageSubscriber<T> implements Closeable
         Builder<T> setIdentifier( String identifier )
         {
             this.identifier = identifier;
+
+            return this;
+        }
+
+        /**
+         * Sets the maximum number of retries.
+         * 
+         * @param maximumRetries the maximum number of retries
+         * @return this builder
+         */
+
+        Builder<T> setMaximumRetries( int maximumRetries )
+        {
+            this.maximumRetries = maximumRetries;
 
             return this;
         }
@@ -1293,57 +1313,61 @@ class MessageSubscriber<T> implements Closeable
 
     private void recover( String messageId, String correlationId, Exception e )
     {
-        try ( StringWriter sw = new StringWriter();
-              PrintWriter pw = new PrintWriter( sw ); )
+        // Only try to recover if an evaluation hasn't already failed
+        if ( !this.failed() )
         {
-
-            // Create a stack trace to log
-            e.printStackTrace( pw );
-            String message = sw.toString();
-
-            LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier {} in "
-                          + "subscriber {}, encountered an error. This is {} of {} allowed consumption failures before "
-                          + "the subscriber will notify an unrecoverable failure. The error is: {}",
-                          messageId,
-                          correlationId,
-                          this.getIdentifier(),
-                          this.getNumberOfRetriesAttempted().get() + 1, // Counter starts at zero
-                          MessageSubscriber.MAXIMUM_RETRIES,
-                          message );
-
-            // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
-            // messages should hit the dead letter queue/DLQ
-            if ( this.getNumberOfRetriesAttempted().incrementAndGet() < MessageSubscriber.MAXIMUM_RETRIES )
+            try ( StringWriter sw = new StringWriter();
+                  PrintWriter pw = new PrintWriter( sw ); )
             {
-                int retries = this.getNumberOfRetriesAttempted().get();
+                // Create a stack trace to log
+                e.printStackTrace( pw );
+                String message = sw.toString();
 
-                LOGGER.debug( "Subscriber {} encountered an unrecoverable consumption failure. Attempting recovery {} of {}.",
+                // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
+                // messages should hit the dead letter queue/DLQ
+                LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
+                              + "{} in subscriber {}, encountered an error. This is {} of {} allowed consumption "
+                              + "failures before the subscriber will notify an unrecoverable failure for "
+                              + "evaluation {}. The error is: {}",
+                              messageId,
+                              correlationId,
                               this.getIdentifier(),
-                              retries,
-                              MessageSubscriber.MAXIMUM_RETRIES );
+                              this.getNumberOfRetriesAttempted().get() + 1, // Counter starts at zero
+                              this.getMaximumRetries(),
+                              correlationId,
+                              message );
 
                 this.session.recover();
             }
-            else
+            catch ( JMSException f )
             {
-                LOGGER.error( "Subscriber {} encountered a consumption failure. Recovery failed after {} attempts.",
+                LOGGER.error( "While attempting to recover a session for evaluation {} in subscriber {}, encountered "
+                              + "an error that prevented recovery: ",
+                              correlationId,
                               this.getIdentifier(),
-                              MessageSubscriber.MAXIMUM_RETRIES );
-
-                this.markSubscriberFailed();
+                              f.getMessage() );
+            }
+            catch ( IOException g )
+            {
+                LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception "
+                              + "writer.",
+                              this.getIdentifier() );
             }
         }
-        catch ( JMSException f )
+
+        // Stop if the maximum number of retries has been reached
+        if ( this.getNumberOfRetriesAttempted()
+                 .incrementAndGet() == this.getMaximumRetries() )
         {
-            LOGGER.error( "While attempting to recover a session for evaluation {}, encountered an error that "
-                          + "prevented recovery: ",
+
+            LOGGER.error( "Subscriber {} encountered a consumption failure for evaluation {}. Recovery failed "
+                          + "after {} attempts.",
+                          this.getIdentifier(),
                           correlationId,
-                          f.getMessage() );
-        }
-        catch ( IOException g )
-        {
-            LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception writer.",
-                          this.getIdentifier() );
+                          this.getMaximumRetries() );
+
+            // Register the subscriber as failed
+            this.markSubscriberFailed();
         }
     }
 
@@ -1354,6 +1378,15 @@ class MessageSubscriber<T> implements Closeable
     private AtomicInteger getNumberOfRetriesAttempted()
     {
         return this.retriesAttempted;
+    }
+
+    /**
+     * @return the number of retries allowed.
+     */
+
+    private int getMaximumRetries()
+    {
+        return this.maximumRetries;
     }
 
     /**
@@ -1459,6 +1492,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws JMSException if the JMS provider fails to create the connection due to some internal error
      * @throws JMSSecurityException if client authentication fails
      * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if any input is invalid
      */
 
     private MessageSubscriber( Builder<T> builder )
@@ -1484,6 +1518,7 @@ class MessageSubscriber<T> implements Closeable
         this.isIgnoreConsumerMessages = builder.isIgnoreConsumerMessages;
         this.consumerConnection = builder.connection;
         this.statusConnection = builder.connection;
+        this.maximumRetries = builder.maximumRetries;
 
         Topic statusTopic = builder.statusTopic;
         String context = builder.context;
@@ -1493,11 +1528,11 @@ class MessageSubscriber<T> implements Closeable
 
         String evaluationId = this.getEvaluationId();
 
-        Objects.requireNonNull( this.topic );
-        Objects.requireNonNull( this.evaluationInfo );
-        Objects.requireNonNull( this.expectedMessageCountSupplier );
-        Objects.requireNonNull( this.consumerConnection );
-        Objects.requireNonNull( this.statusConnection );
+        Objects.requireNonNull( this.topic, "Topic information required." );
+        Objects.requireNonNull( this.evaluationInfo, "Evaluation information required." );
+        Objects.requireNonNull( this.expectedMessageCountSupplier, "Expected message count supplier required." );
+        Objects.requireNonNull( this.consumerConnection, "Connection for consumers required." );
+        Objects.requireNonNull( this.statusConnection, "Connection for status messages requried." );
 
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
@@ -1505,6 +1540,13 @@ class MessageSubscriber<T> implements Closeable
                                 "Set the evaluation status topic for consumer " + this
                                              + ", which is "
                                              + "needed to report on consumption status." );
+
+        if ( this.maximumRetries < 0 )
+        {
+            throw new IllegalArgumentException( "The maximum number of retries must be a positive integer: "
+                                                + this.maximumRetries
+                                                + "." );
+        }
 
         // Create a connection for consumption and register a listener for exceptions
         this.consumerConnection.setExceptionListener( new ConnectionExceptionListener( this.getIdentifier() ) );
@@ -1635,7 +1677,7 @@ class MessageSubscriber<T> implements Closeable
             LOGGER.debug( "Closing and then unsubscribing consumer {} for evaluation {}.",
                           this.name,
                           this.evaluationId );
-            
+
             try
             {
                 // Close first according to docs
@@ -1651,7 +1693,8 @@ class MessageSubscriber<T> implements Closeable
             {
                 throw new IOException( "Unable to close message consumer " + this.name
                                        + " for evaluation "
-                                       + this.evaluationId, e );
+                                       + this.evaluationId,
+                                       e );
             }
         }
     }

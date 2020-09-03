@@ -60,10 +60,26 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactory.class );
 
     /**
+     * Default maximum number of retries. A small risk remains that this may disagree with broker configuration that
+     * could not be found (and is otherwise canonical). If this number exceeds the number in the broker configuration, 
+     * a race condition could emerge in marking a subscriber as complete. See #81735-145. This is considered very low
+     * risk. It would be worse to default to zero retries, which would nevertheless guarantee to eliminate the small 
+     * risk.
+     */
+
+    private static final int DEFAULT_MAXIMUM_RETRIES = 2;
+
+    /**
      * Default jndi properties file on the classpath.
      */
 
     private static final String DEFAULT_PROPERTIES = "eventbroker.properties";
+
+    /**
+     * The maximum number of retries supported by the broker whose connections are exposed by this factory.
+     */
+
+    private final Integer maximumRetries;
 
     /**
      * Instance of an embedded broker managed by this factory instance, created as needed. There should be one instance 
@@ -141,6 +157,18 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
+     * Returns the maximum number of retries allowed by the broker whose connections are exposed by this factory, else 
+     * the default maximum of {@link BrokerConnectionFactory#DEFAULT_MAXIMUM_RETRIES}.
+     * 
+     * @return the maxcimum retry count
+     */
+
+    public int getMaximumRetries()
+    {
+        return this.maximumRetries;
+    }
+
+    /**
      * Constructs a new instances and creates an embedded broker as necessary.
      * 
      * @param jndiProperties the name of a jndi properties file on the classpath
@@ -195,6 +223,22 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                                                     connection.getValue(),
                                                                     properties,
                                                                     this.broker.getBoundPorts() );
+
+            Integer retries = this.broker.getMaximumRetries();
+
+            // Retries?
+            if ( Objects.nonNull( retries ) )
+            {
+                this.maximumRetries = retries;
+            }
+            else
+            {
+                this.maximumRetries = BrokerConnectionFactory.DEFAULT_MAXIMUM_RETRIES;
+            }
+        }
+        else
+        {
+            this.maximumRetries = BrokerConnectionFactory.DEFAULT_MAXIMUM_RETRIES;
         }
 
         // Set any variables that depend on the (possibly adjusted) properties
@@ -382,7 +426,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         try
         {
             returnMe = EmbeddedBroker.of( port );
-            
+
             // Attempt to bind, which may fail
             returnMe.start();
         }
