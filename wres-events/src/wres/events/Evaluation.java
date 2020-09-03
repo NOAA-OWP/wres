@@ -1390,6 +1390,7 @@ public class Evaluation implements Closeable
                                                                      .setExpectedMessageCountSupplier( EvaluationStatus::getStatusMessageCount )
                                                                      .setMapper( this.getStatusMapper() )
                                                                      .setContext( Evaluation.EVALUATION_STATUS_QUEUE )
+                                                                     .setMaximumRetries( broker.getMaximumRetries() )
                                                                      .build();
 
             Topic evaluation = (Topic) broker.getDestination( Evaluation.EVALUATION_QUEUE );
@@ -1403,6 +1404,7 @@ public class Evaluation implements Closeable
                                                                                          .setMapper( this.getEvaluationMapper() )
                                                                                          .setEvaluationStatusTopic( status )
                                                                                          .setContext( Evaluation.EVALUATION_QUEUE )
+                                                                                         .setMaximumRetries( broker.getMaximumRetries() )
                                                                                          .build();
 
             Topic statistics = (Topic) broker.getDestination( Evaluation.STATISTICS_QUEUE );
@@ -1420,6 +1422,7 @@ public class Evaluation implements Closeable
                                                                .setEvaluationStatusTopic( status )
                                                                .setMapper( this.getStatisticsMapper() )
                                                                .setContext( Evaluation.STATISTICS_QUEUE )
+                                                               .setMaximumRetries( broker.getMaximumRetries() )
                                                                .build();
 
             Topic pairs = (Topic) broker.getDestination( Evaluation.PAIRS_QUEUE );
@@ -1433,6 +1436,7 @@ public class Evaluation implements Closeable
                                                           .setEvaluationStatusTopic( status )
                                                           .setMapper( this.getPairsMapper() )
                                                           .setContext( Evaluation.PAIRS_QUEUE )
+                                                          .setMaximumRetries( broker.getMaximumRetries() )
                                                           .build();
         }
         catch ( JMSException | NamingException e )
@@ -1492,6 +1496,7 @@ public class Evaluation implements Closeable
                                                                      .setEvaluationStatusTopic( status )
                                                                      .setContext( completionContext )
                                                                      .setIgnoreConsumerMessages( false ) // Track messages about itself
+                                                                     .setMaximumRetries( broker.getMaximumRetries() )
                                                                      .build();
         }
         catch ( JMSException | NamingException e )
@@ -1712,7 +1717,7 @@ public class Evaluation implements Closeable
 
         this.messageCount.getAndIncrement();
     }
-    
+
     /**
      * Generate a compact, unique, identifier for an evaluation. Thanks to: 
      * https://neilmadden.blog/2018/08/30/moving-away-from-uuids/

@@ -65,12 +65,6 @@ class GraphicsSubscriber implements Closeable
     private static final boolean REMOVE_SUBSCRIPTIONS_ON_CLOSURE = false;
 
     /**
-     * Maximum number of retries on failed consumption across all consumers attached to this subscriber.
-     */
-
-    private static final int MAXIMUM_RETRIES = 2;
-
-    /**
      * Default name for the queue on the amq.topic that accepts evaluation status messages.
      */
 
@@ -646,36 +640,19 @@ class GraphicsSubscriber implements Closeable
 
                 // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
                 // messages should hit the dead letter queue/DLQ
-                if ( this.getNumberOfRetriesAttempted( correlationId )
-                         .incrementAndGet() <= GraphicsSubscriber.MAXIMUM_RETRIES )
-                {
-                    int retries = this.getNumberOfRetriesAttempted( correlationId ).get();
+                LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
+                              + "{} in graphics subscriber {}, encountered an error. This is {} of {} allowed "
+                              + "consumption failures before the subscriber will notify an unrecoverable failure "
+                              + "for evaluation {}. The error is: {}",
+                              messageId,
+                              correlationId,
+                              this.getIdentifier(),
+                              this.getNumberOfRetriesAttempted( correlationId ).get() + 1, // Counter starts at zero
+                              this.broker.getMaximumRetries(),
+                              correlationId,
+                              message );
 
-                    LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
-                                  + "{} in graphics subscriber {}, encountered an error. This is {} of {} allowed "
-                                  + "consumption failures before the subscriber will notify an unrecoverable failure "
-                                  + "for evaluation {}. The error is: {}",
-                                  messageId,
-                                  correlationId,
-                                  this.getIdentifier(),
-                                  retries, // Counter starts at zero
-                                  GraphicsSubscriber.MAXIMUM_RETRIES,
-                                  correlationId,
-                                  message );
-
-                    this.session.recover();
-                }
-                else
-                {
-                    LOGGER.error( "Graphics subscriber {} encountered a consumption failure for evaluation {}. "
-                                  + "Recovery failed after {} attempts.",
-                                  this.getIdentifier(),
-                                  correlationId,
-                                  GraphicsSubscriber.MAXIMUM_RETRIES );
-
-                    // Register the evaluation as failed
-                    this.markEvaluationFailed( correlationId );
-                }
+                this.session.recover();
             }
             catch ( JMSException f )
             {
@@ -691,6 +668,20 @@ class GraphicsSubscriber implements Closeable
                               + "writer.",
                               this.getIdentifier() );
             }
+        }
+
+        // Stop if the maximum number of retries has been reached
+        if ( this.getNumberOfRetriesAttempted( correlationId )
+                 .incrementAndGet() == this.broker.getMaximumRetries() )
+        {
+            LOGGER.error( "Graphics subscriber {} encountered a consumption failure for evaluation {}. "
+                          + "Recovery failed after {} attempts.",
+                          this.getIdentifier(),
+                          correlationId,
+                          this.broker.getMaximumRetries() );
+
+            // Register the evaluation as failed
+            this.markEvaluationFailed( correlationId );
         }
     }
 
