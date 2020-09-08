@@ -624,6 +624,7 @@ public class MessageFactory
     /**
      * Returns <code>true</code> if the outputs contains graphics type, otherwise <code>false</code>.
      * 
+     * @param outputs the outputs message
      * @return true if graphics are required
      * @throws NullPointerException if the input is null 
      */
@@ -636,6 +637,7 @@ public class MessageFactory
     /**
      * Returns the graphical destinations associated with the outputs message.
      * 
+     * @param outputs the outputs message
      * @return the graphical destinations
      * @throws NullPointerException if the input is null 
      */

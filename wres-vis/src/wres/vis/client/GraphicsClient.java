@@ -1,4 +1,4 @@
-package wres.vis.server;
+package wres.vis.client;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,20 +31,20 @@ import org.slf4j.LoggerFactory;
 import wres.eventsbroker.BrokerConnectionFactory;
 
 /**
- * A long-running server process that encapsulates one graphics subscriber that consumes statistics and writes them to 
- * graphics.
+ * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
+ * to graphics.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class GraphicsServer implements Closeable
+class GraphicsClient implements Closeable
 {
 
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsServer.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsClient.class );
 
     /**
      * The frequency with which to log the status of the server in ms.
@@ -68,7 +68,7 @@ class GraphicsServer implements Closeable
      * An executor to execute the graphics server.
      */
 
-    private final ExecutorService serverExecutor;
+    private final ExecutorService clientExecutor;
 
     /**
      * An executor to do the graphics work.
@@ -86,7 +86,7 @@ class GraphicsServer implements Closeable
      * Server status.
      */
 
-    private final ServerStatus serverStatus;
+    private final ClientStatus clientStatus;
 
     /**
      * Wait until stopped.
@@ -116,7 +116,7 @@ class GraphicsServer implements Closeable
     {
         // Create the server
         try ( BrokerConnectionFactory broker = BrokerConnectionFactory.of();
-              GraphicsServer server = GraphicsServer.of( broker ) )
+              GraphicsClient graphics = GraphicsClient.of( broker ) )
         {
             Instant started = Instant.now();
 
@@ -126,28 +126,29 @@ class GraphicsServer implements Closeable
             Runtime.getRuntime().addShutdownHook( new Thread( () -> {
                 Instant ended = Instant.now();
                 Duration duration = Duration.between( started, ended );
-                server.stop();
-                LOGGER.info( "Stopped the WRES Graphics Server, which ran for '{}' and processed {} packets of "
+                graphics.stop();
+                LOGGER.info( "Stopped WRES Graphics Client {}, which ran for '{}' and processed {} packets of "
                              + "statistics across {} evaluations.",
+                             graphics.getSubscriberId(),
                              duration,
-                             server.getServerStatus().getStatisticsCount(),
-                             server.getServerStatus().getEvaluationCount() );
+                             graphics.getClientStatus().getStatisticsCount(),
+                             graphics.getClientStatus().getEvaluationCount() );
             } ) );
 
-            server.start();
+            graphics.start();
 
             // Await termination
-            server.await();
+            graphics.await();
         }
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
 
-            LOGGER.error( "Interrupted while waiting for the WRES Graphics Server." );
+            LOGGER.error( "Interrupted while waiting for a WRES Graphics Client." );
         }
         catch ( GraphicsServerException f )
         {
-            LOGGER.error( "Encountered an internal error in the WRES Graphics Server, which will now shut down. {}",
+            LOGGER.error( "Encountered an internal error in a WRES Graphics Client, which will now shut down. {}",
                           f.getMessage() );
         }
     }
@@ -159,7 +160,7 @@ class GraphicsServer implements Closeable
     private void run()
     {
         // The status is mutable and is updated by the subscriber
-        ServerStatus status = this.getServerStatus();
+        ClientStatus status = this.getClientStatus();
         GraphicsSubscriber subscriber = this.getGraphicsSubscriber();
 
         // Create a timer task to log the server status
@@ -188,8 +189,8 @@ class GraphicsServer implements Closeable
             }
         };
 
-        this.timer.schedule( sweeper, 0, GraphicsServer.STATUS_UPDATE_MILLISECONDS );
-        this.timer.schedule( updater, 0, GraphicsServer.NOTIFY_ALIVE_MILLISECONDS );
+        this.timer.schedule( sweeper, 0, GraphicsClient.STATUS_UPDATE_MILLISECONDS );
+        this.timer.schedule( updater, 0, GraphicsClient.NOTIFY_ALIVE_MILLISECONDS );
     }
 
     @Override
@@ -204,18 +205,18 @@ class GraphicsServer implements Closeable
      * @return an instance of the server
      */
 
-    static GraphicsServer of( BrokerConnectionFactory broker )
+    static GraphicsClient of( BrokerConnectionFactory broker )
     {
-        return new GraphicsServer( broker );
+        return new GraphicsClient( broker );
     }
 
     /**
-     * @return the server status.
+     * @return the client status.
      */
 
-    private ServerStatus getServerStatus()
+    private ClientStatus getClientStatus()
     {
-        return this.serverStatus;
+        return this.clientStatus;
     }
 
     /**
@@ -233,7 +234,7 @@ class GraphicsServer implements Closeable
 
     private void start()
     {
-        this.serverExecutor.execute( this::run );
+        this.clientExecutor.execute( this::run );
     }
 
     /**
@@ -251,7 +252,7 @@ class GraphicsServer implements Closeable
             }
 
             this.timer.cancel();
-            
+
             this.getGraphicsExecutor().shutdown();
 
             try
@@ -260,22 +261,23 @@ class GraphicsServer implements Closeable
             }
             catch ( InterruptedException ie )
             {
-                LOGGER.warn( "Interrupted while shutting down the graphics executor service {} in graphics client {}.",
+                LOGGER.warn( "Interrupted while shutting down the graphics executor service {} in WRES Graphics "
+                             + "Client {}.",
                              this.getGraphicsExecutor(),
                              this.getSubscriberId() );
 
                 Thread.currentThread().interrupt();
             }
-            
-            this.getServerExecutor().shutdown();
-            
+
+            this.getClientExecutor().shutdown();
+
             try
             {
-                this.getServerExecutor().awaitTermination( 1, TimeUnit.SECONDS );
+                this.getClientExecutor().awaitTermination( 1, TimeUnit.SECONDS );
             }
             catch ( InterruptedException e )
             {
-                LOGGER.warn( "Failed to close all resources used by the WRES Graphics Server." );
+                LOGGER.warn( "Failed to close all resources used by WRES Graphics Client {}.", this.getSubscriberId() );
 
                 Thread.currentThread().interrupt();
             }
@@ -316,9 +318,9 @@ class GraphicsServer implements Closeable
      * @return the executor that runs the service.
      */
 
-    private ExecutorService getServerExecutor()
+    private ExecutorService getClientExecutor()
     {
-        return this.serverExecutor;
+        return this.clientExecutor;
     }
 
     /**
@@ -326,33 +328,34 @@ class GraphicsServer implements Closeable
      * @param broker the broker
      */
 
-    private GraphicsServer( BrokerConnectionFactory broker )
+    private GraphicsClient( BrokerConnectionFactory broker )
     {
-        LOGGER.info( "Creating a new WRES Graphics Server..." );
-
         // This identifier is registered with the wres-core as a graphics subscriber. For now, it is manually declared
         // here, but it needs to come from configuration
         this.subscriberId = "4mOgkGkse3gWIGKuIhzVnl5ZPCM";
 
+        LOGGER.info( "Creating WRES Graphics Client {}...", this.getSubscriberId() );
+
         UncaughtExceptionHandler handler = ( a, b ) -> {
-            LOGGER.error( "Encountered an internal error in a WRES Graphics Server.", b );
+            String message = "Encountered an internal error in WRES Graphics Client " + this.getSubscriberId() + ".";
+            LOGGER.error( message, b );
             this.stop();
         };
 
-        ThreadFactory graphicsFactory = new BasicThreadFactory.Builder().namingPattern( "Graphics Server Thread %d" )
+        ThreadFactory graphicsFactory = new BasicThreadFactory.Builder().namingPattern( "Graphics Client Thread %d" )
                                                                         .uncaughtExceptionHandler( handler )
                                                                         .build();
 
-        this.serverExecutor = Executors.newSingleThreadExecutor( graphicsFactory );
+        this.clientExecutor = Executors.newSingleThreadExecutor( graphicsFactory );
         this.timer = new Timer();
-        this.serverStatus = new ServerStatus();
+        this.clientStatus = new ClientStatus();
         this.latch = new CountDownLatch( 1 );
         this.graphicsWorker = this.createGraphicsExecutor();
 
         try
         {
             this.graphicsSubscriber = new GraphicsSubscriber( this.getSubscriberId(),
-                                                              this.getServerStatus(),
+                                                              this.getClientStatus(),
                                                               this.getGraphicsExecutor(),
                                                               broker );
         }
@@ -360,13 +363,13 @@ class GraphicsServer implements Closeable
         {
             this.stop();
 
-            throw new GraphicsServerException( "While attempting to build graphics server "
+            throw new GraphicsServerException( "While attempting to build WRES Graphics Client "
                                                + this.getSubscriberId()
                                                + ", encountered an error.",
                                                e );
         }
 
-        LOGGER.info( "Finished creating a new WRES Graphics Server." );
+        LOGGER.info( "Finished creating WRES Graphics Client {}.", this.getSubscriberId() );
     }
 
     /**
@@ -380,11 +383,11 @@ class GraphicsServer implements Closeable
                                                                         .namingPattern( "Graphics Worker Thread %d" )
                                                                         .build();
 
-        BlockingQueue<Runnable> graphicsQueue = new ArrayBlockingQueue<>( GraphicsServer.MAXIMUM_THREAD_COUNT * 5 );
+        BlockingQueue<Runnable> graphicsQueue = new ArrayBlockingQueue<>( GraphicsClient.MAXIMUM_THREAD_COUNT * 5 );
 
-        ThreadPoolExecutor pool = new ThreadPoolExecutor( GraphicsServer.MAXIMUM_THREAD_COUNT,
-                                                          GraphicsServer.MAXIMUM_THREAD_COUNT,
-                                                          GraphicsServer.MAXIMUM_THREAD_COUNT,
+        ThreadPoolExecutor pool = new ThreadPoolExecutor( GraphicsClient.MAXIMUM_THREAD_COUNT,
+                                                          GraphicsClient.MAXIMUM_THREAD_COUNT,
+                                                          GraphicsClient.MAXIMUM_THREAD_COUNT,
                                                           TimeUnit.MILLISECONDS,
                                                           graphicsQueue,
                                                           graphicsFactory );
@@ -402,7 +405,7 @@ class GraphicsServer implements Closeable
      * @author james.brown@hydrosolved.com
      */
 
-    static class ServerStatus
+    static class ClientStatus
     {
 
         /** The number of evaluations completed.*/

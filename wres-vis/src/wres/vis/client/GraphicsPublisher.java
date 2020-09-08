@@ -1,4 +1,4 @@
-package wres.vis.server;
+package wres.vis.client;
 
 import java.io.Closeable;
 import java.io.IOException;

@@ -42,9 +42,7 @@ class MessagePublisher implements Closeable
 
         JMS_MESSAGE_ID,
 
-        CONSUMER_ID,
-        
-        OUTPUT_PATH;
+        CONSUMER_ID;
 
         @Override
         public String toString()
@@ -59,8 +57,6 @@ class MessagePublisher implements Closeable
                     return "JMSMessageID";
                 case CONSUMER_ID:
                     return "ConsumerID";
-                case OUTPUT_PATH:
-                    return "OutputPath";
                 default:
                     throw new IllegalStateException( "Implement the string identifier for " + this );
             }

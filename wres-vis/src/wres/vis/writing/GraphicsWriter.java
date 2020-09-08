@@ -6,7 +6,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
@@ -105,7 +105,7 @@ abstract class GraphicsWriter
         {
             // Adjust the chart engine
             GraphicsWriter.prepareChartEngineForWriting( engine );
-   
+
             Set<Path> returnMe = new TreeSet<>();
 
             // Default is png
@@ -114,7 +114,8 @@ abstract class GraphicsWriter
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
                 Path resolvedPath = path.resolveSibling( path.getFileName() + ".png" );
-                File outputImageFile = resolvedPath.toFile();
+
+                File outputImageFile = GraphicsWriter.validatePathAndReturnFile( resolvedPath );
 
                 // #58735-18
                 ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
@@ -126,7 +127,8 @@ abstract class GraphicsWriter
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
                 Path resolvedPath = path.resolveSibling( path.getFileName() + ".svg" );
-                File outputImageFile = resolvedPath.toFile();
+
+                File outputImageFile = GraphicsWriter.validatePathAndReturnFile( resolvedPath );
 
                 // Create the chart
                 JFreeChart chart = engine.buildChart();
@@ -154,6 +156,25 @@ abstract class GraphicsWriter
     }
 
     /**
+     * Validates that the path does not already exist.
+     * 
+     * @return a valid file
+     */
+
+    private static File validatePathAndReturnFile( Path path )
+    {
+        File file = path.toFile();
+
+        if ( file.exists() )
+        {
+            // But see #81735-173
+            throw new GraphicsWriteException( "Cannot write file " + file + " because it already exists." );
+        }
+
+        return file;
+    }
+
+    /**
      * Overrides the appearance of the chart to support comparisons between SVG and image outputs across platforms.  
      * 
      * @param engine The charting engine to modify.  This is modified in place.
@@ -178,9 +199,12 @@ abstract class GraphicsWriter
                                                          + " file on the class path." );
         }
 
-        try ( InputStream fontStream = fontUrl.openStream() )
+        try
         {
-            Font font = Font.createFont( Font.TRUETYPE_FONT, fontStream ).deriveFont( 10.0f );
+            // Create from file, not stream
+            // https://stackoverflow.com/questions/38783010/huge-amount-of-jf-tmp-files-in-var-cache-tomcat7-temp
+            File fontFile = new File( fontUrl.toURI() );
+            Font font = Font.createFont( Font.TRUETYPE_FONT, fontFile ).deriveFont( 10.0f );
 
             // Register font with graphics env
             GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -207,8 +231,12 @@ abstract class GraphicsWriter
                 parms.getLabel().setFont( font );
             }
         }
-    }   
-    
+        catch ( URISyntaxException e )
+        {
+            throw new IOException( "While attempting to read a font.", e );
+        }
+    }
+
     /**
      * @param height the height
      * @return the height if the height is greater than zero, else the {@link GraphicWriter#DEFAULT_GRAPHIC_HEIGHT}.
@@ -311,13 +339,13 @@ abstract class GraphicsWriter
          */
 
         private final GraphicShape graphicShape;
-        
+
         /**
          * The duration units.
          */
 
         private final ChronoUnit durationUnits;
-        
+
         /**
          * Returns a graphics helper.
          *
@@ -376,7 +404,7 @@ abstract class GraphicsWriter
             this.graphicsString = innerGraphicsString;
             this.durationUnits = this.getDurationUnitsFromOutputs( outputs );
         }
-        
+
         /**
          * Uncovers the duration units from an {@link Outputs} message. Throws an exception if more than one duration unit
          * is present. Formats should be written for common graphics parameters. See 
@@ -449,7 +477,7 @@ abstract class GraphicsWriter
         /**
          * @return the duration units.
          */
-        
+
         ChronoUnit getDurationUnits()
         {
             return this.durationUnits;

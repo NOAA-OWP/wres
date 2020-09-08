@@ -1,6 +1,7 @@
 package wres.io.writing.commaseparated.statistics;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -126,6 +127,9 @@ abstract class CommaSeparatedStatisticsWriter
         // Append a file extension to the path
         Path extendedPath = outputPath.resolveSibling( outputPath.getFileName() + ".csv" );
 
+        // Validate
+        CommaSeparatedStatisticsWriter.validatePath( extendedPath );
+        
         try ( BufferedWriter w = Files.newBufferedWriter( extendedPath,
                                                           StandardCharsets.UTF_8,
                                                           StandardOpenOption.CREATE,
@@ -140,6 +144,23 @@ abstract class CommaSeparatedStatisticsWriter
         
         return extendedPath;
     }
+    
+    /**
+     * Validates that the path does not already exist.
+     * 
+     * @throws CommaSeparatedWriteException if the path exists
+     */
+
+    private static void validatePath( Path path )
+    {
+        File file = path.toFile();
+
+        if ( file.exists() )
+        {
+            // But see #81735-173. This would apply where the retry tested all consumers attached to one subscriber.
+            throw new CommaSeparatedWriteException( "Cannot write file " + file + " because it already exists." );
+        }
+    }    
 
     /**
      * Mutates the input, adding a new row.
