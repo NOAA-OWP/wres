@@ -1,4 +1,4 @@
-package wres.vis.server;
+package wres.vis.client;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -152,8 +152,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      */
 
     private final Path outputDirectory;
-    
-    final AtomicBoolean consumerBuilt = new AtomicBoolean(); 
+
+    final AtomicBoolean consumerBuilt = new AtomicBoolean();
 
     /**
      * Build the consumer.
@@ -471,82 +471,76 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     {
         Objects.requireNonNull( outputs );
 
-        if ( outputs.hasPng() )
+        if ( outputs.hasPng() || outputs.hasSvg() )
         {
-            this.buildGraphicsConsumersForOneFormatType( outputs, DestinationType.PNG );
+            this.buildGraphicsConsumersForEachStatisticType( outputs );
         }
 
-        if ( outputs.hasSvg() )
-        {
-            this.buildGraphicsConsumersForOneFormatType( outputs, DestinationType.SVG );
-        }
-        
-        consumerBuilt.set( true );
+        this.consumerBuilt.set( true );
     }
 
     /**
      * Adds a graphic consumer for each type of statistical output and for one format type.
      * @param outputs a description of the outputs required
-     * @param type the format type
      */
 
-    private void buildGraphicsConsumersForOneFormatType( Outputs outputs, DestinationType type )
+    private void buildGraphicsConsumersForEachStatisticType( Outputs outputs )
     {
         Path pathToWrite = this.getOutputDirectory();
 
         // Build the consumers conditionally
-        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, DestinationType.GRAPHIC ) )
         {
             DiagramGraphicsWriter diagramWriter = DiagramGraphicsWriter.of( outputs,
                                                                             pathToWrite );
-            this.diagramConsumers.put( type,
+            this.diagramConsumers.put( DestinationType.GRAPHIC,
                                        diagramWriter );
             this.writersToPaths.add( diagramWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, DestinationType.GRAPHIC ) )
         {
             BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
                                                                             pathToWrite );
-            this.boxPlotConsumersPerPair.put( type,
+            this.boxPlotConsumersPerPair.put( DestinationType.GRAPHIC,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.GRAPHIC ) )
         {
             BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
                                                                             pathToWrite );
-            this.boxPlotConsumersPerPool.put( type,
+            this.boxPlotConsumersPerPool.put( DestinationType.GRAPHIC,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.GRAPHIC ) )
         {
             DurationDiagramGraphicsWriter pairedWriter = DurationDiagramGraphicsWriter.of( outputs,
                                                                                            pathToWrite );
-            this.durationDiagramConsumers.put( type,
+            this.durationDiagramConsumers.put( DestinationType.GRAPHIC,
                                                pairedWriter );
             this.writersToPaths.add( pairedWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.GRAPHIC ) )
         {
             DoubleScoreGraphicsWriter doubleScoreWriter =
                     DoubleScoreGraphicsWriter.of( outputs,
                                                   pathToWrite );
-            this.doubleScoreConsumers.put( type,
+            this.doubleScoreConsumers.put( DestinationType.GRAPHIC,
                                            doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, DestinationType.GRAPHIC ) )
         {
             DurationScoreGraphicsWriter durationScoreWriter =
                     DurationScoreGraphicsWriter.of( outputs,
                                                     pathToWrite );
-            this.durationScoreConsumers.put( type,
+            this.durationScoreConsumers.put( DestinationType.GRAPHIC,
                                              durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }
@@ -652,7 +646,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private void processDoubleScoreOutputs( List<DoubleScoreStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
-        
+
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> next : this.doubleScoreConsumers.entrySet() )
         {

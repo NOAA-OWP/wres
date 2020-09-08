@@ -1,4 +1,4 @@
-package wres.vis.server;
+package wres.vis.client;
 
 import static org.junit.Assert.assertEquals;
 
@@ -41,12 +41,12 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
- * Tests the {@link GraphicsServer}.
+ * Tests the {@link GraphicsClient}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class GraphicsServerTest
+public class GraphicsClientTest
 {
     private static final String CMS = "CMS";
 
@@ -77,7 +77,7 @@ public class GraphicsServerTest
     @BeforeClass
     public static void runBeforeAllTests()
     {
-        GraphicsServerTest.connections = BrokerConnectionFactory.of();
+        GraphicsClientTest.connections = BrokerConnectionFactory.of();
     }
 
     @Before
@@ -127,13 +127,13 @@ public class GraphicsServerTest
                                        .build();
 
         // Open an evaluation, closing on completion
+        Path basePath = null;
         try ( // This is the graphics server instance, which normally runs in a separate process
-              GraphicsServer server = GraphicsServer.of( GraphicsServerTest.connections );
+              GraphicsClient server = GraphicsClient.of( GraphicsClientTest.connections );
               // This is the evaluation instance that declares png output
-              Evaluation evaluation = Evaluation.open( this.oneEvaluation,
-                                                       GraphicsServerTest.connections,
-                                                       consumerGroup,
-                                                       this.outputPath ); )
+              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
+                                                     GraphicsClientTest.connections,
+                                                     consumerGroup ); )
         {
             // Publish the statistics to a "feature" group
             evaluation.publish( this.oneStatistics, "DRRC2" );
@@ -146,6 +146,8 @@ public class GraphicsServerTest
 
             // Record the paths written to assert against
             actualPathsWritten = evaluation.getPathsWrittenByExternalSubscribers();
+            
+            basePath = this.outputPath.resolve( "wres_evaluation_output_" + evaluation.getEvaluationId() );
         }
 
         // Make assertions about the things produced by internal subscriptions.
@@ -155,9 +157,9 @@ public class GraphicsServerTest
         assertEquals( 4, actualStatuses.size() );
 
         // Make assertions about the graphics written by the single external subscription.
-        Set<Path> expectedPaths = Set.of( this.outputPath.resolve( "DRRC2_QINE_HEFS_MEAN_ABSOLUTE_ERROR.png" ),
-                                          this.outputPath.resolve( "DRRC2_QINE_HEFS_MEAN_ERROR.png" ),
-                                          this.outputPath.resolve( "DRRC2_QINE_HEFS_MEAN_SQUARE_ERROR.png" ) );
+        Set<Path> expectedPaths = Set.of( basePath.resolve( "DRRC2_QINE_HEFS_MEAN_ABSOLUTE_ERROR.png" ),
+                                          basePath.resolve( "DRRC2_QINE_HEFS_MEAN_ERROR.png" ),
+                                          basePath.resolve( "DRRC2_QINE_HEFS_MEAN_SQUARE_ERROR.png" ) );
 
         assertEquals( expectedPaths, actualPathsWritten );
 
@@ -166,6 +168,8 @@ public class GraphicsServerTest
         {
             next.toFile().delete();
         }
+        
+        basePath.toFile().delete();
     }
 
     /**
@@ -250,7 +254,7 @@ public class GraphicsServerTest
     @AfterClass
     public static void runAfterAllTests() throws IOException
     {
-        GraphicsServerTest.connections.close();
+        GraphicsClientTest.connections.close();
     }
 
 }

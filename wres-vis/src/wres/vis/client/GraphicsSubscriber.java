@@ -1,4 +1,4 @@
-package wres.vis.server;
+package wres.vis.client;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -34,9 +34,8 @@ import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
-import wres.vis.server.GraphicsPublisher.MessageProperty;
-import wres.vis.server.GraphicsServer.ServerStatus;
-import wres.vis.writing.GraphicsWriteException;
+import wres.vis.client.GraphicsPublisher.MessageProperty;
+import wres.vis.client.GraphicsClient.ClientStatus;
 import wres.statistics.generated.Evaluation;
 
 /**
@@ -170,7 +169,7 @@ class GraphicsSubscriber implements Closeable
      * Server status.
      */
 
-    private final ServerStatus status;
+    private final ClientStatus status;
 
     /**
      * The evaluations by unique id.
@@ -500,8 +499,7 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            catch ( JMSException | EvaluationEventException | GraphicsWriteException
-                    | InvalidProtocolBufferException e )
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
                 // Attempt to recover
                 this.recover( messageId, correlationId, e );
@@ -555,8 +553,7 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            catch ( JMSException | EvaluationEventException | GraphicsWriteException
-                    | InvalidProtocolBufferException e )
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
                 // Attempt to recover
                 this.recover( messageId, correlationId, e );
@@ -609,8 +606,7 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            catch ( JMSException | EvaluationEventException | GraphicsWriteException
-                    | InvalidProtocolBufferException e )
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
                 // Attempt to recover
                 this.recover( messageId, correlationId, e );
@@ -619,7 +615,13 @@ class GraphicsSubscriber implements Closeable
     }
 
     /**
-     * Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}.
+     * <p>Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}. 
+     * 
+     * <p>TODO: Retries happen per message. Thus, for example, all graphics formats will be retried when any one format 
+     * fails. This may in turn generate a different exception on attempting to overwrite. Thus, when the writing fails
+     * for any one format, the consumer should be considered exceptional for all formats and the consumer should 
+     * clean-up after itself (deleting paths written for all formats), ready for the next retry. Else, the consumer
+     * should track what succeeded and failed and only retry the things that failed.
      * 
      * @param messageId the message identifier for the exceptional consumption
      * @param correlationId the correlation identifier for the exceptional consumption
@@ -712,7 +714,23 @@ class GraphicsSubscriber implements Closeable
     private void markEvaluationFailed( String evaluationId )
     {
         this.status.registerFailedEvaluation( evaluationId );
-        this.getEvaluationConsumer( evaluationId ).markEvaluationFailed();
+        EvaluationConsumer consumer = this.getEvaluationConsumer( evaluationId );
+        consumer.markEvaluationFailed();
+        
+        try
+        {
+            consumer.close();
+        }
+        catch ( JMSException e )
+        {
+            String message = "Graphics subscriber " + this.getIdentifier()
+                             + " encountered an error while marking "
+                             + "evaluation "
+                             + evaluationId
+                             + " as failed.";
+
+            LOGGER.error( message, e );
+        }
     }
 
     /**
@@ -786,7 +804,7 @@ class GraphicsSubscriber implements Closeable
      */
 
     GraphicsSubscriber( String uniqueId,
-                        ServerStatus status,
+                        ClientStatus status,
                         ExecutorService executorService,
                         BrokerConnectionFactory broker )
             throws JMSException, NamingException

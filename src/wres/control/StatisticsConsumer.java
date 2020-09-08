@@ -688,75 +688,75 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                            .collect( Collectors.toSet() );
 
         // Add consumers for each type
-        for ( DestinationType type : types )
+        if ( !types.isEmpty() )
         {
-            this.buildGraphicsConsumersForOneFormatType( outputs, type );
+            // One consumer for all graphics formats
+            this.buildGraphicsConsumersForEachStatisticType( outputs );
         }
     }
 
     /**
-     * Adds a graphic consumer for each type of statistical output and for one format type.
+     * Adds a graphic consumer for each type of statistical output, which writes all graphics formats.
      * @param outputs the description of outputs required
-     * @param type the format type
      */
 
-    private void buildGraphicsConsumersForOneFormatType( Outputs outputs, DestinationType type )
+    private void buildGraphicsConsumersForEachStatisticType( Outputs outputs )
     {
         Path pathToWrite = this.getOutputDirectory();
 
         // Build the consumers conditionally
-        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, DestinationType.GRAPHIC ) )
         {
             DiagramGraphicsWriter diagramWriter = DiagramGraphicsWriter.of( outputs,
                                                                             pathToWrite );
-            this.diagramConsumers.put( type,
+            this.diagramConsumers.put( DestinationType.GRAPHIC,
                                        diagramWriter );
             this.writersToPaths.add( diagramWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, DestinationType.GRAPHIC ) )
         {
             BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
                                                                             pathToWrite );
-            this.boxPlotConsumersPerPair.put( type,
+            this.boxPlotConsumersPerPair.put( DestinationType.GRAPHIC,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.GRAPHIC ) )
         {
             BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
                                                                             pathToWrite );
-            this.boxPlotConsumersPerPool.put( type,
+            this.boxPlotConsumersPerPool.put( DestinationType.GRAPHIC,
                                               boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.GRAPHIC ) )
         {
             DurationDiagramGraphicsWriter pairedWriter = DurationDiagramGraphicsWriter.of( outputs,
                                                                                            pathToWrite );
-            this.pairedConsumers.put( type,
+            this.pairedConsumers.put( DestinationType.GRAPHIC,
                                       pairedWriter );
             this.writersToPaths.add( pairedWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.GRAPHIC ) )
         {
             DoubleScoreGraphicsWriter doubleScoreWriter =
                     DoubleScoreGraphicsWriter.of( outputs,
                                                   pathToWrite );
-            this.doubleScoreConsumers.put( type,
+            this.doubleScoreConsumers.put( DestinationType.GRAPHIC,
                                            doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
         }
 
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, type ) )
+        if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, DestinationType.GRAPHIC ) )
         {
             DurationScoreGraphicsWriter durationScoreWriter =
                     DurationScoreGraphicsWriter.of( outputs,
                                                     pathToWrite );
-            this.durationScoreConsumers.put( type,
+            this.durationScoreConsumers.put( DestinationType.GRAPHIC,
                                              durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
         }

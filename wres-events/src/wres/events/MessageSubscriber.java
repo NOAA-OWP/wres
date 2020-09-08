@@ -638,7 +638,7 @@ class MessageSubscriber<T> implements Closeable
                 // Check and close early if group consumption is complete for one or more subscribers
                 this.checkAndCompleteGroup( groupId );
             }
-            catch ( JMSException | ConsumerException | EvaluationEventException e )
+            catch ( JMSException | RuntimeException e )
             {
                 // Messages are on the DLQ, but signal locally too
                 if ( Objects.isNull( this.failure ) )
@@ -800,7 +800,7 @@ class MessageSubscriber<T> implements Closeable
                 // Acknowledge
                 message.acknowledge();
             }
-            catch ( JMSException | ConsumerException | EvaluationEventException e )
+            catch ( JMSException | RuntimeException e )
             {
                 // Messages are on the DLQ, but signal locally too
                 if ( Objects.isNull( this.failure ) )
@@ -882,49 +882,60 @@ class MessageSubscriber<T> implements Closeable
         LOGGER.debug( "Closing subscriber, {}.", this );
 
         // Check for group subscriptions that have not completed
-        for ( Map.Entry<String, Queue<OneGroupConsumer<T>>> next : this.groupConsumers.entrySet() )
+        try
         {
-            String groupId = next.getKey();
-            Queue<OneGroupConsumer<T>> consumersToClose = next.getValue();
-
-            Integer expectedCount = this.getEvaluationInfo()
-                                        .getCompletionTracker()
-                                        .getExpectedMessagesPerGroup( groupId );
-
-            int total = 0;
-
-            for ( OneGroupConsumer<T> consumer : consumersToClose )
+            for ( Map.Entry<String, Queue<OneGroupConsumer<T>>> next : this.groupConsumers.entrySet() )
             {
-                if ( Objects.nonNull( expectedCount ) && !consumer.hasBeenUsed() )
+                String groupId = next.getKey();
+                Queue<OneGroupConsumer<T>> consumersToClose = next.getValue();
+
+                Integer expectedCount = this.getEvaluationInfo()
+                                            .getCompletionTracker()
+                                            .getExpectedMessagesPerGroup( groupId );
+
+                int total = 0;
+
+                for ( OneGroupConsumer<T> consumer : consumersToClose )
                 {
-                    if ( consumer.size() != expectedCount )
+                    if ( Objects.nonNull( expectedCount ) && !consumer.hasBeenUsed() )
                     {
-                        throw new EvaluationEventException( "While attempting to gracefully close subscriber " + this
-                                                            + " , encountered an error. A consumer of grouped messages "
-                                                            + "attached to this subscription expected to receive "
-                                                            + expectedCount
-                                                            + " but had only received "
-                                                            + consumer.size()
-                                                            + " messages on closing. A subscriber should not be closed "
-                                                            + "until consumption is complete." );
+                        // Should not close until complete, unless already flagged as failed
+                        if ( consumer.size() != expectedCount && !this.failed() )
+                        {
+                            LOGGER.error( "While attempting to gracefully close subscriber {}"
+                                          + " , encountered an error. A consumer of grouped "
+                                          + "messages attached to this subscription expected to "
+                                          + "receive {} but had only received {} messages on "
+                                          + "closing. A subscriber should not be "
+                                          + "closed until consumption is complete, unless the "
+                                          + "overall evaluation has failed.",
+                                          this,
+                                          expectedCount,
+                                          consumer.size() );
+                        }
+                        // Complete
+                        else if ( consumer.size() == expectedCount )
+                        {
+                            consumer.acceptGroup();
+                            total++;
+                        }
                     }
-
-                    consumer.acceptGroup();
-                    total++;
                 }
+
+                LOGGER.trace( "On closing subscriber {}, discovered {} consumers associated with group {} whose "
+                              + "consumption was ready to complete, but had not yet completed. These were completed.",
+                              this,
+                              total,
+                              groupId );
+
             }
-
-            LOGGER.trace( "On closing subscriber {}, discovered {} consumers associated with group {} whose "
-                          + "consumption was ready to complete, but had not yet completed. These were completed.",
-                          this,
-                          total,
-                          groupId );
-
         }
+        finally
+        {
+            this.internalClose();
 
-        LOGGER.debug( "Completed clean-up of subscriber {}", this );
-
-        this.internalClose();
+            LOGGER.debug( "Completed closure of subscriber {}", this );
+        }
     }
 
     /**
@@ -1277,7 +1288,7 @@ class MessageSubscriber<T> implements Closeable
                 // Acknowledge the message
                 message.acknowledge();
             }
-            catch ( JMSException | ConsumerException | EvaluationEventException | InvalidProtocolBufferException e )
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
                 // Messages are on the DLQ, but signal locally too
                 if ( Objects.isNull( this.failure ) )
@@ -1304,7 +1315,13 @@ class MessageSubscriber<T> implements Closeable
     }
 
     /**
-     * Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}.
+     * <p>Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}.
+     * 
+     * <p>TODO: Retries happen per message. Thus, for example, all graphics formats will be retried when any one format 
+     * fails. This may in turn generate a different exception on attempting to overwrite. Thus, when the writing fails
+     * for any one format, the consumer should be considered exceptional for all formats and the consumer should 
+     * clean-up after itself (deleting paths written for all formats), ready for the next retry. Else, the consumer
+     * should track what succeeded and failed and only retry the things that failed.
      * 
      * @param messageId the message identifier for the exceptional consumption
      * @param correlationId the correlation identifier for the exceptional consumption

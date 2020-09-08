@@ -176,10 +176,9 @@ class ProcessorHelper
                                .build();
 
         // Open an evaluation, to be closed on completion or stopped on exception
-        Evaluation evaluation = Evaluation.open( evaluationDescription,
+        Evaluation evaluation = Evaluation.of( evaluationDescription,
                                                  connections,
-                                                 consumerGroup,
-                                                 outputDirectory );
+                                                 consumerGroup );
 
         try
         {

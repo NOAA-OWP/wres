@@ -1,10 +1,9 @@
-package wres.vis.server;
+package wres.vis.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
@@ -257,10 +256,16 @@ class EvaluationConsumer
     {
         Objects.requireNonNull( completionStatus );
 
-        // Collect the paths written
+        // Collect the paths written, if available
         List<String> addThesePaths = new ArrayList<>();
-        this.consumer.get().forEach( next -> addThesePaths.add( next.toString() ) );
-        this.groupConsumer.get().forEach( next -> addThesePaths.add( next.toString() ) );
+
+        if ( this.getAreConsumersReady() )
+        {
+            this.consumer.get()
+                         .forEach( next -> addThesePaths.add( next.toString() ) );
+            this.groupConsumer.get()
+                              .forEach( next -> addThesePaths.add( next.toString() ) );
+        }
 
         // Create the status message to publish
         EvaluationStatus message = EvaluationStatus.newBuilder()
@@ -349,7 +354,7 @@ class EvaluationConsumer
 
         Objects.requireNonNull( evaluationDescription );
 
-        this.createConsumers( evaluationDescription, suggestedPath );
+        this.createConsumers( evaluationDescription );
 
         LOGGER.debug( "External subscriber {} received and consumed an evaluation description message with "
                       + "identifier {} for evaluation {}.",
@@ -662,10 +667,9 @@ class EvaluationConsumer
      * Attempts to create the consumers.
      * 
      * @param evaluationDescription a description of the evaluation
-     * @param outputDirectory a path string to the output directory where graphics should be written
      */
 
-    private void createConsumers( Evaluation evaluationDescription, String outputDirectory )
+    private void createConsumers( Evaluation evaluationDescription )
     {
         synchronized ( this.getConsumerCreationLock() )
         {
@@ -676,7 +680,7 @@ class EvaluationConsumer
                               this.consumerId );
 
                 // Writable path
-                Path pathToWrite = this.getWritablePath( outputDirectory );
+                Path pathToWrite = this.getPathToWrite( this.evaluationId );
 
                 // Incremental consumer
                 BiPredicate<StatisticType, DestinationType> incrementalTypes =
@@ -741,87 +745,29 @@ class EvaluationConsumer
     }
 
     /**
-     * @param suggestedPath the suggested path to write, which is optional
-     * @return the actual path to write, ideally the suggested one
-     */
-    private Path getWritablePath( String suggestedPath )
-    {
-        Path pathToWrite;
-
-        if ( Objects.nonNull( suggestedPath ) )
-        {
-            try
-            {
-                pathToWrite = Paths.get( suggestedPath );
-
-                if ( pathToWrite.toFile().canWrite() )
-                {
-                    LOGGER.debug( "While writing graphics for evaluation {}, encountered a suggested path to write of "
-                                  + "{}, which was found to be writable. Graphics will be written to this path." );
-                }
-                else
-                {
-                    pathToWrite = this.createTempDirectory();
-
-                    LOGGER.debug( "While writing graphics for evaluation {} in subscriber {}, failed to uncover a "
-                                  + "suggested path to write because the path supplied with the evaluation description "
-                                  + "message, {}, was not writable. Created a temporary path of {} to which graphics "
-                                  + "will be written.",
-                                  this.evaluationId,
-                                  this.consumerId,
-                                  suggestedPath,
-                                  pathToWrite );
-                }
-            }
-            catch ( InvalidPathException e )
-            {
-                pathToWrite = this.createTempDirectory();
-
-                LOGGER.debug( "While writing graphics for evaluation {} in subscriber {}, failed to create a "
-                              + "path from the suggested path string, {}. Created a temporary path of {} to which "
-                              + "graphics will be written.",
-                              this.evaluationId,
-                              this.consumerId,
-                              suggestedPath,
-                              pathToWrite );
-            }
-        }
-        else
-        {
-            pathToWrite = this.createTempDirectory();
-
-            LOGGER.debug( "While writing graphics for evaluation {} in subscriber {}, failed to uncover a "
-                          + "suggested path to write because no path was supplied within the evaluation "
-                          + "description message. Created a temporary path of {} to which graphics "
-                          + "will be written.",
-                          this.evaluationId,
-                          this.consumerId,
-                          pathToWrite );
-        }
-
-        return pathToWrite;
-    }
-
-    /**
-     * Creates a temporary directory for the outputs with the correct permissions. 
+     * Returns a path to write, creating a temporary directory for the outputs with the correct permissions, as needed. 
      *
+     * @param evaluationId the evaluation identifier
      * @return the path to the temporary output directory
      * @throws GraphicsWriteException if the temporary directory cannot be created
+     * @throws NullPointerException if the evaluationId is null
      */
 
-    private Path createTempDirectory()
+    private Path getPathToWrite( String evaluationId )
     {
+        Objects.requireNonNull( evaluationId );
+        
         // Where outputs files will be written
         Path outputDirectory = null;
-
-        // POSIX-compliant
+        String tempDir = System.getProperty( "java.io.tmpdir" );
+        
         try
         {
+            Path namedPath = Paths.get( tempDir, "wres_evaluation_output_" + evaluationId );
+            
+            // POSIX-compliant    
             if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )
-            {
-                // Permissions for temp directory require group read so that the tasker
-                // may give the output to the client on GET. Write so that the tasker
-                // may remove the output on client DELETE. Execute for dir reads.            
+            {          
                 Set<PosixFilePermission> permissions = EnumSet.of( PosixFilePermission.OWNER_READ,
                                                                    PosixFilePermission.OWNER_WRITE,
                                                                    PosixFilePermission.OWNER_EXECUTE,
@@ -832,13 +778,13 @@ class EvaluationConsumer
                 FileAttribute<Set<PosixFilePermission>> fileAttribute =
                         PosixFilePermissions.asFileAttribute( permissions );
 
-                outputDirectory = Files.createTempDirectory( "wres_evaluation_output_",
-                                                             fileAttribute );
+                // Create if not exists
+                outputDirectory = Files.createDirectories( namedPath, fileAttribute );
             }
             // Not POSIX-compliant
             else
             {
-                outputDirectory = Files.createTempDirectory( "wres_evaluation_output_" );
+                outputDirectory = Files.createDirectories( namedPath );
             }
         }
         catch ( IOException e )
