@@ -4,30 +4,37 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URI;
+import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import javax.ws.rs.core.StreamingOutput;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.GeneratedMessageV3;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import org.redisson.Redisson;
+import org.redisson.api.RMap;
+import org.redisson.api.RMapCache;
+import org.redisson.api.RSet;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,29 +52,34 @@ import wres.messages.generated.JobStandardStream;
 class JobResults
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
+    private static final Config REDISSON_CONFIG = new Config();
+    private static final String REDIS_ADDRESS = "redis://persister:6379";
+
+    static
+    {
+        REDISSON_CONFIG.useSingleServer()
+                       .setAddress( REDIS_ADDRESS );
+    }
+
+    private static final RedissonClient REDISSON = Redisson.create( REDISSON_CONFIG );
+    private static final long EXPIRY_IN_MINUTES = Duration.ofDays( 14 )
+                                                          .toMinutes();
 
     /** A shared map of job results by ID */
-    private static final Cache<String,Integer> JOB_RESULTS_BY_ID = Caffeine.newBuilder()
-                                                                           .softValues()
-                                                                           .build();
+    private static final RMapCache<String,Integer> JOB_RESULTS_BY_ID =
+            REDISSON.getMapCache( "jobStatusByJobId" ) ;
 
     /** A shared map of job standard out */
-    private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
-            = Caffeine.newBuilder()
-                      .softValues()
-                      .build();
+    private static final RMapCache<String, RMap<Integer,String>> JOB_STDOUT_BY_ID =
+            REDISSON.getMapCache( "jobStdoutByJobId" );
 
     /** A shared map of job standard error */
-    private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
-            = Caffeine.newBuilder()
-                      .softValues()
-                      .build();
+    private static final RMapCache<String, RMap<Integer,String>> JOB_STDERR_BY_ID =
+            REDISSON.getMapCache( "jobStderrByJobId" );
 
     /** A shared map of job output references */
-    private static final Cache<String, ConcurrentSkipListSet<URI>> JOB_OUTPUTS_BY_ID
-            = Caffeine.newBuilder()
-                      .softValues()
-                      .build();
+    private static final RMapCache<String, RSet<URI>> JOB_OUTPUTS_BY_ID =
+            REDISSON.getMapCache( "jobOutputsByJobId" );
 
     /**
      * How many job results to look for at once (should probably be at least as
@@ -265,7 +277,7 @@ class JobResults
      * on the service end and cache them before the web service is called.
      */
 
-    private static class StandardStreamWatcher implements Callable<ConcurrentNavigableMap<Integer,String>>
+    private static class StandardStreamWatcher implements Callable<ConcurrentMap<Integer,String>>
     {
         private static final int LOCAL_Q_SIZE = 10;
 
@@ -322,19 +334,30 @@ class JobResults
          * @throws IOException when queue declaration fails
          */
 
-        public ConcurrentNavigableMap<Integer,String> call() throws IOException, TimeoutException
+        public RMap<Integer,String> call() throws IOException, TimeoutException
         {
-            ConcurrentNavigableMap<Integer,String> sharedList = new ConcurrentSkipListMap<>();
+            String mapName = this.getJobId() + ":" + this.getWhichStream();
+            RMapCache<Integer,String> sharedList = REDISSON.getMapCache( mapName );
+            boolean expiryWasSet = sharedList.expire( EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
+
+            if ( !expiryWasSet )
+            {
+                LOGGER.warn( "Unexpectedly unable to set expiration for {}: {}",
+                             mapName, sharedList );
+            }
+
             Consumer<GeneratedMessageV3> sharer = new JobStandardStreamSharer( sharedList );
 
             // Store shared list to the static bag-o-state.
             if ( this.getWhichStream().equals( WhichStream.STDOUT ) )
             {
-                JOB_STDOUT_BY_ID.put( this.getJobId(), sharedList );
+                JOB_STDOUT_BY_ID.put( this.getJobId(), sharedList,
+                                      EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
             }
             else if ( this.getWhichStream().equals( WhichStream.STDERR ) )
             {
-                JOB_STDERR_BY_ID.put( this.getJobId(), sharedList );
+                JOB_STDERR_BY_ID.put( this.getJobId(), sharedList,
+                                      EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
             }
             else
             {
@@ -417,7 +440,8 @@ class JobResults
                                            String jobId )
             throws IOException, TimeoutException
     {
-        if ( JOB_RESULTS_BY_ID.asMap().putIfAbsent( jobId, JOB_NOT_DONE_YET ) != null )
+        if ( JOB_RESULTS_BY_ID.putIfAbsent( jobId, JOB_NOT_DONE_YET,
+                                            EXPIRY_IN_MINUTES, TimeUnit.MINUTES ) != null )
         {
             LOGGER.warn( "jobId {} may have been registered twice",
                          jobId );
@@ -438,9 +462,18 @@ class JobResults
         // Share the output locations, allows service endpoint to find files.
         // Not relying on inner classes, so need to pass the shared location to
         // the watcher in order for watcher to know where to put messages.
-        ConcurrentSkipListSet<URI> outputsForOneJob = new ConcurrentSkipListSet<>();
-        JOB_OUTPUTS_BY_ID.asMap()
-                         .putIfAbsent( jobId, outputsForOneJob );
+        String setName = jobId + ":output";
+        RSet<URI> outputsForOneJob = REDISSON.getSet( setName );
+        boolean expirySet = outputsForOneJob.expire( EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
+
+        if ( !expirySet )
+        {
+            LOGGER.warn( "Unexpectedly could not set expiration of {}: {}",
+                         setName, outputsForOneJob );
+        }
+
+        JOB_OUTPUTS_BY_ID.putIfAbsent( jobId, outputsForOneJob,
+                                       EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
         JobOutputWatcher jobOutputWatcher = new JobOutputWatcher( this.getConnection(),
                                                                   jobStatusExchangeName,
                                                                   jobId,
@@ -470,7 +503,7 @@ class JobResults
 
     static JobState getJobResult( String correlationId )
     {
-        Integer result = JOB_RESULTS_BY_ID.asMap().get( correlationId );
+        Integer result = JOB_RESULTS_BY_ID.get( correlationId );
 
         if ( Objects.isNull( result ) )
         {
@@ -499,8 +532,7 @@ class JobResults
 
     static Integer getJobResultRaw( String correlationId )
     {
-        return JOB_RESULTS_BY_ID.asMap()
-                                .get( correlationId );
+        return JOB_RESULTS_BY_ID.get( correlationId );
     }
 
     /**
@@ -511,8 +543,7 @@ class JobResults
 
     static StreamingOutput getJobStdout( String jobId )
     {
-        ConcurrentNavigableMap<Integer,String> stdout = JOB_STDOUT_BY_ID.asMap()
-                                                                        .get( jobId );
+        Map<Integer,String> stdout = JOB_STDOUT_BY_ID.get( jobId );
 
         StreamingOutput streamingOutput = output -> {
             try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
@@ -527,8 +558,9 @@ class JobResults
 
                 // There is an assumption that the worker starts counting at 0
                 int previousIndex = -1;
+                SortedSet<Integer> sortedKeys = new TreeSet<>( stdout.keySet() );
 
-                for ( Integer index : stdout.keySet() )
+                for ( Integer index : sortedKeys )
                 {
                     int indexDiff = index - previousIndex;
 
@@ -561,8 +593,7 @@ class JobResults
 
     static String getJobStderr( String jobId )
     {
-        ConcurrentNavigableMap<Integer,String> stderr = JOB_STDERR_BY_ID.asMap()
-                                                                        .get( jobId );
+        ConcurrentMap<Integer,String> stderr = JOB_STDERR_BY_ID.get( jobId );
 
         if ( stderr == null )
         {
@@ -570,8 +601,9 @@ class JobResults
         }
 
         StringJoiner result = new StringJoiner( System.lineSeparator() );
+        SortedSet<Integer> sortedKeys = new TreeSet<>( stderr.keySet() );
 
-        for ( Integer index : stderr.keySet() )
+        for ( Integer index : sortedKeys )
         {
             result.add( stderr.get( index ) );
         }
@@ -589,8 +621,7 @@ class JobResults
 
     static Set<URI> getJobOutputs( String jobId )
     {
-        return JOB_OUTPUTS_BY_ID.asMap()
-                                .get( jobId );
+        return JOB_OUTPUTS_BY_ID.get( jobId );
     }
 
 }

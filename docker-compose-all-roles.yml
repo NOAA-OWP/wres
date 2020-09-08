@@ -1,9 +1,19 @@
 version: '2.2'
 services:
+    persister:
+        image: "redis:6.0.7-alpine3.12"
+        restart: always
+        volumes:
+         # For the job data
+         - /mnt/wres_share/job_data:/data
+        # Enable persistence
+        command: --appendonly yes
+        mem_limit: 940m
+        read_only: true
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200824-721d0c4"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200908-TBD"
         restart: always
         depends_on:
          - "broker"
@@ -15,9 +25,9 @@ services:
         environment:
          # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
          - JAVA_OPTS=-Dwres.broker=broker -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
-        # Tasker JVM should have 1305m max heap specified at launch
+        # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
-        mem_limit: 1880m
+        mem_limit: 940m
         cap_drop:
          - ALL
         read_only: true

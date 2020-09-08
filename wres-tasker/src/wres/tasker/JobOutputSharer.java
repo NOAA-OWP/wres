@@ -1,8 +1,7 @@
 package wres.tasker;
 
 import java.net.URI;
-import java.nio.file.Paths;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -19,9 +18,9 @@ import wres.messages.generated.JobOutput;
 
 class JobOutputSharer implements Consumer<GeneratedMessageV3>
 {
-    private final ConcurrentSkipListSet<URI> sharedSet;
+    private final Set<URI> sharedSet;
 
-    JobOutputSharer( ConcurrentSkipListSet<URI> sharedSet )
+    JobOutputSharer( Set<URI> sharedSet )
     {
         this.sharedSet = sharedSet;
     }

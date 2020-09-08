@@ -1,6 +1,6 @@
 package wres.tasker;
 
-import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -17,9 +17,9 @@ import wres.messages.generated.JobStandardStream;
 
 class JobStandardStreamSharer implements Consumer<GeneratedMessageV3>
 {
-    private ConcurrentNavigableMap<Integer,String> sharedMap;
+    private final ConcurrentMap<Integer,String> sharedMap;
 
-    JobStandardStreamSharer( ConcurrentNavigableMap<Integer,String> sharedMap )
+    JobStandardStreamSharer( ConcurrentMap<Integer,String> sharedMap )
     {
         this.sharedMap = sharedMap;
     }
