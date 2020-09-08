@@ -3,9 +3,9 @@ package wres.tasker;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
@@ -42,12 +42,12 @@ class JobOutputWatcher implements Runnable
     /**
      * Shared mutable state, where to put all the URIs from job output messages
      */
-    private final ConcurrentSkipListSet<URI> sharedUris;
+    private final Set<URI> sharedUris;
 
     JobOutputWatcher( Connection connection,
                       String jobStatusExchangeName,
                       String jobId,
-                      ConcurrentSkipListSet<URI> sharedUris )
+                      Set<URI> sharedUris )
     {
         Objects.requireNonNull( connection );
         Objects.requireNonNull( jobStatusExchangeName );
@@ -74,7 +74,7 @@ class JobOutputWatcher implements Runnable
         return this.jobId;
     }
 
-    private ConcurrentSkipListSet<URI> getSharedUris()
+    private Set<URI> getSharedUris()
     {
         return this.sharedUris;
     }
