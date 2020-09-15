@@ -25,7 +25,7 @@ services:
          - /mnt/wres_share:/mnt/wres_share
         environment:
          # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
         mem_limit: 940m

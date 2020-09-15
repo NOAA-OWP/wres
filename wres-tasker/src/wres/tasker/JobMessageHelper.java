@@ -74,7 +74,8 @@ class JobMessageHelper
             else
             {
                 // Has the job actually finished?
-                Integer jobStatus = JobResults.getJobResultRaw( jobId );
+                Integer jobStatus = WresJob.getSharedJobResults()
+                                           .getJobResultRaw( jobId );
 
                 if ( Objects.isNull( jobStatus ) )
                 {

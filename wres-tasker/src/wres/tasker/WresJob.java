@@ -23,6 +23,9 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +58,10 @@ public class WresJob
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
     private static final Random RANDOM = new Random( System.currentTimeMillis() );
+    private static final String REDIS_HOST_SYSTEM_PROPERTY_NAME = "wres.redisHost";
+    private static final String REDIS_PORT_SYSTEM_PROPERTY_NAME = "wres.redisPort";
+    private static final int DEFAULT_REDIS_PORT = 6379;
+    private static final RedissonClient REDISSON_CLIENT;
 
     /**
      * The count of evaluations combined with the maximum length below (which
@@ -82,9 +89,42 @@ public class WresJob
         SSLContext sslContext =
                 BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.TASKER );
         CONNECTION_FACTORY.useSslProtocol( sslContext );
+
+        Config redissonConfig = new Config();
+        String redisHost = null;
+        int redisPort = DEFAULT_REDIS_PORT;
+        String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
+        String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
+
+        if ( Objects.nonNull( specifiedRedisHost ) )
+        {
+            redisHost = specifiedRedisHost;
+        }
+
+        if ( Objects.nonNull( specifiedRedisPortRaw ) )
+        {
+            redisPort = Integer.parseInt( specifiedRedisPortRaw );
+        }
+
+        if ( Objects.nonNull( redisHost ) )
+        {
+            String redisAddress = "redis://" + redisHost + ":" + redisPort;
+            redissonConfig.useSingleServer()
+                          .setAddress( redisAddress );
+            REDISSON_CLIENT = Redisson.create( redissonConfig );
+            LOGGER.info( "Redis host specified: {}, using redis at {}",
+                         specifiedRedisHost, redisAddress );
+        }
+        else
+        {
+            REDISSON_CLIENT = null;
+            LOGGER.info( "No redis host specified, using local JVM objects." );
+        }
     }
 
-    private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY );
+    /** Shared job result state, exposed below */
+    private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY,
+                                                                  REDISSON_CLIENT );
 
     private static Connection connection = null;
 
@@ -208,7 +248,7 @@ public class WresJob
     @Produces( TEXT_HTML )
     public Response getWresJobInfo( @PathParam( "jobId" ) String jobId )
     {
-        Integer jobResult = JobResults.getJobResultRaw( jobId );
+        Integer jobResult = JOB_RESULTS.getJobResultRaw( jobId );
 
         if ( Objects.isNull( jobResult ) )
         {
@@ -383,6 +423,10 @@ public class WresJob
         return WresJob.connection;
     }
 
+    static JobResults getSharedJobResults()
+    {
+        return WresJob.JOB_RESULTS;
+    }
 
     /**
      * Abruptly stops all listening for job results that this class listens for,

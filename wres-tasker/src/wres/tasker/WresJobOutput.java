@@ -40,7 +40,8 @@ public class WresJobOutput
     public Response getProjectResourcesPlain( @PathParam( "jobId" ) String id )
     {
         LOGGER.debug( "Retrieving resource list form job {} to create plain response", id );
-        Set<URI> jobOutputs = JobResults.getJobOutputs( id );
+        Set<URI> jobOutputs = WresJob.getSharedJobResults()
+                                     .getJobOutputs( id );
 
         if ( jobOutputs == null )
         {
@@ -74,7 +75,8 @@ public class WresJobOutput
     public Response getProjectResourcesHtml( @PathParam( "jobId" ) String id )
     {
         LOGGER.debug( "Retrieving resource list form job {} to create html response", id );
-        Set<URI> jobOutputs = JobResults.getJobOutputs( id );
+        Set<URI> jobOutputs = WresJob.getSharedJobResults()
+                                     .getJobOutputs( id );
 
         if ( jobOutputs == null )
         {
@@ -125,7 +127,8 @@ public class WresJobOutput
     {
         LOGGER.debug( "Retrieving resource {} from job {}", resourceName, id );
 
-        Set<URI> jobOutputs = JobResults.getJobOutputs( id );
+        Set<URI> jobOutputs = WresJob.getSharedJobResults()
+                                     .getJobOutputs( id );
 
         String type = MediaType.TEXT_PLAIN_TYPE.getType();
 
@@ -221,7 +224,8 @@ public class WresJobOutput
     {
         LOGGER.debug( "Retrieving resources from job {}", id );
 
-        Set<URI> jobOutputs = JobResults.getJobOutputs( id );
+        Set<URI> jobOutputs = WresJob.getSharedJobResults()
+                                     .getJobOutputs( id );
 
         if ( jobOutputs == null )
         {

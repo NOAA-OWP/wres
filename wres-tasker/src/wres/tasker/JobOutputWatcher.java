@@ -1,9 +1,7 @@
 package wres.tasker;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeoutException;
@@ -35,28 +33,21 @@ class JobOutputWatcher implements Runnable
     private final String jobStatusExchangeName;
 
     /**
-     * The id of a WRES evaluation job (as defined by tasker)
+     * The job to get the id from and also store URIs to.
      */
-    private final String jobId;
+    private final JobMetadata jobMetadata;
 
-    /**
-     * Shared mutable state, where to put all the URIs from job output messages
-     */
-    private final Set<URI> sharedUris;
 
     JobOutputWatcher( Connection connection,
                       String jobStatusExchangeName,
-                      String jobId,
-                      Set<URI> sharedUris )
+                      JobMetadata jobMetadata )
     {
         Objects.requireNonNull( connection );
         Objects.requireNonNull( jobStatusExchangeName );
-        Objects.requireNonNull( jobId );
-        Objects.requireNonNull( sharedUris );
+        Objects.requireNonNull( jobMetadata );
         this.connection = connection;
         this.jobStatusExchangeName = jobStatusExchangeName;
-        this.jobId = jobId;
-        this.sharedUris = sharedUris;
+        this.jobMetadata = jobMetadata;
     }
 
     private Connection getConnection()
@@ -71,18 +62,18 @@ class JobOutputWatcher implements Runnable
 
     private String getJobId()
     {
-        return this.jobId;
+        return this.jobMetadata.getId();
     }
 
-    private Set<URI> getSharedUris()
+    private JobMetadata getJobMetadata()
     {
-        return this.sharedUris;
+        return this.jobMetadata;
     }
 
     @Override
     public void run()
     {
-        Consumer<GeneratedMessageV3> sharer = new JobOutputSharer( this.getSharedUris() );
+        Consumer<GeneratedMessageV3> sharer = new JobOutputSharer( this.getJobMetadata() );
 
         BlockingQueue<JobOutput.job_output> jobOutputQueue
                 = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
@@ -114,7 +105,8 @@ class JobOutputWatcher implements Runnable
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Interrupted while getting output for job {}", jobId, ie );
+            LOGGER.warn( "Interrupted while getting output for job {}",
+                         this.getJobId(), ie );
             Thread.currentThread().interrupt();
         }
         catch ( IOException | TimeoutException e )

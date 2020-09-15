@@ -1,10 +1,13 @@
 package wres.tasker;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import com.google.protobuf.GeneratedMessageV3;
 
+import static wres.tasker.JobResults.WhichStream;
+import static wres.tasker.JobResults.WhichStream.STDERR;
+import static wres.tasker.JobResults.WhichStream.STDOUT;
 import wres.messages.generated.JobStandardStream;
 
 /**
@@ -17,11 +20,16 @@ import wres.messages.generated.JobStandardStream;
 
 class JobStandardStreamSharer implements Consumer<GeneratedMessageV3>
 {
-    private final ConcurrentMap<Integer,String> sharedMap;
+    private final JobMetadata sharedMetadata;
+    private final WhichStream whichStream;
 
-    JobStandardStreamSharer( ConcurrentMap<Integer,String> sharedMap )
+    JobStandardStreamSharer( JobMetadata sharedMetadata,
+                             WhichStream whichStream )
     {
-        this.sharedMap = sharedMap;
+        Objects.requireNonNull( sharedMetadata );
+        Objects.requireNonNull( whichStream );
+        this.sharedMetadata = sharedMetadata;
+        this.whichStream = whichStream;
     }
 
     /**
@@ -34,8 +42,24 @@ class JobStandardStreamSharer implements Consumer<GeneratedMessageV3>
     public void accept( GeneratedMessageV3 mustBeJobStandardStream )
     {
         JobStandardStream.job_standard_stream job_standard_stream =
-                (JobStandardStream.job_standard_stream) mustBeJobStandardStream;
-        this.sharedMap.put( job_standard_stream.getIndex(),
-                            job_standard_stream.getText() );
+                ( JobStandardStream.job_standard_stream ) mustBeJobStandardStream;
+        int index = job_standard_stream.getIndex();
+        String text = job_standard_stream.getText();
+
+        if ( this.whichStream.equals( STDERR ) )
+        {
+            this.sharedMetadata.addStderr( index, text );
+        }
+        else if ( this.whichStream.equals( STDOUT ) )
+        {
+            this.sharedMetadata.addStdout( index, text );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Stream must be either "
+                                                     + STDERR.name()
+                                                     + " or " +
+                                                     STDOUT.name() );
+        }
     }
 }
