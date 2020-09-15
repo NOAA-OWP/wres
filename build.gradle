@@ -1105,11 +1105,17 @@ project(':wres-tasker')
         // Update the jetty-continuation depended upon by above jersey dep
         compile 'org.eclipse.jetty:jetty-continuation:9.4.31.v20200723'
 
+        // To temporarily cache/store-in-RAM job metadata when redis unavailable
+        compile 'com.github.ben-manes.caffeine:caffeine:2.8.5'
+
         // To accurately detect mime types of files.
         compile 'org.apache.tika:tika-core:1.24.1'
 
         // To persist job metadata while keeping it relatively fast
         compile 'org.redisson:redisson:3.13.4'
+
+        // For ToStringBuilder
+        compile 'org.apache.commons:commons-lang3:3.11'
 
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
         runtime 'org.glassfish.jersey.core:jersey-server:2.31'

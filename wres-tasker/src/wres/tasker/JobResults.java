@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -24,17 +25,17 @@ import java.util.function.Consumer;
 
 import javax.ws.rs.core.StreamingOutput;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.GeneratedMessageV3;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import org.redisson.Redisson;
-import org.redisson.api.RMap;
+import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
-import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
+import org.redisson.api.map.event.EntryExpiredListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,34 +53,24 @@ import wres.messages.generated.JobStandardStream;
 class JobResults
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
-    private static final Config REDISSON_CONFIG = new Config();
-    private static final String REDIS_ADDRESS = "redis://persister:6379";
-
-    static
-    {
-        REDISSON_CONFIG.useSingleServer()
-                       .setAddress( REDIS_ADDRESS );
-    }
-
-    private static final RedissonClient REDISSON = Redisson.create( REDISSON_CONFIG );
     private static final long EXPIRY_IN_MINUTES = Duration.ofDays( 14 )
                                                           .toMinutes();
 
-    /** A shared map of job results by ID */
-    private static final RMapCache<String,Integer> JOB_RESULTS_BY_ID =
-            REDISSON.getMapCache( "jobStatusByJobId" ) ;
+    public enum WhichStream
+    {
+        STDOUT,
+        STDERR;
+    }
 
-    /** A shared map of job standard out */
-    private static final RMapCache<String, RMap<Integer,String>> JOB_STDOUT_BY_ID =
-            REDISSON.getMapCache( "jobStdoutByJobId" );
+    /** A client for redis, optional */
+    private final RedissonClient redisson;
 
-    /** A shared map of job standard error */
-    private static final RMapCache<String, RMap<Integer,String>> JOB_STDERR_BY_ID =
-            REDISSON.getMapCache( "jobStderrByJobId" );
+    /** The live object service from redisson when redisson is present */
+    private final RLiveObjectService objectService;
 
-    /** A shared map of job output references */
-    private static final RMapCache<String, RSet<URI>> JOB_OUTPUTS_BY_ID =
-            REDISSON.getMapCache( "jobOutputsByJobId" );
+    /** A shared map of job metadata by ID */
+    private final ConcurrentMap<String,JobMetadata> jobMetadataById;
+
 
     /**
      * How many job results to look for at once (should probably be at least as
@@ -112,12 +103,41 @@ class JobResults
         COMPLETED_REPORTED_FAILURE
     }
 
-    JobResults( ConnectionFactory connectionFactory )
+    JobResults( ConnectionFactory connectionFactory,
+                RedissonClient redissonClient )
     {
         this.connectionFactory = connectionFactory;
         // Will lazily initialize connection since trying here first requires
         // retry later anyway.
         this.connection = null;
+        this.redisson = redissonClient;
+
+        // Use redis when available, otherwise local Caffeine instances.
+        if ( Objects.nonNull( this.redisson ) )
+        {
+            RMapCache<String,JobMetadata> redissonMap = this.redisson.getMapCache( "jobMetadataById" );
+            this.objectService = this.redisson.getLiveObjectService();
+            this.objectService.registerClass( JobMetadata.class );
+
+            // Listen for expiration of values within the map to expire metadata
+            redissonMap.addListener(
+                    ( EntryExpiredListener<?,?> ) event
+                            -> this.objectService.delete( JobMetadata.class, event.getKey() ) );
+            this.jobMetadataById = redissonMap;
+        }
+        else
+        {
+            Cache<String,JobMetadata> caffeineCache = Caffeine.newBuilder()
+                                                              .softValues()
+                                                              .build();
+            this.jobMetadataById = caffeineCache.asMap();
+            this.objectService = null;
+        }
+    }
+
+    private boolean usingRedis()
+    {
+        return Objects.nonNull( this.redisson );
     }
 
     private ConnectionFactory getConnectionFactory()
@@ -149,6 +169,10 @@ class JobResults
         return "wres.job.status";
     }
 
+    private RLiveObjectService getObjectService()
+    {
+        return this.objectService;
+    }
 
     /**
      * Watches for the result code of a job regardless of if anyone actually
@@ -160,20 +184,24 @@ class JobResults
     {
         private final Connection connection;
         private final String jobStatusExchangeName;
-        private final String jobId;
+        private final JobMetadata jobMetadata;
 
         /**
          * @param connection shared connection
          * @param jobStatusExchangeName the exchange name to look in
-         * @param jobId the job identifier to look for
+         * @param jobMetadata the job to look for and where to put results.
          */
+
         JobResultWatcher( Connection connection,
                           String jobStatusExchangeName,
-                          String jobId )
+                          JobMetadata jobMetadata )
         {
+            Objects.requireNonNull( connection );
+            Objects.requireNonNull( jobStatusExchangeName );
+            Objects.requireNonNull( jobMetadata );
             this.connection = connection;
             this.jobStatusExchangeName = jobStatusExchangeName;
-            this.jobId = jobId;
+            this.jobMetadata = jobMetadata;
             LOGGER.debug( "Instantiated {}", this );
         }
 
@@ -189,9 +217,13 @@ class JobResults
 
         private String getJobId()
         {
-            return this.jobId;
+            return this.jobMetadata.getId();
         }
 
+        private JobMetadata getJobMetadata()
+        {
+            return this.jobMetadata;
+        }
 
         /**
          * @return the result of the job id (correlation id) or Integer.MIN_VALUE when interrupted
@@ -201,13 +233,14 @@ class JobResults
         public Integer call() throws IOException, TimeoutException
         {
             LOGGER.debug( "call called on {}", this );
+            String jobId = this.getJobId();
 
             BlockingQueue<Integer> result = new ArrayBlockingQueue<>( 1 );
 
             int resultValue = Integer.MIN_VALUE;
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
-            String bindingKey = "job." + this.getJobId() + ".exitCode";
+            String bindingKey = "job." + jobId + ".exitCode";
 
             try ( Channel channel = this.getConnection().createChannel() )
             {
@@ -253,8 +286,12 @@ class JobResults
                 throw ioe;
             }
 
-            // Store state back out to the static bag-o-state. A better way?
-            JOB_RESULTS_BY_ID.put( jobId, resultValue );
+            JobMetadata sharedData = this.getJobMetadata();
+            LOGGER.info( "Shared metadata before setting exit code to {}: {}",
+                         resultValue, sharedData );
+            sharedData.setExitCode( resultValue );
+            LOGGER.info( "Shared metadata after setting exit code to {}: {}",
+                         resultValue, sharedData );
 
             return resultValue;
         }
@@ -277,34 +314,32 @@ class JobResults
      * on the service end and cache them before the web service is called.
      */
 
-    private static class StandardStreamWatcher implements Callable<ConcurrentMap<Integer,String>>
+    private static class StandardStreamWatcher implements Callable<Map<Integer,String>>
     {
         private static final int LOCAL_Q_SIZE = 10;
-
-        public enum WhichStream
-        {
-            STDOUT,
-            STDERR;
-        }
-
         private final Connection connection;
         private final String jobStatusExchangeName;
-        private final String jobId;
+        private final JobMetadata jobMetadata;
         private final WhichStream whichStream;
 
         /**
          * @param connection shared connection
          * @param jobStatusExchangeName the exchange name to look in
-         * @param jobId the job identifier to look for
+         * @param jobMetadata the job to look for and where to put results
+         * @param whichStream Which of the two standard streams this is.
          */
         StandardStreamWatcher( Connection connection,
                                String jobStatusExchangeName,
-                               String jobId,
+                               JobMetadata jobMetadata,
                                WhichStream whichStream )
         {
+            Objects.requireNonNull( connection );
+            Objects.requireNonNull( jobStatusExchangeName );
+            Objects.requireNonNull( jobMetadata );
+            Objects.requireNonNull( whichStream );
             this.connection = connection;
             this.jobStatusExchangeName = jobStatusExchangeName;
-            this.jobId = jobId;
+            this.jobMetadata = jobMetadata;
             this.whichStream = whichStream;
             LOGGER.debug( "Instantiated {}", this );
         }
@@ -321,7 +356,7 @@ class JobResults
 
         private String getJobId()
         {
-            return this.jobId;
+            return this.jobMetadata.getId();
         }
 
         private WhichStream getWhichStream()
@@ -334,42 +369,18 @@ class JobResults
          * @throws IOException when queue declaration fails
          */
 
-        public RMap<Integer,String> call() throws IOException, TimeoutException
+        public Map<Integer,String> call() throws IOException, TimeoutException
         {
-            String mapName = this.getJobId() + ":" + this.getWhichStream();
-            RMapCache<Integer,String> sharedList = REDISSON.getMapCache( mapName );
-            boolean expiryWasSet = sharedList.expire( EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
-
-            if ( !expiryWasSet )
-            {
-                LOGGER.warn( "Unexpectedly unable to set expiration for {}: {}",
-                             mapName, sharedList );
-            }
-
-            Consumer<GeneratedMessageV3> sharer = new JobStandardStreamSharer( sharedList );
-
-            // Store shared list to the static bag-o-state.
-            if ( this.getWhichStream().equals( WhichStream.STDOUT ) )
-            {
-                JOB_STDOUT_BY_ID.put( this.getJobId(), sharedList,
-                                      EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
-            }
-            else if ( this.getWhichStream().equals( WhichStream.STDERR ) )
-            {
-                JOB_STDERR_BY_ID.put( this.getJobId(), sharedList,
-                                      EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
-            }
-            else
-            {
-                throw new IllegalStateException( "Output has to be stderr or stdout." );
-            }
-
+            String jobId = this.getJobId();
+            Consumer<GeneratedMessageV3> sharer = new JobStandardStreamSharer( this.jobMetadata,
+                                                                               this.getWhichStream() );
             BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput
                     = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
 
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
-            String bindingKey = "job." + this.getJobId() + "." + this.getWhichStream().name();
+            String bindingKey = "job." + jobId + "." + this.getWhichStream()
+                                                           .name();
 
             try ( Channel channel = this.getConnection().createChannel() )
             {
@@ -406,7 +417,23 @@ class JobResults
                 throw ioe;
             }
 
-            return sharedList;
+            if ( this.getWhichStream()
+                     .equals( WhichStream.STDOUT ) )
+            {
+                return this.jobMetadata.getStdout();
+            }
+            else if ( this.getWhichStream()
+                          .equals( WhichStream.STDERR ) )
+            {
+                return this.jobMetadata.getStderr();
+            }
+            else
+            {
+                throw new IllegalStateException( "Stream must be either "
+                                                 + WhichStream.STDERR.name()
+                                                 + " or "
+                                                 + WhichStream.STDOUT.name() );
+            }
         }
 
 
@@ -437,11 +464,46 @@ class JobResults
      */
 
     Future<Integer> registerjobId( String jobStatusExchangeName,
-                                           String jobId )
+                                   String jobId )
             throws IOException, TimeoutException
     {
-        if ( JOB_RESULTS_BY_ID.putIfAbsent( jobId, JOB_NOT_DONE_YET,
-                                            EXPIRY_IN_MINUTES, TimeUnit.MINUTES ) != null )
+        JobMetadata jobMetadata = new JobMetadata( jobId );
+        boolean metadataExisted;
+
+        if ( this.usingRedis() )
+        {
+            // Register the object with redisson (and redis, underneath).
+            // The returned object is the Live Object, or proxy, so when this
+            // reference is used within this JVM, the state is actually shared
+            // in redis. Therefore it can be persisted by redis. Therefore it
+            // can be shared between JVMs someday, if we want, as if on a shared
+            // heap between JVMs.
+            jobMetadata = this.getObjectService()
+                              .attach( jobMetadata );
+
+            /* For whatever reason, the following simply does not work. Sigh.
+               Instead, see the listener above attached to the map when created.
+            // RLiveObject instances are RExpirable, set expiration both on the
+            // instance we just created, and also its reference in the RMapCache
+            boolean expiring = ( ( RExpirable ) jobMetadata ).expire( EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
+
+            if ( !expiring )
+            {
+                LOGGER.warn( "Unexpectedly unable to expire jobMetadata instance {}",
+                             jobMetadata );
+            }
+             */
+
+            metadataExisted = ( ( RMapCache<String,JobMetadata> ) this.jobMetadataById )
+                    .putIfAbsent( jobId, jobMetadata,
+                                  EXPIRY_IN_MINUTES, TimeUnit.MINUTES ) != null;
+        }
+        else
+        {
+            metadataExisted = this.jobMetadataById.putIfAbsent( jobId, jobMetadata ) != null;
+        }
+
+        if ( metadataExisted )
         {
             LOGGER.warn( "jobId {} may have been registered twice",
                          jobId );
@@ -449,35 +511,22 @@ class JobResults
 
         JobResultWatcher jobResultWatcher = new JobResultWatcher( this.getConnection(),
                                                                   jobStatusExchangeName,
-                                                                  jobId );
+                                                                  jobMetadata );
         StandardStreamWatcher stdoutWatcher = new StandardStreamWatcher( this.getConnection(),
                                                                          jobStatusExchangeName,
-                                                                         jobId,
-                                                                         StandardStreamWatcher.WhichStream.STDOUT );
+                                                                         jobMetadata,
+                                                                         WhichStream.STDOUT );
         StandardStreamWatcher stderrWatcher = new StandardStreamWatcher( this.getConnection(),
                                                                          jobStatusExchangeName,
-                                                                         jobId,
-                                                                         StandardStreamWatcher.WhichStream.STDERR );
+                                                                         jobMetadata,
+                                                                         WhichStream.STDERR );
 
         // Share the output locations, allows service endpoint to find files.
         // Not relying on inner classes, so need to pass the shared location to
         // the watcher in order for watcher to know where to put messages.
-        String setName = jobId + ":output";
-        RSet<URI> outputsForOneJob = REDISSON.getSet( setName );
-        boolean expirySet = outputsForOneJob.expire( EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
-
-        if ( !expirySet )
-        {
-            LOGGER.warn( "Unexpectedly could not set expiration of {}: {}",
-                         setName, outputsForOneJob );
-        }
-
-        JOB_OUTPUTS_BY_ID.putIfAbsent( jobId, outputsForOneJob,
-                                       EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
         JobOutputWatcher jobOutputWatcher = new JobOutputWatcher( this.getConnection(),
                                                                   jobStatusExchangeName,
-                                                                  jobId,
-                                                                  outputsForOneJob );
+                                                                  jobMetadata );
 
         EXECUTOR.submit( stdoutWatcher );
         EXECUTOR.submit( stderrWatcher );
@@ -501,19 +550,21 @@ class JobResults
      * @return description of the status
      */
 
-    static JobState getJobResult( String correlationId )
+    JobState getJobResult( String correlationId )
     {
-        Integer result = JOB_RESULTS_BY_ID.get( correlationId );
+        JobMetadata result = jobMetadataById.get( correlationId );
+
+        LOGGER.info ( "Here is the job result: {}", result );
 
         if ( Objects.isNull( result ) )
         {
             return JobState.NOT_FOUND;
         }
-        else if ( result.equals( JOB_NOT_DONE_YET ) )
+        else if ( !result.isFinished() )
         {
             return JobState.IN_PROGRESS;
         }
-        else if ( result.equals( 0 ) )
+        else if ( result.getExitCode() == 0 )
         {
             return JobState.COMPLETED_REPORTED_SUCCESS;
         }
@@ -530,10 +581,25 @@ class JobResults
      * @return
      */
 
-    static Integer getJobResultRaw( String correlationId )
+    Integer getJobResultRaw( String correlationId )
     {
-        return JOB_RESULTS_BY_ID.get( correlationId );
+        JobMetadata metadata = jobMetadataById.get( correlationId );
+
+        LOGGER.info ( "Here is the job metadata: {}", metadata );
+        if ( Objects.isNull( metadata ) )
+        {
+            return null;
+        }
+        else if ( !metadata.isFinished() )
+        {
+            return JOB_NOT_DONE_YET;
+        }
+        else
+        {
+            return metadata.getExitCode();
+        }
     }
+
 
     /**
      * Get the plain text of standard out for a given wres job
@@ -541,20 +607,22 @@ class JobResults
      * @return A StreamingOutput having standard out
      */
 
-    static StreamingOutput getJobStdout( String jobId )
+    StreamingOutput getJobStdout( String jobId )
     {
-        Map<Integer,String> stdout = JOB_STDOUT_BY_ID.get( jobId );
+        JobMetadata jobMetadata = jobMetadataById.get( jobId );
 
         StreamingOutput streamingOutput = output -> {
             try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
                   BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
 
-                if ( stdout == null )
+                if ( jobMetadata == null )
                 {
                     writer.write( "No job id '" + jobId + "' found.'" );
                     return;
                 }
+
+                Map<Integer,String> stdout = jobMetadata.getStdout();
 
                 // There is an assumption that the worker starts counting at 0
                 int previousIndex = -1;
@@ -591,15 +659,16 @@ class JobResults
      * @return the standard err from the job
      */
 
-    static String getJobStderr( String jobId )
+    String getJobStderr( String jobId )
     {
-        ConcurrentMap<Integer,String> stderr = JOB_STDERR_BY_ID.get( jobId );
+        JobMetadata metadata = jobMetadataById.get( jobId );
 
-        if ( stderr == null )
+        if ( Objects.isNull( metadata ) )
         {
             return "No job id '" + jobId + "' found.'";
         }
 
+        Map<Integer,String> stderr = metadata.getStderr();
         StringJoiner result = new StringJoiner( System.lineSeparator() );
         SortedSet<Integer> sortedKeys = new TreeSet<>( stderr.keySet() );
 
@@ -619,9 +688,15 @@ class JobResults
      * if job not found
      */
 
-    static Set<URI> getJobOutputs( String jobId )
+    Set<URI> getJobOutputs( String jobId )
     {
-        return JOB_OUTPUTS_BY_ID.get( jobId );
-    }
+        JobMetadata metadata = jobMetadataById.get( jobId );
 
+        if ( Objects.isNull( metadata ) )
+        {
+            return null;
+        }
+
+        return metadata.getOutputs();
+    }
 }

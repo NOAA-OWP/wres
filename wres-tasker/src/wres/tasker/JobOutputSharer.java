@@ -18,11 +18,11 @@ import wres.messages.generated.JobOutput;
 
 class JobOutputSharer implements Consumer<GeneratedMessageV3>
 {
-    private final Set<URI> sharedSet;
+    private final JobMetadata jobMetadata;
 
-    JobOutputSharer( Set<URI> sharedSet )
+    JobOutputSharer( JobMetadata jobMetadata )
     {
-        this.sharedSet = sharedSet;
+        this.jobMetadata = jobMetadata;
     }
 
     /**
@@ -37,6 +37,6 @@ class JobOutputSharer implements Consumer<GeneratedMessageV3>
         JobOutput.job_output jobOutput =
                 (JobOutput.job_output) mustBeJobOutput;
         URI jobOutputUri = URI.create( jobOutput.getResource() );
-        this.sharedSet.add( jobOutputUri );
+        this.jobMetadata.addOutput( jobOutputUri );
     }
 }

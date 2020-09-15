@@ -13,6 +13,7 @@ public class WresJobStderr
     @Produces( MediaType.TEXT_PLAIN )
     public String getWresJobStderr( @PathParam( "jobId" ) String jobId )
     {
-        return JobResults.getJobStderr( jobId );
+        return WresJob.getSharedJobResults()
+                      .getJobStderr( jobId );
     }
 }

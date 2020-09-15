@@ -15,7 +15,8 @@ public class WresJobStdout
     @Produces( MediaType.TEXT_PLAIN )
     public Response getWresJobStdout( @PathParam( "jobId" ) String jobId )
     {
-        StreamingOutput streamingOutput = JobResults.getJobStdout( jobId );
+        StreamingOutput streamingOutput = WresJob.getSharedJobResults()
+                                                 .getJobStdout( jobId );
         return Response.ok( streamingOutput )
                        .build();
     }
