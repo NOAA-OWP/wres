@@ -13,19 +13,32 @@ TOPPWD=/wres_share/releases/JUnitTests
 LOGFILE=$TOPPWD/JUnit_systestsLog_${TIMESTAMP}.txt
 TESTINGJ=/wres_share/releases/install_scripts/testingJ.txt
 PENDINGQUEUEJ=/wres_share/releases/pendingQueueJ.txt
+WRES_GROUP=Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED***
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
 #/usr/bin/touch $LOGFILE
 if [ -f /wres_share/releases/systests/installing ]
 then
 	ls -l /wres_share/releases/systests/installing  2>&1 | /usr/bin/tee --append $LOGFILE
 	echo "The system is installing the new built, now" 2>&1 | /usr/bin/tee --append $LOGFILE
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit
 fi
 if [ -f $TESTINGJ ]
 then
 	ls -l $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
-	echo "There is a system test running, now" 2>&1 | /usr/bin/tee --append $LOGFILE
-	exit
+	fileStatus=`/bin/stat $TESTINGJ | grep Change | cut -d'.' -f1 | gawk '{print($2,$3)}'`
+	lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
+	echo "$TESTINGJ has created/changed at $lastHours ago at $fileStatus" 2>&1 | /usr/bin/tee --append $LOGFILE
+	if [ $lastHours -gt 0 ]
+	then	# Since that testingJ.txt lock file last for more than a hour, remove it!
+		echo -n "System up time " 2>&1 | /usr/bin/tee --append $LOGFILE
+		/bin/uptime -s | /usr/bin/tee --append $LOGFILE
+		rm -v $TESTINGJ | /usr/bin/tee --append $LOGFILE
+	else
+		echo "There is a system test running, now" 2>&1 | /usr/bin/tee --append $LOGFILE
+		/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
+		exit
+	fi
 fi
 touch $TESTINGJ 
 
@@ -36,11 +49,24 @@ then
 	# there isn't any queue
 	ls -l $PENDINGQUEUEJ 2>&1 | /usr/bin/tee --append $LOGFILE
 	rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit
 elif [ -s $PENDINGQUEUEJ ]
 then
 	REVISION=`head -1 $PENDINGQUEUEJ | /usr/bin/sed -e s/wres-//` 
 	WRES_REVISION=`head -1 $PENDINGQUEUEJ` 
+	echo "WRES_REVISION = $WRES_REVISION "  2>&1 | /usr/bin/tee --append $LOGFILE
+	if [ -z $WRES_REVISION ]
+	then # for some reasons, the 1st line is blank
+		cat -n $PENDINGQUEUEJ  2>&1 | /usr/bin/tee --append $LOGFILE
+		echo "Remove that blank line at top" 2>&1 | /usr/bin/tee --append $LOGFILE
+		/usr/bin/sed  -i '1d' $PENDINGQUEUEJ 2>&1 | /usr/bin/tee --append $LOGFILE
+		rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
+        	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
+		exit
+	else
+		echo "WRES_REVISION = $WRES_REVISION; REVISION = $REVISION" 2>&1 | /usr/bin/tee --append $LOGFILE
+	fi
 fi
 
 echo "################ $TIMESTAMP #######################" 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -49,6 +75,7 @@ if [ -z "$WRES_DB_NAMEJ" ]
 then
 	echo "Please export WRES_DB_NAMEJ in ~/.bash_profile"  2>&1 | /usr/bin/tee --append $LOGFILE
 	rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit 2 
 else
 	echo "WRES_DB_NAMEJ = $WRES_DB_NAMEJ"  2>&1 | /usr/bin/tee --append $LOGFILE
@@ -63,6 +90,7 @@ if [ -z "$WRES_DB_USERNAMEJ" ]
 then
 	echo "Please export WRES_DB_USERNAMEJ in ~/.bash_profile"  2>&1 | /usr/bin/tee --append $LOGFILE
 	rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit 2
 else
 	echo "WRES_DB_USERNAMEJ = $WRES_DB_USERNAMEJ"  2>&1 | /usr/bin/tee --append $LOGFILE
@@ -71,6 +99,7 @@ if [ -z "$WRES_DB_HOSTNAMEJ" ]
 then
 	echo "Please export WRES_DB_HOSTNAMEJ in ~/.bash_profile"  2>&1 | /usr/bin/tee --append $LOGFILE
 	rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit 2
 else
 	echo "WRES_DB_HOSTNAMEJ = $WRES_DB_HOSTNAMEJ"  2>&1 | /usr/bin/tee --append $LOGFILE
@@ -79,6 +108,7 @@ if [ ! -s ~/.pgpass ]
 then
 	echo "Please enter WRES_DB_HOSTNAMEJ:PORT:WRES_DB_NAMEJ:WRES_DB_USERJ:{password} in ~/.pgpass"  2>&1 | /usr/bin/tee --append $LOGFILE
 	rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit 2
 else
 	ls -l ~/.pgpass 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -87,6 +117,7 @@ if [ -z "$WRES_DIRJ" ]
 then
 	echo "Please export WRES_DIRJ in ~/.bash_profile" 2>&1 | /usr/bin/tee --append $LOGFILE
 	rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit 2
 else
 	cd $WRES_DIRJ
@@ -104,6 +135,7 @@ if [ ! -s $wresZipDirectory/wres-${REVISION}.zip ]
 then
 	ls -l $wresZipDirectory/wres-${REVISION}.zip 2>&1 | /usr/bin/tee --append $LOGFILE
 	rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
+	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit
 else
 	echo "Revision = $REVISION" 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -112,6 +144,11 @@ else
 	echo -n "systests dir: " 2>&1 | /usr/bin/tee --append $LOGFILE
 	/usr/bin/pwd 2>&1 | /usr/bin/tee --append $LOGFILE
 	SYSTESTS_DIR=`/usr/bin/pwd | gawk -F/ '{print($NF)}'` 
+	if [ ! -L data ]
+	then	# if the data link doesn't exist, then create it
+		ls -l data 2>&1 | /usr/bin/tee --append $LOGFILE
+		ln -sv /wres_share/testing/data data 2>&1 | /usr/bin/tee --append $LOGFILE
+	fi
 	
 #	if [ ! -d  build/install/systests ]
 #	then
@@ -133,17 +170,72 @@ else
 #		rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
 #		exit
 #	fi
+#	On 2020-02-13 a day before the Valentine's Day we got
+#	java.io.IOException: The given database URL ('***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED***') is not accessible. error
+#	So, we need to test the DB connection before run scenario tests
+
+	/bin/psql --host $WRES_DB_HOSTNAMEJ --dbname $WRES_DB_NAMEJ --username $WRES_DB_USERNAMEJ --list --output testDBConnection.txt 2> testDBError.txt
+	ls -l testDBConnection.txt testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+	if [ -s testDBError.txt ]
+	then
+		MAIL_SUBJECT="Dudes, JUnit in $SYSTESTS_DIR Tested $WRES_REVISION with Database problem"
+		/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" $WRES_GROUP < testDBError.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+		cat testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+		rm -v testDBError.txt testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+		rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
+		exit
+	elif [ -s testDBConnection.txt ]
+	then
+		cat testDBConnection.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+		rm -v testDBConnection.txt testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+	fi
+
 
 	mkdir -pv outputs
 
+	#echo "JAVA_OPTS = $JAVA_OPTS"
+	#export JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=java_heapdump.hprof"
+	#echo "JAVA_OPTS = $JAVA_OPTS"
 	echo "	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties=\"-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.logLevel=$WRES_LOG_LEVELJ -Djava.io.tmpdir=./outputs\" --tests=\"SystemTestSuite\" --$WRES_LOG_LEVELJ"
-	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
+#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
+	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
+#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -XX:+HeapDumpOnOutOfMemoryError -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
+#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
+#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-XX:+HeapDumpOnOutOfMemoryError -Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
 fi
 
-#/usr/bin/grep FAILED $LOGFILE | /usr/bin/grep testScenario > failures.txt 
-/usr/bin/grep failed build/reports/tests/test/classes/*.html > failures.txt 
-#/usr/bin/grep PASSED $LOGFILE | /usr/bin/grep testScenario > passes.txt 
-/usr/bin/grep passed build/reports/tests/test/classes/*.html > passes.txt 
+#/usr/bin/grep failures build/reports/tests/test/classes/*.html > failures.txt 
+#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed > failures.txt 
+#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>" | sed -e s/ass\=\"faiures\"faie/failed/ > failures.txt
+#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>" | sed -e s/ass\=\"faiures\"faie/failed \!/ > failures.txt
+(/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>" | sed -e s/ass\=\"faiures\"faie/"failed \!"/ > failures.txt) 2>> $LOGFILE
+if [ -s failures.txt ]
+then
+	echo "/usr/bin/cat failures.txt" | /usr/bin/tee --append $LOGFILE
+	/usr/bin/cat failures.txt | /usr/bin/tee --append $LOGFILE
+else
+	ls -l failures.txt | /usr/bin/tee --append $LOGFILE
+fi
+#/usr/bin/grep passed build/reports/tests/test/classes/*.html > passes.txt 
+#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep success | grep passed > passes.txt 
+#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep success | grep passed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>"  | sed -e s/ass\=\"suess\"passe/passed/ > passes.txt
+(/usr/bin/grep class build/reports/tests/test/classes/*.html | grep success | grep passed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>"  | sed -e s/ass\=\"suess\"passe/passed/ > passes.txt) 2>> $LOGFILE
+if [ -s passes.txt ]
+then
+	echo "/usr/bin/cat passes.txt" | /usr/bin/tee --append $LOGFILE
+	/usr/bin/cat passes.txt | /usr/bin/tee --append $LOGFILE
+else
+	ls -l passes.txt | /usr/bin/tee --append $LOGFILE
+fi
+/usr/bin/grep EXECUTING $LOGFILE | tr -d "#" | gawk '{printf("%s %s\n", $2,$3)}' > executed_order.txt
+if [ -s executed_order.txt ]
+then
+	echo "/usr/bin/cat executed_order.txt" | /usr/bin/tee --append $LOGFILE
+	/usr/bin/cat executed_order.txt | /usr/bin/tee --append $LOGFILE
+else
+	ls -l executed_order.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+fi
+
 if [ -s failures.txt ]
 then
 	failure_nums=`/usr/bin/cat failures.txt | /usr/bin/wc -l`
@@ -156,10 +248,50 @@ then
 else
 	pass_nums=0
 fi
-cat passes.txt failures.txt > summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+
+/usr/bin/cat passes.txt failures.txt | sed -e s/Senario/Scenario/ > passed_failed.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+if [ -s passed_failed.txt ]
+then
+	echo "/usr/bin/cat passed_failed.txt" | /usr/bin/tee --append $LOGFILE
+	/usr/bin/cat passed_failed.txt | /usr/bin/tee --append $LOGFILE
+else
+	ls -l  passed_failed.txt | /usr/bin/tee --append $LOGFILE
+fi
+
+scenarios=`cat executed_order.txt | cut -d' ' -f2`
+echo $scenarios | /usr/bin/tee --append $LOGFILE
+cat /dev/null > summary.txt
+/bin/df -h | /bin/grep wres_share > summary.txt
+echo "Please notify the system administrator if the /wres_share file system close to 100% full!" >> summary.txt
+for scenario in $scenarios
+do
+	/usr/bin/grep $scenario passed_failed.txt >> summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE 
+done
+if [ -s summary.txt ]
+then
+	echo "/usr/bin/cat summary.txt" | /usr/bin/tee --append $LOGFILE
+	/usr/bin/cat summary.txt | /usr/bin/tee --append $LOGFILE
+else
+	ls -l summary.txt | /usr/bin/tee --append $LOGFILE
+fi
+
 MAIL_SUBJECT="JUnit in $SYSTESTS_DIR Tested $WRES_REVISION : $pass_nums PASSED; $failure_nums FAILED"
-/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED*** < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
-rm -v passes.txt failures.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+LOGFILESIZE=`ls -s $LOGFILE | gawk '{print $1}'`
+echo "LOGFILESIZE = $LOGFILESIZE" 2>&1 | /usr/bin/tee --append $LOGFILE
+if [ $LOGFILESIZE -lt 9999 ]
+then
+#	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED*** < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+else
+	echo "$LOGFILE block size $LOGFILESIZE is too large to attach in email" > tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+	echo ".................." >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+	cat summary.txt >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+	mv -v tempfile.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+#	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED*** < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+fi
+ls -l passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+rm -v passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 
 # remove JUnit test lock file
 rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
