@@ -316,6 +316,31 @@ public class Evaluation implements Closeable
                             .setConsumers( consumers )
                             .build();
     }
+    
+    /**
+     * Opens an evaluation with a prescribed identifier.
+     * 
+     * @param evaluationDescription the evaluation description message
+     * @param broker the broker
+     * @param consumers the consumers to subscribe
+     * @param evaluationId the evaluation identifier
+     * @return an open evaluation
+     * @throws NullPointerException if any input is null
+     * @throws EvaluationEventException if the evaluation could not be constructed
+     * @throws IllegalArgumentException if any input is invalid
+     */
+
+    public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
+                                 BrokerConnectionFactory broker,
+                                 Consumers consumers,
+                                 String evaluationId )
+    {
+        return new Builder().setBroker( broker )
+                            .setEvaluationDescription( evaluationDescription )
+                            .setConsumers( consumers )
+                            .setEvaluationId( evaluationId )
+                            .build();
+    }
 
     /**
      * Publish an {@link wres.statistics.generated.EvaluationStatus} message for the current evaluation.
@@ -902,7 +927,13 @@ public class Evaluation implements Closeable
          */
 
         private Consumers consumers;
+        
+        /**
+         * Evaluation identifier.
+         */
 
+        private String evaluationId = null;
+        
         /**
          * Sets the broker.
          * 
@@ -946,6 +977,20 @@ public class Evaluation implements Closeable
         }
 
         /**
+         * Sets the evaluation identifier. See {@link Evaluation#getUniqueId()}.
+         * 
+         * @param evaluationId the evaluation identifier
+         * @return this builder 
+         */
+
+        public Builder setEvaluationId( String evaluationId )
+        {
+            this.evaluationId = evaluationId;
+
+            return this;
+        }
+        
+        /**
          * Builds an evaluation.
          * 
          * @return an evaluation
@@ -957,6 +1002,18 @@ public class Evaluation implements Closeable
         }
     }
 
+    /**
+     * Returns a unique identifier for identifying a component of an evaluation, such as the evaluation itself or an
+     * internal subscriber.
+     * 
+     * @return a unique identifier
+     */
+
+    public static String getUniqueId()
+    {
+        return Evaluation.ID_GENERATOR.generate();
+    }
+    
     /**
      * Small bag of evaluation state for sharing.
      * 
@@ -1052,18 +1109,6 @@ public class Evaluation implements Closeable
             this.completionTracker = completionTracker;
             this.queuesConstructed = new AtomicInteger();
         }
-    }
-
-    /**
-     * Returns a unique identifier for identifying a component of an evaluations, such as the evaluation itself or an
-     * internal subscriber.
-     * 
-     * @return a unique identifier
-     */
-
-    static String getUniqueId()
-    {
-        return Evaluation.ID_GENERATOR.generate();
     }
 
     /**
@@ -1283,7 +1328,14 @@ public class Evaluation implements Closeable
 
     private Evaluation( Builder builder )
     {
-        this.evaluationId = Evaluation.getUniqueId();
+        String internalId = builder.evaluationId;
+        
+        if( Objects.isNull( internalId ) )
+        {
+            internalId = Evaluation.getUniqueId();
+        }
+        
+        this.evaluationId = internalId;
 
         LOGGER.info( "Creating an evaluation with identifier {}.", this.evaluationId );
 
@@ -1349,7 +1401,7 @@ public class Evaluation implements Closeable
                                                                      .setExpectedMessageCountSupplier( EvaluationStatus::getStatusMessageCount )
                                                                      .setMapper( this.getStatusMapper() )
                                                                      .setContext( Evaluation.EVALUATION_STATUS_QUEUE )
-                                                                     .setMaximumRetries( broker.getMaximumRetries() )
+                                                                     .setMaximumRetries( broker.getMaximumMessageRetries() )
                                                                      .build();
 
             Topic evaluation = (Topic) broker.getDestination( Evaluation.EVALUATION_QUEUE );
@@ -1363,7 +1415,7 @@ public class Evaluation implements Closeable
                                                                                          .setMapper( this.getEvaluationMapper() )
                                                                                          .setEvaluationStatusTopic( status )
                                                                                          .setContext( Evaluation.EVALUATION_QUEUE )
-                                                                                         .setMaximumRetries( broker.getMaximumRetries() )
+                                                                                         .setMaximumRetries( broker.getMaximumMessageRetries() )
                                                                                          .build();
 
             Topic statistics = (Topic) broker.getDestination( Evaluation.STATISTICS_QUEUE );
@@ -1381,7 +1433,7 @@ public class Evaluation implements Closeable
                                                                .setEvaluationStatusTopic( status )
                                                                .setMapper( this.getStatisticsMapper() )
                                                                .setContext( Evaluation.STATISTICS_QUEUE )
-                                                               .setMaximumRetries( broker.getMaximumRetries() )
+                                                               .setMaximumRetries( broker.getMaximumMessageRetries() )
                                                                .build();
 
             Topic pairs = (Topic) broker.getDestination( Evaluation.PAIRS_QUEUE );
@@ -1395,7 +1447,7 @@ public class Evaluation implements Closeable
                                                           .setEvaluationStatusTopic( status )
                                                           .setMapper( this.getPairsMapper() )
                                                           .setContext( Evaluation.PAIRS_QUEUE )
-                                                          .setMaximumRetries( broker.getMaximumRetries() )
+                                                          .setMaximumRetries( broker.getMaximumMessageRetries() )
                                                           .build();
         }
         catch ( JMSException | NamingException e )
@@ -1455,7 +1507,7 @@ public class Evaluation implements Closeable
                                                                      .setEvaluationStatusTopic( status )
                                                                      .setContext( completionContext )
                                                                      .setIgnoreConsumerMessages( false ) // Track messages about itself
-                                                                     .setMaximumRetries( broker.getMaximumRetries() )
+                                                                     .setMaximumRetries( broker.getMaximumMessageRetries() )
                                                                      .build();
         }
         catch ( JMSException | NamingException e )

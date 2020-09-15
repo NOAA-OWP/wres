@@ -99,15 +99,17 @@ class ProcessorHelper
 
         Set<Path> returnMe = new TreeSet<>();
 
+        // Get a unique evaluation identifier
+        String evaluationId = Evaluation.getUniqueId();
+
         // Create output directory
-        Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
+        Path outputDirectory = ProcessorHelper.createTempOutputDirectory( evaluationId );
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         // Create a description of the evaluation
         wres.statistics.generated.Evaluation evaluationDescription =
-                ProcessorHelper.getEvaluationDescription( systemSettings,
-                                                          projectConfigPlus );
+                ProcessorHelper.getEvaluationDescription( projectConfigPlus );
 
         // Create some shared writers
         SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
@@ -177,8 +179,9 @@ class ProcessorHelper
 
         // Open an evaluation, to be closed on completion or stopped on exception
         Evaluation evaluation = Evaluation.of( evaluationDescription,
-                                                 connections,
-                                                 consumerGroup );
+                                               connections,
+                                               consumerGroup,
+                                               evaluationId );
 
         try
         {
@@ -221,8 +224,6 @@ class ProcessorHelper
         // Internal error
         catch ( RuntimeException internalError )
         {
-            String evaluationId = "unknown";
-
             // Stop forcibly
             evaluation.stop( internalError );
             evaluationId = evaluation.getEvaluationId();
@@ -599,21 +600,24 @@ class ProcessorHelper
     /**
      * Creates a temporary directory for the outputs with the correct permissions. 
      *
+     * @param evaluationId the unique evaluation identifier
      * @return the path to the temporary output directory
-     * @throws IOException if the temporary directory cannot be created
+     * @throws IOException if the temporary directory cannot be created     
+     * @throws NullPointerException if the evaluationId is null 
      */
 
-    private static Path createTempOutputDirectory() throws IOException
+    private static Path createTempOutputDirectory( String evaluationId ) throws IOException
     {
+        Objects.requireNonNull( evaluationId );
+
         // Where outputs files will be written
         Path outputDirectory = null;
+        String tempDir = System.getProperty( "java.io.tmpdir" );
+        Path namedPath = Paths.get( tempDir, "wres_evaluation_output_" + evaluationId );
 
-        // POSIX-compliant
+        // POSIX-compliant    
         if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )
         {
-            // Permissions for temp directory require group read so that the tasker
-            // may give the output to the client on GET. Write so that the tasker
-            // may remove the output on client DELETE. Execute for dir reads.            
             Set<PosixFilePermission> permissions = EnumSet.of( PosixFilePermission.OWNER_READ,
                                                                PosixFilePermission.OWNER_WRITE,
                                                                PosixFilePermission.OWNER_EXECUTE,
@@ -624,13 +628,13 @@ class ProcessorHelper
             FileAttribute<Set<PosixFilePermission>> fileAttribute =
                     PosixFilePermissions.asFileAttribute( permissions );
 
-            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_",
-                                                         fileAttribute );
+            // Create if not exists
+            outputDirectory = Files.createDirectories( namedPath, fileAttribute );
         }
         // Not POSIX-compliant
         else
         {
-            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_" );
+            outputDirectory = Files.createDirectories( namedPath );
         }
 
         if ( !outputDirectory.isAbsolute() )
@@ -1011,13 +1015,13 @@ class ProcessorHelper
     }
 
     /**
-     * @param systemSettings the system settings to help resolve the path
      * @param projectConfigPlus the project declaration with graphics information
      * @return a description of the evaluation.
+     * @deprecated for removal in 5.1 where templates should not be configurable
      */
 
-    private static wres.statistics.generated.Evaluation getEvaluationDescription( SystemSettings systemSettings,
-                                                                                  ProjectConfigPlus projectConfigPlus )
+    @Deprecated( since = "5.0", forRemoval = true )
+    private static wres.statistics.generated.Evaluation getEvaluationDescription( ProjectConfigPlus projectConfigPlus )
     {
         wres.statistics.generated.Evaluation returnMe = MessageFactory.parse( projectConfigPlus );
 
@@ -1027,7 +1031,7 @@ class ProcessorHelper
         {
             String template = outputs.getPng().getOptions().getTemplateName();
 
-            template = ProcessorHelper.getAbsolutePathFromRelativePath( systemSettings, template );
+            template = ProcessorHelper.getAbsolutePathFromRelativePath( template );
 
             Outputs.Builder builder = outputs.toBuilder();
             builder.getPngBuilder()
@@ -1042,7 +1046,7 @@ class ProcessorHelper
         {
             String template = outputs.getSvg().getOptions().getTemplateName();
 
-            template = ProcessorHelper.getAbsolutePathFromRelativePath( systemSettings, template );
+            template = ProcessorHelper.getAbsolutePathFromRelativePath( template );
 
             Outputs.Builder builder = outputs.toBuilder();
             builder.getSvgBuilder()
@@ -1057,11 +1061,10 @@ class ProcessorHelper
     }
 
     /**
-     * @param systemSettings the system settings to help resolve the path
      * @return an absolute path string from a relative one.
      */
 
-    private static String getAbsolutePathFromRelativePath( SystemSettings systemSettings, String pathString )
+    private static String getAbsolutePathFromRelativePath( String pathString )
     {
         if ( Objects.isNull( pathString ) || pathString.isBlank() )
         {

@@ -19,6 +19,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,14 +61,20 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactory.class );
 
     /**
-     * Default maximum number of retries. A small risk remains that this may disagree with broker configuration that
-     * could not be found (and is otherwise canonical). If this number exceeds the number in the broker configuration, 
-     * a race condition could emerge in marking a subscriber as complete. See #81735-145. This is considered very low
-     * risk. It would be worse to default to zero retries, which would nevertheless guarantee to eliminate the small 
-     * risk.
+     * Maximum number of connection retries.
      */
 
-    private static final int DEFAULT_MAXIMUM_RETRIES = 2;
+    private static final int MAXIMUM_CONNECTION_RETRIES = 5;
+
+    /**
+     * Default maximum number of times a message will be resent. A small risk remains that this may disagree with 
+     * broker configuration that could not be found (and is otherwise canonical). If this number exceeds the number in 
+     * the broker configuration, a race condition could emerge in marking a subscriber as complete. See #81735-145. 
+     * This is considered very low risk. It would be worse to default to zero retries, which would nevertheless 
+     * guarantee to eliminate the small risk.
+     */
+
+    private static final int DEFAULT_MAXIMUM_MESSAGE_RETRIES = 2;
 
     /**
      * Default jndi properties file on the classpath.
@@ -76,10 +83,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     private static final String DEFAULT_PROPERTIES = "eventbroker.properties";
 
     /**
-     * The maximum number of retries supported by the broker whose connections are exposed by this factory.
+     * The maximum number of times a message can be retried.
      */
 
-    private final Integer maximumRetries;
+    private final Integer maximumMessageRetries;
 
     /**
      * Instance of an embedded broker managed by this factory instance, created as needed. There should be one instance 
@@ -157,15 +164,16 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
-     * Returns the maximum number of retries allowed by the broker whose connections are exposed by this factory, else 
-     * the default maximum of {@link BrokerConnectionFactory#DEFAULT_MAXIMUM_RETRIES}.
+     * Returns the maximum number of times a message will be resent on consumption failure. This corresponds to broker
+     * configuration where available and understood, else the default maximum of 
+     * {@link BrokerConnectionFactory#DEFAULT_MAXIMUM_MESSAGE_RETRIES}.
      * 
-     * @return the maxcimum retry count
+     * @return the maximum retry count for resending messages
      */
 
-    public int getMaximumRetries()
+    public int getMaximumMessageRetries()
     {
-        return this.maximumRetries;
+        return this.maximumMessageRetries;
     }
 
     /**
@@ -176,6 +184,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
      * @throws NullPointerException if the jndiProperties is null
      * @throws CouldNotLoadBrokerConfigurationException if the properties could not be read
+     * @throws BrokerConnectionException if the broker was not reachable
      */
 
     private BrokerConnectionFactory( String jndiProperties )
@@ -229,16 +238,16 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
             // Retries?
             if ( Objects.nonNull( retries ) )
             {
-                this.maximumRetries = retries;
+                this.maximumMessageRetries = retries;
             }
             else
             {
-                this.maximumRetries = BrokerConnectionFactory.DEFAULT_MAXIMUM_RETRIES;
+                this.maximumMessageRetries = BrokerConnectionFactory.DEFAULT_MAXIMUM_MESSAGE_RETRIES;
             }
         }
         else
         {
-            this.maximumRetries = BrokerConnectionFactory.DEFAULT_MAXIMUM_RETRIES;
+            this.maximumMessageRetries = BrokerConnectionFactory.DEFAULT_MAXIMUM_MESSAGE_RETRIES;
         }
 
         // Set any variables that depend on the (possibly adjusted) properties
@@ -246,6 +255,8 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         {
             this.context = new InitialContext( properties );
             this.connectionFactory = this.createConnectionFactory( this.context, properties );
+
+            this.testConnection( properties );
         }
         catch ( NamingException e )
         {
@@ -268,15 +279,12 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     {
         EmbeddedBroker returnMe = null;
 
-        Context localContext = new InitialContext( properties );
-        ConnectionFactory factory = this.createConnectionFactory( localContext, properties );
-
         Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
 
         String key = connectionProperty.getKey();
         String value = connectionProperty.getValue();
 
-        if ( value.contains( "localhost" ) || value.contains( "127.0.0.1" ) )
+        if ( value.contains( "localhost" ) || value.contains( "127.0.0.1" ) || value.contains( "0.0.0.0" ) )
         {
             LOGGER.debug( "Discovered the connection property {} with value {}, which "
                           + "indicates that a broker should be listening on localhost.",
@@ -300,6 +308,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                 LOGGER.debug( "Probing to establish whether an active broker is accepting connections at {}. This "
                               + "may fail!",
                               value );
+
+                Context localContext = new InitialContext( properties );
+                ConnectionFactory factory = this.createConnectionFactory( localContext, properties );
 
                 try ( Connection connection = factory.createConnection() )
                 {
@@ -341,9 +352,11 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
                 if ( Objects.nonNull( value ) )
                 {
-                    returnMe = new AbstractMap.SimpleEntry<>( key.toString(), value.toString() );
+                    String burl = value.toString();
+                    // If there is a BROKER_ADDRESS and/or BROKER_PORT environment variable, use those instead
+                    burl = this.overrideBurlWithAnyEnvironmentVariables( key.toString(), burl, properties );
+                    returnMe = new AbstractMap.SimpleEntry<>( key.toString(), burl );
                 }
-
                 break;
             }
         }
@@ -354,6 +367,49 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                                             + properties );
         }
 
+        return returnMe;
+    }
+
+    /**
+     * Checks for a BROKER_ADDRESS and/or BROKER_PORT environment variable and substitutes these entries into the 
+     * supplied binding url and updates the properties.
+     * 
+     * @param propertyName the property name that stores the binding url
+     * @param propertyValue the value of the binding url
+     * @param properties the properties to update
+     * @return a possibly adjusted binding url
+     */
+
+    private String overrideBurlWithAnyEnvironmentVariables( String propertyName,
+                                                            String propertyValue,
+                                                            Properties properties )
+    {
+        Map<String, String> variables = System.getenv();
+
+        String returnMe = propertyValue;
+
+        boolean overriden = false;
+
+        if ( variables.containsKey( "BROKER_ADDRESS" ) )
+        {
+            returnMe = returnMe.replaceAll( "tcp://+[a-zA-Z0-9.]+", "tcp://" + variables.get( "BROKER_ADDRESS" ) );
+            overriden = true;
+        }
+
+        if ( variables.containsKey( "BROKER_PORT" ) )
+        {
+            returnMe = returnMe.replaceAll( ":+[a-zA-Z0-9.]++'", ":" + variables.get( "BROKER_PORT" ) + "'" );
+            overriden = true;
+        }
+
+        // Update the properties
+        properties.setProperty( propertyName, returnMe );
+
+        if ( LOGGER.isDebugEnabled() && overriden )
+        {
+            LOGGER.debug( "Updated the binding URL (BURL) using environment variables discovered at runtime. The old "
+                          + "BURL was {}. The new BURL is {}." );
+        }
         return returnMe;
     }
 
@@ -380,7 +436,8 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                     Integer port = next.getValue();
 
                     String updated = propertyValue.replaceAll( "localhost:\\d+", "localhost:" + port )
-                                                  .replaceAll( "127.0.0.1:\\d+", "127.0.0.1:" + port );
+                                                  .replaceAll( "127.0.0.1:\\d+", "127.0.0.1:" + port )
+                                                  .replaceAll( "0.0.0.0:\\d+", "0.0.0.0:" + port );
 
                     properties.setProperty( propertyName, updated );
 
@@ -417,9 +474,12 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
         String connectionUrl = connectionProperty.getValue();
 
-        String replace = connectionUrl.replaceAll( "[^\\d]+", "" );
+        // Could probably do all this with a single regex - whatever is the opposite of :+(\\d+)
+        String connectionUrlWithoutPort = connectionUrl.replaceAll( ":+(\\d+)", "" );
+        String stringDifference = StringUtils.difference( connectionUrlWithoutPort, connectionUrl );
+        String portString = stringDifference.replaceAll( "[^\\d]+", "" );
 
-        int port = Integer.parseInt( replace );
+        int port = Integer.parseInt( portString );
 
         EmbeddedBroker returnMe = null;
 
@@ -439,6 +499,87 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         }
 
         return returnMe;
+    }
+
+    /**
+     * Tests the connection with exponential back-off, up to the {@link #MAXIMUM_CONNECTION_RETRIES}.
+     * @param properties the connection properties
+     * @throws BrokerConnectionException if the connection finally fails after all retries
+     */
+
+    private void testConnection( Properties properties )
+    {
+        LOGGER.debug( "Testing the broker connection with exponential back-off up to the maximum retry count of {}.",
+                      BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
+
+        Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
+        String connectionUrl = connectionProperty.getValue();
+
+        long sleepMillis = 1000;
+        for ( int i = 0; i <= BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES; i++ )
+        {
+            Connection connection = null;
+            try
+            {
+                if ( i > 0 )
+                {
+                    Thread.sleep( sleepMillis );
+
+                    // Exponential back-off
+                    sleepMillis *= 2;
+
+                    LOGGER.info( "Retrying connection to {} following {} failed connection attempts. This is retry {} "
+                                 + "of {}.",
+                                 connectionUrl,
+                                 i,
+                                 i,
+                                 BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
+                }
+
+                connection = this.connectionFactory.createConnection();
+
+                // Success
+                break;
+            }
+            catch ( JMSException e )
+            {
+                if ( i == BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES )
+                {
+                    throw new BrokerConnectionException( "Unable to connect to the broker at "
+                                                         + connectionUrl
+                                                         + " after "
+                                                         + BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES
+                                                         + " retries.",
+                                                         e );
+                }
+            }
+            // Propagate immediately
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+
+                throw new BrokerConnectionException( "Unable to connect to the broker at "
+                                                     + connectionUrl
+                                                     + ".",
+                                                     e );
+            }
+            finally
+            {
+                // Close any connection that succeeded
+                if ( Objects.nonNull( connection ) )
+                {
+                    try
+                    {
+                        connection.close();
+                    }
+                    catch ( JMSException e )
+                    {
+                        LOGGER.error( "Failed to close an attempted connection during the instantiation of a "
+                                      + "connection factory." );
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -463,9 +604,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
         ConnectionFactory factory = (ConnectionFactory) context.lookup( factoryName );
 
-        LOGGER.debug( "Created a connection factory with name {} and URL connection string {}.",
-                      factoryName,
-                      connectionUrl );
+        LOGGER.info( "Created a connection factory with name {} and binding URL {}.",
+                     factoryName,
+                     connectionUrl );
 
         return factory;
     }

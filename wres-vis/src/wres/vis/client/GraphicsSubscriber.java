@@ -650,7 +650,7 @@ class GraphicsSubscriber implements Closeable
                               correlationId,
                               this.getIdentifier(),
                               this.getNumberOfRetriesAttempted( correlationId ).get() + 1, // Counter starts at zero
-                              this.broker.getMaximumRetries(),
+                              this.broker.getMaximumMessageRetries(),
                               correlationId,
                               message );
 
@@ -674,13 +674,13 @@ class GraphicsSubscriber implements Closeable
 
         // Stop if the maximum number of retries has been reached
         if ( this.getNumberOfRetriesAttempted( correlationId )
-                 .incrementAndGet() == this.broker.getMaximumRetries() )
+                 .incrementAndGet() == this.broker.getMaximumMessageRetries() )
         {
             LOGGER.error( "Graphics subscriber {} encountered a consumption failure for evaluation {}. "
                           + "Recovery failed after {} attempts.",
                           this.getIdentifier(),
                           correlationId,
-                          this.broker.getMaximumRetries() );
+                          this.broker.getMaximumMessageRetries() );
 
             // Register the evaluation as failed
             this.markEvaluationFailed( correlationId );
@@ -716,7 +716,7 @@ class GraphicsSubscriber implements Closeable
         this.status.registerFailedEvaluation( evaluationId );
         EvaluationConsumer consumer = this.getEvaluationConsumer( evaluationId );
         consumer.markEvaluationFailed();
-        
+
         try
         {
             consumer.close();
@@ -867,6 +867,12 @@ class GraphicsSubscriber implements Closeable
         LOGGER.info( "Started the consumer connection for long-running subscriber {}...",
                      this.getIdentifier() );
         this.connection.start();
+
+        String tempDir = System.getProperty( "java.io.tmpdir" );
+
+        LOGGER.info( "The graphics subscriber will write outputs to the directory specified by the java.io.tmpdir "
+                     + "system property, which is {}",
+                     tempDir );
 
         LOGGER.info( "Created long-running subscriber {}", this.getIdentifier() );
     }

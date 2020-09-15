@@ -797,16 +797,17 @@ project(':wres-vis')
 {
     apply plugin: 'application'
 
+    // Workaround windows paths that are too long by overriding the explicit setting of individual dependencies
+    startScripts {
+        classpath = files( '$APP_HOME/lib/*' )
+        
+        // Note: see lengthy note in main application below
+        classpath += files( 'conf' )
+    }
+
     mainClassName = 'wres.vis.client.GraphicsClient'
     applicationDefaultJvmArgs = ['-Xms128m','-Xmx128m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
-
-    // Add logging configuration to the classpath when running via script
-    startScripts
-    {
-        // Note: see lengthy note in main application below
-        classpath += files('conf')
-    }
 
     // Make available logging configuration to the classpath
     distributions
@@ -1106,7 +1107,7 @@ project(':wres-tasker')
         compile 'org.eclipse.jetty:jetty-continuation:9.4.31.v20200723'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        compile 'com.github.ben-manes.caffeine:caffeine:2.8.5'
+        compile 'com.github.ben-manes.caffeine:caffeine:2.8.5'        
 
         // To accurately detect mime types of files.
         compile 'org.apache.tika:tika-core:1.24.1'
@@ -1115,7 +1116,7 @@ project(':wres-tasker')
         compile 'org.redisson:redisson:3.13.4'
 
         // For ToStringBuilder
-        compile 'org.apache.commons:commons-lang3:3.11'
+        compile 'org.apache.commons:commons-lang3:3.11'        
 
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
         runtime 'org.glassfish.jersey.core:jersey-server:2.31'
@@ -1174,6 +1175,8 @@ project(':wres-eventsbroker')
     {
         compile 'org.slf4j:slf4j-api:1.8.0-beta4'
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha4'
+
+        compile 'org.apache.commons:commons-lang3:3.11'
 
         // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
         // https://issues.sonatype.org/browse/MVNCENTRAL-348
