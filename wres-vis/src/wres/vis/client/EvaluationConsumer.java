@@ -797,6 +797,12 @@ class EvaluationConsumer
                                               e );
         }
 
+        // Render absolute
+        if( !outputDirectory.isAbsolute() )
+        {
+            outputDirectory = outputDirectory.toAbsolutePath();
+        }
+        
         return outputDirectory;
     }
 

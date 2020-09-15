@@ -12,7 +12,7 @@
                interleaving multiple users running wres at same time.
                Does not prevent multiple instances of wres from interleaving. -->
           <!-- Roll over when a new day starts. -->
-          <fileNamePattern>${user.home}/wres_logs/wres-graphics.%d{yyyy-MM-dd}.log</fileNamePattern>
+          <fileNamePattern>${user.home}/wres_graphics_logs/wres-graphics.%d{yyyy-MM-dd}.log</fileNamePattern>
           <!-- Keep at most 10 years of rolled files (see next comment) -->
           <maxHistory>3653</maxHistory>
           <!-- When size of all rolled files exceeds 2GiB, delete oldest files,

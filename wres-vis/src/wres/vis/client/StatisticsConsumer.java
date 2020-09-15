@@ -813,7 +813,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
 
     /**
      * Filters the input statistics for the prescribed destination type relative to the output types that should be 
-     * suppressed for particular statistics. See `getSuppressTheseMetricsForThisDestinationType()` down below.
+     * suppressed for particular statistics. See {@link #getSuppressTheseMetricsForThisDestinationType(DestinationType).
      * 
      * @param statistics the statistics to filter
      * @param destinationType the destination type by which to filter
@@ -821,8 +821,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * @throws NullPointerException if any input is null
      */
 
-    private <T extends Statistic<?>> List<T>
-            getFilteredStatisticsForThisDestinationType( List<T> statistics, DestinationType destinationType )
+    private <T extends Statistic<?>> List<T> getFilteredStatisticsForThisDestinationType( List<T> statistics,
+                                                                                          DestinationType destinationType )
     {
         Objects.requireNonNull( statistics );
 
@@ -888,6 +888,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                 .map( next -> MetricConstants.valueOf( next.name() ) )
                                                 .collect( Collectors.toUnmodifiableSet() );
             returnMe.put( DestinationType.PNG, mapped );
+            returnMe.put( DestinationType.GRAPHIC, mapped );
         }
         // SVG
         if ( outputs.hasSvg() && outputs.getSvg().hasOptions() )
