@@ -287,11 +287,11 @@ class JobResults
             }
 
             JobMetadata sharedData = this.getJobMetadata();
-            LOGGER.info( "Shared metadata before setting exit code to {}: {}",
-                         resultValue, sharedData );
+            LOGGER.debug( "Shared metadata before setting exit code to {}: {}",
+                          resultValue, sharedData );
             sharedData.setExitCode( resultValue );
-            LOGGER.info( "Shared metadata after setting exit code to {}: {}",
-                         resultValue, sharedData );
+            LOGGER.debug( "Shared metadata after setting exit code to {}: {}",
+                          resultValue, sharedData );
 
             return resultValue;
         }
@@ -554,7 +554,7 @@ class JobResults
     {
         JobMetadata result = jobMetadataById.get( correlationId );
 
-        LOGGER.info ( "Here is the job result: {}", result );
+        LOGGER.debug( "Here is the job result: {}", result );
 
         if ( Objects.isNull( result ) )
         {
@@ -585,7 +585,8 @@ class JobResults
     {
         JobMetadata metadata = jobMetadataById.get( correlationId );
 
-        LOGGER.info ( "Here is the job metadata: {}", metadata );
+        LOGGER.debug( "Here is the job metadata: {}", metadata );
+
         if ( Objects.isNull( metadata ) )
         {
             return null;

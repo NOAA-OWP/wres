@@ -22,13 +22,12 @@ import org.slf4j.LoggerFactory;
 @REntity
 public class JobMetadata
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( JobMetadata.class );
-    private static final int NOT_YET_EXITED = Integer.MIN_VALUE + 2;
+    protected static final Logger LOGGER = LoggerFactory.getLogger( JobMetadata.class );
 
     @RId
     private String id;
 
-    private int exitCode;
+    private Integer exitCode;
 
     @RCascade( RCascadeType.ALL )
     private Set<URI> outputs;
@@ -49,7 +48,7 @@ public class JobMetadata
         }
 
         this.setId( id );
-        this.exitCode = NOT_YET_EXITED;
+        this.exitCode = null;
         this.outputs = new ConcurrentSkipListSet<>();
         this.stdout = new ConcurrentHashMap<>();
         this.stderr = new ConcurrentHashMap<>();
@@ -60,7 +59,7 @@ public class JobMetadata
      */
     public JobMetadata()
     {
-        this.exitCode = NOT_YET_EXITED;
+        // Left for Redisson (subclass?) to fill in.
     }
 
     public String getId()
@@ -78,12 +77,15 @@ public class JobMetadata
         this.id = id;
     }
 
-    public int getExitCode()
+    /**
+     * @return Exit code or null when not yet exited.
+     */
+    public Integer getExitCode()
     {
         return this.exitCode;
     }
 
-    public void setExitCode( int exitCode )
+    public void setExitCode( Integer exitCode )
     {
         this.exitCode = exitCode;
     }
@@ -174,7 +176,7 @@ public class JobMetadata
 
     boolean isFinished()
     {
-        return this.getExitCode() != NOT_YET_EXITED;
+        return Objects.nonNull( this.getExitCode() );
     }
 
     @Override
