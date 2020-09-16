@@ -10,13 +10,13 @@ networks:
                   gateway: 172.19.254.193
 services:
     persister:
-        image: "redis:6.0.7-alpine3.12"
+        image: "redis:6.0.8-alpine3.12"
         restart: always
         volumes:
          # For the job data
          - /mnt/wres_share/job_data:/data
-        # Enable persistence
-        command: --appendonly yes
+        # Enable persistence, limit RAM to less than mem_limit, evict any w/LRU
+        command: --appendonly yes --maxmemory 900mb --maxmemory-policy allkeys-lru
         mem_limit: 940m
         read_only: true
         networks:
