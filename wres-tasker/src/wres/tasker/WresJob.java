@@ -362,8 +362,10 @@ public class WresJob
                                   properties,
                                   message );
 
-            LOGGER.info( "I sent this message to queue '{}' with properties '{}': {}.",
-                         SEND_QUEUE_NAME, properties, message );
+            LOGGER.info( "Sent a message to queue '{}' with properties '{}'",
+                         SEND_QUEUE_NAME, properties );
+            LOGGER.debug( "I sent this message to queue '{}' with properties '{}': {}.",
+                          SEND_QUEUE_NAME, properties, message );
             return jobId;
         }
     }
