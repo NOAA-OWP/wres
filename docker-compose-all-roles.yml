@@ -1,4 +1,13 @@
 version: '2.2'
+networks:
+    wres_net:
+        driver: bridge
+        enable_ipv6: false
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.19.254.192/26
+                  gateway: 172.19.254.193
 services:
     persister:
         image: "redis:6.0.7-alpine3.12"
@@ -10,6 +19,8 @@ services:
         command: --appendonly yes
         mem_limit: 940m
         read_only: true
+        networks:
+            wres_net:
     tasker:
         ports:
          - "443:8443"
@@ -32,6 +43,8 @@ services:
         cap_drop:
          - ALL
         read_only: true
+        networks:
+            wres_net:
     broker:
         ports:
          - "5671:5671"
@@ -47,6 +60,8 @@ services:
         mem_limit: 720m
         cap_drop:
          - ALL
+        networks:
+            wres_net:
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:20200915-3d8af2d"
         restart: always
@@ -74,3 +89,5 @@ services:
         cap_drop:
          - ALL
         read_only: true
+        networks:
+            wres_net:
