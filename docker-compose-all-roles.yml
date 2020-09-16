@@ -24,7 +24,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200915-3d8af2d"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20200916-014565c"
         restart: always
         depends_on:
          - "broker"
@@ -63,7 +63,7 @@ services:
         networks:
             wres_net:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200915-3d8af2d"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200916-2d92b47"
         restart: always
         depends_on:
          - "broker"
