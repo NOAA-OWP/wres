@@ -2,7 +2,7 @@ package wres.tasker;
 
 import java.net.URI;
 import java.util.Objects;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -30,7 +30,7 @@ public class JobMetadata
     private Integer exitCode;
 
     @RCascade( RCascadeType.ALL )
-    private Set<URI> outputs;
+    private SortedSet<URI> outputs;
 
     @RCascade( RCascadeType.ALL )
     private ConcurrentMap<Integer,String> stdout;
@@ -95,13 +95,13 @@ public class JobMetadata
      * @return The Set of output URIs.
      */
 
-    public Set<URI> getOutputs()
+    public SortedSet<URI> getOutputs()
     {
         return this.outputs;
     }
 
 
-    public void setOutputs( Set<URI> outputs )
+    public void setOutputs( SortedSet<URI> outputs )
     {
         this.outputs = outputs;
     }
