@@ -42,7 +42,7 @@ class GraphicsPublisher implements Closeable
         JMS_MESSAGE_ID,
 
         CONSUMER_ID,
-        
+
         OUTPUT_PATH;
 
         @Override
@@ -142,10 +142,10 @@ class GraphicsPublisher implements Closeable
         // JMS properties
         message.setJMSMessageID( messageId );
         message.setJMSCorrelationID( correlationId );
-        
+
         // Application properties
         message.setStringProperty( MessageProperty.CONSUMER_ID.toString(), consumerId );
-        
+
         // At least until we can write from a buffer directly
         // For example: https://qpid.apache.org/releases/qpid-proton-j-0.33.4/api/index.html
         message.writeBytes( messageBytes.array() );

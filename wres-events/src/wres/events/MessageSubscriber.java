@@ -955,19 +955,20 @@ class MessageSubscriber<T> implements Closeable
 
     private void internalClose()
     {
-        try
+        for ( NamedMessageConsumer next : this.consumers )
         {
-            for ( NamedMessageConsumer next : this.consumers )
+            try
             {
                 next.close();
             }
-        }
-        catch ( IOException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer within "
-                          + "subscriber {}: {}",
-                          this,
-                          e.getMessage() );
+            catch ( IOException e )
+            {
+                LOGGER.error( "Encountered an error while attempting to close registered consumer {} within "
+                              + "subscriber {}: {}",
+                              next.name,
+                              this,
+                              e.getMessage() );
+            }
         }
 
         try
