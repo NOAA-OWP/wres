@@ -255,8 +255,15 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         {
             this.context = new InitialContext( properties );
             this.connectionFactory = this.createConnectionFactory( this.context, properties );
-
+            
+            // Test
             this.testConnection( properties );
+            
+            // Document
+            Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
+            LOGGER.info( "Created a connection factory with name {} and binding URL {}.",
+                         connectionProperty.getKey(),
+                         connectionProperty.getValue() );
         }
         catch ( NamingException e )
         {
@@ -599,14 +606,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         Objects.requireNonNull( properties );
 
         Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
-        String factoryName = connectionProperty.getKey().replace( "connectionfactory.", "" );
-        String connectionUrl = connectionProperty.getValue();
+        String factoryName = connectionProperty.getKey()
+                                               .replace( "connectionfactory.", "" );
 
         ConnectionFactory factory = (ConnectionFactory) context.lookup( factoryName );
-
-        LOGGER.info( "Created a connection factory with name {} and binding URL {}.",
-                     factoryName,
-                     connectionUrl );
 
         return factory;
     }

@@ -1,3 +1,5 @@
+import java.util.concurrent.TimeUnit;
+
 // This build.gradle is released along with gradle wrapper inside a system tests
 // zip, such that the user of the zip may use gradle to compile and run system
 // tests against a given version of WRES. The goal is to follow the "build your
@@ -40,6 +42,100 @@ task( unzipArtifactToTest, type: Copy, group: 'test' )
 // To compile the test java code, we need the artifact libs
 compileTestJava.dependsOn( unzipArtifactToTest )
 
+// This task unzips a graphics client artifact, after the main artifact has been unzipped
+task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, group: 'test' )
+{
+    description = 'Unzips the wres graphics zip artifact to be tested.'
+
+    def zipFile = file( "${wresGraphicsZipDirectory}/wres-vis-${graphicsVersionToTest}.zip" )
+    
+    def outputDir = file( "${buildDir}" )
+
+    println( "wresGraphicsZipDirectory: " + wresZipDirectory )
+    println( "graphicsZipFile: " + zipFile )
+    println( "outputDir: " + outputDir )
+
+    from zipTree(zipFile)
+    into outputDir
+}
+
+// The graphics process to destroy on completion of the test task
+Process graphicsProcess = null;
+
+// This task starts a graphics client
+task( startGraphicsClient, dependsOn: unzipGraphicsArtifactToTest, group: 'test' )
+{
+    def graphicsBin = "${buildDir}/wres-vis-${graphicsVersionToTest}/bin/wres-vis"
+ 
+    if( isWindows() )
+    {
+       graphicsBin = graphicsBin + ".bat"
+    }
+
+    doLast
+    {
+        // Pass on any java options
+        def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
+
+        ProcessBuilder pb = new ProcessBuilder( graphicsBin );
+        pb.environment()
+          .put( "JAVA_OPTS", testJvmPropertiesRaw );
+
+        println( "Starting graphics client ${graphicsVersionToTest}..." )
+        
+        // Redirect output to a log file
+        File logFile = new File( project.buildDir, "wres-graphics-${graphicsVersionToTest}.log" )
+        graphicsProcess = pb.redirectErrorStream( true )
+                            .redirectInput( ProcessBuilder.Redirect.INHERIT )
+                            .redirectOutput( ProcessBuilder.Redirect.to( logFile ) )
+                            .start();
+        // Do not wait for the graphics client to end
+        println( "Graphics client has started." )
+    }
+}
+
+// This task stops a graphics client
+task( stopGraphicsClient, group: 'test' )
+{
+    doLast
+    {
+        if( graphicsProcess != null )
+        {
+            println( "Stopping graphics client ${graphicsVersionToTest}." )
+
+            // Destroy the children and then the parent
+            for( nextChild in graphicsProcess.children() )
+            {
+                nextChild.destroy()
+            }
+            graphicsProcess.destroy()            
+            graphicsProcess.waitFor( 5, TimeUnit.SECONDS )
+            
+            // Still alive? Mdk
+            if( graphicsProcess.isAlive() )
+            {
+                for( nextChild in graphicsProcess.children() )
+                {
+                    nextChild.destroyForcibly()
+                }
+                graphicsProcess.destroyForcibly()
+            }
+        }
+    }
+}
+
+// Start the graphics client before all tests
+test.dependsOn( startGraphicsClient )
+
+// Stop the graphics client after all tests
+test.finalizedBy( stopGraphicsClient )
+
+// Windows OS?
+boolean isWindows()
+{
+    return System.properties['os.name'].toLowerCase().contains( 'windows' );
+}
+
 dependencies
 {
     testCompile 'commons-io:commons-io:2.6'
@@ -72,7 +168,7 @@ test
     // -PtestJvmSystemProperties="wres.useSSL=false wres.blah=true"
 	jvmArgs '-XX:+HeapDumpOnOutOfMemoryError'
 	maxHeapSize = "2180m"
-    // No longer necesary to fork on every test: see #61206
+    // No longer necessary to fork on every test: see #61206
     // forkEvery=1
     def testJvmPropertiesRaw = project.properties['testJvmSystemProperties']
     def splittedTestJvmProperties = testJvmPropertiesRaw.trim().split( " " )

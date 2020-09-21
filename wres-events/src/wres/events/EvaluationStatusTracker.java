@@ -374,10 +374,10 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
             latch.resetClock();
 
-            LOGGER.debug( "Finished registered a message subscriber {} for evaluation {} as {}.",
-                          consumerId,
-                          this.evaluation.getEvaluationId(),
-                          message.getCompletionStatus() );
+            LOGGER.info( "Registered a message subscriber {} for evaluation {} as {}.",
+                         consumerId,
+                         this.evaluation.getEvaluationId(),
+                         message.getCompletionStatus() );
         }
     }
 
