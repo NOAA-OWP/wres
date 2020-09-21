@@ -13,7 +13,9 @@ TOPPWD=/wres_share/releases/JUnitTests
 LOGFILE=$TOPPWD/JUnit_systestsLog_${TIMESTAMP}.txt
 TESTINGJ=/wres_share/releases/install_scripts/testingJ.txt
 PENDINGQUEUEJ=/wres_share/releases/pendingQueueJ.txt
+wresGraphicsZipDirectory=/wres_share/releases/archive/graphics
 WRES_GROUP=Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED***
+#WRES_GROUP=Raymond.Chui@***REMOVED***
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
 #/usr/bin/touch $LOGFILE
 if [ -f /wres_share/releases/systests/installing ]
@@ -150,26 +152,6 @@ else
 		ln -sv /wres_share/testing/data data 2>&1 | /usr/bin/tee --append $LOGFILE
 	fi
 	
-#	if [ ! -d  build/install/systests ]
-#	then
-#		mkdir -pv  build/install/systests
-#		./gradlew distZip -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory --info 2>&1 | /usr/bin/tee --append $LOGFILE
-#	fi
-
-#	echo "..........   ./gradlew installDist -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory --debug" # 2>&1 | /usr/bin/tee --append $LOGFILE
-#	./gradlew installDist -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory --info 2>&1 | /usr/bin/tee --append $LOGFILE
-
-#	if [ -d build/install/systests ]
-#	then
-#		cd build/install/systests
-#		/usr/bin/mkdir -pv outputs 2>&1 | /usr/bin/tee --append $LOGFILE
-#		/usr/bin/pwd 2>&1 | /usr/bin/tee --append $LOGFILE
-#	else
-#		ls -d build/install/systests 2>&1 | /usr/bin/tee --append $LOGFILE
-#		echo "Failed to build installDist" 2>&1 | /usr/bin/tee --append $LOGFILE
-#		rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
-#		exit
-#	fi
 #	On 2020-02-13 a day before the Valentine's Day we got
 #	java.io.IOException: The given database URL ('***REMOVED***wresdb-dev01.***REMOVED***.***REMOVED***') is not accessible. error
 #	So, we need to test the DB connection before run scenario tests
@@ -193,21 +175,19 @@ else
 
 	mkdir -pv outputs
 
-	#echo "JAVA_OPTS = $JAVA_OPTS"
-	#export JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=java_heapdump.hprof"
-	#echo "JAVA_OPTS = $JAVA_OPTS"
-	echo "	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties=\"-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.logLevel=$WRES_LOG_LEVELJ -Djava.io.tmpdir=./outputs\" --tests=\"SystemTestSuite\" --$WRES_LOG_LEVELJ"
-#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
-	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
-#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -XX:+HeapDumpOnOutOfMemoryError -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
-#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
-#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-XX:+HeapDumpOnOutOfMemoryError -Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
+	GRAPHICS_REVISION=`head -1 /wres_share/releases/pendingQueueJ_wres-vis.txt | /usr/bin/sed -e s/wres-vis-//`
+	WRESVIS_REVISION=`head -1 /wres_share/releases/pendingQueueJ_wres-vis.txt`
+	echo "WRESVIS_REVISION = $WRESVIS_REVISION, GRAPHICS_REVISION = $GRAPHICS_REVISION" 2>&1 | /usr/bin/tee --append $LOGFILE
+
+	echo "./gradlew cleanTest test -PversionToTest=$REVISION -PgraphicsVersionToTest=$GRAPHICS_REVISION -PwresZipDirectory=$wresZipDirectory -PwresGraphicsZipDirectory=$wresGraphicsZipDirectory -PtestJvmSystemProperties=\"-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.logLevel=$WRES_LOG_LEVELJ -Djava.io.tmpdir=./outputs\" --tests=\"SystemTestSuite\" --$WRES_LOG_LEVELJ" 2>&1 | /usr/bin/tee --append $LOGFILE
+#	./gradlew cleanTest test -PversionToTest=$REVISION -PwresZipDirectory=$wresZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
+	./gradlew cleanTest test -PversionToTest=$REVISION -PgraphicsVersionToTest=$GRAPHICS_REVISION -PwresZipDirectory=$wresZipDirectory -PwresGraphicsZipDirectory=$wresGraphicsZipDirectory -PtestJvmSystemProperties="-Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=. -Dwres.systemTestingSeed=2389187312693262 -Djava.io.tmpdir=./outputs" --tests="SystemTestSuite" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE
 fi
 
-#/usr/bin/grep failures build/reports/tests/test/classes/*.html > failures.txt 
-#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed > failures.txt 
-#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>" | sed -e s/ass\=\"faiures\"faie/failed/ > failures.txt
-#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>" | sed -e s/ass\=\"faiures\"faie/failed \!/ > failures.txt
+LOGFILE_GRAPHICS=build/wres-graphics-${GRAPHICS_REVISION}.log
+echo "LOGFILE_GRAPHICS = $LOGFILE_GRAPHICS" 2>&1 | /usr/bin/tee --append $LOGFILE
+ls -l $LOGFILE_GRAPHICS 2>&1 | /usr/bin/tee --append $LOGFILE
+
 (/usr/bin/grep class build/reports/tests/test/classes/*.html | grep failures | grep failed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>" | sed -e s/ass\=\"faiures\"faie/"failed \!"/ > failures.txt) 2>> $LOGFILE
 if [ -s failures.txt ]
 then
@@ -216,9 +196,6 @@ then
 else
 	ls -l failures.txt | /usr/bin/tee --append $LOGFILE
 fi
-#/usr/bin/grep passed build/reports/tests/test/classes/*.html > passes.txt 
-#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep success | grep passed > passes.txt 
-#/usr/bin/grep class build/reports/tests/test/classes/*.html | grep success | grep passed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>"  | sed -e s/ass\=\"suess\"passe/passed/ > passes.txt
 (/usr/bin/grep class build/reports/tests/test/classes/*.html | grep success | grep passed | cut -d'.' -f3-4 | tr -d ".html:c<t/d>"  | sed -e s/ass\=\"suess\"passe/passed/ > passes.txt) 2>> $LOGFILE
 if [ -s passes.txt ]
 then
@@ -275,19 +252,19 @@ else
 	ls -l summary.txt | /usr/bin/tee --append $LOGFILE
 fi
 
-MAIL_SUBJECT="JUnit in $SYSTESTS_DIR Tested $WRES_REVISION : $pass_nums PASSED; $failure_nums FAILED"
+#MAIL_SUBJECT="JUnit in $SYSTESTS_DIR Tested $WRES_REVISION : $pass_nums PASSED; $failure_nums FAILED"
+MAIL_SUBJECT="JUnit in $SYSTESTS_DIR Tested $WRES_REVISION with $WRESVIS_REVISION  : $pass_nums PASSED; $failure_nums FAILED"
 LOGFILESIZE=`ls -s $LOGFILE | gawk '{print $1}'`
 echo "LOGFILESIZE = $LOGFILESIZE" 2>&1 | /usr/bin/tee --append $LOGFILE
 if [ $LOGFILESIZE -lt 9999 ]
 then
-#	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED*** < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
-	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	#/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 else
 	echo "$LOGFILE block size $LOGFILESIZE is too large to attach in email" > tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	echo ".................." >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	mv -v tempfile.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-#	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,travis.quarterman@***REMOVED***,arthur.raney@***REMOVED*** < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 fi
 ls -l passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
