@@ -120,6 +120,8 @@ task( stopGraphicsClient, group: 'test' )
                 }
                 graphicsProcess.destroyForcibly()
             }
+            
+            println( "Graphics client has stopped." )
         }
     }
 }

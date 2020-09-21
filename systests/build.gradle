@@ -52,6 +52,12 @@ distributions
 				include 'smalldata_test'
             }
 
+            // Add the system test execution script
+            from('scripts')
+            {
+                include 'JUnit_systests_zip.bash'
+            }
+
             // Gradle software itself
             from('..')
             {
