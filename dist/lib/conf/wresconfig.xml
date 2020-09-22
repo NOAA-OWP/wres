@@ -21,7 +21,7 @@
         <!-- Uncomment to produce graphics with an external subscriber. Do NOT uncomment
              in production until there is an external subscriber in production, as all 
              evaluations that declare graphics will wait for this.-->
-        <graphics>4mOgkGkse3gWIGKuIhzVnl5ZPCM</graphics>
+        <!-- <graphics>4mOgkGkse3gWIGKuIhzVnl5ZPCM</graphics> -->
     </subscribers>
     <maximum_thread_count>7</maximum_thread_count>
     <maximum_archive_threads>5</maximum_archive_threads>
