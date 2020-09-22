@@ -47,14 +47,15 @@ import wres.statistics.generated.Evaluation;
 class GraphicsSubscriber implements Closeable
 {
 
+    private static final String ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR =
+            "Encountered an error while attempting to remove a durable subscription for ";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsSubscriber.class );
 
     private static final String ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID =
             "Acknowledged message {} with correlationId {}.";
 
     private static final String UNKNOWN = "unknown";
-
-    private static final String MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER = "messages within graphics subscriber {}: {}";
 
     /**
      * If <code>true</code>, do not allow the durable subscriptions to survive graphics server restarts - remove the 
@@ -204,6 +205,8 @@ class GraphicsSubscriber implements Closeable
 
         this.closeSubscriptions();
 
+        String errorMessage = "messages within graphics subscriber " + this.getIdentifier() + ".";
+
         try
         {
             if ( Objects.nonNull( this.evaluationStatusPublisher ) )
@@ -213,10 +216,11 @@ class GraphicsSubscriber implements Closeable
         }
         catch ( IOException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a registered publisher of evaluation status "
-                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
-                          this.getIdentifier(),
-                          e.getMessage() );
+            String message = "Encountered an error while attempting to close a registered publisher of evaluation "
+                             + "status "
+                             + errorMessage;
+
+            LOGGER.error( message, e );
         }
 
         try
@@ -225,10 +229,11 @@ class GraphicsSubscriber implements Closeable
         }
         catch ( JMSException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a broker session within graphics subscriber "
-                          + "{}: {}",
-                          this.getIdentifier(),
-                          e.getMessage() );
+            String message = "Encountered an error while attempting to close a broker session within graphics "
+                             + "subscriber "
+                             + errorMessage;
+
+            LOGGER.error( message, e );
         }
 
         try
@@ -237,10 +242,11 @@ class GraphicsSubscriber implements Closeable
         }
         catch ( JMSException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a broker connection within graphics "
-                          + "subscriber {}: {}",
-                          this.getIdentifier(),
-                          e.getMessage() );
+            String message = "Encountered an error while attempting to close a broker connection within graphics "
+                             + "subscriber "
+                             + errorMessage;
+
+            LOGGER.error( message, e );
         }
 
         // This subscriber is not responsible for closing the broker.
@@ -327,6 +333,8 @@ class GraphicsSubscriber implements Closeable
 
     private void closeSubscriptions()
     {
+        String errorMessage = "messages within graphics subscriber " + this.getIdentifier() + ".";
+
         try
         {
             if ( Objects.nonNull( this.evaluationStatusConsumer ) )
@@ -336,10 +344,11 @@ class GraphicsSubscriber implements Closeable
         }
         catch ( JMSException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation status "
-                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
-                          this.getIdentifier(),
-                          e.getMessage() );
+            String message = "Encountered an error while attempting to close a registered consumer of evaluation "
+                             + "status "
+                             + errorMessage;
+
+            LOGGER.error( message, e );
         }
 
         try
@@ -351,10 +360,10 @@ class GraphicsSubscriber implements Closeable
         }
         catch ( JMSException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation "
-                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
-                          this.getIdentifier(),
-                          e.getMessage() );
+            String message = "Encountered an error while attempting to close a registered consumer of evaluation "
+                             + errorMessage;
+
+            LOGGER.error( message, e );
         }
 
         try
@@ -366,10 +375,10 @@ class GraphicsSubscriber implements Closeable
         }
         catch ( JMSException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer of statistics "
-                          + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
-                          this.getIdentifier(),
-                          e.getMessage() );
+            String message = "Encountered an error while attempting to close a registered consumer of statistics "
+                             + errorMessage;
+
+            LOGGER.error( message, e );
         }
 
         // Remove durable subscriptions: any messages that arrive when the subscriber is down will be lost
@@ -381,10 +390,11 @@ class GraphicsSubscriber implements Closeable
             }
             catch ( JMSException e )
             {
-                LOGGER.error( "Encountered an error while attempting to remove a durable subscription for evaluation status "
-                              + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
-                              this.getIdentifier(),
-                              e.getMessage() );
+                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
+                                 + "evaluation status "
+                                 + errorMessage;
+
+                LOGGER.error( message, e );
             }
 
             try
@@ -393,10 +403,11 @@ class GraphicsSubscriber implements Closeable
             }
             catch ( JMSException e )
             {
-                LOGGER.error( "Encountered an error while attempting to remove a durable subscription for evaluation "
-                              + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
-                              this.getIdentifier(),
-                              e.getMessage() );
+                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
+                                 + "evaluation status "
+                                 + errorMessage;
+
+                LOGGER.error( message, e );
             }
 
             try
@@ -405,10 +416,11 @@ class GraphicsSubscriber implements Closeable
             }
             catch ( JMSException e )
             {
-                LOGGER.error( "Encountered an error while attempting to remove a durable subscription for statistics "
-                              + MESSAGES_WITHIN_GRAPHICS_SUBSCRIBER,
-                              this.getIdentifier(),
-                              e.getMessage() );
+                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
+                                 + "statistics "
+                                 + errorMessage;
+
+                LOGGER.error( message, e );
             }
         }
     }
