@@ -13,17 +13,12 @@
     </logger>
 
     <!-- Qpid-->
-   <logger name="org.apache.qpid">
+    <logger name="org.apache.qpid">
         <level value="WARN" />
     </logger>
 
     <!-- Qpid messaging off.-->
-   <logger name="qpid.message">
-        <level value="OFF" />
-    </logger>
-
-    <!-- Qpid AMQMessageDelegate off as the reported errors are not useful.-->
-   <logger name="org.apache.qpid.client.message.AMQMessageDelegate">
+    <logger name="qpid.message">
         <level value="OFF" />
     </logger>
 
