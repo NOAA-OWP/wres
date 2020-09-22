@@ -14,10 +14,7 @@
         {
             "name": "wres-statistics-AMQP",
             "port": "${qpid.amqp_port}",
-            "protocols":
-            [
-                "AMQP_0_9_1"
-            ],
+            "protocols": [ "AMQP_0_9_1" ],
             "authenticationProvider": "externalAuthProvider",
             "needClientAuth": "false",
             "maxOpenConnections": "-1",
