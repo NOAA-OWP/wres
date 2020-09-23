@@ -71,7 +71,7 @@ public class Control implements Function<String[], Integer>,
         this.systemSettings = systemSettings;
         this.database = database;
         this.executor = executor;
-        this.brokerConnections = BrokerConnectionFactory.of();
+        this.brokerConnections = BrokerConnectionFactory.of( false );
     }
 
     private SystemSettings getSystemSettings()

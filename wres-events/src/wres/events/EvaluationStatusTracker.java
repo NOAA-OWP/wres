@@ -527,7 +527,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         this.failure = ConcurrentHashMap.newKeySet();
         this.expectedSubscribers = expectedSubscribers;
 
-        LOGGER.info( "Registering the following messages subscribers for evaluation {}: {}.",
+        LOGGER.info( "Registering the following message subscribers for evaluation {}: {}.",
                      this.evaluation.getEvaluationId(),
                      this.expectedSubscribers );
 

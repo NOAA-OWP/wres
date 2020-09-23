@@ -108,7 +108,11 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     private final ConnectionFactory connectionFactory;
 
     /**
-     * Returns an instance of a factory, which is created using {@link DEFAULT_PROPERTIES}.
+     * <p>Returns an instance of a factory, which is created using {@link DEFAULT_PROPERTIES}. If an embedded broker is
+     * required and the broker configuration requests a specific TCP port (not reserved TCP port 0), then the embedded
+     * broker is lenient when the configured port is already bound, instead choosing an available port.
+     * 
+     * See also {@link #of(boolean)}
      * 
      * @return an instance
      * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
@@ -117,7 +121,26 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
     public static BrokerConnectionFactory of()
     {
-        return new BrokerConnectionFactory( BrokerConnectionFactory.DEFAULT_PROPERTIES );
+        return BrokerConnectionFactory.of( true );
+    }
+
+    /**
+     * <p>Returns an instance of a factory, which is created using {@link DEFAULT_PROPERTIES}. If an embedded broker is
+     * required and the broker configuration requests a specific TCP port (not reserved TCP port 0), then the embedded
+     * broker throws an exception when the configured port is already bound, unless dynamic binding is explicitly 
+     * allowed.
+     * 
+     * See also {@link #of()}.
+     * 
+     * @param dynamicBindingAllowed is true to override a configured port that is bound, false to throw an exception
+     * @return an instance
+     * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
+     * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
+     */
+
+    public static BrokerConnectionFactory of( boolean dynamicBindingAllowed )
+    {
+        return new BrokerConnectionFactory( BrokerConnectionFactory.DEFAULT_PROPERTIES, dynamicBindingAllowed );
     }
 
     @Override
@@ -179,6 +202,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     /**
      * Constructs a new instances and creates an embedded broker as necessary.
      * 
+     * @param dynamicBindingAllowed is true to override a configured port that is bound, false to throw an exception
      * @param jndiProperties the name of a jndi properties file on the classpath
      * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
      * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started
@@ -187,7 +211,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @throws BrokerConnectionException if the broker was not reachable
      */
 
-    private BrokerConnectionFactory( String jndiProperties )
+    private BrokerConnectionFactory( String jndiProperties, boolean dynamicBindingAllowed )
     {
         Objects.requireNonNull( jndiProperties );
 
@@ -210,7 +234,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                           jndiProperties,
                           properties );
 
-            this.broker = this.createEmbeddedBrokerFromPropertiesIfRequired( properties );
+            this.broker = this.createEmbeddedBrokerFromPropertiesIfRequired( properties, dynamicBindingAllowed );
         }
         catch ( IOException | NamingException e )
         {
@@ -255,10 +279,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         {
             this.context = new InitialContext( properties );
             this.connectionFactory = this.createConnectionFactory( this.context, properties );
-            
+
             // Test
             this.testConnection( properties );
-            
+
             // Document
             Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
             LOGGER.info( "Created a connection factory with name {} and binding URL {}.",
@@ -275,13 +299,15 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     /**
      * Creates an instance of an embedded broker if required.
      * 
+     * @param dynamicBindingAllowed is true to override a configured port that is bound, false to throw an exception
      * @param properties the broker configuration properties
      * @return an embedded broker or null
      * @throws NamingException if the connection factory could not be located
      * @throws CouldNotStartEmbeddedBrokerException if an embedded broker was requested and could not be started.
      */
 
-    private EmbeddedBroker createEmbeddedBrokerFromPropertiesIfRequired( Properties properties )
+    private EmbeddedBroker createEmbeddedBrokerFromPropertiesIfRequired( Properties properties,
+                                                                         boolean dynamicBindingAllowed )
             throws NamingException
     {
         EmbeddedBroker returnMe = null;
@@ -306,7 +332,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                               key,
                               value );
 
-                returnMe = this.createEmbeddedBroker( properties );
+                returnMe = this.createEmbeddedBroker( properties, dynamicBindingAllowed );
             }
             // Look for an active broker, fall back on an embedded one
             else
@@ -329,7 +355,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                   + "instead.",
                                   value );
 
-                    returnMe = this.createEmbeddedBroker( properties );
+                    returnMe = this.createEmbeddedBroker( properties, dynamicBindingAllowed );
                 }
             }
         }
@@ -472,11 +498,13 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * broker instance after startup.<li>
      * </ol>
      * 
+     * @param dynamicBindingAllowed is true to override a configured port that is bound, false to throw an exception
      * @param properties the properties
      * @return an embedded broker instance
      */
 
-    private EmbeddedBroker createEmbeddedBroker( Properties properties )
+    private EmbeddedBroker createEmbeddedBroker( Properties properties,
+                                                 boolean dynamicBindingAllowed )
     {
         Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
         String connectionUrl = connectionProperty.getValue();
@@ -501,6 +529,19 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         {
             LOGGER.debug( "Unable to bind an embedded broker to the configured port of {}. Choosing another port, "
                           + "which will be available from the broker instance after startup." );
+
+            if ( !dynamicBindingAllowed )
+            {
+                throw new CouldNotStartEmbeddedBrokerException( "Could not bind an embedded amqp broker to port "
+                                                                + port
+                                                                + " on the loopback network interface. This port is "
+                                                                + "already bound and dynamic binding is not allowed "
+                                                                + "in this context. Either change the configured port, "
+                                                                + "free the configured port, configure a dynamic port "
+                                                                + "using TCP reserved port 0 or request an "
+                                                                + "embedded broker with dynamic binding to override a "
+                                                                + "configured port that is already bound." );
+            }
 
             returnMe = EmbeddedBroker.of();
         }
@@ -609,9 +650,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         String factoryName = connectionProperty.getKey()
                                                .replace( "connectionfactory.", "" );
 
-        ConnectionFactory factory = (ConnectionFactory) context.lookup( factoryName );
-
-        return factory;
+        return (ConnectionFactory) context.lookup( factoryName );
     }
 
 }

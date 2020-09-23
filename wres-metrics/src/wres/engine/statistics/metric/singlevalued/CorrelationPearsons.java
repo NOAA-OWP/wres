@@ -47,7 +47,7 @@ public class CorrelationPearsons extends OrdinaryScore<SampleData<Pair<Double, D
      */
 
     public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
+                                                                                    .setMinimum( -1 )
                                                                                     .setMaximum( 1 )
                                                                                     .setOptimum( 1 )
                                                                                     .setName( ComponentName.MAIN )

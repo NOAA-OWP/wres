@@ -51,7 +51,7 @@ task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, g
     
     def outputDir = file( "${buildDir}" )
 
-    println( "wresGraphicsZipDirectory: " + wresZipDirectory )
+    println( "wresGraphicsZipDirectory: " + wresGraphicsZipDirectory )
     println( "graphicsZipFile: " + zipFile )
     println( "outputDir: " + outputDir )
 
@@ -65,7 +65,8 @@ Process graphicsProcess = null;
 // This task starts a graphics client
 task( startGraphicsClient, dependsOn: unzipGraphicsArtifactToTest, group: 'test' )
 {
-    def graphicsBin = "${buildDir}/wres-vis-${graphicsVersionToTest}/bin/wres-vis"
+    def fS = System.getProperty( "file.separator" )
+    def graphicsBin = "${buildDir}" + fS + "wres-vis-${graphicsVersionToTest}" + fS + "bin" + fS + "wres-vis"
  
     if( isWindows() )
     {
@@ -82,13 +83,24 @@ task( startGraphicsClient, dependsOn: unzipGraphicsArtifactToTest, group: 'test'
           .put( "JAVA_OPTS", testJvmPropertiesRaw );
 
         println( "Starting graphics client ${graphicsVersionToTest}..." )
+        println( "Graphics client start script: " + graphicsBin )
         
         // Redirect output to a log file
         File logFile = new File( project.buildDir, "wres-graphics-${graphicsVersionToTest}.log" )
+        
+        println( "Writing a log for the test task graphics to " + logFile )
+        
         graphicsProcess = pb.redirectErrorStream( true )
                             .redirectInput( ProcessBuilder.Redirect.INHERIT )
                             .redirectOutput( ProcessBuilder.Redirect.to( logFile ) )
                             .start();
+        
+        // Cannot proceed without a graphics client
+        if( ! graphicsProcess.isAlive() )
+        {
+            throw new GradleException( "Unable to instantiate a graphics client for the test task." )
+        }
+                            
         // Do not wait for the graphics client to end
         println( "Graphics client has started." )
     }
