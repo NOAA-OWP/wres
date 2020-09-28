@@ -28,8 +28,8 @@ public class Scenario012
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "DRRC2HSF_QINE_HEFS_MEAN_ERROR.csv" ),
-                    Path.of( "DRRC2HSF_QINE_HEFS_MEAN_ERROR.png" ),
+            Set.of( Path.of( "DRRC2HSF_DRRC2HSF_HEFS_MEAN_ERROR.csv" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_MEAN_ERROR.png" ),
                     Path.of( "pairs.csv" ) );      
     
     private ScenarioInformation scenarioInfo;

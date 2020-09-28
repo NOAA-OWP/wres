@@ -157,9 +157,9 @@ public class GraphicsClientTest
         assertEquals( 4, actualStatuses.size() );
 
         // Make assertions about the graphics written by the single external subscription.
-        Set<Path> expectedPaths = Set.of( basePath.resolve( "DRRC2_QINE_HEFS_MEAN_ABSOLUTE_ERROR.png" ),
-                                          basePath.resolve( "DRRC2_QINE_HEFS_MEAN_ERROR.png" ),
-                                          basePath.resolve( "DRRC2_QINE_HEFS_MEAN_SQUARE_ERROR.png" ) );
+        Set<Path> expectedPaths = Set.of( basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_ABSOLUTE_ERROR.png" ),
+                                          basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_ERROR.png" ),
+                                          basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_SQUARE_ERROR.png" ) );
 
         assertEquals( expectedPaths, actualPathsWritten );
 

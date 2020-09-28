@@ -496,8 +496,6 @@ public class ConfigHelper
 
         StringJoiner filename = new StringJoiner( "_" );
 
-        filename.add( identifier.getVariableName() );
-
         // Add optional scenario identifier
         if ( identifier.hasScenarioName() )
         {

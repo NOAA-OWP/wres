@@ -29,9 +29,9 @@ public class Scenario504
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "baseline_pairs.csv" ),
-                    Path.of( "FAKE2_DISCHARGE_MEAN_ERROR.csv" ),
-                    Path.of( "FAKE2_DISCHARGE_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
-                    Path.of( "FAKE2_DISCHARGE_SAMPLE_SIZE.csv" ),
+                    Path.of( "FAKE2_FAKE2_FAKE2_MEAN_ERROR.csv" ),
+                    Path.of( "FAKE2_FAKE2_FAKE2_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
+                    Path.of( "FAKE2_FAKE2_FAKE2_SAMPLE_SIZE.csv" ),
                     Path.of( "pairs.csv" ) );
 
     private ScenarioInformation scenarioInfo;

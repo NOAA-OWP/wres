@@ -28,8 +28,8 @@ public class Scenario720
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "KCDM7_streamflow_AHPS_MEAN_ERROR.csv" ),
-                    Path.of( "KCDM7_streamflow_AHPS_SAMPLE_SIZE.csv" ),
+            Set.of( Path.of( "06893000_KCDM7_AHPS_MEAN_ERROR.csv" ),
+                    Path.of( "06893000_KCDM7_AHPS_SAMPLE_SIZE.csv" ),
                     Path.of( "pairs.csv" ) );
     
     private ScenarioInformation scenarioInfo;

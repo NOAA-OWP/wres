@@ -28,10 +28,10 @@ public class Scenario305
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "LGNN5_MAP_HEFS_MEAN_ERROR.csv" ),
-                    Path.of( "LGNN5_MAP_HEFS_MEAN_ERROR.png" ),
-                    Path.of( "LGNN5_MAP_HEFS_SAMPLE_SIZE.csv" ),
-                    Path.of( "LGNN5_MAP_HEFS_SAMPLE_SIZE.png" ),
+            Set.of( Path.of( "LGNN5_LGNN5_HEFS_MEAN_ERROR.csv" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_MEAN_ERROR.png" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.csv" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.png" ),
                     Path.of( "pairs.csv" ) );
 
     private ScenarioInformation scenarioInfo;

@@ -156,6 +156,7 @@ public class WriterTestHelper
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
+                                          .setLeftVariableName( "QINE" )
                                           .setRightVariableName( "SQIN" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
@@ -246,6 +247,7 @@ public class WriterTestHelper
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
+                                          .setLeftVariableName( "QINE" )
                                           .setRightVariableName( "SQIN" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
@@ -323,6 +325,7 @@ public class WriterTestHelper
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
+                                          .setLeftVariableName( "QINE" )
                                           .setRightVariableName( "SQIN" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
@@ -415,6 +418,7 @@ public class WriterTestHelper
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
+                                          .setLeftVariableName( "QINE" )
                                           .setRightVariableName( "SQIN" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
@@ -502,6 +506,7 @@ public class WriterTestHelper
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
+                                          .setLeftVariableName( "QINE" )
                                           .setRightVariableName( "SQIN" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
@@ -579,6 +584,7 @@ public class WriterTestHelper
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
+                                          .setLeftVariableName( "QINE" )
                                           .setRightVariableName( "SQIN" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();
@@ -648,6 +654,7 @@ public class WriterTestHelper
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
+                                          .setLeftVariableName( "QINE" )
                                           .setRightVariableName( "SQIN" )
                                           .setMeasurementUnit( "CMS" )
                                           .build();

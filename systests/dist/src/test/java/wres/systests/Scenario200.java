@@ -28,10 +28,10 @@ public class Scenario200
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "DOSC1_QIN_HEFS_MEAN_ERROR.csv" ),
-                    Path.of( "DOSC1_QIN_HEFS_MEAN_ERROR.png" ),
-                    Path.of( "DOSC1_QIN_HEFS_SAMPLE_SIZE.csv" ),
-                    Path.of( "DOSC1_QIN_HEFS_SAMPLE_SIZE.png" ),
+            Set.of( Path.of( "DOSC1_DOSC1_HEFS_MEAN_ERROR.csv" ),
+                    Path.of( "DOSC1_DOSC1_HEFS_MEAN_ERROR.png" ),
+                    Path.of( "DOSC1_DOSC1_HEFS_SAMPLE_SIZE.csv" ),
+                    Path.of( "DOSC1_DOSC1_HEFS_SAMPLE_SIZE.png" ),
                     Path.of( "pairs.csv" ) );
     
     private ScenarioInformation scenarioInfo;
