@@ -63,7 +63,7 @@ public class CommaSeparatedDiagramOutputTest
         Path pathToFile = pathsToFile.iterator().next();
         
         // Check the expected path: #61841
-        assertEquals( "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv", pathToFile.toFile().getName() );
+        assertEquals( "CREC1_CREC1_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv", pathToFile.toFile().getName() );
 
         List<String> result = Files.readAllLines( pathToFile );
         

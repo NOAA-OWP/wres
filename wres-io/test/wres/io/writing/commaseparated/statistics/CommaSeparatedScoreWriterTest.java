@@ -70,7 +70,7 @@ public class CommaSeparatedScoreWriterTest
 
         Optional<Path> pathToFirstFile =
                 pathsToFile.stream()
-                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" ) )
+                           .filter( next -> next.endsWith( "DRRC2_DRRC2_HEFS_MEAN_ABSOLUTE_ERROR.csv" ) )
                            .findAny();
 
         // Check the expected path: #61841
@@ -87,7 +87,7 @@ public class CommaSeparatedScoreWriterTest
 
         Optional<Path> pathToSecondFile =
                 pathsToFile.stream()
-                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" ) )
+                           .filter( next -> next.endsWith( "DRRC2_DRRC2_HEFS_MEAN_ERROR.csv" ) )
                            .findAny();
 
         // Check the expected path: #61841
@@ -104,7 +104,7 @@ public class CommaSeparatedScoreWriterTest
 
         Optional<Path> pathToThirdFile =
                 pathsToFile.stream()
-                           .filter( next -> next.endsWith( "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" ) )
+                           .filter( next -> next.endsWith( "DRRC2_DRRC2_HEFS_MEAN_SQUARE_ERROR.csv" ) )
                            .findAny();
 
         // Check the expected path: #61841
@@ -163,7 +163,7 @@ public class CommaSeparatedScoreWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertEquals( "DOLC2_SQIN_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv", pathToFile.toFile().getName() );
+        assertEquals( "DOLC2_DOLC2_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv", pathToFile.toFile().getName() );
         
         List<String> result = Files.readAllLines( pathToFile );
 
@@ -215,7 +215,7 @@ public class CommaSeparatedScoreWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertEquals( "FTSC1_SQIN_HEFS_MEAN_SQUARE_ERROR.csv", pathToFile.toFile().getName() );
+        assertEquals( "FTSC1_FTSC1_HEFS_MEAN_SQUARE_ERROR.csv", pathToFile.toFile().getName() );
 
         List<String> firstResult = Files.readAllLines( pathToFile );
 

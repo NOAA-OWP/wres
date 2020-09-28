@@ -678,6 +678,20 @@ public class FeatureFinder
 
         for ( FeatureGroup group : featureService.getGroup() )
         {
+            if ( Objects.isNull( group.getType() )
+                 || Objects.isNull( group.getValue() )
+                 || group.getType()
+                         .isBlank()
+                 || group.getValue()
+                         .isBlank() )
+            {
+                throw new ProjectConfigException( group, "The type and value "
+                                                         + "of each feature "
+                                                         + "group must be "
+                                                         + "specified. Instead,"
+                                                         + " saw " + group );
+            }
+
             String path = featureServiceBaseUri.getPath();
             String fullPath = path + "/" + group.getType()
                               + "/" + group.getValue();

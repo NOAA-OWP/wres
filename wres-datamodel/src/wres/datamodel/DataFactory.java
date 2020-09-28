@@ -634,25 +634,17 @@ public final class DataFactory
         }
         else
         {
+            joinElements.add( firstTuple.getLeft()
+                                        .getName() );
             joinElements.add( firstTuple.getRight()
                                         .getName() );
+
+            if ( firstTuple.hasBaseline() )
+            {
+                joinElements.add( firstTuple.getBaseline()
+                                            .getName() );
+            }
         }
-
-        // Add the variable name
-        String variableName = evaluation.getLeftVariableName();
-
-        if ( variableName.isBlank() && !evaluation.getRightVariableName().isBlank() )
-        {
-            variableName = evaluation.getRightVariableName();
-        }
-
-        // Use the baseline variable name for a baseline pool
-        if ( pool.getIsBaselinePool() && !evaluation.getBaselineVariableName().isBlank() )
-        {
-            variableName = evaluation.getBaselineVariableName();
-        }
-
-        joinElements.add( variableName );
 
         // Dataset name
         String dataName = DataFactory.getDatasetName( evaluation, pool );

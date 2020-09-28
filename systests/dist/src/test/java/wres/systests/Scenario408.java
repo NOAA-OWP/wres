@@ -28,16 +28,16 @@ public class Scenario408
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "ANTO2_QINE_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
-                    Path.of( "ANTO2_QINE_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
-                    Path.of( "ARCT2_QINE_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
-                    Path.of( "ARCT2_QINE_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
-                    Path.of( "BLUO2_QINE_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
-                    Path.of( "BLUO2_QINE_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
-                    Path.of( "GLOO2_QINE_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
-                    Path.of( "GLOO2_QINE_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
+            Set.of( Path.of( "ANTO2X_ANTO2_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
+                    Path.of( "ANTO2X_ANTO2_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
+                    Path.of( "ARCT2X_ARCT2_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
+                    Path.of( "ARCT2X_ARCT2_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
+                    Path.of( "BLUO2X_BLUO2_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
+                    Path.of( "BLUO2X_BLUO2_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
                     Path.of( "pairs.csv" ) );
-    
+
     private ScenarioInformation scenarioInfo;
     
     /**

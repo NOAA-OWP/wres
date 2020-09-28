@@ -82,7 +82,7 @@ public class BoxPlotGraphicsWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.png" ) );
+        assertTrue( pathToFile.endsWith( "JUNP1_JUNP1_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.png" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
@@ -119,7 +119,7 @@ public class BoxPlotGraphicsWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertTrue( pathToFile.endsWith( "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS.png" ) );
+        assertTrue( pathToFile.endsWith( "JUNP1_JUNP1_HEFS_BOX_PLOT_OF_ERRORS.png" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );

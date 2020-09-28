@@ -28,8 +28,8 @@ public class Scenario409
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "GLOO2_QINE_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.csv" ),
-                    Path.of( "GLOO2_QINE_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.png" ),
+            Set.of( Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.csv" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.png" ),
                     Path.of( "pairs.csv" ) );
     
     private ScenarioInformation scenarioInfo;

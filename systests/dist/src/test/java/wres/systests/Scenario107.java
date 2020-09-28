@@ -29,18 +29,18 @@ public class Scenario107
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "baseline_pairs.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_CONTINGENCY_TABLE_Pr_GT_0.5.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_CONTINGENCY_TABLE_Pr_GT_0.25.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_MEAN_ERROR.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_MEAN_ERROR.png" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.25.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.25.png" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.5.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.5.png" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_1.69901_CMS_Pr_EQ_0.9.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_1.69901_CMS_Pr_EQ_0.9.png" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_4.0932_CMS_Pr_EQ_0.95.csv" ),
-                    Path.of( "LGNN5_STREAMFLOW_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_4.0932_CMS_Pr_EQ_0.95.png" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_CONTINGENCY_TABLE_Pr_GT_0.5.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_CONTINGENCY_TABLE_Pr_GT_0.25.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_MEAN_ERROR.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_MEAN_ERROR.png" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.25.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.25.png" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.5.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_PROBABILITY_OF_DETECTION_Pr_GT_0.5.png" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_1.69901_CMS_Pr_EQ_0.9.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_1.69901_CMS_Pr_EQ_0.9.png" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_4.0932_CMS_Pr_EQ_0.95.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_4.0932_CMS_Pr_EQ_0.95.png" ),
                     Path.of( "pairs.csv" ) );
 
     private ScenarioInformation scenarioInfo;

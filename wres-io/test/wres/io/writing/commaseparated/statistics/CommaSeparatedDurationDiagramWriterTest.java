@@ -69,7 +69,7 @@ public class CommaSeparatedDurationDiagramWriterTest
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
-        assertEquals( "FTSC1_SQIN_HEFS_TIME_TO_PEAK_ERROR.csv", pathToFile.toFile().getName() );
+        assertEquals( "FTSC1_FTSC1_HEFS_TIME_TO_PEAK_ERROR.csv", pathToFile.toFile().getName() );
 
         List<String> result = Files.readAllLines( pathToFile );
 
