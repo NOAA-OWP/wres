@@ -63,7 +63,7 @@ services:
         networks:
             wres_net:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20200928-8b4c1b6"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20201001-49d6b52"
         restart: always
         depends_on:
          - "broker"
