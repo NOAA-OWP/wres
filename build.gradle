@@ -186,7 +186,7 @@ subprojects
 
     test
     {
-        maxHeapSize = "2080m"
+        maxHeapSize = "1680m"
         testLogging.showStandardStreams = true
         systemProperties += [ 'user.timezone': 'UTC' ]
     }
@@ -1344,7 +1344,7 @@ mainClassName = 'wres.Main'
 sourceCompatibility = '11'
 targetCompatibility = '11'
 
-applicationDefaultJvmArgs = ['-Xms2080m', '-Xmx2080m',
+applicationDefaultJvmArgs = ['-Xms1680m', '-Xmx1680m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
                              '-Duser.timezone=UTC',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
