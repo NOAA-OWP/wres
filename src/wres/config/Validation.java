@@ -1,7 +1,11 @@
 package wres.config;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -689,19 +693,40 @@ public class Validation
                     final Path destinationPath;
                     try
                     {
-                        // TODO: permit web resource thresholds, not only files
-                        // See #59422
-                        // Construct a path using the SystemSetting wres.dataDirectory when
-                        // the specified source is not absolute.
                         if ( !thresholdData.isAbsolute() )
                         {
                             destinationPath = systemSettings.getDataDirectory()
                                                             .resolve( thresholdData.getPath() );
                         }
+                        else if (thresholdData.getScheme().toLowerCase().startsWith("http")) {
+                            // Further checks are not really reasonable since it is entirely likely that we
+                            // could get 404s when we hit a correct server because the URL passed in won't be the
+                            // complete request. The best we can do is see if it can actually be used as a URL
+                            URL possibleURL = thresholdData.toURL();
+                            LOGGER.debug(
+                                    "The remote thresholds at {} can presumably be accessed since it is a valid url",
+                                    thresholdData
+                            );
+                            continue;
+                        }
                         else
                         {
                             destinationPath = Paths.get( thresholdData );
                         }
+                    }
+                    catch (MalformedURLException exception) {
+                        LOGGER.warn(FILE_LINE_COLUMN_BOILERPLATE +
+                                "The URL '{}' is not a proper address and therefore cannot be used to access a " +
+                                        "remote threshold dataset. {}",
+                                projectConfigPlus.getOrigin(),
+                                nextThreshold.sourceLocation().getLineNumber(),
+                                nextThreshold.sourceLocation().getColumnNumber(),
+                                thresholdData,
+                                PLEASE_UPDATE
+                        );
+
+                        result = false;
+                        continue;
                     }
                     catch ( InvalidPathException | FileSystemNotFoundException | SecurityException e )
                     {
