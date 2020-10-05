@@ -22,16 +22,10 @@ class TimedCountDownLatch
      * Constructs a {@link TimedCountDownLatch} initialized to the prescribed count.
      * 
      * @param count the count
-     * @throws IllegalArgumentException if the count is less than one
      */
 
     TimedCountDownLatch( int count )
     {
-        if ( count < 1 )
-        {
-            throw new IllegalArgumentException( "The count must be one or more." );
-        }
-
         this.sync = new Sync( count );
         this.timestamp = new AtomicLong( System.nanoTime() );
     }

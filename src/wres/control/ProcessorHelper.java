@@ -52,6 +52,7 @@ import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.protobuf.ProtobufWriter;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Consumer.Format;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
@@ -118,10 +119,12 @@ class ProcessorHelper
                                                                         evaluationDescription,
                                                                         outputDirectory );
 
-        // Obtain any external subscribers that are required for this evaluation.
-        Map<DestinationType, Set<String>> externalSubscribers =
-                ProcessorHelper.getExternalSubscribers( evaluationDescription,
-                                                        systemSettings );
+        // Obtain any formats delivered by external subscribers.
+        Set<Format> externalFormats = ProcessorHelper.getFormatsDeliveredByExternalSubscribers( systemSettings );
+        // Formats delivered by internal subscribers, in a mutable list
+        List<Format> internalFormats = new ArrayList<>( Arrays.asList( Format.values() ) );
+        internalFormats.removeAll( externalFormats );
+        Format[] formats = internalFormats.toArray( new Format[internalFormats.size()] );
 
         // Write some statistic types and formats as soon as they become available. Everything else is written on 
         // group/feature completion.
@@ -133,11 +136,11 @@ class ProcessorHelper
                 ( type, format ) -> ( type == StatisticType.BOXPLOT_PER_PAIR
                                       || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format ) )
                                     && type != StatisticType.DURATION_SCORE
-                                    && !externalSubscribers.containsKey( format );
+                                    && !externalFormats.contains( MessageFactory.parse( format ) );
 
         // All others types, but again ignoring those for which external subscribers are available 
         BiPredicate<StatisticType, DestinationType> nonIncrementalTypes =
-                ( type, format ) -> !externalSubscribers.containsKey( format )
+                ( type, format ) -> !externalFormats.contains( MessageFactory.parse( format ) )
                                     && incrementalTypes.negate().test( type, format );
 
         // Incremental consumer
@@ -160,11 +163,7 @@ class ProcessorHelper
         // declaration parsing status events into the ProjectConfigPlus instance so they can be published once the 
         // evaluation is created below. These need to be mapped from the ProjectConfigPlus::getValidationEvents.
         Consumers.Builder consumerBuilder = new Consumers.Builder();
-        // Add the external subscribers
-        externalSubscribers.values()
-                           .stream()
-                           .flatMap( Set::stream )
-                           .forEach( consumerBuilder::addExternalSubscriber );
+
         // Add the remaining subscribers and build
         Consumers consumerGroup =
                 consumerBuilder.addStatusConsumer( ProcessorHelper.getLoggerConsumerForStatusEvents() )
@@ -172,9 +171,9 @@ class ProcessorHelper
                                // Add a regular consumer for statistics that are neither grouped by time window
                                // nor feature. These include box plots per pair and statistics that can be 
                                // written incrementally, such as netCDF and Protobuf
-                               .addStatisticsConsumer( next -> incrementalConsumer.accept( List.of( next ) ) )
+                               .addStatisticsConsumer( next -> incrementalConsumer.accept( List.of( next ) ), formats )
                                // Add a grouped consumer for statistics that are grouped by feature
-                               .addGroupedStatisticsConsumer( groupConsumer )
+                               .addGroupedStatisticsConsumer( groupConsumer, formats )
                                .build();
 
         // Open an evaluation, to be closed on completion or stopped on exception
@@ -982,36 +981,29 @@ class ProcessorHelper
     }
 
     /**
-     * Returns a map of external subscribers that are required by the evaluation provided.
+     * Returns a set of formats that are delivered by external subscribers, according to a feature toggle in the 
+     * supplied system settings.
      * 
-     * @param evaluationDescription the evaluation description
      * @param systemSettings the system settings where external subscribers are registered
-     * @return the external subscribers
+     * @return the formats delivered by external subscribers
+     * @deprecated for removal when the feature toggle is no longer required
      */
 
-    private static Map<DestinationType, Set<String>>
-            getExternalSubscribers( wres.statistics.generated.Evaluation evaluationDescription,
-                                    SystemSettings systemSettings )
+    @Deprecated( since = "5.0", forRemoval = true )
+    private static Set<Format> getFormatsDeliveredByExternalSubscribers( SystemSettings systemSettings )
     {
-        Objects.requireNonNull( evaluationDescription );
         Objects.requireNonNull( systemSettings );
 
-        Map<DestinationType, Set<String>> returnMe = new EnumMap<>( DestinationType.class );
+        Set<Format> formats = new HashSet<>();
 
-        // Only add subscribers when a subscription is required
-        if ( MessageFactory.hasGraphicsTypes( evaluationDescription.getOutputs() ) )
+        // Add external graphics if required
+        if ( systemSettings.hasExternalGraphics() )
         {
-            Set<String> graphics = systemSettings.getGraphicsSubscribers();
-
-            if ( !graphics.isEmpty() )
-            {
-                // Add the subscribers for each graphics type
-                Set<DestinationType> types = MessageFactory.getGraphicsTypes( evaluationDescription.getOutputs() );
-                types.forEach( type -> returnMe.put( type, graphics ) );
-            }
+            formats.add( Format.PNG );
+            formats.add( Format.SVG );
         }
 
-        return Collections.unmodifiableMap( returnMe );
+        return Collections.unmodifiableSet( formats );
     }
 
     /**

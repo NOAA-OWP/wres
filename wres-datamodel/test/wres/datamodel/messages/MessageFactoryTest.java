@@ -29,6 +29,7 @@ import org.junit.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.config.ProjectConfigPlus;
+import wres.config.generated.DestinationType;
 import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
@@ -63,6 +64,7 @@ import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
+import wres.statistics.generated.Evaluation.DefaultData;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.CsvFormat;
@@ -77,6 +79,7 @@ import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
@@ -508,6 +511,7 @@ public class MessageFactoryTest
                                                            .setConfiguration( "fake drawing parameters" ) ) );
 
         expected.setRightDataName( "HEFS" )
+                .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
                 .setLeftVariableName( "discharge1" )
                 .setRightVariableName( "discharge2" )
                 .setMeasurementUnit( "CMS" )
@@ -515,6 +519,18 @@ public class MessageFactoryTest
                 .setOutputs( outputs );
 
         assertEquals( expected.build(), actual );
+    }
+    
+    @Test
+    public void testParseFormatFromDestinationType()
+    {
+        assertEquals( Format.PNG, MessageFactory.parse( DestinationType.GRAPHIC ) );
+        assertEquals( Format.PNG, MessageFactory.parse( DestinationType.PNG ) );
+        assertEquals( Format.SVG, MessageFactory.parse( DestinationType.SVG ) );
+        assertEquals( Format.NETCDF, MessageFactory.parse( DestinationType.NETCDF ) );
+        assertEquals( Format.PROTOBUF, MessageFactory.parse( DestinationType.PROTOBUF ) );
+        assertEquals( Format.CSV, MessageFactory.parse( DestinationType.NUMERIC ) );
+        assertEquals( Format.CSV, MessageFactory.parse( DestinationType.CSV ) );
     }
 
     /**

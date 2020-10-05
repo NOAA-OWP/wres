@@ -87,7 +87,7 @@ class MessageSubscriber<T> implements Closeable
      * A connection to the broker for publishing consumption status messages.
      */
 
-    private final Connection statusConnection;
+    private final Connection producerConnection;
 
     /**
      * A session.
@@ -203,10 +203,16 @@ class MessageSubscriber<T> implements Closeable
     static class Builder<T>
     {
         /**
-         * Broker connections.
+         * Connection for consumption.
          */
 
-        private Connection connection;
+        private Connection consumerConnection;
+
+        /**
+         * Connection for production.
+         */
+
+        private Connection producerConnection;
 
         /**
          * Destination.
@@ -276,15 +282,29 @@ class MessageSubscriber<T> implements Closeable
         private int maximumRetries = 0;
 
         /**
-         * Sets the connection.
+         * Sets the connection for consumption.
          * 
-         * @param connection the connection factory
+         * @param consumerConnection the consumer connection
          * @return this builder
          */
 
-        Builder<T> setConnection( Connection connection )
+        Builder<T> setConsumerConnection( Connection consumerConnection )
         {
-            this.connection = connection;
+            this.consumerConnection = consumerConnection;
+
+            return this;
+        }
+
+        /**
+         * Sets the connection for publication of status messages.
+         * 
+         * @param producerConnection the producer connection
+         * @return this builder
+         */
+
+        Builder<T> setProducerConnection( Connection producerConnection )
+        {
+            this.producerConnection = producerConnection;
 
             return this;
         }
@@ -590,6 +610,12 @@ class MessageSubscriber<T> implements Closeable
         // Instead, look for a ConsumerException and document that consumers should throw these.        
         MessageListener listener = message -> {
 
+            // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
+            // exit gracefully when problems occur. The message is either delivered, the session is recovering or the
+            // subscriber is unrecoverable.
+            AtomicBoolean success = new AtomicBoolean();
+            AtomicBoolean recovering = new AtomicBoolean();
+
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
@@ -623,8 +649,9 @@ class MessageSubscriber<T> implements Closeable
                     subscribers.forEach( next -> next.accept( messageIdFinal, received ) );
                 }
 
-                // Acknowledge
+                // Acknowledge and flag success locally
                 message.acknowledge();
+                success.set( true );
 
                 // Increment the actual message count
                 this.actualMessageCount.incrementAndGet();
@@ -646,11 +673,18 @@ class MessageSubscriber<T> implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                // Attempt to recover
+                // Attempt to recover and flag recovery locally
                 this.recover( messageId, correlationId, e );
+                recovering.set( true );
             }
             finally
             {
+                // A consumption failed and a recovery is not underway. Unrecoverable.
+                if ( !success.get() && !recovering.get() )
+                {
+                    this.markSubscriberFailed();
+                }
+
                 // Check completion
                 this.checkAndCompleteSubscription();
             }
@@ -755,8 +789,14 @@ class MessageSubscriber<T> implements Closeable
         String name = this.getNextSubscriptionName( context );
         MessageConsumer consumer = this.getConsumer( this.topic, selector, name );
 
-        // A listener acknowledges the message when the consumption completes 
+        // A listener acknowledges the message when the consumption completes       
         MessageListener listener = message -> {
+
+            // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
+            // exit gracefully when problems occur. The message is either delivered, the session is recovering or the
+            // subscriber is unrecoverable.
+            AtomicBoolean success = new AtomicBoolean();
+            AtomicBoolean recovering = new AtomicBoolean();
 
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
@@ -797,8 +837,9 @@ class MessageSubscriber<T> implements Closeable
                                   correlationId );
                 }
 
-                // Acknowledge
+                // Acknowledge and flag success locally
                 message.acknowledge();
+                success.set( true );
             }
             catch ( JMSException | RuntimeException e )
             {
@@ -808,11 +849,18 @@ class MessageSubscriber<T> implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                // Attempt to recover
+                // Attempt to recover and flag recovery locally
                 this.recover( messageId, correlationId, e );
+                recovering.set( true );
             }
             finally
             {
+                // A consumption failed and a recovery is not underway. Unrecoverable.
+                if ( !success.get() && !recovering.get() )
+                {
+                    this.markSubscriberFailed();
+                }
+
                 // Check completion
                 this.checkAndCompleteSubscription();
             }
@@ -963,11 +1011,11 @@ class MessageSubscriber<T> implements Closeable
             }
             catch ( IOException e )
             {
-                LOGGER.error( "Encountered an error while attempting to close registered consumer {} within "
-                              + "subscriber {}: {}",
-                              next.name,
-                              this,
-                              e.getMessage() );
+                LOGGER.warn( "Encountered an error while attempting to close registered consumer {} within "
+                             + "subscriber {}: {}",
+                             next.name,
+                             this,
+                             e.getMessage() );
             }
         }
 
@@ -980,10 +1028,10 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( IOException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a registered consumer of evaluation status "
-                          + "messages within subscriber {}: {}",
-                          this,
-                          e.getMessage() );
+            LOGGER.warn( "Encountered an error while attempting to close a registered consumer of evaluation status "
+                         + "messages within subscriber {}: {}",
+                         this,
+                         e.getMessage() );
         }
 
         try
@@ -995,10 +1043,10 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( IOException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a registered publisher of evaluation status "
-                          + "messages within subscriber {}: {}",
-                          this,
-                          e.getMessage() );
+            LOGGER.warn( "Encountered an error while attempting to close a registered publisher of evaluation status "
+                         + "messages within subscriber {}: {}",
+                         this,
+                         e.getMessage() );
         }
 
         try
@@ -1007,9 +1055,9 @@ class MessageSubscriber<T> implements Closeable
         }
         catch ( JMSException e )
         {
-            LOGGER.error( "Encountered an error while attempting to close a broker session within subscriber {}: {}",
-                          this,
-                          e.getMessage() );
+            LOGGER.warn( "Encountered an error while attempting to close a broker session within subscriber {}: {}",
+                         this,
+                         e.getMessage() );
         }
 
         // Do not close connections as they may be re-used.
@@ -1088,7 +1136,8 @@ class MessageSubscriber<T> implements Closeable
 
         EvaluationStatus ready = EvaluationStatus.newBuilder()
                                                  .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
-                                                 .setConsumerId( this.getIdentifier() )
+                                                 .setConsumer( wres.statistics.generated.Consumer.newBuilder()
+                                                                                                 .setConsumerId( this.getIdentifier() ) )
                                                  .build();
 
         ByteBuffer message = ByteBuffer.wrap( ready.toByteArray() );
@@ -1203,7 +1252,8 @@ class MessageSubscriber<T> implements Closeable
 
                 EvaluationStatus ready = EvaluationStatus.newBuilder()
                                                          .setCompletionStatus( status )
-                                                         .setConsumerId( this.getIdentifier() )
+                                                         .setConsumer( wres.statistics.generated.Consumer.newBuilder()
+                                                                                                         .setConsumerId( this.getIdentifier() ) )
                                                          .addAllStatusEvents( events )
                                                          .build();
 
@@ -1242,6 +1292,12 @@ class MessageSubscriber<T> implements Closeable
 
         // Now listen for status messages when a group completes
         MessageListener listener = message -> {
+
+            // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
+            // exit gracefully when problems occur. The message is either delivered, the session is recovering or the
+            // subscriber is unrecoverable.
+            AtomicBoolean success = new AtomicBoolean();
+            AtomicBoolean recovering = new AtomicBoolean();
 
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
@@ -1286,8 +1342,9 @@ class MessageSubscriber<T> implements Closeable
                         break;
                 }
 
-                // Acknowledge the message
+                // Acknowledge and flag success locally
                 message.acknowledge();
+                success.set( true );
             }
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
@@ -1297,11 +1354,18 @@ class MessageSubscriber<T> implements Closeable
                     this.failure = receivedBytes;
                 }
 
-                // Attempt to recover
+                // Attempt to recover and flag recovery locally
                 this.recover( messageId, correlationId, e );
+                recovering.set( true );
             }
             finally
             {
+                // A consumption failed and a recovery is not underway. Unrecoverable.
+                if ( !success.get() && !recovering.get() )
+                {
+                    this.markSubscriberFailed();
+                }
+
                 // Check completion
                 this.checkAndCompleteSubscription();
             }
@@ -1413,7 +1477,7 @@ class MessageSubscriber<T> implements Closeable
 
     private void markSubscriberFailed()
     {
-        this.isFailedUnrecoverably.getAndSet( true );
+        this.isFailedUnrecoverably.set( true );
     }
 
     /**
@@ -1534,8 +1598,8 @@ class MessageSubscriber<T> implements Closeable
         this.isFailedUnrecoverably = new AtomicBoolean();
         this.expectedMessageCountSupplier = builder.expectedMessageCountSupplier;
         this.isIgnoreConsumerMessages = builder.isIgnoreConsumerMessages;
-        this.consumerConnection = builder.connection;
-        this.statusConnection = builder.connection;
+        this.consumerConnection = builder.consumerConnection;
+        this.producerConnection = builder.producerConnection;
         this.maximumRetries = builder.maximumRetries;
 
         Topic statusTopic = builder.statusTopic;
@@ -1550,7 +1614,7 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( this.evaluationInfo, "Evaluation information required." );
         Objects.requireNonNull( this.expectedMessageCountSupplier, "Expected message count supplier required." );
         Objects.requireNonNull( this.consumerConnection, "Connection for consumers required." );
-        Objects.requireNonNull( this.statusConnection, "Connection for status messages requried." );
+        Objects.requireNonNull( this.producerConnection, "Connection for status messages requried." );
 
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( subscribers );
@@ -1566,8 +1630,9 @@ class MessageSubscriber<T> implements Closeable
                                                 + "." );
         }
 
-        // Create a connection for consumption and register a listener for exceptions
+        // Register a listener on each connection for exceptions
         this.consumerConnection.setExceptionListener( new ConnectionExceptionListener( this.getIdentifier() ) );
+        this.producerConnection.setExceptionListener( new ConnectionExceptionListener( this.getIdentifier() ) );
 
         // Client acknowledges
         this.session = this.consumerConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
@@ -1623,11 +1688,11 @@ class MessageSubscriber<T> implements Closeable
         this.consumers = Collections.unmodifiableList( localConsumers );
 
         // Create the publisher for status messages
-        this.statusPublisher = MessagePublisher.of( this.statusConnection, statusTopic );
+        this.statusPublisher = MessagePublisher.of( this.producerConnection, statusTopic );
 
         // Start the connections
         this.consumerConnection.start();
-        this.statusConnection.start();
+        this.producerConnection.start();
 
         // Notify status as ready to consume if there are consumers attached to this subscriber, other than the
         // status consumer

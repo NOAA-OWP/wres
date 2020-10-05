@@ -50,6 +50,11 @@ import wres.vis.writing.GraphicsWriteException;
 
 class EvaluationConsumer
 {
+    private static final String FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION =
+            " failed to complete a graphics writing task for evaluation ";
+
+    private static final String GRAPHICS_SUBSCRIBER = "Graphics subscriber ";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
 
     /**
@@ -59,10 +64,10 @@ class EvaluationConsumer
     private final String evaluationId;
 
     /**
-     * Consumer identifier.
+     * Description of this consumer.
      */
 
-    private final String consumerId;
+    private final wres.statistics.generated.Consumer consumerDescription;
 
     /**
      * Actual number of messages consumed.
@@ -152,23 +157,22 @@ class EvaluationConsumer
      * Builds a consumer.
      * 
      * @param evaluationId the evaluation identifier
-     * @param consumerId the consumer identifier
+     * @param consumerDescription a description of the consumer
      * @param evaluationStatusPublisher the evaluation status publisher
      * @param executorService the executor to do graphics writing work (this instance is not responsible for closing)
      * @throws NullPointerException if any input is null
      */
 
     EvaluationConsumer( String evaluationId,
-                        String consumerId,
+                        wres.statistics.generated.Consumer consumerDescription,
                         GraphicsPublisher evaluationStatusPublisher,
                         ExecutorService executorService )
     {
         Objects.requireNonNull( evaluationId );
-        Objects.requireNonNull( consumerId );
+        Objects.requireNonNull( consumerDescription );
         Objects.requireNonNull( evaluationStatusPublisher );
 
         this.evaluationId = evaluationId;
-        this.consumerId = consumerId;
         this.evaluationStatusPublisher = evaluationStatusPublisher;
         this.consumed = new AtomicInteger();
         this.expected = new AtomicInteger();
@@ -180,17 +184,19 @@ class EvaluationConsumer
         this.groupConsumers = new ConcurrentHashMap<>();
         this.statisticsCache = new ConcurrentLinkedQueue<>();
         this.executorService = executorService;
+        this.consumerDescription = consumerDescription;
 
         LOGGER.info( "External graphics subscriber {} opened evaluation {}, which is ready to consume messages.",
-                     this.consumerId,
+                     this.getConsumerId(),
                      this.evaluationId );
     }
 
     /**
      * Closes the evaluation on completion.
      * @throws JMSException if the evaluation failed to close
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably 
      */
-    void close() throws JMSException
+    void close() throws JMSException, UnrecoverableConsumerException
     {
         if ( !this.isClosed() )
         {
@@ -202,14 +208,14 @@ class EvaluationConsumer
             {
 
                 LOGGER.debug( "External graphics subscriber {} is closing evaluation {}.",
-                              this.consumerId,
+                              this.getConsumerId(),
                               this.evaluationId );
 
                 this.completeAllGroups();
 
                 LOGGER.info( "External graphics subscriber {} closed evaluation {}, which contained {} messages (not "
                              + "including any evaluation status messages).",
-                             this.consumerId,
+                             this.getConsumerId(),
                              this.evaluationId,
                              this.consumed.get() );
             }
@@ -270,21 +276,21 @@ class EvaluationConsumer
         // Create the status message to publish
         EvaluationStatus message = EvaluationStatus.newBuilder()
                                                    .setCompletionStatus( completionStatus )
-                                                   .setConsumerId( this.consumerId )
+                                                   .setConsumer( this.consumerDescription )
                                                    .addAllResourcesCreated( addThesePaths )
                                                    .build();
 
         // Create the metadata
-        String messageId = "ID:" + this.consumerId + "-complete";
+        String messageId = "ID:" + this.getConsumerId() + "-complete";
 
         ByteBuffer buffer = ByteBuffer.wrap( message.toByteArray() );
 
-        this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.consumerId );
+        this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.getConsumerId() );
 
         if ( completionStatus == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
         {
             LOGGER.warn( "External graphics subscriber {} has marked evaluation {} as failed unrecoverably.",
-                         this.consumerId,
+                         this.getConsumerId(),
                          this.evaluationId );
         }
     }
@@ -294,9 +300,13 @@ class EvaluationConsumer
      * @param statistics the statistics
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    void acceptStatisticsMessage( Statistics statistics, String groupId, String messageId )
+    void acceptStatisticsMessage( Statistics statistics,
+                                  String groupId,
+                                  String messageId )
+            throws UnrecoverableConsumerException
     {
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( messageId );
@@ -321,7 +331,7 @@ class EvaluationConsumer
 
             LOGGER.debug( "External subscriber {} received and consumed a statistics message with identifier {} "
                           + "for evaluation {}.",
-                          this.consumerId,
+                          this.getConsumerId(),
                           messageId,
                           this.evaluationId );
         }
@@ -337,17 +347,19 @@ class EvaluationConsumer
      * @param evaluationDescription the evaluation description message
      * @param suggestedPath a suggested path string for writing, which is optional
      * @param messageId the message identifier to help with logging
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      * @throws IllegalStateException if an evaluation description has already been received
      */
 
     void acceptEvaluationMessage( Evaluation evaluationDescription, String suggestedPath, String messageId )
+            throws UnrecoverableConsumerException
     {
         if ( this.getAreConsumersReady() )
         {
             throw new IllegalStateException( "While processing evaluation "
                                              + this.evaluationId
                                              + " in subscriber "
-                                             + this.consumerId
+                                             + this.getConsumerId()
                                              + ", encountered two instances of an evaluation description message, "
                                              + "which is not allowed." );
         }
@@ -358,7 +370,7 @@ class EvaluationConsumer
 
         LOGGER.debug( "External subscriber {} received and consumed an evaluation description message with "
                       + "identifier {} for evaluation {}.",
-                      this.consumerId,
+                      this.getConsumerId(),
                       messageId,
                       this.evaluationId );
 
@@ -370,15 +382,17 @@ class EvaluationConsumer
      * @param status the evaluation status message
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
     void acceptStatusMessage( EvaluationStatus status, String groupId, String messageId )
+            throws UnrecoverableConsumerException
     {
         Objects.requireNonNull( status );
 
         LOGGER.debug( "External subscriber {} received and consumed an evaluation status message with identifier {} "
                       + "for evaluation {}.",
-                      this.consumerId,
+                      this.getConsumerId(),
                       messageId,
                       this.evaluationId );
 
@@ -415,7 +429,7 @@ class EvaluationConsumer
 
         LOGGER.debug( "For evaluation {}, external graphics subscriber {} has consumed {} messages {}.",
                       this.evaluationId,
-                      this.consumerId,
+                      this.getConsumerId(),
                       this.consumed.get(),
                       append );
 
@@ -452,10 +466,11 @@ class EvaluationConsumer
     /**
      * Executes a graphics writing task
      * @param task the task to execute
-     * @throws GraphicsWriteException if the task fails exceptionally
+     * @throws GraphicsWriteException if the task fails exceptionally, but potentially in a recoverable way
+     * @throws UnrecoverableConsumerException if the task fails unrecoverably
      */
 
-    private void execute( Runnable task )
+    private void execute( Runnable task ) throws UnrecoverableConsumerException
     {
         Future<?> future = this.getExecutorService().submit( task );
 
@@ -466,18 +481,28 @@ class EvaluationConsumer
         }
         catch ( ExecutionException e )
         {
-            throw new GraphicsWriteException( "Graphics subscriber " + this.consumerId
-                                              + " failed to complete a graphics writing task for evaluation "
-                                              + this.evaluationId
-                                              + ".",
-                                              e );
+            // Most unchecked exceptions are worth a recovery attempt 
+            if ( e.getCause() instanceof RuntimeException )
+            {
+                throw new GraphicsWriteException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
+                                                  + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
+                                                  + this.evaluationId
+                                                  + ".",
+                                                  e );
+            }
+
+            throw new UnrecoverableConsumerException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
+                                                      + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
+                                                      + this.evaluationId
+                                                      + ".",
+                                                      e );
         }
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
 
-            throw new GraphicsWriteException( "Graphics subscriber " + this.consumerId
-                                              + " failed to complete a graphics writing task for evaluation "
+            throw new GraphicsWriteException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
+                                              + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
                                               + this.evaluationId
                                               + ".",
                                               e );
@@ -497,7 +522,7 @@ class EvaluationConsumer
 
         LOGGER.debug( "External graphics subscriber {} received notification of publication complete for evaluation "
                       + "{}. The message indicated an expected message count of {}.",
-                      this.consumerId,
+                      this.getConsumerId(),
                       this.evaluationId,
                       this.expected.get() );
     }
@@ -507,10 +532,12 @@ class EvaluationConsumer
      * 
      * @param status the evaluation status message
      * @param groupId the message group identifier
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably 
      */
 
     private void setExpectedMessageCountForGroups( EvaluationStatus status,
                                                    String groupId )
+            throws UnrecoverableConsumerException
     {
         // Set the expected number of messages per group
         this.getGroupTracker()
@@ -521,7 +548,7 @@ class EvaluationConsumer
         {
             LOGGER.debug( "External graphics subscriber {} received notification of publication complete for group {} "
                           + "of evaluation {}. The message indicated an expected message count of {}.",
-                          this.consumerId,
+                          this.getConsumerId(),
                           groupId,
                           this.evaluationId,
                           status.getMessageCount() );
@@ -532,7 +559,7 @@ class EvaluationConsumer
                           + "of evaluation {}. The expected number of messages within the group is {} but some of "
                           + "these messages are outstanding. Grouped consumption will happen when this subscriber is "
                           + "closed.",
-                          this.consumerId,
+                          this.getConsumerId(),
                           groupId,
                           this.evaluationId,
                           status.getMessageCount() );
@@ -541,10 +568,11 @@ class EvaluationConsumer
 
     /**
      * Completes all message groups prior to closing the consumer.
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      * @throws IllegalStateException if the number of messages within the group does not match the expected number
      */
 
-    private void completeAllGroups()
+    private void completeAllGroups() throws UnrecoverableConsumerException
     {
         // Check for group subscriptions that have not completed and complete them, unless this consumer is
         // already in a failure state
@@ -636,9 +664,10 @@ class EvaluationConsumer
      * @param group the group to complete
      * @param consumer the message consumer whose resources should be closed
      * @return true if the group was completed, otherwise false
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    private boolean checkAndCompleteGroup( String groupId )
+    private boolean checkAndCompleteGroup( String groupId ) throws UnrecoverableConsumerException
     {
         boolean completed = false;
 
@@ -667,9 +696,10 @@ class EvaluationConsumer
      * Attempts to create the consumers.
      * 
      * @param evaluationDescription a description of the evaluation
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    private void createConsumers( Evaluation evaluationDescription )
+    private void createConsumers( Evaluation evaluationDescription ) throws UnrecoverableConsumerException
     {
         synchronized ( this.getConsumerCreationLock() )
         {
@@ -677,7 +707,7 @@ class EvaluationConsumer
             {
                 LOGGER.debug( "Creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.evaluationId,
-                              this.consumerId );
+                              this.getConsumerId() );
 
                 // Writable path
                 Path pathToWrite = this.getPathToWrite( this.evaluationId );
@@ -698,7 +728,7 @@ class EvaluationConsumer
 
                 LOGGER.debug( "Finished creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.evaluationId,
-                              this.consumerId );
+                              this.getConsumerId() );
 
                 // Flag that the consumers are ready
                 this.areConsumersReady.set( true );
@@ -711,9 +741,10 @@ class EvaluationConsumer
 
     /**
      * Consumes any statistics messages that arrived before the consumers were ready.
+     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    private void consumeCachedStatisticsMessages()
+    private void consumeCachedStatisticsMessages() throws UnrecoverableConsumerException
     {
         // Consume any cached messages that arrived before the consumers were ready and then clear the cache
         if ( !this.statisticsCache.isEmpty() )
@@ -722,7 +753,7 @@ class EvaluationConsumer
                           + "arrived before the consumers were created. These messages were cached and have now been "
                           + "consumed.",
                           this.evaluationId,
-                          this.consumerId,
+                          this.getConsumerId(),
                           this.statisticsCache.size() );
 
             // Iterate the cache and consume
@@ -756,18 +787,18 @@ class EvaluationConsumer
     private Path getPathToWrite( String evaluationId )
     {
         Objects.requireNonNull( evaluationId );
-        
+
         // Where outputs files will be written
         Path outputDirectory = null;
         String tempDir = System.getProperty( "java.io.tmpdir" );
-        
+
         try
         {
             Path namedPath = Paths.get( tempDir, "wres_evaluation_output_" + evaluationId );
-            
+
             // POSIX-compliant    
             if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )
-            {          
+            {
                 Set<PosixFilePermission> permissions = EnumSet.of( PosixFilePermission.OWNER_READ,
                                                                    PosixFilePermission.OWNER_WRITE,
                                                                    PosixFilePermission.OWNER_EXECUTE,
@@ -789,7 +820,7 @@ class EvaluationConsumer
         }
         catch ( IOException e )
         {
-            throw new GraphicsWriteException( "Encountered an error in subscriber " + this.consumerId
+            throw new GraphicsWriteException( "Encountered an error in subscriber " + this.getConsumerId()
                                               + " while attempting to create a temporary "
                                               + "directory for the graphics from evaluation "
                                               + this.evaluationId
@@ -798,12 +829,21 @@ class EvaluationConsumer
         }
 
         // Render absolute
-        if( !outputDirectory.isAbsolute() )
+        if ( !outputDirectory.isAbsolute() )
         {
             outputDirectory = outputDirectory.toAbsolutePath();
         }
-        
+
         return outputDirectory;
+    }
+
+    /**
+     * @return the consumer identifier
+     */
+
+    private String getConsumerId()
+    {
+        return this.consumerDescription.getConsumerId();
     }
 
     /**

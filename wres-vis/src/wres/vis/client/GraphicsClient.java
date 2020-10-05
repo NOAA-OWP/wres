@@ -28,6 +28,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.events.Evaluation;
 import wres.eventsbroker.BrokerConnectionFactory;
 
 /**
@@ -101,12 +102,6 @@ class GraphicsClient implements Closeable
     private final GraphicsSubscriber graphicsSubscriber;
 
     /**
-     * The unique identifier of the subscriber encapsulated by this server.
-     */
-
-    private final String subscriberId;
-
-    /**
      * Start the graphics server.
      * @param args the command line arguments
      * @throws IOException if the server failed to stop
@@ -115,20 +110,23 @@ class GraphicsClient implements Closeable
     public static void main( String[] args ) throws IOException
     {
         // Create the server
+        int exitCode = 0;
+
         try ( BrokerConnectionFactory broker = BrokerConnectionFactory.of();
               GraphicsClient graphics = GraphicsClient.of( broker ) )
         {
             Instant started = Instant.now();
 
             // Add a shutdown hook to respond gracefully to SIGINT signals
-            // Given the try-with-resources, this may initiate close twice, 
+            // Given the try-with-resources, this may initiate a close twice, 
             // but a shutdown hook works in more circumstances than a try/finally.
             Runtime.getRuntime().addShutdownHook( new Thread( () -> {
                 Instant ended = Instant.now();
                 Duration duration = Duration.between( started, ended );
+
                 graphics.stop();
-                LOGGER.info( "Stopped WRES Graphics Client {}, which ran for '{}' and processed {} packets of "
-                             + "statistics across {} evaluations.",
+                LOGGER.info( "WRES Graphics Client {} ran for '{}' and processed {} packets of statistics across {} "
+                             + "evaluations.",
                              graphics.getSubscriberId(),
                              duration,
                              graphics.getClientStatus().getStatisticsCount(),
@@ -145,12 +143,18 @@ class GraphicsClient implements Closeable
             Thread.currentThread().interrupt();
 
             LOGGER.error( "Interrupted while waiting for a WRES Graphics Client." );
+
+            exitCode = 1;
         }
-        catch ( GraphicsServerException f )
+        catch ( GraphicsClientException f )
         {
             LOGGER.error( "Encountered an internal error in a WRES Graphics Client, which will now shut down. {}",
                           f.getMessage() );
+
+            exitCode = 1;
         }
+
+        System.exit( exitCode );
     }
 
     /**
@@ -159,6 +163,8 @@ class GraphicsClient implements Closeable
 
     private void run()
     {
+        LOGGER.info( "WRES Graphics client {} is running.", this.getSubscriberId() );
+
         // The status is mutable and is updated by the subscriber
         ClientStatus status = this.getClientStatus();
         GraphicsSubscriber subscriber = this.getGraphicsSubscriber();
@@ -232,9 +238,9 @@ class GraphicsClient implements Closeable
      * Starts the server.
      */
 
-    private void start()
+    void start()
     {
-        this.clientExecutor.execute( this::run );
+        this.clientExecutor.submit( this::run );
     }
 
     /**
@@ -246,12 +252,12 @@ class GraphicsClient implements Closeable
         // Not stopped already?
         if ( this.latch.getCount() != 0 )
         {
+            this.timer.cancel();
+
             if ( Objects.nonNull( this.graphicsSubscriber ) )
             {
                 this.graphicsSubscriber.close();
             }
-
-            this.timer.cancel();
 
             this.getGraphicsExecutor().shutdown();
 
@@ -283,6 +289,8 @@ class GraphicsClient implements Closeable
             }
 
             this.latch.countDown();
+
+            LOGGER.info( "WRES Graphics Client {} has stopped.", this.getSubscriberId() );
         }
     }
 
@@ -302,7 +310,8 @@ class GraphicsClient implements Closeable
 
     private String getSubscriberId()
     {
-        return this.subscriberId;
+        return this.getGraphicsSubscriber()
+                   .getSubscriberId();
     }
 
     /**
@@ -330,11 +339,7 @@ class GraphicsClient implements Closeable
 
     private GraphicsClient( BrokerConnectionFactory broker )
     {
-        // This identifier is registered with the wres-core as a graphics subscriber. For now, it is manually declared
-        // here, but it needs to come from configuration
-        this.subscriberId = "4mOgkGkse3gWIGKuIhzVnl5ZPCM";
-
-        LOGGER.info( "Creating WRES Graphics Client {}...", this.getSubscriberId() );
+        LOGGER.info( "Creating WRES Graphics Client..." );
 
         UncaughtExceptionHandler handler = ( a, b ) -> {
             String message = "Encountered an internal error in WRES Graphics Client " + this.getSubscriberId() + ".";
@@ -347,29 +352,29 @@ class GraphicsClient implements Closeable
                                                                         .build();
 
         this.clientExecutor = Executors.newSingleThreadExecutor( graphicsFactory );
-        this.timer = new Timer();
-        this.clientStatus = new ClientStatus();
+        this.timer = new Timer( true );
         this.latch = new CountDownLatch( 1 );
         this.graphicsWorker = this.createGraphicsExecutor();
 
+        // Client identifier = identifier of the one subscriber it composes
+        String subscriberId = Evaluation.getUniqueId();
+        this.clientStatus = new ClientStatus( subscriberId, this::stop );
+
         try
         {
-            this.graphicsSubscriber = new GraphicsSubscriber( this.getSubscriberId(),
+            this.graphicsSubscriber = new GraphicsSubscriber( subscriberId,
                                                               this.getClientStatus(),
                                                               this.getGraphicsExecutor(),
                                                               broker );
         }
         catch ( NamingException | JMSException | RuntimeException e )
         {
-            this.stop();
-
-            throw new GraphicsServerException( "While attempting to build WRES Graphics Client "
-                                               + this.getSubscriberId()
-                                               + ", encountered an error.",
+            throw new GraphicsClientException( "While attempting to build a WRES Graphics Client, encountered an "
+                                               + "error.",
                                                e );
         }
 
-        LOGGER.info( "Finished creating WRES Graphics Client {}.", this.getSubscriberId() );
+        LOGGER.info( "Finished creating WRES Graphics Client with subscriber identifier {}.", this.getSubscriberId() );
     }
 
     /**
@@ -379,8 +384,16 @@ class GraphicsClient implements Closeable
 
     private ExecutorService createGraphicsExecutor()
     {
-        ThreadFactory graphicsFactory = new BasicThreadFactory.Builder()
-                                                                        .namingPattern( "Graphics Worker Thread %d" )
+        UncaughtExceptionHandler handler = ( a, b ) -> {
+            String message = "Encountered an internal error in a WRES Graphics Worker of WRES Graphics Client "
+                             + this.getSubscriberId()
+                             + ".";
+            LOGGER.error( message, b );
+            this.stop();
+        };
+
+        ThreadFactory graphicsFactory = new BasicThreadFactory.Builder().namingPattern( "Graphics Worker Thread %d" )
+                                                                        .uncaughtExceptionHandler( handler )
                                                                         .build();
 
         BlockingQueue<Runnable> graphicsQueue = new ArrayBlockingQueue<>( GraphicsClient.MAXIMUM_THREAD_COUNT * 5 );
@@ -408,6 +421,9 @@ class GraphicsClient implements Closeable
     static class ClientStatus
     {
 
+        /** The client identifier.*/
+        private final String clientId;
+
         /** The number of evaluations completed.*/
         private final AtomicInteger evaluationCount = new AtomicInteger();
 
@@ -425,6 +441,9 @@ class GraphicsClient implements Closeable
 
         /** The evaluations that have completed.*/
         private final Set<String> evaluationComplete = ConcurrentHashMap.newKeySet();
+
+        /** A stop action to perform when the client fails unrecoverably.**/
+        private final Runnable stopAction;
 
         @Override
         public String toString()
@@ -527,9 +546,39 @@ class GraphicsClient implements Closeable
         {
             return this.statisticsCount.get();
         }
+
+        /**
+         * Flags an unrecoverable failure in the graphics client.
+         * @param exception the unrecoverable consumer exception that caused the failure
+         */
+
+        void markFailedUnrecoverably( UnrecoverableConsumerException exception )
+        {
+            String failure = "WRES Graphics Client " + clientId + " has failed unrecoverably and will now stop.";
+
+            LOGGER.error( failure, exception );
+
+            this.stopAction.run();
+        }
+
+        /**
+         * Hidden constructor.
+         * 
+         * @param clientId the client identifier
+         * @param stopAction a callback composing a stop action to perform when the client fails unrecoverably.
+         */
+
+        private ClientStatus( String clientId, Runnable stopAction )
+        {
+            Objects.requireNonNull( clientId );
+            Objects.requireNonNull( stopAction );
+
+            this.clientId = clientId;
+            this.stopAction = stopAction;
+        }
     }
 
-    static class GraphicsServerException extends RuntimeException
+    static class GraphicsClientException extends RuntimeException
     {
 
         /**
@@ -538,13 +587,13 @@ class GraphicsClient implements Closeable
         private static final long serialVersionUID = -3496487018421078900L;
 
         /**
-         * Builds a {@link GraphicsServerException} with the specified message.
+         * Builds a {@link GraphicsClientException} with the specified message.
          * 
          * @param message the message.
          * @param cause the cause of the exception
          */
 
-        public GraphicsServerException( String message, Throwable cause )
+        public GraphicsClientException( String message, Throwable cause )
         {
             super( message, cause );
         }

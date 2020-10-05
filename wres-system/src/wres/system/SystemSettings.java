@@ -6,9 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -49,7 +46,7 @@ public class SystemSettings extends XMLReader
 	private int maximumWebClientThreads = 3;
 	private int maximumNwmIngestThreads = 6;
 	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
-	private final Set<String> graphicsSubscribers = new HashSet<>();
+	private boolean graphicsSubscribers = false;
 	private boolean updateProgressMonitor = false;
 
     public static SystemSettings fromDefaultClasspathXmlFile()
@@ -83,12 +80,12 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * @return the graphics subscribers.
+     * @return true if graphics should be delivered by an external provider.
      */
     
-    public Set<String> getGraphicsSubscribers()
+    public boolean hasExternalGraphics()
     {
-        return Collections.unmodifiableSet( this.graphicsSubscribers );
+        return this.graphicsSubscribers;
     }
     
 	/**
@@ -396,7 +393,7 @@ public class SystemSettings extends XMLReader
 
                 if ( tagName.equalsIgnoreCase( "graphics" ) )
                 {
-                    this.graphicsSubscribers.add( value );
+                    this.graphicsSubscribers = "true".equalsIgnoreCase( value );
                 }
                 else
                 {

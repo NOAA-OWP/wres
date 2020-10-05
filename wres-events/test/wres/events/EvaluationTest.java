@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
@@ -73,6 +74,12 @@ public class EvaluationTest
      */
 
     private Pairs somePairs;
+
+    /**
+     * Nominal formats negotiated by consumers.
+     */
+
+    private final Format[] formats = new Format[] { Format.CSV, Format.PNG };
 
     /**
      * Connection factory.
@@ -137,53 +144,6 @@ public class EvaluationTest
     }
 
     @Test
-    @Ignore( "An out-of-band test for use with LongRunningSubscriber and a persistent broker. See #80267" )
-    public void publishAndConsumeOneEvaluationWithAnExternalSubscriber()
-            throws IOException, NamingException, JMSException, InterruptedException
-    {
-        // Create the consumers upfront
-        // Consumers simply dump to an actual output store for comparison with the expected output
-        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>(); // Common store
-        List<EvaluationStatus> actualStatuses = new ArrayList<>();
-        List<Statistics> actualStatistics = new ArrayList<>();
-
-        // Consumers, three for each evaluation
-        Consumer<EvaluationStatus> status = actualStatuses::add;
-        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<Statistics> statistics = actualStatistics::add;
-
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( status )
-                                       .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics )
-                                       // Register an external subscriber with a unique identifier
-                                       .addExternalSubscriber( "4mOgkGkse3gWIGKuIhzVnl5ZPCM" )
-                                       .build();
-
-        // Create and start a broker and open an evaluation, closing on completion
-        try ( Evaluation evaluationOne = Evaluation.of( this.oneEvaluation,
-                                                        EvaluationTest.connections,
-                                                        consumerGroup ); )
-        {
-            // First evaluation
-            for ( Statistics next : this.oneStatistics )
-            {
-                evaluationOne.publish( next );
-            }
-
-            // Success
-            evaluationOne.markPublicationCompleteReportedSuccess();
-
-            // Wait for the evaluation to complete
-            evaluationOne.await();
-        }
-
-        // Make assertions about the internal subscriptions
-        assertEquals( List.of( this.oneEvaluation ), actualEvaluations );
-        assertEquals( this.oneStatistics, actualStatistics );
-    }
-
-    @Test
     public void publishAndConsumeTwoEvaluationsSimultaneously()
             throws IOException, NamingException, JMSException, InterruptedException
     {
@@ -203,7 +163,7 @@ public class EvaluationTest
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( status )
                                        .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics )
+                                       .addStatisticsConsumer( statistics, this.formats )
                                        .build();
 
         Consumer<wres.statistics.generated.Evaluation> otherDescription = actualEvaluations::add; // Common store
@@ -213,7 +173,7 @@ public class EvaluationTest
         Consumers otherConsumerGroup =
                 new Consumers.Builder().addStatusConsumer( otherStatus )
                                        .addEvaluationConsumer( otherDescription )
-                                       .addStatisticsConsumer( otherStatistics )
+                                       .addStatisticsConsumer( otherStatistics, this.formats )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -282,7 +242,7 @@ public class EvaluationTest
                 new Consumers.Builder().addStatusConsumer( status )
                                        .addStatusConsumer( status )
                                        .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics )
+                                       .addStatisticsConsumer( statistics, this.formats )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -325,7 +285,7 @@ public class EvaluationTest
                                        .addEvaluationConsumer( message -> {
                                        } )
                                        .addStatisticsConsumer( message -> {
-                                       } )
+                                       }, this.formats )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -372,7 +332,7 @@ public class EvaluationTest
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( status )
                                        .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics )
+                                       .addStatisticsConsumer( statistics, this.formats )
                                        .addGroupedStatisticsConsumer( aggregatedStatistics )
                                        .build();
 
@@ -448,8 +408,8 @@ public class EvaluationTest
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( status )
                                        .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics )
-                                       .addGroupedStatisticsConsumer( aggregatedStatistics )
+                                       .addStatisticsConsumer( statistics, this.formats )
+                                       .addGroupedStatisticsConsumer( aggregatedStatistics, this.formats )
                                        .addPairsConsumer( pairs )
                                        .build();
 
@@ -529,7 +489,7 @@ public class EvaluationTest
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
                                        .addEvaluationConsumer( Function.identity()::apply )
-                                       .addStatisticsConsumer( Function.identity()::apply )
+                                       .addStatisticsConsumer( Function.identity()::apply, this.formats )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -570,7 +530,7 @@ public class EvaluationTest
                                        .addEvaluationConsumer( Function.identity()::apply )
                                        .addStatisticsConsumer( consume -> {
                                            throw new ConsumerException( "Consumption failed!" );
-                                       } )
+                                       }, this.formats )
                                        .build();
 
         // Open an evaluation, closing on completion
@@ -627,7 +587,7 @@ public class EvaluationTest
                                            {
                                                throw new ConsumerException( "Consumption failed!" );
                                            }
-                                       } )
+                                       }, this.formats )
                                        .build();
 
         // Open an evaluation, closing on completion
@@ -657,7 +617,7 @@ public class EvaluationTest
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
                                        .addEvaluationConsumer( Function.identity()::apply )
-                                       .addStatisticsConsumer( Function.identity()::apply )
+                                       .addStatisticsConsumer( Function.identity()::apply, this.formats )
                                        .build();
 
         // Open an evaluation, closing on completion
