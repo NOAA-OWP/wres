@@ -18,10 +18,11 @@
         <certificate_file_to_trust>classpath:dod_sw_ca-54_expires_2022-11.pem</certificate_file_to_trust>
     </database>
     <subscribers>
-        <!-- Uncomment to produce graphics with an external subscriber. Do NOT uncomment
-             in production until there is an external subscriber in production, as all 
-             evaluations that declare graphics will wait for this.-->
-        <!-- <graphics>4mOgkGkse3gWIGKuIhzVnl5ZPCM</graphics> -->
+        <!-- Temporary feature toggle for external graphics. True means use an 
+             external client and false means deliver through an internal 
+             subscriber. Toggle false in production until external graphics are
+             enabled in production.-->
+        <graphics>false</graphics>
     </subscribers>
     <maximum_thread_count>7</maximum_thread_count>
     <maximum_archive_threads>5</maximum_archive_threads>

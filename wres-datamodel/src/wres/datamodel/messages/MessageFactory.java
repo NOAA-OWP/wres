@@ -48,6 +48,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
@@ -622,18 +623,38 @@ public class MessageFactory
     }
 
     /**
+     * Creates a {@link Format} from a {@link DestinationType}.
+     * 
+     * @param destinationType the destination type
+     * @return the format
+     */
+
+    public static Format parse( DestinationType destinationType )
+    {
+        switch ( destinationType )
+        {
+            case GRAPHIC:
+                return Format.PNG;
+            case NUMERIC:
+                return Format.CSV;
+            default:
+                return Format.valueOf( destinationType.name() );
+        }
+    }
+
+    /**
      * Returns <code>true</code> if the outputs contains graphics type, otherwise <code>false</code>.
      * 
      * @param outputs the outputs message
      * @return true if graphics are required
      * @throws NullPointerException if the input is null 
      */
-    
+
     public static boolean hasGraphicsTypes( Outputs outputs )
     {
-        return ! MessageFactory.getGraphicsTypes( outputs ).isEmpty();
+        return !MessageFactory.getGraphicsTypes( outputs ).isEmpty();
     }
-    
+
     /**
      * Returns the graphical destinations associated with the outputs message.
      * 
@@ -641,27 +662,27 @@ public class MessageFactory
      * @return the graphical destinations
      * @throws NullPointerException if the input is null 
      */
-    
+
     public static Set<DestinationType> getGraphicsTypes( Outputs outputs )
     {
         Objects.requireNonNull( outputs );
-        
+
         Set<DestinationType> returnMe = new HashSet<>();
-        
-        if( outputs.hasPng() )
+
+        if ( outputs.hasPng() )
         {
             returnMe.add( DestinationType.PNG );
             returnMe.add( DestinationType.GRAPHIC );
         }
-        
-        if( outputs.hasSvg() )
+
+        if ( outputs.hasSvg() )
         {
             returnMe.add( DestinationType.SVG );
         }
-        
+
         return Collections.unmodifiableSet( returnMe );
     }
-    
+
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsForProject}. Optionally ignores some statistic types.
@@ -1208,34 +1229,19 @@ public class MessageFactory
             LOGGER.debug( "Populated the evaluation with a metric count of {}.",
                           metrics.size() );
 
-            // Inputs declaration available?
-            boolean hasInputs = Objects.nonNull( projectConfig.getInputs() );
+            // Add a default baseline
+            builder.setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY );
 
-            // Skill metrics, so add a default baseline as needed
-            if ( metrics.parallelStream().anyMatch( MetricConstants::isSkillMetric ) )
+            // Set the baseline name as the default where no baseline is defined and skill metrics are requested
+            if ( metrics.stream().anyMatch( MetricConstants::isSkillMetric )
+                 && Objects.isNull( projectConfig.getInputs().getBaseline() ) )
             {
-
-                // Explicit baseline absent, so add the baseline name
-                if ( hasInputs && Objects.isNull( projectConfig.getInputs().getBaseline() ) )
-                {
-                    // Set the name for the baseline dataset as the default baseline
-                    String name = DefaultData.OBSERVED_CLIMATOLOGY.name().replace( "_", " " );
-                    builder.setBaselineDataName( name );
-                    LOGGER.debug( "Populated the evaluation with a default baseline source name of {}.",
-                                  name );
-                }
-
-                // Explicit baseline present and separate pools for baseline data, so add default baseline for 
-                // baseline pool 
-                if ( hasInputs && Objects.nonNull( projectConfig.getInputs().getBaseline() )
-                     && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
-                {
-                    builder.setBaselineDataForBaselinePool( DefaultData.OBSERVED_CLIMATOLOGY );
-
-                    LOGGER.debug( "Populated the default baseline for a baseline pool with {}.",
-                                  DefaultData.OBSERVED_CLIMATOLOGY );
-                }
+                builder.setBaselineDataName( DefaultData.OBSERVED_CLIMATOLOGY.toString()
+                                                                             .replace( "_", " " ) );
             }
+
+            LOGGER.debug( "Populated the default baseline with {}.",
+                          DefaultData.OBSERVED_CLIMATOLOGY );
         }
     }
 

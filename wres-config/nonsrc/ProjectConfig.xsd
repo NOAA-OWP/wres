@@ -936,7 +936,7 @@ time scale within a single class, rather than two classes.
     <xs:complexType name ="crossPair">
            <xs:annotation>
                 <xs:documentation>If present, use common pairs by reference time and 
-                    valid time when evaluating right and baseline sources, If absent,  
+                    valid time when evaluating right and baseline sources. If absent,  
                     retain all pairs of each type. Only applies when a baseline is 
                     declared. Employs fuzzy matching of reference times by default,
                     with exact matching as an option (exact="true"). With fuzzy matching, 

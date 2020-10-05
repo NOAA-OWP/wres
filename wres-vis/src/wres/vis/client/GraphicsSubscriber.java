@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -18,6 +19,7 @@ import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
@@ -33,8 +35,10 @@ import wres.events.EvaluationEventException;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.vis.client.GraphicsPublisher.MessageProperty;
+import wres.vis.writing.GraphicsWriteException;
 import wres.vis.client.GraphicsClient.ClientStatus;
 import wres.statistics.generated.Evaluation;
 
@@ -47,6 +51,9 @@ import wres.statistics.generated.Evaluation;
 class GraphicsSubscriber implements Closeable
 {
 
+    private static final String SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION =
+            "Subscriber {} has claimed ownership of message {} for evaluation {}.";
+
     private static final String ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR =
             "Encountered an error while attempting to remove a durable subscription for ";
 
@@ -56,13 +63,6 @@ class GraphicsSubscriber implements Closeable
             "Acknowledged message {} with correlationId {}.";
 
     private static final String UNKNOWN = "unknown";
-
-    /**
-     * If <code>true</code>, do not allow the durable subscriptions to survive graphics server restarts - remove the 
-     * subscriptions when closing this subscriber.
-     */
-
-    private static final boolean REMOVE_SUBSCRIPTIONS_ON_CLOSURE = false;
 
     /**
      * Default name for the queue on the amq.topic that accepts evaluation status messages.
@@ -100,11 +100,24 @@ class GraphicsSubscriber implements Closeable
 
     private static final String OUTPUT_PATH_STRING = MessageProperty.OUTPUT_PATH.toString();
 
+
     /**
-     * A unique identifier for the subscriber.
+     * Description of this consumer.
      */
 
-    private final String uniqueId;
+    private final wres.statistics.generated.Consumer consumerDescription;
+
+    /**
+     * Re-usable status message.
+     */
+
+    private final EvaluationStatus readyToConsume;
+
+    /**
+     * The formats supported as strings.
+     */
+
+    private final Collection<String> formatStrings;
 
     /**
      * A publisher for {@link EvaluationStatus} messages.
@@ -167,7 +180,7 @@ class GraphicsSubscriber implements Closeable
     private final BrokerConnectionFactory broker;
 
     /**
-     * Server status.
+     * Client status.
      */
 
     private final ClientStatus status;
@@ -200,12 +213,29 @@ class GraphicsSubscriber implements Closeable
     @Override
     public void close()
     {
+        // Log an error if there are open evaluations
+        if ( this.hasOpenEvaluations() )
+        {
+            Set<String> open = this.evaluations.entrySet()
+                                               .stream()
+                                               .filter( next -> !next.getValue().isComplete() )
+                                               .map( Map.Entry::getKey )
+                                               .collect( Collectors.toSet() );
+
+            LOGGER.error( "While closing graphics subscriber {}, {} open evaluations were discovered: {}. These "
+                          + "evaluations will not be notified complete. They should be notified before a "
+                          + "subscriber is closed.",
+                          this.getSubscriberId(),
+                          open.size(),
+                          open );
+        }
+
         LOGGER.debug( "Closing and then removing subscriptions for {}.",
-                      this.getIdentifier() );
+                      this.getSubscriberId() );
 
         this.closeSubscriptions();
 
-        String errorMessage = "messages within graphics subscriber " + this.getIdentifier() + ".";
+        String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
 
         try
         {
@@ -220,7 +250,7 @@ class GraphicsSubscriber implements Closeable
                              + "status "
                              + errorMessage;
 
-            LOGGER.error( message, e );
+            LOGGER.warn( message, e );
         }
 
         try
@@ -233,7 +263,7 @@ class GraphicsSubscriber implements Closeable
                              + "subscriber "
                              + errorMessage;
 
-            LOGGER.error( message, e );
+            LOGGER.warn( message, e );
         }
 
         try
@@ -246,7 +276,7 @@ class GraphicsSubscriber implements Closeable
                              + "subscriber "
                              + errorMessage;
 
-            LOGGER.error( message, e );
+            LOGGER.warn( message, e );
         }
 
         // This subscriber is not responsible for closing the broker.
@@ -276,7 +306,7 @@ class GraphicsSubscriber implements Closeable
         }
 
         LOGGER.debug( "The sweeper for subscriber {} removed {} completed evaluation, including {}.",
-                      this.getIdentifier(),
+                      this.getSubscriberId(),
                       completed.size(),
                       completed );
 
@@ -291,40 +321,24 @@ class GraphicsSubscriber implements Closeable
 
     void notifyAlive()
     {
-        // Create the status message to publish
-        EvaluationStatus message = EvaluationStatus.newBuilder()
-                                                   .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
-                                                   .setConsumerId( this.getIdentifier() )
-                                                   .build();
-
         // Iterate the evaluations
         for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
         {
             // Consider only open evaluations
             if ( !next.getValue().isComplete() )
             {
-                String messageId = "ID:" + this.getIdentifier();
-
-                String evaluationId = next.getKey();
-
-                ByteBuffer buffer = ByteBuffer.wrap( message.toByteArray() );
-
-                try
-                {
-                    this.evaluationStatusPublisher.publish( buffer, messageId, evaluationId, this.getIdentifier() );
-                }
-                catch ( JMSException e )
-                {
-                    throw new EvaluationEventException( "Subscriber "
-                                                        + this.getIdentifier()
-                                                        + " failed to publish an evaluation status message about "
-                                                        + "evaluation "
-                                                        + evaluationId
-                                                        + ".",
-                                                        e );
-                }
+                this.publishReadyToConsume( next.getKey() );
             }
         }
+    }
+
+    /**
+     * @return the subscriber identifier.
+     */
+
+    String getSubscriberId()
+    {
+        return this.consumerDescription.getConsumerId();
     }
 
     /**
@@ -333,7 +347,7 @@ class GraphicsSubscriber implements Closeable
 
     private void closeSubscriptions()
     {
-        String errorMessage = "messages within graphics subscriber " + this.getIdentifier() + ".";
+        String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
 
         try
         {
@@ -381,8 +395,8 @@ class GraphicsSubscriber implements Closeable
             LOGGER.error( message, e );
         }
 
-        // Remove durable subscriptions: any messages that arrive when the subscriber is down will be lost
-        if ( GraphicsSubscriber.REMOVE_SUBSCRIPTIONS_ON_CLOSURE )
+        // Remove durable subscriptions if there are no open evaluations
+        if ( !this.hasOpenEvaluations() )
         {
             try
             {
@@ -426,12 +440,21 @@ class GraphicsSubscriber implements Closeable
     }
 
     /**
-     * @return the subscriber identifier.
+     * @return <code>true</code> if some evaluations remain incomplete, <code>false</code> otherwise.
      */
 
-    private String getIdentifier()
+    private boolean hasOpenEvaluations()
     {
-        return this.uniqueId;
+        // Iterate the evaluations
+        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
+        {
+            if ( !next.getValue().isComplete() )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -440,7 +463,7 @@ class GraphicsSubscriber implements Closeable
 
     private String getEvaluationStatusSubscriberName()
     {
-        return this.getIdentifier() + "-EXTERNAL-status";
+        return this.getSubscriberId() + "-EXTERNAL-status";
     }
 
     /**
@@ -449,7 +472,7 @@ class GraphicsSubscriber implements Closeable
 
     private String getEvaluationSubscriberName()
     {
-        return this.getIdentifier() + "-EXTERNAL-evaluation";
+        return this.getSubscriberId() + "-EXTERNAL-evaluation";
     }
 
     /**
@@ -458,7 +481,7 @@ class GraphicsSubscriber implements Closeable
 
     private String getStatisticsSubscriberName()
     {
-        return this.getIdentifier() + "-EXTERNAL-statistics";
+        return this.getSubscriberId() + "-EXTERNAL-statistics";
     }
 
     /**
@@ -468,6 +491,7 @@ class GraphicsSubscriber implements Closeable
     private MessageListener getStatusListener()
     {
         return message -> {
+
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
@@ -495,26 +519,48 @@ class GraphicsSubscriber implements Closeable
 
                     EvaluationStatus statusEvent = EvaluationStatus.parseFrom( buffer );
 
-                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
-
-                    consumer.acceptStatusMessage( statusEvent, groupId, messageId );
-
-                    // Complete?
-                    if ( consumer.isComplete() )
+                    // Request for a consumer?
+                    if ( statusEvent.getCompletionStatus() == CompletionStatus.CONSUMER_REQUIRED )
                     {
-                        // Yes, then close
-                        consumer.close();
-                        this.status.registerEvaluationCompleted( correlationId );
+                        // Offer services if services are required
+                        this.offerServices( statusEvent, correlationId );
+                    }
+                    // Request for consumption, but only if the message is flagged for me
+                    else if ( this.isThisMessageForMe( message ) )
+                    {
+                        LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
+                                      this.getSubscriberId(),
+                                      messageId,
+                                      correlationId );
+
+                        EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+
+                        consumer.acceptStatusMessage( statusEvent, groupId, messageId );
+
+                        // Complete?
+                        if ( consumer.isComplete() )
+                        {
+                            // Yes, then close
+                            consumer.close();
+                            this.status.registerEvaluationCompleted( correlationId );
+                        }
                     }
                 }
+
+                // Acknowledge and flag success locally
                 message.acknowledge();
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
+            // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
-                // Attempt to recover
                 this.recover( messageId, correlationId, e );
+            }
+            // Do not attempt to recover
+            catch ( UnrecoverableConsumerException e )
+            {
+                this.markSubscriberFailed( e );
             }
         };
     }
@@ -526,6 +572,7 @@ class GraphicsSubscriber implements Closeable
     private MessageListener getStatisticsListener()
     {
         return message -> {
+
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
@@ -533,42 +580,56 @@ class GraphicsSubscriber implements Closeable
 
             try
             {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-                groupId = message.getStringProperty( GraphicsSubscriber.GROUP_ID_STRING );
-
-                EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
-
-                // Create the byte array to hold the message
-                int messageLength = (int) receivedBytes.getBodyLength();
-
-                byte[] messageContainer = new byte[messageLength];
-
-                receivedBytes.readBytes( messageContainer );
-
-                ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
-
-                Statistics statistics = Statistics.parseFrom( buffer );
-
-                consumer.acceptStatisticsMessage( statistics, groupId, messageId );
-                this.status.registerStatistics( messageId );
-
-                // Complete?
-                if ( consumer.isComplete() )
+                if ( this.isThisMessageForMe( message ) )
                 {
-                    // Yes, then close
-                    consumer.close();
-                    this.status.registerEvaluationCompleted( correlationId );
+                    messageId = message.getJMSMessageID();
+                    correlationId = message.getJMSCorrelationID();
+                    groupId = message.getStringProperty( GraphicsSubscriber.GROUP_ID_STRING );
+
+                    LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
+                                  this.getSubscriberId(),
+                                  messageId,
+                                  correlationId );
+
+                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+
+                    // Create the byte array to hold the message
+                    int messageLength = (int) receivedBytes.getBodyLength();
+
+                    byte[] messageContainer = new byte[messageLength];
+
+                    receivedBytes.readBytes( messageContainer );
+
+                    ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
+
+                    Statistics statistics = Statistics.parseFrom( buffer );
+
+                    consumer.acceptStatisticsMessage( statistics, groupId, messageId );
+                    this.status.registerStatistics( messageId );
+
+                    // Complete?
+                    if ( consumer.isComplete() )
+                    {
+                        // Yes, then close
+                        consumer.close();
+                        this.status.registerEvaluationCompleted( correlationId );
+                    }
                 }
 
+                // Acknowledge and flag success locally
                 message.acknowledge();
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
+            // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
-                // Attempt to recover
                 this.recover( messageId, correlationId, e );
+            }
+            // Do not attempt to recover
+            catch ( UnrecoverableConsumerException e )
+            {
+                this.markSubscriberFailed( e );
             }
         };
     }
@@ -580,6 +641,7 @@ class GraphicsSubscriber implements Closeable
     private MessageListener getEvaluationListener()
     {
         return message -> {
+
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
@@ -587,41 +649,55 @@ class GraphicsSubscriber implements Closeable
 
             try
             {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-                outputPath = message.getStringProperty( GraphicsSubscriber.OUTPUT_PATH_STRING );
-
-                EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
-
-                // Create the byte array to hold the message
-                int messageLength = (int) receivedBytes.getBodyLength();
-
-                byte[] messageContainer = new byte[messageLength];
-
-                receivedBytes.readBytes( messageContainer );
-
-                ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
-
-                Evaluation evaluation = Evaluation.parseFrom( buffer );
-
-                consumer.acceptEvaluationMessage( evaluation, outputPath, messageId );
-
-                // Complete?
-                if ( consumer.isComplete() )
+                if ( this.isThisMessageForMe( message ) )
                 {
-                    // Yes, then close
-                    consumer.close();
-                    this.status.registerEvaluationCompleted( correlationId );
+                    messageId = message.getJMSMessageID();
+                    correlationId = message.getJMSCorrelationID();
+                    outputPath = message.getStringProperty( GraphicsSubscriber.OUTPUT_PATH_STRING );
+
+                    LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
+                                  this.getSubscriberId(),
+                                  messageId,
+                                  correlationId );
+
+                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+
+                    // Create the byte array to hold the message
+                    int messageLength = (int) receivedBytes.getBodyLength();
+
+                    byte[] messageContainer = new byte[messageLength];
+
+                    receivedBytes.readBytes( messageContainer );
+
+                    ByteBuffer buffer = ByteBuffer.wrap( messageContainer );
+
+                    Evaluation evaluation = Evaluation.parseFrom( buffer );
+
+                    consumer.acceptEvaluationMessage( evaluation, outputPath, messageId );
+
+                    // Complete?
+                    if ( consumer.isComplete() )
+                    {
+                        // Yes, then close
+                        consumer.close();
+                        this.status.registerEvaluationCompleted( correlationId );
+                    }
                 }
 
+                // Acknowledge and flag success locally
                 message.acknowledge();
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
+            // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
-                // Attempt to recover
                 this.recover( messageId, correlationId, e );
+            }
+            // Do not attempt to recover
+            catch ( UnrecoverableConsumerException e )
+            {
+                this.markSubscriberFailed( e );
             }
         };
     }
@@ -660,7 +736,7 @@ class GraphicsSubscriber implements Closeable
                               + "for evaluation {}. The error is: {}",
                               messageId,
                               correlationId,
-                              this.getIdentifier(),
+                              this.getSubscriberId(),
                               this.getNumberOfRetriesAttempted( correlationId ).get() + 1, // Counter starts at zero
                               this.broker.getMaximumMessageRetries(),
                               correlationId,
@@ -673,14 +749,14 @@ class GraphicsSubscriber implements Closeable
                 LOGGER.error( "While attempting to recover a session for evaluation {} in graphics subscriber {}, "
                               + "encountered an error that prevented recovery: ",
                               correlationId,
-                              this.getIdentifier(),
+                              this.getSubscriberId(),
                               f.getMessage() );
             }
             catch ( IOException g )
             {
                 LOGGER.error( "While attempting recovery in graphics subscriber {}, failed to close an exception "
                               + "writer.",
-                              this.getIdentifier() );
+                              this.getSubscriberId() );
             }
         }
 
@@ -690,7 +766,7 @@ class GraphicsSubscriber implements Closeable
         {
             LOGGER.error( "Graphics subscriber {} encountered a consumption failure for evaluation {}. "
                           + "Recovery failed after {} attempts.",
-                          this.getIdentifier(),
+                          this.getSubscriberId(),
                           correlationId,
                           this.broker.getMaximumMessageRetries() );
 
@@ -721,6 +797,8 @@ class GraphicsSubscriber implements Closeable
     /**
      * Marks graphics writing as failed unrecoverably for a given evaluation.
      * @param evaluationId the evaluation identifier
+     * @throws UnrecoverableConsumerException 
+     * @throws GraphicsWriteException if the subscriber fails unrecoverably
      */
 
     private void markEvaluationFailed( String evaluationId )
@@ -733,9 +811,9 @@ class GraphicsSubscriber implements Closeable
         {
             consumer.close();
         }
-        catch ( JMSException e )
+        catch ( JMSException | UnrecoverableConsumerException e )
         {
-            String message = "Graphics subscriber " + this.getIdentifier()
+            String message = "Graphics subscriber " + this.getSubscriberId()
                              + " encountered an error while marking "
                              + "evaluation "
                              + evaluationId
@@ -743,6 +821,20 @@ class GraphicsSubscriber implements Closeable
 
             LOGGER.error( message, e );
         }
+    }
+
+    /**
+     * Marks the subscriber as failed unrecoverably.
+     * @param exception the source of the failure
+     */
+
+    private void markSubscriberFailed( UnrecoverableConsumerException exception )
+    {
+        LOGGER.info( "Message subscriber {} has been flagged as failed without the possibility of recovery.",
+                     this.getSubscriberId() );
+
+        // Propagate upwards        
+        this.status.markFailedUnrecoverably( exception );
     }
 
     /**
@@ -766,7 +858,7 @@ class GraphicsSubscriber implements Closeable
         if ( Objects.isNull( consumer ) )
         {
             consumer = new EvaluationConsumer( evaluationId,
-                                               this.getIdentifier(),
+                                               this.consumerDescription,
                                                this.evaluationStatusPublisher,
                                                this.getGraphicsExecutor() );
             this.status.registerEvaluationStarted( evaluationId );
@@ -804,9 +896,84 @@ class GraphicsSubscriber implements Closeable
     }
 
     /**
+     * Offers services.
+     * 
+     * @param status the evaluation status message with the consumer request
+     * @param evaluationId the identifier of the evaluation for which services should be offered
+     */
+
+    private void offerServices( EvaluationStatus status, String evaluationId )
+    {
+        // Only offer formats if the status message is non-specific or some required formats intersect the formats
+        // offered
+        Collection<Format> formatsOffered = this.consumerDescription.getFormatsList();
+        if ( status.getFormatsRequiredList().isEmpty()
+             || status.getFormatsRequiredList().stream().anyMatch( formatsOffered::contains ) )
+        {
+            this.publishReadyToConsume( evaluationId );
+        }
+        else
+        {
+            LOGGER.debug( "Received a request from evaluation {} for a consumer, but subscriber {} could not fulfill "
+                          + "the contract.",
+                          evaluationId,
+                          this.getSubscriberId() );
+        }
+    }
+
+    /**
+     * Returns <code>true</code> if the message is contracted by this subscriber, otherwise <code>false</code>. 
+     * @param message the message
+     * @return true if the message is contracted, false if not
+     * @throws JMSException if the ownership cannot be determined for any reason
+     */
+
+    private boolean isThisMessageForMe( Message message ) throws JMSException
+    {
+        for ( String next : this.formatStrings )
+        {
+            String nextFormat = message.getStringProperty( next );
+
+            if ( Objects.nonNull( nextFormat ) && this.getSubscriberId().equals( nextFormat ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Publishes the status message {@link #readyToConsume}.
+     * @param evaluationId the evaluation to notify
+     */
+
+    private void publishReadyToConsume( String evaluationId )
+    {
+        String messageId = "ID:" + this.getSubscriberId();
+
+        ByteBuffer buffer = ByteBuffer.wrap( this.readyToConsume.toByteArray() );
+
+        try
+        {
+            this.evaluationStatusPublisher.publish( buffer, messageId, evaluationId, this.getSubscriberId() );
+        }
+        catch ( JMSException e )
+        {
+            throw new EvaluationEventException( "Subscriber "
+                                                + this.getSubscriberId()
+                                                + " failed to publish an evaluation status message about "
+                                                + "evaluation "
+                                                + evaluationId
+                                                + ".",
+                                                e );
+        }
+    }
+
+    /**
      * Builds a subscriber.
      * 
-     * @param identifier a unique identifier for the subscriber
+     * @param subscriberId the subscriber identifier
      * @param status a graphics server whose status can be updated with subscriber progress
      * @param executorService the executor for completing graphics work
      * @param broker the broker
@@ -815,21 +982,27 @@ class GraphicsSubscriber implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    GraphicsSubscriber( String uniqueId,
+    GraphicsSubscriber( String subscriberId,
                         ClientStatus status,
                         ExecutorService executorService,
                         BrokerConnectionFactory broker )
             throws JMSException, NamingException
     {
-        Objects.requireNonNull( uniqueId );
+        Objects.requireNonNull( subscriberId );
         Objects.requireNonNull( status );
         Objects.requireNonNull( executorService );
         Objects.requireNonNull( broker );
 
-        LOGGER.info( "Building a long-running graphics subscriber {} to listen for evaluation messages...",
-                     uniqueId );
+        // Describe the consumer
+        this.consumerDescription = wres.statistics.generated.Consumer.newBuilder()
+                                                                     .setConsumerId( subscriberId )
+                                                                     .addFormats( Format.PNG )
+                                                                     .addFormats( Format.SVG )
+                                                                     .build();
 
-        this.uniqueId = uniqueId;
+        LOGGER.info( "Building a long-running graphics subscriber {} to listen for evaluation messages...",
+                     this.getSubscriberId() );
+
         this.status = status;
         this.broker = broker;
 
@@ -841,7 +1014,7 @@ class GraphicsSubscriber implements Closeable
 
         this.evaluationStatusPublisher = GraphicsPublisher.of( this.connection,
                                                                this.evaluationStatusTopic,
-                                                               this.getIdentifier() );
+                                                               this.getSubscriberId() );
 
         // Create a connection for consumption and register a listener for exceptions
         this.connection.setExceptionListener( new ConnectionExceptionListener() );
@@ -875,9 +1048,19 @@ class GraphicsSubscriber implements Closeable
         this.retriesAttempted = new ConcurrentHashMap<>();
         this.executorService = executorService;
 
+        this.readyToConsume = EvaluationStatus.newBuilder()
+                                              .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
+                                              .setConsumer( consumerDescription )
+                                              .build();
+
+        this.formatStrings = this.consumerDescription.getFormatsList()
+                                                     .stream()
+                                                     .map( Format::toString )
+                                                     .collect( Collectors.toSet() );
+
         // Start the consumer connection
         LOGGER.info( "Started the consumer connection for long-running subscriber {}...",
-                     this.getIdentifier() );
+                     this.getSubscriberId() );
         this.connection.start();
 
         String tempDir = System.getProperty( "java.io.tmpdir" );
@@ -886,7 +1069,7 @@ class GraphicsSubscriber implements Closeable
                      + "system property, which is {}",
                      tempDir );
 
-        LOGGER.info( "Created long-running subscriber {}", this.getIdentifier() );
+        LOGGER.info( "Created long-running subscriber {}", this.getSubscriberId() );
     }
 
     /**
@@ -899,8 +1082,6 @@ class GraphicsSubscriber implements Closeable
         @Override
         public void onException( JMSException exception )
         {
-            exception.printStackTrace();
-
             LOGGER.error( "Encountered an error on a connection owned by a graphics subscriber: {}.",
                           exception.getMessage() );
         }

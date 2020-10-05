@@ -806,7 +806,7 @@ project(':wres-vis')
     }
 
     mainClassName = 'wres.vis.client.GraphicsClient'
-    applicationDefaultJvmArgs = ['-Xms128m','-Xmx128m',
+    applicationDefaultJvmArgs = ['-Xms512m','-Xmx512m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Make available logging configuration to the classpath

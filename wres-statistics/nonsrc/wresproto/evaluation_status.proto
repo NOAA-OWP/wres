@@ -3,6 +3,7 @@ syntax = "proto3";
 package wres.statistics.generated;
 
 import "google/protobuf/timestamp.proto";
+import "wresproto/consumer.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "EvaluationStatusProto";
@@ -33,18 +34,19 @@ message EvaluationStatus
         // Captures the status of an evaluation that has been started.
         
     	UNKNOWN = 0;
+        // The evaluation has unknown status.
 
     	EVALUATION_STARTED = 1;
-        // Evaluation is ongoing.
+        // The evaluation is ongoing.
 
     	EVALUATION_ONGOING = 2;
-        // Evaluation is ongoing.
+        // The evaluation is ongoing.
 
     	EVALUATION_COMPLETE_REPORTED_SUCCESS = 3;  
-        // Evaluation complete and succeeded.
+        // The evaluation is complete and succeeded.
 
         EVALUATION_COMPLETE_REPORTED_FAILURE = 4;  
-        // Evaluation complete and failed.
+        // The evaluation is complete and failed.
 
         PUBLICATION_COMPLETE_REPORTED_SUCCESS = 5; 
         // Publication completed without errors.
@@ -52,30 +54,49 @@ message EvaluationStatus
         PUBLICATION_COMPLETE_REPORTED_FAILURE = 6;
         // Publication completed with errors.
 
-        READY_TO_CONSUME = 7; 
-        // A consumer reports ready to consume. A consumer must be identified
-        // in order to correlate with its completion status. See consumer_id.
+        GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS = 7;
+        // Publication of a message group has been completed. The group 
+        // identifier is assumed to be part of the protocol metadata.
 
-        CONSUMPTION_ONGOING = 8;
-        // A consumer reports ready to consume. A consumer must be identified
-        // in order to correlate with its completion status. See consumer_id.
+        CONSUMER_REQUIRED = 8;
+        // An evaluation declares the need for a consumer. The required format
+        // types may be listed in the formats_required field of the 
+        // EvaluationStatus message. Together with the status READY_TO_CONSUME, 
+        // this evaluation status is part of the negotiation of a consumption 
+        // contract. When a publisher reports CONSUMER_REQUIRED, a consumer
+        // responds READY_TO_CONSUME.
 
-        CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 9; 
+        READY_TO_CONSUME = 9;
+        // A consumer reports ready to consume. Together with the status 
+        // CONSUMER_REQUIRED, this evaluation status is part of the negotiation 
+        // of a consumption contract. When a publisher reports 
+        // CONSUMER_REQUIRED, a consumer responds READY_TO_CONSUME. Being ready 
+        // does not guarantee the contract to the consumer reporting ready. A 
+        // consumer must be identified in order to correlate with its completion 
+        // status. See the Consumer field in the EvaluationStatus message.
+
+        CONSUMPTION_ONGOING = 10;
+        // A consumer reports consumption ongoing. This may be used to register
+        // that a consumer is alive when consumption is long-running. A consumer 
+        // must be identified in order to correlate with its completion status. 
+        // See the Consumer field in the EvaluationStatus message.
+
+        CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 11; 
         // A consumer reports completion without errors.
         
-        CONSUMPTION_COMPLETE_REPORTED_FAILURE = 10;
+        CONSUMPTION_COMPLETE_REPORTED_FAILURE = 12;
         // A consumer reports completion with errors.
-
-        GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS = 11;
-        // A message group has been completed. The group identifier is assumed 
-        // to be part of the protocol metadata.
     }
     
     CompletionStatus completion_status = 2;
 
-    string consumer_id = 3;
-    // The unique identifier of the consumer when the status update is about
-    // a message consumer. Must be present when a consumer reports.
+    Consumer consumer = 3;
+    // The consumer associated with this status update. Must be present when 
+    // a consumer is reporting its status.
+
+    // When an evaluation reports CompletionStatus.CONSUMER_REQUIRED, the
+    // formats required by the evaluation may be listed here.
+    repeated Consumer.Format formats_required = 4;
 
     message EvaluationStatusEvent
     {
@@ -113,33 +134,33 @@ message EvaluationStatus
         // A status code, such as an HTTP status code.
     }    
 
-    repeated EvaluationStatusEvent status_events = 4;
+    repeated EvaluationStatusEvent status_events = 5;
     // Zero or more caller-facing status events.
     
-    int32 message_count = 5;
+    int32 message_count = 6;
     // Number of statistics messages that were published, plus one (for the 
     // evaluation message description that accompanies every evaluation). This 
     // is the expected number of messages a client consumer should receive. 
     // Always set when the completion status indicates that publication is 
     // complete (from that point onwards).
 
-    int32 status_message_count = 6;
+    int32 status_message_count = 7;
     // Number of evaluation status messages (like this one) that were published, 
     // where applicable. This is the expected number of messages a client 
     // consumer should receive. Always set when the completion status indicates 
     // that publication is complete (from that point onwards).
 
-    int32 pairs_message_count = 7;
+    int32 pairs_message_count = 8;
     // The number of pairs messages that were published, where applicable. This 
     // is the expected number of messages a client consumer should receive.
     // Always set when the completion status indicates that publication is 
     // complete (from that point onwards).
 
-    int32 group_count = 8;
+    int32 group_count = 9;
     // The number of groups within the evaluation. Always set when the completion 
     // status indicates that publication is complete (from that point onwards).
 
-    repeated string resources_created = 9;
+    repeated string resources_created = 10;
     // Paths or URIs to resources created during an evaluation event.
 
 }

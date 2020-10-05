@@ -58,7 +58,7 @@ public class MessageSubscriberTest
         // Create and start a broker and open an evaluation, closing on completion
         Topic destination = (Topic) MessageSubscriberTest.connections.getDestination( "statistics" );
         Topic statusDestination = (Topic) MessageSubscriberTest.connections.getDestination( "status" );
-        
+
         Function<ByteBuffer, Integer> mapper = buffer -> buffer.getInt();
         AtomicInteger actualOne = new AtomicInteger();
         Consumer<Integer> consumerOne = anInt -> actualOne.set( anInt );
@@ -75,18 +75,21 @@ public class MessageSubscriberTest
                                 .setMessageCount( 1 )
                                 .build();
         ByteBuffer publicationComplete = ByteBuffer.wrap( published.toByteArray() );
-        
+
         try ( Connection publisherConnection = MessageSubscriberTest.connections.get().createConnection();
               MessagePublisher publisher =
                       MessagePublisher.of( publisherConnection,
-                                           destination ); 
+                                           destination );
               MessagePublisher statusPublisher =
-                        MessagePublisher.of( publisherConnection,
-                                             statusDestination );
-              Connection subscriberConnection = MessageSubscriberTest.connections.get()
-                                                                                 .createConnection();
+                      MessagePublisher.of( publisherConnection,
+                                           statusDestination );
+              Connection consumerConnection = MessageSubscriberTest.connections.get()
+                                                                               .createConnection();
+              Connection producerConnection = MessageSubscriberTest.connections.get()
+                                                                               .createConnection();
               MessageSubscriber<Integer> subscriberOne =
-                      new MessageSubscriber.Builder<Integer>().setConnection( subscriberConnection )
+                      new MessageSubscriber.Builder<Integer>().setConsumerConnection( consumerConnection )
+                                                              .setProducerConnection( producerConnection )
                                                               .setTopic( destination )
                                                               .setMapper( mapper )
                                                               .setEvaluationInfo( evaluationInfo )
@@ -100,13 +103,13 @@ public class MessageSubscriberTest
             properties.put( MessageProperty.JMS_CORRELATION_ID, "someEvaluationId" );
 
             publisher.publish( sentOne, Collections.unmodifiableMap( properties ) );
-            
+
             // Publication complete
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:anotherId" );
             statusPublisher.publish( publicationComplete, Collections.unmodifiableMap( properties ) );
 
             // Wait until one message was received
-            while ( ! subscriberOne.isComplete() )
+            while ( !subscriberOne.isComplete() )
             {
             }
 
@@ -142,7 +145,7 @@ public class MessageSubscriberTest
                                 .setCompletionStatus( CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS )
                                 .setMessageCount( 2 )
                                 .build();
-        
+
         // Publication complete
         EvaluationStatus published =
                 EvaluationStatus.newBuilder()
@@ -152,7 +155,7 @@ public class MessageSubscriberTest
 
         ByteBuffer groupComplete = ByteBuffer.wrap( status.toByteArray() );
         ByteBuffer publicationComplete = ByteBuffer.wrap( published.toByteArray() );
-        
+
 
         // Mock completion: decrement latch when a new consumption is registered
         GroupCompletionTracker completionTracker = Mockito.mock( GroupCompletionTracker.class );
@@ -169,10 +172,11 @@ public class MessageSubscriberTest
               MessagePublisher statusPublisher =
                       MessagePublisher.of( publisherConnection,
                                            statusDestination );
-              Connection subscriberConnection = MessageSubscriberTest.connections.get()
-                                                                                 .createConnection();
+              Connection consumerConnection = MessageSubscriberTest.connections.get().createConnection();
+              Connection producerConnection = MessageSubscriberTest.connections.get().createConnection();
               MessageSubscriber<Integer> subscriberOne =
-                      new MessageSubscriber.Builder<Integer>().setConnection( subscriberConnection )
+                      new MessageSubscriber.Builder<Integer>().setConsumerConnection( consumerConnection )
+                                                              .setProducerConnection( producerConnection )
                                                               .setTopic( statisticsDestination )
                                                               .setEvaluationStatusTopic( statusDestination )
                                                               .setExpectedMessageCountSupplier( EvaluationStatus::getMessageCount )
@@ -215,7 +219,7 @@ public class MessageSubscriberTest
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:192021" );
             properties.remove( MessageProperty.JMSX_GROUP_ID );
             statusPublisher.publish( publicationComplete, Collections.unmodifiableMap( properties ) );
-            
+
             // Wait until four messages were received
             while ( !subscriberOne.isComplete() )
             {

@@ -28,6 +28,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.events.Consumers;
 import wres.events.Evaluation;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -101,7 +102,7 @@ public class GraphicsClientTest
     }
 
     @Test
-    public void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber() throws IOException
+    public void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber() throws IOException, InterruptedException
     {
         // Create the consumers upfront
         // Consumers simply dump to an actual output store for comparison with the expected output
@@ -117,44 +118,43 @@ public class GraphicsClientTest
         Consumers consumerGroup =
                 new Consumers.Builder().addStatusConsumer( status )
                                        .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics )
-                                       // Register an external subscriber with a unique identifier.
-                                       // This identifier is currently defined in-band to the GraphicsServer instance,
-                                       // but may be exposed via an advanced API in future. 
-                                       // External subscribers normally run out-of-band to an evaluation process. For
-                                       // this integration test, it is running in the same process.
-                                       .addExternalSubscriber( "4mOgkGkse3gWIGKuIhzVnl5ZPCM" )
+                                       .addStatisticsConsumer( statistics, new Format[] { Format.CSV } )
                                        .build();
 
         // Open an evaluation, closing on completion
         Path basePath = null;
         try ( // This is the graphics server instance, which normally runs in a separate process
-              GraphicsClient server = GraphicsClient.of( GraphicsClientTest.connections );
-              // This is the evaluation instance that declares png output
-              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     GraphicsClientTest.connections,
-                                                     consumerGroup ); )
+              GraphicsClient graphics = GraphicsClient.of( GraphicsClientTest.connections ) )
         {
-            // Publish the statistics to a "feature" group
-            evaluation.publish( this.oneStatistics, "DRRC2" );
-
-            // Mark publication complete, which implicitly marks all groups complete
-            evaluation.markPublicationCompleteReportedSuccess();
-
-            // Wait for the evaluation to complete
-            evaluation.await();
-
-            // Record the paths written to assert against
-            actualPathsWritten = evaluation.getPathsWrittenByExternalSubscribers();
+            // Start the graphics client
+            graphics.start();
             
-            basePath = this.outputPath.resolve( "wres_evaluation_output_" + evaluation.getEvaluationId() );
+            try ( // This is the evaluation instance that declares png output
+                  Evaluation evaluation = Evaluation.of( this.oneEvaluation,
+                                                         GraphicsClientTest.connections,
+                                                         consumerGroup ); )
+            {
+
+                // Publish the statistics to a "feature" group
+                evaluation.publish( this.oneStatistics, "DRRC2" );
+
+                // Mark publication complete, which implicitly marks all groups complete
+                evaluation.markPublicationCompleteReportedSuccess();
+
+                // Wait for the evaluation to complete
+                evaluation.await();
+
+                // Record the paths written to assert against
+                actualPathsWritten = evaluation.getPathsWrittenByExternalSubscribers();
+
+                basePath = this.outputPath.resolve( "wres_evaluation_output_" + evaluation.getEvaluationId() );
+
+            }
         }
 
         // Make assertions about the things produced by internal subscriptions.
         assertEquals( List.of( this.oneEvaluation ), actualEvaluations );
         assertEquals( List.of( this.oneStatistics ), actualStatistics );
-        // Weaker assertion about the status messages - not important here.
-        assertEquals( 4, actualStatuses.size() );
 
         // Make assertions about the graphics written by the single external subscription.
         Set<Path> expectedPaths = Set.of( basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_ABSOLUTE_ERROR.png" ),
@@ -168,7 +168,7 @@ public class GraphicsClientTest
         {
             next.toFile().delete();
         }
-        
+
         basePath.toFile().delete();
     }
 

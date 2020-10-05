@@ -42,7 +42,19 @@ class MessagePublisher implements Closeable
 
         JMS_MESSAGE_ID,
 
-        CONSUMER_ID;
+        CONSUMER_ID,
+        
+        PNG,
+        
+        SVG,
+        
+        PROTOBUF,
+        
+        NETCDF,
+        
+        CSV,
+        
+        PAIRS;
 
         @Override
         public String toString()
@@ -57,6 +69,18 @@ class MessagePublisher implements Closeable
                     return "JMSMessageID";
                 case CONSUMER_ID:
                     return "ConsumerID";
+                case PNG:
+                    return "PNG";
+                case SVG:
+                    return "SVG";
+                case PROTOBUF:
+                    return "PROTOBUF";
+                case NETCDF:
+                    return "NETCDF";
+                case CSV:
+                    return "CSV";
+                case PAIRS:
+                    return "PAIRS";
                 default:
                     throw new IllegalStateException( "Implement the string identifier for " + this );
             }

@@ -26,10 +26,9 @@ message Evaluation
     string baseline_data_name = 4;
     // User-friendly name for the baseline data sources.
 
-    DefaultData baseline_data_for_baseline_pool = 5;
-    // A default baseline dataset used to compute skill metrics for
-    // pools that only contain baseline pairs when statistics are computed 
-    // separately for a baseline.
+    DefaultData default_baseline = 5;
+    // The dataset used for the baseline when no explicit baseline is 
+    // declared.
 
     string left_variable_name = 6;
     // Variable name for the left data.
