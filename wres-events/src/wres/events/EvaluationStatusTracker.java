@@ -218,6 +218,15 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
             case CONSUMPTION_ONGOING:
                 this.registerConsumptionOngoing( message );
                 break;
+            case GROUP_PUBLICATION_COMPLETE:
+                this.registerGroupPublicationComplete( message );
+                break;
+            case GROUP_CONSUMPTION_COMPLETE:
+                this.registerGroupConsumptionComplete( message );
+                break;
+            case EVALUATION_COMPLETE_REPORTED_FAILURE:
+                this.stopOnFailure( message );
+                break;
             default:
                 break;
         }
@@ -244,7 +253,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     {
         // Non-zero exit code
         this.exitCode.set( 1 );
-
+        
         String consumerId = failure.getConsumer()
                                    .getConsumerId();
 
@@ -298,6 +307,9 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         // Stop waiting
         this.publicationLatch.countDown();
         this.subscriberLatches.forEach( ( a, b ) -> b.countDown() );
+        
+        // Stop any flow control blocking
+        this.evaluation.stopFlowControl();
     }
 
     /**
@@ -489,7 +501,16 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     {
         return Collections.unmodifiableSet( this.failure );
     }
+    
+    /**
+     * @return true if there are failed subscribers.
+     */
 
+    boolean hasFailedSubscribers()
+    {
+        return !this.getFailedSubscribers().isEmpty();
+    }
+    
     /**
      * @return a set of negotiated subscribers by format.
      */
@@ -712,7 +733,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                 int size = consumers.size();
                 int pick = SUBSCRIBER_RESOLVER.nextInt( size );
                 String newConsumerId = consumers.get( pick );
-                
+
                 // Replace. Is the new consumer id different than the old one?
                 existingConsumerId = accepted.replace( nextAccepted, newConsumerId );
 
@@ -821,6 +842,45 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                           this.evaluation.getEvaluationId(),
                           message.getCompletionStatus() );
         }
+    }
+
+    /**
+     * Registers the publication of a message group complete.
+     * 
+     * TODO: Add the group identity to the message and move the group flow control logic to the 
+     * {@link GroupCompletionTracker}, which can be constructed with the {@link Evaluation} and passed to this 
+     * instance and then called from here.
+     * 
+     * @param message the status message containing the status event
+     */
+
+    private void registerGroupPublicationComplete( EvaluationStatus message )
+    {
+        LOGGER.debug( "Evaluation {} reports {}. Engaging producer flow control until the same or a different message "
+                      + "group acknowledges consumption complete.",
+                      this.evaluation.getEvaluationId(),
+                      message.getCompletionStatus() );
+
+        this.evaluation.startFlowControl();
+    }
+
+    /**
+     * Registers the publication of a message group complete.
+     * 
+     * TODO: Add the group identity to the message and move the group flow control logic to the 
+     * {@link GroupCompletionTracker}, which can be constructed with the {@link Evaluation} and passed to this 
+     * instance and then called from here.
+     * 
+     * @param message the status message containing the status event
+     */
+
+    private void registerGroupConsumptionComplete( EvaluationStatus message )
+    {
+        LOGGER.debug( "Evaluation {} reports {}. Disengaging producer flow control.",
+                      this.evaluation.getEvaluationId(),
+                      message.getCompletionStatus() );
+
+        this.evaluation.stopFlowControl();
     }
 
     /**

@@ -54,7 +54,7 @@ message EvaluationStatus
         PUBLICATION_COMPLETE_REPORTED_FAILURE = 6;
         // Publication completed with errors.
 
-        GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS = 7;
+        GROUP_PUBLICATION_COMPLETE = 7;
         // Publication of a message group has been completed. The group 
         // identifier is assumed to be part of the protocol metadata.
 
@@ -86,6 +86,12 @@ message EvaluationStatus
         
         CONSUMPTION_COMPLETE_REPORTED_FAILURE = 12;
         // A consumer reports completion with errors.
+
+        GROUP_CONSUMPTION_COMPLETE = 13;
+        // Consumption of a message group has been completed. The group 
+        // identifier is assumed to be part of the protocol metadata. A consumer 
+        // must be identified in order to correlate with its completion status. 
+        // See the Consumer field in the EvaluationStatus message.
     }
     
     CompletionStatus completion_status = 2;
