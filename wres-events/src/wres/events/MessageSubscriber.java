@@ -183,6 +183,18 @@ class MessageSubscriber<T> implements Closeable
     private final boolean isIgnoreConsumerMessages;
 
     /**
+     * A description of this consumer.
+     */
+
+    private final wres.statistics.generated.Consumer consumerDescription;
+
+    /**
+     * A message to publish when group consumption is complete.
+     */
+
+    private final EvaluationStatus groupConsumptionComplete;
+
+    /**
      * Returns a message on which consumption failed, <code>null</code> if no failure occurred.
      * 
      * @return a message that was not consumed
@@ -623,44 +635,49 @@ class MessageSubscriber<T> implements Closeable
 
             try
             {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-                groupId = message.getStringProperty( MessageProperty.JMSX_GROUP_ID.toString() );
-
-                // This is a grouped message
-                if ( !UNKNOWN.equals( groupId ) )
+                // Only consume if subscriber is live
+                if ( !this.failed() )
                 {
-                    // Create the byte array to hold the message
-                    int messageLength = (int) receivedBytes.getBodyLength();
+                    messageId = message.getJMSMessageID();
+                    correlationId = message.getJMSCorrelationID();
+                    groupId = message.getStringProperty( MessageProperty.JMSX_GROUP_ID.toString() );
 
-                    byte[] messageContainer = new byte[messageLength];
+                    // This is a grouped message
+                    if ( !UNKNOWN.equals( groupId ) )
+                    {
+                        // Create the byte array to hold the message
+                        int messageLength = (int) receivedBytes.getBodyLength();
 
-                    receivedBytes.readBytes( messageContainer );
+                        byte[] messageContainer = new byte[messageLength];
 
-                    ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
+                        receivedBytes.readBytes( messageContainer );
 
-                    T received = mapper.apply( bufferedMessage );
+                        ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
 
-                    Queue<OneGroupConsumer<T>> subscribers = this.getGroupSubscriber( innerSubscriber,
-                                                                                      groupId );
+                        T received = mapper.apply( bufferedMessage );
 
-                    // Register the message with each grouped subscriber
-                    String messageIdFinal = messageId;
-                    subscribers.forEach( next -> next.accept( messageIdFinal, received ) );
+                        Queue<OneGroupConsumer<T>> subscribers = this.getGroupSubscriber( innerSubscriber,
+                                                                                          groupId );
+
+                        // Register the message with each grouped subscriber
+                        String messageIdFinal = messageId;
+                        subscribers.forEach( next -> next.accept( messageIdFinal, received ) );
+                    }
+
+                    success.set( true );
+
+                    // Increment the actual message count
+                    this.actualMessageCount.incrementAndGet();
+
+                    LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
+                                  + "identifier {}.",
+                                  this,
+                                  messageId,
+                                  correlationId );
                 }
 
-                // Acknowledge and flag success locally
+                // Acknowledge
                 message.acknowledge();
-                success.set( true );
-
-                // Increment the actual message count
-                this.actualMessageCount.incrementAndGet();
-
-                LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
-                              + "identifier {}.",
-                              this,
-                              messageId,
-                              correlationId );
 
                 // Check and close early if group consumption is complete for one or more subscribers
                 this.checkAndCompleteGroup( groupId );
@@ -805,41 +822,46 @@ class MessageSubscriber<T> implements Closeable
 
             try
             {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-                consumerId = message.getStringProperty( MessageProperty.CONSUMER_ID.toString() );
-
-                // Do not consume messages about subscribers unless this subscriber is explicitly tracking subscriber 
-                // messages
-                if ( Objects.isNull( consumerId ) || !this.isIgnoreConsumerMessages() )
+                // Only consume if subscriber is live
+                if ( !this.failed() )
                 {
+                    messageId = message.getJMSMessageID();
+                    correlationId = message.getJMSCorrelationID();
+                    consumerId = message.getStringProperty( MessageProperty.CONSUMER_ID.toString() );
 
-                    // Create the byte array to hold the message
-                    int messageLength = (int) receivedBytes.getBodyLength();
+                    // Do not consume messages about subscribers unless this subscriber is explicitly tracking subscriber 
+                    // messages
+                    if ( Objects.isNull( consumerId ) || !this.isIgnoreConsumerMessages() )
+                    {
 
-                    byte[] messageContainer = new byte[messageLength];
+                        // Create the byte array to hold the message
+                        int messageLength = (int) receivedBytes.getBodyLength();
 
-                    receivedBytes.readBytes( messageContainer );
+                        byte[] messageContainer = new byte[messageLength];
 
-                    ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
+                        receivedBytes.readBytes( messageContainer );
 
-                    T received = mapper.apply( bufferedMessage );
+                        ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
 
-                    subscriber.accept( received );
+                        T received = mapper.apply( bufferedMessage );
 
-                    // Increment the actual message count
-                    this.actualMessageCount.incrementAndGet();
+                        subscriber.accept( received );
 
-                    LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
-                                  + "identifier {}.",
-                                  this,
-                                  messageId,
-                                  correlationId );
+                        // Increment the actual message count
+                        this.actualMessageCount.incrementAndGet();
+
+                        LOGGER.debug( "Consumer {} successfully consumed a message with identifier {} and correlation "
+                                      + "identifier {}.",
+                                      this,
+                                      messageId,
+                                      correlationId );
+                    }
+
+                    success.set( true );
                 }
 
-                // Acknowledge and flag success locally
+                // Acknowledge
                 message.acknowledge();
-                success.set( true );
             }
             catch ( JMSException | RuntimeException e )
             {
@@ -895,6 +917,8 @@ class MessageSubscriber<T> implements Closeable
 
             if ( Objects.nonNull( check ) )
             {
+                ByteBuffer buffer = ByteBuffer.wrap( this.groupConsumptionComplete.toByteArray() );
+
                 for ( OneGroupConsumer<T> next : check )
                 {
                     Integer expected = this.getEvaluationInfo()
@@ -904,6 +928,13 @@ class MessageSubscriber<T> implements Closeable
                     if ( Objects.nonNull( expected ) && expected == next.size() && !next.hasBeenUsed() )
                     {
                         next.acceptGroup();
+
+                        // Notify completion
+                        String messageId = "ID:" + this.getIdentifier() + groupId;
+                        this.publishStatusInternal( buffer,
+                                                    messageId,
+                                                    this.groupConsumptionComplete.getCompletionStatus() );
+
                         completed++;
                     }
                 }
@@ -1003,6 +1034,7 @@ class MessageSubscriber<T> implements Closeable
 
     private void internalClose()
     {
+        // Close and remove durable subscriptions, where applicable
         for ( NamedMessageConsumer next : this.consumers )
         {
             try
@@ -1150,7 +1182,6 @@ class MessageSubscriber<T> implements Closeable
      * 
      * @param message the message
      * @param messageId the message identifier
-     * @param evaluataionId the evaluation identifier
      * @param status the status to help with logging
      */
 
@@ -1306,45 +1337,50 @@ class MessageSubscriber<T> implements Closeable
 
             try
             {
-                messageId = message.getJMSMessageID();
-                correlationId = message.getJMSCorrelationID();
-                messageGroupId = message.getStringProperty( MessageProperty.JMSX_GROUP_ID.toString() );
-
-                // Create the byte array to hold the message
-                int messageLength = (int) receivedBytes.getBodyLength();
-
-                byte[] messageContainer = new byte[messageLength];
-
-                receivedBytes.readBytes( messageContainer );
-
-                ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
-
-                EvaluationStatus status = EvaluationStatus.parseFrom( bufferedMessage.array() );
-
-                // The status message signals the completion of a group and the group has received all expected
-                // statistics messages
-                switch ( status.getCompletionStatus() )
+                // Only consume if the subscriber is live
+                if ( !this.failed() )
                 {
-                    case GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS:
-                        this.setExpectedMessageCountForGroups( status,
-                                                               evaluationId,
-                                                               messageId,
-                                                               messageGroupId,
-                                                               correlationId );
-                        break;
-                    case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
-                        this.setExpectedMessageCount( status,
-                                                      evaluationId,
-                                                      messageId,
-                                                      correlationId );
-                        break;
-                    default:
-                        break;
+                    messageId = message.getJMSMessageID();
+                    correlationId = message.getJMSCorrelationID();
+                    messageGroupId = message.getStringProperty( MessageProperty.JMSX_GROUP_ID.toString() );
+
+                    // Create the byte array to hold the message
+                    int messageLength = (int) receivedBytes.getBodyLength();
+
+                    byte[] messageContainer = new byte[messageLength];
+
+                    receivedBytes.readBytes( messageContainer );
+
+                    ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
+
+                    EvaluationStatus status = EvaluationStatus.parseFrom( bufferedMessage.array() );
+
+                    // The status message signals the completion of a group and the group has received all expected
+                    // statistics messages
+                    switch ( status.getCompletionStatus() )
+                    {
+                        case GROUP_PUBLICATION_COMPLETE:
+                            this.setExpectedMessageCountForGroups( status,
+                                                                   evaluationId,
+                                                                   messageId,
+                                                                   messageGroupId,
+                                                                   correlationId );
+                            break;
+                        case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
+                            this.setExpectedMessageCount( status,
+                                                          evaluationId,
+                                                          messageId,
+                                                          correlationId );
+                            break;
+                        default:
+                            break;
+                    }
+
+                    success.set( true );
                 }
 
-                // Acknowledge and flag success locally
+                // Acknowledge
                 message.acknowledge();
-                success.set( true );
             }
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
@@ -1499,7 +1535,7 @@ class MessageSubscriber<T> implements Closeable
         // Set the expected number of messages per group
         this.getEvaluationInfo()
             .getCompletionTracker()
-            .registerGroupComplete( status, messageGroupId );
+            .registerPublicationComplete( status, messageGroupId );
         int completed = this.checkAndCompleteGroup( messageGroupId );
 
         if ( completed > 0 && LOGGER.isDebugEnabled() )
@@ -1586,6 +1622,15 @@ class MessageSubscriber<T> implements Closeable
         {
             localIdentifier = Evaluation.getUniqueId();
         }
+
+        this.consumerDescription = wres.statistics.generated.Consumer.newBuilder()
+                                                                     .setConsumerId( localIdentifier )
+                                                                     .build();
+
+        this.groupConsumptionComplete = EvaluationStatus.newBuilder()
+                                                        .setCompletionStatus( CompletionStatus.GROUP_CONSUMPTION_COMPLETE )
+                                                        .setConsumer( this.consumerDescription )
+                                                        .build();
 
         this.identifier = localIdentifier;
         this.topic = builder.topic;
