@@ -41,7 +41,7 @@ public class GroupCompletionTracker
     }
 
     /**
-     * Registers the completion of a message group.
+     * Registers the publication of a message group complete.
      * 
      * @param completionState a message indicating that a group has completed.
      * @param groupId the group identifier.
@@ -49,19 +49,19 @@ public class GroupCompletionTracker
      * @throws IllegalArgumentException if the message is missing expected content
      */
 
-    public void registerGroupComplete( EvaluationStatus completionState, String groupId )
+    public void registerPublicationComplete( EvaluationStatus completionState, String groupId )
     {
         Objects.requireNonNull( completionState );
         Objects.requireNonNull( groupId );
 
-        if ( completionState.getCompletionStatus() != CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS )
+        if ( completionState.getCompletionStatus() != CompletionStatus.GROUP_PUBLICATION_COMPLETE )
         {
             throw new IllegalArgumentException( "While registered the completion of group " + groupId
                                                 + ", received an unexpected completion "
                                                 + "status  "
                                                 + completionState.getCompletionStatus()
                                                 + ". Expected "
-                                                + CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS );
+                                                + CompletionStatus.GROUP_PUBLICATION_COMPLETE );
         }
 
         if ( completionState.getMessageCount() == 0 )

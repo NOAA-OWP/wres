@@ -142,7 +142,7 @@ public class MessageSubscriberTest
         // Group complete message
         EvaluationStatus status =
                 EvaluationStatus.newBuilder()
-                                .setCompletionStatus( CompletionStatus.GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS )
+                                .setCompletionStatus( CompletionStatus.GROUP_PUBLICATION_COMPLETE )
                                 .setMessageCount( 2 )
                                 .build();
 

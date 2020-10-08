@@ -1345,6 +1345,7 @@ sourceCompatibility = '11'
 targetCompatibility = '11'
 
 applicationDefaultJvmArgs = ['-Xms1680m', '-Xmx1680m',
+                             '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
                              '-Duser.timezone=UTC',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',

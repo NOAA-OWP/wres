@@ -6,7 +6,7 @@ package wres.vis.client;
  * @author james.brown@hydrosolved.com
  */
 
-public class UnrecoverableConsumerException extends Exception
+public class UnrecoverableConsumerException extends RuntimeException
 {
 
     private static final long serialVersionUID = -2029793213220550948L;
