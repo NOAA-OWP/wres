@@ -277,7 +277,6 @@ public class EvaluationTest
     @Test
     public void testPublishThrowsExceptionAfterStop() throws IOException
     {
-        // Add the same status consumer twice, which doubles the expected number of messages to 24
         Consumers consumerGroup =
                 new Consumers.Builder()
                                        .addStatusConsumer( message -> {

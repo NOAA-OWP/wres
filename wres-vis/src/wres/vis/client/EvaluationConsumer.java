@@ -196,7 +196,7 @@ class EvaluationConsumer
      * @throws JMSException if the evaluation failed to close
      * @throws UnrecoverableConsumerException if the consumer fails unrecoverably 
      */
-    void close() throws JMSException, UnrecoverableConsumerException
+    void close() throws JMSException
     {
         if ( !this.isClosed() )
         {
@@ -306,7 +306,6 @@ class EvaluationConsumer
     void acceptStatisticsMessage( Statistics statistics,
                                   String groupId,
                                   String messageId )
-            throws UnrecoverableConsumerException
     {
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( messageId );
@@ -352,7 +351,6 @@ class EvaluationConsumer
      */
 
     void acceptEvaluationMessage( Evaluation evaluationDescription, String suggestedPath, String messageId )
-            throws UnrecoverableConsumerException
     {
         if ( this.getAreConsumersReady() )
         {
@@ -386,7 +384,6 @@ class EvaluationConsumer
      */
 
     void acceptStatusMessage( EvaluationStatus status, String groupId, String messageId )
-            throws UnrecoverableConsumerException
     {
         Objects.requireNonNull( status );
 
@@ -398,7 +395,7 @@ class EvaluationConsumer
 
         switch ( status.getCompletionStatus() )
         {
-            case GROUP_PUBLICATION_COMPLETE_REPORTED_SUCCESS:
+            case GROUP_PUBLICATION_COMPLETE:
                 this.setExpectedMessageCountForGroups( status, groupId );
                 break;
             case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
@@ -470,7 +467,7 @@ class EvaluationConsumer
      * @throws UnrecoverableConsumerException if the task fails unrecoverably
      */
 
-    private void execute( Runnable task ) throws UnrecoverableConsumerException
+    private void execute( Runnable task )
     {
         Future<?> future = this.getExecutorService().submit( task );
 
@@ -537,11 +534,10 @@ class EvaluationConsumer
 
     private void setExpectedMessageCountForGroups( EvaluationStatus status,
                                                    String groupId )
-            throws UnrecoverableConsumerException
     {
         // Set the expected number of messages per group
         this.getGroupTracker()
-            .registerGroupComplete( status, groupId );
+            .registerPublicationComplete( status, groupId );
         boolean completed = this.checkAndCompleteGroup( groupId );
 
         if ( completed && LOGGER.isDebugEnabled() )
@@ -572,7 +568,7 @@ class EvaluationConsumer
      * @throws IllegalStateException if the number of messages within the group does not match the expected number
      */
 
-    private void completeAllGroups() throws UnrecoverableConsumerException
+    private void completeAllGroups()
     {
         // Check for group subscriptions that have not completed and complete them, unless this consumer is
         // already in a failure state
@@ -667,7 +663,7 @@ class EvaluationConsumer
      * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    private boolean checkAndCompleteGroup( String groupId ) throws UnrecoverableConsumerException
+    private boolean checkAndCompleteGroup( String groupId )
     {
         boolean completed = false;
 
@@ -699,7 +695,7 @@ class EvaluationConsumer
      * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    private void createConsumers( Evaluation evaluationDescription ) throws UnrecoverableConsumerException
+    private void createConsumers( Evaluation evaluationDescription )
     {
         synchronized ( this.getConsumerCreationLock() )
         {
@@ -744,7 +740,7 @@ class EvaluationConsumer
      * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    private void consumeCachedStatisticsMessages() throws UnrecoverableConsumerException
+    private void consumeCachedStatisticsMessages()
     {
         // Consume any cached messages that arrived before the consumers were ready and then clear the cache
         if ( !this.statisticsCache.isEmpty() )

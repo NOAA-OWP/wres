@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -210,6 +211,12 @@ class GraphicsSubscriber implements Closeable
 
     private final ReentrantLock evaluationsLock = new ReentrantLock();
 
+    /**
+     * Is <code>true</code> is the subscriber has failed unrecoverably.
+     */
+
+    private final AtomicBoolean isFailedUnrecoverably;
+
     @Override
     public void close()
     {
@@ -230,41 +237,12 @@ class GraphicsSubscriber implements Closeable
                           open );
         }
 
-        LOGGER.debug( "Closing and then removing subscriptions for {}.",
-                      this.getSubscriberId() );
-
+        // Durable subscriptions are removed if all evaluations succeeded
         this.closeSubscriptions();
 
+        // No need to close any other pubs/subs or sessions (according to the JMS documentation of Connection::close).
+        
         String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
-
-        try
-        {
-            if ( Objects.nonNull( this.evaluationStatusPublisher ) )
-            {
-                this.evaluationStatusPublisher.close();
-            }
-        }
-        catch ( IOException e )
-        {
-            String message = "Encountered an error while attempting to close a registered publisher of evaluation "
-                             + "status "
-                             + errorMessage;
-
-            LOGGER.warn( message, e );
-        }
-
-        try
-        {
-            this.session.close();
-        }
-        catch ( JMSException e )
-        {
-            String message = "Encountered an error while attempting to close a broker session within graphics "
-                             + "subscriber "
-                             + errorMessage;
-
-            LOGGER.warn( message, e );
-        }
 
         try
         {
@@ -347,6 +325,9 @@ class GraphicsSubscriber implements Closeable
 
     private void closeSubscriptions()
     {
+        LOGGER.debug( "Closing and then removing subscriptions for {}.",
+                      this.getSubscriberId() );
+        
         String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
 
         try
@@ -506,7 +487,7 @@ class GraphicsSubscriber implements Closeable
                 groupId = message.getStringProperty( GraphicsSubscriber.GROUP_ID_STRING );
 
                 // Ignore status messages about consumers, including this one
-                if ( Objects.isNull( consumerId ) )
+                if ( Objects.isNull( consumerId ) && !this.isSubscriberFailed() )
                 {
                     int messageLength = (int) receivedBytes.getBodyLength();
 
@@ -552,15 +533,15 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            // Attempt to recover
-            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
-            {
-                this.recover( messageId, correlationId, e );
-            }
             // Do not attempt to recover
             catch ( UnrecoverableConsumerException e )
             {
                 this.markSubscriberFailed( e );
+            }
+            // Attempt to recover
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
+            {
+                this.recover( messageId, correlationId, e );
             }
         };
     }
@@ -580,7 +561,7 @@ class GraphicsSubscriber implements Closeable
 
             try
             {
-                if ( this.isThisMessageForMe( message ) )
+                if ( !this.isSubscriberFailed() && this.isThisMessageForMe( message ) )
                 {
                     messageId = message.getJMSMessageID();
                     correlationId = message.getJMSCorrelationID();
@@ -621,15 +602,15 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            // Attempt to recover
-            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
-            {
-                this.recover( messageId, correlationId, e );
-            }
             // Do not attempt to recover
             catch ( UnrecoverableConsumerException e )
             {
                 this.markSubscriberFailed( e );
+            }
+            // Attempt to recover
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
+            {
+                this.recover( messageId, correlationId, e );
             }
         };
     }
@@ -649,7 +630,7 @@ class GraphicsSubscriber implements Closeable
 
             try
             {
-                if ( this.isThisMessageForMe( message ) )
+                if ( !this.isSubscriberFailed() && this.isThisMessageForMe( message ) )
                 {
                     messageId = message.getJMSMessageID();
                     correlationId = message.getJMSCorrelationID();
@@ -689,15 +670,15 @@ class GraphicsSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
-            // Attempt to recover
-            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
-            {
-                this.recover( messageId, correlationId, e );
-            }
             // Do not attempt to recover
             catch ( UnrecoverableConsumerException e )
             {
                 this.markSubscriberFailed( e );
+            }
+            // Attempt to recover
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
+            {
+                this.recover( messageId, correlationId, e );
             }
         };
     }
@@ -824,8 +805,9 @@ class GraphicsSubscriber implements Closeable
     }
 
     /**
-     * Marks the subscriber as failed unrecoverably.
+     * Marks the subscriber as failed unrecoverably and then rethrows the unrecoverable exception.
      * @param exception the source of the failure
+     * @throws UnrecoverableConsumerException always, after marking the subscriber as failed
      */
 
     private void markSubscriberFailed( UnrecoverableConsumerException exception )
@@ -833,8 +815,20 @@ class GraphicsSubscriber implements Closeable
         LOGGER.info( "Message subscriber {} has been flagged as failed without the possibility of recovery.",
                      this.getSubscriberId() );
 
-        // Propagate upwards        
+        // Propagate upwards
+        this.isFailedUnrecoverably.set( true );
         this.status.markFailedUnrecoverably( exception );
+
+        throw exception;
+    }
+
+    /**
+     * @return <code>true</code> if the subscriber failed unrecoverably, otherwise <code>false</code>.
+     */
+
+    private boolean isSubscriberFailed()
+    {
+        return this.isFailedUnrecoverably.get();
     }
 
     /**
@@ -850,7 +844,8 @@ class GraphicsSubscriber implements Closeable
                                               + "missing identifier." );
 
         // Lock to avoid sweeping
-        this.getEvaluationsLock().lock();
+        this.getEvaluationsLock()
+            .lock();
 
         // Check initially
         EvaluationConsumer consumer = this.evaluations.get( evaluationId );
@@ -872,7 +867,8 @@ class GraphicsSubscriber implements Closeable
         }
 
         // Unlock to allow sweeping
-        this.getEvaluationsLock().unlock();
+        this.getEvaluationsLock()
+            .unlock();
 
         return consumer;
     }
@@ -1050,13 +1046,15 @@ class GraphicsSubscriber implements Closeable
 
         this.readyToConsume = EvaluationStatus.newBuilder()
                                               .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
-                                              .setConsumer( consumerDescription )
+                                              .setConsumer( this.consumerDescription )
                                               .build();
 
         this.formatStrings = this.consumerDescription.getFormatsList()
                                                      .stream()
                                                      .map( Format::toString )
                                                      .collect( Collectors.toSet() );
+
+        this.isFailedUnrecoverably = new AtomicBoolean();
 
         // Start the consumer connection
         LOGGER.info( "Started the consumer connection for long-running subscriber {}...",
