@@ -1,0 +1,52 @@
+# Based on: https://hub.docker.com/r/chrisob/qpid-broker-j-docker/dockerfile
+
+#############
+# Build image
+FROM alpine AS builder
+
+ARG BROKER_J_VERSION=8.0.1
+
+WORKDIR /workspace
+
+# Download Broker-J tgz and checksum
+RUN mkdir out
+ADD https://archive.apache.org/dist/qpid/broker-j/${BROKER_J_VERSION}/binaries/apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz \
+    apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz
+ADD https://archive.apache.org/dist/qpid/broker-j/${BROKER_J_VERSION}/binaries/apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512 \
+    apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512
+
+# Assert checksum
+RUN sha512sum -c apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512
+
+# Extract binaries to ./out/
+RUN apk add tar
+RUN tar xf apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz -C out --strip-components=2 qpid-broker/${BROKER_J_VERSION}/
+
+#############
+# Final image
+FROM openjdk:11-jre-slim
+
+# Set env vars expected by qpid
+ENV QPID_HOME=/usr/local
+ENV QPID_WORK=/container_home
+ENV QPID_RUN_LOG=2
+
+# Create user and group
+RUN groupadd --system --gid 1370800073 wres && \
+    useradd  --system --no-log-init \
+             --create-home --home-dir ${QPID_WORK} \
+             --uid 502 --gid 1370800073 wres_eventsbroker
+WORKDIR ${QPID_WORK}
+
+# Copy qpid binaries from build stage to QPID_HOME
+RUN mkdir -p ${QPID_HOME}
+COPY --from=builder /workspace/out ${QPID_HOME}
+
+# Copy initial-config.json
+COPY nonsrc/initial-config.json ${QPID_HOME}/etc/
+
+USER wres_eventsbroker
+EXPOSE 5673 8081
+VOLUME ${QPID_WORK}
+
+CMD ["qpid-server", "--initial-config-path", "${QPID_HOME}/etc/initial-config.json", "-prop", "qpid.amqp_port=5673", "-prop", "qpid.http_port=8081"]

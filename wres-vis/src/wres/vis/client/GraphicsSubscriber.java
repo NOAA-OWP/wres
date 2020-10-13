@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -51,6 +52,8 @@ import wres.statistics.generated.Evaluation;
 
 class GraphicsSubscriber implements Closeable
 {
+
+    private static final String EVALUATION = "evaluation ";
 
     private static final String SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION =
             "Subscriber {} has claimed ownership of message {} for evaluation {}.";
@@ -241,7 +244,7 @@ class GraphicsSubscriber implements Closeable
         this.closeSubscriptions();
 
         // No need to close any other pubs/subs or sessions (according to the JMS documentation of Connection::close).
-        
+
         String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
 
         try
@@ -261,7 +264,7 @@ class GraphicsSubscriber implements Closeable
     }
 
     /**
-     * Removes completed evaluations from the cache.
+     * Maintenance task that removes completed evaluations from the cache.
      */
 
     void sweep()
@@ -270,23 +273,32 @@ class GraphicsSubscriber implements Closeable
         this.getEvaluationsLock().lock();
 
         // Find the evaluations to sweep
-        Set<String> completed = this.evaluations.entrySet()
-                                                .stream()
-                                                .filter( next -> next.getValue().isComplete() )
-                                                .map( Map.Entry::getKey )
-                                                .collect( Collectors.toSet() );
-
-        // Do the actual sweeping
-        for ( String next : completed )
+        Set<String> completed = new HashSet<>();
+        
+        // Create an independent set to sweep as this is a mutating loop
+        Set<String> toSweep = new HashSet<>( this.evaluations.keySet() );
+        for ( String nextEvaluation : toSweep )
         {
-            this.evaluations.remove( next );
-            this.retriesAttempted.remove( next );
+            EvaluationConsumer nextValue = this.evaluations.get( nextEvaluation );
+            if ( nextValue.isComplete() )
+            {
+                this.evaluations.remove( nextEvaluation );
+                this.retriesAttempted.remove( nextEvaluation );
+            }
+            else
+            {
+                // Maintenance task
+                nextValue.sweepOpenGroups();
+            }
         }
 
-        LOGGER.debug( "The sweeper for subscriber {} removed {} completed evaluation, including {}.",
-                      this.getSubscriberId(),
-                      completed.size(),
-                      completed );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "The sweeper for subscriber {} removed {} completed evaluations, including {}.",
+                          this.getSubscriberId(),
+                          completed.size(),
+                          completed );
+        }
 
         this.getEvaluationsLock().unlock();
     }
@@ -327,9 +339,52 @@ class GraphicsSubscriber implements Closeable
     {
         LOGGER.debug( "Closing and then removing subscriptions for {}.",
                       this.getSubscriberId() );
-        
+
         String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
 
+        // Remove durable subscriptions if there are no open evaluations
+        if ( !this.hasOpenEvaluations() )
+        {
+            try
+            {
+                this.session.unsubscribe( this.getEvaluationStatusSubscriberName() );
+            }
+            catch ( JMSException e )
+            {
+                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
+                                 + "evaluation status "
+                                 + errorMessage;
+
+                LOGGER.error( message, e );
+            }
+
+            try
+            {
+                this.session.unsubscribe( this.getEvaluationSubscriberName() );
+            }
+            catch ( JMSException e )
+            {
+                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
+                                 + EVALUATION
+                                 + errorMessage;
+
+                LOGGER.error( message, e );
+            }
+
+            try
+            {
+                this.session.unsubscribe( this.getStatisticsSubscriberName() );
+            }
+            catch ( JMSException e )
+            {
+                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
+                                 + "statistics "
+                                 + errorMessage;
+
+                LOGGER.error( message, e );
+            }
+        }
+        
         try
         {
             if ( Objects.nonNull( this.evaluationStatusConsumer ) )
@@ -374,49 +429,6 @@ class GraphicsSubscriber implements Closeable
                              + errorMessage;
 
             LOGGER.error( message, e );
-        }
-
-        // Remove durable subscriptions if there are no open evaluations
-        if ( !this.hasOpenEvaluations() )
-        {
-            try
-            {
-                this.session.unsubscribe( this.getEvaluationStatusSubscriberName() );
-            }
-            catch ( JMSException e )
-            {
-                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
-                                 + "evaluation status "
-                                 + errorMessage;
-
-                LOGGER.error( message, e );
-            }
-
-            try
-            {
-                this.session.unsubscribe( this.getEvaluationSubscriberName() );
-            }
-            catch ( JMSException e )
-            {
-                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
-                                 + "evaluation status "
-                                 + errorMessage;
-
-                LOGGER.error( message, e );
-            }
-
-            try
-            {
-                this.session.unsubscribe( this.getStatisticsSubscriberName() );
-            }
-            catch ( JMSException e )
-            {
-                String message = ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR
-                                 + "statistics "
-                                 + errorMessage;
-
-                LOGGER.error( message, e );
-            }
         }
     }
 
@@ -796,7 +808,7 @@ class GraphicsSubscriber implements Closeable
         {
             String message = "Graphics subscriber " + this.getSubscriberId()
                              + " encountered an error while marking "
-                             + "evaluation "
+                             + EVALUATION
                              + evaluationId
                              + " as failed.";
 
@@ -959,7 +971,7 @@ class GraphicsSubscriber implements Closeable
             throw new EvaluationEventException( "Subscriber "
                                                 + this.getSubscriberId()
                                                 + " failed to publish an evaluation status message about "
-                                                + "evaluation "
+                                                + EVALUATION
                                                 + evaluationId
                                                 + ".",
                                                 e );

@@ -192,12 +192,17 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
     private final Set<String> resourcesWritten;
 
+    /**
+     * Producer flow control.
+     */
+
+    private final ProducerFlowController flowController;
+
     @Override
     public void accept( EvaluationStatus message )
     {
         Objects.requireNonNull( message );
         CompletionStatus status = message.getCompletionStatus();
-
         switch ( status )
         {
             case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
@@ -253,7 +258,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     {
         // Non-zero exit code
         this.exitCode.set( 1 );
-        
+
         String consumerId = failure.getConsumer()
                                    .getConsumerId();
 
@@ -307,7 +312,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         // Stop waiting
         this.publicationLatch.countDown();
         this.subscriberLatches.forEach( ( a, b ) -> b.countDown() );
-        
+
         // Stop any flow control blocking
         this.evaluation.stopFlowControl();
     }
@@ -501,7 +506,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     {
         return Collections.unmodifiableSet( this.failure );
     }
-    
+
     /**
      * @return true if there are failed subscribers.
      */
@@ -510,7 +515,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     {
         return !this.getFailedSubscribers().isEmpty();
     }
-    
+
     /**
      * @return a set of negotiated subscribers by format.
      */
@@ -518,6 +523,50 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     Map<Format, String> getNegotiatedSubscribers()
     {
         return Collections.unmodifiableMap( this.negotiatedSubscribers );
+    }
+
+    /**
+     * Registers the publication of a message group complete.
+     * 
+     * TODO: delegate producer flow control to the broker. See #83536.
+     * 
+     * @param message the status message containing the status event
+     * @throws NullPointerException if the message is null
+     */
+
+    private void registerGroupPublicationComplete( EvaluationStatus message )
+    {
+        Objects.requireNonNull( message );
+
+        this.flowController.start();
+    }
+
+    /**
+     * Registers the publication of a message group complete.
+     * 
+     * TODO: delegate producer flow control to the broker. See #83536.
+     * 
+     * @param message the status message containing the status event
+     * @throws NullPointerException if the message is null
+     * @throws IllegalArgumentException if the consumer is absent
+     */
+
+    private void registerGroupConsumptionComplete( EvaluationStatus message )
+    {
+        Objects.requireNonNull( message );
+
+        if ( message.hasConsumer() )
+        {
+            String consumerId = message.getConsumer()
+                                       .getConsumerId();
+
+            this.flowController.stop( consumerId );
+        }
+        else
+        {
+            // Only grouped messages control flow.
+            LOGGER.debug( "Not attempting to stop flow control because the message received had no consumer set." );
+        }
     }
 
     /**
@@ -731,7 +780,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
             {
                 // Find a new consumer id
                 int size = consumers.size();
-                int pick = SUBSCRIBER_RESOLVER.nextInt( size );
+                int pick = EvaluationStatusTracker.SUBSCRIBER_RESOLVER.nextInt( size );
                 String newConsumerId = consumers.get( pick );
 
                 // Replace. Is the new consumer id different than the old one?
@@ -751,6 +800,9 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
                 // Add a consumption latch for the new consumer.
                 this.subscriberLatches.put( newConsumerId, new TimedCountDownLatch( 1 ) );
+
+                // Flow control the consumer
+                this.flowController.addConsumer( newConsumerId );
             }
         }
     }
@@ -845,45 +897,6 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     }
 
     /**
-     * Registers the publication of a message group complete.
-     * 
-     * TODO: Add the group identity to the message and move the group flow control logic to the 
-     * {@link GroupCompletionTracker}, which can be constructed with the {@link Evaluation} and passed to this 
-     * instance and then called from here.
-     * 
-     * @param message the status message containing the status event
-     */
-
-    private void registerGroupPublicationComplete( EvaluationStatus message )
-    {
-        LOGGER.debug( "Evaluation {} reports {}. Engaging producer flow control until the same or a different message "
-                      + "group acknowledges consumption complete.",
-                      this.evaluation.getEvaluationId(),
-                      message.getCompletionStatus() );
-
-        this.evaluation.startFlowControl();
-    }
-
-    /**
-     * Registers the publication of a message group complete.
-     * 
-     * TODO: Add the group identity to the message and move the group flow control logic to the 
-     * {@link GroupCompletionTracker}, which can be constructed with the {@link Evaluation} and passed to this 
-     * instance and then called from here.
-     * 
-     * @param message the status message containing the status event
-     */
-
-    private void registerGroupConsumptionComplete( EvaluationStatus message )
-    {
-        LOGGER.debug( "Evaluation {} reports {}. Disengaging producer flow control.",
-                      this.evaluation.getEvaluationId(),
-                      message.getCompletionStatus() );
-
-        this.evaluation.stopFlowControl();
-    }
-
-    /**
      * Throws an exception if the consumer identifier is blank.
      * @param consumerId the consumer identifier
      * @throws EvaluationEventException if the consumer identifier is blank
@@ -945,10 +958,11 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
     /**
      * Create an instance with an evaluation and an expected list of subscriber identifiers.
-     * @param evaluation the evaluation 
+     * @param evaluation the evaluation
      * @param expectedSubscribers the list of unique identifiers for subscribers that have already been negotiated
      * @param formatsAwaited the formats to be delivered by subscribers yet to be negotiated
      * @param myConsumerId the consumer identifier of this instance, used to ignore messages related to the tracker
+     * @param statisticsSubscriberId the statistics subscriber identifier, which is flow controlled
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the list of subscribers is empty
      */
@@ -956,12 +970,14 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     EvaluationStatusTracker( Evaluation evaluation,
                              Set<String> expectedSubscribers,
                              Set<Format> formatsAwaited,
-                             String myConsumerId )
+                             String myConsumerId,
+                             String statisticsSubscriberId )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( expectedSubscribers );
         Objects.requireNonNull( formatsAwaited );
         Objects.requireNonNull( myConsumerId );
+        Objects.requireNonNull( statisticsSubscriberId );
 
         if ( expectedSubscribers.isEmpty() )
         {
@@ -976,6 +992,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         this.expectedSubscribers = expectedSubscribers;
         this.negotiatedSubscribers = new EnumMap<>( Format.class );
         this.subscriptionOffers = new ConcurrentHashMap<>();
+        this.flowController = new ProducerFlowController( evaluation, Set.of( statisticsSubscriberId ) );
 
         // Add a placeholder entry for each unknown subscriber
         formatsAwaited.forEach( nextFormat -> this.negotiatedSubscribers.put( nextFormat, StringUtils.EMPTY ) );

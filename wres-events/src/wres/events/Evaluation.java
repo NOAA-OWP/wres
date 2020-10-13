@@ -23,6 +23,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -294,9 +295,15 @@ public class Evaluation implements Closeable
      * than producers (a.k.a. producer flow control). TODO: delegate this to the broker when adopting a broker than 
      * supports flow control for topic exchanges via JMS (Qpid does not).
      */
-    
+
     private final ReentrantLock flowControlLock;
-    
+
+    /**
+     * The publication group that currently holds the flow control lock.
+     */
+
+    private final AtomicReference<String> flowControlGroup = new AtomicReference<>();
+
     /**
      * Returns the unique evaluation identifier.
      * 
@@ -448,13 +455,14 @@ public class Evaluation implements Closeable
             this.validateRequestToPublish();
 
             Objects.requireNonNull( statistics );
-            
+
             this.validateGroupId( groupId );
-            
+
             // Acquire a publication lock when producer flow control is engaged
-            if( Objects.nonNull( groupId ) )
+            if ( Objects.nonNull( groupId ) )
             {
                 this.acquireFlowControlLock();
+                this.flowControlGroup.set( groupId );
             }
 
             ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
@@ -558,7 +566,7 @@ public class Evaluation implements Closeable
      */
 
     public void markGroupPublicationCompleteReportedSuccess( String groupId )
-    {        
+    {
         Objects.requireNonNull( groupId );
 
         if ( !this.messageGroups.containsKey( groupId ) )
@@ -574,6 +582,7 @@ public class Evaluation implements Closeable
 
         EvaluationStatus complete = EvaluationStatus.newBuilder()
                                                     .setCompletionStatus( status )
+                                                    .setGroupId( groupId )
                                                     .setMessageCount( count.get() )
                                                     .build();
 
@@ -629,7 +638,7 @@ public class Evaluation implements Closeable
     public void stop( Exception exception ) throws IOException
     {
         LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
- 
+
         CompletionStatus status = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
 
         // Create a string representation of the exception stack
@@ -1146,25 +1155,25 @@ public class Evaluation implements Closeable
     /**
      * Starts producer flow control when consumption lags behind production.
      */
-    
+
     void startFlowControl()
     {
         this.flowControlLock.lock();
     }
-    
+
     /**
      * Stops producer flow control when consumption catches up with production. Should be stopped by the thread that 
      * started flow control.
      */
-    
+
     void stopFlowControl()
     {
-        if( this.flowControlLock.isHeldByCurrentThread() )
+        if ( this.flowControlLock.isHeldByCurrentThread() )
         {
             this.flowControlLock.unlock();
         }
     }
-    
+
     /**
      * Completes any outstanding message groups.
      */
@@ -1255,8 +1264,8 @@ public class Evaluation implements Closeable
                                              + "this evaluation has been stopped and can no longer accept "
                                              + "publication requests." );
         }
-        
-        if( this.statusTracker.hasFailedSubscribers() )
+
+        if ( this.statusTracker.hasFailedSubscribers() )
         {
             throw new IllegalStateException( WHILE_ATTEMPTING_TO_PUBLISH_A_MESSAGE_TO_EVALUATION
                                              + this.getEvaluationId()
@@ -1447,7 +1456,8 @@ public class Evaluation implements Closeable
         this.isClosed = new AtomicBoolean();
         this.hasGroupSubscriptions = !groupedStatisticsSubs.isEmpty();
 
-        EvaluationInfo evaluationInfo = EvaluationInfo.of( this.getEvaluationId(), GroupCompletionTracker.of() );
+        GroupCompletionTracker groupTracker = GroupCompletionTracker.of();
+        EvaluationInfo evaluationInfo = EvaluationInfo.of( this.getEvaluationId(), groupTracker );
 
         // Register publishers and subscribers
         ConnectionFactory factory = broker.get();
@@ -1468,7 +1478,7 @@ public class Evaluation implements Closeable
         {
             subscribers.add( pairsSubscriberId );
         }
-        
+
         try
         {
             this.producerConnection = factory.createConnection();
@@ -1479,7 +1489,8 @@ public class Evaluation implements Closeable
             this.statusTracker = new EvaluationStatusTracker( this,
                                                               Collections.unmodifiableSet( subscribers ),
                                                               formatsAwaited,
-                                                              statusTrackerId );
+                                                              statusTrackerId,
+                                                              statisticsSubscriberId );
 
             String completionContext = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-complete";
 
@@ -1878,11 +1889,11 @@ public class Evaluation implements Closeable
             LOGGER.error( message, e );
         }
     }
-    
+
     /**
      * Acquire the producer flow control lock.
      */
-    
+
     private void acquireFlowControlLock()
     {
         this.flowControlLock.lock();
@@ -1891,15 +1902,15 @@ public class Evaluation implements Closeable
     /**
      * Release the producer flow control lock.
      */
-    
+
     private void releaseFlowControlLock()
     {
-        if( this.flowControlLock.isHeldByCurrentThread() )
+        if ( this.flowControlLock.isHeldByCurrentThread() )
         {
             this.flowControlLock.unlock();
         }
     }
-    
+
     /**
      * Generate a compact, unique, identifier for an evaluation. Thanks to: 
      * https://neilmadden.blog/2018/08/30/moving-away-from-uuids/

@@ -195,6 +195,85 @@ class MessageSubscriber<T> implements Closeable
     private final EvaluationStatus groupConsumptionComplete;
 
     /**
+     * Returns true if this consumer has completed consumption, otherwise false.
+     * 
+     * @return true if consumption is complete
+     */
+
+    boolean isComplete()
+    {
+        return this.isComplete.get();
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.getIdentifier();
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        LOGGER.debug( "Closing subscriber, {}.", this );
+
+        // Check for group subscriptions that have not completed
+        try
+        {
+            for ( Map.Entry<String, Queue<OneGroupConsumer<T>>> next : this.groupConsumers.entrySet() )
+            {
+                String groupId = next.getKey();
+                Queue<OneGroupConsumer<T>> consumersToClose = next.getValue();
+
+                Integer expectedCount = this.getEvaluationInfo()
+                                            .getCompletionTracker()
+                                            .getExpectedMessagesPerGroup( groupId );
+
+                int total = 0;
+
+                for ( OneGroupConsumer<T> consumer : consumersToClose )
+                {
+                    if ( Objects.nonNull( expectedCount ) && !consumer.hasBeenUsed() )
+                    {
+                        // Should not close until complete, unless already flagged as failed
+                        if ( consumer.size() != expectedCount && !this.failed() )
+                        {
+                            LOGGER.error( "While attempting to gracefully close subscriber {}"
+                                          + " , encountered an error. A consumer of grouped "
+                                          + "messages attached to this subscription expected to "
+                                          + "receive {} but had only received {} messages on "
+                                          + "closing. A subscriber should not be "
+                                          + "closed until consumption is complete, unless the "
+                                          + "overall evaluation has failed.",
+                                          this,
+                                          expectedCount,
+                                          consumer.size() );
+                        }
+                        // Complete
+                        else if ( consumer.size() == expectedCount )
+                        {
+                            consumer.acceptGroup();
+                            total++;
+                        }
+                    }
+                }
+
+                LOGGER.trace( "On closing subscriber {}, discovered {} consumers associated with group {} whose "
+                              + "consumption was ready to complete, but had not yet completed. These were completed.",
+                              this,
+                              total,
+                              groupId );
+
+            }
+        }
+        finally
+        {
+            this.internalClose();
+
+            LOGGER.debug( "Completed closure of subscriber {}", this );
+        }
+    }
+
+    /**
      * Returns a message on which consumption failed, <code>null</code> if no failure occurred.
      * 
      * @return a message that was not consumed
@@ -203,6 +282,15 @@ class MessageSubscriber<T> implements Closeable
     Message getFirstFailure()
     {
         return this.failure;
+    }
+
+    /**
+     * @return the subscriber identifier.
+     */
+
+    String getIdentifier()
+    {
+        return this.identifier;
     }
 
     /**
@@ -662,6 +750,10 @@ class MessageSubscriber<T> implements Closeable
                         // Register the message with each grouped subscriber
                         String messageIdFinal = messageId;
                         subscribers.forEach( next -> next.accept( messageIdFinal, received ) );
+
+                        // Complete the group if possible
+                        EvaluationStatus status = this.getGroupStatus( groupId );
+                        this.checkAndCompleteGroup( status );
                     }
 
                     success.set( true );
@@ -678,9 +770,6 @@ class MessageSubscriber<T> implements Closeable
 
                 // Acknowledge
                 message.acknowledge();
-
-                // Check and close early if group consumption is complete for one or more subscribers
-                this.checkAndCompleteGroup( groupId );
             }
             catch ( JMSException | RuntimeException e )
             {
@@ -725,6 +814,27 @@ class MessageSubscriber<T> implements Closeable
                                          messageConsumer,
                                          this.session,
                                          MessageSubscriber.DURABLE_SUBSCRIBERS );
+    }
+
+    /**
+     * @return the status of the specified group.
+     */
+
+    private EvaluationStatus getGroupStatus( String groupId )
+    {
+        EvaluationStatus.Builder builder = EvaluationStatus.newBuilder()
+                                                           .setGroupId( groupId );
+
+        Integer count = this.getEvaluationInfo()
+                            .getCompletionTracker()
+                            .getExpectedMessagesPerGroup( groupId );
+
+        if ( Objects.nonNull( count ) )
+        {
+            builder.setMessageCount( count );
+        }
+
+        return builder.build();
     }
 
     /**
@@ -902,130 +1012,74 @@ class MessageSubscriber<T> implements Closeable
     /**
      * Checks for a complete group and finalizes it.
      * 
-     * @param group the grouped consumers whose consumption should be completed
-     * @param consumer the message consumer whose resources should be closed
+     * @param status the status message with the group count information
      * @return the number of consumers completed
      */
 
-    private int checkAndCompleteGroup( String groupId )
+    private int checkAndCompleteGroup( EvaluationStatus status )
     {
         int completed = 0;
+
+        String groupId = status.getGroupId();
 
         if ( Objects.nonNull( this.groupConsumers ) && this.groupConsumers.containsKey( groupId ) )
         {
             Queue<OneGroupConsumer<T>> check = this.groupConsumers.get( groupId );
 
-            if ( Objects.nonNull( check ) )
+            EvaluationStatus complete = this.groupConsumptionComplete.toBuilder()
+                                                                     .setGroupId( groupId )
+                                                                     .build();
+
+            ByteBuffer buffer = ByteBuffer.wrap( complete.toByteArray() );
+
+            int usedCount = 0;
+
+            for ( OneGroupConsumer<T> next : check )
             {
-                ByteBuffer buffer = ByteBuffer.wrap( this.groupConsumptionComplete.toByteArray() );
+                Integer expected = this.getExpectedGroupMessageCount( status );
 
-                for ( OneGroupConsumer<T> next : check )
+                if ( Objects.nonNull( expected ) && expected == next.size() && !next.hasBeenUsed() )
                 {
-                    Integer expected = this.getEvaluationInfo()
-                                           .getCompletionTracker()
-                                           .getExpectedMessagesPerGroup( next.getGroupId() );
-
-                    if ( Objects.nonNull( expected ) && expected == next.size() && !next.hasBeenUsed() )
-                    {
-                        next.acceptGroup();
-
-                        // Notify completion
-                        String messageId = "ID:" + this.getIdentifier() + groupId;
-                        this.publishStatusInternal( buffer,
-                                                    messageId,
-                                                    this.groupConsumptionComplete.getCompletionStatus() );
-
-                        completed++;
-                    }
+                    next.acceptGroup();
+                    completed++;
                 }
+
+                if ( next.hasBeenUsed() )
+                {
+                    usedCount++;
+                }
+            }
+
+            // Notify completion
+            if ( usedCount == check.size() )
+            {
+                String messageId = "ID:" + this.getIdentifier() + groupId;
+                this.publishStatusInternal( buffer,
+                                            messageId,
+                                            this.groupConsumptionComplete.getCompletionStatus() );
             }
         }
 
         return completed;
     }
 
-    @Override
-    public String toString()
-    {
-        return this.getIdentifier();
-    }
-
-    String getIdentifier()
-    {
-        return this.identifier;
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        LOGGER.debug( "Closing subscriber, {}.", this );
-
-        // Check for group subscriptions that have not completed
-        try
-        {
-            for ( Map.Entry<String, Queue<OneGroupConsumer<T>>> next : this.groupConsumers.entrySet() )
-            {
-                String groupId = next.getKey();
-                Queue<OneGroupConsumer<T>> consumersToClose = next.getValue();
-
-                Integer expectedCount = this.getEvaluationInfo()
-                                            .getCompletionTracker()
-                                            .getExpectedMessagesPerGroup( groupId );
-
-                int total = 0;
-
-                for ( OneGroupConsumer<T> consumer : consumersToClose )
-                {
-                    if ( Objects.nonNull( expectedCount ) && !consumer.hasBeenUsed() )
-                    {
-                        // Should not close until complete, unless already flagged as failed
-                        if ( consumer.size() != expectedCount && !this.failed() )
-                        {
-                            LOGGER.error( "While attempting to gracefully close subscriber {}"
-                                          + " , encountered an error. A consumer of grouped "
-                                          + "messages attached to this subscription expected to "
-                                          + "receive {} but had only received {} messages on "
-                                          + "closing. A subscriber should not be "
-                                          + "closed until consumption is complete, unless the "
-                                          + "overall evaluation has failed.",
-                                          this,
-                                          expectedCount,
-                                          consumer.size() );
-                        }
-                        // Complete
-                        else if ( consumer.size() == expectedCount )
-                        {
-                            consumer.acceptGroup();
-                            total++;
-                        }
-                    }
-                }
-
-                LOGGER.trace( "On closing subscriber {}, discovered {} consumers associated with group {} whose "
-                              + "consumption was ready to complete, but had not yet completed. These were completed.",
-                              this,
-                              total,
-                              groupId );
-
-            }
-        }
-        finally
-        {
-            this.internalClose();
-
-            LOGGER.debug( "Completed closure of subscriber {}", this );
-        }
-    }
-
     /**
-     * Returns true if this consumer has completed consumption, otherwise false.
-     * 
-     * @return true if consumption is complete
+     * @return the expected group message count.
      */
 
-    boolean isComplete()
+    private Integer getExpectedGroupMessageCount( EvaluationStatus status )
     {
-        return this.isComplete.get();
+        // Look inside the status tracker, which is updated out-of-band
+        Integer count = this.evaluationInfo.getCompletionTracker()
+                                           .getExpectedMessagesPerGroup( status.getGroupId() );
+
+        // Look inside the message
+        if ( Objects.isNull( count ) )
+        {
+            count = status.getMessageCount();
+        }
+
+        return count;
     }
 
     /**
@@ -1333,7 +1387,6 @@ class MessageSubscriber<T> implements Closeable
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
-            String messageGroupId = UNKNOWN;
 
             try
             {
@@ -1342,7 +1395,6 @@ class MessageSubscriber<T> implements Closeable
                 {
                     messageId = message.getJMSMessageID();
                     correlationId = message.getJMSCorrelationID();
-                    messageGroupId = message.getStringProperty( MessageProperty.JMSX_GROUP_ID.toString() );
 
                     // Create the byte array to hold the message
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -1360,11 +1412,10 @@ class MessageSubscriber<T> implements Closeable
                     switch ( status.getCompletionStatus() )
                     {
                         case GROUP_PUBLICATION_COMPLETE:
-                            this.setExpectedMessageCountForGroups( status,
-                                                                   evaluationId,
-                                                                   messageId,
-                                                                   messageGroupId,
-                                                                   correlationId );
+                            this.evaluationInfo.getCompletionTracker()
+                                               .registerPublicationComplete( status );
+
+                            this.checkAndCompleteGroup( status );
                             break;
                         case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
                             this.setExpectedMessageCount( status,
@@ -1514,56 +1565,6 @@ class MessageSubscriber<T> implements Closeable
     private void markSubscriberFailed()
     {
         this.isFailedUnrecoverably.set( true );
-    }
-
-    /**
-     * Sets the expected message count for message groups.
-     * 
-     * @param status the evaluation status message
-     * @param evaluationId the evaluation identifier
-     * @param messageId the message identifier
-     * @param messageGroupId the message group identifier
-     * @param correlationId the correlation identifier
-     */
-
-    private void setExpectedMessageCountForGroups( EvaluationStatus status,
-                                                   String evaluationId,
-                                                   String messageId,
-                                                   String messageGroupId,
-                                                   String correlationId )
-    {
-        // Set the expected number of messages per group
-        this.getEvaluationInfo()
-            .getCompletionTracker()
-            .registerPublicationComplete( status, messageGroupId );
-        int completed = this.checkAndCompleteGroup( messageGroupId );
-
-        if ( completed > 0 && LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "While consuming grouped messages for evaluation {}, encountered an evaluation "
-                          + "status message with identifier {} and correlation identifier {} and "
-                          + "completion state {}, which successfully triggered consumption across {} "
-                          + "consumers containing {} messages.",
-                          evaluationId,
-                          messageId,
-                          correlationId,
-                          status.getCompletionStatus(),
-                          completed,
-                          status.getMessageCount() );
-        }
-        else if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "While consuming grouped messages for evaluation {}, encountered an evaluation "
-                          + "status message with identifier {} and correlation identifier {} and "
-                          + "completion state {}. The expected number of messages within the group is {} "
-                          + "but some of these messages are outstanding. Grouped consumption will happen "
-                          + "when this subscriber is closed.",
-                          evaluationId,
-                          messageId,
-                          correlationId,
-                          status.getCompletionStatus(),
-                          status.getMessageCount() );
-        }
     }
 
     /**
