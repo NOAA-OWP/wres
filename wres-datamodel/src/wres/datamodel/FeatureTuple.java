@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -120,6 +121,24 @@ public class FeatureTuple implements Comparable<FeatureTuple>
                 .toString();
     }
 
+    /**
+     * @return a short string representation of the feature tuple, comprising the names only.
+     */
+    
+    public String toStringShort()
+    {
+        StringJoiner joiner = new StringJoiner( "-" );
+        
+        joiner.add( this.getLeftName() ).add( this.getRightName() );
+        
+        if( Objects.nonNull( this.getBaseline() ) )
+        {
+            joiner.add( this.getBaselineName() );
+        }
+        
+        return joiner.toString();
+    }
+    
     /**
      * Get the name of the left feature.
      *

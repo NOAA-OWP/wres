@@ -56,7 +56,8 @@ message EvaluationStatus
 
         GROUP_PUBLICATION_COMPLETE = 7;
         // Publication of a message group has been completed. The group 
-        // identifier is assumed to be part of the protocol metadata.
+        // identifier should be set in the groupId field of the encapsulating 
+        // EvaluationStatus message.
 
         CONSUMER_REQUIRED = 8;
         // An evaluation declares the need for a consumer. The required format
@@ -73,13 +74,14 @@ message EvaluationStatus
         // CONSUMER_REQUIRED, a consumer responds READY_TO_CONSUME. Being ready 
         // does not guarantee the contract to the consumer reporting ready. A 
         // consumer must be identified in order to correlate with its completion 
-        // status. See the Consumer field in the EvaluationStatus message.
+        // status. See the Consumer field in the encapsulating EvaluationStatus 
+        // message.
 
         CONSUMPTION_ONGOING = 10;
         // A consumer reports consumption ongoing. This may be used to register
         // that a consumer is alive when consumption is long-running. A consumer 
         // must be identified in order to correlate with its completion status. 
-        // See the Consumer field in the EvaluationStatus message.
+        // See the Consumer field in the encapsulating EvaluationStatus message.
 
         CONSUMPTION_COMPLETE_REPORTED_SUCCESS = 11; 
         // A consumer reports completion without errors.
@@ -89,9 +91,10 @@ message EvaluationStatus
 
         GROUP_CONSUMPTION_COMPLETE = 13;
         // Consumption of a message group has been completed. The group 
-        // identifier is assumed to be part of the protocol metadata. A consumer 
-        // must be identified in order to correlate with its completion status. 
-        // See the Consumer field in the EvaluationStatus message.
+        // identifier should be set in the groupId field of the encapsulating 
+        // EvaluationStatus message. A consumer must be identified in order to 
+        // correlate with its completion status. See the Consumer field in the 
+        // encapsulating EvaluationStatus message.
     }
     
     CompletionStatus completion_status = 2;
@@ -103,6 +106,10 @@ message EvaluationStatus
     // When an evaluation reports CompletionStatus.CONSUMER_REQUIRED, the
     // formats required by the evaluation may be listed here.
     repeated Consumer.Format formats_required = 4;
+
+    string groupId = 5;
+    // The identifier of a message group when this status update corresponds to
+    // a message group.
 
     message EvaluationStatusEvent
     {
@@ -140,33 +147,33 @@ message EvaluationStatus
         // A status code, such as an HTTP status code.
     }    
 
-    repeated EvaluationStatusEvent status_events = 5;
+    repeated EvaluationStatusEvent status_events = 6;
     // Zero or more caller-facing status events.
     
-    int32 message_count = 6;
+    int32 message_count = 7;
     // Number of statistics messages that were published, plus one (for the 
     // evaluation message description that accompanies every evaluation). This 
     // is the expected number of messages a client consumer should receive. 
     // Always set when the completion status indicates that publication is 
     // complete (from that point onwards).
 
-    int32 status_message_count = 7;
+    int32 status_message_count = 8;
     // Number of evaluation status messages (like this one) that were published, 
     // where applicable. This is the expected number of messages a client 
     // consumer should receive. Always set when the completion status indicates 
     // that publication is complete (from that point onwards).
 
-    int32 pairs_message_count = 8;
+    int32 pairs_message_count = 9;
     // The number of pairs messages that were published, where applicable. This 
     // is the expected number of messages a client consumer should receive.
     // Always set when the completion status indicates that publication is 
     // complete (from that point onwards).
 
-    int32 group_count = 9;
+    int32 group_count = 10;
     // The number of groups within the evaluation. Always set when the completion 
     // status indicates that publication is complete (from that point onwards).
 
-    repeated string resources_created = 10;
+    repeated string resources_created = 11;
     // Paths or URIs to resources created during an evaluation event.
 
 }

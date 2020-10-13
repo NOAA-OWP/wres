@@ -3,6 +3,7 @@ package wres.vis.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -27,9 +28,11 @@ import javax.naming.NamingException;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import wres.events.Evaluation;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.util.Strings;
 
 /**
  * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
@@ -64,6 +67,12 @@ class GraphicsClient implements Closeable
      */
 
     private static final int MAXIMUM_THREAD_COUNT = 5;
+
+    /**
+     * Software version.
+     */
+
+    private static final Version VERSION = new Version();
 
     /**
      * An executor to execute the graphics server.
@@ -109,6 +118,18 @@ class GraphicsClient implements Closeable
 
     public static void main( String[] args ) throws IOException
     {
+        // Print version information
+        String processName = ManagementFactory.getRuntimeMXBean().getName();
+        String processId = Strings.extractWord( processName, "\\d+(?=@)" );
+
+        MDC.put( "pid", processId );
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( GraphicsClient.VERSION.getDescription() );
+            LOGGER.info( GraphicsClient.VERSION.getVerboseRuntimeDescription() );
+        }
+
         // Create the server
         int exitCode = 0;
 
@@ -259,11 +280,13 @@ class GraphicsClient implements Closeable
                 this.graphicsSubscriber.close();
             }
 
-            this.getGraphicsExecutor().shutdown();
+            this.getGraphicsExecutor()
+                .shutdown();
 
             try
             {
-                this.getGraphicsExecutor().awaitTermination( 5, TimeUnit.SECONDS );
+                this.getGraphicsExecutor()
+                    .awaitTermination( 5, TimeUnit.SECONDS );
             }
             catch ( InterruptedException ie )
             {
@@ -275,7 +298,8 @@ class GraphicsClient implements Closeable
                 Thread.currentThread().interrupt();
             }
 
-            this.getClientExecutor().shutdown();
+            this.getClientExecutor()
+                .shutdown();
 
             try
             {
@@ -473,13 +497,18 @@ class GraphicsClient implements Closeable
 
             if ( !this.evaluationComplete.isEmpty() )
             {
-                addComplete = " Completed " + this.evaluationComplete.size()
+                addComplete = " Graphics client "
+                              + this.clientId
+                              + " completed "
+                              + this.evaluationComplete.size()
                               + " of the "
                               + this.evaluationCount.get()
                               + " evaluations that were started.";
             }
 
-            return "Waiting for statistics. Until now, received "
+            return "Graphics client "
+                   + this.clientId
+                   + " is waiting for work. Until now, received "
                    + this.statisticsCount.get()
                    + " packets of statistics across "
                    + this.evaluationCount.get()

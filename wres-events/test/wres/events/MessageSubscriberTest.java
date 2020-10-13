@@ -153,7 +153,6 @@ public class MessageSubscriberTest
                                 .setMessageCount( 4 )
                                 .build();
 
-        ByteBuffer groupComplete = ByteBuffer.wrap( status.toByteArray() );
         ByteBuffer publicationComplete = ByteBuffer.wrap( published.toByteArray() );
 
 
@@ -200,7 +199,11 @@ public class MessageSubscriberTest
 
             // Group complete
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:131415" );
-            statusPublisher.publish( groupComplete, Collections.unmodifiableMap( properties ) );
+            EvaluationStatus groupOne = status.toBuilder()
+                                              .setGroupId( "someGroupId" )
+                                              .build();
+            statusPublisher.publish( ByteBuffer.wrap( groupOne.toByteArray() ),
+                                     Collections.unmodifiableMap( properties ) );
 
             // Start another group
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:789" );
@@ -213,7 +216,11 @@ public class MessageSubscriberTest
 
             // Another group complete
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:161718" );
-            statusPublisher.publish( groupComplete, Collections.unmodifiableMap( properties ) );
+            EvaluationStatus groupTwo = status.toBuilder()
+                                              .setGroupId( "anotherGroupId" )
+                                              .build();
+            statusPublisher.publish( ByteBuffer.wrap( groupTwo.toByteArray() ),
+                                     Collections.unmodifiableMap( properties ) );
 
             // Publication complete
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:192021" );

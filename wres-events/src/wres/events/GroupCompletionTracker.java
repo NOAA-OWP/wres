@@ -33,6 +33,7 @@ public class GroupCompletionTracker
      * Returns an instance.
      * 
      * @return an instance
+     * @throws NullPointerException if the input is null
      */
 
     public static GroupCompletionTracker of()
@@ -44,14 +45,16 @@ public class GroupCompletionTracker
      * Registers the publication of a message group complete.
      * 
      * @param completionState a message indicating that a group has completed.
-     * @param groupId the group identifier.
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the message is missing expected content
      */
 
-    public void registerPublicationComplete( EvaluationStatus completionState, String groupId )
+    public void registerPublicationComplete( EvaluationStatus completionState )
     {
         Objects.requireNonNull( completionState );
+
+        String groupId = completionState.getGroupId();
+
         Objects.requireNonNull( groupId );
 
         if ( completionState.getCompletionStatus() != CompletionStatus.GROUP_PUBLICATION_COMPLETE )
@@ -100,12 +103,8 @@ public class GroupCompletionTracker
     /**
      * Hidden constructor.
      * 
-     * @param evaluationConsumerCount the number of evaluation description consumers
-     * @param statisticsConsumerCount the number of statistics consumers
-     * @param evaluationStatusConsumerCount the number of evaluation status consumers
-     * @param statisticsGroupConsumerCount the number of consumers of grouped statistics messages
-     * @param pairsConsumerCount the number of consumers of pairs messages
-     * @throws IllegalArgumentException if any count is <= 0, except for grouped messages or pairs messages
+     * 
+     * @param evaluation the evaluation to track
      */
 
     private GroupCompletionTracker()

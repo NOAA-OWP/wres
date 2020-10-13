@@ -116,13 +116,11 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
         if ( !result.hasStatistics() && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "[{}/{}] Completed feature '{}', but no statistics were produced. "
+            LOGGER.warn( "[{}/{}] Completed feature tuple '{}', but no statistics were produced. "
                          + "This probably occurred because no pools contained valid pairs.",
                          currentFeature,
                          this.totalFeatures,
-                         result.getFeature()
-                               .getRight()
-                               .getName() );
+                         result.getFeature().toStringShort() );
         }
         else
         {
@@ -132,12 +130,10 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
             if ( LOGGER.isInfoEnabled() )
             {
-                LOGGER.info( "[{}/{}] Completed feature '{}'",
+                LOGGER.info( "[{}/{}] Completed feature tuple '{}'",
                              currentFeature,
                              this.totalFeatures,
-                             result.getFeature()
-                                   .getRight()
-                                   .getName() );
+                             result.getFeature().toStringShort() );
             }
         }
     }

@@ -146,20 +146,18 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
 
     public void acceptGroup()
     {
-        if ( this.hasBeenUsed.get() )
+        if ( this.hasBeenUsed.getAndSet( true ) )
         {
             throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
         }
-
-        LOGGER.trace( "Grouped consumer {} consumed a new group of {} message.", this, this.size() );
 
         // Propagate
         this.innerConsumer.accept( this.cache.values() );
 
         // Clear the cache
         this.cache.clear();
-
-        this.hasBeenUsed.set( true );
+        
+        LOGGER.trace( "Grouped consumer {} consumed a new group of {} message.", this, this.size() );
     }
 
     /**
