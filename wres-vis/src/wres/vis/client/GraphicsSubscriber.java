@@ -270,11 +270,12 @@ class GraphicsSubscriber implements Closeable
     void sweep()
     {
         // Lock for sweeping
-        this.getEvaluationsLock().lock();
+        this.getEvaluationsLock()
+            .lock();
 
         // Find the evaluations to sweep
         Set<String> completed = new HashSet<>();
-        
+
         // Create an independent set to sweep as this is a mutating loop
         Set<String> toSweep = new HashSet<>( this.evaluations.keySet() );
         for ( String nextEvaluation : toSweep )
@@ -300,7 +301,8 @@ class GraphicsSubscriber implements Closeable
                           completed );
         }
 
-        this.getEvaluationsLock().unlock();
+        this.getEvaluationsLock()
+            .unlock();
     }
 
     /**
@@ -384,7 +386,7 @@ class GraphicsSubscriber implements Closeable
                 LOGGER.error( message, e );
             }
         }
-        
+
         try
         {
             if ( Objects.nonNull( this.evaluationStatusConsumer ) )
@@ -698,11 +700,11 @@ class GraphicsSubscriber implements Closeable
     /**
      * <p>Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}. 
      * 
-     * <p>TODO: Retries happen per message. Thus, for example, all graphics formats will be retried when any one format 
-     * fails. This may in turn generate a different exception on attempting to overwrite. Thus, when the writing fails
-     * for any one format, the consumer should be considered exceptional for all formats and the consumer should 
-     * clean-up after itself (deleting paths written for all formats), ready for the next retry. Else, the consumer
-     * should track what succeeded and failed and only retry the things that failed.
+     * <p>A well-behaving consumer cleans up after itself. Thus, it is considered a consumer bug if the consumer reports
+     * a failure to overwrite on attempting a retry when the consumer failed exceptionally on an earlier attempt. By way 
+     * of example, if a consumer writes path A and then immediately fails, triggering this method, any failure of the
+     * consumer to support the retry and overwrite A (because it already exists) is considered a bug in the consumer. A
+     * consumer must be "retry friendly", which means that it must clean up before throwing an exception.
      * 
      * @param messageId the message identifier for the exceptional consumption
      * @param correlationId the correlation identifier for the exceptional consumption

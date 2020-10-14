@@ -387,7 +387,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                 {
                     String burl = value.toString();
                     // If there is a BROKER_ADDRESS and/or BROKER_PORT environment variable, use those instead
-                    burl = this.overrideBurlWithAnyEnvironmentVariables( key.toString(), burl, properties );
+                    burl = this.overrideBurlWithEnvironmentVariables( key.toString(), burl, properties );
                     returnMe = new AbstractMap.SimpleEntry<>( key.toString(), burl );
                 }
                 break;
@@ -413,9 +413,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @return a possibly adjusted binding url
      */
 
-    private String overrideBurlWithAnyEnvironmentVariables( String propertyName,
-                                                            String propertyValue,
-                                                            Properties properties )
+    private String overrideBurlWithEnvironmentVariables( String propertyName,
+                                                         String propertyValue,
+                                                         Properties properties )
     {
         Map<String, String> variables = System.getenv();
 
@@ -534,13 +534,13 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
             {
                 throw new CouldNotStartEmbeddedBrokerException( "Could not bind an embedded amqp broker to port "
                                                                 + port
-                                                                + " on the loopback network interface. This port is "
-                                                                + "already bound and dynamic binding is not allowed "
-                                                                + "in this context. Either change the configured port, "
+                                                                + " on the loopback network interface. If this port is "
+                                                                + "already bound, change the configured port, "
                                                                 + "free the configured port, configure a dynamic port "
                                                                 + "using TCP reserved port 0 or request an "
                                                                 + "embedded broker with dynamic binding to override a "
-                                                                + "configured port that is already bound." );
+                                                                + "configured port that is already bound.",
+                                                                e );
             }
 
             returnMe = EmbeddedBroker.of();

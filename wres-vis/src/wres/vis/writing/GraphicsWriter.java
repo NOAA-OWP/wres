@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -22,6 +23,8 @@ import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.graphics2d.svg.SVGGraphics2D;
 import org.jfree.graphics2d.svg.SVGUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -43,6 +46,8 @@ import wres.statistics.generated.Outputs.SvgFormat;
 
 abstract class GraphicsWriter
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsWriter.class );
 
     /**
      * Default chart height in pixels.
@@ -101,12 +106,12 @@ abstract class GraphicsWriter
         Objects.requireNonNull( engine );
         Objects.requireNonNull( outputs );
 
+        Set<Path> returnMe = new TreeSet<>();
+
         try
         {
             // Adjust the chart engine
             GraphicsWriter.prepareChartEngineForWriting( engine );
-
-            Set<Path> returnMe = new TreeSet<>();
 
             // Default is png
             if ( outputs.hasPng() )
@@ -115,18 +120,22 @@ abstract class GraphicsWriter
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
                 Path resolvedPath = path.resolveSibling( path.getFileName() + ".png" );
 
+                // Add now to enable clean-up on failure
+                returnMe.add( resolvedPath );
+
                 File outputImageFile = GraphicsWriter.validatePathAndReturnFile( resolvedPath );
 
                 // #58735-18
                 ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
-
-                returnMe.add( resolvedPath );
             }
             if ( outputs.hasSvg() )
             {
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
                 Path resolvedPath = path.resolveSibling( path.getFileName() + ".svg" );
+
+                // Add now to enable clean-up on failure
+                returnMe.add( resolvedPath );
 
                 File outputImageFile = GraphicsWriter.validatePathAndReturnFile( resolvedPath );
 
@@ -142,8 +151,6 @@ abstract class GraphicsWriter
                 String svgElement = svg2d.getSVGElement();
 
                 SVGUtils.writeToSVG( outputImageFile, svgElement );
-
-                returnMe.add( resolvedPath );
             }
 
             return Collections.unmodifiableSet( returnMe );
@@ -151,6 +158,9 @@ abstract class GraphicsWriter
         catch ( IOException | ChartEngineException | XYChartDataSourceException | FontFormatException
                 | CouldNotLoadRequiredFontException e )
         {
+            // Clean up, to allow recovery. See #83816
+            GraphicsWriter.deletePaths( returnMe );
+
             throw new GraphicsWriteException( "Error while writing chart:", e );
         }
     }
@@ -172,6 +182,34 @@ abstract class GraphicsWriter
         }
 
         return file;
+    }
+
+    /**
+     * Attempts to delete a set of paths on encountering an error.
+     * 
+     * @param pathsToDelete the paths to delete
+     */
+
+    private static void deletePaths( Set<Path> pathsToDelete )
+    {
+        // Clean up. This should happen anyway, but is essential for the writer to be "retry friendly" when the 
+        // failure to write is recoverable
+        LOGGER.debug( "Deleting the following paths that were created before an exception was encountered in the "
+                      + "writer: {}.",
+                      pathsToDelete );
+
+        for ( Path nextPath : pathsToDelete )
+        {
+            try
+            {
+                Files.deleteIfExists( nextPath );
+            }
+            catch ( IOException f )
+            {
+                LOGGER.error( "Failed to delete a path created before an exception was encountered: {}.",
+                              nextPath );
+            }
+        }
     }
 
     /**
