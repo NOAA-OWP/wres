@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.StatisticType;
+import wres.events.ConsumerException;
 import wres.events.GroupCompletionTracker;
 import wres.events.OneGroupConsumer;
 import wres.statistics.generated.Evaluation;
@@ -188,7 +189,7 @@ class EvaluationConsumer
 
         LOGGER.info( "External graphics subscriber {} opened evaluation {}, which is ready to consume messages.",
                      this.getConsumerId(),
-                     this.evaluationId );
+                     this.getEvaluationId() );
     }
 
     /**
@@ -209,14 +210,14 @@ class EvaluationConsumer
 
                 LOGGER.debug( "External graphics subscriber {} is closing evaluation {}.",
                               this.getConsumerId(),
-                              this.evaluationId );
+                              this.getEvaluationId() );
 
                 this.completeAllGroups( true );
 
                 LOGGER.info( "External graphics subscriber {} closed evaluation {}, which contained {} messages (not "
                              + "including any evaluation status messages).",
                              this.getConsumerId(),
-                             this.evaluationId,
+                             this.getEvaluationId(),
                              this.consumed.get() );
             }
             catch ( RuntimeException e )
@@ -299,13 +300,13 @@ class EvaluationConsumer
         ByteBuffer buffer = ByteBuffer.wrap( message.build()
                                                     .toByteArray() );
 
-        this.evaluationStatusPublisher.publish( buffer, messageId, this.evaluationId, this.getConsumerId() );
+        this.evaluationStatusPublisher.publish( buffer, messageId, this.getEvaluationId(), this.getConsumerId() );
 
         if ( completionStatus == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
         {
             LOGGER.warn( "External graphics subscriber {} has marked evaluation {} as failed unrecoverably.",
                          this.getConsumerId(),
-                         this.evaluationId );
+                         this.getEvaluationId() );
         }
     }
 
@@ -348,7 +349,7 @@ class EvaluationConsumer
                           + "for evaluation {}.",
                           this.getConsumerId(),
                           messageId,
-                          this.evaluationId );
+                          this.getEvaluationId() );
         }
         // No. Cache until the consumers are ready.
         else
@@ -373,7 +374,7 @@ class EvaluationConsumer
         if ( this.getAreConsumersReady() )
         {
             throw new IllegalStateException( "While processing evaluation "
-                                             + this.evaluationId
+                                             + this.getEvaluationId()
                                              + " in subscriber "
                                              + this.getConsumerId()
                                              + ", encountered two instances of an evaluation description message, "
@@ -388,7 +389,7 @@ class EvaluationConsumer
                       + "identifier {} for evaluation {}.",
                       this.getConsumerId(),
                       messageId,
-                      this.evaluationId );
+                      this.getEvaluationId() );
 
         this.consumed.incrementAndGet();
     }
@@ -410,7 +411,7 @@ class EvaluationConsumer
                       + "for evaluation {}.",
                       this.getConsumerId(),
                       messageId,
-                      this.evaluationId );
+                      this.getEvaluationId() );
 
         switch ( status.getCompletionStatus() )
         {
@@ -444,7 +445,7 @@ class EvaluationConsumer
         }
 
         LOGGER.debug( "For evaluation {}, external graphics subscriber {} has consumed {} messages {}.",
-                      this.evaluationId,
+                      this.getEvaluationId(),
                       this.getConsumerId(),
                       this.consumed.get(),
                       append );
@@ -502,14 +503,14 @@ class EvaluationConsumer
             {
                 throw new GraphicsWriteException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
                                                   + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
-                                                  + this.evaluationId
+                                                  + this.getEvaluationId()
                                                   + ".",
                                                   e );
             }
 
             throw new UnrecoverableConsumerException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
                                                       + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
-                                                      + this.evaluationId
+                                                      + this.getEvaluationId()
                                                       + ".",
                                                       e );
         }
@@ -519,7 +520,7 @@ class EvaluationConsumer
 
             throw new GraphicsWriteException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
                                               + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
-                                              + this.evaluationId
+                                              + this.getEvaluationId()
                                               + ".",
                                               e );
         }
@@ -539,7 +540,7 @@ class EvaluationConsumer
         LOGGER.debug( "External graphics subscriber {} received notification of publication complete for evaluation "
                       + "{}. The message indicated an expected message count of {}.",
                       this.getConsumerId(),
-                      this.evaluationId,
+                      this.getEvaluationId(),
                       this.expected.get() );
     }
 
@@ -567,7 +568,7 @@ class EvaluationConsumer
                           + "of evaluation {}. The message indicated an expected message count of {}.",
                           this.getConsumerId(),
                           groupId,
-                          this.evaluationId,
+                          this.getEvaluationId(),
                           status.getMessageCount() );
         }
         else if ( LOGGER.isDebugEnabled() )
@@ -578,11 +579,20 @@ class EvaluationConsumer
                           + "closed.",
                           this.getConsumerId(),
                           groupId,
-                          this.evaluationId,
+                          this.getEvaluationId(),
                           status.getMessageCount() );
         }
     }
 
+    /**
+     * @return the evaluation identifier.
+     */
+    
+    private String getEvaluationId()
+    {
+        return this.evaluationId;
+    }
+    
     /**
      * Completes all message groups.
      * 
@@ -685,6 +695,7 @@ class EvaluationConsumer
      * @param consumer the message consumer whose resources should be closed
      * @return true if the group was completed, otherwise false
      * @throws JMSException if the group completion could not be notified
+     * @throws ConsumerException if the consumption failed because the group has already been completed
      * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
@@ -698,11 +709,19 @@ class EvaluationConsumer
 
             if ( Objects.nonNull( check ) )
             {
+                if ( check.hasBeenUsed() )
+                {
+                    throw new ConsumerException( "While attempting to close message group " + groupId
+                                                 +
+                                                 " in evaluation "
+                                                 + this.getEvaluationId()
+                                                 + " discovered that the message group has already been closed." );
+                }
+                
                 Integer expectedGroupCount = this.getGroupCompletionTracker()
                                                  .getExpectedMessagesPerGroup( check.getGroupId() );
 
-                if ( Objects.nonNull( expectedGroupCount ) && expectedGroupCount == check.size()
-                     && !check.hasBeenUsed() )
+                if ( Objects.nonNull( expectedGroupCount ) && expectedGroupCount == check.size() )
                 {
                     this.execute( check::acceptGroup );
 
@@ -732,11 +751,11 @@ class EvaluationConsumer
             if ( Objects.isNull( this.consumer ) )
             {
                 LOGGER.debug( "Creating consumers for evaluation {}, which are attached to subscriber {}.",
-                              this.evaluationId,
+                              this.getEvaluationId(),
                               this.getConsumerId() );
 
                 // Writable path
-                Path pathToWrite = this.getPathToWrite( this.evaluationId );
+                Path pathToWrite = this.getPathToWrite( this.getEvaluationId() );
 
                 // Incremental consumer
                 BiPredicate<StatisticType, DestinationType> incrementalTypes =
@@ -753,7 +772,7 @@ class EvaluationConsumer
                                                             pathToWrite );
 
                 LOGGER.debug( "Finished creating consumers for evaluation {}, which are attached to subscriber {}.",
-                              this.evaluationId,
+                              this.getEvaluationId(),
                               this.getConsumerId() );
 
                 // Flag that the consumers are ready
@@ -779,7 +798,7 @@ class EvaluationConsumer
             LOGGER.debug( "While consuming evaluation {} in subscriber {}, discovered {} statistics messages that "
                           + "arrived before the consumers were created. These messages were cached and have now been "
                           + "consumed.",
-                          this.evaluationId,
+                          this.getEvaluationId(),
                           this.getConsumerId(),
                           this.statisticsCache.size() );
 
@@ -850,7 +869,7 @@ class EvaluationConsumer
             throw new GraphicsWriteException( "Encountered an error in subscriber " + this.getConsumerId()
                                               + " while attempting to create a temporary "
                                               + "directory for the graphics from evaluation "
-                                              + this.evaluationId
+                                              + this.getEvaluationId()
                                               + ".",
                                               e );
         }

@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MissingValues;
@@ -34,6 +37,8 @@ import wres.util.TimeHelper;
  */
 abstract class CommaSeparatedStatisticsWriter
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedStatisticsWriter.class );
 
     /**
      * Delimiter for the header.
@@ -123,13 +128,13 @@ abstract class CommaSeparatedStatisticsWriter
 
         // Sort the rows before writing them
         Collections.sort( rows );
-        
+
         // Append a file extension to the path
         Path extendedPath = outputPath.resolveSibling( outputPath.getFileName() + ".csv" );
 
         // Validate
         CommaSeparatedStatisticsWriter.validatePath( extendedPath );
-        
+
         try ( BufferedWriter w = Files.newBufferedWriter( extendedPath,
                                                           StandardCharsets.UTF_8,
                                                           StandardOpenOption.CREATE,
@@ -141,10 +146,16 @@ abstract class CommaSeparatedStatisticsWriter
                 w.write( System.lineSeparator() );
             }
         }
-        
+        catch ( IOException e )
+        {
+            // Clean up, to allow recovery. See #83816
+            CommaSeparatedStatisticsWriter.deletePath( extendedPath );
+            throw new CommaSeparatedWriteException( "Encountered an error while writing " + extendedPath, e );
+        }
+
         return extendedPath;
     }
-    
+
     /**
      * Validates that the path does not already exist.
      * 
@@ -160,7 +171,32 @@ abstract class CommaSeparatedStatisticsWriter
             // But see #81735-173. This would apply where the retry tested all consumers attached to one subscriber.
             throw new CommaSeparatedWriteException( "Cannot write file " + file + " because it already exists." );
         }
-    }    
+    }
+
+    /**
+     * Attempts to delete a path on encountering an error.
+     * 
+     * @param pathToDelete the path to delete
+     */
+
+    private static void deletePath( Path pathToDelete )
+    {
+        // Clean up. This should happen anyway, but is essential for the writer to be "retry friendly" when the 
+        // failure to write is recoverable
+        LOGGER.debug( "Deleting the following paths that were created before an exception was encountered in the "
+                      + "writer: {}.",
+                      pathToDelete );
+
+        try
+        {
+            Files.deleteIfExists( pathToDelete );
+        }
+        catch ( IOException f )
+        {
+            LOGGER.error( "Failed to delete a path created before an exception was encountered: {}.",
+                          pathToDelete );
+        }
+    }
 
     /**
      * Mutates the input, adding a new row.

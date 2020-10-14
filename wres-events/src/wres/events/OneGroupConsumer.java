@@ -131,12 +131,12 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
 
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Grouped consumer {} replaced an existing message with identifier {}.", this, messageId );
+                LOGGER.debug( "Group consumer {} replaced an existing message with identifier {}.", this, messageId );
             }
         }
         else if ( LOGGER.isTraceEnabled() )
         {
-            LOGGER.trace( "Grouped consumer {} accepted a new message, {}.", this, message );
+            LOGGER.trace( "Group consumer {} accepted a new message, {}.", this, message );
         }
     }
 
@@ -146,18 +146,29 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
 
     public void acceptGroup()
     {
+        // Flag this immediately because the state is visible to other threads via hasBeenUsed()
         if ( this.hasBeenUsed.getAndSet( true ) )
         {
             throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
         }
 
-        // Propagate
-        this.innerConsumer.accept( this.cache.values() );
+        // Propagate, but make the acceptance of the group "retry friendly". In other words, if the consumption fails, 
+        // then return the consumer to unused.
+        try
+        {
+            this.innerConsumer.accept( this.cache.values() );
 
-        // Clear the cache
-        this.cache.clear();
-        
-        LOGGER.trace( "Grouped consumer {} consumed a new group of {} message.", this, this.size() );
+            // Clear the cache
+            this.cache.clear();
+
+            LOGGER.trace( "Group consumer {} consumed a new group of {} message.", this, this.size() );
+        }
+        catch ( RuntimeException e )
+        {
+            this.hasBeenUsed.set( false );
+
+            throw e;
+        }
     }
 
     /**
