@@ -113,7 +113,7 @@
     "type" : "JSON",
     "context" : {
       "uncomment_for_dlqs:queue.defaultAlternateBinding" : "{\"destination\": \"$${this:name}_DLQ\"} }",
-      "queue.maximumDeliveryAttempts" : "2"
+      "queue.maximumDeliveryAttempts" : "4"
     },
     "defaultVirtualHostNode" : "true",
     "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"

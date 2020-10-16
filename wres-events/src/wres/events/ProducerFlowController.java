@@ -10,6 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jcip.annotations.GuardedBy;
+import net.jcip.annotations.ThreadSafe;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 
 /**
@@ -21,7 +23,7 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
  * 
  * @author james.brown@hydrosolved.com
  */
-
+@ThreadSafe
 class ProducerFlowController
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProducerFlowController.class );
@@ -38,13 +40,14 @@ class ProducerFlowController
      * flow control has been turned off.
      */
 
+    @GuardedBy( "consumerCreditLock" )
     private final Map<String, AtomicInteger> consumerCredit;
 
     /**
      * Lock that protects the {@link #consumerCredit}.
      */
 
-    private final ReentrantLock lock;
+    private final ReentrantLock consumerCreditLock;
 
     /**
      * Build an instance.
@@ -73,7 +76,7 @@ class ProducerFlowController
             this.consumerCredit.put( next, new AtomicInteger() );
         }
 
-        this.lock = new ReentrantLock();
+        this.consumerCreditLock = new ReentrantLock();
     }
 
     /**
@@ -116,7 +119,7 @@ class ProducerFlowController
         // Lock the map to add and check the credit
         try
         {
-            this.lock.lock();
+            this.consumerCreditLock.lock();
 
             // Add the credit
             this.consumerCredit.get( consumerId )
@@ -143,7 +146,7 @@ class ProducerFlowController
         }
         finally
         {
-            this.lock.unlock();
+            this.consumerCreditLock.unlock();
         }
     }
 
@@ -159,13 +162,13 @@ class ProducerFlowController
 
         try
         {
-            this.lock.lock();
+            this.consumerCreditLock.lock();
 
             this.consumerCredit.put( consumerId, new AtomicInteger() );
         }
         finally
         {
-            this.lock.unlock();
+            this.consumerCreditLock.unlock();
         }
     }
 
