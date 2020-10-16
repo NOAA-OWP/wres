@@ -483,7 +483,9 @@ public class Evaluation implements Closeable
                                                                                               .setEventMessage( message ) )
                                                        .build();
 
-            this.publish( ongoing, groupId );
+            ByteBuffer status = ByteBuffer.wrap( ongoing.toByteArray() );
+            this.internalPublish( status, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, groupId );
+            this.statusMessageCount.getAndIncrement();
 
             // Record group
             if ( Objects.nonNull( groupId ) )
@@ -534,7 +536,12 @@ public class Evaluation implements Closeable
                                                                             + 1 ) // This one
                                                     .build();
 
-        this.publish( complete );
+        ByteBuffer completeBuffer = ByteBuffer.wrap( complete.toByteArray() );
+        this.internalPublish( completeBuffer,
+                              this.evaluationStatusPublisher,
+                              Evaluation.EVALUATION_STATUS_QUEUE,
+                              null );
+        this.statusMessageCount.getAndIncrement();
 
         // No further publication allowed by public methods
         this.publicationComplete.set( true );

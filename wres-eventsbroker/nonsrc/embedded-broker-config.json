@@ -45,7 +45,7 @@
             "context": 
             { 
                 "uncomment_for_dlqs:queue.defaultAlternateBinding": "{\"destination\": \"$${this:name}_DLQ\"} }",
-                "queue.maximumDeliveryAttempts": "2"
+                "queue.maximumDeliveryAttempts": "4"
             },
             "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"4\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"
         }
