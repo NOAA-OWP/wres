@@ -45,9 +45,6 @@ import wres.util.CalculationException;
  */
 public class Project
 {
-
-    private static final String WHERE_PS_PROJECT_ID = "WHERE PS.project_id = ";
-
     private static final String SELECT_1 = "SELECT 1";
 
     private static final String PROJECT_ID = "project_id";
@@ -57,17 +54,17 @@ public class Project
     /**
      * The member identifier for left handed data in the database
      */
-    public static final String LEFT_MEMBER = "'left'";
+    public static final String LEFT_MEMBER = "left";
 
     /**
      * The member identifier for right handed data in the database
      */
-    public static final String RIGHT_MEMBER = "'right'";
+    public static final String RIGHT_MEMBER = "right";
 
     /**
      * The member identifier for baseline data in the database
      */
-    public static final String BASELINE_MEMBER = "'baseline'";
+    public static final String BASELINE_MEMBER = "baseline";
 
     /**
      * Protects access and generation of the feature collection
@@ -535,17 +532,22 @@ public class Project
         {
             Database database = this.getDatabase();
             DataScripter script = new DataScripter( database );
-            script.addLine( "SELECT EXISTS (" );
-            script.addTab().addLine( SELECT_1 );
-            script.addTab().addLine( "FROM wres.ProjectSource PS" );
-            script.addTab().addLine( "INNER JOIN wres.Source S" );
-            script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
-            script.addTab().addLine( WHERE_PS_PROJECT_ID, this.getId() );
-            script.addTab( 2 ).addLine( "AND PS.member = ", this.getInputName( dataSourceConfig ) );
-            script.addTab( 2 ).addLine( "AND S.is_point_data = FALSE" );
-            script.addLine( ") AS uses_gridded_data;" );
+            script.addLine( SELECT_1 );
+            script.addLine( "FROM wres.ProjectSource PS" );
+            script.addLine( "INNER JOIN wres.Source S" );
+            script.addTab().addLine( "ON PS.source_id = S.source_id" );
+            script.addLine( "WHERE PS.project_id = ?" );
+            script.addArgument( this.getId() );
+            script.addTab().addLine( "AND PS.member = ( ? )::operating_member" );
+            script.addArgument( this.getInputName( dataSourceConfig ) );
+            script.addTab().addLine( "AND S.is_point_data = FALSE" );
+            script.setMaxRows( 1 );
 
-            usesGriddedData = script.retrieve( "uses_gridded_data" );
+            try ( DataProvider provider = script.getData() )
+            {
+                // If there is a row, then gridded data is used.
+                usesGriddedData = provider.next();
+            }
 
             switch ( name )
             {
@@ -580,12 +582,10 @@ public class Project
      */
     private String getInputName( DataSourceConfig dataSourceConfig )
     {
-        return "'"
-               + ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
-                                                        dataSourceConfig )
-                             .value()
-                             .toLowerCase()
-               + "'";
+        return ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(),
+                                                      dataSourceConfig )
+                           .value()
+                           .toLowerCase();
     }
 
     /**

@@ -228,7 +228,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
             script.addArgument( wkt );
         }
 
-        script.add("LIMIT 1;");
+        script.setMaxRows( 1 );
     }
 
     @Override

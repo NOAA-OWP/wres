@@ -100,6 +100,14 @@ public class Query
     private final String[] statements;
 
     /**
+     * Maximum rows to retrieve, passed to Statement. This is a portable-ish way
+     * of specifying "LIMIT N" or "FETCH ONLY FIRST N ROWS".
+     * From Statement docs: "zero means there is no limit"
+     */
+
+    private int maxRows = 0;
+
+    /**
      * Constructor
      * @param script The script that the query will run
      */
@@ -298,6 +306,23 @@ public class Query
         }
 
         this.sqlStatesToRetry.add( sqlStateToRetry );
+        return this;
+    }
+
+    /**
+     * Limit the number of rows to be returned, passed-through to Statement.
+     * @param maxRows The maximum row count to return, greater than 0.
+     * @return The same Query with max rows set.
+     * @throws IllegalArgumentException when 0 or lower is passed.
+     */
+    Query setMaxRows( int maxRows )
+    {
+        if ( maxRows <= 0 )
+        {
+            throw new IllegalArgumentException( "Expected > 0, got " + maxRows );
+        }
+
+        this.maxRows = maxRows;
         return this;
     }
 
@@ -782,6 +807,11 @@ public class Query
         Statement statement = connection.createStatement();
         statement.setQueryTimeout( systemSettings.getQueryTimeout() );
 
+        if ( this.maxRows > 0 )
+        {
+            statement.setMaxRows( this.maxRows );
+        }
+
         if ( this.useCursor )
         {
             statement.setFetchSize( systemSettings.fetchSize() );
@@ -803,6 +833,11 @@ public class Query
         PreparedStatement statement = connection.prepareStatement( this.script,
                                                                    RETURN_GENERATED_KEYS );
         statement.setQueryTimeout( systemSettings.getQueryTimeout() );
+
+        if ( this.maxRows > 0 )
+        {
+            statement.setMaxRows( this.maxRows );
+        }
 
         if ( this.useCursor )
         {
