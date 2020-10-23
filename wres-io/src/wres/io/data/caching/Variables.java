@@ -2,7 +2,9 @@ package wres.io.data.caching;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
@@ -38,18 +40,14 @@ public class Variables
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
 
-        script.addLine( "SELECT DISTINCT( variable_name )" );
+        script.addLine( "SELECT DISTINCT( TS.variable_name )" );
         script.addLine( "FROM wres.TimeSeries TS" );
-        script.addLine( "WHERE EXISTS" );
-        script.addLine( "(" );
-        script.addTab().addLine( "SELECT 1" );
-        script.addTab().addLine( "FROM wres.ProjectSource PS" );
-        script.addTab().addLine( "WHERE PS.project_id = ?" );
+        script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
+        script.addTab().addLine( "TS.source_id = PS.source_id" );
+        script.addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectID );
         script.addTab().addLine( "AND PS.member = ( ? )::operating_member" );
         script.addArgument( projectMember );
-        script.addTab().addLine( "AND TS.source_id = PS.source_id" );
-        script.addLine( ")" );
 
         return script.interpret( resultSet -> resultSet.getString("variable_name") );
     }
@@ -68,41 +66,24 @@ public class Variables
                             final String variableName )
             throws SQLException
 	{
-		String member = projectMember;
-
-		if (!member.startsWith( "'" ))
-		{
-			member = "'" + member;
-		}
-
-		if (!member.endsWith( "'" ))
-		{
-			member += "'";
-		}
-
         Database database = this.getDatabase();
         DataScripter script = new DataScripter( database );
+        script.addLine( "SELECT 1" );
+        script.addLine( "FROM wres.TimeSeries TS" );
+        script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
+        script.addTab().addLine( "PS.source_id = TS.source_id" );
+        script.addLine( "WHERE PS.project_id = ?" );
+        script.addArgument( projectID );
+        script.addTab().addLine( "AND PS.member = ( ? )::operating_member" );
+        script.addArgument( projectMember );
+        script.addTab().addLine( "AND TS.variable_name = ?" );
+        script.addArgument( variableName );
+        script.setMaxRows( 1 );
 
-		script.addLine( "SELECT EXISTS" );
-		script.addLine( "(" );
-		script.addTab().addLine("SELECT 1");
-		script.addTab().addLine( "FROM wres.TimeSeries TS" );
-		script.addTab().addLine( "WHERE EXISTS" );
-        script.addTab().addLine( "(" );
-		script.addTab( 2 ).addLine( "SELECT 1" );
-		script.addTab( 2 ).addLine( "FROM" );
-        script.addTab( 2 ).addLine( "(" );
-		script.addTab(  3  ).addLine( "SELECT PS.source_id" );
-		script.addTab(  3  ).addLine( "FROM wres.ProjectSource PS" );
-		script.addTab(  3  ).addLine( "WHERE PS.project_id = ", projectID );
-		script.addTab(   4   ).addLine( "AND PS.member = ", member );
-		script.addTab(   4   ).addLine( "AND PS.source_id = TS.source_id" );
-		script.addTab(   3   ).addLine(") AS PS");
-		script.addTab( 2 ).add( ") AND TS.variable_name = '" );
-		script.add( variableName );
-        script.addLine( "'" );
-		script.add(");");
-
-		return script.retrieve( "exists" );
+        try ( DataProvider provider = script.getData() )
+        {
+            // When a row exists, next returns true. Otherwise false.
+            return provider.next();
+        }
 	}
 }

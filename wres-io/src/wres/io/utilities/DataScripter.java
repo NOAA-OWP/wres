@@ -19,6 +19,7 @@ public class DataScripter extends ScriptBuilder
     private boolean useTransaction;
     private Set<String> sqlStatesToRetry = Collections.emptySet();
     private List<Long> insertedIds;
+    private int maxRows;
 
     public DataScripter( Database database )
     {
@@ -93,6 +94,16 @@ public class DataScripter extends ScriptBuilder
         }
 
         this.sqlStatesToRetry.add( "23505" );
+    }
+
+    public void setMaxRows( int maxRows )
+    {
+        if ( maxRows <= 0 )
+        {
+            throw new IllegalArgumentException( "Expected > 0, got " + maxRows );
+        }
+
+        this.maxRows = maxRows;
     }
 
     /**
@@ -269,6 +280,11 @@ public class DataScripter extends ScriptBuilder
             {
                 query = query.retryOnSqlState( sqlState );
             }
+        }
+
+        if ( this.maxRows > 0 )
+        {
+            query.setMaxRows( this.maxRows );
         }
 
         return query;
