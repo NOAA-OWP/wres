@@ -118,7 +118,7 @@ public class ProtobufWriterTest
                .addScores( three );
 
         // Write the first pool
-        this.writer.accept( poolOne.build() );
+        this.writer.apply( poolOne.build() );
 
         Statistics.Builder poolTwo = Statistics.newBuilder();
 
@@ -159,7 +159,7 @@ public class ProtobufWriterTest
                .addScores( five );
 
         // Write the second pool
-        this.writer.accept( poolTwo.build() );
+        this.writer.apply( poolTwo.build() );
 
         // Read back in and assert equality for all messages
         try ( InputStream stream = Files.newInputStream( ProtobufWriterTest.PATH ) )

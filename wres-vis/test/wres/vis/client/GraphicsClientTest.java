@@ -8,9 +8,10 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -102,7 +103,8 @@ public class GraphicsClientTest
     }
 
     @Test
-    public void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber() throws IOException, InterruptedException
+    public void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber()
+            throws IOException, InterruptedException
     {
         // Create the consumers upfront
         // Consumers simply dump to an actual output store for comparison with the expected output
@@ -112,13 +114,25 @@ public class GraphicsClientTest
         Set<Path> actualPathsWritten;
 
         // Internal consumers. Internal always means in-band to the evaluation process.
-        Consumer<EvaluationStatus> status = actualStatuses::add;
-        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<Statistics> statistics = actualStatistics::add;
+        Function<EvaluationStatus, Set<Path>> statusMessageConsumer = statusMessage -> {
+            actualStatuses.add( statusMessage );
+            return Collections.emptySet();
+        };
+
+        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationMessageConsumer = evaluationMessage -> {
+            actualEvaluations.add( evaluationMessage );
+            return Collections.emptySet();
+        };
+
+        Function<Statistics, Set<Path>> statisticsMessageConsumer = statisticsMessage -> {
+            actualStatistics.add( statisticsMessage );
+            return Collections.emptySet();
+        };
+
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( status )
-                                       .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics, new Format[] { Format.CSV } )
+                new Consumers.Builder().addStatusConsumer( statusMessageConsumer )
+                                       .addEvaluationConsumer( evaluationMessageConsumer )
+                                       .addStatisticsConsumer( statisticsMessageConsumer, new Format[] { Format.CSV } )
                                        .build();
 
         // Open an evaluation, closing on completion
@@ -128,7 +142,7 @@ public class GraphicsClientTest
         {
             // Start the graphics client
             graphics.start();
-            
+
             try ( // This is the evaluation instance that declares png output
                   Evaluation evaluation = Evaluation.of( this.oneEvaluation,
                                                          GraphicsClientTest.connections,

@@ -13,8 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import wres.config.ProjectConfigException;
@@ -43,7 +42,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  */
 
 public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
-        implements Consumer<List<BoxplotStatisticOuter>>, Supplier<Set<Path>>
+        implements Function<List<BoxplotStatisticOuter>, Set<Path>>
 {
 
     /**
@@ -78,9 +77,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
      */
 
     @Override
-    public void accept( final List<BoxplotStatisticOuter> output )
+    public Set<Path> apply( final List<BoxplotStatisticOuter> output )
     {
-        Set<Path> pathsWrittenLocal = new HashSet<>( 1 );
+        Set<Path> pathsWrittenLocal = new HashSet<>();
 
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -122,17 +121,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         }
 
         this.pathsWrittenTo.addAll( pathsWrittenLocal );
-    }
 
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    @Override
-    public Set<Path> get()
-    {
         return this.getPathsWrittenTo();
     }
 
@@ -154,7 +143,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                                                         ChronoUnit durationUnits )
             throws IOException
     {
-        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+        Set<Path> pathsWrittenTo = new HashSet<>();
 
         // Distinguish between pooled outputs and outputs per pair
         // TODO: this will not be necessary once all pools are written to a single destination

@@ -1,17 +1,11 @@
 package wres.vis.client;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,37 +18,47 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.jms.JMSException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DestinationType;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.events.ConsumerException;
 import wres.events.GroupCompletionTracker;
 import wres.events.OneGroupConsumer;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Consumer;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
-import wres.vis.writing.GraphicsWriteException;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMessageType;
 
 /**
- * Consumer of messages for one evaluation.
+ * <p>Consumer of messages for one evaluation. Receives messages and forwards them to underlying consumers, which 
+ * serialize outputs. The serialization may happen per message or per message group. Where consumption happens per 
+ * message group, the {@link EvaluationConsumer} manages the sematics associated with that, forwarding the messages to a 
+ * caching consumer until the group has completed and then asking the consumer, finally, to serialize the completed 
+ * group. 
+ * 
+ * <p>Also notifies all listening clients of various stages within the lifecycle of an evaluation or exposes methods 
+ * that allow a subscriber to drive that notification. In particular, on closure, notifies all listening clients whether 
+ * the evaluation succeeded or failed. Also notifies listening clients when the consumption of a message group has 
+ * completed. This notification may be used by a client to trigger/release producer flow control by message group (i.e., 
+ * allowing for the publication of another group of messages).
  * 
  * @author james.brown@hydrosolved.com
  */
 
 class EvaluationConsumer
 {
-    private static final String FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION =
-            " failed to complete a graphics writing task for evaluation ";
+    private static final String FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION =
+            " failed to complete a consumption task for evaluation ";
 
-    private static final String GRAPHICS_SUBSCRIBER = "Graphics subscriber ";
+    private static final String SUBSCRIBER = "Subscriber ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
 
@@ -68,7 +72,7 @@ class EvaluationConsumer
      * Description of this consumer.
      */
 
-    private final wres.statistics.generated.Consumer consumerDescription;
+    private final Consumer consumerDescription;
 
     /**
      * Actual number of messages consumed.
@@ -92,7 +96,7 @@ class EvaluationConsumer
      * To notify when consumption complete.
      */
 
-    private final GraphicsPublisher evaluationStatusPublisher;
+    private final MessagePublisher evaluationStatusPublisher;
 
     /**
      * Consumer creation lock.
@@ -104,13 +108,13 @@ class EvaluationConsumer
      * Consumer of individual messages.
      */
 
-    private StatisticsConsumer consumer;
+    private Function<Collection<Statistics>, Set<Path>> consumer;
 
     /**
      * Consumer for message groups.
      */
 
-    private StatisticsConsumer groupConsumer;
+    private Function<Collection<Statistics>, Set<Path>> groupConsumer;
 
     /**
      * Completion tracker for message groups.
@@ -119,7 +123,7 @@ class EvaluationConsumer
     private final GroupCompletionTracker groupTracker;
 
     /**
-     * A map of group subscribers by group identifier.
+     * A map of group consumers by group identifier.
      */
 
     private final Map<String, OneGroupConsumer<Statistics>> groupConsumers;
@@ -143,7 +147,7 @@ class EvaluationConsumer
     private final Queue<StatisticsCache> statisticsCache;
 
     /**
-     * Thread pool to do graphics writing work.
+     * Thread pool to do writing work.
      */
 
     private final ExecutorService executorService;
@@ -155,18 +159,38 @@ class EvaluationConsumer
     private final AtomicBoolean isFailed;
 
     /**
+     * Is <code>true</code> if the evaluation failure has been notified, otherwise <code>false</code>.
+     */
+
+    private final AtomicBoolean isFailureNotified;
+
+    /**
+     * A set of paths written by all consumers.
+     */
+
+    private final Set<Path> pathsWritten;
+
+    /**
+     * The factory that supplies consumers for evaluations.
+     */
+
+    private final ConsumerFactory consumerFactory;
+
+    /**
      * Builds a consumer.
      * 
      * @param evaluationId the evaluation identifier
      * @param consumerDescription a description of the consumer
+     * @param consumerFactory the consumer factory
      * @param evaluationStatusPublisher the evaluation status publisher
-     * @param executorService the executor to do graphics writing work (this instance is not responsible for closing)
+     * @param executorService the executor to do writing work (this instance is not responsible for closing)
      * @throws NullPointerException if any input is null
      */
 
     EvaluationConsumer( String evaluationId,
-                        wres.statistics.generated.Consumer consumerDescription,
-                        GraphicsPublisher evaluationStatusPublisher,
+                        Consumer consumerDescription,
+                        ConsumerFactory consumerFactory,
+                        MessagePublisher evaluationStatusPublisher,
                         ExecutorService executorService )
     {
         Objects.requireNonNull( evaluationId );
@@ -181,13 +205,16 @@ class EvaluationConsumer
         this.areConsumersReady = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
         this.isFailed = new AtomicBoolean();
+        this.isFailureNotified = new AtomicBoolean();
         this.groupTracker = GroupCompletionTracker.of();
         this.groupConsumers = new ConcurrentHashMap<>();
         this.statisticsCache = new ConcurrentLinkedQueue<>();
         this.executorService = executorService;
         this.consumerDescription = consumerDescription;
+        this.consumerFactory = consumerFactory;
+        this.pathsWritten = new HashSet<>();
 
-        LOGGER.info( "External graphics subscriber {} opened evaluation {}, which is ready to consume messages.",
+        LOGGER.info( "External subscriber {} opened evaluation {}, which is ready to consume messages.",
                      this.getConsumerId(),
                      this.getEvaluationId() );
     }
@@ -208,13 +235,13 @@ class EvaluationConsumer
             try
             {
 
-                LOGGER.debug( "External graphics subscriber {} is closing evaluation {}.",
+                LOGGER.debug( "External subscriber {} is closing evaluation {}.",
                               this.getConsumerId(),
                               this.getEvaluationId() );
 
                 this.completeAllGroups( true );
 
-                LOGGER.info( "External graphics subscriber {} closed evaluation {}, which contained {} messages (not "
+                LOGGER.info( "External subscriber {} closed evaluation {}, which contained {} messages (not "
                              + "including any evaluation status messages).",
                              this.getConsumerId(),
                              this.getEvaluationId(),
@@ -222,20 +249,27 @@ class EvaluationConsumer
             }
             catch ( RuntimeException e )
             {
-                this.markEvaluationFailed();
+                this.markEvaluationFailed( e );
 
                 LOGGER.error( "Encountered an error on closing an evaluation consumer.", e );
             }
             finally
             {
-                CompletionStatus status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS;
-
-                if ( this.failed() )
+                if ( this.isFailed() )
                 {
-                    status = CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE;
+                    if ( !this.isFailureNotified() )
+                    {
+                        this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
+                                                     null,
+                                                     List.of() );
+                    }
                 }
-
-                this.publishCompletionState( status, null );
+                else
+                {
+                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
+                                                 null,
+                                                 List.of() );
+                }
             }
 
             // This instance is not responsible for closing the executor service.
@@ -245,48 +279,76 @@ class EvaluationConsumer
     /**
      * Sweeps any open message groups, closing them. This is a maintenance task.
      */
-    
+
     void sweepOpenGroups()
     {
         this.completeAllGroups( false );
     }
-    
+
     /**
      * Marks an evaluation as failed unrecoverably after exhausting all attempts to recover the subscriber that 
      * delivers messages to this consumer.
+     * @param exception an exception to notify
      */
 
-    void markEvaluationFailed()
+    void markEvaluationFailed( Exception exception )
     {
-        this.isFailed.set( true );
+        // Notify
+        try
+        {
+            // Create the exception events to notify
+            List<EvaluationStatusEvent> events = this.getExceptionEvents( exception );
+
+            this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
+                                         null,
+                                         events );
+            this.isFailureNotified.set( true );
+
+            LOGGER.warn( "External subscriber {} has marked evaluation {} as failed unrecoverably.",
+                         this.getConsumerId(),
+                         this.getEvaluationId() );
+        }
+        catch ( JMSException e )
+        {
+            String message = "While marking evaluation " + this.getEvaluationId()
+                             + " as "
+                             + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                             + ": unable to publish the notification.";
+
+            LOGGER.error( message, e );
+        }
+        finally
+        {
+            this.isFailed.set( true );
+            this.isComplete.set( true );
+        }
     }
 
     /**
      * Publishes the completion status of the consumer.
      * @param completionStatus the completion status
+     * @param events evaluation status events
      * @throws NullPointerException if the input is null
      * @throws JMSException if the status could not be published
      */
 
-    void publishCompletionState( CompletionStatus completionStatus, String groupId ) throws JMSException
+    void publishCompletionState( CompletionStatus completionStatus, String groupId, List<EvaluationStatusEvent> events )
+            throws JMSException
     {
         Objects.requireNonNull( completionStatus );
+        Objects.requireNonNull( events );
 
         // Collect the paths written, if available
-        List<String> addThesePaths = new ArrayList<>();
-
-        if ( this.getAreConsumersReady() )
-        {
-            this.consumer.get()
-                         .forEach( next -> addThesePaths.add( next.toString() ) );
-            this.groupConsumer.get()
-                              .forEach( next -> addThesePaths.add( next.toString() ) );
-        }
+        List<String> addThesePaths = this.getPathsWritten()
+                                         .stream()
+                                         .map( Path::toString )
+                                         .collect( Collectors.toUnmodifiableList() );
 
         // Create the status message to publish
         EvaluationStatus.Builder message = EvaluationStatus.newBuilder()
                                                            .setCompletionStatus( completionStatus )
-                                                           .setConsumer( this.consumerDescription )
+                                                           .setConsumer( this.getConsumerDescription() )
+                                                           .addAllStatusEvents( events )
                                                            .addAllResourcesCreated( addThesePaths );
 
         if ( Objects.nonNull( groupId ) )
@@ -301,13 +363,6 @@ class EvaluationConsumer
                                                     .toByteArray() );
 
         this.evaluationStatusPublisher.publish( buffer, messageId, this.getEvaluationId(), this.getConsumerId() );
-
-        if ( completionStatus == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
-        {
-            LOGGER.warn( "External graphics subscriber {} has marked evaluation {} as failed unrecoverably.",
-                         this.getConsumerId(),
-                         this.getEvaluationId() );
-        }
     }
 
     /**
@@ -332,8 +387,8 @@ class EvaluationConsumer
         if ( this.getAreConsumersReady() )
         {
             // Accept the incremental types
-            this.execute( () -> this.getConsumer()
-                                    .accept( List.of( statistics ) ) );
+            this.execute( () -> this.addPathsWritten( this.getConsumer()
+                                                          .apply( List.of( statistics ) ) ) );
 
             // Accept the grouped types
             if ( Objects.nonNull( groupId ) )
@@ -361,14 +416,13 @@ class EvaluationConsumer
     /**
      * Accepts an evaluation description message for consumption.
      * @param evaluationDescription the evaluation description message
-     * @param suggestedPath a suggested path string for writing, which is optional
      * @param messageId the message identifier to help with logging
      * @throws JMSException if a consumer could not be created when required
      * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      * @throws IllegalStateException if an evaluation description has already been received
      */
 
-    void acceptEvaluationMessage( Evaluation evaluationDescription, String suggestedPath, String messageId )
+    void acceptEvaluationMessage( Evaluation evaluationDescription, String messageId )
             throws JMSException
     {
         if ( this.getAreConsumersReady() )
@@ -383,7 +437,7 @@ class EvaluationConsumer
 
         Objects.requireNonNull( evaluationDescription );
 
-        this.createConsumers( evaluationDescription );
+        this.createConsumers( evaluationDescription, this.getConsumerFactory() );
 
         LOGGER.debug( "External subscriber {} received and consumed an evaluation description message with "
                       + "identifier {} for evaluation {}.",
@@ -444,7 +498,7 @@ class EvaluationConsumer
             append = "of an expected " + this.expected.get() + " messages";
         }
 
-        LOGGER.debug( "For evaluation {}, external graphics subscriber {} has consumed {} messages {}.",
+        LOGGER.debug( "For evaluation {}, external subscriber {} has consumed {} messages {}.",
                       this.getEvaluationId(),
                       this.getConsumerId(),
                       this.consumed.get(),
@@ -466,13 +520,21 @@ class EvaluationConsumer
     /**
      * @return true if the evaluation failed, otherwise false
      */
-    boolean failed()
+    boolean isFailed()
     {
         return this.isFailed.get();
     }
 
     /**
-     * @return the executor to do graphics writing work.
+     * @return true if the evaluation failure has been notified, otherwise false
+     */
+    private boolean isFailureNotified()
+    {
+        return this.isFailureNotified.get();
+    }
+
+    /**
+     * @return the executor to do writing work.
      */
 
     private ExecutorService getExecutorService()
@@ -481,9 +543,9 @@ class EvaluationConsumer
     }
 
     /**
-     * Executes a graphics writing task
+     * Executes a writing task
      * @param task the task to execute
-     * @throws GraphicsWriteException if the task fails exceptionally, but potentially in a recoverable way
+     * @throws ConsumerException if the task fails exceptionally, but potentially in a recoverable way
      * @throws UnrecoverableConsumerException if the task fails unrecoverably
      */
 
@@ -501,15 +563,15 @@ class EvaluationConsumer
             // Most unchecked exceptions are worth a recovery attempt 
             if ( e.getCause() instanceof RuntimeException )
             {
-                throw new GraphicsWriteException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
-                                                  + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
-                                                  + this.getEvaluationId()
-                                                  + ".",
-                                                  e );
+                throw new ConsumerException( SUBSCRIBER + this.getConsumerId()
+                                             + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                             + this.getEvaluationId()
+                                             + ".",
+                                             e );
             }
 
-            throw new UnrecoverableConsumerException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
-                                                      + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
+            throw new UnrecoverableConsumerException( SUBSCRIBER + this.getConsumerId()
+                                                      + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                                       + this.getEvaluationId()
                                                       + ".",
                                                       e );
@@ -518,11 +580,11 @@ class EvaluationConsumer
         {
             Thread.currentThread().interrupt();
 
-            throw new GraphicsWriteException( GRAPHICS_SUBSCRIBER + this.getConsumerId()
-                                              + FAILED_TO_COMPLETE_A_GRAPHICS_WRITING_TASK_FOR_EVALUATION
-                                              + this.getEvaluationId()
-                                              + ".",
-                                              e );
+            throw new ConsumerException( SUBSCRIBER + this.getConsumerId()
+                                         + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                         + this.getEvaluationId()
+                                         + ".",
+                                         e );
         }
     }
 
@@ -537,11 +599,60 @@ class EvaluationConsumer
 
         this.expected.addAndGet( status.getMessageCount() );
 
-        LOGGER.debug( "External graphics subscriber {} received notification of publication complete for evaluation "
+        LOGGER.debug( "External subscriber {} received notification of publication complete for evaluation "
                       + "{}. The message indicated an expected message count of {}.",
                       this.getConsumerId(),
                       this.getEvaluationId(),
                       this.expected.get() );
+    }
+
+    /**
+     * Creates exception events to notify from an exception.
+     * 
+     * @param exception the exception
+     * @return the exception events
+     */
+
+    private List<EvaluationStatusEvent> getExceptionEvents( Exception exception )
+    {
+        // Nothing to report
+        if ( Objects.isNull( exception ) )
+        {
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
+                                                           .setEventType( StatusMessageType.ERROR )
+                                                           .setEventMessage( exception.getMessage() )
+                                                           .build();
+
+        events.add( event );
+
+        // Add up to five causes, where available
+        Throwable cause = exception.getCause();
+
+        for ( int i = 0; i < 5; i++ )
+        {
+            if ( Objects.nonNull( cause ) )
+            {
+                EvaluationStatusEvent eventInner = EvaluationStatusEvent.newBuilder()
+                                                                        .setEventType( StatusMessageType.ERROR )
+                                                                        .setEventMessage( cause.getMessage() )
+                                                                        .build();
+
+                events.add( eventInner );
+            }
+            else
+            {
+                break;
+            }
+
+            cause = cause.getCause();
+        }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
@@ -564,7 +675,7 @@ class EvaluationConsumer
 
         if ( completed && LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "External graphics subscriber {} received notification of publication complete for group {} "
+            LOGGER.debug( "External subscriber {} received notification of publication complete for group {} "
                           + "of evaluation {}. The message indicated an expected message count of {}.",
                           this.getConsumerId(),
                           groupId,
@@ -573,7 +684,7 @@ class EvaluationConsumer
         }
         else if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "External graphics subscriber {} received notification of publication complete for group {} "
+            LOGGER.debug( "External subscriber {} received notification of publication complete for group {} "
                           + "of evaluation {}. The expected number of messages within the group is {} but some of "
                           + "these messages are outstanding. Grouped consumption will happen when this subscriber is "
                           + "closed.",
@@ -587,12 +698,21 @@ class EvaluationConsumer
     /**
      * @return the evaluation identifier.
      */
-    
+
     private String getEvaluationId()
     {
         return this.evaluationId;
     }
-    
+
+    /**
+     * @return the consumer factory.
+     */
+
+    private ConsumerFactory getConsumerFactory()
+    {
+        return this.consumerFactory;
+    }
+
     /**
      * Completes all message groups.
      * 
@@ -605,7 +725,7 @@ class EvaluationConsumer
     {
         // Check for group subscriptions that have not completed and complete them, unless this consumer is
         // already in a failure state
-        if ( !this.failed() )
+        if ( !this.isFailed() )
         {
             for ( Map.Entry<String, OneGroupConsumer<Statistics>> next : this.groupConsumers.entrySet() )
             {
@@ -618,14 +738,14 @@ class EvaluationConsumer
                 if ( Objects.nonNull( expectedCount ) && !consumerToClose.hasBeenUsed() )
                 {
                     // Submit acceptance task
-                    if( consumerToClose.size() == expectedCount )
+                    if ( consumerToClose.size() == expectedCount )
                     {
-                        this.execute( consumerToClose::acceptGroup );
-                        
+                        this.execute( () -> this.addPathsWritten( consumerToClose.acceptGroup() ) );
+
                         LOGGER.trace( "On closing subscriber {}, discovered a consumer associated with group {} whose "
-                                + "consumption was ready to complete, but had not yet completed. This were completed.",
-                                this,
-                                groupId );
+                                      + "consumption was ready to complete, but had not yet completed. This were completed.",
+                                      this,
+                                      groupId );
                     }
                     else if ( consumerIsClosing )
                     {
@@ -663,7 +783,7 @@ class EvaluationConsumer
     /**
      * @return the incremental consumer.
      */
-    private Consumer<Collection<Statistics>> getConsumer()
+    private Function<Collection<Statistics>, Set<Path>> getConsumer()
     {
         return this.consumer;
     }
@@ -676,7 +796,7 @@ class EvaluationConsumer
     {
         Objects.requireNonNull( groupId );
 
-        OneGroupConsumer<Statistics> newGroupConsumer = OneGroupConsumer.of( this.groupConsumer, groupId );
+        OneGroupConsumer<Statistics> newGroupConsumer = OneGroupConsumer.of( this.groupConsumer::apply, groupId );
         OneGroupConsumer<Statistics> existingGroupConsumer = this.groupConsumers.putIfAbsent( groupId,
                                                                                               newGroupConsumer );
 
@@ -717,16 +837,16 @@ class EvaluationConsumer
                                                  + this.getEvaluationId()
                                                  + " discovered that the message group has already been closed." );
                 }
-                
+
                 Integer expectedGroupCount = this.getGroupCompletionTracker()
                                                  .getExpectedMessagesPerGroup( check.getGroupId() );
 
                 if ( Objects.nonNull( expectedGroupCount ) && expectedGroupCount == check.size() )
                 {
-                    this.execute( check::acceptGroup );
+                    this.execute( () -> this.addPathsWritten( check.acceptGroup() ) );
 
                     // Notify completion
-                    this.publishCompletionState( CompletionStatus.GROUP_CONSUMPTION_COMPLETE, groupId );
+                    this.publishCompletionState( CompletionStatus.GROUP_CONSUMPTION_COMPLETE, groupId, List.of() );
 
                     completed = true;
                 }
@@ -740,11 +860,14 @@ class EvaluationConsumer
      * Attempts to create the consumers.
      * 
      * @param evaluationDescription a description of the evaluation
+     * @param consumerFactory the consumer factory
      * @throws JMSException if a group completion could not be notified
      * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
      */
 
-    private void createConsumers( Evaluation evaluationDescription ) throws JMSException
+    private void createConsumers( Evaluation evaluationDescription,
+                                  ConsumerFactory consumerFactory )
+            throws JMSException
     {
         synchronized ( this.getConsumerCreationLock() )
         {
@@ -754,22 +877,9 @@ class EvaluationConsumer
                               this.getEvaluationId(),
                               this.getConsumerId() );
 
-                // Writable path
-                Path pathToWrite = this.getPathToWrite( this.getEvaluationId() );
-
-                // Incremental consumer
-                BiPredicate<StatisticType, DestinationType> incrementalTypes =
-                        ( type, format ) -> type == StatisticType.BOXPLOT_PER_PAIR
-                                            && type != StatisticType.DURATION_SCORE;
-
-                this.consumer = StatisticsConsumer.of( evaluationDescription, incrementalTypes, pathToWrite );
-
-                // Grouped consumer
-                BiPredicate<StatisticType, DestinationType> nonIncrementalTypes = incrementalTypes.negate();
-
-                this.groupConsumer = StatisticsConsumer.of( evaluationDescription,
-                                                            nonIncrementalTypes,
-                                                            pathToWrite );
+                this.consumer = consumerFactory.getConsumer( evaluationDescription, this.getEvaluationId() );
+                this.groupConsumer = consumerFactory.getGroupedConsumer( evaluationDescription,
+                                                                         this.getEvaluationId() );
 
                 LOGGER.debug( "Finished creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.getEvaluationId(),
@@ -822,65 +932,32 @@ class EvaluationConsumer
     }
 
     /**
-     * Returns a path to write, creating a temporary directory for the outputs with the correct permissions, as needed. 
-     *
-     * @param evaluationId the evaluation identifier
-     * @return the path to the temporary output directory
-     * @throws GraphicsWriteException if the temporary directory cannot be created
-     * @throws NullPointerException if the evaluationId is null
+     * Adds paths written to the cache of all paths written.
+     * 
+     * @param paths the paths to append
      */
 
-    private Path getPathToWrite( String evaluationId )
+    private void addPathsWritten( Set<Path> paths )
     {
-        Objects.requireNonNull( evaluationId );
+        this.pathsWritten.addAll( paths );
+    }
 
-        // Where outputs files will be written
-        Path outputDirectory = null;
-        String tempDir = System.getProperty( "java.io.tmpdir" );
+    /**
+     * @return an immutable view of the paths written so far.
+     */
 
-        try
-        {
-            Path namedPath = Paths.get( tempDir, "wres_evaluation_output_" + evaluationId );
+    private Set<Path> getPathsWritten()
+    {
+        return Collections.unmodifiableSet( this.pathsWritten );
+    }
 
-            // POSIX-compliant    
-            if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )
-            {
-                Set<PosixFilePermission> permissions = EnumSet.of( PosixFilePermission.OWNER_READ,
-                                                                   PosixFilePermission.OWNER_WRITE,
-                                                                   PosixFilePermission.OWNER_EXECUTE,
-                                                                   PosixFilePermission.GROUP_READ,
-                                                                   PosixFilePermission.GROUP_WRITE,
-                                                                   PosixFilePermission.GROUP_EXECUTE );
+    /**
+     * @return the consumer description
+     */
 
-                FileAttribute<Set<PosixFilePermission>> fileAttribute =
-                        PosixFilePermissions.asFileAttribute( permissions );
-
-                // Create if not exists
-                outputDirectory = Files.createDirectories( namedPath, fileAttribute );
-            }
-            // Not POSIX-compliant
-            else
-            {
-                outputDirectory = Files.createDirectories( namedPath );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new GraphicsWriteException( "Encountered an error in subscriber " + this.getConsumerId()
-                                              + " while attempting to create a temporary "
-                                              + "directory for the graphics from evaluation "
-                                              + this.getEvaluationId()
-                                              + ".",
-                                              e );
-        }
-
-        // Render absolute
-        if ( !outputDirectory.isAbsolute() )
-        {
-            outputDirectory = outputDirectory.toAbsolutePath();
-        }
-
-        return outputDirectory;
+    private Consumer getConsumerDescription()
+    {
+        return this.consumerDescription;
     }
 
     /**

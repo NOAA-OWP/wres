@@ -1364,10 +1364,11 @@ public class MessageFactory
 
         GraphicFormat.Builder generalOptions = GraphicFormat.newBuilder();
 
-        // No graphics options declared
+        // No graphics options declared, so return default options
         if ( Objects.isNull( graphics ) )
         {
-            return generalOptions.build();
+            return generalOptions.setShape( GraphicShape.LEAD_THRESHOLD )
+                                 .build();
         }
 
         if ( Objects.nonNull( graphics.getHeight() ) )
@@ -1408,6 +1409,10 @@ public class MessageFactory
         else if ( Objects.nonNull( destination.getOutputType() ) )
         {
             generalOptions.setShape( GraphicShape.valueOf( destination.getOutputType().name() ) );
+        }
+        else
+        {
+            generalOptions.setShape( GraphicShape.LEAD_THRESHOLD );
         }
 
         return generalOptions.build();

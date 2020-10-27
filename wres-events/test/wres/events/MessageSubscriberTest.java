@@ -4,14 +4,15 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.jms.Connection;
@@ -61,7 +62,10 @@ public class MessageSubscriberTest
 
         Function<ByteBuffer, Integer> mapper = buffer -> buffer.getInt();
         AtomicInteger actualOne = new AtomicInteger();
-        Consumer<Integer> consumerOne = anInt -> actualOne.set( anInt );
+        Function<Integer, Set<Path>> consumerOne = anInt -> {
+            actualOne.set( anInt );
+            return Collections.emptySet();
+        };
 
         // Bytes sent, representing integer 1695609641
         ByteBuffer sentOne = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );
@@ -131,7 +135,10 @@ public class MessageSubscriberTest
         Function<Collection<Integer>, Integer> groupAggregator = list -> list.stream()
                                                                              .mapToInt( Integer::intValue )
                                                                              .sum();
-        Consumer<Collection<Integer>> consumer = aList -> actual.add( groupAggregator.apply( aList ) );
+        Function<Collection<Integer>, Set<Path>> consumer = aList -> {
+            actual.add( groupAggregator.apply( aList ) );
+            return Collections.emptySet();
+        };
 
         // Bytes sent, representing integers 1695609641, 243, 1746072600 and 7, respectively
         ByteBuffer sentOne = ByteBuffer.wrap( new byte[] { (byte) 0x65, (byte) 0x10, (byte) 0xf3, (byte) 0x29 } );

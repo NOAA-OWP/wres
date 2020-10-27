@@ -71,10 +71,7 @@ public class BoxPlotGraphicsWriterTest
         BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( outputs,
                                                                  this.outputDirectory );
 
-        writer.accept( BoxPlotGraphicsWriterTest.getBoxPlotPerPairForOnePool() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( BoxPlotGraphicsWriterTest.getBoxPlotPerPairForOnePool() );
 
         // Check the expected number of paths: #61841
         assertEquals( 1, pathsToFile.size() );
@@ -108,10 +105,7 @@ public class BoxPlotGraphicsWriterTest
         BoxPlotGraphicsWriter writer = BoxPlotGraphicsWriter.of( outputs,
                                                                  this.outputDirectory );
 
-        writer.accept( BoxPlotGraphicsWriterTest.getBoxPlotPerPoolForTwoPools() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( BoxPlotGraphicsWriterTest.getBoxPlotPerPoolForTwoPools() );
 
         // Check the expected number of paths: #61841
         assertEquals( 1, pathsToFile.size() );

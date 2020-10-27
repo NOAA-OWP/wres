@@ -3,10 +3,11 @@ package wres.events;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.Test;
@@ -32,7 +33,10 @@ public class OneGroupConsumerTest
 
         // Each consumer group involves an addition of integers
         Function<Collection<Integer>, Integer> aggregator = list -> list.stream().mapToInt( Integer::intValue ).sum();
-        Consumer<Collection<Integer>> consumer = aList -> sum.set( aggregator.apply( aList ) );
+        Function<Collection<Integer>, Set<Path>> consumer = aList -> {
+            sum.set( aggregator.apply( aList ) );
+            return Set.of();
+        };
         OneGroupConsumer<Integer> group = OneGroupConsumer.of( consumer, "someGroupId" );
 
         group.accept( "a", 23 );
@@ -52,10 +56,12 @@ public class OneGroupConsumerTest
         // Aggregated statistics
         AtomicReference<Statistics> aggregated = new AtomicReference<>();
 
-        // Each consumer group involves an addition of integers
-        Consumer<Collection<Statistics>> consumer =
-                aList -> aggregated.set( OneGroupConsumerTest.getStatisticsAggregator()
-                                                             .apply( aList ) );
+        // Consumer
+        Function<Collection<Statistics>, Set<Path>> consumer = aList -> {
+            aggregated.set( OneGroupConsumerTest.getStatisticsAggregator().apply( aList ) );
+            return Set.of();
+        };
+
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( consumer, "someGroupId" );
 
         // Add two statistics and accept them
@@ -92,6 +98,7 @@ public class OneGroupConsumerTest
     public void reuseOfAConsumerThrowsAnExceptionOnAcceptGroup()
     {
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
+            return Set.of();
         }, "someGroupId" );
 
         group.acceptGroup();
@@ -108,6 +115,7 @@ public class OneGroupConsumerTest
     public void reuseOfAConsumerThrowsAnExceptionOnAccept()
     {
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
+            return Set.of();
         }, "someGroupId" );
 
         group.acceptGroup();
@@ -127,6 +135,7 @@ public class OneGroupConsumerTest
     {
         // No-op consumer
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
+            return Set.of();
         }, "someGroupId" );
 
         assertEquals( "someGroupId", group.getGroupId() );
@@ -137,6 +146,7 @@ public class OneGroupConsumerTest
     {
         // No-op consumer
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
+            return Set.of();
         }, "someGroupId" );
 
         assertEquals( 0, group.size() );

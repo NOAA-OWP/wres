@@ -71,6 +71,7 @@ import wres.statistics.generated.Outputs.CsvFormat;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.NumericFormat;
 import wres.statistics.generated.Outputs.PngFormat;
+import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
@@ -508,7 +509,8 @@ public class MessageFactoryTest
                                                            .addIgnore( MetricName.SAMPLE_SIZE )
                                                            .setTemplateName( "template/scenario007/"
                                                                              + "testTemplateCopiedFromDefault.xml" )
-                                                           .setConfiguration( "fake drawing parameters" ) ) );
+                                                           .setConfiguration( "fake drawing parameters" )
+                                                           .setShape( GraphicShape.LEAD_THRESHOLD ) ) );
 
         expected.setRightDataName( "HEFS" )
                 .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
@@ -520,7 +522,7 @@ public class MessageFactoryTest
 
         assertEquals( expected.build(), actual );
     }
-    
+
     @Test
     public void testParseFormatFromDestinationType()
     {

@@ -13,8 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +38,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class DoubleScoreGraphicsWriter extends GraphicsWriter
-        implements Consumer<List<DoubleScoreStatisticOuter>>,
-        Supplier<Set<Path>>
+        implements Function<List<DoubleScoreStatisticOuter>,Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -71,7 +69,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      */
 
     @Override
-    public void accept( List<DoubleScoreStatisticOuter> output )
+    public Set<Path> apply( List<DoubleScoreStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing duration score outputs." );
 
@@ -103,6 +101,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 }
             }
         }
+        
+        return this.getPathsWritten();
     }
 
     /**
@@ -111,8 +111,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * @return the paths written so far.
      */
 
-    @Override
-    public Set<Path> get()
+    private Set<Path> getPathsWritten()
     {
         return Collections.unmodifiableSet( this.pathsWrittenTo );
     }

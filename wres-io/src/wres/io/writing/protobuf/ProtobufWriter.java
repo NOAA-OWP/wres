@@ -9,8 +9,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,7 @@ import wres.statistics.generated.EvaluationStatus;
  */
 
 @Immutable
-public class ProtobufWriter implements Consumer<Statistics>, Supplier<Set<Path>>
+public class ProtobufWriter implements Function<Statistics,Set<Path>>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProtobufWriter.class );
@@ -57,7 +56,7 @@ public class ProtobufWriter implements Consumer<Statistics>, Supplier<Set<Path>>
      */
 
     @Override
-    public void accept( Statistics statistics )
+    public Set<Path> apply( Statistics statistics )
     {
         Objects.requireNonNull( statistics );
 
@@ -84,6 +83,8 @@ public class ProtobufWriter implements Consumer<Statistics>, Supplier<Set<Path>>
         }
 
         LOGGER.debug( "Finished writing a statistics message to {}.", this.getPathToWrite() );
+        
+        return Set.of( this.getPathToWrite() );
     }
 
     /**
@@ -99,12 +100,6 @@ public class ProtobufWriter implements Consumer<Statistics>, Supplier<Set<Path>>
     public static ProtobufWriter of( Path path, Evaluation evaluation )
     {
         return new ProtobufWriter( path, evaluation );
-    }
-
-    @Override
-    public Set<Path> get()
-    {
-        return Set.of( this.getPathToWrite() );
     }
 
     /**

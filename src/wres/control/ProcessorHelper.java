@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -171,7 +171,7 @@ class ProcessorHelper
                                // Add a regular consumer for statistics that are neither grouped by time window
                                // nor feature. These include box plots per pair and statistics that can be 
                                // written incrementally, such as netCDF and Protobuf
-                               .addStatisticsConsumer( next -> incrementalConsumer.accept( List.of( next ) ), formats )
+                               .addStatisticsConsumer( next -> incrementalConsumer.apply( List.of( next ) ), formats )
                                // Add a grouped consumer for statistics that are grouped by feature
                                .addGroupedStatisticsConsumer( groupConsumer, formats )
                                .build();
@@ -253,25 +253,6 @@ class ProcessorHelper
             catch ( IOException e )
             {
                 LOGGER.error( "Failed to close the shared writers for evaluation {}.", evaluation.getEvaluationId() );
-            }
-
-            // Close the other closable consumers
-            try
-            {
-                groupConsumer.close();
-            }
-            catch ( IOException e )
-            {
-                LOGGER.error( "Failed to close a group consumer for evaluation {}.", evaluation.getEvaluationId() );
-            }
-            try
-            {
-                incrementalConsumer.close();
-            }
-            catch ( IOException e )
-            {
-                LOGGER.error( "Failed to close an incremental consumer for evaluation {}.",
-                              evaluation.getEvaluationId() );
             }
 
             // Add the consumer paths written, since consumers are now out-of-band to producers
@@ -447,9 +428,6 @@ class ProcessorHelper
 
             // Find the paths written to by writers
             pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
-
-            // Find the paths written to by shared writers
-            pathsWrittenTo.addAll( sharedWriters.getStatisticsWriters().get() );
 
             if ( sharedWriters.hasSharedSampleWriters() )
             {
@@ -960,9 +938,13 @@ class ProcessorHelper
      * @return a logger consumer for evaluation status messages
      */
 
-    private static Consumer<EvaluationStatus> getLoggerConsumerForStatusEvents()
+    private static Function<EvaluationStatus, Set<Path>> getLoggerConsumerForStatusEvents()
     {
-        return statusMessage -> LOGGER.debug( "Encountered an evaluation status message: {}", statusMessage );
+        return statusMessage -> {
+            LOGGER.debug( "Encountered an evaluation status message: {}", statusMessage );
+
+            return Collections.emptySet();
+        };
     }
 
     /**
@@ -974,10 +956,13 @@ class ProcessorHelper
      * @return a logger consumer for evaluation status messages
      */
 
-    private static Consumer<wres.statistics.generated.Evaluation> getLoggerConsumerForEvaluationEvents()
+    private static Function<wres.statistics.generated.Evaluation, Set<Path>> getLoggerConsumerForEvaluationEvents()
     {
-        return evaluationMessage -> LOGGER.debug( "Encountered an evaluation description message: {}",
-                                                  evaluationMessage );
+        return evaluationMessage -> {
+            LOGGER.debug( "Encountered an evaluation description message: {}",
+                          evaluationMessage );
+            return Collections.emptySet();
+        };
     }
 
     /**

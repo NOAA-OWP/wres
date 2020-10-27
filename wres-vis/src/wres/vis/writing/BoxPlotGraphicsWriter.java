@@ -11,8 +11,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -38,8 +37,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class BoxPlotGraphicsWriter extends GraphicsWriter
-        implements Consumer<List<BoxplotStatisticOuter>>,
-        Supplier<Set<Path>>
+        implements Function<List<BoxplotStatisticOuter>,Set<Path>>
 {
     private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS =
             "Specify non-null input data when writing box plot outputs.";
@@ -71,12 +69,14 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      */
 
     @Override
-    public void accept( List<BoxplotStatisticOuter> output )
+    public Set<Path> apply( List<BoxplotStatisticOuter> output )
     {
         Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
 
         this.writeBoxPlotsPerPair( output );
         this.writeBoxPlotsPerPool( output );
+        
+        return this.getPathsWritten();
     }
 
     /**
@@ -163,8 +163,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      * @return the paths written so far.
      */
 
-    @Override
-    public Set<Path> get()
+    private Set<Path> getPathsWritten()
     {
         return Collections.unmodifiableSet( this.pathsWrittenTo );
     }

@@ -14,9 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigs;
@@ -45,7 +43,7 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>>
         extends CommaSeparatedStatisticsWriter
-        implements Consumer<List<T>>, Supplier<Set<Path>>
+        implements Function<List<T>, Set<Path>>
 {
     /**
      * Set of paths that this writer actually wrote to
@@ -90,7 +88,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
      */
 
     @Override
-    public void accept( final List<T> output )
+    public Set<Path> apply( final List<T> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -126,17 +124,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
             }
         }
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    @Override
-    public Set<Path> get()
-    {
+        
         return this.getPathsWrittenTo();
     }
 

@@ -1,11 +1,9 @@
 package wres.control;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -15,6 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -86,7 +85,7 @@ import wres.vis.writing.DurationScoreGraphicsWriter;
  * @author jesse.bickel@***REMOVED***
  */
 
-class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable, Supplier<Set<Path>>
+class StatisticsConsumer implements Function<Collection<Statistics>, Set<Path>>, Supplier<Set<Path>>
 {
 
     /**
@@ -111,21 +110,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> doubleScoreConsumers =
+    private final Map<DestinationType, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> doubleScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DurationScoreStatisticOuter>>> durationScoreConsumers =
+    private final Map<DestinationType, Function<List<DurationScoreStatisticOuter>, Set<Path>>> durationScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DiagramStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DiagramStatisticOuter>>> diagramConsumers =
+    private final Map<DestinationType, Function<List<DiagramStatisticOuter>, Set<Path>>> diagramConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -133,7 +132,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * contain one box per pair.
      */
 
-    private final Map<DestinationType, Consumer<List<BoxplotStatisticOuter>>> boxPlotConsumersPerPair =
+    private final Map<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxPlotConsumersPerPair =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -141,21 +140,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * contain one box per pool.
      */
 
-    private final Map<DestinationType, Consumer<List<BoxplotStatisticOuter>>> boxPlotConsumersPerPool =
+    private final Map<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxPlotConsumersPerPool =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DiagramDiagramStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DurationDiagramStatisticOuter>>> pairedConsumers =
+    private final Map<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> pairedConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Writers that consume all types of statistics.
      */
 
-    private final Set<Consumer<Statistics>> statisticsConsumers = new HashSet<>();
+    private final Set<Function<Statistics, Set<Path>>> statisticsConsumers = new HashSet<>();
 
     /**
      * A map of output formats for which specific metrics should not be written. 
@@ -164,15 +163,9 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private final Map<DestinationType, Set<MetricConstants>> suppressTheseDestinationsForTheseMetrics;
 
     /**
-     * List of resources that ProductProcessor opened that it needs to close
+     * A set of paths written.
      */
-    private final List<Closeable> resourcesToClose;
-
-    /**
-     * List of potential writers that the ProductProcessor opened that supply
-     * a list of paths that those writers actually ended up writing to.
-     */
-    private final List<Supplier<Set<Path>>> writersToPaths;
+    private final Set<Path> pathsWrittenTo;
 
     /**
      * The duration units.
@@ -236,7 +229,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      */
 
     @Override
-    public void accept( Collection<Statistics> statistics )
+    public Set<Path> apply( Collection<Statistics> statistics )
     {
         if ( Objects.isNull( statistics ) )
         {
@@ -271,6 +264,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         {
             throw new ConsumerException( "While consuming evaluation statistics.", e );
         }
+
+        return this.get();
     }
 
     /**
@@ -494,29 +489,13 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     }
 
     /**
-     * @return the paths to write.
-     */
-
-    private List<Supplier<Set<Path>>> getWritersToPaths()
-    {
-        return Collections.unmodifiableList( this.writersToPaths );
-    }
-
-    /**
      * @return paths actually written to by this processor so far.
      */
     @Override
     public Set<Path> get()
     {
-        Set<Path> paths = new HashSet<>();
-
-        for ( Supplier<Set<Path>> supplierOfPaths : this.getWritersToPaths() )
-        {
-            paths.addAll( supplierOfPaths.get() );
-        }
-
-        LOGGER.debug( "Returning paths from {} {}: {}", this.getClass().getName(), this, paths );
-        return Collections.unmodifiableSet( paths );
+        LOGGER.debug( "Returning paths from {} {}: {}", this.getClass().getName(), this, this.pathsWrittenTo );
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**
@@ -577,7 +556,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                     pathToWrite );
             this.diagramConsumers.put( DestinationType.CSV,
                                        diagramWriter );
-            this.writersToPaths.add( diagramWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, DestinationType.CSV ) )
@@ -588,7 +566,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                     this.outputDirectory );
             this.boxPlotConsumersPerPair.put( DestinationType.CSV,
                                               boxPlotWriter );
-            this.writersToPaths.add( boxPlotWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.CSV ) )
@@ -599,7 +576,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                     this.outputDirectory );
             this.boxPlotConsumersPerPool.put( DestinationType.CSV,
                                               boxPlotWriter );
-            this.writersToPaths.add( boxPlotWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.CSV ) )
@@ -610,7 +586,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                             this.getDurationUnits(),
                                                             this.outputDirectory );
             this.pairedConsumers.put( DestinationType.CSV, pairedWriter );
-            this.writersToPaths.add( pairedWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.CSV ) )
@@ -633,7 +608,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                   mapper );
             this.doubleScoreConsumers.put( DestinationType.CSV,
                                            doubleScoreWriter );
-            this.writersToPaths.add( doubleScoreWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, DestinationType.CSV ) )
@@ -646,7 +620,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                                         .toString() );
             this.durationScoreConsumers.put( DestinationType.CSV,
                                              durationScoreWriter );
-            this.writersToPaths.add( durationScoreWriter );
         }
     }
 
@@ -711,7 +684,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                                             pathToWrite );
             this.diagramConsumers.put( DestinationType.GRAPHIC,
                                        diagramWriter );
-            this.writersToPaths.add( diagramWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, DestinationType.GRAPHIC ) )
@@ -720,7 +692,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                                             pathToWrite );
             this.boxPlotConsumersPerPair.put( DestinationType.GRAPHIC,
                                               boxPlotWriter );
-            this.writersToPaths.add( boxPlotWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.GRAPHIC ) )
@@ -729,7 +700,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                                             pathToWrite );
             this.boxPlotConsumersPerPool.put( DestinationType.GRAPHIC,
                                               boxPlotWriter );
-            this.writersToPaths.add( boxPlotWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.GRAPHIC ) )
@@ -738,7 +708,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                                                            pathToWrite );
             this.pairedConsumers.put( DestinationType.GRAPHIC,
                                       pairedWriter );
-            this.writersToPaths.add( pairedWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.GRAPHIC ) )
@@ -748,7 +717,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                   pathToWrite );
             this.doubleScoreConsumers.put( DestinationType.GRAPHIC,
                                            doubleScoreWriter );
-            this.writersToPaths.add( doubleScoreWriter );
         }
 
         if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, DestinationType.GRAPHIC ) )
@@ -758,7 +726,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                                                     pathToWrite );
             this.durationScoreConsumers.put( DestinationType.GRAPHIC,
                                              durationScoreWriter );
-            this.writersToPaths.add( durationScoreWriter );
         }
     }
 
@@ -777,9 +744,8 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         {
             LOGGER.debug( "There are shared netcdf consumers for {}", this );
 
-            this.doubleScoreConsumers.put( DestinationType.NETCDF,
-                                           next -> sharedWriters.getNetcdfOutputWriter().accept( next ) );
-            this.writersToPaths.add( sharedWriters );
+            this.doubleScoreConsumers.put( DestinationType.NETCDF, sharedWriters.getNetcdfOutputWriter() );
+
             // Not in charge of closing the sharedwriters, that is out at top.
         }
         else
@@ -803,7 +769,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
             LOGGER.debug( "There are shared protobuf consumers for {}", this );
 
             this.statisticsConsumers.add( sharedWriters.getProtobufWriter() );
-            this.writersToPaths.add( sharedWriters );
+
             // Not in charge of closing the sharedwriters, that is out at top.
         }
         else
@@ -824,20 +790,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DiagramStatisticOuter>>> next : this.diagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DiagramStatisticOuter>, Set<Path>>> next : this.diagramConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, next.getKey() ) )
             {
-                log( outputs, next.getKey(), true );
+                this.log( outputs, next.getKey(), true );
 
                 List<DiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
                                                                                                          next.getKey() );
 
                 // Consume the output
-                next.getValue().accept( filtered );
+                Set<Path> paths = next.getValue().apply( filtered );
+                this.pathsWrittenTo.addAll( paths );
 
-                log( outputs, next.getKey(), false );
+                this.log( outputs, next.getKey(), false );
             }
         }
     }
@@ -855,7 +822,11 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
 
         for ( Statistics nextStatistics : statistics )
         {
-            this.statisticsConsumers.forEach( next -> next.accept( nextStatistics ) );
+            for ( Function<Statistics, Set<Path>> nextConsumer : this.statisticsConsumers )
+            {
+                Set<Path> paths = nextConsumer.apply( nextStatistics );
+                this.pathsWrittenTo.addAll( paths );
+            }
         }
     }
 
@@ -871,20 +842,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<BoxplotStatisticOuter>>> next : this.boxPlotConsumersPerPair.entrySet() )
+        for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxPlotConsumersPerPair.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, next.getKey() ) )
             {
-                log( outputs, next.getKey(), true );
+                this.log( outputs, next.getKey(), true );
 
                 List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
                                                                                                          next.getKey() );
 
                 // Consume the output
-                next.getValue().accept( filtered );
+                Set<Path> paths = next.getValue().apply( filtered );
+                this.pathsWrittenTo.addAll( paths );
 
-                log( outputs, next.getKey(), false );
+                this.log( outputs, next.getKey(), false );
             }
         }
     }
@@ -901,20 +873,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<BoxplotStatisticOuter>>> next : this.boxPlotConsumersPerPool.entrySet() )
+        for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxPlotConsumersPerPool.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, next.getKey() ) )
             {
-                log( outputs, next.getKey(), true );
+                this.log( outputs, next.getKey(), true );
 
                 List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
                                                                                                          next.getKey() );
 
                 // Consume the output
-                next.getValue().accept( filtered );
+                Set<Path> paths = next.getValue().apply( filtered );
+                this.pathsWrittenTo.addAll( paths );
 
-                log( outputs, next.getKey(), false );
+                this.log( outputs, next.getKey(), false );
             }
         }
     }
@@ -931,20 +904,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> next : this.doubleScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> next : this.doubleScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, next.getKey() ) )
             {
-                log( outputs, next.getKey(), true );
+                this.log( outputs, next.getKey(), true );
 
                 List<DoubleScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
                                                                                                              next.getKey() );
 
                 // Consume the output
-                next.getValue().accept( filtered );
+                Set<Path> paths = next.getValue().apply( filtered );
+                this.pathsWrittenTo.addAll( paths );
 
-                log( outputs, next.getKey(), false );
+                this.log( outputs, next.getKey(), false );
             }
         }
 
@@ -962,20 +936,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DurationScoreStatisticOuter>>> next : this.durationScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DurationScoreStatisticOuter>, Set<Path>>> next : this.durationScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, next.getKey() ) )
             {
-                log( outputs, next.getKey(), true );
+                this.log( outputs, next.getKey(), true );
 
                 List<DurationScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
                                                                                                                next.getKey() );
 
                 // Consume the output
-                next.getValue().accept( filtered );
+                Set<Path> paths = next.getValue().apply( filtered );
+                this.pathsWrittenTo.addAll( paths );
 
-                log( outputs, next.getKey(), false );
+                this.log( outputs, next.getKey(), false );
             }
         }
     }
@@ -992,20 +967,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DurationDiagramStatisticOuter>>> next : this.pairedConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> next : this.pairedConsumers.entrySet() )
         {
             // Consume conditionally
             if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, next.getKey() ) )
             {
-                log( outputs, next.getKey(), true );
+                this.log( outputs, next.getKey(), true );
 
                 List<DurationDiagramStatisticOuter> filtered =
                         this.getFilteredStatisticsForThisDestinationType( outputs, next.getKey() );
 
                 // Consume the output
-                next.getValue().accept( filtered );
+                Set<Path> paths = next.getValue().apply( filtered );
+                this.pathsWrittenTo.addAll( paths );
 
-                log( outputs, next.getKey(), false );
+                this.log( outputs, next.getKey(), false );
             }
         }
     }
@@ -1044,48 +1020,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                      .map( DestinationConfig::getType )
                      .anyMatch( allTypes::contains );
     }
-
-
-    /**
-     * Closes resources that were opened by this class.
-     * 
-     * @throws IOException if any one consumer could not be closed.
-     */
-
-    @Override
-    public void close() throws IOException
-    {
-        int countFailedToClose = 0;
-        IOException reThrow = null;
-        for ( Closeable resource : this.resourcesToClose )
-        {
-            LOGGER.debug( "About to close {}", resource );
-
-            try
-            {
-                resource.close();
-            }
-            catch ( IOException ioe )
-            {
-                countFailedToClose++;
-                reThrow = ioe;
-                // Not much we can do at this point. We tried to close, but
-                // we need to try to close all the other resources too before
-                // the software exits. Will rethrow the last one below.
-                LOGGER.warn( "Unable to close resource {}", resource, ioe );
-            }
-        }
-
-        // Rethrow
-        if ( countFailedToClose > 0 )
-        {
-            throw new IOException( "While attempting to close a statistics consumer, failed to close "
-                                   + countFailedToClose
-                                   + " dependent resources. The last exception follows.",
-                                   reThrow );
-        }
-    }
-
 
     /**
      * Logs the status of product generation.
@@ -1313,8 +1247,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( evaluationDescription );
         Objects.requireNonNull( outputDirectory );
 
-        this.resourcesToClose = new ArrayList<>( 1 );
-        this.writersToPaths = new ArrayList<>();
+        this.pathsWrittenTo = new TreeSet<>();
         this.projectConfigPlus = projectConfigPlus;
         this.writeWhenTrue = writeWhenTrue;
         this.evaluationDescription = evaluationDescription;

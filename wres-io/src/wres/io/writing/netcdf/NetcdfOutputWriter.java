@@ -31,7 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -85,7 +84,6 @@ import wres.util.Strings;
  */
 
 public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOuter>,
-        Supplier<Set<Path>>,
         Closeable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
@@ -615,7 +613,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     @Override
-    public void accept( List<DoubleScoreStatisticOuter> output )
+    public Set<Path> apply( List<DoubleScoreStatisticOuter> output )
     {
         if( ! this.getIsReadyToWrite().get() )
         {
@@ -669,6 +667,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 this.writingTasksSubmitted.add( taskFuture );
             }
         }
+        
+        return this.getPathsWrittenTo();
     }
 
     @Override
@@ -769,17 +769,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         LOGGER.debug( "Closed writers from {}", this );
 
-    }
-
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     */
-
-    @Override
-    public Set<Path> get()
-    {
-        return this.getPathsWrittenTo();
     }
 
     /**
