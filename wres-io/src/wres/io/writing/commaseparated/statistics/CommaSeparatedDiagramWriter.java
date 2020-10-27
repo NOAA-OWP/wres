@@ -14,8 +14,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigs;
@@ -43,7 +42,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  */
 
 public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
-        implements Consumer<List<DiagramStatisticOuter>>, Supplier<Set<Path>>
+        implements Function<List<DiagramStatisticOuter>,Set<Path>>
 {
     /**
      * Set of paths that this writer actually wrote to
@@ -77,7 +76,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     @Override
-    public void accept( final List<DiagramStatisticOuter> output )
+    public Set<Path> apply( final List<DiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -119,18 +118,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             }
         }
 
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    @Override
-    public Set<Path> get()
-    {
         return this.getPathsWrittenTo();
+        
     }
 
     /**

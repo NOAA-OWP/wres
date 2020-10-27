@@ -60,10 +60,7 @@ public class CommaSeparatedScoreWriterTest
                                               this.outputDirectory,
                                               next -> Double.toString( next.getData().getValue() ) );
 
-        writer.accept( WriterTestHelper.getScoreStatisticsForOnePool() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForOnePool() );
 
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 3 );
@@ -152,10 +149,7 @@ public class CommaSeparatedScoreWriterTest
                                               this.outputDirectory,
                                               next -> MessageFactory.parse( next.getData().getValue() ).toString() );
         
-        writer.accept( WriterTestHelper.getDurationScoreStatisticsForOnePool() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getDurationScoreStatisticsForOnePool() );
 
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );
@@ -204,10 +198,7 @@ public class CommaSeparatedScoreWriterTest
                                               ChronoUnit.SECONDS,
                                               this.outputDirectory,
                                               next -> Double.toString( next.getData().getValue() ) );
-        writer.accept( WriterTestHelper.getScoreStatisticsForThreePoolsWithMissings() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForThreePoolsWithMissings() );
 
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );

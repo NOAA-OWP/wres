@@ -11,8 +11,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -35,8 +34,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class DiagramGraphicsWriter extends GraphicsWriter
-        implements Consumer<List<DiagramStatisticOuter>>,
-        Supplier<Set<Path>>
+        implements Function<List<DiagramStatisticOuter>,Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -65,7 +63,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      */
 
     @Override
-    public void accept( List<DiagramStatisticOuter> output )
+    public Set<Path> apply( List<DiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -90,6 +88,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
+        
+        return this.getPathsWritten();
     }
 
     /**
@@ -98,8 +98,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      * @return the paths written so far.
      */
 
-    @Override
-    public Set<Path> get()
+    private Set<Path> getPathsWritten()
     {
         return Collections.unmodifiableSet( this.pathsWrittenTo );
     }

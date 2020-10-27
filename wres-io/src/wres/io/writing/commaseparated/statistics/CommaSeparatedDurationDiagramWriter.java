@@ -16,8 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -41,7 +40,7 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
  */
 
 public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatisticsWriter
-        implements Consumer<List<DurationDiagramStatisticOuter>>, Supplier<Set<Path>>
+        implements Function<List<DurationDiagramStatisticOuter>,Set<Path>>
 {
 
     /**
@@ -77,7 +76,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
      */
 
     @Override
-    public void accept( final List<DurationDiagramStatisticOuter> output )
+    public Set<Path> apply( final List<DurationDiagramStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -120,17 +119,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
         }
 
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    @Override
-    public Set<Path> get()
-    {
         return this.getPathsWrittenTo();
     }
 

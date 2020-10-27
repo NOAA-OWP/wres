@@ -52,10 +52,7 @@ public class CommaSeparatedDiagramOutputTest
                                                                              ChronoUnit.SECONDS,
                                                                              this.outputDirectory );
 
-        writer.accept( WriterTestHelper.getReliabilityDiagramForOnePool() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getReliabilityDiagramForOnePool() );
 
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );

@@ -1,12 +1,14 @@
 package wres.events;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +47,7 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * Inner consumer to consume the messages upon flushing the cache.
      */
 
-    private final Consumer<Collection<T>> innerConsumer;
+    private final Function<Collection<T>, Set<Path>> innerConsumer;
 
     /**
      * Group identifier.
@@ -74,7 +76,7 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> OneGroupConsumer<T> of( Consumer<Collection<T>> innerConsumer,
+    public static <T> OneGroupConsumer<T> of( Function<Collection<T>, Set<Path>> innerConsumer,
                                               String groupId )
     {
         return new OneGroupConsumer<>( innerConsumer, groupId );
@@ -97,7 +99,7 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * @return the inner consumer
      */
 
-    Consumer<Collection<T>> getInnerConsumer()
+    Function<Collection<T>, Set<Path>> getInnerConsumer()
     {
         return this.innerConsumer;
     }
@@ -142,9 +144,10 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
 
     /**
      * Flushes the cache of statistics to the inner consumer.
+     * @return a set of paths mutated
      */
 
-    public void acceptGroup()
+    public Set<Path> acceptGroup()
     {
         // Flag this immediately because the state is visible to other threads via hasBeenUsed()
         if ( this.hasBeenUsed.getAndSet( true ) )
@@ -156,12 +159,14 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
         // then return the consumer to unused.
         try
         {
-            this.innerConsumer.accept( this.cache.values() );
+            Set<Path> paths = this.innerConsumer.apply( this.cache.values() );
 
             // Clear the cache
             this.cache.clear();
 
             LOGGER.trace( "Group consumer {} consumed a new group of {} message.", this, this.size() );
+
+            return paths;
         }
         catch ( RuntimeException e )
         {
@@ -201,7 +206,7 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * @throws NullPointerException if any required input is null
      */
 
-    private OneGroupConsumer( Consumer<Collection<T>> innerConsumer, String groupId )
+    private OneGroupConsumer( Function<Collection<T>, Set<Path>> innerConsumer, String groupId )
     {
         Objects.requireNonNull( groupId );
         Objects.requireNonNull( innerConsumer );

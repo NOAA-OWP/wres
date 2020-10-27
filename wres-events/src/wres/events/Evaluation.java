@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -1420,13 +1419,13 @@ public class Evaluation implements Closeable
         // Copy then validate
         BrokerConnectionFactory broker = builder.broker;
         Consumers innerConsumers = builder.consumers;
-        List<Consumer<wres.statistics.generated.Evaluation>> evaluationSubs =
+        List<Function<wres.statistics.generated.Evaluation,Set<Path>>> evaluationSubs =
                 innerConsumers.getEvaluationConsumers();
-        List<Consumer<EvaluationStatus>> statusSubs = innerConsumers.getEvaluationStatusConsumers();
-        List<Consumer<Statistics>> statisticsSubs = innerConsumers.getStatisticsConsumers();
-        List<Consumer<Collection<Statistics>>> groupedStatisticsSubs =
+        List<Function<EvaluationStatus,Set<Path>>> statusSubs = innerConsumers.getEvaluationStatusConsumers();
+        List<Function<Statistics,Set<Path>>> statisticsSubs = innerConsumers.getStatisticsConsumers();
+        List<Function<Collection<Statistics>,Set<Path>>> groupedStatisticsSubs =
                 innerConsumers.getGroupedStatisticsConsumers();
-        List<Consumer<Pairs>> pairsSubs = innerConsumers.getPairsConsumers();
+        List<Function<Pairs,Set<Path>>> pairsSubs = innerConsumers.getPairsConsumers();
 
         this.evaluationDescription = builder.evaluationDescription;
 
@@ -1498,6 +1497,13 @@ public class Evaluation implements Closeable
                                                               formatsAwaited,
                                                               statusTrackerId,
                                                               statisticsSubscriberId );
+            
+            // Wrap the tracker and return no paths written
+            Function<EvaluationStatus,Set<Path>> statusWrapper = status ->
+            {
+                this.statusTracker.accept( status );
+                return Set.of();
+            };
 
             String completionContext = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-complete";
 
@@ -1508,7 +1514,7 @@ public class Evaluation implements Closeable
                                                                      .setConsumerConnection( this.consumerConnection )
                                                                      .setProducerConnection( this.producerConnection )
                                                                      .setTopic( status )
-                                                                     .addSubscribers( List.of( this.statusTracker ) )
+                                                                     .addSubscribers( List.of( statusWrapper ) )
                                                                      .setEvaluationInfo( evaluationInfo )
                                                                      .setMapper( this.getStatusMapper() )
                                                                      // Status tracker has no precise expectation of count

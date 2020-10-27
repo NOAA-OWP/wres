@@ -189,13 +189,13 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
     public Set<Path> get()
     {
         Set<Path> returnMe = new HashSet<>();
-        
+
         // Path points to a file that exists?
         if ( Files.exists( this.pathToPairs ) )
         {
             returnMe.add( this.pathToPairs );
         }
-        
+
         return Collections.unmodifiableSet( returnMe );
     }
 
@@ -285,7 +285,7 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
                             // then print all reference times
                             Instant referenceTime = this.getFirstReferenceTime( nextSeries );
                             // Lead duration in standard units
-                            Duration leadDuration = this.getLeadDuration( referenceTime, nextPair.getTime() ); 
+                            Duration leadDuration = this.getLeadDuration( referenceTime, nextPair.getTime() );
                             joiner.add( Long.toString( TimeHelper.durationToLongUnits( leadDuration,
                                                                                        this.getTimeResolution() ) ) );
 
@@ -360,28 +360,28 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
     {
         return this.writeLock;
     }
-    
+
     /**
      * Returns the reference time from the next series, if any.
      * 
      * @return the reference time, if any
      */
-    
+
     private Instant getFirstReferenceTime( TimeSeries<?> timeSeries )
     {
         Objects.requireNonNull( timeSeries );
-        
+
         Map<ReferenceTimeType, Instant> referenceTimes = timeSeries.getReferenceTimes();
 
         Instant referenceTime = null;
-        if( ! referenceTimes.isEmpty() )
+        if ( !referenceTimes.isEmpty() )
         {
             referenceTime = referenceTimes.values().iterator().next();
         }
-        
+
         return referenceTime;
     }
-    
+
     /**
      * Returns the lead duration associated with the input.
      * 
@@ -392,14 +392,14 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
 
     private Duration getLeadDuration( Instant referenceTime, Instant validTime )
     {
-        if( Objects.nonNull( referenceTime ) )
+        if ( Objects.nonNull( referenceTime ) )
         {
             return Duration.between( referenceTime, validTime );
         }
-        
+
         return Duration.ZERO;
     }
-    
+
     /**
      * Returns a shared instance of a {@link BufferedWriter}.
      * 

@@ -1,33 +1,24 @@
 package wres.vis.client;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
+import java.util.TreeSet;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -47,26 +38,23 @@ import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
-import wres.vis.writing.BoxPlotGraphicsWriter;
-import wres.vis.writing.DiagramGraphicsWriter;
-import wres.vis.writing.DoubleScoreGraphicsWriter;
-import wres.vis.writing.DurationDiagramGraphicsWriter;
-import wres.vis.writing.DurationScoreGraphicsWriter;
-import wres.vis.writing.GraphicsWriteException;
 
 /**
- * <p>Consumes statistics, creates graphics, and writes graphics formats from them.
+ * <p>A consumer that routes a collection of statistics to inner consumers than deliver specific output formats. There 
+ * is up to one inner consumer for each type of statistic and format. The format is represented as a 
+ * {@link DestinationType}, which includes aggregate destinations, such as {@link DestinationType#GRAPHIC} and 
+ * {@link DestinationType#NUMERIC}, as well as specific format destinations, such as {@link DestinationType#PNG}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable, Supplier<Set<Path>>
+class StatisticsToFormatsRouter implements Function<Collection<Statistics>, Set<Path>>
 {
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsConsumer.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsToFormatsRouter.class );
 
     /**
      * Null output error string
@@ -75,30 +63,24 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
 
     /**
-     * Only writes when the condition is true.
-     */
-
-    private final BiPredicate<StatisticType, DestinationType> writeWhenTrue;
-
-    /**
      * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> doubleScoreConsumers =
+    private final Map<DestinationType, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> doubleScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DurationScoreStatisticOuter>>> durationScoreConsumers =
+    private final Map<DestinationType, Function<List<DurationScoreStatisticOuter>, Set<Path>>> durationScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DiagramStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DiagramStatisticOuter>>> diagramConsumers =
+    private final Map<DestinationType, Function<List<DiagramStatisticOuter>, Set<Path>>> diagramConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -106,7 +88,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * contain one box per pair.
      */
 
-    private final Map<DestinationType, Consumer<List<BoxplotStatisticOuter>>> boxPlotConsumersPerPair =
+    private final Map<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPair =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -114,14 +96,14 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * contain one box per pool.
      */
 
-    private final Map<DestinationType, Consumer<List<BoxplotStatisticOuter>>> boxPlotConsumersPerPool =
+    private final Map<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPool =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DiagramDiagramStatisticOuter} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<List<DurationDiagramStatisticOuter>>> durationDiagramConsumers =
+    private final Map<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> durationDiagramConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -131,15 +113,9 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private final Map<DestinationType, Set<MetricConstants>> suppressTheseDestinationsForTheseMetrics;
 
     /**
-     * List of resources that ProductProcessor opened that it needs to close
+     * Paths written by this instance.
      */
-    private final List<Closeable> resourcesToClose;
-
-    /**
-     * List of potential writers that the ProductProcessor opened that supply
-     * a list of paths that those writers actually ended up writing to.
-     */
-    private final List<Supplier<Set<Path>>> writersToPaths;
+    private final Set<Path> pathsWritten;
 
     /**
      * The evaluation description.
@@ -148,30 +124,184 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     private final Evaluation evaluationDescription;
 
     /**
-     * The output directory.
+     * Builder.
+     * @author james.brown@hydrosolved.com
      */
-
-    private final Path outputDirectory;
-
-    final AtomicBoolean consumerBuilt = new AtomicBoolean();
-
-    /**
-     * Build the consumer.
-     * 
-     * @param evaluationDescription the evaluation description
-     * @param writeWhenTrue the condition under which outputs should be written
-     * @param outputDirectory the output directory
-     * @throws NullPointerException if any of the inputs are null
-     * @throws WresProcessingException if the project is invalid for writing
-     */
-
-    static StatisticsConsumer of( Evaluation evaluationDescription,
-                                  BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                  Path outputDirectory )
+    static class Builder
     {
-        return new StatisticsConsumer( evaluationDescription,
-                                       writeWhenTrue,
-                                       outputDirectory );
+
+        /**
+         * The evaluation description.
+         */
+
+        private Evaluation evaluationDescription;
+
+        /**
+         * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link DestinationType} format.
+         */
+
+        private final Map<DestinationType, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> doubleScoreConsumers =
+                new EnumMap<>( DestinationType.class );
+
+        /**
+         * Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link DestinationType} format.
+         */
+
+        private final Map<DestinationType, Function<List<DurationScoreStatisticOuter>, Set<Path>>> durationScoreConsumers =
+                new EnumMap<>( DestinationType.class );
+
+        /**
+         * Store of consumers for processing {@link DiagramStatisticOuter} by {@link DestinationType} format.
+         */
+
+        private final Map<DestinationType, Function<List<DiagramStatisticOuter>, Set<Path>>> diagramConsumers =
+                new EnumMap<>( DestinationType.class );
+
+        /**
+         * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link DestinationType} format. The plots
+         * contain one box per pair.
+         */
+
+        private final Map<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPair =
+                new EnumMap<>( DestinationType.class );
+
+        /**
+         * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link DestinationType} format. The plots
+         * contain one box per pool.
+         */
+
+        private final Map<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPool =
+                new EnumMap<>( DestinationType.class );
+
+        /**
+         * Store of consumers for processing {@link DiagramDiagramStatisticOuter} by {@link DestinationType} format.
+         */
+
+        private final Map<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> durationDiagramConsumers =
+                new EnumMap<>( DestinationType.class );
+
+        /**
+         * Sets the evaluation description.
+         * @param evaluationDescription the evaluation description
+         * @return the builder
+         */
+        Builder setEvaluationDescription( Evaluation evaluationDescription )
+        {
+            this.evaluationDescription = evaluationDescription;
+            return this;
+        }
+
+        /**
+         * Adds a double score consumer to the builder for a given destination type.
+         * @param destination the destination type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        Builder addDoubleScoreConsumer( DestinationType destination,
+                                        Function<List<DoubleScoreStatisticOuter>, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( destination );
+            Objects.requireNonNull( consumer );
+
+            this.doubleScoreConsumers.put( destination, consumer );
+            return this;
+        }
+
+        /**
+         * Adds a duration score consumer to the builder for a given destination type.
+         * @param destination the destination type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        Builder addDurationScoreConsumer( DestinationType destination,
+                                          Function<List<DurationScoreStatisticOuter>, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( destination );
+            Objects.requireNonNull( consumer );
+
+            this.durationScoreConsumers.put( destination, consumer );
+            return this;
+        }
+
+        /**
+         * Adds a diagram consumer to the builder for a given destination type.
+         * @param destination the destination type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        Builder addDiagramConsumer( DestinationType destination,
+                                    Function<List<DiagramStatisticOuter>, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( destination );
+            Objects.requireNonNull( consumer );
+
+            this.diagramConsumers.put( destination, consumer );
+            return this;
+        }
+
+        /**
+         * Adds a box plot per pair consumer to the builder for a given destination type.
+         * @param destination the destination type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        Builder addBoxplotConsumerPerPair( DestinationType destination,
+                                           Function<List<BoxplotStatisticOuter>, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( destination );
+            Objects.requireNonNull( consumer );
+
+            this.boxplotConsumersPerPair.put( destination, consumer );
+            return this;
+        }
+
+        /**
+         * Adds a box plot per pool consumer to the builder for a given destination type.
+         * @param destination the destination type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        Builder addBoxplotConsumerPerPool( DestinationType destination,
+                                           Function<List<BoxplotStatisticOuter>, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( destination );
+            Objects.requireNonNull( consumer );
+
+            this.boxplotConsumersPerPool.put( destination, consumer );
+            return this;
+        }
+
+        /**
+         * Adds a duration diagram consumer to the builder for a given destination type.
+         * @param destination the destination type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        Builder addDurationDiagramConsumer( DestinationType destination,
+                                            Function<List<DurationDiagramStatisticOuter>, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( destination );
+            Objects.requireNonNull( consumer );
+
+            this.durationDiagramConsumers.put( destination, consumer );
+            return this;
+        }
+
+        /**
+         * Builds an instance.
+         * @return an instance
+         */
+        StatisticsToFormatsRouter build()
+        {
+            return new StatisticsToFormatsRouter( this );
+        }
+
     }
 
     /**
@@ -182,13 +312,13 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      */
 
     @Override
-    public void accept( Collection<Statistics> statistics )
+    public Set<Path> apply( Collection<Statistics> statistics )
     {
         if ( Objects.isNull( statistics ) )
         {
             throw new ConsumerException( "Cannot consumer null statistics." );
         }
-
+        
         try
         {
             // Split the statistics into two groups as there may be separate statistics for a baseline
@@ -206,7 +336,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
                               .collect( Collectors.groupingBy( classifier ) );
 
             // Iterate the types
-            groups.forEach( ( ( a, b ) -> this.acceptInner( b, a == LeftOrRightOrBaseline.BASELINE ) ) );
+            groups.forEach( ( ( a, b ) -> this.accept( b, a == LeftOrRightOrBaseline.BASELINE ) ) );
         }
         // Better to throw a common type here as a JMS MessageListener is expected to handle all exceptions
         // and it is better to aggregate them into one type than to catch a generic java.lang.Exception in 
@@ -215,8 +345,10 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         // can break the flow with exceptions. Eventually, all consumers will be external. 
         catch ( RuntimeException e )
         {
-            throw new ConsumerException( "While consuming evaluation statistics.", e );
+            throw new ConsumerException( "While routing evaluation statistics for consumption.", e );
         }
+
+        return this.getPathsWritten();
     }
 
     /**
@@ -227,7 +359,7 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
      * @throws NullPointerException if the statistics are null
      */
 
-    public void acceptInner( Collection<Statistics> statistics, boolean isBaselinePool )
+    private void accept( Collection<Statistics> statistics, boolean isBaselinePool )
     {
         Objects.requireNonNull( statistics );
 
@@ -435,115 +567,13 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     }
 
     /**
-     * @return the paths to write.
-     */
-
-    private List<Supplier<Set<Path>>> getWritersToPaths()
-    {
-        return Collections.unmodifiableList( this.writersToPaths );
-    }
-
-    /**
      * @return paths actually written to by this processor so far.
      */
-    @Override
-    public Set<Path> get()
+
+    private Set<Path> getPathsWritten()
     {
-        Set<Path> paths = new HashSet<>();
-
-        for ( Supplier<Set<Path>> supplierOfPaths : this.getWritersToPaths() )
-        {
-            paths.addAll( supplierOfPaths.get() );
-        }
-
-        LOGGER.debug( "Returning paths from {} {}: {}", this.getClass().getName(), this, paths );
-        return Collections.unmodifiableSet( paths );
-    }
-
-    /**
-     * Builds a set of consumers for writing graphics to supplied destinations.
-     * 
-     * @param outputs a description of the outputs required
-     * @param destinations the destinations
-     */
-
-    private void buildGraphicsConsumers( Outputs outputs )
-    {
-        Objects.requireNonNull( outputs );
-
-        if ( outputs.hasPng() || outputs.hasSvg() )
-        {
-            this.buildGraphicsConsumersForEachStatisticType( outputs );
-        }
-
-        this.consumerBuilt.set( true );
-    }
-
-    /**
-     * Adds a graphic consumer for each type of statistical output and for one format type.
-     * @param outputs a description of the outputs required
-     */
-
-    private void buildGraphicsConsumersForEachStatisticType( Outputs outputs )
-    {
-        Path pathToWrite = this.getOutputDirectory();
-
-        // Build the consumers conditionally
-        if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, DestinationType.GRAPHIC ) )
-        {
-            DiagramGraphicsWriter diagramWriter = DiagramGraphicsWriter.of( outputs,
-                                                                            pathToWrite );
-            this.diagramConsumers.put( DestinationType.GRAPHIC,
-                                       diagramWriter );
-            this.writersToPaths.add( diagramWriter );
-        }
-
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, DestinationType.GRAPHIC ) )
-        {
-            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
-                                                                            pathToWrite );
-            this.boxPlotConsumersPerPair.put( DestinationType.GRAPHIC,
-                                              boxPlotWriter );
-            this.writersToPaths.add( boxPlotWriter );
-        }
-
-        if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, DestinationType.GRAPHIC ) )
-        {
-            BoxPlotGraphicsWriter boxPlotWriter = BoxPlotGraphicsWriter.of( outputs,
-                                                                            pathToWrite );
-            this.boxPlotConsumersPerPool.put( DestinationType.GRAPHIC,
-                                              boxPlotWriter );
-            this.writersToPaths.add( boxPlotWriter );
-        }
-
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, DestinationType.GRAPHIC ) )
-        {
-            DurationDiagramGraphicsWriter pairedWriter = DurationDiagramGraphicsWriter.of( outputs,
-                                                                                           pathToWrite );
-            this.durationDiagramConsumers.put( DestinationType.GRAPHIC,
-                                               pairedWriter );
-            this.writersToPaths.add( pairedWriter );
-        }
-
-        if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, DestinationType.GRAPHIC ) )
-        {
-            DoubleScoreGraphicsWriter doubleScoreWriter =
-                    DoubleScoreGraphicsWriter.of( outputs,
-                                                  pathToWrite );
-            this.doubleScoreConsumers.put( DestinationType.GRAPHIC,
-                                           doubleScoreWriter );
-            this.writersToPaths.add( doubleScoreWriter );
-        }
-
-        if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, DestinationType.GRAPHIC ) )
-        {
-            DurationScoreGraphicsWriter durationScoreWriter =
-                    DurationScoreGraphicsWriter.of( outputs,
-                                                    pathToWrite );
-            this.durationScoreConsumers.put( DestinationType.GRAPHIC,
-                                             durationScoreWriter );
-            this.writersToPaths.add( durationScoreWriter );
-        }
+        LOGGER.debug( "Returning paths from {} {}: {}", this.getClass().getName(), this, this.pathsWritten );
+        return Collections.unmodifiableSet( this.pathsWritten );
     }
 
     /**
@@ -558,21 +588,18 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DiagramStatisticOuter>>> next : this.diagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DiagramStatisticOuter>, Set<Path>>> next : this.diagramConsumers.entrySet() )
         {
-            // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.DIAGRAM, next.getKey() ) )
-            {
-                log( outputs, next.getKey(), true );
+            this.log( outputs, next.getKey(), true );
 
-                List<DiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                         next.getKey() );
+            List<DiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                     next.getKey() );
 
-                // Consume the output
-                next.getValue().accept( filtered );
+            // Consume the output
+            Set<Path> paths = next.getValue().apply( filtered );
+            this.pathsWritten.addAll( paths );
 
-                log( outputs, next.getKey(), false );
-            }
+            this.log( outputs, next.getKey(), false );
         }
     }
 
@@ -588,21 +615,18 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<BoxplotStatisticOuter>>> next : this.boxPlotConsumersPerPair.entrySet() )
+        for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxplotConsumersPerPair.entrySet() )
         {
-            // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_PAIR, next.getKey() ) )
-            {
-                log( outputs, next.getKey(), true );
+            this.log( outputs, next.getKey(), true );
 
-                List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                         next.getKey() );
+            List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                     next.getKey() );
 
-                // Consume the output
-                next.getValue().accept( filtered );
+            // Consume the output
+            Set<Path> paths = next.getValue().apply( filtered );
+            this.pathsWritten.addAll( paths );
 
-                log( outputs, next.getKey(), false );
-            }
+            this.log( outputs, next.getKey(), false );
         }
     }
 
@@ -618,21 +642,18 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<BoxplotStatisticOuter>>> next : this.boxPlotConsumersPerPool.entrySet() )
+        for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxplotConsumersPerPool.entrySet() )
         {
-            // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.BOXPLOT_PER_POOL, next.getKey() ) )
-            {
-                log( outputs, next.getKey(), true );
+            this.log( outputs, next.getKey(), true );
 
-                List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                         next.getKey() );
+            List<BoxplotStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                     next.getKey() );
 
-                // Consume the output
-                next.getValue().accept( filtered );
+            // Consume the output
+            Set<Path> paths = next.getValue().apply( filtered );
+            this.pathsWritten.addAll( paths );
 
-                log( outputs, next.getKey(), false );
-            }
+            this.log( outputs, next.getKey(), false );
         }
     }
 
@@ -648,21 +669,18 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DoubleScoreStatisticOuter>>> next : this.doubleScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> next : this.doubleScoreConsumers.entrySet() )
         {
-            // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.DOUBLE_SCORE, next.getKey() ) )
-            {
-                log( outputs, next.getKey(), true );
+            this.log( outputs, next.getKey(), true );
 
-                List<DoubleScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                             next.getKey() );
+            List<DoubleScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                         next.getKey() );
 
-                // Consume the output
-                next.getValue().accept( filtered );
+            // Consume the output
+            Set<Path> paths = next.getValue().apply( filtered );
+            this.pathsWritten.addAll( paths );
 
-                log( outputs, next.getKey(), false );
-            }
+            this.log( outputs, next.getKey(), false );
         }
     }
 
@@ -678,21 +696,18 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DurationScoreStatisticOuter>>> next : this.durationScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DurationScoreStatisticOuter>, Set<Path>>> next : this.durationScoreConsumers.entrySet() )
         {
-            // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.DURATION_SCORE, next.getKey() ) )
-            {
-                log( outputs, next.getKey(), true );
+            this.log( outputs, next.getKey(), true );
 
-                List<DurationScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
-                                                                                                               next.getKey() );
+            List<DurationScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisDestinationType( outputs,
+                                                                                                           next.getKey() );
 
-                // Consume the output
-                next.getValue().accept( filtered );
+            // Consume the output
+            Set<Path> paths = next.getValue().apply( filtered );
+            this.pathsWritten.addAll( paths );
 
-                log( outputs, next.getKey(), false );
-            }
+            this.log( outputs, next.getKey(), false );
         }
     }
 
@@ -708,65 +723,21 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<List<DurationDiagramStatisticOuter>>> next : this.durationDiagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> next : this.durationDiagramConsumers.entrySet() )
         {
-            // Consume conditionally
-            if ( this.writeWhenTrue.test( StatisticType.DURATION_DIAGRAM, next.getKey() ) )
-            {
-                log( outputs, next.getKey(), true );
+            this.log( outputs, next.getKey(), true );
 
-                List<DurationDiagramStatisticOuter> filtered =
-                        this.getFilteredStatisticsForThisDestinationType( outputs, next.getKey() );
+            List<DurationDiagramStatisticOuter> filtered =
+                    this.getFilteredStatisticsForThisDestinationType( outputs, next.getKey() );
 
-                // Consume the output
-                next.getValue().accept( filtered );
+            // Consume the output
+            Set<Path> paths = next.getValue().apply( filtered );
+            this.pathsWritten.addAll( paths );
 
-                log( outputs, next.getKey(), false );
-            }
+            this.log( outputs, next.getKey(), false );
         }
     }
-
-    /**
-     * Closes resources that were opened by this class.
-     * 
-     * @throws IOException if any one consumer could not be closed.
-     */
-
-    @Override
-    public void close() throws IOException
-    {
-        int countFailedToClose = 0;
-        IOException reThrow = null;
-        for ( Closeable resource : this.resourcesToClose )
-        {
-            LOGGER.debug( "About to close {}", resource );
-
-            try
-            {
-                resource.close();
-            }
-            catch ( IOException ioe )
-            {
-                countFailedToClose++;
-                reThrow = ioe;
-                // Not much we can do at this point. We tried to close, but
-                // we need to try to close all the other resources too before
-                // the software exits. Will rethrow the last one below.
-                LOGGER.warn( "Unable to close resource {}", resource, ioe );
-            }
-        }
-
-        // Rethrow
-        if ( countFailedToClose > 0 )
-        {
-            throw new IOException( "While attempting to close a statistics consumer, failed to close "
-                                   + countFailedToClose
-                                   + " dependent resources. The last exception follows.",
-                                   reThrow );
-        }
-    }
-
-
+    
     /**
      * Logs the status of product generation.
      * 
@@ -861,15 +832,6 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     }
 
     /**
-     * @return the output directory.
-     */
-
-    private Path getOutputDirectory()
-    {
-        return this.outputDirectory;
-    }
-
-    /**
      * @param outputs the outputs description to check
      * @return a set of metrics to suppress for each destination type.
      */
@@ -906,26 +868,19 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
     /**
      * Build a product processor that writes conditionally.
      * 
-     * @param evaluationDescription the evaluation description
-     * @param writeWhenTrue the condition under which outputs should be written
-     * @param outputDirectory the output directory
-     * @throws NullPointerException if any of the inputs are null
+     * @param builder the builder
      * @throws WresProcessingException if the project is invalid for writing
+     * @throws NullPointerException if any required input is null
      */
 
-    private StatisticsConsumer( Evaluation evaluationDescription,
-                                BiPredicate<StatisticType, DestinationType> writeWhenTrue,
-                                Path outputDirectory )
+    private StatisticsToFormatsRouter( Builder builder )
     {
-        Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
-        Objects.requireNonNull( evaluationDescription );
-        Objects.requireNonNull( outputDirectory );
+        // Set then validate
+        this.evaluationDescription = builder.evaluationDescription;
 
-        this.resourcesToClose = new ArrayList<>( 1 );
-        this.writersToPaths = new ArrayList<>();
-        this.writeWhenTrue = writeWhenTrue;
-        this.evaluationDescription = evaluationDescription;
-        this.outputDirectory = outputDirectory;
+        Objects.requireNonNull( this.evaluationDescription );
+
+        this.pathsWritten = new TreeSet<>();
 
         Outputs outputsDescription = this.getEvaluationDescription()
                                          .getOutputs();
@@ -933,15 +888,12 @@ class StatisticsConsumer implements Consumer<Collection<Statistics>>, Closeable,
         this.suppressTheseDestinationsForTheseMetrics =
                 this.getMetricsToSuppressForEachDestination( outputsDescription );
 
-        // Register output consumers
-        try
-        {
-            this.buildGraphicsConsumers( outputsDescription );
-        }
-        catch ( ProjectConfigException e )
-        {
-            throw new GraphicsWriteException( "While processing the project configuration to write output:", e );
-        }
+        this.doubleScoreConsumers.putAll( builder.doubleScoreConsumers );
+        this.durationScoreConsumers.putAll( builder.durationScoreConsumers );
+        this.diagramConsumers.putAll( builder.diagramConsumers );
+        this.durationDiagramConsumers.putAll( builder.durationDiagramConsumers );
+        this.boxplotConsumersPerPair.putAll( builder.boxplotConsumersPerPair );
+        this.boxplotConsumersPerPool.putAll( builder.boxplotConsumersPerPool );
     }
 
 }

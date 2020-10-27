@@ -7,14 +7,16 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.jms.JMSException;
@@ -156,24 +158,42 @@ public class EvaluationTest
         List<Statistics> otherActualStatistics = new ArrayList<>();
 
         // Consumers, three for each evaluation
-        Consumer<EvaluationStatus> status = actualStatuses::add;
-        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<Statistics> statistics = actualStatistics::add;
+        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
+            actualStatuses.add( statusMessage );
+            return Collections.emptySet();
+        };
+        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
+            actualEvaluations.add( evaluationMessage );
+            return Collections.emptySet();
+        };
+        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
+            actualStatistics.add( statisticsMessage );
+            return Collections.emptySet();
+        };
 
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( status )
-                                       .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics, this.formats )
+                new Consumers.Builder().addStatusConsumer( statusConsumer )
+                                       .addEvaluationConsumer( evaluationConsumer )
+                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
                                        .build();
 
-        Consumer<wres.statistics.generated.Evaluation> otherDescription = actualEvaluations::add; // Common store
-        Consumer<EvaluationStatus> otherStatus = otherActualStatuses::add;
-        Consumer<Statistics> otherStatistics = otherActualStatistics::add;
+        Function<EvaluationStatus, Set<Path>> otherStatusConsumer = statusMessage -> {
+            otherActualStatuses.add( statusMessage );
+            return Collections.emptySet();
+        };
+        Function<wres.statistics.generated.Evaluation, Set<Path>> otherEvaluationConsumer = evaluationMessage -> {
+            actualEvaluations.add( evaluationMessage );
+            return Collections.emptySet();
+        };
+        Function<Statistics, Set<Path>> otherStatisticsConsumer = statisticsMessage -> {
+            otherActualStatistics.add( statisticsMessage );
+            return Collections.emptySet();
+        };
 
         Consumers otherConsumerGroup =
-                new Consumers.Builder().addStatusConsumer( otherStatus )
-                                       .addEvaluationConsumer( otherDescription )
-                                       .addStatisticsConsumer( otherStatistics, this.formats )
+                new Consumers.Builder().addStatusConsumer( otherStatusConsumer )
+                                       .addEvaluationConsumer( otherEvaluationConsumer )
+                                       .addStatisticsConsumer( otherStatisticsConsumer, this.formats )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -232,17 +252,26 @@ public class EvaluationTest
         List<EvaluationStatus> actualStatuses = new ArrayList<>();
         List<Statistics> actualStatistics = new ArrayList<>();
 
-        // Consumers, three for each evaluation
-        Consumer<EvaluationStatus> status = actualStatuses::add;
-        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<Statistics> statistics = actualStatistics::add;
+        // Consumers
+        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
+            actualStatuses.add( statusMessage );
+            return Collections.emptySet();
+        };
+        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
+            actualEvaluations.add( evaluationMessage );
+            return Collections.emptySet();
+        };
+        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
+            actualStatistics.add( statisticsMessage );
+            return Collections.emptySet();
+        };
 
         // Add the same status consumer twice, which doubles the expected number of messages to 24
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( status )
-                                       .addStatusConsumer( status )
-                                       .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics, this.formats )
+                new Consumers.Builder().addStatusConsumer( statusConsumer )
+                                       .addStatusConsumer( statusConsumer )
+                                       .addEvaluationConsumer( evaluationConsumer )
+                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -280,10 +309,13 @@ public class EvaluationTest
         Consumers consumerGroup =
                 new Consumers.Builder()
                                        .addStatusConsumer( message -> {
+                                           return Collections.emptySet();
                                        } )
                                        .addEvaluationConsumer( message -> {
+                                           return Collections.emptySet();
                                        } )
                                        .addStatisticsConsumer( message -> {
+                                           return Collections.emptySet();
                                        }, this.formats )
                                        .build();
 
@@ -317,22 +349,33 @@ public class EvaluationTest
         // End-of-pipeline statistics
         List<Statistics> actualAggregatedStatistics = new ArrayList<>();
 
-        // Consumers for the incremental messages
-        Consumer<EvaluationStatus> status = actualStatuses::add;
-        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<Collection<Statistics>> aggregatedStatistics =
-                aList -> actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
-                                                                       .apply( aList ) );
-        Consumer<Statistics> statistics = actualStatistics::add;
+        // Consumers
+        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
+            actualStatuses.add( statusMessage );
+            return Collections.emptySet();
+        };
+        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
+            actualEvaluations.add( evaluationMessage );
+            return Collections.emptySet();
+        };
+        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
+            actualStatistics.add( statisticsMessage );
+            return Collections.emptySet();
+        };
+        Function<Collection<Statistics>, Set<Path>> aggregatedStatisticsConsumer = statisticsMessages -> {
+            actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
+                                                          .apply( statisticsMessages ) );
+            return Collections.emptySet();
+        };
 
         int featureCount = 10000;
 
         // Create a container for all the consumers
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( status )
-                                       .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics, this.formats )
-                                       .addGroupedStatisticsConsumer( aggregatedStatistics )
+                new Consumers.Builder().addStatusConsumer( statusConsumer )
+                                       .addEvaluationConsumer( evaluationConsumer )
+                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
+                                       .addGroupedStatisticsConsumer( aggregatedStatisticsConsumer )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -393,23 +436,37 @@ public class EvaluationTest
         List<Pairs> actualPairs = new ArrayList<>();
 
         // Consumers for the incremental messages
-        Consumer<EvaluationStatus> status = actualStatuses::add;
-        Consumer<wres.statistics.generated.Evaluation> description = actualEvaluations::add;
-        Consumer<Statistics> statistics = actualStatistics::add;
-        Consumer<Pairs> pairs = actualPairs::add;
+        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
+            actualStatuses.add( statusMessage );
+            return Collections.emptySet();
+        };
+        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
+            actualEvaluations.add( evaluationMessage );
+            return Collections.emptySet();
+        };
+        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
+            actualStatistics.add( statisticsMessage );
+            return Collections.emptySet();
+        };
+        Function<Pairs, Set<Path>> pairsConsumer = pairsMessage -> {
+            actualPairs.add( pairsMessage );
+            return Collections.emptySet();
+        };
 
         // Consumers for the end-of-pipeline/grouped statistics
-        Consumer<Collection<Statistics>> aggregatedStatistics =
-                aList -> actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
-                                                                       .apply( aList ) );
+        Function<Collection<Statistics>, Set<Path>> aggregatedStatisticsConsumer = statisticsMessages -> {
+            actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
+                                                          .apply( statisticsMessages ) );
+            return Collections.emptySet();
+        };
 
         // Create a container for all the consumers
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( status )
-                                       .addEvaluationConsumer( description )
-                                       .addStatisticsConsumer( statistics, this.formats )
-                                       .addGroupedStatisticsConsumer( aggregatedStatistics, this.formats )
-                                       .addPairsConsumer( pairs )
+                new Consumers.Builder().addStatusConsumer( statusConsumer )
+                                       .addEvaluationConsumer( evaluationConsumer )
+                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
+                                       .addGroupedStatisticsConsumer( aggregatedStatisticsConsumer, this.formats )
+                                       .addPairsConsumer( pairsConsumer )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -486,9 +543,15 @@ public class EvaluationTest
         // Create the consumers
         // Create a container for all the consumers
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
-                                       .addEvaluationConsumer( Function.identity()::apply )
-                                       .addStatisticsConsumer( Function.identity()::apply, this.formats )
+                new Consumers.Builder().addStatusConsumer( message -> {
+                    return Collections.emptySet();
+                } )
+                                       .addEvaluationConsumer( message -> {
+                                           return Collections.emptySet();
+                                       } )
+                                       .addStatisticsConsumer( message -> {
+                                           return Collections.emptySet();
+                                       }, this.formats )
                                        .build();
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -525,8 +588,12 @@ public class EvaluationTest
     {
         // Create a statistics consumer that fails always, together with some no-op consumers for other message types
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
-                                       .addEvaluationConsumer( Function.identity()::apply )
+                new Consumers.Builder().addStatusConsumer( message -> {
+                    return Collections.emptySet();
+                } )
+                                       .addEvaluationConsumer( message -> {
+                                           return Collections.emptySet();
+                                       } )
                                        .addStatisticsConsumer( consume -> {
                                            throw new ConsumerException( "Consumption failed!" );
                                        }, this.formats )
@@ -579,13 +646,19 @@ public class EvaluationTest
         // Create a statistics consumer that fails one time only, together with some no-op consumers for other types
         AtomicInteger failureCount = new AtomicInteger();
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
-                                       .addEvaluationConsumer( Function.identity()::apply )
+                new Consumers.Builder().addStatusConsumer( message -> {
+                    return Collections.emptySet();
+                } )
+                                       .addEvaluationConsumer( message -> {
+                                           return Collections.emptySet();
+                                       } )
                                        .addStatisticsConsumer( statistics -> {
                                            if ( failureCount.getAndIncrement() < 1 )
                                            {
                                                throw new ConsumerException( "Consumption failed!" );
                                            }
+
+                                           return Collections.emptySet();
                                        }, this.formats )
                                        .build();
 
@@ -614,9 +687,15 @@ public class EvaluationTest
         // Create the consumers
         // Create a container for all the consumers
         Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( Function.identity()::apply )
-                                       .addEvaluationConsumer( Function.identity()::apply )
-                                       .addStatisticsConsumer( Function.identity()::apply, this.formats )
+                new Consumers.Builder().addStatusConsumer( message -> {
+                    return Collections.emptySet();
+                } )
+                                       .addEvaluationConsumer( message -> {
+                                           return Collections.emptySet();
+                                       } )
+                                       .addStatisticsConsumer( message -> {
+                                           return Collections.emptySet();
+                                       }, this.formats )
                                        .build();
 
         // Open an evaluation, closing on completion

@@ -7,20 +7,16 @@ import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.JMSException;
 import javax.naming.NamingException;
@@ -33,6 +29,7 @@ import org.slf4j.MDC;
 import wres.events.Evaluation;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.util.Strings;
+import wres.vis.client.EvaluationSubscriber.SubscriberStatus;
 
 /**
  * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
@@ -61,6 +58,12 @@ class GraphicsClient implements Closeable
      */
 
     private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
+
+    /**
+     * The frequency with which to check the health of the subscriber in ms.
+     */
+
+    private static final long HEALTH_CHECK_MILLISECONDS = 5_000;
 
     /**
      * Maximum number of threads for graphics writing.
@@ -93,12 +96,6 @@ class GraphicsClient implements Closeable
     private final Timer timer;
 
     /**
-     * Server status.
-     */
-
-    private final ClientStatus clientStatus;
-
-    /**
      * Wait until stopped.
      */
 
@@ -108,7 +105,7 @@ class GraphicsClient implements Closeable
      * The graphics subscriber;
      */
 
-    private final GraphicsSubscriber graphicsSubscriber;
+    private final EvaluationSubscriber graphicsSubscriber;
 
     /**
      * Start the graphics server.
@@ -150,8 +147,8 @@ class GraphicsClient implements Closeable
                              + "evaluations.",
                              graphics.getSubscriberId(),
                              duration,
-                             graphics.getClientStatus().getStatisticsCount(),
-                             graphics.getClientStatus().getEvaluationCount() );
+                             graphics.getSubscriberStatus().getStatisticsCount(),
+                             graphics.getSubscriberStatus().getEvaluationCount() );
             } ) );
 
             graphics.start();
@@ -187,8 +184,9 @@ class GraphicsClient implements Closeable
         LOGGER.info( "WRES Graphics client {} is running.", this.getSubscriberId() );
 
         // The status is mutable and is updated by the subscriber
-        ClientStatus status = this.getClientStatus();
-        GraphicsSubscriber subscriber = this.getGraphicsSubscriber();
+        SubscriberStatus status = this.getSubscriberStatus();
+        EvaluationSubscriber subscriber = this.getGraphicsSubscriber();
+        GraphicsClient client = this;
 
         // Create a timer task to log the server status
         TimerTask sweeper = new TimerTask()
@@ -216,12 +214,30 @@ class GraphicsClient implements Closeable
             }
         };
 
+        // Create a timer task to check on the health of the subscriber
+        TimerTask healthChecker = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                if ( status.isFailed() )
+                {
+                    LOGGER.error( "While checking the graphics client for the health of its subscribers, discovered a "
+                                  + "failed subscriber with identifier {}. The graphics client will now close.",
+                                  client.getSubscriberId() );
+
+                    client.close();
+                }
+            }
+        };
+
         this.timer.schedule( sweeper, 0, GraphicsClient.STATUS_UPDATE_MILLISECONDS );
         this.timer.schedule( updater, 0, GraphicsClient.NOTIFY_ALIVE_MILLISECONDS );
+        this.timer.schedule( healthChecker, 0, GraphicsClient.HEALTH_CHECK_MILLISECONDS );
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         this.stop();
     }
@@ -241,16 +257,17 @@ class GraphicsClient implements Closeable
      * @return the client status.
      */
 
-    private ClientStatus getClientStatus()
+    private SubscriberStatus getSubscriberStatus()
     {
-        return this.clientStatus;
+        return this.getGraphicsSubscriber()
+                   .getSubscriberStatus();
     }
 
     /**
      * @return the graphics subscriber.
      */
 
-    private GraphicsSubscriber getGraphicsSubscriber()
+    private EvaluationSubscriber getGraphicsSubscriber()
     {
         return this.graphicsSubscriber;
     }
@@ -382,14 +399,14 @@ class GraphicsClient implements Closeable
 
         // Client identifier = identifier of the one subscriber it composes
         String subscriberId = Evaluation.getUniqueId();
-        this.clientStatus = new ClientStatus( subscriberId, this::stop );
 
         try
         {
-            this.graphicsSubscriber = new GraphicsSubscriber( subscriberId,
-                                                              this.getClientStatus(),
-                                                              this.getGraphicsExecutor(),
-                                                              broker );
+            GraphicsConsumerFactory consumerFactory = new GraphicsConsumerFactory( subscriberId );
+            this.graphicsSubscriber = new EvaluationSubscriber( subscriberId,
+                                                                consumerFactory,
+                                                                this.getGraphicsExecutor(),
+                                                                broker );
         }
         catch ( NamingException | JMSException | RuntimeException e )
         {
@@ -433,178 +450,6 @@ class GraphicsClient implements Closeable
         pool.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
 
         return pool;
-    }
-
-    /**
-     * A mutable container that records the status of the server and the jobs completed so far. All status information 
-     * is updated atomically.
-     * 
-     * @author james.brown@hydrosolved.com
-     */
-
-    static class ClientStatus
-    {
-
-        /** The client identifier.*/
-        private final String clientId;
-
-        /** The number of evaluations completed.*/
-        private final AtomicInteger evaluationCount = new AtomicInteger();
-
-        /** The number of statistics blobs completed.*/
-        private final AtomicInteger statisticsCount = new AtomicInteger();
-
-        /** The last evaluation started.*/
-        private final AtomicReference<String> evaluationId = new AtomicReference<>();
-
-        /** The last statistics message completed.*/
-        private final AtomicReference<String> statisticsMessageId = new AtomicReference<>();
-
-        /** The evaluations that failed.*/
-        private final Set<String> evaluationFailed = ConcurrentHashMap.newKeySet();
-
-        /** The evaluations that have completed.*/
-        private final Set<String> evaluationComplete = ConcurrentHashMap.newKeySet();
-
-        /** A stop action to perform when the client fails unrecoverably.**/
-        private final Runnable stopAction;
-
-        @Override
-        public String toString()
-        {
-            String addSucceeded = "";
-            String addFailed = "";
-            String addComplete = "";
-
-            if ( Objects.nonNull( this.evaluationId.get() ) && Objects.nonNull( this.statisticsMessageId.get() ) )
-            {
-                addSucceeded = " The most recent evaluation was "
-                               + this.evaluationId.get()
-                               + " and the most recent statistics were attached to message "
-                               + this.statisticsMessageId.get()
-                               + ".";
-            }
-
-            if ( !this.evaluationFailed.isEmpty() )
-            {
-                addFailed =
-                        " Failed to consume one or more statistics messages for " + this.evaluationFailed.size()
-                            + " evaluations. "
-                            + "The failed evaluation are "
-                            + this.evaluationFailed
-                            + ".";
-            }
-
-            if ( !this.evaluationComplete.isEmpty() )
-            {
-                addComplete = " Graphics client "
-                              + this.clientId
-                              + " completed "
-                              + this.evaluationComplete.size()
-                              + " of the "
-                              + this.evaluationCount.get()
-                              + " evaluations that were started.";
-            }
-
-            return "Graphics client "
-                   + this.clientId
-                   + " is waiting for work. Until now, received "
-                   + this.statisticsCount.get()
-                   + " packets of statistics across "
-                   + this.evaluationCount.get()
-                   + " evaluations."
-                   + addSucceeded
-                   + addFailed
-                   + addComplete;
-        }
-
-        /**
-         * Increment the evaluation count and last evaluation identifier.
-         * @param evaluationId the evaluation identifier
-         */
-
-        void registerEvaluationStarted( String evaluationId )
-        {
-            this.evaluationCount.incrementAndGet();
-            this.evaluationId.set( evaluationId );
-        }
-
-        /**
-         * Registers an evaluation completed.
-         * @param evaluationId the evaluation identifier
-         */
-
-        void registerEvaluationCompleted( String evaluationId )
-        {
-            this.evaluationComplete.add( evaluationId );
-        }
-
-        /**
-         * Increment the failed evaluation count and last failed evaluation identifier.
-         * @param evaluationId the evaluation identifier
-         */
-
-        void registerFailedEvaluation( String evaluationId )
-        {
-            this.evaluationFailed.add( evaluationId );
-        }
-
-        /**
-         * Increment the statistics count and last statistics message identifier.
-         * @param messageId the identifier of the message that contained the statistics.
-         */
-
-        void registerStatistics( String messageId )
-        {
-            this.statisticsCount.incrementAndGet();
-            this.statisticsMessageId.set( messageId );
-        }
-
-        /**
-         * @return the evaluation count.
-         */
-        int getEvaluationCount()
-        {
-            return this.evaluationCount.get();
-        }
-
-        /**
-         * @return the statistics count.
-         */
-        int getStatisticsCount()
-        {
-            return this.statisticsCount.get();
-        }
-
-        /**
-         * Flags an unrecoverable failure in the graphics client.
-         * @param exception the unrecoverable consumer exception that caused the failure
-         */
-
-        void markFailedUnrecoverably( UnrecoverableConsumerException exception )
-        {
-            String failure = "WRES Graphics Client " + clientId + " has failed unrecoverably and will now stop.";
-
-            LOGGER.error( failure, exception );
-
-            this.stopAction.run();
-        }
-
-        /**
-         * Hidden constructor.
-         * 
-         * @param clientId the client identifier
-         * @param stopAction a callback composing a stop action to perform when the client fails unrecoverably.
-         */
-
-        private ClientStatus( String clientId, Runnable stopAction )
-        {
-            Objects.requireNonNull( clientId );
-            Objects.requireNonNull( stopAction );
-
-            this.clientId = clientId;
-            this.stopAction = stopAction;
-        }
     }
 
     static class GraphicsClientException extends RuntimeException

@@ -1,12 +1,10 @@
 package wres.io.writing;
 
 import java.io.Closeable;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -21,7 +19,7 @@ import wres.io.writing.protobuf.ProtobufWriter;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SharedStatisticsWriters implements Closeable, Supplier<Set<Path>>
+public class SharedStatisticsWriters implements Closeable
 {
 
     /**
@@ -183,26 +181,6 @@ public class SharedStatisticsWriters implements Closeable, Supplier<Set<Path>>
         }
 
         this.storedTypes = Collections.unmodifiableSet( localTypes );
-    }
-
-    @Override
-    public Set<Path> get()
-    {
-        Set<Path> paths = new HashSet<>( 1 );
-
-        if ( this.contains( DestinationType.NETCDF ) )
-        {
-            Set<Path> outputWriterPaths = this.getNetcdfOutputWriter().get();
-            paths.addAll( outputWriterPaths );
-        }
-        
-        if ( this.contains( DestinationType.PROTOBUF ) )
-        {
-            Set<Path> outputWriterPaths = this.getProtobufWriter().get();
-            paths.addAll( outputWriterPaths );
-        }
-        
-        return Collections.unmodifiableSet( paths );
     }
 
     /**

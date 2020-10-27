@@ -53,10 +53,7 @@ public class CommaSeparatedBoxPlotWriterTest
                                                                              ChronoUnit.SECONDS,
                                                                              this.outputDirectory );
 
-        writer.accept( WriterTestHelper.getBoxPlotPerPairForOnePool() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getBoxPlotPerPairForOnePool() );
 
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );
@@ -114,10 +111,7 @@ public class CommaSeparatedBoxPlotWriterTest
                                                                              ChronoUnit.SECONDS,
                                                                              this.outputDirectory );
 
-        writer.accept( WriterTestHelper.getBoxPlotPerPoolForTwoPools() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getBoxPlotPerPoolForTwoPools() );
 
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );

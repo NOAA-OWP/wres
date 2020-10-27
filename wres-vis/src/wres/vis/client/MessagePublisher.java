@@ -20,13 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Publishes evaluation status messages associated with the consumption of graphics. There is one {@link Connection} 
- * and one {@link Session} per instance.
+ * Publishes evaluation messages to any listening client. There is one {@link Connection} and one {@link Session} per 
+ * instance.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class GraphicsPublisher implements Closeable
+class MessagePublisher implements Closeable
 {
 
     /**
@@ -41,9 +41,7 @@ class GraphicsPublisher implements Closeable
 
         JMS_MESSAGE_ID,
 
-        CONSUMER_ID,
-
-        OUTPUT_PATH;
+        CONSUMER_ID;
 
         @Override
         public String toString()
@@ -58,15 +56,13 @@ class GraphicsPublisher implements Closeable
                     return "JMSMessageID";
                 case CONSUMER_ID:
                     return "ConsumerID";
-                case OUTPUT_PATH:
-                    return "OutputPath";
                 default:
                     throw new IllegalStateException( "Implement the string identifier for " + this );
             }
         }
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsPublisher.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
 
     /**
      * A connection to the broker.
@@ -110,12 +106,12 @@ class GraphicsPublisher implements Closeable
      * @return an instance
      */
 
-    static GraphicsPublisher of( Connection connection,
-                                 Destination destination,
-                                 String identifier )
+    static MessagePublisher of( Connection connection,
+                                Destination destination,
+                                String identifier )
             throws JMSException
     {
-        return new GraphicsPublisher( connection, destination, identifier );
+        return new MessagePublisher( connection, destination, identifier );
     }
 
     /**
@@ -216,9 +212,9 @@ class GraphicsPublisher implements Closeable
      * @throws NullPointerException if the connectionFactory or destination is null
      */
 
-    private GraphicsPublisher( Connection connection,
-                               Destination destination,
-                               String identifier )
+    private MessagePublisher( Connection connection,
+                              Destination destination,
+                              String identifier )
             throws JMSException
     {
         Objects.requireNonNull( connection );

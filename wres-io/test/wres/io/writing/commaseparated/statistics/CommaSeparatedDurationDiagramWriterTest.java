@@ -58,10 +58,7 @@ public class CommaSeparatedDurationDiagramWriterTest
                                                         ChronoUnit.SECONDS,
                                                         this.outputDirectory );
 
-        writer.accept( WriterTestHelper.getTimeToPeakErrorsForOnePool() );
-
-        // Determine the paths written
-        Set<Path> pathsToFile = writer.get();
+        Set<Path> pathsToFile = writer.apply( WriterTestHelper.getTimeToPeakErrorsForOnePool() );
 
         // Check the expected number of paths: #61841
         assertTrue( pathsToFile.size() == 1 );

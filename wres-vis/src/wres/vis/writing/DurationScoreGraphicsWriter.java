@@ -10,8 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -32,8 +31,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class DurationScoreGraphicsWriter extends GraphicsWriter
-        implements Consumer<List<DurationScoreStatisticOuter>>,
-        Supplier<Set<Path>>
+        implements Function<List<DurationScoreStatisticOuter>,Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -63,7 +61,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      */
 
     @Override
-    public void accept( List<DurationScoreStatisticOuter> output )
+    public Set<Path> apply( List<DurationScoreStatisticOuter> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing duration score outputs." );
 
@@ -88,6 +86,8 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
+        
+        return this.getPathsWritten();
     }
 
     /**
@@ -96,8 +96,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      * @return the paths written so far.
      */
 
-    @Override
-    public Set<Path> get()
+    private Set<Path> getPathsWritten()
     {
         return Collections.unmodifiableSet( this.pathsWrittenTo );
     }

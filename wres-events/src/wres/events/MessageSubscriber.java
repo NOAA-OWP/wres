@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,11 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 
@@ -330,13 +331,13 @@ class MessageSubscriber<T> implements Closeable
          * List of subscriptions to evaluation events.
          */
 
-        private List<Consumer<T>> subscribers = new ArrayList<>();
+        private List<Function<T, Set<Path>>> subscribers = new ArrayList<>();
 
         /**
          * List of subscriptions to groups of evaluation events.
          */
 
-        private List<Consumer<Collection<T>>> groupSubscribers = new ArrayList<>();
+        private List<Function<Collection<T>, Set<Path>>> groupSubscribers = new ArrayList<>();
 
         /**
          * A mapper between message bytes and messages.
@@ -459,7 +460,7 @@ class MessageSubscriber<T> implements Closeable
          * @throws NullPointerException if the list is null
          */
 
-        Builder<T> addSubscribers( List<Consumer<T>> subscribers )
+        Builder<T> addSubscribers( List<Function<T, Set<Path>>> subscribers )
         {
             Objects.requireNonNull( subscribers );
 
@@ -477,7 +478,7 @@ class MessageSubscriber<T> implements Closeable
          * @throws NullPointerException if the list is null
          */
 
-        Builder<T> addGroupSubscribers( List<Consumer<Collection<T>>> subscribers )
+        Builder<T> addGroupSubscribers( List<Function<Collection<T>, Set<Path>>> subscribers )
         {
             Objects.requireNonNull( subscribers );
 
@@ -597,7 +598,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private List<NamedMessageConsumer> subscribeAllConsumers( List<Consumer<T>> consumers,
+    private List<NamedMessageConsumer> subscribeAllConsumers( List<Function<T, Set<Path>>> consumers,
                                                               Function<ByteBuffer, T> mapper,
                                                               String evaluationId,
                                                               String context )
@@ -608,7 +609,7 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( evaluationId );
 
         List<NamedMessageConsumer> returnMe = new ArrayList<>();
-        for ( Consumer<T> next : consumers )
+        for ( Function<T, Set<Path>> next : consumers )
         {
             NamedMessageConsumer consumer = this.subscribeOneConsumer( next, mapper, evaluationId, context );
             returnMe.add( consumer );
@@ -630,7 +631,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private List<NamedMessageConsumer> subscribeAllGroupedConsumers( List<Consumer<Collection<T>>> consumers,
+    private List<NamedMessageConsumer> subscribeAllGroupedConsumers( List<Function<Collection<T>, Set<Path>>> consumers,
                                                                      Function<ByteBuffer, T> mapper,
                                                                      String evaluationId,
                                                                      String context )
@@ -641,7 +642,7 @@ class MessageSubscriber<T> implements Closeable
         Objects.requireNonNull( evaluationId );
 
         List<NamedMessageConsumer> returnMe = new ArrayList<>();
-        for ( Consumer<Collection<T>> next : consumers )
+        for ( Function<Collection<T>, Set<Path>> next : consumers )
         {
             NamedMessageConsumer consumer = this.subscribeOneGroupedConsumer( next, mapper, evaluationId, context );
             returnMe.add( consumer );
@@ -663,7 +664,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private NamedMessageConsumer subscribeOneGroupedConsumer( Consumer<Collection<T>> innerSubscriber,
+    private NamedMessageConsumer subscribeOneGroupedConsumer( Function<Collection<T>, Set<Path>> innerSubscriber,
                                                               Function<ByteBuffer, T> mapper,
                                                               String evaluationId,
                                                               String context )
@@ -694,7 +695,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null
      */
 
-    private NamedMessageConsumer getConsumerForGroupedMessages( Consumer<Collection<T>> innerSubscriber,
+    private NamedMessageConsumer getConsumerForGroupedMessages( Function<Collection<T>, Set<Path>> innerSubscriber,
                                                                 Function<ByteBuffer, T> mapper,
                                                                 String evaluationId,
                                                                 String context )
@@ -846,7 +847,7 @@ class MessageSubscriber<T> implements Closeable
      * @return the group subscriber
      */
 
-    private Queue<OneGroupConsumer<T>> getGroupSubscriber( Consumer<Collection<T>> innerConsumer,
+    private Queue<OneGroupConsumer<T>> getGroupSubscriber( Function<Collection<T>, Set<Path>> innerConsumer,
                                                            String groupId )
     {
         Objects.requireNonNull( innerConsumer );
@@ -898,7 +899,7 @@ class MessageSubscriber<T> implements Closeable
      * @throws NullPointerException if any input is null, except the optional groupId
      */
 
-    private NamedMessageConsumer subscribeOneConsumer( Consumer<T> subscriber,
+    private NamedMessageConsumer subscribeOneConsumer( Function<T, Set<Path>> subscriber,
                                                        Function<ByteBuffer, T> mapper,
                                                        String evaluationId,
                                                        String context )
@@ -955,7 +956,7 @@ class MessageSubscriber<T> implements Closeable
 
                         T received = mapper.apply( bufferedMessage );
 
-                        subscriber.accept( received );
+                        subscriber.apply( received );
 
                         // Increment the actual message count
                         this.actualMessageCount.incrementAndGet();
@@ -1651,8 +1652,8 @@ class MessageSubscriber<T> implements Closeable
         Topic statusTopic = builder.statusTopic;
         String context = builder.context;
         Function<ByteBuffer, T> mapper = builder.mapper;
-        List<Consumer<T>> subscribers = builder.subscribers;
-        List<Consumer<Collection<T>>> groupSubscribers = builder.groupSubscribers;
+        List<Function<T, Set<Path>>> subscribers = builder.subscribers;
+        List<Function<Collection<T>, Set<Path>>> groupSubscribers = builder.groupSubscribers;
 
         String evaluationId = this.getEvaluationId();
 
