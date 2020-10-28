@@ -222,7 +222,8 @@ class EvaluationConsumer
     /**
      * Closes the evaluation on completion.
      * @throws JMSException if the evaluation failed to close
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably 
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
     void close() throws JMSException
     {
@@ -371,7 +372,8 @@ class EvaluationConsumer
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
      * @throws JMSException if the group completion could not be notified
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
 
     void acceptStatisticsMessage( Statistics statistics,
@@ -418,7 +420,8 @@ class EvaluationConsumer
      * @param evaluationDescription the evaluation description message
      * @param messageId the message identifier to help with logging
      * @throws JMSException if a consumer could not be created when required
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      * @throws IllegalStateException if an evaluation description has already been received
      */
 
@@ -454,7 +457,8 @@ class EvaluationConsumer
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
      * @throws JMSException if a group completion could not be notified
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
 
     void acceptStatusMessage( EvaluationStatus status, String groupId, String messageId ) throws JMSException
@@ -546,7 +550,8 @@ class EvaluationConsumer
      * Executes a writing task
      * @param task the task to execute
      * @throws ConsumerException if the task fails exceptionally, but potentially in a recoverable way
-     * @throws UnrecoverableConsumerException if the task fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
 
     private void execute( Runnable task )
@@ -570,7 +575,7 @@ class EvaluationConsumer
                                              e );
             }
 
-            throw new UnrecoverableConsumerException( SUBSCRIBER + this.getConsumerId()
+            throw new UnrecoverableSubscriberException( SUBSCRIBER + this.getConsumerId()
                                                       + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                                       + this.getEvaluationId()
                                                       + ".",
@@ -660,7 +665,8 @@ class EvaluationConsumer
      * 
      * @param status the evaluation status message
      * @throws JMSException if the group completion could not be notified
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably 
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
 
     private void setExpectedMessageCountForGroups( EvaluationStatus status )
@@ -717,7 +723,8 @@ class EvaluationConsumer
      * Completes all message groups.
      * 
      * @param consumerIsClosing is true if the consumer is closing and open groups are disallowed
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      * @throws IllegalStateException if some groups are open when the consumerIsClosing is true
      */
 
@@ -816,7 +823,8 @@ class EvaluationConsumer
      * @return true if the group was completed, otherwise false
      * @throws JMSException if the group completion could not be notified
      * @throws ConsumerException if the consumption failed because the group has already been completed
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
 
     private boolean checkAndCompleteGroup( String groupId ) throws JMSException
@@ -862,7 +870,8 @@ class EvaluationConsumer
      * @param evaluationDescription a description of the evaluation
      * @param consumerFactory the consumer factory
      * @throws JMSException if a group completion could not be notified
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
 
     private void createConsumers( Evaluation evaluationDescription,
@@ -897,7 +906,8 @@ class EvaluationConsumer
     /**
      * Consumes any statistics messages that arrived before the consumers were ready.
      * @throws JMSException if a group completion could not be notified 
-     * @throws UnrecoverableConsumerException if the consumer fails unrecoverably
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
      */
 
     private void consumeCachedStatisticsMessages() throws JMSException

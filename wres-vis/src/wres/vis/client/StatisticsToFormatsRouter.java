@@ -48,7 +48,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
  * @author james.brown@hydrosolved.com
  */
 
-class StatisticsToFormatsRouter implements Function<Collection<Statistics>, Set<Path>>
+public class StatisticsToFormatsRouter implements Function<Collection<Statistics>, Set<Path>>
 {
     /**
      * Logger.
@@ -318,7 +318,7 @@ class StatisticsToFormatsRouter implements Function<Collection<Statistics>, Set<
         {
             throw new ConsumerException( "Cannot consumer null statistics." );
         }
-        
+
         try
         {
             // Split the statistics into two groups as there may be separate statistics for a baseline
@@ -737,7 +737,7 @@ class StatisticsToFormatsRouter implements Function<Collection<Statistics>, Set<
             this.log( outputs, next.getKey(), false );
         }
     }
-    
+
     /**
      * Logs the status of product generation.
      * 

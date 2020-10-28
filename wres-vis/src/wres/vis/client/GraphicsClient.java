@@ -18,9 +18,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.jms.JMSException;
-import javax.naming.NamingException;
-
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -402,13 +399,14 @@ class GraphicsClient implements Closeable
 
         try
         {
-            GraphicsConsumerFactory consumerFactory = new GraphicsConsumerFactory( subscriberId );
-            this.graphicsSubscriber = new EvaluationSubscriber( subscriberId,
-                                                                consumerFactory,
-                                                                this.getGraphicsExecutor(),
-                                                                broker );
+            // A factory that creates consumers on demand
+            ConsumerFactory consumerFactory = new GraphicsConsumerFactory( subscriberId );
+
+            this.graphicsSubscriber = EvaluationSubscriber.of( consumerFactory,
+                                                               this.getGraphicsExecutor(),
+                                                               broker );
         }
-        catch ( NamingException | JMSException | RuntimeException e )
+        catch ( UnrecoverableSubscriberException e )
         {
             throw new GraphicsClientException( "While attempting to build a WRES Graphics Client, encountered an "
                                                + "error.",
