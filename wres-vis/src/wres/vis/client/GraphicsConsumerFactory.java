@@ -19,9 +19,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationType;
 import wres.events.ConsumerException;
+import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.Consumer.Format;
 import wres.vis.writing.BoxPlotGraphicsWriter;
 import wres.vis.writing.DiagramGraphicsWriter;
 import wres.vis.writing.DoubleScoreGraphicsWriter;
@@ -39,10 +41,10 @@ class GraphicsConsumerFactory implements ConsumerFactory
     private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsConsumerFactory.class );
 
     /**
-     * The subscriber identifier.
+     * Consumer description.
      */
 
-    private final String subscriberId;
+    private final Consumer consumerDescription;
 
     @Override
     public Function<Collection<Statistics>, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId )
@@ -90,6 +92,12 @@ class GraphicsConsumerFactory implements ConsumerFactory
                       .build();
     }
 
+    @Override
+    public Consumer getConsumerDescription()
+    {
+        return this.consumerDescription;
+    }
+
     /**
      * Returns a path to write, creating a temporary directory for the outputs with the correct permissions, as needed. 
      *
@@ -135,7 +143,7 @@ class GraphicsConsumerFactory implements ConsumerFactory
         }
         catch ( IOException e )
         {
-            throw new ConsumerException( "Encountered an error in subscriber " + this.getSubscriberId()
+            throw new ConsumerException( "Encountered an error in subscriber " + this.getConsumerId()
                                          + " while attempting to create a temporary "
                                          + "directory for the graphics from evaluation "
                                          + evaluationId
@@ -151,7 +159,7 @@ class GraphicsConsumerFactory implements ConsumerFactory
 
         LOGGER.debug( "While processing evaluation {} in subscriber {}, created output directory {}.",
                       evaluationId,
-                      this.getSubscriberId(),
+                      this.getConsumerId(),
                       outputDirectory );
 
         return outputDirectory;
@@ -161,22 +169,26 @@ class GraphicsConsumerFactory implements ConsumerFactory
      * @return the subscriber identifier
      */
 
-    private String getSubscriberId()
+    private String getConsumerId()
     {
-        return this.subscriberId;
+        return this.consumerDescription.getConsumerId();
     }
 
     /**
      * Builds an instance.
-     * @param subscriberId the subscriber identifier
+     * @param consumerId the consumer identifier
      * @throws NullPointerException if the subscriber identifier is null
      */
 
-    GraphicsConsumerFactory( String subscriberId )
+    GraphicsConsumerFactory( String consumerId )
     {
-        Objects.requireNonNull( subscriberId );
+        Objects.requireNonNull( consumerId );
 
-        this.subscriberId = subscriberId;
+        this.consumerDescription = Consumer.newBuilder()
+                                           .setConsumerId( consumerId )
+                                           .addFormats( Format.PNG )
+                                           .addFormats( Format.SVG )
+                                           .build();
     }
 
 }
