@@ -3,6 +3,7 @@ package wres.control;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -72,7 +73,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
     private final java.text.Format decimalFormatter;
 
     @Override
-    public Function<Collection<Statistics>, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId )
+    public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( evaluationId );
@@ -109,9 +110,11 @@ class StatisticsConsumerFactory implements ConsumerFactory
             builder.addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
                                                BoxPlotGraphicsWriter.of( outputs, outputsDirectory ) );
         }
+        
+        Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
+                .build();
 
-        return builder.setEvaluationDescription( evaluation )
-                      .build();
+        return statistics -> router.apply( List.of( statistics ) );
     }
 
     @Override

@@ -52,7 +52,8 @@ public interface ConsumerFactory
 {
 
     /**
-     * Creates a consumer for a given evaluation description.
+     * Creates a consumer for a given evaluation description. An ordinary consumer writes a statistics message as soon 
+     * as it arrives.
      * 
      * @param evaluation the evaluation description
      * @param evaluationId the evaluation identifier
@@ -60,10 +61,11 @@ public interface ConsumerFactory
      * @throws ConsumerException if the consumer could not be created for any reason
      */
 
-    Function<Collection<Statistics>, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId );
+    Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId );
 
     /**
-     * Creates a consumer of grouped statistics for a given evaluation description.
+     * Creates a consumer of grouped statistics for a given evaluation description. A grouped consumer delays writing 
+     * until all messages have been received for a message group, which contains a collection of statistics.
      * 
      * @param evaluation the evaluation description
      * @param evaluationId the evaluation identifier

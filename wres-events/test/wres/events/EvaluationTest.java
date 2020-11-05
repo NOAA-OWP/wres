@@ -158,17 +158,17 @@ public class EvaluationTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
+            public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
             {
                 return statistics -> {
                     if ( "evaluationOne".equals( evaluationId ) )
                     {
-                        actualStatistics.addAll( statistics );
+                        actualStatistics.add( statistics );
                     }
                     else
                     {
-                        otherActualStatistics.addAll( statistics );
+                        otherActualStatistics.add( statistics );
                     }
 
                     return Set.of();
@@ -262,11 +262,11 @@ public class EvaluationTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
+            public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
             {
                 return statistics -> {
-                    actualStatistics.addAll( statistics );
+                    actualStatistics.add( statistics );
                     return Set.of();
                 };
             }
@@ -392,7 +392,7 @@ public class EvaluationTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
+            public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
             {
                 return statistics -> {
@@ -469,7 +469,7 @@ public class EvaluationTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
+            public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
             {
                 return statistics -> {
@@ -532,7 +532,7 @@ public class EvaluationTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
+            public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
             {
                 return statistics -> Set.of();
