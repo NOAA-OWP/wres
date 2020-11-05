@@ -16,8 +16,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -30,11 +28,11 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.*;
 import wres.control.Control.DatabaseServices;
 import wres.datamodel.FeatureTuple;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.events.Consumers;
 import wres.events.Evaluation;
+import wres.events.subscribe.ConsumerFactory;
+import wres.events.subscribe.EvaluationSubscriber;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
@@ -45,12 +43,8 @@ import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedSampleDataWriters;
-import wres.io.writing.SharedStatisticsWriters;
-import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
-import wres.io.writing.protobuf.ProtobufWriter;
-import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.system.ProgressMonitor;
@@ -119,67 +113,28 @@ class ProcessorHelper
                                                                         evaluationDescription,
                                                                         outputDirectory );
 
-        // Obtain any formats delivered by external subscribers.
+        // Obtain any formats delivered by out-of-process subscribers.
         Set<Format> externalFormats = ProcessorHelper.getFormatsDeliveredByExternalSubscribers( systemSettings );
-        // Formats delivered by internal subscribers, in a mutable list
-        List<Format> internalFormats = new ArrayList<>( Arrays.asList( Format.values() ) );
+        // Formats delivered by within-process subscribers, in a mutable list
+        Set<Format> internalFormats = MessageFactory.getDeclaredFormats( evaluationDescription.getOutputs() );
+        internalFormats = new HashSet<>( internalFormats );
         internalFormats.removeAll( externalFormats );
-        Format[] formats = internalFormats.toArray( new Format[internalFormats.size()] );
 
-        // Write some statistic types and formats as soon as they become available. Everything else is written on 
-        // group/feature completion.
-        // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
-        // a format that can be written incrementally. Duration scores are always written last because they are not
-        // computed until the end of the pipeline.
-        // Also ignore formats for which external subscribers are available.
-        BiPredicate<StatisticType, DestinationType> incrementalTypes =
-                ( type, format ) -> ( type == StatisticType.BOXPLOT_PER_PAIR
-                                      || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format ) )
-                                    && type != StatisticType.DURATION_SCORE
-                                    && !externalFormats.contains( MessageFactory.parse( format ) );
+        // Create a subscriber for the format writers that are within-process
+        String consumerId = Evaluation.getUniqueId();
+        ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
+                                                                         new HashSet<>( internalFormats ),
+                                                                         systemSettings,
+                                                                         sharedWriters.getNetcdfWriter(),
+                                                                         projectConfig );
 
-        // All others types, but again ignoring those for which external subscribers are available 
-        BiPredicate<StatisticType, DestinationType> nonIncrementalTypes =
-                ( type, format ) -> !externalFormats.contains( MessageFactory.parse( format ) )
-                                    && incrementalTypes.negate().test( type, format );
-
-        // Incremental consumer
-        StatisticsConsumer incrementalConsumer = StatisticsConsumer.of( evaluationDescription,
-                                                                        projectConfigPlus,
-                                                                        incrementalTypes,
-                                                                        sharedWriters.getStatisticsWriters(),
-                                                                        outputDirectory );
-
-        // Group consumer (group = feature for now)
-        StatisticsConsumer groupConsumer = StatisticsConsumer.of( evaluationDescription,
-                                                                  projectConfigPlus,
-                                                                  nonIncrementalTypes,
-                                                                  sharedWriters.getStatisticsWriters(),
-                                                                  outputDirectory );
-
-        // TODO: currently there are only logging consumers for both evaluation description events and evaluation status 
-        // events. Both of these things could be exposed via the web service API and a corresponding consumer 
-        // provided as input to this method, allowing them to bubble up to that API. Also consider adding the 
-        // declaration parsing status events into the ProjectConfigPlus instance so they can be published once the 
-        // evaluation is created below. These need to be mapped from the ProjectConfigPlus::getValidationEvents.
-        Consumers.Builder consumerBuilder = new Consumers.Builder();
-
-        // Add the remaining subscribers and build
-        Consumers consumerGroup =
-                consumerBuilder.addStatusConsumer( ProcessorHelper.getLoggerConsumerForStatusEvents() )
-                               .addEvaluationConsumer( ProcessorHelper.getLoggerConsumerForEvaluationEvents() )
-                               // Add a regular consumer for statistics that are neither grouped by time window
-                               // nor feature. These include box plots per pair and statistics that can be 
-                               // written incrementally, such as netCDF and Protobuf
-                               .addStatisticsConsumer( next -> incrementalConsumer.apply( List.of( next ) ), formats )
-                               // Add a grouped consumer for statistics that are grouped by feature
-                               .addGroupedStatisticsConsumer( groupConsumer, formats )
-                               .build();
+        EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
+                                                                          executors.getProductExecutor(),
+                                                                          connections );
 
         // Open an evaluation, to be closed on completion or stopped on exception
         Evaluation evaluation = Evaluation.of( evaluationDescription,
                                                connections,
-                                               consumerGroup,
                                                evaluationId );
 
         try
@@ -197,12 +152,12 @@ class ProcessorHelper
             // Wait for the evaluation to conclude
             evaluation.await();
 
-            // Since the shared writers are created here, they should be destroyed here. An attempt should be made to 
-            // close them before the finally block because some of these writers may employ a delayed write, which could 
-            // still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further context 
-            // see #81790-21 and the detailed description in Evaluation.await(), which clarifies that awaiting for an 
-            // evaluation to complete does not mean that all consumers have finished their work, only that they have 
-            // received all expected messages. If this contract is insufficient (e.g., because of a delayed write
+            // Since the consumer resources are created here, they should be destroyed here. An attempt should be made 
+            // to close them before the finally block because some of these writers may employ a delayed write, which 
+            // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
+            // context see #81790-21 and the detailed description in Evaluation.await(), which clarifies that awaiting 
+            // for an evaluation to complete does not mean that all consumers have finished their work, only that they 
+            // have received all expected messages. If this contract is insufficient (e.g., because of a delayed write
             // implementation), then it may be necessary to promote the underlying consumer/s to an external/outer 
             // subscriber that is responsible for messaging its own lifecycle, rather than delegating that to the 
             // Evaluation instance (which adopts the limited contract described here). An external subscriber within 
@@ -255,12 +210,11 @@ class ProcessorHelper
                 LOGGER.error( "Failed to close the shared writers for evaluation {}.", evaluation.getEvaluationId() );
             }
 
-            // Add the consumer paths written, since consumers are now out-of-band to producers
-            returnMe.addAll( incrementalConsumer.get() );
-            returnMe.addAll( groupConsumer.get() );
+            // Close the formats subscriber
+            formatsSubscriber.close();
 
             // Add the paths written by external subscribers
-            returnMe.addAll( evaluation.getPathsWrittenByExternalSubscribers() );
+            returnMe.addAll( evaluation.getPathsWrittenBySubscribers() );
 
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
@@ -369,10 +323,9 @@ class ProcessorHelper
             }
 
             // Create any netcdf blobs for writing. See #80267-137.
-            if ( sharedWriters.getStatisticsWriters().contains( DestinationType.NETCDF ) )
+            if ( sharedWriters.hasNetcdfWriter() )
             {
-                sharedWriters.getStatisticsWriters()
-                             .getNetcdfOutputWriter()
+                sharedWriters.getNetcdfWriter()
                              .createBlobsForWriting( thresholds );
             }
 
@@ -508,32 +461,21 @@ class ProcessorHelper
         ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
 
         // Build any writers of incremental formats that are shared across features
-        SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
-        Set<DestinationType> incrementalFormats = ConfigHelper.getIncrementalFormats( projectConfig );
+        NetcdfOutputWriter netcdfWriter = null;
 
-        if ( incrementalFormats.contains( DestinationType.NETCDF ) )
+        // The netcdf is an oddball and writing happens in three stages: 1) create writer; 2) create blobs; and 3) 
+        // write to blobs. This adds complexity that could be reduced by creating and writing on-the-fly.
+        if ( evaluationDescription.getOutputs().hasNetcdf() )
         {
             // Use the gridded netcdf writer.
-            NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of(
-                                                                     systemSettings,
-                                                                     executor,
-                                                                     projectConfig,
-                                                                     durationUnits,
-                                                                     outputDirectory );
-
-            sharedWritersBuilder.setNetcdfOutputWriter( netcdfWriter );
+            netcdfWriter = NetcdfOutputWriter.of(
+                                                  systemSettings,
+                                                  executor,
+                                                  projectConfig,
+                                                  durationUnits,
+                                                  outputDirectory );
 
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
-        }
-
-        if ( incrementalFormats.contains( DestinationType.PROTOBUF ) )
-        {
-            // Use a standard name for the protobuf
-            // Eventually, this should probably correspond to the unique evaluation identifier
-            Path protobufPath = outputDirectory.resolve( "evaluation.pb3" );
-            sharedWritersBuilder.setProtobufWriter( ProtobufWriter.of( protobufPath, evaluationDescription ) );
-
-            LOGGER.debug( "Added a shared protobuf writer to the evaluation." );
         }
 
         SharedSampleDataWriters sharedSampleWriters = null;
@@ -566,10 +508,7 @@ class ProcessorHelper
             }
         }
 
-        // Iterate the features, closing any shared writers on completion
-        SharedStatisticsWriters sharedStatisticsWriters = sharedWritersBuilder.build();
-
-        return SharedWriters.of( sharedStatisticsWriters,
+        return SharedWriters.of( netcdfWriter,
                                  sharedSampleWriters,
                                  sharedBaselineSampleWriters );
     }
@@ -789,10 +728,10 @@ class ProcessorHelper
     static class SharedWriters implements Closeable
     {
         /**
-         * Shared writers for statstics.
+         * Shared netcdf writer.
          */
 
-        private final SharedStatisticsWriters sharedStatisticsWriters;
+        private final NetcdfOutputWriter netcdfWriter;
 
         /**
          * Shared writers for sample data.
@@ -809,27 +748,27 @@ class ProcessorHelper
         /**
          * Returns an instance.
          * 
-         * @param sharedStatisticsWriters
-         * @param sharedSampleWriters
-         * @param sharedBaselineSampleWriters
+         * @param netcdfWriter shared netcdf writer
+         * @param sharedSampleWriters shared writer of pairs
+         * @param sharedBaselineSampleWriters shared writer of baseline pairs
          */
-        static SharedWriters of( SharedStatisticsWriters sharedStatisticsWriters,
+        static SharedWriters of( NetcdfOutputWriter netcdfWriter,
                                  SharedSampleDataWriters sharedSampleWriters,
                                  SharedSampleDataWriters sharedBaselineSampleWriters )
 
         {
-            return new SharedWriters( sharedStatisticsWriters, sharedSampleWriters, sharedBaselineSampleWriters );
+            return new SharedWriters( netcdfWriter, sharedSampleWriters, sharedBaselineSampleWriters );
         }
 
         /**
-         * Returns the shared statistics writers.
+         * Returns the netcdf writer or null.
          * 
-         * @return the shared statistics writers.
+         * @return the netcdf writer or null
          */
 
-        SharedStatisticsWriters getStatisticsWriters()
+        NetcdfOutputWriter getNetcdfWriter()
         {
-            return this.sharedStatisticsWriters;
+            return this.netcdfWriter;
         }
 
         /**
@@ -855,14 +794,14 @@ class ProcessorHelper
         }
 
         /**
-         * Returns <code>true</code> if shared statistics writers are available, otherwise <code>false</code>.
+         * Returns <code>true</code> if shared netcdf writer is available, otherwise <code>false</code>.
          * 
-         * @return true if shared statistics writers are available
+         * @return true if shared netcdf writer is available
          */
 
-        boolean hasSharedStatisticsWriters()
+        boolean hasNetcdfWriter()
         {
-            return Objects.nonNull( this.sharedStatisticsWriters );
+            return Objects.nonNull( this.netcdfWriter );
         }
 
         /**
@@ -895,9 +834,9 @@ class ProcessorHelper
 
         public void close() throws IOException
         {
-            if ( this.hasSharedStatisticsWriters() )
+            if ( this.hasNetcdfWriter() )
             {
-                this.getStatisticsWriters().close();
+                this.getNetcdfWriter().close();
             }
 
             if ( this.hasSharedSampleWriters() )
@@ -914,55 +853,19 @@ class ProcessorHelper
         /**
          * Hidden constructor.
          * 
-         * @param sharedStatisticsWriters
-         * @param sharedSampleWriters
-         * @param sharedBaselineSampleWriters
+         * @param netcdfWriter the netcdf writer
+         * @param sharedSampleWriters the shared writer for pairs
+         * @param sharedBaselineSampleWriters the shared writer for baseline pairs
          */
-        private SharedWriters( SharedStatisticsWriters sharedStatisticsWriters,
+        private SharedWriters( NetcdfOutputWriter netcdfWriter,
                                SharedSampleDataWriters sharedSampleWriters,
                                SharedSampleDataWriters sharedBaselineSampleWriters )
         {
-            this.sharedStatisticsWriters = sharedStatisticsWriters;
+            this.netcdfWriter = netcdfWriter;
             this.sharedSampleWriters = sharedSampleWriters;
             this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
         }
 
-    }
-
-    /**
-     * Returns a consumer that logs evaluation status messages. TODO: replace this with a real consumer that exposes 
-     * the status messages via the web service API. Most likely, this consumer should be supplied by 
-     * {@link wres.server.ProjectService}.
-     * 
-     * @param evaluationId the evaluation identifier
-     * @return a logger consumer for evaluation status messages
-     */
-
-    private static Function<EvaluationStatus, Set<Path>> getLoggerConsumerForStatusEvents()
-    {
-        return statusMessage -> {
-            LOGGER.debug( "Encountered an evaluation status message: {}", statusMessage );
-
-            return Collections.emptySet();
-        };
-    }
-
-    /**
-     * Returns a consumer that logs evaluation description messages. TODO: replace this with a real consumer that 
-     * exposes the evaluation description messages via the web service API. Most likely, this consumer should be 
-     * supplied by {@link wres.server.ProjectService}.
-     * 
-     * @param evaluationId the evaluation identifier
-     * @return a logger consumer for evaluation status messages
-     */
-
-    private static Function<wres.statistics.generated.Evaluation, Set<Path>> getLoggerConsumerForEvaluationEvents()
-    {
-        return evaluationMessage -> {
-            LOGGER.debug( "Encountered an evaluation description message: {}",
-                          evaluationMessage );
-            return Collections.emptySet();
-        };
     }
 
     /**

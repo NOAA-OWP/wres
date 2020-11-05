@@ -1,4 +1,4 @@
-package wres.events;
+package wres.events.subscribe;
 
 /**
  * Exception to throw when consumption has timed out. This corresponds to HTTP status code 408.

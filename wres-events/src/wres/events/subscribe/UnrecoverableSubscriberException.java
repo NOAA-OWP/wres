@@ -1,4 +1,4 @@
-package wres.vis.client;
+package wres.events.subscribe;
 
 /**
  * An unchecked exception that indicates an unrecoverable failure in a subscriber that must be responded to promptly by 

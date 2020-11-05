@@ -1,4 +1,4 @@
-package wres.events;
+package wres.events.publish;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,7 +19,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import wres.events.MessagePublisher.MessageProperty;
+import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
 
 /**

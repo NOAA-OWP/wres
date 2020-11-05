@@ -1,4 +1,4 @@
-package wres.events;
+package wres.events.publish;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -10,6 +10,7 @@ import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
+import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.JMSSecurityException;
 import javax.jms.Message;
@@ -18,6 +19,8 @@ import javax.jms.Session;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.events.Evaluation;
 
 /**
  * Publishes messages to a destination that is supplied on construction. There is one {@link Connection} per instance 
@@ -28,12 +31,12 @@ import org.slf4j.LoggerFactory;
  * @author james.brown@hydrosolved.com
  */
 
-class MessagePublisher implements Closeable
+public class MessagePublisher implements Closeable
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
 
-    enum MessageProperty
+    public enum MessageProperty
     {
 
         JMSX_GROUP_ID,
@@ -43,17 +46,17 @@ class MessagePublisher implements Closeable
         JMS_MESSAGE_ID,
 
         CONSUMER_ID,
-        
+
         PNG,
-        
+
         SVG,
-        
+
         PROTOBUF,
-        
+
         NETCDF,
-        
+
         CSV,
-        
+
         PAIRS;
 
         @Override
@@ -163,8 +166,8 @@ class MessagePublisher implements Closeable
      * @return an instance
      */
 
-    static MessagePublisher of( Connection connection,
-                                Destination destination )
+    public static MessagePublisher of( Connection connection,
+                                       Destination destination )
             throws JMSException
     {
         return MessagePublisher.of( connection,
@@ -188,11 +191,11 @@ class MessagePublisher implements Closeable
      * @return an instance
      */
 
-    static MessagePublisher of( Connection connection,
-                                Destination destination,
-                                int deliveryMode,
-                                int messagePriority,
-                                long messageTimeToLive )
+    public static MessagePublisher of( Connection connection,
+                                       Destination destination,
+                                       int deliveryMode,
+                                       int messagePriority,
+                                       long messageTimeToLive )
             throws JMSException
     {
         return new MessagePublisher( connection, destination, deliveryMode, messagePriority, messageTimeToLive );
@@ -208,7 +211,7 @@ class MessagePublisher implements Closeable
      * @throws IllegalArgumentException if expected input is missing
      */
 
-    void publish( ByteBuffer messageBytes, Map<MessageProperty, String> metadata ) throws JMSException
+    public void publish( ByteBuffer messageBytes, Map<MessageProperty, String> metadata ) throws JMSException
     {
         Objects.requireNonNull( messageBytes );
         Objects.requireNonNull( metadata );
@@ -299,7 +302,7 @@ class MessagePublisher implements Closeable
      * @return the number of messages published so far.
      */
 
-    int getMessageCount()
+    public int getMessageCount()
     {
         return this.messageCount;
     }
@@ -355,6 +358,47 @@ class MessagePublisher implements Closeable
                       this.deliveryMode,
                       this.messagePriority,
                       this.messageTimeToLive );
+    }
+
+    /**
+     * Listen for failures on a connection.
+     */
+
+    static class ConnectionExceptionListener implements ExceptionListener
+    {
+        private static final Logger LOGGER = LoggerFactory.getLogger( ConnectionExceptionListener.class );
+
+        /**
+         * The client that encountered the exception.
+         */
+
+        private final String clientId;
+
+        @Override
+        public void onException( JMSException exception )
+        {
+            // Could consider promoting to WARN or ERROR. See #80267-109 for an example of the type of exception that 
+            // might appear here. Could also rethrow, but that cannot be done until the embedded broker exits cleanly as
+            // described in #80267-109.
+            LOGGER.debug( "An exception listener uncovered an error in client {}. {}",
+                          this.clientId,
+                          exception.getMessage() );
+        }
+
+        /**
+         * Creates an instance with an evaluation identifier and a message client identifier.
+         * 
+         * @param evaluationId the evaluation identifier
+         * @param clientId the client identifier
+         */
+
+        ConnectionExceptionListener( String clientId )
+        {
+            Objects.requireNonNull( clientId );
+
+            this.clientId = clientId;
+        }
+
     }
 
 }

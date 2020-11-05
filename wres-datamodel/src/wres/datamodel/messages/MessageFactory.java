@@ -682,6 +682,47 @@ public class MessageFactory
 
         return Collections.unmodifiableSet( returnMe );
     }
+    
+    /**
+     * Uncovers a set of declared formats from a description of the outputs.
+     * 
+     * @param outputs the outputs that declare the formats to write
+     * @return the declared formats to write
+     */
+
+    public static Set<Format> getDeclaredFormats( Outputs outputs )
+    {
+        Objects.requireNonNull( outputs );
+
+        Set<Format> formats = new HashSet<>();
+        
+        if( outputs.hasPng() )
+        {
+            formats.add( Format.PNG );
+        }
+        
+        if( outputs.hasSvg() )
+        {
+            formats.add( Format.SVG );
+        }
+        
+        if( outputs.hasCsv() )
+        {
+            formats.add( Format.CSV );
+        }
+        
+        if( outputs.hasNetcdf() )
+        {
+            formats.add( Format.NETCDF );
+        }
+        
+        if( outputs.hasProtobuf() )
+        {
+            formats.add( Format.PROTOBUF );
+        }
+
+        return Collections.unmodifiableSet( formats );
+    }    
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a

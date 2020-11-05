@@ -1,10 +1,11 @@
-package wres.vis.client;
+package wres.events.subscribe;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +27,9 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.events.ConsumerException;
 import wres.events.GroupCompletionTracker;
-import wres.events.OneGroupConsumer;
+import wres.events.publish.MessagePublisher;
+import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.EvaluationStatus;
@@ -214,7 +215,7 @@ class EvaluationConsumer
         this.consumerFactory = consumerFactory;
         this.pathsWritten = new HashSet<>();
 
-        LOGGER.info( "External subscriber {} opened evaluation {}, which is ready to consume messages.",
+        LOGGER.info( "Subscriber {} opened evaluation {}, which is ready to consume messages.",
                      this.getConsumerId(),
                      this.getEvaluationId() );
     }
@@ -236,13 +237,13 @@ class EvaluationConsumer
             try
             {
 
-                LOGGER.debug( "External subscriber {} is closing evaluation {}.",
+                LOGGER.debug( "Subscriber {} is closing evaluation {}.",
                               this.getConsumerId(),
                               this.getEvaluationId() );
 
                 this.completeAllGroups( true );
 
-                LOGGER.info( "External subscriber {} closed evaluation {}, which contained {} messages (not "
+                LOGGER.info( "Subscriber {} closed evaluation {}, which contained {} messages (not "
                              + "including any evaluation status messages).",
                              this.getConsumerId(),
                              this.getEvaluationId(),
@@ -305,7 +306,7 @@ class EvaluationConsumer
                                          events );
             this.isFailureNotified.set( true );
 
-            LOGGER.warn( "External subscriber {} has marked evaluation {} as failed unrecoverably.",
+            LOGGER.warn( "Subscriber {} has marked evaluation {} as failed unrecoverably.",
                          this.getConsumerId(),
                          this.getEvaluationId() );
         }
@@ -363,7 +364,12 @@ class EvaluationConsumer
         ByteBuffer buffer = ByteBuffer.wrap( message.build()
                                                     .toByteArray() );
 
-        this.evaluationStatusPublisher.publish( buffer, messageId, this.getEvaluationId(), this.getConsumerId() );
+        Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
+        properties.put( MessageProperty.JMS_MESSAGE_ID, messageId );
+        properties.put( MessageProperty.JMS_CORRELATION_ID, this.getEvaluationId() );
+        properties.put( MessageProperty.CONSUMER_ID, this.getConsumerId() );
+
+        this.evaluationStatusPublisher.publish( buffer, Collections.unmodifiableMap( properties ) );
     }
 
     /**
@@ -388,25 +394,7 @@ class EvaluationConsumer
         // Yes.
         if ( this.getAreConsumersReady() )
         {
-            // Accept the incremental types
-            this.execute( () -> this.addPathsWritten( this.getConsumer()
-                                                          .apply( List.of( statistics ) ) ) );
-
-            // Accept the grouped types
-            if ( Objects.nonNull( groupId ) )
-            {
-                this.getGroupConsumer( groupId )
-                    .accept( messageId, statistics );
-                this.checkAndCompleteGroup( groupId );
-            }
-
-            this.consumed.incrementAndGet();
-
-            LOGGER.debug( "External subscriber {} received and consumed a statistics message with identifier {} "
-                          + "for evaluation {}.",
-                          this.getConsumerId(),
-                          messageId,
-                          this.getEvaluationId() );
+            this.acceptStatisticsMessageInner( statistics, groupId, messageId );
         }
         // No. Cache until the consumers are ready.
         else
@@ -442,7 +430,7 @@ class EvaluationConsumer
 
         this.createConsumers( evaluationDescription, this.getConsumerFactory() );
 
-        LOGGER.debug( "External subscriber {} received and consumed an evaluation description message with "
+        LOGGER.debug( "Subscriber {} received and consumed an evaluation description message with "
                       + "identifier {} for evaluation {}.",
                       this.getConsumerId(),
                       messageId,
@@ -465,7 +453,7 @@ class EvaluationConsumer
     {
         Objects.requireNonNull( status );
 
-        LOGGER.debug( "External subscriber {} received and consumed an evaluation status message with identifier {} "
+        LOGGER.debug( "Subscriber {} received and consumed an evaluation status message with identifier {} "
                       + "for evaluation {}.",
                       this.getConsumerId(),
                       messageId,
@@ -576,10 +564,10 @@ class EvaluationConsumer
             }
 
             throw new UnrecoverableSubscriberException( SUBSCRIBER + this.getConsumerId()
-                                                      + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
-                                                      + this.getEvaluationId()
-                                                      + ".",
-                                                      e );
+                                                        + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                                        + this.getEvaluationId()
+                                                        + ".",
+                                                        e );
         }
         catch ( InterruptedException e )
         {
@@ -604,7 +592,7 @@ class EvaluationConsumer
 
         this.expected.addAndGet( status.getMessageCount() );
 
-        LOGGER.debug( "External subscriber {} received notification of publication complete for evaluation "
+        LOGGER.debug( "Subscriber {} received notification of publication complete for evaluation "
                       + "{}. The message indicated an expected message count of {}.",
                       this.getConsumerId(),
                       this.getEvaluationId(),
@@ -681,7 +669,7 @@ class EvaluationConsumer
 
         if ( completed && LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "External subscriber {} received notification of publication complete for group {} "
+            LOGGER.debug( "Subscriber {} received notification of publication complete for group {} "
                           + "of evaluation {}. The message indicated an expected message count of {}.",
                           this.getConsumerId(),
                           groupId,
@@ -690,7 +678,7 @@ class EvaluationConsumer
         }
         else if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "External subscriber {} received notification of publication complete for group {} "
+            LOGGER.debug( "Subscriber {} received notification of publication complete for group {} "
                           + "of evaluation {}. The expected number of messages within the group is {} but some of "
                           + "these messages are outstanding. Grouped consumption will happen when this subscriber is "
                           + "closed.",
@@ -856,6 +844,11 @@ class EvaluationConsumer
                     // Notify completion
                     this.publishCompletionState( CompletionStatus.GROUP_CONSUMPTION_COMPLETE, groupId, List.of() );
 
+                    LOGGER.debug( "Subscriber {} registered consumption complete for group {} of evaluation {}.",
+                                  this.consumerDescription.getConsumerId(),
+                                  groupId,
+                                  this.getEvaluationId() );
+
                     completed = true;
                 }
             }
@@ -880,7 +873,7 @@ class EvaluationConsumer
     {
         synchronized ( this.getConsumerCreationLock() )
         {
-            if ( Objects.isNull( this.consumer ) )
+            if ( !this.getAreConsumersReady() )
             {
                 LOGGER.debug( "Creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.getEvaluationId(),
@@ -894,12 +887,12 @@ class EvaluationConsumer
                               this.getEvaluationId(),
                               this.getConsumerId() );
 
+                // Consume any messages that arrived early
+                this.consumeCachedStatisticsMessages();
+
                 // Flag that the consumers are ready
                 this.areConsumersReady.set( true );
             }
-
-            // Consume any messages that arrived early
-            this.consumeCachedStatisticsMessages();
         }
     }
 
@@ -925,12 +918,49 @@ class EvaluationConsumer
             // Iterate the cache and consume
             for ( StatisticsCache next : this.statisticsCache )
             {
-                this.acceptStatisticsMessage( next.getStatistics(), next.getGroupId(), next.getMessageId() );
+                // Internal call, which does not have logic for caching statistics because the present context is to
+                // process cached statistics.
+                this.acceptStatisticsMessageInner( next.getStatistics(), next.getGroupId(), next.getMessageId() );
             }
 
             // Clear the cache
             this.statisticsCache.clear();
         }
+    }
+
+    /**
+     * Inner method to accepts statistics. This method does not contain logic for caching statistics when consumers are 
+     * not ready.
+     * @param statistics the statistics
+     * @param groupId a message group identifier, which only applies to grouped messages
+     * @param messageId the message identifier to help with logging
+     * @throws JMSException if the group completion could not be notified
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
+     */
+
+    private void acceptStatisticsMessageInner( Statistics statistics, String groupId, String messageId )
+            throws JMSException
+    {
+        // Accept the incremental types
+        this.execute( () -> this.addPathsWritten( this.getConsumer()
+                                                      .apply( List.of( statistics ) ) ) );
+
+        // Accept the grouped types
+        if ( Objects.nonNull( groupId ) )
+        {
+            this.getGroupConsumer( groupId )
+                .accept( messageId, statistics );
+            this.checkAndCompleteGroup( groupId );
+        }
+
+        this.consumed.incrementAndGet();
+
+        LOGGER.debug( "Subscriber {} received and consumed a statistics message with identifier {} "
+                      + "for evaluation {}.",
+                      this.getConsumerId(),
+                      messageId,
+                      this.getEvaluationId() );
     }
 
     /**

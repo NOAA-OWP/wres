@@ -1,4 +1,4 @@
-package wres.events;
+package wres.events.subscribe;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -75,7 +75,7 @@ public class Consumers
     /**
      * @return the evaluation consumers
      */
-    List<Function<Evaluation, Set<Path>>> getEvaluationConsumers()
+    public List<Function<Evaluation, Set<Path>>> getEvaluationConsumers()
     {
         return this.evaluationConsumers; //Immutable on construction
     }
@@ -83,7 +83,7 @@ public class Consumers
     /**
      * @return the evaluation status consumers
      */
-    List<Function<EvaluationStatus, Set<Path>>> getEvaluationStatusConsumers()
+    public List<Function<EvaluationStatus, Set<Path>>> getEvaluationStatusConsumers()
     {
         return this.statusConsumers; //Immutable on construction
     }
@@ -91,7 +91,7 @@ public class Consumers
     /**
      * @return the statistics consumers
      */
-    List<Function<Statistics, Set<Path>>> getStatisticsConsumers()
+    public List<Function<Statistics, Set<Path>>> getStatisticsConsumers()
     {
         return this.statisticsConsumers; //Immutable on construction
     }
@@ -99,7 +99,7 @@ public class Consumers
     /**
      * @return the consumers of statistics groups
      */
-    List<Function<Collection<Statistics>, Set<Path>>> getGroupedStatisticsConsumers()
+    public List<Function<Collection<Statistics>, Set<Path>>> getGroupedStatisticsConsumers()
     {
         return this.groupedStatisticsConsumers; //Immutable on construction
     }
@@ -107,7 +107,7 @@ public class Consumers
     /**
      * @return the consumers of pairs
      */
-    List<Function<Pairs, Set<Path>>> getPairsConsumers()
+    public List<Function<Pairs, Set<Path>>> getPairsConsumers()
     {
         return this.pairsConsumers; //Immutable on construction
     }
@@ -115,7 +115,7 @@ public class Consumers
     /**
      * @return the format types negotiated by statistics consumers
      */
-    Set<Format> getStatisticsConsumerTypes()
+    public Set<Format> getStatisticsConsumerTypes()
     {
         return this.statisticsConsumerTypes; //Immutable on construction
     }

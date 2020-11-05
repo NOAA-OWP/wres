@@ -11,21 +11,16 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.jms.Connection;
@@ -37,11 +32,11 @@ import javax.naming.NamingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.ThreadSafe;
-import wres.events.MessagePublisher.MessageProperty;
+import wres.events.publish.MessagePublisher;
+import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
@@ -70,7 +65,7 @@ import wres.statistics.generated.Statistics;
  * <p> The lifecycle for an evaluation is composed of three parts:
  * <ol>
  * <li>Opening, which corresponds to 
- * {@link #of(wres.statistics.generated.Evaluation, BrokerConnectionFactory, Consumers)}</li>
+ * {@link #of(wres.statistics.generated.Evaluation, BrokerConnectionFactory)} or an overloaded version;</li>
  * <li>Awaiting completion {@link #await()}; and</li>
  * <li>Closing, either forcibly ({@link #stop(Exception)}) or nominally {@link #close()}.</li>
  * </ol>
@@ -104,11 +99,6 @@ public class Evaluation implements Closeable
             " discovered an evaluation message with missing information. ";
 
     private static final String WHILE_PUBLISHING_TO_EVALUATION = "While publishing to evaluation ";
-
-    private static final String CANNOT_BUILD_AN_EVALUATION_WITHOUT_ONE_OR_MORE_SUBSCRIBERS =
-            "Cannot build an evaluation without one or more subscribers for ";
-
-    private static final String MESSAGE_FROM_A_BYTEBUFFER = " message from a bytebuffer.";
 
     private static final String PUBLICATION_COMPLETE_ERROR = "Publication to this evaluation has been notified "
                                                              + "complete and no further messages may be published.";
@@ -174,47 +164,10 @@ public class Evaluation implements Closeable
     private final MessagePublisher pairsPublisher;
 
     /**
-     * A collection of subscribers for {@link wres.statistics.generated.Evaluation} messages.
-     */
-
-    private final MessageSubscriber<wres.statistics.generated.Evaluation> evaluationSubscribers;
-
-    /**
-     * A collection of subscribers for {@link wres.statistics.generated.Statistics} messages.
-     */
-
-    private final MessageSubscriber<Statistics> statisticsSubscribers;
-
-    /**
-     * A collection of subscribers for {@link EvaluationStatus} messages.
-     */
-
-    private final MessageSubscriber<EvaluationStatus> evaluationStatusSubscribers;
-
-    /**
-     * A subscriber that listens for an {@link EvaluationStatus} messaging indicating that the evaluation is complete.
-     */
-
-    private final MessageSubscriber<EvaluationStatus> statusTrackerSubscriber;
-
-    /**
-     * A collection of subscribers for {@link Pairs} messages.
-     */
-
-    private final MessageSubscriber<Pairs> pairsSubscribers;
-
-    /**
      * A unique identifier for the evaluation.
      */
 
     private final String evaluationId;
-
-    /**
-     * Is <code>true</code> if this evaluation has one or more subscribers for message groups. If <code>true</code>,
-     * then any attempt to publish a message must be accompanied by a message group identifier.
-     */
-
-    private final boolean hasGroupSubscriptions;
 
     /**
      * The total message count, excluding evaluation status messages. This is one more than the number of statistics
@@ -298,12 +251,6 @@ public class Evaluation implements Closeable
     private final ReentrantLock flowControlLock;
 
     /**
-     * The publication group that currently holds the flow control lock.
-     */
-
-    private final AtomicReference<String> flowControlGroup = new AtomicReference<>();
-
-    /**
      * Returns the unique evaluation identifier.
      * 
      * @return the evaluation identifier
@@ -319,7 +266,6 @@ public class Evaluation implements Closeable
      * 
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
-     * @param consumers the consumers to subscribe
      * @return an open evaluation
      * @throws NullPointerException if any input is null
      * @throws EvaluationEventException if the evaluation could not be constructed
@@ -327,12 +273,10 @@ public class Evaluation implements Closeable
      */
 
     public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
-                                 BrokerConnectionFactory broker,
-                                 Consumers consumers )
+                                 BrokerConnectionFactory broker )
     {
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
-                            .setConsumers( consumers )
                             .build();
     }
 
@@ -341,7 +285,6 @@ public class Evaluation implements Closeable
      * 
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
-     * @param consumers the consumers to subscribe
      * @param evaluationId the evaluation identifier
      * @return an open evaluation
      * @throws NullPointerException if any input is null
@@ -351,12 +294,10 @@ public class Evaluation implements Closeable
 
     public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
                                  BrokerConnectionFactory broker,
-                                 Consumers consumers,
                                  String evaluationId )
     {
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
-                            .setConsumers( consumers )
                             .setEvaluationId( evaluationId )
                             .build();
     }
@@ -461,7 +402,6 @@ public class Evaluation implements Closeable
             if ( Objects.nonNull( groupId ) )
             {
                 this.acquireFlowControlLock();
-                this.flowControlGroup.set( groupId );
             }
 
             ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
@@ -725,12 +665,8 @@ public class Evaluation implements Closeable
             return;
         }
 
-        // Close the subscribers gracefully
-        this.closeGracefully( this.evaluationSubscribers );
-        this.closeGracefully( this.evaluationStatusSubscribers );
-        this.closeGracefully( this.statisticsSubscribers );
-        this.closeGracefully( this.pairsSubscribers );
-        this.closeGracefully( this.statusTrackerSubscriber );
+        // Close the status tracker
+        this.statusTracker.close();
 
         // Close the publishers gracefully
         this.closeGracefully( this.evaluationPublisher );
@@ -782,12 +718,12 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Uncovers all paths written by external subscribers.
+     * Uncovers all paths written by subscribers.
      * 
      * @return the paths written
      */
 
-    public Set<Path> getPathsWrittenByExternalSubscribers()
+    public Set<Path> getPathsWrittenBySubscribers()
     {
         Set<String> resourcesWritten = this.statusTracker.getResourcesWritten();
 
@@ -860,42 +796,6 @@ public class Evaluation implements Closeable
 
             if ( exit != 0 )
             {
-                // Exceptions uncovered?
-                // Perhaps failing on the delivery of evaluation status messages is too high a bar?
-                boolean internalSubscriberFailed = this.evaluationSubscribers.failed()
-                                                   || this.evaluationStatusSubscribers.failed()
-                                                   || this.statisticsSubscribers.failed()
-                                                   || this.pairsSubscribers.failed()
-                                                   || this.statusTrackerSubscriber.failed();
-
-                if ( internalSubscriberFailed )
-                {
-                    String separator = System.getProperty( "line.separator" );
-
-                    LOGGER.debug( "While awaiting evaluation {}, discovered one or more undeliverable messages. If the "
-                                  + "broker has been configured with a dead letter queue (DLQ), these messages will "
-                                  + "appear on the DLQ for further inspection and removal. The first undeliverable "
-                                  + "evaluation message is:{}{}{}The first undeliverable evaluation status message "
-                                  + "is:{}{}{}The first undeliverable statistics message is:{}{}{}The first "
-                                  + "undeliverable pairs message is:{}{}{}The first undeliverable evaluation "
-                                  + "completion message is:{}{}",
-                                  this.getEvaluationId(),
-                                  separator,
-                                  this.evaluationSubscribers.getFirstFailure(),
-                                  separator,
-                                  separator,
-                                  this.evaluationStatusSubscribers.getFirstFailure(),
-                                  separator,
-                                  separator,
-                                  this.statisticsSubscribers.getFirstFailure(),
-                                  separator,
-                                  separator,
-                                  this.pairsSubscribers.getFirstFailure(),
-                                  separator,
-                                  separator,
-                                  this.statusTrackerSubscriber.getFirstFailure() );
-                }
-
                 EvaluationFailedToCompleteException exception =
                         new EvaluationFailedToCompleteException( "Failed to complete evaluation "
                                                                  + this.getEvaluationId()
@@ -970,12 +870,6 @@ public class Evaluation implements Closeable
         private wres.statistics.generated.Evaluation evaluationDescription;
 
         /**
-         * Consumers of evaluation events.
-         */
-
-        private Consumers consumers;
-
-        /**
          * Evaluation identifier.
          */
 
@@ -1005,20 +899,6 @@ public class Evaluation implements Closeable
         public Builder setEvaluationDescription( wres.statistics.generated.Evaluation evaluationDescription )
         {
             this.evaluationDescription = evaluationDescription;
-
-            return this;
-        }
-
-        /**
-         * Adds a collection of consumers of evaluation events.
-         * 
-         * @param consumers the consumer subscription
-         * @return this builder 
-         */
-
-        public Builder setConsumers( Consumers consumers )
-        {
-            this.consumers = consumers;
 
             return this;
         }
@@ -1361,13 +1241,8 @@ public class Evaluation implements Closeable
 
     private void validateGroupId( String groupId )
     {
-        if ( this.hasGroupSubscriptions() )
+        if ( Objects.nonNull( groupId ) )
         {
-            Objects.requireNonNull( groupId,
-                                    EVALUATION_STRING + this.getEvaluationId()
-                                             + " has subscriptions to message groups. When publishing to this "
-                                             + "evaluation, a group identifier must be supplied." );
-
             AtomicInteger count = this.messageGroups.get( groupId );
 
             if ( Objects.nonNull( count ) && count.get() < 0 )
@@ -1380,17 +1255,6 @@ public class Evaluation implements Closeable
                                                     + "messages." );
             }
         }
-    }
-
-    /**
-     * Returns <code>true</code> if the evaluation has subscriptions for message groups, otherwise <code>false</code>.
-     * 
-     * @return true if there are subscriptions for message groups
-     */
-
-    private boolean hasGroupSubscriptions()
-    {
-        return this.hasGroupSubscriptions;
     }
 
     /**
@@ -1418,72 +1282,24 @@ public class Evaluation implements Closeable
 
         // Copy then validate
         BrokerConnectionFactory broker = builder.broker;
-        Consumers innerConsumers = builder.consumers;
-        List<Function<wres.statistics.generated.Evaluation,Set<Path>>> evaluationSubs =
-                innerConsumers.getEvaluationConsumers();
-        List<Function<EvaluationStatus,Set<Path>>> statusSubs = innerConsumers.getEvaluationStatusConsumers();
-        List<Function<Statistics,Set<Path>>> statisticsSubs = innerConsumers.getStatisticsConsumers();
-        List<Function<Collection<Statistics>,Set<Path>>> groupedStatisticsSubs =
-                innerConsumers.getGroupedStatisticsConsumers();
-        List<Function<Pairs,Set<Path>>> pairsSubs = innerConsumers.getPairsConsumers();
 
         this.evaluationDescription = builder.evaluationDescription;
 
         // Get the formats that are required, but not delivered by internal subscribers, i.e., are awaiting 
         // subscriptions
-        Set<Format> formatsAwaited = this.getFormatsAwaited( this.evaluationDescription.getOutputs(),
-                                                             innerConsumers.getStatisticsConsumerTypes() );
+        Set<Format> formatsAwaited = this.getFormatsAwaited( this.evaluationDescription.getOutputs() );
 
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
         Objects.requireNonNull( this.evaluationDescription,
                                 "Cannot create an evaluation without an evaluation "
                                                             + "message." );
 
-        if ( evaluationSubs.isEmpty() )
-        {
-            throw new IllegalArgumentException( CANNOT_BUILD_AN_EVALUATION_WITHOUT_ONE_OR_MORE_SUBSCRIBERS
-                                                + "evaluation events." );
-        }
-
-        if ( statusSubs.isEmpty() )
-        {
-            throw new IllegalArgumentException( CANNOT_BUILD_AN_EVALUATION_WITHOUT_ONE_OR_MORE_SUBSCRIBERS
-                                                + "evaluation status events." );
-        }
-
-        if ( statisticsSubs.isEmpty() && groupedStatisticsSubs.isEmpty() )
-        {
-            throw new IllegalArgumentException( CANNOT_BUILD_AN_EVALUATION_WITHOUT_ONE_OR_MORE_SUBSCRIBERS
-                                                + "evaluation statistics events." );
-        }
-
         this.publicationComplete = new AtomicBoolean();
         this.isStopped = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
-        this.hasGroupSubscriptions = !groupedStatisticsSubs.isEmpty();
-
-        GroupCompletionTracker groupTracker = GroupCompletionTracker.of();
-        EvaluationInfo evaluationInfo = EvaluationInfo.of( this.getEvaluationId(), groupTracker );
 
         // Register publishers and subscribers
         ConnectionFactory factory = broker.get();
-
-        // Create some unique subscriber identifiers
-        String statusSubscriberId = Evaluation.getUniqueId();
-        String evaluationSubscriberId = Evaluation.getUniqueId();
-        String statisticsSubscriberId = Evaluation.getUniqueId();
-        String pairsSubscriberId = Evaluation.getUniqueId();
-
-        Set<String> subscribers = new HashSet<>();
-        subscribers.add( statusSubscriberId );
-        subscribers.add( evaluationSubscriberId );
-        subscribers.add( statisticsSubscriberId );
-
-        // Optional pairs subscribers
-        if ( !pairsSubs.isEmpty() )
-        {
-            subscribers.add( pairsSubscriberId );
-        }
 
         try
         {
@@ -1493,104 +1309,23 @@ public class Evaluation implements Closeable
             // Create the status tracker first  so that subscribers can register
             String statusTrackerId = Evaluation.getUniqueId();
             this.statusTracker = new EvaluationStatusTracker( this,
-                                                              Collections.unmodifiableSet( subscribers ),
+                                                              broker,
                                                               formatsAwaited,
                                                               statusTrackerId,
-                                                              statisticsSubscriberId );
-            
-            // Wrap the tracker and return no paths written
-            Function<EvaluationStatus,Set<Path>> statusWrapper = status ->
-            {
-                this.statusTracker.accept( status );
-                return Set.of();
-            };
-
-            String completionContext = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-complete";
+                                                              broker.getMaximumMessageRetries() );
 
             Topic status = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
-            this.statusTrackerSubscriber =
-                    new MessageSubscriber.Builder<EvaluationStatus>().setIdentifier( statusTrackerId )
-                                                                     .setConsumerConnection( this.consumerConnection )
-                                                                     .setProducerConnection( this.producerConnection )
-                                                                     .setTopic( status )
-                                                                     .addSubscribers( List.of( statusWrapper ) )
-                                                                     .setEvaluationInfo( evaluationInfo )
-                                                                     .setMapper( this.getStatusMapper() )
-                                                                     // Status tracker has no precise expectation of count
-                                                                     .setExpectedMessageCountSupplier( message -> 0 )
-                                                                     .setEvaluationStatusTopic( status )
-                                                                     .setContext( completionContext )
-                                                                     .setIgnoreConsumerMessages( false ) // Track messages about itself
-                                                                     .setMaximumRetries( broker.getMaximumMessageRetries() )
-                                                                     .build();
-
             this.evaluationStatusPublisher = MessagePublisher.of( this.producerConnection, status );
-            this.evaluationStatusSubscribers =
-                    new MessageSubscriber.Builder<EvaluationStatus>().setIdentifier( statusSubscriberId )
-                                                                     .setConsumerConnection( this.consumerConnection )
-                                                                     .setProducerConnection( this.producerConnection )
-                                                                     .setTopic( status )
-                                                                     .addSubscribers( statusSubs )
-                                                                     .setEvaluationInfo( evaluationInfo )
-                                                                     .setEvaluationStatusTopic( status )
-                                                                     .setExpectedMessageCountSupplier( EvaluationStatus::getStatusMessageCount )
-                                                                     .setMapper( this.getStatusMapper() )
-                                                                     .setContext( Evaluation.EVALUATION_STATUS_QUEUE )
-                                                                     .setMaximumRetries( broker.getMaximumMessageRetries() )
-                                                                     .build();
 
             Topic evaluation = (Topic) broker.getDestination( Evaluation.EVALUATION_QUEUE );
             this.evaluationPublisher = MessagePublisher.of( this.producerConnection, evaluation );
-            this.evaluationSubscribers =
-                    new MessageSubscriber.Builder<wres.statistics.generated.Evaluation>().setIdentifier( evaluationSubscriberId )
-                                                                                         .setConsumerConnection( this.consumerConnection )
-                                                                                         .setProducerConnection( this.producerConnection )
-                                                                                         .setTopic( evaluation )
-                                                                                         .addSubscribers( evaluationSubs )
-                                                                                         .setEvaluationInfo( evaluationInfo )
-                                                                                         .setExpectedMessageCountSupplier( message -> 1 )
-                                                                                         .setMapper( this.getEvaluationMapper() )
-                                                                                         .setEvaluationStatusTopic( status )
-                                                                                         .setContext( Evaluation.EVALUATION_QUEUE )
-                                                                                         .setMaximumRetries( broker.getMaximumMessageRetries() )
-                                                                                         .build();
 
             Topic statistics = (Topic) broker.getDestination( Evaluation.STATISTICS_QUEUE );
             this.statisticsPublisher = MessagePublisher.of( this.producerConnection, statistics );
-            this.statisticsSubscribers =
-                    new MessageSubscriber.Builder<Statistics>().setIdentifier( statisticsSubscriberId )
-                                                               .setConsumerConnection( this.consumerConnection )
-                                                               .setProducerConnection( this.producerConnection )
-                                                               .setTopic( statistics )
-                                                               .addSubscribers( statisticsSubs )
-                                                               .setEvaluationInfo( evaluationInfo )
-                                                               // The message count contains one evaluation description 
-                                                               // and N statistics messages, so subtract one to get N
-                                                               .setExpectedMessageCountSupplier( message -> message.getMessageCount()
-                                                                                                            - 1 )
-                                                               .addGroupSubscribers( groupedStatisticsSubs )
-                                                               .setEvaluationStatusTopic( status )
-                                                               .setMapper( this.getStatisticsMapper() )
-                                                               .setContext( Evaluation.STATISTICS_QUEUE )
-                                                               .setMaximumRetries( broker.getMaximumMessageRetries() )
-                                                               .build();
 
             Topic pairs = (Topic) broker.getDestination( Evaluation.PAIRS_QUEUE );
             this.pairsPublisher = MessagePublisher.of( this.producerConnection, pairs );
-            this.pairsSubscribers =
-                    new MessageSubscriber.Builder<Pairs>().setIdentifier( pairsSubscriberId )
-                                                          .setConsumerConnection( this.consumerConnection )
-                                                          .setProducerConnection( this.producerConnection )
-                                                          .setTopic( pairs )
-                                                          .addSubscribers( pairsSubs )
-                                                          .setEvaluationInfo( evaluationInfo )
-                                                          .setExpectedMessageCountSupplier( EvaluationStatus::getPairsMessageCount )
-                                                          .setEvaluationStatusTopic( status )
-                                                          .setMapper( this.getPairsMapper() )
-                                                          .setContext( Evaluation.PAIRS_QUEUE )
-                                                          .setMaximumRetries( broker.getMaximumMessageRetries() )
-                                                          .build();
         }
         catch ( JMSException | NamingException e )
         {
@@ -1603,18 +1338,6 @@ public class Evaluation implements Closeable
         this.pairsMessageCount = new AtomicInteger();
         this.messageGroups = new ConcurrentHashMap<>();
         this.flowControlLock = new ReentrantLock();
-
-        // Log the subscriptions
-        StringJoiner subString = new StringJoiner( ",", "{", "}" );
-        subString.add( "EVALUATION_STATUS=" + this.evaluationStatusSubscribers.getIdentifier() );
-        subString.add( "EVALUATION_DESCRIPTION=" + this.evaluationSubscribers.getIdentifier() );
-        subString.add( "STATISTICS=" + this.statisticsSubscribers.getIdentifier() );
-
-        // Optional pairs subscribers
-        if ( !pairsSubs.isEmpty() )
-        {
-            subString.add( "PAIRS=" + this.pairsSubscribers.getIdentifier() );
-        }
 
         // Await all subscribers to be negotiated
         try
@@ -1646,10 +1369,8 @@ public class Evaluation implements Closeable
         // Publish the evaluation description  and update the evaluation status
         this.internalPublish( this.evaluationDescription );
 
-        LOGGER.info( "Finished creating evaluation {}, which has these internal subscribers by message type: {}, and "
-                     + "these external subscribers by output format type, which were negotiated separately: {}.",
+        LOGGER.info( "Finished creating evaluation {}, which negotiated these subscribers by output format type: {}.",
                      this.evaluationId,
-                     subString,
                      this.statusTracker.getNegotiatedSubscribers() );
     }
 
@@ -1658,132 +1379,39 @@ public class Evaluation implements Closeable
      * set of formats that are still awaiting subscribers.
      * 
      * @param outputs the outputs requested for the evaluation, including the formats required
-     * @param formatsAgreed the formats for which subscriptions have already been agreed
      * @return the formats to be delivered by negotiation
      */
 
-    private Set<Format> getFormatsAwaited( Outputs outputs, Set<Format> formatsAgreed )
+    private Set<Format> getFormatsAwaited( Outputs outputs )
     {
         Set<Format> returnMe = new HashSet<>();
 
-        if ( outputs.hasCsv() && !formatsAgreed.contains( Format.CSV ) )
+        if ( outputs.hasCsv() )
         {
             returnMe.add( Format.CSV );
         }
 
-        if ( outputs.hasPng() && !formatsAgreed.contains( Format.PNG ) )
+        if ( outputs.hasPng() )
         {
             returnMe.add( Format.PNG );
         }
 
-        if ( outputs.hasSvg() && !formatsAgreed.contains( Format.SVG ) )
+        if ( outputs.hasSvg() )
         {
             returnMe.add( Format.SVG );
         }
 
-        if ( outputs.hasNetcdf() && !formatsAgreed.contains( Format.NETCDF ) )
+        if ( outputs.hasNetcdf() )
         {
             returnMe.add( Format.NETCDF );
         }
 
-        if ( outputs.hasProtobuf() && !formatsAgreed.contains( Format.PROTOBUF ) )
+        if ( outputs.hasProtobuf() )
         {
             returnMe.add( Format.PROTOBUF );
         }
 
         return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Maps a message contained in a {@link ByteBuffer} to a {@link EvaluationStatus}.
-     * @return a mapper
-     */
-
-    private Function<ByteBuffer, EvaluationStatus> getStatusMapper()
-    {
-        return buffer -> {
-            try
-            {
-                return EvaluationStatus.parseFrom( buffer );
-            }
-            catch ( InvalidProtocolBufferException e )
-            {
-                throw new EvaluationEventException( "While processing an evaluation status event for evaluation "
-                                                    + this.getEvaluationId()
-                                                    + ", failed to create an evaluation status "
-                                                    + MESSAGE_FROM_A_BYTEBUFFER,
-                                                    e );
-            }
-        };
-    }
-
-    /**
-     * Maps a message contained in a {@link ByteBuffer} to a {@link Pairs}.
-     * @return a mapper
-     */
-
-    private Function<ByteBuffer, Pairs> getPairsMapper()
-    {
-        return buffer -> {
-            try
-            {
-                return Pairs.parseFrom( buffer );
-            }
-            catch ( InvalidProtocolBufferException e )
-            {
-                throw new EvaluationEventException( "While processing a pairs event for evaluation "
-                                                    + this.getEvaluationId()
-                                                    + ", failed to create a pairs "
-                                                    + MESSAGE_FROM_A_BYTEBUFFER,
-                                                    e );
-            }
-        };
-    }
-
-    /**
-     * Maps a message contained in a {@link ByteBuffer} to a {@link wres.statistics.generated.Evaluation}.
-     * @return a mapper
-     */
-
-    private Function<ByteBuffer, wres.statistics.generated.Evaluation> getEvaluationMapper()
-    {
-        return buffer -> {
-            try
-            {
-                return wres.statistics.generated.Evaluation.parseFrom( buffer );
-            }
-            catch ( InvalidProtocolBufferException e )
-            {
-                throw new EvaluationEventException( "While processing an evaluation event for evaluation "
-                                                    + this.getEvaluationId()
-                                                    + ", failed to create an evaluation "
-                                                    + MESSAGE_FROM_A_BYTEBUFFER,
-                                                    e );
-            }
-        };
-    }
-
-    /**
-     * Maps a message contained in a {@link ByteBuffer} to a {@link Statistics}.
-     * @return a mapper
-     */
-
-    private Function<ByteBuffer, Statistics> getStatisticsMapper()
-    {
-        return buffer -> {
-            try
-            {
-                return Statistics.parseFrom( buffer );
-            }
-            catch ( InvalidProtocolBufferException e )
-            {
-                throw new EvaluationEventException( "While processing a statistics event for evaluation "
-                                                    + this.getEvaluationId()
-                                                    + ", failed to create a statistics "
-                                                    + MESSAGE_FROM_A_BYTEBUFFER,
-                                                    e );
-            }
-        };
     }
 
     /**
@@ -1859,27 +1487,6 @@ public class Evaluation implements Closeable
         this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null );
 
         this.messageCount.getAndIncrement();
-    }
-
-    /**
-     * Closes a subscriber gracefully.
-     * 
-     * @param subscriber the subscriber to close
-     */
-
-    private void closeGracefully( MessageSubscriber<?> subscriber )
-    {
-        try
-        {
-            subscriber.close();
-        }
-        catch ( IOException e )
-        {
-            String message = "Encountered an error while attempting to close a subscriber associated with evaluation "
-                             + this.getEvaluationId();
-
-            LOGGER.error( message, e );
-        }
     }
 
     /**

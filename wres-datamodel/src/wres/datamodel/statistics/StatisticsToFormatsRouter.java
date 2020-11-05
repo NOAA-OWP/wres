@@ -1,4 +1,4 @@
-package wres.vis.client;
+package wres.datamodel.statistics;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -21,13 +21,6 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.Slicer;
-import wres.datamodel.statistics.BoxplotStatisticOuter;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.DurationScoreStatisticOuter;
-import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.Statistic;
-import wres.events.ConsumerException;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
@@ -107,6 +100,13 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             new EnumMap<>( DestinationType.class );
 
     /**
+     * Store of consumers for processing {@link Statistics} by {@link DestinationType} format.
+     */
+
+    private final Map<DestinationType, Function<Statistics, Set<Path>>> allStatisticsConsumers =
+            new EnumMap<>( DestinationType.class );
+
+    /**
      * A map of output formats for which specific metrics should not be written. 
      */
 
@@ -127,7 +127,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * Builder.
      * @author james.brown@hydrosolved.com
      */
-    static class Builder
+    public static class Builder
     {
 
         /**
@@ -181,11 +181,18 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                 new EnumMap<>( DestinationType.class );
 
         /**
+         * Store of consumers for processing {@link Statistics} by {@link DestinationType} format.
+         */
+
+        private final Map<DestinationType, Function<Statistics, Set<Path>>> allStatisticsConsumers =
+                new EnumMap<>( DestinationType.class );
+
+        /**
          * Sets the evaluation description.
          * @param evaluationDescription the evaluation description
          * @return the builder
          */
-        Builder setEvaluationDescription( Evaluation evaluationDescription )
+        public Builder setEvaluationDescription( Evaluation evaluationDescription )
         {
             this.evaluationDescription = evaluationDescription;
             return this;
@@ -198,8 +205,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
          * @return the builder
          * @throws NullPointerException if any input is null
          */
-        Builder addDoubleScoreConsumer( DestinationType destination,
-                                        Function<List<DoubleScoreStatisticOuter>, Set<Path>> consumer )
+        public Builder addDoubleScoreConsumer( DestinationType destination,
+                                               Function<List<DoubleScoreStatisticOuter>, Set<Path>> consumer )
         {
             Objects.requireNonNull( destination );
             Objects.requireNonNull( consumer );
@@ -215,8 +222,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
          * @return the builder
          * @throws NullPointerException if any input is null
          */
-        Builder addDurationScoreConsumer( DestinationType destination,
-                                          Function<List<DurationScoreStatisticOuter>, Set<Path>> consumer )
+        public Builder addDurationScoreConsumer( DestinationType destination,
+                                                 Function<List<DurationScoreStatisticOuter>, Set<Path>> consumer )
         {
             Objects.requireNonNull( destination );
             Objects.requireNonNull( consumer );
@@ -232,8 +239,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
          * @return the builder
          * @throws NullPointerException if any input is null
          */
-        Builder addDiagramConsumer( DestinationType destination,
-                                    Function<List<DiagramStatisticOuter>, Set<Path>> consumer )
+        public Builder addDiagramConsumer( DestinationType destination,
+                                           Function<List<DiagramStatisticOuter>, Set<Path>> consumer )
         {
             Objects.requireNonNull( destination );
             Objects.requireNonNull( consumer );
@@ -249,8 +256,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
          * @return the builder
          * @throws NullPointerException if any input is null
          */
-        Builder addBoxplotConsumerPerPair( DestinationType destination,
-                                           Function<List<BoxplotStatisticOuter>, Set<Path>> consumer )
+        public Builder addBoxplotConsumerPerPair( DestinationType destination,
+                                                  Function<List<BoxplotStatisticOuter>, Set<Path>> consumer )
         {
             Objects.requireNonNull( destination );
             Objects.requireNonNull( consumer );
@@ -266,8 +273,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
          * @return the builder
          * @throws NullPointerException if any input is null
          */
-        Builder addBoxplotConsumerPerPool( DestinationType destination,
-                                           Function<List<BoxplotStatisticOuter>, Set<Path>> consumer )
+        public Builder addBoxplotConsumerPerPool( DestinationType destination,
+                                                  Function<List<BoxplotStatisticOuter>, Set<Path>> consumer )
         {
             Objects.requireNonNull( destination );
             Objects.requireNonNull( consumer );
@@ -283,8 +290,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
          * @return the builder
          * @throws NullPointerException if any input is null
          */
-        Builder addDurationDiagramConsumer( DestinationType destination,
-                                            Function<List<DurationDiagramStatisticOuter>, Set<Path>> consumer )
+        public Builder addDurationDiagramConsumer( DestinationType destination,
+                                                   Function<List<DurationDiagramStatisticOuter>, Set<Path>> consumer )
         {
             Objects.requireNonNull( destination );
             Objects.requireNonNull( consumer );
@@ -294,10 +301,27 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         /**
+         * Adds a consumer for all types of statistics to the builder for a given destination type.
+         * @param destination the destination type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        public Builder addStatisticsConsumer( DestinationType destination,
+                                              Function<Statistics, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( destination );
+            Objects.requireNonNull( consumer );
+
+            this.allStatisticsConsumers.put( destination, consumer );
+            return this;
+        }
+
+        /**
          * Builds an instance.
          * @return an instance
          */
-        StatisticsToFormatsRouter build()
+        public StatisticsToFormatsRouter build()
         {
             return new StatisticsToFormatsRouter( this );
         }
@@ -305,10 +329,10 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     }
 
     /**
-     * Produces graphical and numerical output for each type available in the input.
+     * Produces output for each type available in the input.
      * 
      * @param statistics the list of statistics
-     * @throws ConsumerException if consumption fails for any reason
+     * @throws StatisticsToFormatsRoutingException if consumption fails for any reason
      */
 
     @Override
@@ -316,7 +340,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     {
         if ( Objects.isNull( statistics ) )
         {
-            throw new ConsumerException( "Cannot consumer null statistics." );
+            throw new StatisticsToFormatsRoutingException( "Cannot consumer null statistics." );
         }
 
         try
@@ -345,7 +369,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         // can break the flow with exceptions. Eventually, all consumers will be external. 
         catch ( RuntimeException e )
         {
-            throw new ConsumerException( "While routing evaluation statistics for consumption.", e );
+            throw new StatisticsToFormatsRoutingException( "While routing evaluation statistics for consumption.", e );
         }
 
         return this.getPathsWritten();
@@ -426,6 +450,12 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                               this.getDurationDiagramMapper( poolSupplier ) );
 
             this.processDurationDiagramStatistic( wrapped );
+        }
+
+        // Consumers of all statistics
+        if ( !this.allStatisticsConsumers.isEmpty() )
+        {
+            this.processMultiStatistics( statistics );
         }
 
     }
@@ -739,6 +769,28 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     }
 
     /**
+     * Processes {@link Statistics} for consumers of all statistics.
+     * 
+     * @param statistics the statistics to consume
+     * @throws NullPointerException if the input is null
+     */
+
+    private void processMultiStatistics( Collection<Statistics> statistics )
+    {
+        Objects.requireNonNull( statistics, NULL_OUTPUT_STRING );
+
+        // Iterate through the consumers
+        for ( Entry<DestinationType, Function<Statistics, Set<Path>>> next : this.allStatisticsConsumers.entrySet() )
+        {
+            for ( Statistics nextStatistics : statistics )
+            {
+                Set<Path> paths = next.getValue().apply( nextStatistics );
+                this.pathsWritten.addAll( paths );
+            }
+        }
+    }
+
+    /**
      * Logs the status of product generation.
      * 
      * @param <T> the output type
@@ -894,6 +946,40 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         this.durationDiagramConsumers.putAll( builder.durationDiagramConsumers );
         this.boxplotConsumersPerPair.putAll( builder.boxplotConsumersPerPair );
         this.boxplotConsumersPerPool.putAll( builder.boxplotConsumersPerPool );
+        this.allStatisticsConsumers.putAll( builder.allStatisticsConsumers );
+    }
+
+    /**
+     * Exception to throw when statistics cannot be routed.
+     */
+
+    private static class StatisticsToFormatsRoutingException extends RuntimeException
+    {
+
+        private static final long serialVersionUID = -7654568836842809914L;
+
+        /**
+         * Constructs a {@link StatisticsToFormatsRoutingException} with the specified message.
+         * 
+         * @param message the message.
+         */
+
+        public StatisticsToFormatsRoutingException( String message )
+        {
+            super( message );
+        }
+
+        /**
+         * Builds a {@link StatisticsToFormatsRoutingException} with the specified message.
+         * 
+         * @param message the message.
+         * @param cause the cause of the exception
+         */
+
+        public StatisticsToFormatsRoutingException( String message, Throwable cause )
+        {
+            super( message, cause );
+        }
     }
 
 }
