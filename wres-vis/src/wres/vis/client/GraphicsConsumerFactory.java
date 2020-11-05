@@ -10,6 +10,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -49,7 +50,7 @@ class GraphicsConsumerFactory implements ConsumerFactory
     private final Consumer consumerDescription;
 
     @Override
-    public Function<Collection<Statistics>, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId )
+    public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( evaluationId );
@@ -59,10 +60,14 @@ class GraphicsConsumerFactory implements ConsumerFactory
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
-        return builder.setEvaluationDescription( evaluation )
-                      .addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
-                                                  BoxPlotGraphicsWriter.of( outputs, outputsDirectory ) )
-                      .build();
+        Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
+                                                                      .addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
+                                                                                                  BoxPlotGraphicsWriter.of( outputs,
+                                                                                                                            outputsDirectory ) )
+                                                                      .build();
+
+
+        return statistics -> router.apply( List.of( statistics ) );
     }
 
     @Override

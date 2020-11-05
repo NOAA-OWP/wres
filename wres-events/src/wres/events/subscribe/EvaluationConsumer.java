@@ -109,7 +109,7 @@ class EvaluationConsumer
      * Consumer of individual messages.
      */
 
-    private Function<Collection<Statistics>, Set<Path>> consumer;
+    private Function<Statistics, Set<Path>> consumer;
 
     /**
      * Consumer for message groups.
@@ -778,7 +778,7 @@ class EvaluationConsumer
     /**
      * @return the incremental consumer.
      */
-    private Function<Collection<Statistics>, Set<Path>> getConsumer()
+    private Function<Statistics, Set<Path>> getConsumer()
     {
         return this.consumer;
     }
@@ -944,7 +944,7 @@ class EvaluationConsumer
     {
         // Accept the incremental types
         this.execute( () -> this.addPathsWritten( this.getConsumer()
-                                                      .apply( List.of( statistics ) ) ) );
+                                                      .apply( statistics ) ) );
 
         // Accept the grouped types
         if ( Objects.nonNull( groupId ) )
