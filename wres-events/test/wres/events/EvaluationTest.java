@@ -8,14 +8,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -25,15 +24,20 @@ import javax.naming.NamingException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import wres.events.subscribe.ConsumerException;
+import wres.events.subscribe.ConsumerFactory;
+import wres.events.subscribe.EvaluationSubscriber;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
+import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Pairs.Pair;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
@@ -78,12 +82,6 @@ public class EvaluationTest
     private Pairs somePairs;
 
     /**
-     * Nominal formats negotiated by consumers.
-     */
-
-    private final Format[] formats = new Format[] { Format.CSV, Format.PNG };
-
-    /**
      * Connection factory.
      */
 
@@ -99,10 +97,12 @@ public class EvaluationTest
     public void runBeforeEachTest()
     {
         // First evaluation
-        wres.statistics.generated.Evaluation.Builder oneEvaluationBuilder =
-                wres.statistics.generated.Evaluation.newBuilder();
+        this.oneEvaluation =
+                wres.statistics.generated.Evaluation.newBuilder()
+                                                    .setOutputs( Outputs.newBuilder()
+                                                                        .setPng( PngFormat.getDefaultInstance() ) )
+                                                    .build();
 
-        this.oneEvaluation = oneEvaluationBuilder.build();
         this.oneStatistics = new ArrayList<>();
 
         // Add one score with an incrementing value across each of ten pools
@@ -118,11 +118,12 @@ public class EvaluationTest
         }
 
         // Second evaluation
-        wres.statistics.generated.Evaluation.Builder anotherEvaluationBuilder =
-                wres.statistics.generated.Evaluation.newBuilder();
-
         this.anotherStatistics = new ArrayList<>();
-        this.anotherEvaluation = anotherEvaluationBuilder.build();
+        this.anotherEvaluation =
+                wres.statistics.generated.Evaluation.newBuilder()
+                                                    .setOutputs( Outputs.newBuilder()
+                                                                        .setPng( PngFormat.getDefaultInstance() ) )
+                                                    .build();
 
         // Add one score with an incrementing value across each of five pools
         for ( int i = 10; i < 15; i++ )
@@ -149,62 +150,61 @@ public class EvaluationTest
     public void publishAndConsumeTwoEvaluationsSimultaneously()
             throws IOException, NamingException, JMSException, InterruptedException
     {
-        // Create the consumers upfront
-        // Consumers simply dump to an actual output store for comparison with the expected output
-        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>(); // Common store
-        List<EvaluationStatus> actualStatuses = new ArrayList<>();
+        // Containers to hold the statistics
         List<Statistics> actualStatistics = new ArrayList<>();
-        List<EvaluationStatus> otherActualStatuses = new ArrayList<>();
         List<Statistics> otherActualStatistics = new ArrayList<>();
 
-        // Consumers, three for each evaluation
-        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
-            actualStatuses.add( statusMessage );
-            return Collections.emptySet();
-        };
-        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
-            actualEvaluations.add( evaluationMessage );
-            return Collections.emptySet();
-        };
-        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
-            actualStatistics.add( statisticsMessage );
-            return Collections.emptySet();
-        };
+        // Consumer factory implementation that simply adds the statistics to the above containers
+        ConsumerFactory consumer = new ConsumerFactory()
+        {
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> {
+                    if ( "evaluationOne".equals( evaluationId ) )
+                    {
+                        actualStatistics.addAll( statistics );
+                    }
+                    else
+                    {
+                        otherActualStatistics.addAll( statistics );
+                    }
 
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( statusConsumer )
-                                       .addEvaluationConsumer( evaluationConsumer )
-                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
-                                       .build();
+                    return Set.of();
+                };
+            }
 
-        Function<EvaluationStatus, Set<Path>> otherStatusConsumer = statusMessage -> {
-            otherActualStatuses.add( statusMessage );
-            return Collections.emptySet();
-        };
-        Function<wres.statistics.generated.Evaluation, Set<Path>> otherEvaluationConsumer = evaluationMessage -> {
-            actualEvaluations.add( evaluationMessage );
-            return Collections.emptySet();
-        };
-        Function<Statistics, Set<Path>> otherStatisticsConsumer = statisticsMessage -> {
-            otherActualStatistics.add( statisticsMessage );
-            return Collections.emptySet();
-        };
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> Set.of();
+            }
 
-        Consumers otherConsumerGroup =
-                new Consumers.Builder().addStatusConsumer( otherStatusConsumer )
-                                       .addEvaluationConsumer( otherEvaluationConsumer )
-                                       .addStatisticsConsumer( otherStatisticsConsumer, this.formats )
-                                       .build();
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.PNG )
+                               .build();
+            }
+        };
 
         // Create and start a broker and open an evaluation, closing on completion
-        try ( Evaluation evaluationOne =
-                Evaluation.of( this.oneEvaluation,
-                               EvaluationTest.connections,
-                               consumerGroup );
+        try ( EvaluationSubscriber subscriberOne =
+                EvaluationSubscriber.of( consumer,
+                                         Executors.newSingleThreadExecutor(),
+                                         EvaluationTest.connections );
+              Evaluation evaluationOne =
+                      Evaluation.of( this.oneEvaluation,
+                                     EvaluationTest.connections,
+                                     "evaluationOne" );
               Evaluation evaluationTwo =
                       Evaluation.of( this.anotherEvaluation,
                                      EvaluationTest.connections,
-                                     otherConsumerGroup ) )
+                                     "evaluationTwo" ) )
         {
             // First evaluation
             for ( Statistics next : this.oneStatistics )
@@ -229,100 +229,17 @@ public class EvaluationTest
             evaluationTwo.await();
         }
 
-        List<wres.statistics.generated.Evaluation> expectedEvaluations =
-                List.of( this.oneEvaluation, this.anotherEvaluation );
-
-        assertEquals( expectedEvaluations, actualEvaluations );
-
         assertEquals( this.oneStatistics, actualStatistics );
         assertEquals( this.anotherStatistics, otherActualStatistics );
-
-        // For status messages, assert number only
-        assertEquals( 12, actualStatuses.size() );
-        assertEquals( 7, otherActualStatuses.size() );
     }
 
-    @Test
-    public void publishAndConsumeOneEvaluationWithTwoStatusConsumers()
-            throws IOException, NamingException, JMSException, InterruptedException
-    {
-        // Create the consumers upfront
-        // Consumers simply dump to an actual output store for comparison with the expected output
-        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>(); // Common store
-        List<EvaluationStatus> actualStatuses = new ArrayList<>();
-        List<Statistics> actualStatistics = new ArrayList<>();
-
-        // Consumers
-        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
-            actualStatuses.add( statusMessage );
-            return Collections.emptySet();
-        };
-        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
-            actualEvaluations.add( evaluationMessage );
-            return Collections.emptySet();
-        };
-        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
-            actualStatistics.add( statisticsMessage );
-            return Collections.emptySet();
-        };
-
-        // Add the same status consumer twice, which doubles the expected number of messages to 24
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( statusConsumer )
-                                       .addStatusConsumer( statusConsumer )
-                                       .addEvaluationConsumer( evaluationConsumer )
-                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
-                                       .build();
-
-        // Create and start a broker and open an evaluation, closing on completion
-        try ( Evaluation evaluationOne =
-                Evaluation.of( this.oneEvaluation,
-                               EvaluationTest.connections,
-                               consumerGroup ); )
-        {
-            // First evaluation
-            for ( Statistics next : this.oneStatistics )
-            {
-                evaluationOne.publish( next );
-            }
-
-            // Success
-            evaluationOne.markPublicationCompleteReportedSuccess();
-
-            // Wait for the evaluation to complete
-            evaluationOne.await();
-        }
-
-        List<wres.statistics.generated.Evaluation> expectedEvaluations =
-                List.of( this.oneEvaluation );
-
-        assertEquals( expectedEvaluations, actualEvaluations );
-        assertEquals( this.oneStatistics, actualStatistics );
-
-        // For status messages, assert number only
-        assertEquals( 24, actualStatuses.size() );
-    }
 
     @Test
     public void testPublishThrowsExceptionAfterStop() throws IOException
     {
-        Consumers consumerGroup =
-                new Consumers.Builder()
-                                       .addStatusConsumer( message -> {
-                                           return Collections.emptySet();
-                                       } )
-                                       .addEvaluationConsumer( message -> {
-                                           return Collections.emptySet();
-                                       } )
-                                       .addStatisticsConsumer( message -> {
-                                           return Collections.emptySet();
-                                       }, this.formats )
-                                       .build();
-
         // Create and start a broker and open an evaluation, closing on completion
-        Evaluation evaluationOne = Evaluation.of( this.oneEvaluation,
-                                                  EvaluationTest.connections,
-                                                  consumerGroup );
+        Evaluation evaluationOne = Evaluation.of( wres.statistics.generated.Evaluation.getDefaultInstance(),
+                                                  EvaluationTest.connections );
 
         // Stop the evaluation
         evaluationOne.stop( new Exception( "an exception" ) );
@@ -332,147 +249,56 @@ public class EvaluationTest
     }
 
     @Test
-    @Ignore( "Performance testing only. Not to be exposed. Remove @ignore locally, as needed." )
-    public void testLargeEvaluation()
+    public void publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumer()
             throws IOException, NamingException, JMSException, InterruptedException
     {
-        Instant then = Instant.now();
-
-        // Create the consumers upfront
-        // Consumers simply dump to an actual output store for comparison with the expected output
-        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>(); // Common store
-        List<EvaluationStatus> actualStatuses = new ArrayList<>();
-
         // Statistics incremented as the pipeline progresses
         List<Statistics> actualStatistics = new ArrayList<>();
 
         // End-of-pipeline statistics
         List<Statistics> actualAggregatedStatistics = new ArrayList<>();
 
-        // Consumers
-        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
-            actualStatuses.add( statusMessage );
-            return Collections.emptySet();
-        };
-        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
-            actualEvaluations.add( evaluationMessage );
-            return Collections.emptySet();
-        };
-        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
-            actualStatistics.add( statisticsMessage );
-            return Collections.emptySet();
-        };
-        Function<Collection<Statistics>, Set<Path>> aggregatedStatisticsConsumer = statisticsMessages -> {
-            actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
-                                                          .apply( statisticsMessages ) );
-            return Collections.emptySet();
-        };
-
-        int featureCount = 10000;
-
-        // Create a container for all the consumers
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( statusConsumer )
-                                       .addEvaluationConsumer( evaluationConsumer )
-                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
-                                       .addGroupedStatisticsConsumer( aggregatedStatisticsConsumer )
-                                       .build();
-
-        // Create and start a broker and open an evaluation, closing on completion
-        try ( Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     EvaluationTest.connections,
-                                                     consumerGroup ); )
+        // Consumer factory implementation that simply adds the statistics to the above containers
+        ConsumerFactory consumer = new ConsumerFactory()
         {
-            // Iterate the groups/features
-            for ( int i = 0; i < featureCount; i++ )
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
             {
-                // Publish the group/feature
-                for ( Statistics next : this.oneStatistics )
-                {
-                    evaluation.publish( next, "group_" + i );
-                }
-
-                // Mark the group complete
-                evaluation.markGroupPublicationCompleteReportedSuccess( "group_" + i );
+                return statistics -> {
+                    actualStatistics.addAll( statistics );
+                    return Set.of();
+                };
             }
 
-            // Success
-            evaluation.markPublicationCompleteReportedSuccess();
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statisticsMessages -> {
+                    actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
+                                                                  .apply( statisticsMessages ) );
+                    return Collections.emptySet();
+                };
+            }
 
-            // Wait for the evaluation to complete
-            evaluation.await();
-        }
-
-        assertEquals( featureCount, actualAggregatedStatistics.size() );
-        assertEquals( featureCount * this.oneStatistics.size(), actualStatistics.size() );
-
-        Instant now = Instant.now();
-
-        System.out.println();
-        System.out.println( "Time elapsed for messaging an evaluation composed of " + featureCount
-                            + " features, each with "
-                            + this.oneStatistics.size()
-                            + " pools (and asserting the correct number of consumed statistics): "
-                            + Duration.between( then, now ) );
-    }
-
-    @Test
-    public void
-            publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumerAndOnePairsConsumer()
-                    throws IOException, NamingException, JMSException, InterruptedException
-    {
-        // Create the consumers upfront
-        // Consumers simply dump to an actual output store for comparison with the expected output
-        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>(); // Common store
-        List<EvaluationStatus> actualStatuses = new ArrayList<>();
-
-        // Statistics incremented as the pipeline progresses
-        List<Statistics> actualStatistics = new ArrayList<>();
-
-        // End-of-pipeline statistics
-        List<Statistics> actualAggregatedStatistics = new ArrayList<>();
-
-        // Pairs
-        List<Pairs> actualPairs = new ArrayList<>();
-
-        // Consumers for the incremental messages
-        Function<EvaluationStatus, Set<Path>> statusConsumer = statusMessage -> {
-            actualStatuses.add( statusMessage );
-            return Collections.emptySet();
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.PNG )
+                               .build();
+            }
         };
-        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationConsumer = evaluationMessage -> {
-            actualEvaluations.add( evaluationMessage );
-            return Collections.emptySet();
-        };
-        Function<Statistics, Set<Path>> statisticsConsumer = statisticsMessage -> {
-            actualStatistics.add( statisticsMessage );
-            return Collections.emptySet();
-        };
-        Function<Pairs, Set<Path>> pairsConsumer = pairsMessage -> {
-            actualPairs.add( pairsMessage );
-            return Collections.emptySet();
-        };
-
-        // Consumers for the end-of-pipeline/grouped statistics
-        Function<Collection<Statistics>, Set<Path>> aggregatedStatisticsConsumer = statisticsMessages -> {
-            actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
-                                                          .apply( statisticsMessages ) );
-            return Collections.emptySet();
-        };
-
-        // Create a container for all the consumers
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( statusConsumer )
-                                       .addEvaluationConsumer( evaluationConsumer )
-                                       .addStatisticsConsumer( statisticsConsumer, this.formats )
-                                       .addGroupedStatisticsConsumer( aggregatedStatisticsConsumer, this.formats )
-                                       .addPairsConsumer( pairsConsumer )
-                                       .build();
 
         // Create and start a broker and open an evaluation, closing on completion
-        try ( Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     EvaluationTest.connections,
-                                                     consumerGroup ); )
+        try ( EvaluationSubscriber subscriber =
+                EvaluationSubscriber.of( consumer,
+                                         Executors.newSingleThreadExecutor(),
+                                         EvaluationTest.connections );
+              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
+                                                     EvaluationTest.connections ); )
         {
             // First group
             for ( Statistics next : this.oneStatistics )
@@ -506,9 +332,6 @@ public class EvaluationTest
         }
 
         // Make some assertions
-        List<wres.statistics.generated.Evaluation> expectedEvaluations =
-                List.of( this.oneEvaluation );
-        assertEquals( expectedEvaluations, actualEvaluations );
 
         // Assertions about the disaggregated statistics
         List<Statistics> expectedWithoutGroups = new ArrayList<>( this.oneStatistics );
@@ -528,40 +351,18 @@ public class EvaluationTest
                                                                  expectedTwoBuilder.build() );
 
         assertEquals( expectedAggregatedStatistics, actualAggregatedStatistics );
-
-        // For status messages, assert number only: 15 statistics, 1 evaluation start and 1 evaluation end, 1 message 
-        // for each 2 group completed and one for each of five consumers starting = 24
-        assertEquals( 19, actualStatuses.size() );
-
-        List<Pairs> expectedPairs = List.of( this.somePairs, this.somePairs );
-        assertEquals( expectedPairs, actualPairs );
     }
 
     @Test
     public void testEmptyEvaluation() throws IOException
     {
-        // Create the consumers
-        // Create a container for all the consumers
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( message -> {
-                    return Collections.emptySet();
-                } )
-                                       .addEvaluationConsumer( message -> {
-                                           return Collections.emptySet();
-                                       } )
-                                       .addStatisticsConsumer( message -> {
-                                           return Collections.emptySet();
-                                       }, this.formats )
-                                       .build();
-
         // Create and start a broker and open an evaluation, closing on completion
         Evaluation evaluation = null;
         Integer exitCode = null;
         try
         {
-            evaluation = Evaluation.of( this.oneEvaluation,
-                                        EvaluationTest.connections,
-                                        consumerGroup );
+            evaluation = Evaluation.of( wres.statistics.generated.Evaluation.getDefaultInstance(),
+                                        EvaluationTest.connections );
 
             // Notify publication done, even though nothing published, as this 
             // has the expected message count
@@ -587,26 +388,45 @@ public class EvaluationTest
     public void testEvaluationWithUnrecoverableConsumerException() throws IOException
     {
         // Create a statistics consumer that fails always, together with some no-op consumers for other message types
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( message -> {
-                    return Collections.emptySet();
-                } )
-                                       .addEvaluationConsumer( message -> {
-                                           return Collections.emptySet();
-                                       } )
-                                       .addStatisticsConsumer( consume -> {
-                                           throw new ConsumerException( "Consumption failed!" );
-                                       }, this.formats )
-                                       .build();
+        // Consumer factory implementation that simply adds the statistics to the above containers
+        ConsumerFactory consumer = new ConsumerFactory()
+        {
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> {
+                    throw new ConsumerException( "Consumption failed!" );
+                };
+            }
+
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> Set.of();
+            }
+
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.PNG )
+                               .build();
+            }
+        };
 
         // Open an evaluation, closing on completion
         Evaluation evaluation = null;
         EvaluationFailedToCompleteException actualException = null;
-        try
+        try ( EvaluationSubscriber subscriberOne =
+                EvaluationSubscriber.of( consumer,
+                                         Executors.newSingleThreadExecutor(),
+                                         EvaluationTest.connections ); )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
-                                        EvaluationTest.connections,
-                                        consumerGroup );
+                                        EvaluationTest.connections );
 
             // Publish a statistics message, which fails to be consumed after retries
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -643,29 +463,49 @@ public class EvaluationTest
     @Test
     public void testEvaluationWithRecoverableConsumerException() throws IOException
     {
-        // Create a statistics consumer that fails one time only, together with some no-op consumers for other types
+        // Create a statistics consumer that fails always, together with some no-op consumers for other message types
+        // Consumer factory implementation that simply adds the statistics to the above containers
         AtomicInteger failureCount = new AtomicInteger();
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( message -> {
-                    return Collections.emptySet();
-                } )
-                                       .addEvaluationConsumer( message -> {
-                                           return Collections.emptySet();
-                                       } )
-                                       .addStatisticsConsumer( statistics -> {
-                                           if ( failureCount.getAndIncrement() < 1 )
-                                           {
-                                               throw new ConsumerException( "Consumption failed!" );
-                                           }
+        ConsumerFactory consumer = new ConsumerFactory()
+        {
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> {
+                    if ( failureCount.getAndIncrement() < 1 )
+                    {
+                        throw new ConsumerException( "Consumption failed!" );
+                    }
 
-                                           return Collections.emptySet();
-                                       }, this.formats )
-                                       .build();
+                    return Collections.emptySet();
+                };
+            }
+
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> Set.of();
+            }
+
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.PNG )
+                               .build();
+            }
+        };
 
         // Open an evaluation, closing on completion
-        try ( Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     EvaluationTest.connections,
-                                                     consumerGroup ) )
+        try ( EvaluationSubscriber subscriberOne =
+                EvaluationSubscriber.of( consumer,
+                                         Executors.newSingleThreadExecutor(),
+                                         EvaluationTest.connections );
+              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
+                                                     EvaluationTest.connections ) )
         {
             // Publish a statistics message, triggering one failed consumption followed by recovery
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -681,31 +521,47 @@ public class EvaluationTest
         }
     }
 
+
     @Test
     public void testEvaluationWithUnrecoverablePublisherException() throws IOException
     {
-        // Create the consumers
-        // Create a container for all the consumers
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( message -> {
-                    return Collections.emptySet();
-                } )
-                                       .addEvaluationConsumer( message -> {
-                                           return Collections.emptySet();
-                                       } )
-                                       .addStatisticsConsumer( message -> {
-                                           return Collections.emptySet();
-                                       }, this.formats )
-                                       .build();
-
         // Open an evaluation, closing on completion
         Evaluation evaluation = null;
         AtomicInteger exitCode = new AtomicInteger();
-        try
+
+        ConsumerFactory consumer = new ConsumerFactory()
+        {
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> Set.of();
+            }
+
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+            {
+                return statistics -> Set.of();
+            }
+
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.PNG )
+                               .build();
+            }
+        };
+
+        try ( EvaluationSubscriber subscriberOne =
+                EvaluationSubscriber.of( consumer,
+                                         Executors.newSingleThreadExecutor(),
+                                         EvaluationTest.connections ); )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
-                                        EvaluationTest.connections,
-                                        consumerGroup );
+                                        EvaluationTest.connections );
 
             Statistics mockedStatistics = Mockito.mock( Statistics.class );
             Mockito.when( mockedStatistics.toByteArray() )

@@ -1,5 +1,10 @@
 package wres.events;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -17,19 +22,34 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import javax.jms.BytesMessage;
+import javax.jms.Connection;
+import javax.jms.ExceptionListener;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageListener;
+import javax.jms.Session;
+import javax.jms.Topic;
+import javax.naming.NamingException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.ProtocolStringList;
 
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 import wres.statistics.generated.Consumer.Format;
+import wres.events.publish.MessagePublisher.MessageProperty;
+import wres.events.subscribe.SubscriberTimedOutException;
+import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 
@@ -41,7 +61,7 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
  */
 
 @ThreadSafe
-class EvaluationStatusTracker implements Consumer<EvaluationStatus>
+class EvaluationStatusTracker implements Closeable
 {
 
     private static final String ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER =
@@ -79,19 +99,40 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     private static final int NEGOTIATION_PERIOD = 100;
 
     /**
+     * Maximum number of retries allowed.
+     */
+
+    private final int maximumRetries;
+
+    /**
+     * Actual number of retries attempted.
+     */
+
+    private final AtomicInteger retriesAttempted;
+
+    /**
+     * A message that could not be consumed by this status tracker, null if no failure.
+     */
+
+    private Message trackerFailedOn = null;
+
+    /**
+     * Is <code>true</code> if the subscriber failed after all attempts to recover.
+     */
+
+    private final AtomicBoolean isFailedUnrecoverably;
+
+    /**
      * A latch that records the completion of publication. There is no timeout on publication.
      */
 
     private final CountDownLatch publicationLatch = new CountDownLatch( 1 );
 
     /**
-     * A latch for each top-level subscriber by subscriber identifier. A top-level subscriber is an external 
-     * subscriber or an internal subscriber that collates one or more consumers. For example if there are three 
-     * consumers of evaluation status messages, one consumer of pairs messages, one consumer of statistics messages, 
-     * one consumer of evaluation description messages and one external subscriber, then there are five top-level 
-     * subscribers, one for each message type that has one or more consumers. Once set, this latch is counted down 
-     * for each subscriber that reports completion. Each latch is initialized with a count of one. Consumption is
-     * allowed to timeout when no progress is recorded within a prescribed duration.
+     * A latch for each top-level subscriber by subscriber identifier. A top-level subscriber collates one or more 
+     * consumers. Once set, this latch is counted down for each subscriber that reports completion. Each latch is 
+     * initialized with a count of one. Consumption is allowed to timeout when no progress is recorded within a 
+     * prescribed duration.
      */
 
     private final Map<String, TimedCountDownLatch> subscriberLatches;
@@ -103,11 +144,16 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     private final Evaluation evaluation;
 
     /**
-     * A set of identifiers for subscribers that have already been negotiated. These subscribers are created and 
-     * registered by the core evaluation client, as distinct from the {@link #negotiatedSubscribers}.
+     * The connection.
      */
 
-    private final Set<String> expectedSubscribers;
+    private final Connection connection;
+
+    /**
+     * The session.
+     */
+
+    private final Session session;
 
     /**
      * A negotiated subscriber for each format type that is not delivered by the core evaluation client.
@@ -178,7 +224,13 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
      * were reported by the subscriber to which I am attached.
      */
 
-    private final String myConsumerId;
+    private final String identifier;
+
+    /**
+     * The fully qualified name of the durable subscriber on the broker.
+     */
+
+    private final String subscriberName;
 
     /**
      * The exit code.
@@ -199,41 +251,36 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     private final ProducerFlowController flowController;
 
     @Override
-    public void accept( EvaluationStatus message )
+    public void close()
     {
-        Objects.requireNonNull( message );
-        CompletionStatus status = message.getCompletionStatus();
-        switch ( status )
+        // Unsubscribe
+        try
         {
-            case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
-                this.publicationLatch.countDown();
-                break;
-            case PUBLICATION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailure( message );
-                break;
-            case READY_TO_CONSUME:
-                this.registerSubscriberReady( message );
-                break;
-            case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
-                this.registerSubscriberCompleteReportedSuccess( message );
-                break;
-            case CONSUMPTION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailure( message );
-                break;
-            case CONSUMPTION_ONGOING:
-                this.registerConsumptionOngoing( message );
-                break;
-            case GROUP_PUBLICATION_COMPLETE:
-                this.registerGroupPublicationComplete( message );
-                break;
-            case GROUP_CONSUMPTION_COMPLETE:
-                this.registerGroupConsumptionComplete( message );
-                break;
-            case EVALUATION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailure( message );
-                break;
-            default:
-                break;
+            this.session.unsubscribe( this.subscriberName );
+        }
+        catch ( JMSException e )
+        {
+            String message = "While attempting to close evaluation status subscriber " + this.getIdentifier()
+                             + " for evaluation "
+                             + this.evaluation.getEvaluationId()
+                             + ", failed to remove the subscription from the session.";
+
+            LOGGER.error( message, e );
+        }
+
+        // No need to close the session, only the connection
+        try
+        {
+            this.connection.close();
+        }
+        catch ( JMSException e )
+        {
+            String message = "While attempting to close evaluation status subscriber " + this.getIdentifier()
+                             + " for evaluation "
+                             + this.evaluation.getEvaluationId()
+                             + ", failed to close the connection.";
+
+            LOGGER.error( message, e );
         }
     }
 
@@ -246,75 +293,6 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     Set<String> getResourcesWritten()
     {
         return Collections.unmodifiableSet( this.resourcesWritten );
-    }
-
-    /**
-     * Stops all tracking on failure.
-     * @param failure the failure message.
-     * @throws IllegalStateException if stopping a consumer that has previously been reported as failed or succeeded
-     */
-
-    private void stopOnFailure( EvaluationStatus failure )
-    {
-        // Non-zero exit code
-        this.exitCode.set( 1 );
-
-        String consumerId = failure.getConsumer()
-                                   .getConsumerId();
-
-        if ( !consumerId.isBlank() )
-        {
-            // Failed previously. Probably a subscriber notification error.
-            if ( this.failure.contains( consumerId ) )
-            {
-                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
-                                                 + this.evaluation.getEvaluationId()
-                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
-                                                 + consumerId
-                                                 + " as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
-                                                 + " when it has already been marked as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
-                                                 + ". This probably represents an error in the subscriber that should "
-                                                 + "be fixed." );
-            }
-
-            this.failure.add( consumerId );
-
-            // Succeeded previously. Definitely a subscriber notification failure.
-            if ( this.success.contains( consumerId ) )
-            {
-                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
-                                                 + this.evaluation.getEvaluationId()
-                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
-                                                 + consumerId
-                                                 + " as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
-                                                 + " when it has previously been marked as "
-                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
-                                                 + ". This is an error in the subscriber that should be fixed." );
-            }
-        }
-
-        // Add any paths written
-        ProtocolStringList resources = failure.getResourcesCreatedList();
-        this.resourcesWritten.addAll( resources );
-
-        LOGGER.debug( "While processing evaluation {}, discovered {} resources that were created by subscribers.",
-                      this.evaluation.getEvaluationId(),
-                      resources.size() );
-
-        LOGGER.error( "While tracking evaluation {}, encountered an error that prevented completion. The failure "
-                      + "message is {}.",
-                      this.evaluation.getEvaluationId(),
-                      failure );
-
-        // Stop waiting
-        this.publicationLatch.countDown();
-        this.subscriberLatches.forEach( ( a, b ) -> b.countDown() );
-
-        // Stop any flow control blocking
-        this.evaluation.stopFlowControl();
     }
 
     /**
@@ -396,7 +374,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         LOGGER.debug( "While processing evaluation {}, received confirmation that consumption has stopped "
                       + "across all {} registered subscriptions.",
                       evaluationId,
-                      this.expectedSubscribers.size() );
+                      this.subscriberLatches.size() );
 
         // Throw an exception if any consumers failed to complete consumption
         Set<String> identifiers = this.subscriberLatches.entrySet()
@@ -452,6 +430,11 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
             public void run()
             {
                 tracker.notifyConsumerRequired();
+
+                if ( tracker.failed() )
+                {
+                    tracker.close();
+                }
             }
         };
 
@@ -517,12 +500,104 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     }
 
     /**
+     * Returns <code>true</code> if this status tracker is in a failure state, otherwise <code>false</code> . 
+     * Note that {@link #getFirstFailure()} may contain an exception that was recovered.
+     * 
+     * @return true if an unrecoverable exception occurred.
+     */
+
+    boolean failed()
+    {
+        return this.isFailedUnrecoverably.get();
+    }
+
+    /**
+     * Returns a message on which consumption failed, <code>null</code> if no failure occurred.
+     * 
+     * @return a message that was not consumed
+     */
+
+    Message getFirstFailure()
+    {
+        return this.trackerFailedOn;
+    }
+
+    /**
      * @return a set of negotiated subscribers by format.
      */
 
     Map<Format, String> getNegotiatedSubscribers()
     {
         return Collections.unmodifiableMap( this.negotiatedSubscribers );
+    }
+
+    /**
+     * Stops all tracking on failure.
+     * @param failure the failure message.
+     * @throws IllegalStateException if stopping a consumer that has previously been reported as failed or succeeded
+     */
+
+    private void stopOnFailure( EvaluationStatus failure )
+    {
+        // Non-zero exit code
+        this.exitCode.set( 1 );
+
+        String consumerId = failure.getConsumer()
+                                   .getConsumerId();
+
+        if ( !consumerId.isBlank() )
+        {
+            // Failed previously. Probably a subscriber notification error.
+            if ( this.failure.contains( consumerId ) )
+            {
+                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
+                                                 + this.evaluation.getEvaluationId()
+                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
+                                                 + consumerId
+                                                 + " as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                                 + " when it has already been marked as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                                 + ". This probably represents an error in the subscriber that should "
+                                                 + "be fixed." );
+            }
+
+            this.failure.add( consumerId );
+
+            // Succeeded previously. Definitely a subscriber notification failure.
+            if ( this.success.contains( consumerId ) )
+            {
+                throw new IllegalStateException( WHILE_PROCESSING_EVALUATION
+                                                 + this.evaluation.getEvaluationId()
+                                                 + ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER
+                                                 + consumerId
+                                                 + " as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE
+                                                 + " when it has previously been marked as "
+                                                 + CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
+                                                 + ". This is an error in the subscriber that should be fixed." );
+            }
+        }
+
+        // Add any paths written
+        ProtocolStringList resources = failure.getResourcesCreatedList();
+        this.resourcesWritten.addAll( resources );
+
+        LOGGER.debug( "While processing evaluation {}, discovered {} resources that were created by subscribers.",
+                      this.evaluation.getEvaluationId(),
+                      resources.size() );
+
+        LOGGER.error( "While tracking evaluation {}, encountered an error that prevented completion. The failure "
+                      + "message is {}.",
+                      this.evaluation.getEvaluationId(),
+                      failure );
+
+        // Stop waiting
+        this.publicationLatch.countDown();
+        this.subscriberLatches.forEach( ( a, b ) -> b.countDown() );
+
+        // Stop any flow control blocking
+        this.evaluation.stopFlowControl();
     }
 
     /**
@@ -560,6 +635,8 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
             String consumerId = message.getConsumer()
                                        .getConsumerId();
 
+            LOGGER.debug( "Registering group consumption complete for subscriber {}.", consumerId );
+
             this.flowController.stop( consumerId );
         }
         else
@@ -579,32 +656,6 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     {
         // Attempt to fulfil a contract with this subscriber
         this.attemptToNegotiateSubscriber( message );
-
-        String consumerId = message.getConsumer()
-                                   .getConsumerId();
-
-        // Must be an expected subscriber, not a negotiated one because the negotiated subscribers are provisional until 
-        // the negotiation period has expired.
-        boolean isexpectedSubscriber = this.expectedSubscribers.contains( consumerId );
-
-        // A real consumer that is not a subscriber just negotiated
-        if ( isexpectedSubscriber )
-        {
-            LOGGER.debug( "Registering a pre-notified message subscriber {} for evaluation {} as {}.",
-                          consumerId,
-                          this.evaluation.getEvaluationId(),
-                          message.getCompletionStatus() );
-
-            // Reset the countdown
-            TimedCountDownLatch latch = this.getSubscriberLatch( consumerId );
-
-            latch.resetClock();
-
-            LOGGER.debug( "Registered a pre-notified message subscriber {} for evaluation {} as {}.",
-                          consumerId,
-                          this.evaluation.getEvaluationId(),
-                          message.getCompletionStatus() );
-        }
     }
 
     /**
@@ -802,7 +853,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                 this.subscriberLatches.put( newConsumerId, new TimedCountDownLatch( 1 ) );
 
                 // Flow control the consumer
-                this.flowController.addConsumer( newConsumerId );
+                this.flowController.addSubscriber( newConsumerId );
             }
         }
     }
@@ -913,9 +964,8 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
                                                 + "contain the consumerId, which is not allowed." );
         }
 
-        // Not this consumer and either one of the expected subscribers or a negotiated subscriber
-        return !this.isThisConsumerMe( consumerId )
-               && ( this.expectedSubscribers.contains( consumerId ) || this.isNegotiatedSubscriber( consumerId ) );
+        // Not this consumer and a negotiated subscriber
+        return !this.isThisConsumerMe( consumerId ) && this.isNegotiatedSubscriber( consumerId );
     }
 
     /**
@@ -939,7 +989,7 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
 
     private boolean isThisConsumerMe( String consumerId )
     {
-        return Objects.equals( consumerId, this.myConsumerId );
+        return Objects.equals( consumerId, this.identifier );
     }
 
     /**
@@ -959,48 +1009,46 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
     /**
      * Create an instance with an evaluation and an expected list of subscriber identifiers.
      * @param evaluation the evaluation
-     * @param expectedSubscribers the list of unique identifiers for subscribers that have already been negotiated
+     * @param broker the broker connection factory
      * @param formatsAwaited the formats to be delivered by subscribers yet to be negotiated
-     * @param myConsumerId the consumer identifier of this instance, used to ignore messages related to the tracker
-     * @param statisticsSubscriberId the statistics subscriber identifier, which is flow controlled
+     * @param identifier the consumer identifier of this instance, used to ignore messages related to the tracker
+     * @param maximum retries the maximum number of retries on failing to consume a message
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the list of subscribers is empty
+     * @throws IllegalArgumentException if the list of subscribers is empty or the maximum number of retries is < 0
+     * @throws EvaluationEventException if the status tracker could not be created for any other reason
      */
 
     EvaluationStatusTracker( Evaluation evaluation,
-                             Set<String> expectedSubscribers,
+                             BrokerConnectionFactory broker,
                              Set<Format> formatsAwaited,
-                             String myConsumerId,
-                             String statisticsSubscriberId )
+                             String identifier,
+                             int maximumRetries )
     {
         Objects.requireNonNull( evaluation );
-        Objects.requireNonNull( expectedSubscribers );
+        Objects.requireNonNull( broker );
         Objects.requireNonNull( formatsAwaited );
-        Objects.requireNonNull( myConsumerId );
-        Objects.requireNonNull( statisticsSubscriberId );
+        Objects.requireNonNull( identifier );
 
-        if ( expectedSubscribers.isEmpty() )
+        if ( maximumRetries < 0 )
         {
-            throw new IllegalArgumentException( "Expected one or more subscribers when building evaluation "
-                                                + evaluation.getEvaluationId()
-                                                + " but found none." );
+            throw new IllegalArgumentException( "While building an evaluation status tracker, discovered a maximum "
+                                                + "retry count that is less than zero, which is not allowed: "
+                                                + maximumRetries );
         }
 
         this.evaluation = evaluation;
         this.success = ConcurrentHashMap.newKeySet();
         this.failure = ConcurrentHashMap.newKeySet();
-        this.expectedSubscribers = expectedSubscribers;
         this.negotiatedSubscribers = new EnumMap<>( Format.class );
         this.subscriptionOffers = new ConcurrentHashMap<>();
-        this.flowController = new ProducerFlowController( evaluation, Set.of( statisticsSubscriberId ) );
+        this.flowController = new ProducerFlowController( evaluation );
 
         // Add a placeholder entry for each unknown subscriber
         formatsAwaited.forEach( nextFormat -> this.negotiatedSubscribers.put( nextFormat, StringUtils.EMPTY ) );
 
-        LOGGER.info( "Registering the following message subscribers for evaluation {}: {}. The following output "
-                     + "formats will be delivered by subscribers that are yet to be negotiated: {}.",
+        LOGGER.info( "The following output formats for evaluation {} will be delivered by subscribers that are yet to "
+                     + "be negotiated: {}.",
                      this.evaluation.getEvaluationId(),
-                     this.expectedSubscribers,
                      formatsAwaited );
 
         // Default timeout for consumption from an individual consumer unless progress is reported
@@ -1014,16 +1062,330 @@ class EvaluationStatusTracker implements Consumer<EvaluationStatus>
         this.timeoutDuringNegotiation = 5;
         this.timeoutDuringNegotiationUnits = TimeUnit.MINUTES;
 
-        // Create the latches
-        Map<String, TimedCountDownLatch> internalLatches = new ConcurrentHashMap<>( this.expectedSubscribers.size() );
-        this.expectedSubscribers.forEach( next -> internalLatches.put( next, new TimedCountDownLatch( 1 ) ) );
-
         // Mutable because some subscriptions may be negotiated and hence latches added upon successful negotiation
-        this.subscriberLatches = internalLatches;
+        this.subscriberLatches = new ConcurrentHashMap<>();
 
         // A latch whose count equals the number of formats to be delivered by external subscribers
         this.negotiatedSubscribersLatch = new TimedCountDownLatch( this.negotiatedSubscribers.size() );
-        this.myConsumerId = myConsumerId;
+        this.identifier = identifier;
         this.resourcesWritten = new HashSet<>();
+        this.retriesAttempted = new AtomicInteger();
+        this.isFailedUnrecoverably = new AtomicBoolean();
+        this.maximumRetries = maximumRetries;
+
+        // Set the message consumer and listener
+        try
+        {
+            this.connection = broker.get()
+                                    .createConnection();
+            this.connection.setExceptionListener( new ConnectionExceptionListener( this.getIdentifier() ) );
+            this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
+            Topic topic = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
+
+            String selector = MessageProperty.JMS_CORRELATION_ID + "='" + this.evaluation.getEvaluationId() + "'";
+            this.subscriberName = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-status-tracker-"
+                                  + this.evaluation.getEvaluationId()
+                                  + "-"
+                                  + this.getIdentifier();
+
+            this.registerListenerForConsumer( this.getMessageConsumer( topic, this.subscriberName, selector ),
+                                              this.evaluation.getEvaluationId() );
+
+            // Start the connection
+            this.connection.start();
+        }
+        catch ( JMSException | NamingException e )
+        {
+            throw new EvaluationEventException( "Unable to construct an evaluation.", e );
+        }
+    }
+
+    /**
+     * Returns a consumer.
+     * 
+     * @param topic the topic
+     * @param name the name of the subscriber
+     * @param selector a selector
+     * @return a consumer
+     * @throws JMSException if the consumer could not be created for any reason
+     */
+
+    private MessageConsumer getMessageConsumer( Topic topic, String name, String selector )
+            throws JMSException
+    {
+        return this.session.createDurableSubscriber( topic, name, selector, false );
+    }
+
+    /**
+     * Registers a listener to a consumer.
+     * 
+     * @param statusConsumer the status consumer
+     * @param evaluationId the identifier of the evaluation being tracked
+     * @throws JMSException if the listener could not be registered for any reason
+     */
+
+    private void registerListenerForConsumer( MessageConsumer statusConsumer,
+                                              String evaluationId )
+            throws JMSException
+    {
+        // Now listen for status messages when a group completes
+        MessageListener listener = message -> {
+
+            // Throwing exceptions on the MessageListener::onMessage is considered a bug, so need to track status and 
+            // exit gracefully when problems occur. The message is either delivered, the session is recovering or the
+            // subscriber is unrecoverable.
+            AtomicBoolean consumeSucceeded = new AtomicBoolean();
+            AtomicBoolean recovering = new AtomicBoolean();
+
+            BytesMessage receivedBytes = (BytesMessage) message;
+            String messageId = "unknown";
+            String correlationId = "unknown";
+
+            try
+            {
+                // Only consume if the subscriber is live
+                if ( !this.failed() )
+                {
+                    messageId = message.getJMSMessageID();
+                    correlationId = message.getJMSCorrelationID();
+
+                    // Create the byte array to hold the message
+                    int messageLength = (int) receivedBytes.getBodyLength();
+
+                    byte[] messageContainer = new byte[messageLength];
+
+                    receivedBytes.readBytes( messageContainer );
+
+                    ByteBuffer bufferedMessage = ByteBuffer.wrap( messageContainer );
+
+                    EvaluationStatus statusMessage = EvaluationStatus.parseFrom( bufferedMessage.array() );
+
+                    // Accept the message
+                    this.acceptStatusMessage( statusMessage );
+
+                    consumeSucceeded.set( true );
+                }
+
+                // Acknowledge
+                message.acknowledge();
+            }
+            catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
+            {
+                // Messages are on the DLQ, but signal locally too
+                if ( Objects.isNull( this.trackerFailedOn ) )
+                {
+                    this.trackerFailedOn = receivedBytes;
+                }
+
+                // Attempt to recover and flag recovery locally
+                this.recover( messageId, correlationId, e );
+                recovering.set( true );
+            }
+            finally
+            {
+                // A consumption failed and a recovery is not underway. Unrecoverable.
+                if ( !consumeSucceeded.get() && !recovering.get() )
+                {
+                    this.markSubscriberFailed();
+                }
+            }
+        };
+
+        statusConsumer.setMessageListener( listener );
+
+        LOGGER.debug( "Successfully registered an evaluation status tracker {} for the evaluation status messages "
+                      + "associated with evaluation {}",
+                      this,
+                      evaluationId );
+    }
+
+    /**
+     * Accepts and routes an evaluation status message.
+     * @param message the message
+     */
+    private void acceptStatusMessage( EvaluationStatus message )
+    {
+        Objects.requireNonNull( message );
+        CompletionStatus status = message.getCompletionStatus();
+        switch ( status )
+        {
+            case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
+                this.publicationLatch.countDown();
+                break;
+            case PUBLICATION_COMPLETE_REPORTED_FAILURE:
+                this.stopOnFailure( message );
+                break;
+            case READY_TO_CONSUME:
+                this.registerSubscriberReady( message );
+                break;
+            case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
+                this.registerSubscriberCompleteReportedSuccess( message );
+                break;
+            case CONSUMPTION_COMPLETE_REPORTED_FAILURE:
+                this.stopOnFailure( message );
+                break;
+            case CONSUMPTION_ONGOING:
+                this.registerConsumptionOngoing( message );
+                break;
+            case GROUP_PUBLICATION_COMPLETE:
+                this.registerGroupPublicationComplete( message );
+                break;
+            case GROUP_CONSUMPTION_COMPLETE:
+                this.registerGroupConsumptionComplete( message );
+                break;
+            case EVALUATION_COMPLETE_REPORTED_FAILURE:
+                this.stopOnFailure( message );
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * <p>Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}.
+     * 
+     * <p>TODO: Retries happen per message. Thus, for example, all graphics formats will be retried when any one format 
+     * fails. This may in turn generate a different exception on attempting to overwrite. Thus, when the writing fails
+     * for any one format, the consumer should be considered exceptional for all formats and the consumer should 
+     * clean-up after itself (deleting paths written for all formats), ready for the next retry. Else, the consumer
+     * should track what succeeded and failed and only retry the things that failed.
+     * 
+     * @param messageId the message identifier for the exceptional consumption
+     * @param correlationId the correlation identifier for the exceptional consumption
+     * @param exception the exception encountered
+     */
+
+    private void recover( String messageId, String correlationId, Exception e )
+    {
+        // Only try to recover if an evaluation hasn't already failed
+        if ( !this.failed() )
+        {
+            try ( StringWriter sw = new StringWriter();
+                  PrintWriter pw = new PrintWriter( sw ); )
+            {
+                // Create a stack trace to log
+                e.printStackTrace( pw );
+                String message = sw.toString();
+
+                // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
+                // messages should hit the dead letter queue/DLQ
+                LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
+                              + "{} in subscriber {}, encountered an error. This is {} of {} allowed consumption "
+                              + "failures before the subscriber will notify an unrecoverable failure for "
+                              + "evaluation {}. The error is: {}",
+                              messageId,
+                              correlationId,
+                              this.getIdentifier(),
+                              this.getNumberOfRetriesAttempted().get() + 1, // Counter starts at zero
+                              this.getMaximumRetries(),
+                              correlationId,
+                              message );
+
+                this.session.recover();
+            }
+            catch ( JMSException f )
+            {
+                LOGGER.error( "While attempting to recover a session for evaluation {} in evaluation status tracker {}, "
+                              + "encountered an error that prevented recovery: ",
+                              correlationId,
+                              this.getIdentifier(),
+                              f.getMessage() );
+            }
+            catch ( IOException g )
+            {
+                LOGGER.error( "While attempting recovery in evaluation status tracker {}, failed to close an exception "
+                              + "writer.",
+                              this.getIdentifier() );
+            }
+        }
+
+        // Stop if the maximum number of retries has been reached
+        if ( this.getNumberOfRetriesAttempted()
+                 .incrementAndGet() == this.getMaximumRetries() )
+        {
+
+            LOGGER.error( "Evaluation status tracker {} encountered a consumption failure for evaluation {}. Recovery "
+                          + "failed after {} attempts.",
+                          this.getIdentifier(),
+                          correlationId,
+                          this.getMaximumRetries() );
+
+            // Register the subscriber as failed
+            this.markSubscriberFailed();
+        }
+    }
+
+    /**
+     * @return the number of retries attempted so far.
+     */
+
+    private AtomicInteger getNumberOfRetriesAttempted()
+    {
+        return this.retriesAttempted;
+    }
+
+    /**
+     * @return the number of retries allowed.
+     */
+
+    private int getMaximumRetries()
+    {
+        return this.maximumRetries;
+    }
+
+    /**
+     * Marks the subscriber as failed after all recovery attempts.
+     */
+
+    private void markSubscriberFailed()
+    {
+        this.isFailedUnrecoverably.set( true );
+    }
+
+    /**
+     * @return the identifier of this status tracker.
+     */
+
+    private String getIdentifier()
+    {
+        return this.identifier;
+    }
+
+    /**
+     * Listen for failures on a connection.
+     */
+
+    private static class ConnectionExceptionListener implements ExceptionListener
+    {
+        private static final Logger LOGGER = LoggerFactory.getLogger( ConnectionExceptionListener.class );
+
+        /**
+         * The client that encountered the exception.
+         */
+
+        private final String clientId;
+
+        @Override
+        public void onException( JMSException exception )
+        {
+            LOGGER.warn( "An exception listener uncovered an error in client {}. {}",
+                         this.clientId,
+                         exception.getMessage() );
+        }
+
+        /**
+         * Creates an instance with an evaluation identifier and a message client identifier.
+         * 
+         * @param evaluationId the evaluation identifier
+         * @param clientId the client identifier
+         */
+
+        ConnectionExceptionListener( String clientId )
+        {
+            Objects.requireNonNull( clientId );
+
+            this.clientId = clientId;
+        }
+
     }
 }

@@ -38,7 +38,9 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import wres.events.Evaluation.EvaluationInfo;
-import wres.events.MessagePublisher.MessageProperty;
+import wres.events.publish.MessagePublisher;
+import wres.events.publish.MessagePublisher.MessageProperty;
+import wres.events.subscribe.OneGroupConsumer;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;

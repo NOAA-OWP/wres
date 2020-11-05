@@ -305,7 +305,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
                                              return Collections.emptySet();
                                          },
-                                                          this.executors.getProductExecutor() );
+                                                          // Consuming happens in the product thread pool and publishing
+                                                          // should happen in a different one because production is
+                                                          // flow-controlled with respect to consumption using a naive 
+                                                          // blocking approach, which would otherwise risk deadlock. 
+                                                          this.executors.getPairExecutor() );
 
                 // Add the task to the list
                 listOfFutures.add( statisticsTasks );

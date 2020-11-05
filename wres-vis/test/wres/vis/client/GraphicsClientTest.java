@@ -7,11 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -26,14 +22,11 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.events.Consumers;
 import wres.events.Evaluation;
 import wres.eventsbroker.BrokerConnectionFactory;
-import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
-import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.PngFormat;
@@ -108,32 +101,7 @@ public class GraphicsClientTest
     {
         // Create the consumers upfront
         // Consumers simply dump to an actual output store for comparison with the expected output
-        List<wres.statistics.generated.Evaluation> actualEvaluations = new ArrayList<>();
-        List<EvaluationStatus> actualStatuses = new ArrayList<>();
-        List<Statistics> actualStatistics = new ArrayList<>();
         Set<Path> actualPathsWritten;
-
-        // Internal consumers. Internal always means in-band to the evaluation process.
-        Function<EvaluationStatus, Set<Path>> statusMessageConsumer = statusMessage -> {
-            actualStatuses.add( statusMessage );
-            return Collections.emptySet();
-        };
-
-        Function<wres.statistics.generated.Evaluation, Set<Path>> evaluationMessageConsumer = evaluationMessage -> {
-            actualEvaluations.add( evaluationMessage );
-            return Collections.emptySet();
-        };
-
-        Function<Statistics, Set<Path>> statisticsMessageConsumer = statisticsMessage -> {
-            actualStatistics.add( statisticsMessage );
-            return Collections.emptySet();
-        };
-
-        Consumers consumerGroup =
-                new Consumers.Builder().addStatusConsumer( statusMessageConsumer )
-                                       .addEvaluationConsumer( evaluationMessageConsumer )
-                                       .addStatisticsConsumer( statisticsMessageConsumer, new Format[] { Format.CSV } )
-                                       .build();
 
         // Open an evaluation, closing on completion
         Path basePath = null;
@@ -145,8 +113,7 @@ public class GraphicsClientTest
 
             try ( // This is the evaluation instance that declares png output
                   Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                         GraphicsClientTest.connections,
-                                                         consumerGroup ); )
+                                                         GraphicsClientTest.connections ); )
             {
 
                 // Publish the statistics to a "feature" group
@@ -159,16 +126,12 @@ public class GraphicsClientTest
                 evaluation.await();
 
                 // Record the paths written to assert against
-                actualPathsWritten = evaluation.getPathsWrittenByExternalSubscribers();
+                actualPathsWritten = evaluation.getPathsWrittenBySubscribers();
 
                 basePath = this.outputPath.resolve( "wres_evaluation_output_" + evaluation.getEvaluationId() );
 
             }
         }
-
-        // Make assertions about the things produced by internal subscriptions.
-        assertEquals( List.of( this.oneEvaluation ), actualEvaluations );
-        assertEquals( List.of( this.oneStatistics ), actualStatistics );
 
         // Make assertions about the graphics written by the single external subscription.
         Set<Path> expectedPaths = Set.of( basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_ABSOLUTE_ERROR.png" ),

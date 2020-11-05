@@ -1,4 +1,4 @@
-package wres.vis.client;
+package wres.events.subscribe;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -6,6 +6,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -35,13 +37,14 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import wres.events.EvaluationEventException;
+import wres.events.publish.MessagePublisher;
+import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
-import wres.vis.client.MessagePublisher.MessageProperty;
 import wres.statistics.generated.Evaluation;
 
 /**
@@ -85,6 +88,12 @@ public class EvaluationSubscriber implements Closeable
             "Acknowledged message {} with correlationId {}.";
 
     private static final String UNKNOWN = "unknown";
+
+    /**
+     * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
+     */
+
+    private static final boolean DURABLE_SUBSCRIBERS = true;
 
     /**
      * Default name for the queue on the amq.topic that accepts evaluation status messages.
@@ -171,16 +180,35 @@ public class EvaluationSubscriber implements Closeable
     private final Topic statisticsTopic;
 
     /**
-     * A session.
+     * A session for evaluation messages, other than statistics messages (see {@link #statisticsSession}).
      */
 
     private final Session session;
 
     /**
-     * A consumer connection.
+     * A session for statistics messages.
      */
 
-    private final Connection connection;
+    private final Session statisticsSession;
+
+    /**
+     * A consumer connection for all messages except statistics messages (see also 
+     * {@link #statisticsConsumerConnection}).
+     */
+
+    private final Connection consumerConnection;
+
+    /**
+     * A statistics consumer connection.
+     */
+
+    private final Connection statisticsConsumerConnection;
+
+    /**
+     * A connection for publishing status messages.
+     */
+
+    private final Connection publisherConnection;
 
     /**
      * Broker connections.
@@ -207,7 +235,7 @@ public class EvaluationSubscriber implements Closeable
     private final Map<String, AtomicInteger> retriesAttempted;
 
     /**
-     * An executor service for graphics writing work.
+     * An executor service for writing work.
      */
 
     private final ExecutorService executorService;
@@ -235,8 +263,9 @@ public class EvaluationSubscriber implements Closeable
      * Creates an instance.
      * 
      * @param consumerFactory the consumer factory
-     * @param executorService the executor for completing graphics work
+     * @param executorService the executor
      * @param broker the broker connection factory
+     * @return a subscriber instance
      * @throws NullPointerException if any input is null
      * @throws UnrecoverableSubscriberException if the subscriber cannot be instantiated for any other reason
      */
@@ -260,7 +289,7 @@ public class EvaluationSubscriber implements Closeable
                                                .map( Map.Entry::getKey )
                                                .collect( Collectors.toSet() );
 
-            LOGGER.error( "While closing graphics subscriber {}, {} open evaluations were discovered: {}. These "
+            LOGGER.error( "While closing subscriber {}, {} open evaluations were discovered: {}. These "
                           + "evaluations will not be notified complete. They should be notified before a "
                           + "subscriber is closed.",
                           this.getSubscriberId(),
@@ -273,19 +302,36 @@ public class EvaluationSubscriber implements Closeable
 
         // No need to close any other pubs/subs or sessions (according to the JMS documentation of Connection::close).
 
-        String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
+        String message = "Encountered an error while attempting to close a broker connection within "
+                         + "subscriber "
+                         + this.getSubscriberId()
+                         + ".";
 
         try
         {
-            this.connection.close();
+            this.consumerConnection.close();
         }
         catch ( JMSException e )
         {
-            String message = "Encountered an error while attempting to close a broker connection within graphics "
-                             + "subscriber "
-                             + errorMessage;
+            LOGGER.error( message, e );
+        }
 
-            LOGGER.warn( message, e );
+        try
+        {
+            this.statisticsConsumerConnection.close();
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( message, e );
+        }
+
+        try
+        {
+            this.publisherConnection.close();
+        }
+        catch ( JMSException e )
+        {
+            LOGGER.error( message, e );
         }
 
         // This subscriber is not responsible for closing the broker.
@@ -295,7 +341,7 @@ public class EvaluationSubscriber implements Closeable
      * Maintenance task that removes completed evaluations from the cache.
      */
 
-    void sweep()
+    public void sweep()
     {
         // Lock for sweeping
         this.getEvaluationsLock()
@@ -339,7 +385,7 @@ public class EvaluationSubscriber implements Closeable
      * @throws EvaluationEventException if the notification failed
      */
 
-    void notifyAlive()
+    public void notifyAlive()
     {
         // Iterate the evaluations
         for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
@@ -356,7 +402,7 @@ public class EvaluationSubscriber implements Closeable
      * @return the subscriber identifier.
      */
 
-    String getSubscriberId()
+    public String getSubscriberId()
     {
         return this.getConsumerDescription().getConsumerId();
     }
@@ -365,7 +411,7 @@ public class EvaluationSubscriber implements Closeable
      * @return the status of the subscriber.
      */
 
-    SubscriberStatus getSubscriberStatus()
+    public SubscriberStatus getSubscriberStatus()
     {
         return this.status;
     }
@@ -379,10 +425,10 @@ public class EvaluationSubscriber implements Closeable
         LOGGER.debug( "Closing and then removing subscriptions for {}.",
                       this.getSubscriberId() );
 
-        String errorMessage = "messages within graphics subscriber " + this.getSubscriberId() + ".";
+        String errorMessage = "messages within subscriber " + this.getSubscriberId() + ".";
 
         // Remove durable subscriptions if there are no open evaluations
-        if ( !this.hasOpenEvaluations() )
+        if ( !this.hasOpenEvaluations() && EvaluationSubscriber.DURABLE_SUBSCRIBERS )
         {
             try
             {
@@ -412,7 +458,7 @@ public class EvaluationSubscriber implements Closeable
 
             try
             {
-                this.session.unsubscribe( this.getStatisticsSubscriberName() );
+                this.statisticsSession.unsubscribe( this.getStatisticsSubscriberName() );
             }
             catch ( JMSException e )
             {
@@ -592,7 +638,7 @@ public class EvaluationSubscriber implements Closeable
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
-                this.recover( messageId, correlationId, e );
+                this.recover( messageId, correlationId, this.session, e );
             }
         };
     }
@@ -661,7 +707,7 @@ public class EvaluationSubscriber implements Closeable
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
-                this.recover( messageId, correlationId, e );
+                this.recover( messageId, correlationId, this.statisticsSession, e );
             }
         };
     }
@@ -727,7 +773,7 @@ public class EvaluationSubscriber implements Closeable
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {
-                this.recover( messageId, correlationId, e );
+                this.recover( messageId, correlationId, this.session, e );
             }
         };
     }
@@ -743,10 +789,11 @@ public class EvaluationSubscriber implements Closeable
      * 
      * @param messageId the message identifier for the exceptional consumption
      * @param correlationId the correlation identifier for the exceptional consumption
+     * @param session the session to recover
      * @param exception the exception encountered
      */
 
-    private void recover( String messageId, String correlationId, Exception e )
+    private void recover( String messageId, String correlationId, Session session, Exception e )
     {
         // Only try to recover if an evaluation hasn't already failed
         if ( !this.getEvaluationConsumer( correlationId ).isFailed() )
@@ -761,7 +808,7 @@ public class EvaluationSubscriber implements Closeable
                 // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
                 // messages should hit the dead letter queue/DLQ
                 LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
-                              + "{} in graphics subscriber {}, encountered an error. This is {} of {} allowed "
+                              + "{} in subscriber {}, encountered an error. This is {} of {} allowed "
                               + "consumption failures before the subscriber will notify an unrecoverable failure "
                               + "for evaluation {}. The error is: {}",
                               messageId,
@@ -772,11 +819,11 @@ public class EvaluationSubscriber implements Closeable
                               correlationId,
                               message );
 
-                this.session.recover();
+                session.recover();
             }
             catch ( JMSException f )
             {
-                LOGGER.error( "While attempting to recover a session for evaluation {} in graphics subscriber {}, "
+                LOGGER.error( "While attempting to recover a session for evaluation {} in subscriber {}, "
                               + "encountered an error that prevented recovery: ",
                               correlationId,
                               this.getSubscriberId(),
@@ -784,7 +831,7 @@ public class EvaluationSubscriber implements Closeable
             }
             catch ( IOException g )
             {
-                LOGGER.error( "While attempting recovery in graphics subscriber {}, failed to close an exception "
+                LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception "
                               + "writer.",
                               this.getSubscriberId() );
             }
@@ -825,7 +872,7 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Marks graphics writing as failed unrecoverably for a given evaluation.
+     * Marks writing as failed unrecoverably for a given evaluation.
      * @param evaluationId the evaluation identifier
      * @param an exception to notify
      * @throws UnrecoverableSubscriberException if the subscriber fails unrecoverably
@@ -919,7 +966,7 @@ public class EvaluationSubscriber implements Closeable
                                                this.getConsumerDescription(),
                                                this.consumerFactory,
                                                this.evaluationStatusPublisher,
-                                               this.getGraphicsExecutor() );
+                                               this.getExecutor() );
             this.status.registerEvaluationStarted( evaluationId );
         }
 
@@ -947,10 +994,10 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * @return the executor to do graphics writing work.
+     * @return the executor to do writing work.
      */
 
-    private ExecutorService getGraphicsExecutor()
+    private ExecutorService getExecutor()
     {
         return this.executorService;
     }
@@ -1017,7 +1064,12 @@ public class EvaluationSubscriber implements Closeable
 
         try
         {
-            this.evaluationStatusPublisher.publish( buffer, messageId, evaluationId, this.getSubscriberId() );
+            Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
+            properties.put( MessageProperty.JMS_MESSAGE_ID, messageId );
+            properties.put( MessageProperty.JMS_CORRELATION_ID, evaluationId );
+            properties.put( MessageProperty.CONSUMER_ID, this.getSubscriberId() );
+
+            this.evaluationStatusPublisher.publish( buffer, Collections.unmodifiableMap( properties ) );
         }
         catch ( JMSException e )
         {
@@ -1044,7 +1096,7 @@ public class EvaluationSubscriber implements Closeable
      * Builds a subscriber.
      * 
      * @param consumerFactory the consumer factory
-     * @param executorService the executor for completing graphics work
+     * @param executorService the executor
      * @param broker the broker connection factory
      * @throws NullPointerException if any input is null
      * @throws UnrecoverableSubscriberException if the subscriber cannot be instantiated for any other reason
@@ -1062,7 +1114,7 @@ public class EvaluationSubscriber implements Closeable
         this.broker = broker;
         this.executorService = executorService;
 
-        LOGGER.info( "Building a long-running graphics subscriber {} to listen for evaluation messages...",
+        LOGGER.info( "Building a subscriber {} to listen for evaluation messages...",
                      this.getSubscriberId() );
 
         this.status = new SubscriberStatus( this.getSubscriberId() );
@@ -1074,37 +1126,43 @@ public class EvaluationSubscriber implements Closeable
             this.evaluationTopic = (Topic) this.broker.getDestination( EVALUATION_QUEUE );
             this.statisticsTopic = (Topic) this.broker.getDestination( STATISTICS_QUEUE );
 
-            this.connection = this.broker.get().createConnection();
+            this.consumerConnection = this.broker.get()
+                                                 .createConnection();
+            this.statisticsConsumerConnection = this.broker.get()
+                                                           .createConnection();
+            this.publisherConnection = this.broker.get()
+                                                  .createConnection();
 
-            this.evaluationStatusPublisher = MessagePublisher.of( this.connection,
-                                                                  this.evaluationStatusTopic,
-                                                                  this.getSubscriberId() );
+            this.evaluationStatusPublisher = MessagePublisher.of( this.publisherConnection,
+                                                                  this.evaluationStatusTopic );
 
-            // Create a connection for consumption and register a listener for exceptions
-            this.connection.setExceptionListener( new ConnectionExceptionListener( this ) );
+            // Register a listener for exceptions
+            ConnectionExceptionListener exceptionListener = new ConnectionExceptionListener( this );
+            this.consumerConnection.setExceptionListener( exceptionListener );
+            this.statisticsConsumerConnection.setExceptionListener( exceptionListener );
+
+            this.publisherConnection.setExceptionListener( exceptionListener );
 
             // Client acknowledges
-            this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
+            this.session = this.consumerConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
+            this.statisticsSession = this.statisticsConsumerConnection.createSession( false,
+                                                                                      Session.CLIENT_ACKNOWLEDGE );
 
-
-            this.evaluationStatusConsumer = this.session.createDurableSubscriber( this.evaluationStatusTopic,
-                                                                                  this.getEvaluationStatusSubscriberName(),
-                                                                                  null,
-                                                                                  false );
+            this.evaluationStatusConsumer = this.getMessageConsumer( this.session,
+                                                                     this.evaluationStatusTopic,
+                                                                     this.getEvaluationStatusSubscriberName() );
 
             this.evaluationStatusConsumer.setMessageListener( this.getStatusListener() );
 
-            this.evaluationConsumer = this.session.createDurableSubscriber( this.evaluationTopic,
-                                                                            this.getEvaluationSubscriberName(),
-                                                                            null,
-                                                                            false );
+            this.evaluationConsumer = this.getMessageConsumer( this.session,
+                                                               this.evaluationTopic,
+                                                               this.getEvaluationSubscriberName() );
 
             this.evaluationConsumer.setMessageListener( this.getEvaluationListener() );
 
-            this.statisticsConsumer = this.session.createDurableSubscriber( this.statisticsTopic,
-                                                                            this.getStatisticsSubscriberName(),
-                                                                            null,
-                                                                            false );
+            this.statisticsConsumer = this.getMessageConsumer( this.statisticsSession,
+                                                               this.statisticsTopic,
+                                                               this.getStatisticsSubscriberName() );
 
             this.statisticsConsumer.setMessageListener( this.getStatisticsListener() );
 
@@ -1124,26 +1182,28 @@ public class EvaluationSubscriber implements Closeable
 
             this.isFailedUnrecoverably = new AtomicBoolean();
 
-            // Start the consumer connection
-            LOGGER.info( "Started the consumer connection for long-running subscriber {}...",
+            // Start the connections
+            LOGGER.info( "Started the connections for subscriber {}...",
                          this.getSubscriberId() );
-            this.connection.start();
+            this.consumerConnection.start();
+            this.statisticsConsumerConnection.start();
+            this.publisherConnection.start();
         }
         catch ( JMSException | NamingException e )
         {
             throw new UnrecoverableSubscriberException( "While attempting to create a subscriber with identifier "
-                                                      + this.getSubscriberId()
-                                                      + " to receive evaluation messages, encountered an error.",
-                                                      e );
+                                                        + this.getSubscriberId()
+                                                        + " to receive evaluation messages, encountered an error.",
+                                                        e );
         }
 
         String tempDir = System.getProperty( "java.io.tmpdir" );
 
-        LOGGER.info( "The graphics subscriber will write outputs to the directory specified by the java.io.tmpdir "
+        LOGGER.info( "The subscriber will write outputs to the directory specified by the java.io.tmpdir "
                      + "system property, which is {}",
                      tempDir );
 
-        LOGGER.info( "Created long-running subscriber {}", this.getSubscriberId() );
+        LOGGER.info( "Created subscriber {}", this.getSubscriberId() );
     }
 
     /**
@@ -1153,7 +1213,7 @@ public class EvaluationSubscriber implements Closeable
      * @author james.brown@hydrosolved.com
      */
 
-    static class SubscriberStatus
+    public static class SubscriberStatus
     {
 
         /** The client identifier.*/
@@ -1232,7 +1292,7 @@ public class EvaluationSubscriber implements Closeable
         /**
          * @return the evaluation count.
          */
-        int getEvaluationCount()
+        public int getEvaluationCount()
         {
             return this.evaluationCount.get();
         }
@@ -1240,7 +1300,7 @@ public class EvaluationSubscriber implements Closeable
         /**
          * @return the statistics count.
          */
-        int getStatisticsCount()
+        public int getStatisticsCount()
         {
             return this.statisticsCount.get();
         }
@@ -1250,7 +1310,7 @@ public class EvaluationSubscriber implements Closeable
          * @param exception the unrecoverable consumer exception that caused the failure
          */
 
-        void markFailedUnrecoverably( UnrecoverableSubscriberException exception )
+        public void markFailedUnrecoverably( UnrecoverableSubscriberException exception )
         {
             String failure = "WRES Graphics Client " + this.clientId + " has failed unrecoverably and will now stop.";
 
@@ -1264,7 +1324,7 @@ public class EvaluationSubscriber implements Closeable
          * @return true if the subscriber has failed, otherwise false
          */
 
-        boolean isFailed()
+        public boolean isFailed()
         {
             return this.isFailed.get();
         }
@@ -1326,6 +1386,27 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
+     * Returns a consumer.
+     * 
+     * @param session the session
+     * @param topic the topic
+     * @param name the name of the subscriber
+     * @return a consumer
+     * @throws JMSException if the consumer could not be created for any reason
+     */
+
+    private MessageConsumer getMessageConsumer( Session session, Topic topic, String name )
+            throws JMSException
+    {
+        if ( EvaluationSubscriber.DURABLE_SUBSCRIBERS )
+        {
+            return session.createDurableSubscriber( topic, name, null, false );
+        }
+
+        return session.createConsumer( topic, null );
+    }
+
+    /**
      * Listen for failures on a connection.
      */
 
@@ -1337,7 +1418,7 @@ public class EvaluationSubscriber implements Closeable
         @Override
         public void onException( JMSException exception )
         {
-            String message = "Encountered an error on a connection owned by a graphics subscriber. This is not "
+            String message = "Encountered an error on a connection owned by a subscriber. This is not "
                              + "recoverable and the subscriber will now stop.";
 
             UnrecoverableSubscriberException propagate = new UnrecoverableSubscriberException( message );

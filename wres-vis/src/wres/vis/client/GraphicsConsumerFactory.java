@@ -18,7 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationType;
-import wres.events.ConsumerException;
+import wres.datamodel.statistics.StatisticsToFormatsRouter;
+import wres.events.subscribe.ConsumerException;
+import wres.events.subscribe.ConsumerFactory;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs;
@@ -177,7 +179,7 @@ class GraphicsConsumerFactory implements ConsumerFactory
     /**
      * Builds an instance.
      * @param consumerId the consumer identifier
-     * @throws NullPointerException if the subscriber identifier is null
+     * @throws NullPointerException if the consumer identifier is null
      */
 
     GraphicsConsumerFactory( String consumerId )

@@ -26,7 +26,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import wres.events.Evaluation.EvaluationInfo;
-import wres.events.MessagePublisher.MessageProperty;
+import wres.events.publish.MessagePublisher;
+import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;

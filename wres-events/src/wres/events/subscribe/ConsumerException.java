@@ -1,4 +1,4 @@
-package wres.events;
+package wres.events.subscribe;
 
 /**
  * Exception to throw when an evaluation message could not be consumed for any reason.
@@ -21,7 +21,7 @@ public class ConsumerException extends RuntimeException
      * @param message the message.
      */
 
-    public ConsumerException( final String message )
+    public ConsumerException( String message )
     {
         super( message );
     }

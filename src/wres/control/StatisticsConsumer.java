@@ -46,7 +46,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.events.ConsumerException;
+import wres.events.subscribe.ConsumerException;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;

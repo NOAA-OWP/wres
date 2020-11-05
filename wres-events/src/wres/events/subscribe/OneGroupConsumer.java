@@ -1,4 +1,4 @@
-package wres.events;
+package wres.events.subscribe;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -97,9 +97,11 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * Gets the inner consumer.
      * 
      * @return the inner consumer
+     * @deprecated
      */
 
-    Function<Collection<T>, Set<Path>> getInnerConsumer()
+    @Deprecated( forRemoval = true, since = "5.0" )
+    public Function<Collection<T>, Set<Path>> getInnerConsumer()
     {
         return this.innerConsumer;
     }
