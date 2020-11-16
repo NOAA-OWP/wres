@@ -723,6 +723,7 @@ public class EvaluationSubscriber implements Closeable
             BytesMessage receivedBytes = (BytesMessage) message;
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
+            String jobId = null;
 
             try
             {
@@ -730,6 +731,7 @@ public class EvaluationSubscriber implements Closeable
                 {
                     messageId = message.getJMSMessageID();
                     correlationId = message.getJMSCorrelationID();
+                    jobId = message.getStringProperty( MessageProperty.EVALUATION_JOB_ID.toString() );
 
                     LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                                   this.getSubscriberId(),
@@ -749,7 +751,7 @@ public class EvaluationSubscriber implements Closeable
 
                     Evaluation evaluation = Evaluation.parseFrom( buffer );
 
-                    consumer.acceptEvaluationMessage( evaluation, messageId );
+                    consumer.acceptEvaluationMessage( evaluation, messageId, jobId );
 
                     // Complete?
                     if ( consumer.isComplete() )
@@ -823,16 +825,15 @@ public class EvaluationSubscriber implements Closeable
             }
             catch ( JMSException f )
             {
-                LOGGER.error( "While attempting to recover a session for evaluation {} in subscriber {}, "
-                              + "encountered an error that prevented recovery: ",
+                LOGGER.error( "While attempting to recover a session for evaluation {} in subscriber {}, encountered "
+                              + "an error that prevented recovery: ",
                               correlationId,
                               this.getSubscriberId(),
                               f.getMessage() );
             }
             catch ( IOException g )
             {
-                LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception "
-                              + "writer.",
+                LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception writer.",
                               this.getSubscriberId() );
             }
         }
@@ -841,8 +842,8 @@ public class EvaluationSubscriber implements Closeable
         if ( this.getNumberOfRetriesAttempted( correlationId )
                  .incrementAndGet() == this.broker.getMaximumMessageRetries() )
         {
-            LOGGER.error( "Graphics subscriber {} encountered a consumption failure for evaluation {}. "
-                          + "Recovery failed after {} attempts.",
+            LOGGER.error( "Subscriber {} encountered a consumption failure for evaluation {}. Recovery failed after {} "
+                          + "attempts.",
                           this.getSubscriberId(),
                           correlationId,
                           this.broker.getMaximumMessageRetries() );
@@ -890,7 +891,7 @@ public class EvaluationSubscriber implements Closeable
         }
         catch ( JMSException | UnrecoverableSubscriberException e )
         {
-            String message = "Graphics subscriber " + this.getSubscriberId()
+            String message = "Subscriber " + this.getSubscriberId()
                              + " encountered an error while marking "
                              + EVALUATION
                              + evaluationId
@@ -1268,7 +1269,7 @@ public class EvaluationSubscriber implements Closeable
 
             if ( !this.evaluationComplete.isEmpty() )
             {
-                addComplete = " Graphics client "
+                addComplete = " Evaluation subscriber "
                               + this.clientId
                               + " completed "
                               + this.evaluationComplete.size()
@@ -1277,7 +1278,7 @@ public class EvaluationSubscriber implements Closeable
                               + " evaluations that were started.";
             }
 
-            return "Graphics client "
+            return "Evaluation subscriber "
                    + this.clientId
                    + " is waiting for work. Until now, received "
                    + this.statisticsCount.get()
@@ -1312,7 +1313,7 @@ public class EvaluationSubscriber implements Closeable
 
         public void markFailedUnrecoverably( UnrecoverableSubscriberException exception )
         {
-            String failure = "WRES Graphics Client " + this.clientId + " has failed unrecoverably and will now stop.";
+            String failure = "Evaluation subscriber " + this.clientId + " has failed unrecoverably and will now stop.";
 
             LOGGER.error( failure, exception );
 
@@ -1418,10 +1419,12 @@ public class EvaluationSubscriber implements Closeable
         @Override
         public void onException( JMSException exception )
         {
-            String message = "Encountered an error on a connection owned by a subscriber. This is not "
-                             + "recoverable and the subscriber will now stop.";
+            String message = "Encountered an error on a connection owned by a subscriber. If a failover policy was "
+                             + "configured on the connection factory (e.g., connection retries), then that policy was "
+                             + "exhausted before this error was thrown. As such, the error is not recoverable and the "
+                             + "subscriber will now stop.";
 
-            UnrecoverableSubscriberException propagate = new UnrecoverableSubscriberException( message );
+            UnrecoverableSubscriberException propagate = new UnrecoverableSubscriberException( message, exception );
 
             this.subscriber.markSubscriberFailed( propagate );
         }

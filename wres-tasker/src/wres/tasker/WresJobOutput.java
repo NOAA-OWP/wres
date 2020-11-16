@@ -74,7 +74,7 @@ public class WresJobOutput
     @Produces( TEXT_HTML )
     public Response getProjectResourcesHtml( @PathParam( "jobId" ) String id )
     {
-        LOGGER.debug( "Retrieving resource list form job {} to create html response", id );
+        LOGGER.debug( "Retrieving resource list from job {} to create html response", id );
         Set<URI> jobOutputs = WresJob.getSharedJobResults()
                                      .getJobOutputs( id );
 

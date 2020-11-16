@@ -1440,7 +1440,16 @@ public class Evaluation implements Closeable
         {
             properties.put( MessageProperty.JMSX_GROUP_ID, groupId );
         }
-
+        
+        // Add the evaluation job identifier if this has been configured as a system property. See #84942. This is not
+        // present in most contexts but, at the time of writing, is present when running in cluster mode with a short-
+        // running wres process. In that case, it is needed by client subscribers to qualify the output directory
+        String wresJobId = System.getProperty( "wres.jobId" );
+        if( Objects.nonNull( wresJobId ) )
+        {
+            properties.put( MessageProperty.EVALUATION_JOB_ID, wresJobId );
+        }
+        
         // Add the formats delivered by external subscribers to allow for competing subscribers to identify the
         // messages that belong to them
         Map<Format, String> negotiatedSubscribers = this.statusTracker.getNegotiatedSubscribers();

@@ -46,6 +46,8 @@ public class MessagePublisher implements Closeable
         JMS_MESSAGE_ID,
 
         CONSUMER_ID,
+        
+        EVALUATION_JOB_ID,
 
         PNG,
 
@@ -72,6 +74,8 @@ public class MessagePublisher implements Closeable
                     return "JMSMessageID";
                 case CONSUMER_ID:
                     return "ConsumerID";
+                case EVALUATION_JOB_ID:
+                    return "EvaluationJobID";
                 case PNG:
                     return "PNG";
                 case SVG:

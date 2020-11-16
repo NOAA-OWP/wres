@@ -128,7 +128,7 @@ public class GraphicsClientTest
                 // Record the paths written to assert against
                 actualPathsWritten = evaluation.getPathsWrittenBySubscribers();
 
-                basePath = this.outputPath.resolve( "wres_evaluation_output_" + evaluation.getEvaluationId() );
+                basePath = this.outputPath.resolve( "wres_evaluation_" + evaluation.getEvaluationId() );
 
             }
         }

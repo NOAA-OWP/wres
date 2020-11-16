@@ -89,10 +89,29 @@ public class Tasker
             LOGGER.warn( "Server was interrupted.", ie );
             Thread.currentThread().interrupt();
         }
+        catch( Exception e )
+        {
+            // Wrap and propagate: #84777
+            throw new TaskerFailedToStartException( "While attempting to start a jetty server within the WRES Tasker.", 
+                                                    e );
+        }
         finally
         {
             WresJob.shutdownNow();
-            jettyServer.destroy();
+            if( jettyServer.isStarted() )
+            {
+                jettyServer.destroy();
+            }
+        }
+    }
+    
+    private static class TaskerFailedToStartException extends RuntimeException
+    {
+        private static final long serialVersionUID = 8797327489673141317L;
+
+        private TaskerFailedToStartException( String message, Exception e )
+        {
+            super( message, e );
         }
     }
 

@@ -40,7 +40,7 @@ import wres.statistics.generated.Statistics;
  * <p>At least one of the methods of this interface should return a non-trivial consumer. Both methods should return a
  * non-trivial consumer if both styles of consumption are required (incremental and grouped). For example, if the 
  * consumption abstracts a single consumer and that consumer writes to a numerical format whereby each pool of 
- * statistics can be written as it arrives, then the {@link #getGroupedConsumer(Evaluation, String)} may return a
+ * statistics can be written as it arrives, then the {@link #getConsumer(Evaluation, Path)} may return a
  * trivial consumer as follows:
  * 
  * <p><code>return statistics {@literal ->} Set.of();</code>
@@ -56,24 +56,24 @@ public interface ConsumerFactory
      * as it arrives.
      * 
      * @param evaluation the evaluation description
-     * @param evaluationId the evaluation identifier
+     * @param path the path to which outputs should be written by a consumer
      * @return a consumer
      * @throws ConsumerException if the consumer could not be created for any reason
      */
 
-    Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId );
+    Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path );
 
     /**
      * Creates a consumer of grouped statistics for a given evaluation description. A grouped consumer delays writing 
      * until all messages have been received for a message group, which contains a collection of statistics.
      * 
      * @param evaluation the evaluation description
-     * @param evaluationId the evaluation identifier
+     * @param path the path to which outputs should be written by a consumer
      * @return a grouped consumer
      * @throws ConsumerException if the consumer could not be created for any reason
      */
 
-    Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, String evaluationId );
+    Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, Path path );
 
     /**
      * Returns a basic description of the consumers that are created by this factory, including the formats they offer.
@@ -88,13 +88,15 @@ public interface ConsumerFactory
      *
      * @param evaluationId the evaluation identifier
      * @param consumerId the consumer identifier used to help with messaging
+     * @param jobId an optional evaluation job identifier (see #84942)
      * @return the path to the temporary output directory
      * @throws ConsumerException if the temporary directory cannot be created
      * @throws NullPointerException if any input is null
      */
 
     static Path getPathToWrite( String evaluationId,
-                                String consumerId )
+                                String consumerId,
+                                String jobId )
     {
         Objects.requireNonNull( evaluationId );
         Objects.requireNonNull( consumerId );
@@ -103,9 +105,16 @@ public interface ConsumerFactory
         Path outputDirectory = null;
         String tempDir = System.getProperty( "java.io.tmpdir" );
 
+        // Is this instance running in a context that uses a wres job identifier?
+        // If so, create a directory corresponding to the job identifier
+        if ( Objects.nonNull( jobId ) )
+        {
+            tempDir = tempDir + System.getProperty( "file.separator" ) + jobId;
+        }
+
         try
         {
-            Path namedPath = Paths.get( tempDir, "wres_evaluation_output_" + evaluationId );
+            Path namedPath = Paths.get( tempDir, "wres_evaluation_" + evaluationId );
 
             // POSIX-compliant    
             if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )

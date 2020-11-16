@@ -159,10 +159,10 @@ public class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
-                    if ( "evaluationOne".equals( evaluationId ) )
+                    if ( path.toString().contains( "evaluationOne" ) )
                     {
                         actualStatistics.add( statistics );
                     }
@@ -177,7 +177,7 @@ public class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -263,7 +263,7 @@ public class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
                     actualStatistics.add( statistics );
@@ -273,7 +273,7 @@ public class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statisticsMessages -> {
                     actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
@@ -393,7 +393,7 @@ public class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
                     throw new ConsumerException( "Consumption failed!" );
@@ -402,7 +402,7 @@ public class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -470,7 +470,7 @@ public class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
                     if ( failureCount.getAndIncrement() < 1 )
@@ -484,7 +484,7 @@ public class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -533,14 +533,14 @@ public class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, String evaluationId )
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }

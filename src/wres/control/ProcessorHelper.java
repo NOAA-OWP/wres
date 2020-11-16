@@ -529,7 +529,17 @@ class ProcessorHelper
         // Where outputs files will be written
         Path outputDirectory = null;
         String tempDir = System.getProperty( "java.io.tmpdir" );
-        Path namedPath = Paths.get( tempDir, "wres_evaluation_output_" + evaluationId );
+        
+        // Is this instance running in a context that uses a wres job identifier?
+        // If so, create a directory corresponding to the job identifier. See #84942.
+        String jobId = System.getProperty( "wres.jobId" );
+        if ( Objects.nonNull( jobId ) )
+        {
+            LOGGER.debug( "Discovered system property {} with value {}.", "wres.jobId", jobId );
+            tempDir = tempDir + System.getProperty( "file.separator" ) + jobId;
+        }
+        
+        Path namedPath = Paths.get( tempDir, "wres_evaluation_" + evaluationId );
 
         // POSIX-compliant    
         if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )
