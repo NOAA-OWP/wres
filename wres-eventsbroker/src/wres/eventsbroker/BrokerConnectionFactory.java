@@ -61,7 +61,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactory.class );
 
     /**
-     * Maximum number of connection retries.
+     * Maximum number of connection retries on initially connecting to the broker.
      */
 
     private static final int MAXIMUM_CONNECTION_RETRIES = 5;
@@ -74,7 +74,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * guarantee to eliminate the small risk.
      */
 
-    private static final int DEFAULT_MAXIMUM_MESSAGE_RETRIES = 2;
+    private static final int DEFAULT_MAXIMUM_MESSAGE_RETRIES = 4;
 
     /**
      * Default jndi properties file on the classpath.
@@ -281,7 +281,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
             this.connectionFactory = this.createConnectionFactory( this.context, properties );
 
             // Test
-            this.testConnection( properties );
+            this.testConnection( properties,
+                                 this.connectionFactory,
+                                 BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
 
             // Document
             Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
@@ -317,6 +319,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         String key = connectionProperty.getKey();
         String value = connectionProperty.getValue();
 
+        // Loopback interface or all local interfaces? If so, an embedded broker may be required.
         if ( value.contains( "localhost" ) || value.contains( "127.0.0.1" ) || value.contains( "0.0.0.0" ) )
         {
             LOGGER.debug( "Discovered the connection property {} with value {}, which "
@@ -324,7 +327,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                           key,
                           value );
 
-            // Embedded broker with dynamic port assignment?
+            // Does the burl contain the tcp reserved port 0, i.e. dynamic binding required?
             if ( value.contains( LOCALHOST_0 ) || value.contains( LOCALHOST_127_0_0_1_0 ) )
             {
                 LOGGER.debug( "Discovered the connection property {} with value {}, which indicates that an embedded "
@@ -345,11 +348,18 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                 Context localContext = new InitialContext( properties );
                 ConnectionFactory factory = this.createConnectionFactory( localContext, properties );
 
-                try ( Connection connection = factory.createConnection() )
+                try
                 {
+                    LOGGER.warn( "Probing for an active AMQP broker at the binding URL {}. This may take some time if "
+                                 + "no active broker exists and retries are configured. If no active broker is "
+                                 + "discovered, an embedded broker will be started.",
+                                 value );
+
+                    this.testConnection( properties, factory, 0 );
+
                     LOGGER.debug( "Discovered an active AMQP broker at {}", value );
                 }
-                catch ( JMSException e )
+                catch ( BrokerConnectionException e )
                 {
                     LOGGER.debug( "Could not connect to an active AMQP broker at {}. Starting an embedded broker "
                                   + "instead.",
@@ -450,9 +460,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * If the connection string contains a different port than the port actually used, then update the port inline to 
      * the properties map with the relevant AMQP port from the list of broker ports for which bindings were found. 
      * 
-     * @param propertyName
-     * @param propertyValue
-     * @param properties
+     * @param propertyName the property name for the binding url
+     * @param propertyValue the property value for the binding url to update
+     * @param properties the properties whose named value should be replaced
+     * @param ports the discovered ports
      */
 
     private void updateConnectionStringWithDynamicPortIfConfigured( String propertyName,
@@ -512,8 +523,12 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
         // Could probably do all this with a single regex - whatever is the opposite of :+(\\d+)
         String connectionUrlWithoutPort = connectionUrl.replaceAll( ":+(\\d+)", "" );
         String stringDifference = StringUtils.difference( connectionUrlWithoutPort, connectionUrl );
+        // If string difference ends with additional options, remove them
+        if ( stringDifference.contains( "&" ) )
+        {
+            stringDifference = stringDifference.substring( 0, stringDifference.indexOf( "&" ) );
+        }
         String portString = stringDifference.replaceAll( "[^\\d]+", "" );
-
         int port = Integer.parseInt( portString );
 
         EmbeddedBroker returnMe = null;
@@ -550,21 +565,29 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
-     * Tests the connection with exponential back-off, up to the {@link #MAXIMUM_CONNECTION_RETRIES}.
+     * Tests the connection with exponential back-off, up to the prescribed number of retries. If the properties 
+     * contains a binding url that configures its own retries, then these retries will nest. Thus, to delegate retries 
+     * to the broker (based on the declared burl), request zero retries in this context. 
+     * 
      * @param properties the connection properties
+     * @param conFactory the connection factory
      * @throws BrokerConnectionException if the connection finally fails after all retries
+     * @throws NullPointerException if any input is null
      */
 
-    private void testConnection( Properties properties )
+    private void testConnection( Properties properties, ConnectionFactory conFactory, int retries )
     {
+        Objects.requireNonNull( properties );
+        Objects.requireNonNull( conFactory );
+
         LOGGER.debug( "Testing the broker connection with exponential back-off up to the maximum retry count of {}.",
-                      BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
+                      retries );
 
         Map.Entry<String, String> connectionProperty = this.getConnectionProperty( properties );
         String connectionUrl = connectionProperty.getValue();
 
         long sleepMillis = 1000;
-        for ( int i = 0; i <= BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES; i++ )
+        for ( int i = 0; i <= retries; i++ )
         {
             Connection connection = null;
             try
@@ -581,22 +604,22 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                                  connectionUrl,
                                  i,
                                  i,
-                                 BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
+                                 retries );
                 }
 
-                connection = this.connectionFactory.createConnection();
+                connection = conFactory.createConnection();
 
                 // Success
                 break;
             }
             catch ( JMSException e )
             {
-                if ( i == BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES )
+                if ( i == retries )
                 {
                     throw new BrokerConnectionException( "Unable to connect to the broker at "
                                                          + connectionUrl
                                                          + " after "
-                                                         + BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES
+                                                         + retries
                                                          + " retries.",
                                                          e );
                 }

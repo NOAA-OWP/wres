@@ -2,9 +2,9 @@ package wres.worker;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -103,11 +103,15 @@ class JobReceiver extends DefaultConsumer
         FileAttribute<Set<PosixFilePermission>> fileAttribute =
                 PosixFilePermissions.asFileAttribute( permissions );
 
+        String jobIdString = "wres_job_" + jobId;
+        
         try
         {
-            outputPath = Files.createTempDirectory( "wres_job_"
-                                                    + jobId + "_",
-                                                    fileAttribute );
+            String tempDir = System.getProperty( "java.io.tmpdir" );
+            Path jobDir = Paths.get( tempDir, jobIdString );
+            outputPath = Files.createDirectory( jobDir, fileAttribute );
+            
+            LOGGER.debug( "Created job directory {}.", outputPath );
         }
         catch ( IOException ioe )
         {
@@ -117,7 +121,8 @@ class JobReceiver extends DefaultConsumer
 
         // Translate the message into a command
         ProcessBuilder processBuilder = createBuilderFromMessage( body,
-                                                                  outputPath );
+                                                                  outputPath,
+                                                                  jobIdString );
         // Set up the information needed to launch process and send info back
         WresProcess wresProcess = new WresProcess( processBuilder,
                                                    properties.getReplyTo(),
@@ -134,13 +139,15 @@ class JobReceiver extends DefaultConsumer
      * Translate a message from the queue into a ProcessBuilder to run
      * @param message a message from the queue
      * @param outputDirectory a directory exclusively for this job's outputs
+     * @param jobIdString the fully qualified job identifier to propagate to the inner wres process
      * @return a ProcessBuilder to attempt to run
      * @throws IllegalArgumentException if the message is not well formed
      * @throws IllegalStateException when output data directory cannot be created
      */
 
     private ProcessBuilder createBuilderFromMessage( byte[] message,
-                                                     Path outputDirectory )
+                                                     Path outputDirectory,
+                                                     String jobIdString )
     {
         Job.job jobMessage;
 
@@ -153,7 +160,8 @@ class JobReceiver extends DefaultConsumer
             throw new IllegalArgumentException( "Bad message received", ipbe );
         }
 
-        String javaOpts = " -Djava.io.tmpdir=" + outputDirectory.toString();
+        // #84942
+        String javaOpts = " -Dwres.jobId=" + jobIdString;
 
         List<String> result = new ArrayList<>();
 

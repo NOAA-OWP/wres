@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Objects;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -46,7 +47,7 @@ public class SystemSettings extends XMLReader
 	private int maximumWebClientThreads = 3;
 	private int maximumNwmIngestThreads = 6;
 	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
-	private boolean graphicsSubscribers = false;
+	private boolean hasExternalGraphics = false;
 	private boolean updateProgressMonitor = false;
 
     public static SystemSettings fromDefaultClasspathXmlFile()
@@ -80,12 +81,21 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * @return true if graphics should be delivered by an external provider.
+     * @return true if graphics should be delivered by an external provider. Looks for the system property, 
+     * <code>wres.externalGraphics</code>, then looks at the system settings configuration. When both are defined, the
+     * former is canonical.
      */
     
     public boolean hasExternalGraphics()
     {
-        return this.graphicsSubscribers;
+        // Java property defined?
+        String sysProp = System.getProperty( "wres.externalGraphics" );
+        if( Objects.nonNull( sysProp ) )
+        {
+            return "true".equalsIgnoreCase( sysProp );
+        }
+            
+        return this.hasExternalGraphics;
     }
     
 	/**
@@ -393,7 +403,7 @@ public class SystemSettings extends XMLReader
 
                 if ( tagName.equalsIgnoreCase( "graphics" ) )
                 {
-                    this.graphicsSubscribers = "true".equalsIgnoreCase( value );
+                    this.hasExternalGraphics = "true".equalsIgnoreCase( value );
                 }
                 else
                 {
@@ -703,7 +713,7 @@ public class SystemSettings extends XMLReader
                 .append( "maximumArchiveThreads", maximumArchiveThreads )
                 .append( "maximumWebClientThreads", maximumWebClientThreads )
                 .append( "dataDirectory", dataDirectory )
-                .append( "graphicsSubscribers", this.graphicsSubscribers )
+                .append( "graphicsSubscribers", this.hasExternalGraphics )
                 .toString();
     }
 

@@ -56,7 +56,7 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
     private final String groupId;
 
     /**
-     * Cache of statistics.
+     * Cache of statistics by statistics message identifier.
      */
     private final Map<String, T> cache;
 
@@ -94,19 +94,6 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
     }
 
     /**
-     * Gets the inner consumer.
-     * 
-     * @return the inner consumer
-     * @deprecated
-     */
-
-    @Deprecated( forRemoval = true, since = "5.0" )
-    public Function<Collection<T>, Set<Path>> getInnerConsumer()
-    {
-        return this.innerConsumer;
-    }
-
-    /**
      * Accept a message.
      * 
      * @param messageId the message identifier
@@ -126,7 +113,7 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
             throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
         }
 
-        // Do atomic put if absent and, if present, then do atomic replace.
+        // Do atomic put-if-absent and, if present, then do atomic replace.
         T cachedMessage = this.cache.putIfAbsent( messageId, message );
 
         if ( Objects.nonNull( cachedMessage ) )

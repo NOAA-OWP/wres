@@ -407,13 +407,14 @@ class EvaluationConsumer
      * Accepts an evaluation description message for consumption.
      * @param evaluationDescription the evaluation description message
      * @param messageId the message identifier to help with logging
+     * @param jobId an optional job identifier
      * @throws JMSException if a consumer could not be created when required
      * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
      *            subscriber that wraps it
      * @throws IllegalStateException if an evaluation description has already been received
      */
 
-    void acceptEvaluationMessage( Evaluation evaluationDescription, String messageId )
+    void acceptEvaluationMessage( Evaluation evaluationDescription, String messageId, String jobId )
             throws JMSException
     {
         if ( this.getAreConsumersReady() )
@@ -428,7 +429,7 @@ class EvaluationConsumer
 
         Objects.requireNonNull( evaluationDescription );
 
-        this.createConsumers( evaluationDescription, this.getConsumerFactory() );
+        this.createConsumers( evaluationDescription, this.getConsumerFactory(), jobId );
 
         LOGGER.debug( "Subscriber {} received and consumed an evaluation description message with "
                       + "identifier {} for evaluation {}.",
@@ -738,7 +739,8 @@ class EvaluationConsumer
                         this.execute( () -> this.addPathsWritten( consumerToClose.acceptGroup() ) );
 
                         LOGGER.trace( "On closing subscriber {}, discovered a consumer associated with group {} whose "
-                                      + "consumption was ready to complete, but had not yet completed. This were completed.",
+                                      + "consumption was ready to complete, but had not yet completed. This was "
+                                      + "completed.",
                                       this,
                                       groupId );
                     }
@@ -862,13 +864,15 @@ class EvaluationConsumer
      * 
      * @param evaluationDescription a description of the evaluation
      * @param consumerFactory the consumer factory
+     * @param jobId an optional job identifier
      * @throws JMSException if a group completion could not be notified
      * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
      *            subscriber that wraps it
      */
 
     private void createConsumers( Evaluation evaluationDescription,
-                                  ConsumerFactory consumerFactory )
+                                  ConsumerFactory consumerFactory,
+                                  String jobId )
             throws JMSException
     {
         synchronized ( this.getConsumerCreationLock() )
@@ -879,9 +883,11 @@ class EvaluationConsumer
                               this.getEvaluationId(),
                               this.getConsumerId() );
 
-                this.consumer = consumerFactory.getConsumer( evaluationDescription, this.getEvaluationId() );
-                this.groupConsumer = consumerFactory.getGroupedConsumer( evaluationDescription,
-                                                                         this.getEvaluationId() );
+                // Create a path to write
+                Path path = ConsumerFactory.getPathToWrite( this.getEvaluationId(), this.getConsumerId(), jobId );
+
+                this.consumer = consumerFactory.getConsumer( evaluationDescription, path );
+                this.groupConsumer = consumerFactory.getGroupedConsumer( evaluationDescription, path );
 
                 LOGGER.debug( "Finished creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.getEvaluationId(),

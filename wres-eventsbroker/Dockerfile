@@ -46,7 +46,9 @@ COPY --from=builder /workspace/out ${QPID_HOME}
 COPY nonsrc/initial-config.json ${QPID_HOME}/etc/
 
 USER wres_eventsbroker
-EXPOSE 5673 8081
+EXPOSE 5673 15673
 VOLUME ${QPID_WORK}
 
-CMD ["qpid-server", "--initial-config-path", "${QPID_HOME}/etc/initial-config.json", "-prop", "qpid.amqp_port=5673", "-prop", "qpid.http_port=8081"]
+VOLUME /wres_secrets
+
+CMD ["qpid-server", "--initial-config-path", "${QPID_HOME}/etc/initial-config.json", "-prop", "qpid.amqp_port=5673", "-prop", "qpid.http_port=15673"]

@@ -402,8 +402,8 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * Awaits the conclusion of negotiations for output formats that are not delivered by the core client. The 
-     * negotiation is concluded when all formats have been negotiated or the timeout is reached.
+     * Awaits the conclusion of negotiations for output formats that are delivered by subscribers. The negotiation is 
+     * concluded when all formats have been negotiated or the timeout is reached.
      * 
      * @throws InterruptedException if the evaluation was interrupted.
      */
@@ -721,16 +721,16 @@ class EvaluationStatusTracker implements Closeable
                                              .getFormatsList();
 
         // If the consumer cannot satisfy any outstanding formats then log and return
-        Set<Format> formatsRequired = this.negotiatedSubscribers.keySet();
+        Set<Format> formatsRequired = new HashSet<>( this.negotiatedSubscribers.keySet() );
 
-        // Log the offer
+        // Record the offer
         if ( !formatsRequired.isEmpty() )
         {
             Set<Format> formatsAwaited = this.getFormatsAwaitingSubscribers();
-            Set<Format> formatsAwaitedThatAreOffered = new HashSet<>( formatsAwaited );
-            Set<Format> formatsRequiredThatAreOffered = new HashSet<>( formatsRequired );
-            formatsAwaitedThatAreOffered.retainAll( formatsOffered );
-            formatsRequiredThatAreOffered.retainAll( formatsOffered );
+            Set<Format> formatsWithoutConsumers = new HashSet<>( formatsAwaited );
+            Set<Format> formatsOfferedByConsumer = new HashSet<>( formatsRequired );
+            formatsWithoutConsumers.retainAll( formatsOffered );
+            formatsOfferedByConsumer.retainAll( formatsOffered );
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -746,19 +746,19 @@ class EvaluationStatusTracker implements Closeable
             }
 
             // Record the offer
-            this.recordAnOffer( formatsAwaitedThatAreOffered, formatsRequiredThatAreOffered, consumerId );
+            this.recordAnOffer( formatsWithoutConsumers, formatsOfferedByConsumer, consumerId );
         }
     }
 
     /**
      * Records a subscription offer for the prescribed formats.
-     * @param formatsAwaitedThatAreOffered the formats required for which subscribers have not yet been identified
-     * @param formatsRequiredThatAreOffered the formats required that are also offered by the consumer
-     * @param consumerId the consumer identifier
+     * @param formatsWithoutConsumers the formats required for which consumers have not yet been identified
+     * @param formatsOfferedByConsumer the formats required that are also offered by the consumer
+     * @param consumerId the consumer identifier of the consumer with an offer
      */
 
-    private void recordAnOffer( Set<Format> formatsAwaitedThatAreOffered,
-                                Set<Format> formatsRequiredThatAreOffered,
+    private void recordAnOffer( Set<Format> formatsWithoutConsumers,
+                                Set<Format> formatsOfferedByConsumer,
                                 String consumerId )
     {
         // For each format supported by the consumer that is also one of the required formats, attempt to add
@@ -766,12 +766,13 @@ class EvaluationStatusTracker implements Closeable
         // succeeds for one of the formats offered, it should succeed for all open formats offered by the 
         // subscriber, otherwise evaluations will be distributed across subscribers that do the same work. This is 
         // achieved by locking the whole map to mutation by one thread. An underlying assumption here is that each
-        // competing subscriber has a symmetric offer. See #82939-8 and #82939-9. Success here is only provisional
-        // because a window of time is allowed for other offers to accumulate, in order to ensure a fair 
+        // competing subscriber has a symmetric offer, i.e., there are no two subscribers that overlap partially in the
+        // formats they offer, rather not at all or completely. See #82939-8 and #82939-9. Success here is only 
+        // provisional because a window of time is allowed for other offers to accumulate, in order to ensure a fair 
         // competition. See #82939-27.
         Set<String> offers = new HashSet<>();
         offers.add( consumerId );
-        for ( Format next : formatsRequiredThatAreOffered )
+        for ( Format next : formatsOfferedByConsumer )
         {
             Set<String> added = this.subscriptionOffers.putIfAbsent( next, offers );
             // Already exists?
@@ -785,22 +786,23 @@ class EvaluationStatusTracker implements Closeable
         synchronized ( this.negotiatedSubscribersLock )
         {
             boolean won = false;
-            for ( Format next : formatsAwaitedThatAreOffered )
+            for ( Format next : formatsWithoutConsumers )
             {
                 won = this.negotiatedSubscribers.replace( next, StringUtils.EMPTY, consumerId );
             }
 
-            // Success
+            // Provisionally awarded these formats to a subscriber. However, the final award may be to a different
+            // subscriber if other offers arrive within the negotiation period. See chooseBetweenOffers.
             if ( won )
             {
                 // Countdown the negotiation latch for each format offered and won, noting here that any win means
                 // all win and a win cannot happen in another thread because this thread has the mutex lock
-                formatsAwaitedThatAreOffered.forEach( next -> this.negotiatedSubscribersLatch.countDown() );
+                formatsWithoutConsumers.forEach( next -> this.negotiatedSubscribersLatch.countDown() );
 
                 LOGGER.debug( "While negotiating evaluation {}, subscriber {} was the first to offer formats {}.",
                               this.evaluation.getEvaluationId(),
                               consumerId,
-                              formatsAwaitedThatAreOffered );
+                              formatsWithoutConsumers );
             }
         }
     }
@@ -811,7 +813,7 @@ class EvaluationStatusTracker implements Closeable
      * thus, an even distribution of work across subscriber clients.
      * See #82939-27.
      * 
-     * @param accepted the map of provisionally accepted subscribers
+     * @param accepted the map of provisionally accepted consumers
      * @param offered the offered subscribers
      */
 
@@ -834,19 +836,20 @@ class EvaluationStatusTracker implements Closeable
                 int pick = EvaluationStatusTracker.SUBSCRIBER_RESOLVER.nextInt( size );
                 String newConsumerId = consumers.get( pick );
 
-                // Replace. Is the new consumer id different than the old one?
+                // Replace, which returns the existing value if one exists
                 existingConsumerId = accepted.replace( nextAccepted, newConsumerId );
 
                 // Replace all instances of the old references with the new one if the winning subscriber offers 
-                // multiple formats that are required.
-                if ( Objects.nonNull( existingConsumerId ) )
+                // multiple formats that are required. Don't check if the existing and new are the same.
+                if ( Objects.nonNull( existingConsumerId ) && !existingConsumerId.equals( newConsumerId ) )
                 {
                     replaced.add( newConsumerId );
 
-                    for ( Format next : acceptedFormats )
-                    {
-                        accepted.replace( next, existingConsumerId, newConsumerId );
-                    }
+                    this.replaceExistingConsumerWithNewConsumerForAllOfferedFormats( existingConsumerId,
+                                                                                     newConsumerId,
+                                                                                     acceptedFormats,
+                                                                                     accepted,
+                                                                                     offered );
                 }
 
                 // Add a consumption latch for the new consumer.
@@ -854,6 +857,37 @@ class EvaluationStatusTracker implements Closeable
 
                 // Flow control the consumer
                 this.flowController.addSubscriber( newConsumerId );
+            }
+        }
+    }
+
+    /**
+     * For each format offered by the new consumer, replace the existing consumer that was provisionally accepted for 
+     * that format. This ensures a minimum number of consumers across all formats (since, in general, it is more 
+     * efficient for a consumer to deliver all of the required formats that it offers, rather than distributing formats
+     * across consumers).
+     * 
+     * @param existingConsumerId the existing consumer id to replace
+     * @param newConsumerId the new consumer id
+     * @param acceptedFormats the formats for which consumers have been accepted
+     * @param accepted the map of provisionally accepted consumers
+     * @param offered the map of consumers that can satisfy each format
+     */
+
+    private void replaceExistingConsumerWithNewConsumerForAllOfferedFormats( String existingConsumerId,
+                                                                             String newConsumerId,
+                                                                             Set<Format> acceptedFormats,
+                                                                             Map<Format, String> accepted,
+                                                                             Map<Format, Set<String>> offered )
+    {
+        // Iterate through the other formats 
+        for ( Format next : acceptedFormats )
+        {
+            // Is the format offered by the chosen consumer? If so, use the chosen consumer for this
+            // format too.
+            if ( offered.get( next ).contains( newConsumerId ) )
+            {
+                accepted.replace( next, existingConsumerId, newConsumerId );
             }
         }
     }

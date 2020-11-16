@@ -59,13 +59,13 @@ class StatisticsConsumerFactory implements ConsumerFactory
      */
 
     private final ProjectConfig projectConfig;
-    
+
     /**
      * The netcdf writer.
      */
 
     private final NetcdfOutputWriter netcdfWriter;
-    
+
     /**
      * Decimal formatter.
      */
@@ -73,15 +73,14 @@ class StatisticsConsumerFactory implements ConsumerFactory
     private final java.text.Format decimalFormatter;
 
     @Override
-    public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, String evaluationId )
+    public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path )
     {
         Objects.requireNonNull( evaluation );
-        Objects.requireNonNull( evaluationId );
+        Objects.requireNonNull( path );
 
         Outputs outputs = evaluation.getOutputs();
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
-        Path outputsDirectory = ConsumerFactory.getPathToWrite( evaluationId, this.getConsumerId() );
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
@@ -98,7 +97,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         // Protobuf
         if ( formats.contains( Format.PROTOBUF ) )
         {
-            Path protobufPath = outputsDirectory.resolve( "evaluation.pb3" );
+            Path protobufPath = path.resolve( "evaluation.pb3" );
             Function<Statistics, Set<Path>> protoWriter = ProtobufWriter.of( protobufPath, evaluation );
             builder.addStatisticsConsumer( DestinationType.PROTOBUF, protoWriter );
         }
@@ -108,23 +107,23 @@ class StatisticsConsumerFactory implements ConsumerFactory
         {
             // Specific formats are filtered at runtime via the router using the Outputs declaration
             builder.addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
-                                               BoxPlotGraphicsWriter.of( outputs, outputsDirectory ) );
+                                               BoxPlotGraphicsWriter.of( outputs, path ) );
         }
-        
+
         Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
-                .build();
+                                                                    .build();
 
         return statistics -> router.apply( List.of( statistics ) );
     }
 
     @Override
-    public Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, String evaluationId )
+    public Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, Path path )
     {
         Objects.requireNonNull( evaluation );
-        Objects.requireNonNull( evaluationId );
+        Objects.requireNonNull( path );
 
         Outputs outputs = evaluation.getOutputs();
-        Path outputsDirectory = ConsumerFactory.getPathToWrite( evaluationId, this.getConsumerId() );
+        
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
 
@@ -154,30 +153,30 @@ class StatisticsConsumerFactory implements ConsumerFactory
             builder.addDiagramConsumer( DestinationType.CSV,
                                         CommaSeparatedDiagramWriter.of( this.projectConfig,
                                                                         durationUnits,
-                                                                        outputsDirectory ) )
+                                                                        path ) )
                    .addBoxplotConsumerPerPair( DestinationType.CSV,
                                                CommaSeparatedBoxPlotWriter.of( this.projectConfig,
                                                                                durationUnits,
-                                                                               outputsDirectory ) )
+                                                                               path ) )
                    .addBoxplotConsumerPerPool( DestinationType.CSV,
                                                CommaSeparatedBoxPlotWriter.of( this.projectConfig,
                                                                                durationUnits,
-                                                                               outputsDirectory ) )
+                                                                               path ) )
                    .addDurationDiagramConsumer( DestinationType.CSV,
                                                 CommaSeparatedDurationDiagramWriter.of( this.projectConfig,
                                                                                         durationUnits,
-                                                                                        outputsDirectory ) )
+                                                                                        path ) )
                    .addDurationScoreConsumer( DestinationType.CSV,
                                               CommaSeparatedScoreWriter.of( this.projectConfig,
                                                                             durationUnits,
-                                                                            outputsDirectory,
+                                                                            path,
                                                                             next -> MessageFactory.parse( next.getData()
                                                                                                               .getValue() )
                                                                                                   .toString() ) )
                    .addDoubleScoreConsumer( DestinationType.CSV,
                                             CommaSeparatedScoreWriter.of( this.projectConfig,
                                                                           durationUnits,
-                                                                          outputsDirectory,
+                                                                          path,
                                                                           doubleMapper ) );
         }
 
@@ -185,15 +184,15 @@ class StatisticsConsumerFactory implements ConsumerFactory
         if ( this.hasGraphics( formats ) )
         {
             builder.addBoxplotConsumerPerPool( DestinationType.GRAPHIC,
-                                               BoxPlotGraphicsWriter.of( outputs, outputsDirectory ) )
+                                               BoxPlotGraphicsWriter.of( outputs, path ) )
                    .addDoubleScoreConsumer( DestinationType.GRAPHIC,
-                                            DoubleScoreGraphicsWriter.of( outputs, outputsDirectory ) )
+                                            DoubleScoreGraphicsWriter.of( outputs, path ) )
                    .addDurationScoreConsumer( DestinationType.GRAPHIC,
-                                              DurationScoreGraphicsWriter.of( outputs, outputsDirectory ) )
+                                              DurationScoreGraphicsWriter.of( outputs, path ) )
                    .addDiagramConsumer( DestinationType.GRAPHIC,
-                                        DiagramGraphicsWriter.of( outputs, outputsDirectory ) )
+                                        DiagramGraphicsWriter.of( outputs, path ) )
                    .addDurationDiagramConsumer( DestinationType.GRAPHIC,
-                                                DurationDiagramGraphicsWriter.of( outputs, outputsDirectory ) );
+                                                DurationDiagramGraphicsWriter.of( outputs, path ) );
         }
 
         // Note that diagrams are always written by group, even if all the statistics could be written per pool because
@@ -208,15 +207,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
     public Consumer getConsumerDescription()
     {
         return this.consumerDescription;
-    }
-
-    /**
-     * @return the subscriber identifier
-     */
-
-    private String getConsumerId()
-    {
-        return this.consumerDescription.getConsumerId();
     }
 
     /**
