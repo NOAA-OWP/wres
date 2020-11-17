@@ -32,7 +32,7 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
  * classpath. If the configuration contains the loopback address (localhost, 127.0.0.1), then the factory creates an 
  * instance of an {@link EmbeddedBroker} unless a broker is already active on that address and port. If the configured 
  * port is free, then the embedded broker will attempt to bind to this port first. If the configured port is TCP 
- * reserved port zero or the configured port is not free, the embedded broker will choose a port and report this 
+ * reserved port zero or the configured port is not free, then the embedded broker will choose a port and report this 
  * via the broker instance, but only after {@link EmbeddedBroker#start()} has been called.
  * 
  * <p>Any embedded broker instance is managed by this class and must be closed when the application exits. For this 
