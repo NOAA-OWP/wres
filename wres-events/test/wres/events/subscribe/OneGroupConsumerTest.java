@@ -44,8 +44,8 @@ public class OneGroupConsumerTest
         group.accept( "c", 5 );
         group.accept( "d", -12 );
 
-        // Compute sum
-        group.acceptGroup();
+        // Set the expected group size, which triggers completion
+        group.setExpectedMessageCount( 4 );
 
         assertEquals( 33, sum.get() );
     }
@@ -71,6 +71,9 @@ public class OneGroupConsumerTest
         DoubleScoreStatistic.Builder scoreBuilder = DoubleScoreStatistic.newBuilder().addStatistics( componentBuilder );
         one.addScores( scoreBuilder );
 
+        // Set the expected group size, which triggers completion when both messages have been received
+        group.setExpectedMessageCount( 2 );
+        
         group.accept( "a", one.build() );
 
         Statistics.Builder another = Statistics.newBuilder();
@@ -82,9 +85,6 @@ public class OneGroupConsumerTest
 
         group.accept( "b", another.build() );
 
-        // Compute aggregate
-        group.acceptGroup();
-
         // Expected
         Statistics expected = Statistics.newBuilder()
                                         .mergeFrom( one.build() )
@@ -95,31 +95,35 @@ public class OneGroupConsumerTest
     }
 
     @Test
-    public void reuseOfAConsumerThrowsAnExceptionOnAcceptGroup()
+    public void checkForExpectedExceptionWhenSettingTheExpectedMessageCountTwice()
     {
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
             return Set.of();
         }, "someGroupId" );
 
-        group.acceptGroup();
+        group.setExpectedMessageCount( 1 );
+        group.accept( "aMessage", Statistics.getDefaultInstance() );
 
         IllegalStateException expected = assertThrows( IllegalStateException.class,
-                                                       () -> group.acceptGroup() );
+                                                       () -> group.setExpectedMessageCount( 1 ) );
 
-        String expectedMessage = "Attempted to reuse a one-use consumer, which is not allowed.";
+        String expectedMessage = "The message count has already been set and cannot be reset.";
 
         assertEquals( expectedMessage, expected.getMessage() );
     }
 
     @Test
-    public void reuseOfAConsumerThrowsAnExceptionOnAccept()
+    public void checkForExpectedExceptionOnReusingAConsumer()
     {
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
             return Set.of();
         }, "someGroupId" );
 
-        group.acceptGroup();
+        group.setExpectedMessageCount( 1 );
 
+        // Completes the group
+        group.accept( "aMessage", Statistics.getDefaultInstance() );
+        
         Statistics defaultInstance = Statistics.getDefaultInstance();
 
         IllegalStateException expected = assertThrows( IllegalStateException.class,
@@ -139,17 +143,6 @@ public class OneGroupConsumerTest
         }, "someGroupId" );
 
         assertEquals( "someGroupId", group.getGroupId() );
-    }
-
-    @Test
-    public void testSize()
-    {
-        // No-op consumer
-        OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
-            return Set.of();
-        }, "someGroupId" );
-
-        assertEquals( 0, group.size() );
     }
 
     /**
