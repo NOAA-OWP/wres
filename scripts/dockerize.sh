@@ -53,7 +53,7 @@ echo "Core WRES binary zip version is $wres_core_version"
 echo "WRES Worker shim binary zip version is $wres_worker_shim_version"
 echo "WRES Tasker binary zip version is $wres_tasker_version"
 echo "Primary docker image version is $overall_version"
-echo "Tasker docker image version is $overall_version"
+echo "Tasker docker image version is $tasker_version"
 echo "Broker docker image version is $broker_version"
 
 wres_core_file=wres-${wres_core_version}.zip
