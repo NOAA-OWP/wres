@@ -156,9 +156,9 @@ $list_objects_command \
 && $restore_data_only_table_command -n public -t databasechangelog -t databasechangeloglock $changelog_dump_file \
 && $restore_post_data_only_command $changelog_dump_file \
 && $restore_pre_data_only_command  -L ${list_of_non_schema_objects_file} $dump_file \
-&& $restore_data_only_table_command -t measurementunit -t conversions -t usgsparameter -t netcdfcoordinate -t unitconversion -t feature -t ensemble -t gridprojection -t variable -t source -t indexqueue $dump_file \
-&& $restore_data_only_table_command -t measurementunit_measurementunit_id_seq -t feature_feature_id_seq -t ensemble_ensemble_id_seq -t gridprojection_gridprojection_id_seq -t variable_variable_id_seq -t source_source_id_seq -t indexqueue_indexqueue_id_seq $dump_file \
-&& $restore_data_only_table_command -t timeseries -t $dump_file \
+&& $restore_data_only_table_command -t measurementunit -t conversions -t netcdfcoordinate -t unitconversion -t feature -t ensemble -t gridprojection -t source $dump_file \
+&& $restore_data_only_table_command -t measurementunit_measurementunit_id_seq -t ensemble_ensemble_id_seq -t gridprojection_gridprojection_id_seq -t source_source_id_seq $dump_file \
+&& $restore_data_only_table_command -t timeseries $dump_file \
 && $restore_data_only_table_command -t timeseries_timeseries_id_seq -t timeseriesvalue -t timeseriesvalue_lead_0 -t timeseriesvalue_lead_1 -t timeseriesvalue_lead_2 -t timeseriesvalue_lead_3 -t timeseriesvalue_lead_4 -t timeseriesvalue_lead_5 -t timeseriesvalue_lead_6 -t timeseriesvalue_lead_7 -t timeseriesvalue_lead_8 -t timeseriesvalue_lead_9 $dump_file \
 && $restore_data_only_table_command -t timeseriesvalue_lead_10 -t timeseriesvalue_lead_11 -t timeseriesvalue_lead_12 -t timeseriesvalue_lead_13 -t timeseriesvalue_lead_14 -t timeseriesvalue_lead_15 -t timeseriesvalue_lead_16 -t timeseriesvalue_lead_17 -t timeseriesvalue_lead_18 -t timeseriesvalue_lead_19 $dump_file \
 && $restore_data_only_table_command -t timeseriesvalue_lead_20 -t timeseriesvalue_lead_21 -t timeseriesvalue_lead_22 -t timeseriesvalue_lead_23 -t timeseriesvalue_lead_24 -t timeseriesvalue_lead_25 -t timeseriesvalue_lead_26 -t timeseriesvalue_lead_27 -t timeseriesvalue_lead_28 -t timeseriesvalue_lead_29 $dump_file \
@@ -175,7 +175,7 @@ $list_objects_command \
 && $restore_data_only_table_command -t timeseriesvalue_lead_130 -t timeseriesvalue_lead_131 -t timeseriesvalue_lead_132 -t timeseriesvalue_lead_133 -t timeseriesvalue_lead_134 -t timeseriesvalue_lead_135 -t timeseriesvalue_lead_136 -t timeseriesvalue_lead_137 -t timeseriesvalue_lead_138 -t timeseriesvalue_lead_139 $dump_file \
 && $restore_data_only_table_command -t timeseriesvalue_lead_140 -t timeseriesvalue_lead_141 -t timeseriesvalue_lead_142 -t timeseriesvalue_lead_143 -t timeseriesvalue_lead_144 -t timeseriesvalue_lead_145 -t timeseriesvalue_lead_146 -t timeseriesvalue_lead_147 -t timeseriesvalue_lead_148 -t timeseriesvalue_lead_149 -t timeseriesvalue_lead_150 -t timeseriesvalue_lead_above_150 $dump_file \
 && $restore_data_only_table_command -t timeseriesvalue_lead_negative_1 -t timeseriesvalue_lead_negative_2 -t timeseriesvalue_lead_negative_3 -t timeseriesvalue_lead_negative_4 -t timeseriesvalue_lead_negative_5 -t timeseriesvalue_lead_negative_6 -t timeseriesvalue_lead_negative_7 -t timeseriesvalue_lead_negative_8 -t timeseriesvalue_lead_negative_9 -t timeseriesvalue_lead_negative_10 -t timeseriesvalue_lead_below_negative_10 $dump_file \
-&& $restore_data_only_table_command -t sourcecompleted -t forecasts -t project $dump_file \
+&& $restore_data_only_table_command -t sourcecompleted -t project $dump_file \
 && $restore_data_only_table_command -t projectsource -t project_project_id_seq -t executionlog -t projectexecutions $dump_file \
 && $restore_data_only_table_command -t executionlog_log_id_seq $dump_file \
 && $restore_post_data_only_command $dump_file \
