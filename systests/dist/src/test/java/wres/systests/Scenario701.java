@@ -2950,7 +2950,15 @@ public class Scenario701
                     Path.of( "07142575_21194132_NWM_Short_Range_MEAN_SQUARE_ERROR.csv" ),
                     Path.of( "07142575_21194132_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "07142575_21194132_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
-                    Path.of( "07142575_21194132_NWM_Short_Range_SAMPLE_SIZE.csv" ) );
+                    Path.of( "07142575_21194132_NWM_Short_Range_SAMPLE_SIZE.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_BIAS_FRACTION.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_MEAN_ABSOLUTE_ERROR.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_MEAN_ERROR.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_MEAN_SQUARE_ERROR.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
+                    Path.of( "07189100_7600551_NWM_Short_Range_SAMPLE_SIZE.csv" ) );
 
     private ScenarioInformation scenarioInfo;
 
