@@ -11,6 +11,10 @@ RUN dnf install -y \
     dejavu-serif-fonts-2.35-6.el8 \
     # The following aren't direct dependencies of WRES, are updates post-8.2.2004
     bind-export-libs-9.11.13-6.el8_2.1 \
+    ca-certificates-2020.2.41-80.0.el8_2 \
+    centos-gpg-keys-8.2-2.2004.0.2.el8 \
+    centos-release-8.2-2.2004.0.2.el8 \
+    centos-repos-8.2-2.2004.0.2.el8 \
     dbus-1.12.8-10.el8_2 \
     dbus-common-1.12.8-10.el8_2 \
     dbus-daemon-1.12.8-10.el8_2 \
@@ -30,7 +34,10 @@ RUN dnf install -y \
     systemd-libs-239-31.el8_2.2 \
     systemd-pam-239-31.el8_2.2 \
     systemd-udev-239-31.el8_2.2 \
+    tzdata-2020d-1.el8 \
+    tzdata-java-2020d-1.el8 \
     yum-4.2.17-7.el8_2 \
+    zlib-1.2.11-16.el8_2 \
     && dnf clean all
 
 # For examples of the following for alpine or debian, see git history.
