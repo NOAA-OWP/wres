@@ -957,12 +957,6 @@ public class Evaluation implements Closeable
         private final String evaluationId;
 
         /**
-         * Optional completion tracker for message groups.
-         */
-
-        private final GroupCompletionTracker completionTracker;
-
-        /**
          * Number of queues constructed with respect to this evaluation, which assists in naming durable queues.
          */
 
@@ -988,14 +982,6 @@ public class Evaluation implements Closeable
         }
 
         /**
-         * @return the completion tracker
-         */
-        GroupCompletionTracker getCompletionTracker()
-        {
-            return completionTracker;
-        }
-
-        /**
          * Return an instance.
          * 
          * @param evaluationId the evaluation identifier
@@ -1004,36 +990,21 @@ public class Evaluation implements Closeable
 
         static EvaluationInfo of( String evaluationId )
         {
-            return new EvaluationInfo( evaluationId, null );
-        }
-
-        /**
-         * Return an instance.
-         * 
-         * @param evaluationId the evaluation identifier
-         * @param completionTracker the completion tracker
-         * @return an instance
-         */
-
-        static EvaluationInfo of( String evaluationId, GroupCompletionTracker completionTracker )
-        {
-            return new EvaluationInfo( evaluationId, completionTracker );
+            return new EvaluationInfo( evaluationId );
         }
 
         /**
          * Build an instance.
          * 
          * @param evaluationId the evaluation identifier
-         * @param completionTracker the optional completion tracker
          * @throws NullPointerException if any input is null
          */
 
-        private EvaluationInfo( String evaluationId, GroupCompletionTracker completionTracker )
+        private EvaluationInfo( String evaluationId )
         {
             Objects.requireNonNull( evaluationId );
 
             this.evaluationId = evaluationId;
-            this.completionTracker = completionTracker;
             this.queuesConstructed = new AtomicInteger();
         }
     }

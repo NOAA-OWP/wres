@@ -2,13 +2,18 @@ package wres.events.subscribe;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +36,7 @@ import net.jcip.annotations.ThreadSafe;
  */
 
 @ThreadSafe
-public class OneGroupConsumer<T> implements BiConsumer<String, T>
+class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( OneGroupConsumer.class );
@@ -64,7 +69,31 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * Is <code>true</code> if this consumer has been used once.
      */
 
-    private final AtomicBoolean hasBeenUsed;
+    private final AtomicBoolean isComplete;
+
+    /**
+     * Expected number of messages in the group.
+     */
+
+    private final AtomicInteger expectedMessageCount;
+
+    /**
+     * Actual number of messages received.
+     */
+
+    private final AtomicInteger actualMessageCount;
+
+    /**
+     * A set of paths written by the consumer.
+     */
+
+    private final Set<Path> pathsWritten;
+
+    /**
+     * Mutex lock that protects completion of a group.
+     */
+
+    private final ReentrantLock groupCompletionLock = new ReentrantLock();
 
     /**
      * Returns an instance for grouped consumption of messages.
@@ -76,21 +105,10 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * @throws NullPointerException if any input is null
      */
 
-    public static <T> OneGroupConsumer<T> of( Function<Collection<T>, Set<Path>> innerConsumer,
+    static <T> OneGroupConsumer<T> of( Function<Collection<T>, Set<Path>> innerConsumer,
                                               String groupId )
     {
         return new OneGroupConsumer<>( innerConsumer, groupId );
-    }
-
-    /**
-     * Returns the number of messages in the cache.
-     * 
-     * @return the number of messages
-     */
-
-    public int size()
-    {
-        return this.cache.size();
     }
 
     /**
@@ -108,7 +126,7 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
         Objects.requireNonNull( messageId );
         Objects.requireNonNull( message );
 
-        if ( this.hasBeenUsed() )
+        if ( this.isComplete() )
         {
             throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
         }
@@ -129,40 +147,24 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
         {
             LOGGER.trace( "Group consumer {} accepted a new message, {}.", this, message );
         }
+
+        // Increment the actual message count
+        this.actualMessageCount.incrementAndGet();
+
+        // Try to accept the group. Since this can happen in two places, either when the final message is received or
+        // the expected message count is known, ensure it only happens once (in case both occur together). A group can 
+        // only be completed once.
+        if ( this.groupCompletionLock.tryLock() )
+        {
+            this.acceptGroup();
+            this.groupCompletionLock.unlock();
+        }
     }
 
-    /**
-     * Flushes the cache of statistics to the inner consumer.
-     * @return a set of paths mutated
-     */
-
-    public Set<Path> acceptGroup()
+    @Override
+    public Set<Path> get()
     {
-        // Flag this immediately because the state is visible to other threads via hasBeenUsed()
-        if ( this.hasBeenUsed.getAndSet( true ) )
-        {
-            throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
-        }
-
-        // Propagate, but make the acceptance of the group "retry friendly". In other words, if the consumption fails, 
-        // then return the consumer to unused.
-        try
-        {
-            Set<Path> paths = this.innerConsumer.apply( this.cache.values() );
-
-            // Clear the cache
-            this.cache.clear();
-
-            LOGGER.trace( "Group consumer {} consumed a new group of {} message.", this, this.size() );
-
-            return paths;
-        }
-        catch ( RuntimeException e )
-        {
-            this.hasBeenUsed.set( false );
-
-            throw e;
-        }
+        return Collections.unmodifiableSet( this.pathsWritten );
     }
 
     /**
@@ -171,20 +173,115 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
      * @return the groupId
      */
 
-    public String getGroupId()
+    String getGroupId()
     {
         return this.groupId;
     }
 
+    /**
+      * Sets the number of messages expected in the group.
+      * 
+      * @param expectedMessageCount the expected message count
+      * @throws IllegalArgumentException if the expected count is less than or equal to zero
+      */
+
+    void setExpectedMessageCount( int expectedMessageCount )
+    {
+        // Flag as used
+        if ( this.isComplete.get() )
+        {
+            throw new IllegalStateException( "The message count has already been set and cannot be reset." );
+        }
+        
+        if ( expectedMessageCount <= 0 )
+        {
+            throw new IllegalArgumentException( "While setting the expected message count for group "
+                                                + this.getGroupId()
+                                                + "discovered an expected count of less than or equal to zero, which "
+                                                + "is not allowed: "
+                                                + expectedMessageCount
+                                                + "." );
+        }
+
+        this.expectedMessageCount.set( expectedMessageCount );
+
+        // Try to accept the group. Since this can happen in two places, either when the final message is received or
+        // the expected message count is known, ensure it only happens once (in case both occur together). A group can 
+        // only be completed once.
+        if ( this.groupCompletionLock.tryLock() )
+        {
+            this.acceptGroup();
+            this.groupCompletionLock.unlock();
+        }
+
+        // Log status
+        if ( LOGGER.isDebugEnabled() && this.isComplete() )
+        {
+            LOGGER.debug( "Received notification of publication complete for group {}. The message indicated an "
+                          + "expected message count of {} and the group was completed, as all of these messages have "
+                          + "been received.",
+                          this.getGroupId(),
+                          this.expectedMessageCount.get() );
+        }
+        else if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Received notification of publication complete for group {}. The expected number of messages "
+                          + "within the group is {} but {} of these messages are outstanding. Grouped consumption will "
+                          + "happen when all of the oustanding messages have been received.",
+                          this.getGroupId(),
+                          this.expectedMessageCount.get(),
+                          this.expectedMessageCount.get() - this.actualMessageCount.get() );
+        }
+    }
+    
     /**
      * Returns <code>true</code> if the consumer has been used already, otherwise <code>false</code>.
      * 
      * @return true if the consumer has consumed
      */
 
-    public boolean hasBeenUsed()
+    boolean isComplete()
     {
-        return this.hasBeenUsed.get();
+        return this.isComplete.get();
+    }
+
+    /**
+     * Flushes the cache of statistics to the inner consumer.
+     */
+
+    private void acceptGroup()
+    {
+        // Expected count set and equal to actual count
+        if ( this.expectedMessageCount.get() > 0 && this.expectedMessageCount.get() == this.actualMessageCount.get() )
+        {
+            // Flag as used
+            if ( this.isComplete.getAndSet( true ) )
+            {
+                throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
+            }
+
+            // Propagate, but make the acceptance of the group "retry friendly". In other words, if the consumption fails, 
+            // then return the consumer to unused.
+            try
+            {
+                Set<Path> paths = this.innerConsumer.apply( this.cache.values() );
+
+                // Clear the cache
+                this.cache.clear();
+
+                LOGGER.trace( "Group consumer {} consumed a new group of {} message.",
+                              this,
+                              this.actualMessageCount.get() );
+
+                this.pathsWritten.addAll( paths );
+            }
+            catch ( RuntimeException e )
+            {
+                this.isComplete.set( false );
+
+                throw e;
+            }
+        }
     }
 
     /**
@@ -202,8 +299,11 @@ public class OneGroupConsumer<T> implements BiConsumer<String, T>
 
         this.innerConsumer = innerConsumer;
         this.cache = new ConcurrentHashMap<>();
-        this.hasBeenUsed = new AtomicBoolean();
+        this.isComplete = new AtomicBoolean();
+        this.expectedMessageCount = new AtomicInteger();
+        this.actualMessageCount = new AtomicInteger();
         this.groupId = groupId;
+        this.pathsWritten = new TreeSet<>();
     }
 
 }

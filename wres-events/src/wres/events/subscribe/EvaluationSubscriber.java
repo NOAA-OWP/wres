@@ -360,11 +360,6 @@ public class EvaluationSubscriber implements Closeable
                 this.evaluations.remove( nextEvaluation );
                 this.retriesAttempted.remove( nextEvaluation );
             }
-            else
-            {
-                // Maintenance task
-                nextValue.sweepOpenGroups();
-            }
         }
 
         if ( LOGGER.isDebugEnabled() )

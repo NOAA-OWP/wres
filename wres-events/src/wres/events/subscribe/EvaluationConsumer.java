@@ -27,7 +27,6 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.events.GroupCompletionTracker;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.statistics.generated.Evaluation;
@@ -118,12 +117,6 @@ class EvaluationConsumer
     private Function<Collection<Statistics>, Set<Path>> groupConsumer;
 
     /**
-     * Completion tracker for message groups.
-     */
-
-    private final GroupCompletionTracker groupTracker;
-
-    /**
      * A map of group consumers by group identifier.
      */
 
@@ -207,7 +200,6 @@ class EvaluationConsumer
         this.isClosed = new AtomicBoolean();
         this.isFailed = new AtomicBoolean();
         this.isFailureNotified = new AtomicBoolean();
-        this.groupTracker = GroupCompletionTracker.of();
         this.groupConsumers = new ConcurrentHashMap<>();
         this.statisticsCache = new ConcurrentLinkedQueue<>();
         this.executorService = executorService;
@@ -234,57 +226,34 @@ class EvaluationConsumer
             // Flag closed, regardless of what happens next
             this.isClosed.set( true );
 
-            try
+            LOGGER.debug( "Subscriber {} is closing evaluation {}.",
+                          this.getConsumerId(),
+                          this.getEvaluationId() );
+
+            LOGGER.info( "Subscriber {} closed evaluation {}, which contained {} messages (not "
+                         + "including any evaluation status messages).",
+                         this.getConsumerId(),
+                         this.getEvaluationId(),
+                         this.consumed.get() );
+
+            if ( this.isFailed() )
             {
-
-                LOGGER.debug( "Subscriber {} is closing evaluation {}.",
-                              this.getConsumerId(),
-                              this.getEvaluationId() );
-
-                this.completeAllGroups( true );
-
-                LOGGER.info( "Subscriber {} closed evaluation {}, which contained {} messages (not "
-                             + "including any evaluation status messages).",
-                             this.getConsumerId(),
-                             this.getEvaluationId(),
-                             this.consumed.get() );
-            }
-            catch ( RuntimeException e )
-            {
-                this.markEvaluationFailed( e );
-
-                LOGGER.error( "Encountered an error on closing an evaluation consumer.", e );
-            }
-            finally
-            {
-                if ( this.isFailed() )
+                if ( !this.isFailureNotified() )
                 {
-                    if ( !this.isFailureNotified() )
-                    {
-                        this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
-                                                     null,
-                                                     List.of() );
-                    }
-                }
-                else
-                {
-                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
+                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
                                                  null,
                                                  List.of() );
                 }
             }
+            else
+            {
+                this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
+                                             null,
+                                             List.of() );
+            }
 
             // This instance is not responsible for closing the executor service.
         }
-    }
-
-    /**
-     * Sweeps any open message groups, closing them. This is a maintenance task.
-     */
-
-    void sweepOpenGroups()
-    {
-        this.completeAllGroups( false );
     }
 
     /**
@@ -656,38 +625,37 @@ class EvaluationConsumer
      * @throws JMSException if the group completion could not be notified
      * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
      *            subscriber that wraps it
+     * @throws JMSException if the completion state could not be published
      */
 
-    private void setExpectedMessageCountForGroups( EvaluationStatus status )
-            throws JMSException
+    private void setExpectedMessageCountForGroups( EvaluationStatus status ) throws JMSException
     {
         // Set the expected number of messages per group
         String groupId = status.getGroupId();
 
-        this.getGroupCompletionTracker()
-            .registerPublicationComplete( status );
-        boolean completed = this.checkAndCompleteGroup( groupId );
+        Objects.requireNonNull( groupId );
 
-        if ( completed && LOGGER.isDebugEnabled() )
+        if ( status.getCompletionStatus() != CompletionStatus.GROUP_PUBLICATION_COMPLETE )
         {
-            LOGGER.debug( "Subscriber {} received notification of publication complete for group {} "
-                          + "of evaluation {}. The message indicated an expected message count of {}.",
-                          this.getConsumerId(),
-                          groupId,
-                          this.getEvaluationId(),
-                          status.getMessageCount() );
+            throw new IllegalArgumentException( "While registered the expected message count of group " + groupId
+                                                + ", received an unexpected completion "
+                                                + "status  "
+                                                + status.getCompletionStatus()
+                                                + ". Expected "
+                                                + CompletionStatus.GROUP_PUBLICATION_COMPLETE );
         }
-        else if ( LOGGER.isDebugEnabled() )
+
+        if ( status.getMessageCount() == 0 )
         {
-            LOGGER.debug( "Subscriber {} received notification of publication complete for group {} "
-                          + "of evaluation {}. The expected number of messages within the group is {} but some of "
-                          + "these messages are outstanding. Grouped consumption will happen when this subscriber is "
-                          + "closed.",
-                          this.getConsumerId(),
-                          groupId,
-                          this.getEvaluationId(),
-                          status.getMessageCount() );
+            throw new IllegalArgumentException( "The completion status message for group " + groupId
+                                                + " is missing an expected count of messages." );
         }
+
+        // Set the expected count
+        OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
+        groupCon.setExpectedMessageCount( status.getMessageCount() );
+
+        this.checkAndCompleteGroup( groupCon );
     }
 
     /**
@@ -706,67 +674,6 @@ class EvaluationConsumer
     private ConsumerFactory getConsumerFactory()
     {
         return this.consumerFactory;
-    }
-
-    /**
-     * Completes all message groups.
-     * 
-     * @param consumerIsClosing is true if the consumer is closing and open groups are disallowed
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
-     * @throws IllegalStateException if some groups are open when the consumerIsClosing is true
-     */
-
-    private void completeAllGroups( boolean consumerIsClosing )
-    {
-        // Check for group subscriptions that have not completed and complete them, unless this consumer is
-        // already in a failure state
-        if ( !this.isFailed() )
-        {
-            for ( Map.Entry<String, OneGroupConsumer<Statistics>> next : this.groupConsumers.entrySet() )
-            {
-                String groupId = next.getKey();
-                OneGroupConsumer<Statistics> consumerToClose = next.getValue();
-
-                Integer expectedCount = this.getGroupCompletionTracker()
-                                            .getExpectedMessagesPerGroup( groupId );
-
-                if ( Objects.nonNull( expectedCount ) && !consumerToClose.hasBeenUsed() )
-                {
-                    // Submit acceptance task
-                    if ( consumerToClose.size() == expectedCount )
-                    {
-                        this.execute( () -> this.addPathsWritten( consumerToClose.acceptGroup() ) );
-
-                        LOGGER.trace( "On closing subscriber {}, discovered a consumer associated with group {} whose "
-                                      + "consumption was ready to complete, but had not yet completed. This was "
-                                      + "completed.",
-                                      this,
-                                      groupId );
-                    }
-                    else if ( consumerIsClosing )
-                    {
-                        throw new IllegalStateException( "While attempting to gracefully close subscriber "
-                                                         + this
-                                                         + " , encountered an error. A consumer of grouped messages "
-                                                         + "attached to this subscription expected to receive "
-                                                         + expectedCount
-                                                         + " messages but actually received "
-                                                         + consumerToClose.size()
-                                                         + " messages on closing. A subscriber should not be closed "
-                                                         + "until consumption is complete." );
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @return the group completion tracker for this evaluation.
-     */
-    private GroupCompletionTracker getGroupCompletionTracker()
-    {
-        return this.groupTracker;
     }
 
     /**
@@ -803,60 +710,6 @@ class EvaluationConsumer
         }
 
         return existingGroupConsumer;
-    }
-
-    /**
-     * Checks for a complete group and finalizes it.
-     * 
-     * @param group the group to complete
-     * @param consumer the message consumer whose resources should be closed
-     * @return true if the group was completed, otherwise false
-     * @throws JMSException if the group completion could not be notified
-     * @throws ConsumerException if the consumption failed because the group has already been completed
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
-     */
-
-    private boolean checkAndCompleteGroup( String groupId ) throws JMSException
-    {
-        boolean completed = false;
-
-        if ( Objects.nonNull( this.groupConsumers ) && this.groupConsumers.containsKey( groupId ) )
-        {
-            OneGroupConsumer<Statistics> check = this.groupConsumers.get( groupId );
-
-            if ( Objects.nonNull( check ) )
-            {
-                if ( check.hasBeenUsed() )
-                {
-                    throw new ConsumerException( "While attempting to close message group " + groupId
-                                                 +
-                                                 " in evaluation "
-                                                 + this.getEvaluationId()
-                                                 + " discovered that the message group has already been closed." );
-                }
-
-                Integer expectedGroupCount = this.getGroupCompletionTracker()
-                                                 .getExpectedMessagesPerGroup( check.getGroupId() );
-
-                if ( Objects.nonNull( expectedGroupCount ) && expectedGroupCount == check.size() )
-                {
-                    this.execute( () -> this.addPathsWritten( check.acceptGroup() ) );
-
-                    // Notify completion
-                    this.publishCompletionState( CompletionStatus.GROUP_CONSUMPTION_COMPLETE, groupId, List.of() );
-
-                    LOGGER.debug( "Subscriber {} registered consumption complete for group {} of evaluation {}.",
-                                  this.consumerDescription.getConsumerId(),
-                                  groupId,
-                                  this.getEvaluationId() );
-
-                    completed = true;
-                }
-            }
-        }
-
-        return completed;
     }
 
     /**
@@ -955,9 +808,10 @@ class EvaluationConsumer
         // Accept the grouped types
         if ( Objects.nonNull( groupId ) )
         {
-            this.getGroupConsumer( groupId )
-                .accept( messageId, statistics );
-            this.checkAndCompleteGroup( groupId );
+            OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
+            groupCon.accept( messageId, statistics );
+
+            this.checkAndCompleteGroup( groupCon );
         }
 
         this.consumed.incrementAndGet();
@@ -967,6 +821,35 @@ class EvaluationConsumer
                       this.getConsumerId(),
                       messageId,
                       this.getEvaluationId() );
+    }
+
+    /**
+     * Checks the group consumer for completion and, if complete, publishes a status message {@link CompletionState#}
+     * and updates the paths written.
+     * 
+     * @param groupCon the group consumer
+     * @throws JMSException if the completion state could not be published
+     * @throws NullPointerException if the input is null
+     */
+
+    private void checkAndCompleteGroup( OneGroupConsumer<Statistics> groupCon ) throws JMSException
+    {
+        if ( groupCon.isComplete() )
+        {
+            // add any paths created if the group has completed
+            Set<Path> paths = groupCon.get();
+            this.addPathsWritten( paths );
+
+            // Notify completion
+            this.publishCompletionState( CompletionStatus.GROUP_CONSUMPTION_COMPLETE,
+                                         groupCon.getGroupId(),
+                                         List.of() );
+
+            LOGGER.debug( "Subscriber {} registered consumption complete for group {} of evaluation {}.",
+                          this.consumerDescription.getConsumerId(),
+                          groupCon.getGroupId(),
+                          this.getEvaluationId() );
+        }
     }
 
     /**
