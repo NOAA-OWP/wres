@@ -35,6 +35,9 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
  * reserved port zero or the configured port is not free, then the embedded broker will choose a port and report this 
  * via the broker instance, but only after {@link EmbeddedBroker#start()} has been called.
  * 
+ * <p>The configured address and port of the broker may be overridden at runtime with the system properties 
+ * <code>wres.eventsBrokerPort</code> and <code>wres.eventsBrokerAddress</code>, respectively.
+ * 
  * <p>Any embedded broker instance is managed by this class and must be closed when the application exits. For this 
  * reason, the class implements {@link Closeable} and it is recommended to instantiate using a try-with-resources. 
  * For example:
@@ -396,8 +399,8 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                 if ( Objects.nonNull( value ) )
                 {
                     String burl = value.toString();
-                    // If there is a BROKER_ADDRESS and/or BROKER_PORT environment variable, use those instead
-                    burl = this.overrideBurlWithEnvironmentVariables( key.toString(), burl, properties );
+                    // If there are system properties for the broker address and port, use those instead
+                    burl = this.overrideBurlWithSystemProperties( key.toString(), burl, properties );
                     returnMe = new AbstractMap.SimpleEntry<>( key.toString(), burl );
                 }
                 break;
@@ -414,8 +417,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
     }
 
     /**
-     * Checks for a BROKER_ADDRESS and/or BROKER_PORT environment variable and substitutes these entries into the 
-     * supplied binding url and updates the properties.
+     * Checks for a <code>wres.eventsBrokerPort</code> and/or <code>wres.eventsBrokerAddress</code> system property and 
+     * substitutes these entries into the binding url contained in the supplied properties and also returns the 
+     * adjusted binding url.
      * 
      * @param propertyName the property name that stores the binding url
      * @param propertyValue the value of the binding url
@@ -423,25 +427,27 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
      * @return a possibly adjusted binding url
      */
 
-    private String overrideBurlWithEnvironmentVariables( String propertyName,
-                                                         String propertyValue,
-                                                         Properties properties )
+    private String overrideBurlWithSystemProperties( String propertyName,
+                                                     String propertyValue,
+                                                     Properties properties )
     {
-        Map<String, String> variables = System.getenv();
-
         String returnMe = propertyValue;
+
+        Properties systemProperties = System.getProperties();
 
         boolean overriden = false;
 
-        if ( variables.containsKey( "BROKER_ADDRESS" ) )
+        if ( systemProperties.containsKey( "wres.eventsBrokerAddress" ) )
         {
-            returnMe = returnMe.replaceAll( "tcp://+[a-zA-Z0-9.]+", "tcp://" + variables.get( "BROKER_ADDRESS" ) );
+            returnMe = returnMe.replaceAll( "tcp://+[a-zA-Z0-9.]+",
+                                            "tcp://" + systemProperties.get( "wres.eventsBrokerAddress" ) );
             overriden = true;
         }
 
-        if ( variables.containsKey( "BROKER_PORT" ) )
+        if ( systemProperties.containsKey( "wres.eventsBrokerPort" ) )
         {
-            returnMe = returnMe.replaceAll( ":+[a-zA-Z0-9.]++'", ":" + variables.get( "BROKER_PORT" ) + "'" );
+            returnMe = returnMe.replaceAll( ":+[a-zA-Z0-9.]++'",
+                                            ":" + systemProperties.get( "wres.eventsBrokerPort" ) + "'" );
             overriden = true;
         }
 
@@ -450,9 +456,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
 
         if ( LOGGER.isDebugEnabled() && overriden )
         {
-            LOGGER.debug( "Updated the binding URL (BURL) using environment variables discovered at runtime. The old "
+            LOGGER.debug( "Updated the binding URL (BURL) using system properties discovered at runtime. The old "
                           + "BURL was {}. The new BURL is {}." );
         }
+        
         return returnMe;
     }
 
