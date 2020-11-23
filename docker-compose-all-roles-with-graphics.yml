@@ -67,6 +67,8 @@ services:
         restart: always
         depends_on:
          - "broker"
+         - "eventsbroker"
+         - "graphics"
         volumes:
          # For input and output data:
          - /mnt/wres_share:/mnt/wres_share
