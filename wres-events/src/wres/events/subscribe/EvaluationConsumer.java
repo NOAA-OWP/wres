@@ -824,8 +824,8 @@ class EvaluationConsumer
     }
 
     /**
-     * Checks the group consumer for completion and, if complete, publishes a status message {@link CompletionState#}
-     * and updates the paths written.
+     * Checks the group consumer for completion and, if complete, publishes a status message 
+     * {@link CompletionStatus#GROUP_CONSUMPTION_COMPLETE} and updates the paths written.
      * 
      * @param groupCon the group consumer
      * @throws JMSException if the completion state could not be published
@@ -836,7 +836,7 @@ class EvaluationConsumer
     {
         if ( groupCon.isComplete() )
         {
-            // add any paths created if the group has completed
+            // Add any paths created if the group has completed
             Set<Path> paths = groupCon.get();
             this.addPathsWritten( paths );
 
