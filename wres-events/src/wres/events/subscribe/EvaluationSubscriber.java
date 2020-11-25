@@ -571,6 +571,8 @@ public class EvaluationSubscriber implements Closeable
             String consumerId = UNKNOWN;
             String groupId = null;
 
+            EvaluationConsumer consumer = null;
+            
             try
             {
                 messageId = message.getJMSMessageID();
@@ -606,22 +608,17 @@ public class EvaluationSubscriber implements Closeable
                                       messageId,
                                       correlationId );
 
-                        EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+                        consumer = this.getEvaluationConsumer( correlationId );
 
                         consumer.acceptStatusMessage( statusEvent, groupId, messageId );
-
-                        // Complete?
-                        if ( consumer.isComplete() )
-                        {
-                            // Yes, then close
-                            consumer.close();
-                            this.status.registerEvaluationCompleted( correlationId );
-                        }
                     }
                 }
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
+                
+                // Try to complete
+                this.completeConsumer( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -651,6 +648,8 @@ public class EvaluationSubscriber implements Closeable
             String correlationId = UNKNOWN;
             String groupId = null;
 
+            EvaluationConsumer consumer = null;
+            
             try
             {
                 if ( !this.isSubscriberFailed() && this.isThisMessageForMe( message ) )
@@ -664,7 +663,7 @@ public class EvaluationSubscriber implements Closeable
                                   messageId,
                                   correlationId );
 
-                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+                    consumer = this.getEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -679,18 +678,13 @@ public class EvaluationSubscriber implements Closeable
 
                     consumer.acceptStatisticsMessage( statistics, groupId, messageId );
                     this.status.registerStatistics( messageId );
-
-                    // Complete?
-                    if ( consumer.isComplete() )
-                    {
-                        // Yes, then close
-                        consumer.close();
-                        this.status.registerEvaluationCompleted( correlationId );
-                    }
                 }
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
+                
+                // Try to complete
+                this.completeConsumer( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -708,6 +702,25 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
+     * Attempts to complete a consumer.
+     * 
+     * @param consumer the consumer
+     * @param evaluationId the evaluation identifier
+     * @throws JMSException if the evaluation could not be published complete
+     */
+    
+    private void completeConsumer( EvaluationConsumer consumer, String evaluationId ) throws JMSException
+    {
+        // Complete?
+        if ( Objects.nonNull( consumer ) && consumer.isComplete() )
+        {
+            // Yes, then close
+            consumer.close();
+            this.status.registerEvaluationCompleted( evaluationId );
+        }
+    }
+    
+    /**
      * Awaits evaluation messages and then consumes them. 
      */
 
@@ -720,6 +733,8 @@ public class EvaluationSubscriber implements Closeable
             String correlationId = UNKNOWN;
             String jobId = null;
 
+            EvaluationConsumer consumer = null;
+            
             try
             {
                 if ( !this.isSubscriberFailed() && this.isThisMessageForMe( message ) )
@@ -733,7 +748,7 @@ public class EvaluationSubscriber implements Closeable
                                   messageId,
                                   correlationId );
 
-                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+                    consumer = this.getEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -747,18 +762,13 @@ public class EvaluationSubscriber implements Closeable
                     Evaluation evaluation = Evaluation.parseFrom( buffer );
 
                     consumer.acceptEvaluationMessage( evaluation, messageId, jobId );
-
-                    // Complete?
-                    if ( consumer.isComplete() )
-                    {
-                        // Yes, then close
-                        consumer.close();
-                        this.status.registerEvaluationCompleted( correlationId );
-                    }
                 }
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
+                
+                // Try to complete
+                this.completeConsumer( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }

@@ -756,7 +756,7 @@ public class ThresholdsByMetric
             else
             {
                 LOGGER.trace( "While building thresholds-by-metric, discovered metric {}, which does not support "
-                              + "all threshold types. Adding the \"all data\" threshold only." );
+                              + "all threshold types. Adding the \"all data\" threshold for this metric.", metric );
                 
                 addMe.add( ThresholdOuter.ALL_DATA );
             }

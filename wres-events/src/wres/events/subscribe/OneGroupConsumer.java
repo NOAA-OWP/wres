@@ -106,7 +106,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
      */
 
     static <T> OneGroupConsumer<T> of( Function<Collection<T>, Set<Path>> innerConsumer,
-                                              String groupId )
+                                       String groupId )
     {
         return new OneGroupConsumer<>( innerConsumer, groupId );
     }
@@ -151,14 +151,8 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
         // Increment the actual message count
         this.actualMessageCount.incrementAndGet();
 
-        // Try to accept the group. Since this can happen in two places, either when the final message is received or
-        // the expected message count is known, ensure it only happens once (in case both occur together). A group can 
-        // only be completed once.
-        if ( this.groupCompletionLock.tryLock() )
-        {
-            this.acceptGroup();
-            this.groupCompletionLock.unlock();
-        }
+        // Try to accept the group.
+        this.acceptGroup();
     }
 
     @Override
@@ -192,7 +186,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
         {
             throw new IllegalStateException( "The message count has already been set and cannot be reset." );
         }
-        
+
         if ( expectedMessageCount <= 0 )
         {
             throw new IllegalArgumentException( "While setting the expected message count for group "
@@ -205,14 +199,8 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
 
         this.expectedMessageCount.set( expectedMessageCount );
 
-        // Try to accept the group. Since this can happen in two places, either when the final message is received or
-        // the expected message count is known, ensure it only happens once (in case both occur together). A group can 
-        // only be completed once.
-        if ( this.groupCompletionLock.tryLock() )
-        {
-            this.acceptGroup();
-            this.groupCompletionLock.unlock();
-        }
+        // Try to accept the group.
+        this.acceptGroup();
 
         // Log status
         if ( LOGGER.isDebugEnabled() && this.isComplete() )
@@ -233,7 +221,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
                           this.expectedMessageCount.get() - this.actualMessageCount.get() );
         }
     }
-    
+
     /**
      * Returns <code>true</code> if the consumer has been used already, otherwise <code>false</code>.
      * 
@@ -246,24 +234,22 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
     }
 
     /**
-     * Flushes the cache of statistics to the inner consumer.
+     * Flushes the cache of statistics to the inner consumer. Calls to this method should be guarded by the 
+     * {@link #groupCompletionLock}.
      */
 
     private void acceptGroup()
     {
-        // Expected count set and equal to actual count
-        if ( this.expectedMessageCount.get() > 0 && this.expectedMessageCount.get() == this.actualMessageCount.get() )
+        // Lock available and consumer ready to complete.
+        // If this method is called by a second thread while a first thread succeeds, the second thread will fail to
+        // acquire the lock and the group will complete gracefully (either successfully or exceptionally). This is 
+        // necessary because group acceptance can happen in two places within this class: 1) when the expected message
+        // count is supplied; and 2) when the last message is supplied.
+        if ( this.isReadyToComplete() && this.groupCompletionLock.tryLock() )
         {
-            // Flag as used
-            if ( this.isComplete.getAndSet( true ) )
-            {
-                throw new IllegalStateException( ATTEMPTED_TO_REUSE_A_ONE_USE_CONSUMER_WHICH_IS_NOT_ALLOWED );
-            }
-
-            // Propagate, but make the acceptance of the group "retry friendly". In other words, if the consumption fails, 
-            // then return the consumer to unused.
             try
             {
+                // Propagate
                 Set<Path> paths = this.innerConsumer.apply( this.cache.values() );
 
                 // Clear the cache
@@ -274,14 +260,26 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
                               this.actualMessageCount.get() );
 
                 this.pathsWritten.addAll( paths );
-            }
-            catch ( RuntimeException e )
-            {
-                this.isComplete.set( false );
 
-                throw e;
+                // Consumption happened without exception (or immediate exception), flag complete
+                this.isComplete.set( true );
+            }
+            finally
+            {
+                this.groupCompletionLock.unlock();
             }
         }
+    }
+    
+    /**
+     * @return true if the consumer is ready to complete, otherwise false
+     */
+    
+    private boolean isReadyToComplete()
+    {
+        return this.expectedMessageCount.get() > 0
+                && this.expectedMessageCount.get() == this.actualMessageCount.get()
+                && ! this.isComplete();
     }
 
     /**
