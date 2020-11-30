@@ -536,7 +536,7 @@ public class EvaluationSubscriber implements Closeable
 
     private String getEvaluationStatusSubscriberName()
     {
-        return this.getSubscriberId() + "-EXTERNAL-status";
+        return this.getSubscriberId() + "-status";
     }
 
     /**
@@ -545,7 +545,7 @@ public class EvaluationSubscriber implements Closeable
 
     private String getEvaluationSubscriberName()
     {
-        return this.getSubscriberId() + "-EXTERNAL-evaluation";
+        return this.getSubscriberId() + "-evaluation";
     }
 
     /**
@@ -554,7 +554,7 @@ public class EvaluationSubscriber implements Closeable
 
     private String getStatisticsSubscriberName()
     {
-        return this.getSubscriberId() + "-EXTERNAL-statistics";
+        return this.getSubscriberId() + "-statistics";
     }
 
     /**

@@ -14,61 +14,52 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.function.DoubleUnaryOperator;
-import java.util.function.ToDoubleFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
-import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
-import wres.datamodel.MissingValues;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.ScaleValidationEvent.EventType;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
+import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
- * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Double} 
- * values. An upscaled value is produced from a collection of values that fall within an interval that ends at a 
- * prescribed time. The interval has the same width as the period associated with the desired {@link TimeScaleOuter}. If 
- * the events are not evenly spaced within the interval, that interval is skipped and logged. If any event value is 
- * non-finite, then the upscaled event value is {@link MissingValues#DOUBLE}. The interval is right-closed, 
- * i.e. <code>(end-period,end]</code>. Thus, for example, when upscaling a sequence of instantaneous values 
- * (0Z,6Z,12Z,18Z,0Z] to form an average that ends at 0Z and spans a period of PT24H, the four-point average is taken 
- * for the values at 6Z, 12Z, 18Z and 0Z and not the five-point average. Indeed, if these values represented an average 
- * over PT1H, rather than instantaneous values, then the five-point average would consider a PT25H period.
+ * Helper class for supporting rescaling operations.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Double>
+class RescalingHelper
 {
 
     /**
-     * Validation events that occur frequently. These typically correspond to happy paths or warnings, which do not
-     * stop the application and are, therefore, hit frequently.
+     * Logger.
      */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( RescalingHelper.class );
 
     private static final ScaleValidationEvent DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE =
             ScaleValidationEvent.debug( "Did not detect an attempt to accumulate "
-                                       + "something that is not an accumulation." );
+                                        + "something that is not an accumulation." );
 
     private static final ScaleValidationEvent NOT_ATTEMPTING_TO_ACCUMULATE_AN_INSTANTANEOUS_VALUE =
             ScaleValidationEvent.debug( "Not attempting to accumulate an instantaneous value." );
 
     private static final ScaleValidationEvent NO_ATTEMPT_WAS_MADE_TO_CHANGE_THE_TIME_SCALE_FUNCTION =
             ScaleValidationEvent.debug( "No attempt was made to change the time scale function without "
-                                       + "also changing the period." );
+                                        + "also changing the period." );
 
     private static final ScaleValidationEvent THE_DESIRED_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE =
             ScaleValidationEvent.debug( "The desired period is an integer multiple of the existing "
-                                       + "period and is, therefore, acceptable." );
+                                        + "period and is, therefore, acceptable." );
 
     private static final ScaleValidationEvent THE_EXISTING_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_DESIRED_PERIOD =
             ScaleValidationEvent.debug( "The existing period is not larger than the desired period and "
-                                       + "is, therefore, acceptable." );
+                                        + "is, therefore, acceptable." );
 
     private static final ScaleValidationEvent THE_DESIRED_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE =
             ScaleValidationEvent.debug( "The desired function is not unknown and is, therefore, acceptable." );
@@ -128,48 +119,22 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
     private static final String SEVEN_MEMBER_MESSAGE = "{}{}{}{}{}";
 
-    /**
-     * Lenient on values that match the {@link MissingValues#DOUBLE}? TODO: expose this to declaration.
-     */
-
-    private static final boolean LENIENT = false;
 
     /**
-     * Logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesOfDoubleBasicUpscaler.class );
-
-    /**
-     * Function that returns a double value or {@link MissingValues#DOUBLE} if the
-     * input is not finite. 
-     */
-
-    private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
-            a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
-
-    /**
-     * Creates an instance.
+     * Conducts upscaling of a time-series.
      * 
-     * @return an instance of the upscaler
+     * @param <T> the type of event value to upscale
+     * @param timeSeries the time-series
+     * @param upscaler the function that upscales the event values
+     * @param desiredTimeScale the desired time scale
+     * @param endsAt the set of times at which upscaled values should end
+     * @return the upscaled time-series and associated validation events
      */
 
-    public static TimeSeriesOfDoubleBasicUpscaler of()
-    {
-        return new TimeSeriesOfDoubleBasicUpscaler();
-    }
-
-    @Override
-    public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
-                                                             TimeScaleOuter desiredTimeScale )
-    {
-        return this.upscale( timeSeries, desiredTimeScale, Collections.emptySet() );
-    }
-
-    @Override
-    public RescaledTimeSeriesPlusValidation<Double> upscale( TimeSeries<Double> timeSeries,
-                                                             TimeScaleOuter desiredTimeScale,
-                                                             Set<Instant> endsAt )
+    static <T> RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries,
+                                                            Function<SortedSet<Event<T>>, T> upscaler,
+                                                            TimeScaleOuter desiredTimeScale,
+                                                            Set<Instant> endsAt )
     {
         Objects.requireNonNull( timeSeries );
 
@@ -178,7 +143,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         Objects.requireNonNull( endsAt );
 
         // Validate the request
-        List<ScaleValidationEvent> validationEvents = this.validate( timeSeries, desiredTimeScale );
+        List<ScaleValidationEvent> validationEvents = RescalingHelper.validate( timeSeries, desiredTimeScale );
 
         // Empty time-series
         if ( timeSeries.getEvents().isEmpty() )
@@ -240,9 +205,9 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
                     new TimeSeriesMetadata.Builder( existingMetadata ).setTimeScale( desiredTimeScale )
                                                                       .build();
 
-            TimeSeries<Double> returnMe = new TimeSeriesBuilder<Double>().setMetadata( metadata )
-                                                                         .addEvents( timeSeries.getEvents() )
-                                                                         .build();
+            TimeSeries<T> returnMe = new TimeSeriesBuilder<T>().setMetadata( metadata )
+                                                               .addEvents( timeSeries.getEvents() )
+                                                               .build();
 
             return RescaledTimeSeriesPlusValidation.of( returnMe, validationEvents );
         }
@@ -250,39 +215,36 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         // No times at which values should end, so start at the beginning
         if ( endsAt.isEmpty() )
         {
-            endsAt = this.getEndTimesFromSeries( timeSeries, desiredTimeScale );
+            endsAt = RescalingHelper.getEndTimesFromSeries( timeSeries, desiredTimeScale );
         }
 
         // Group the events according to whether their valid times fall within the desired period that ends at a 
         // particular valid time
         Duration period = desiredTimeScale.getPeriod();
 
-        Map<Instant, SortedSet<Event<Double>>> groups =
+        Map<Instant, SortedSet<Event<T>>> groups =
                 TimeSeriesSlicer.groupEventsByInterval( timeSeries.getEvents(), endsAt, period );
 
         // Process the groups whose events are evenly-spaced and have no missing values, otherwise skip and log
-        TimeSeriesBuilder<Double> builder = new TimeSeriesBuilder<>();
-        // Acquire the function for the desired scale
-        TimeScaleFunction desiredFunction = desiredTimeScale.getFunction();
-
-        ToDoubleFunction<SortedSet<Event<Double>>> upscaler = this.getUpscaler( desiredFunction );
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
 
         // Create a mutable copy of the validation events to add more, as needed
         List<ScaleValidationEvent> mutableValidationEvents = new ArrayList<>( validationEvents );
         validationEvents = mutableValidationEvents;
 
         // Upscale each group
-        for ( Map.Entry<Instant, SortedSet<Event<Double>>> nextGroup : groups.entrySet() )
+        for ( Map.Entry<Instant, SortedSet<Event<T>>> nextGroup : groups.entrySet() )
         {
-            List<ScaleValidationEvent> validation = this.checkThatUpscalingIsPossible( nextGroup.getValue(),
-                                                                                       nextGroup.getKey(),
-                                                                                       period );
+            List<ScaleValidationEvent> validation = RescalingHelper.checkThatUpscalingIsPossible( nextGroup.getValue(),
+                                                                                                  nextGroup.getKey(),
+                                                                                                  period );
             validationEvents.addAll( validation );
 
             // No validation events, upscaling can proceed
             if ( validation.isEmpty() )
             {
-                Event<Double> upscaled = Event.of( nextGroup.getKey(), upscaler.applyAsDouble( nextGroup.getValue() ) );
+                T result = upscaler.apply( nextGroup.getValue() );
+                Event<T> upscaled = Event.of( nextGroup.getKey(), result );
 
                 builder.addEvent( upscaled );
             }
@@ -309,7 +271,7 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @return the times at which upscaled intervals should end
      */
 
-    private <T> Set<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
+    private static <T> Set<Instant> getEndTimesFromSeries( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
     {
         Set<Instant> endsAt = new HashSet<>();
 
@@ -348,10 +310,10 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @return the validation events
      */
 
-    private <T> List<ScaleValidationEvent> validate( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
+    private static <T> List<ScaleValidationEvent> validate( TimeSeries<T> timeSeries, TimeScaleOuter desiredTimeScale )
     {
         List<ScaleValidationEvent> events =
-                TimeSeriesOfDoubleBasicUpscaler.validateForUpscaling( timeSeries.getTimeScale(), desiredTimeScale );
+                RescalingHelper.validateForUpscaling( timeSeries.getTimeScale(), desiredTimeScale );
 
         // Errors to translate into exceptions?
         List<ScaleValidationEvent> errors = events.stream()
@@ -387,9 +349,9 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
      * @throws NullPointerException if any input is null
      */
 
-    private List<ScaleValidationEvent> checkThatUpscalingIsPossible( SortedSet<Event<Double>> events,
-                                                                     Instant endsAt,
-                                                                     Duration period )
+    private static <T> List<ScaleValidationEvent> checkThatUpscalingIsPossible( SortedSet<Event<T>> events,
+                                                                                Instant endsAt,
+                                                                                Duration period )
     {
         Objects.requireNonNull( events );
         Objects.requireNonNull( endsAt );
@@ -459,67 +421,6 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
     }
 
     /**
-     * Returns a function that corresponds to a {@link TimeScaleFunction}, additionally wrapped by 
-     * {@link #RETURN_DOUBLE_OR_MISSING} so that missing input produces missing output.
-     * 
-     * @param function The nominated function
-     * @return a function for upscaling
-     * @throws UnsupportedOperationException if the nominated function is not recognized
-     */
-
-    private ToDoubleFunction<SortedSet<Event<Double>>> getUpscaler( TimeScaleFunction function )
-    {
-        return events -> {
-
-            double upscaled;
-
-            SortedSet<Event<Double>> eventsToUse = events;
-
-            if ( TimeSeriesOfDoubleBasicUpscaler.LENIENT )
-            {
-                eventsToUse = eventsToUse.stream()
-                                         .filter( next -> Double.isFinite( next.getValue() ) )
-                                         .collect( Collectors.toCollection( TreeSet::new ) );
-            }
-
-            switch ( function )
-            {
-                case MAXIMUM:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .max()
-                                          .getAsDouble();
-                    break;
-                case MEAN:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .average()
-                                          .getAsDouble();
-                    break;
-                case MINIMUM:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .min()
-                                          .getAsDouble();
-                    break;
-                case TOTAL:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .sum();
-                    break;
-                default:
-                    throw new UnsupportedOperationException( "Could not create an upscaling function for the "
-                                                             + "function identifier '"
-                                                             + function
-                                                             + "'." );
-
-            }
-
-            return RETURN_DOUBLE_OR_MISSING.applyAsDouble( upscaled );
-        };
-    }
-
-    /**
      * <p>Validates the request to upscale and throws an exception if the request is invalid. The validation is composed
      * of many separate pieces, each of which produces a {@link ScaleValidationEvent}. These validation events are 
      * collected together and, if any show {@link EventType#ERROR}, then an exception is thrown with all such cases 
@@ -554,31 +455,31 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
 
         // Change of scale required, i.e. not absolutely equal and not instantaneous
         // (which has a more lenient interpretation)
-        if ( TimeSeriesOfDoubleBasicUpscaler.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale ) )
+        if ( RescalingHelper.isChangeOfScaleRequired( existingTimeScale, desiredTimeScale ) )
         {
 
             // The desired time scale must be a sensible function in the context of rescaling
-            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfDesiredFunctionIsUnknown( desiredTimeScale ) );
+            allEvents.add( RescalingHelper.checkIfDesiredFunctionIsUnknown( desiredTimeScale ) );
 
             // Downscaling not currently allowed
-            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfDownscalingRequested( existingTimeScale.getPeriod(),
-                                                                                        desiredTimeScale.getPeriod() ) );
+            allEvents.add( RescalingHelper.checkIfDownscalingRequested( existingTimeScale.getPeriod(),
+                                                                        desiredTimeScale.getPeriod() ) );
 
             // The desired time scale period must be an integer multiple of the existing time scale period
-            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
-                                                                                               desiredTimeScale.getPeriod() ) );
+            allEvents.add( RescalingHelper.checkIfDesiredPeriodDoesNotCommute( existingTimeScale.getPeriod(),
+                                                                               desiredTimeScale.getPeriod() ) );
 
             // If the existing and desired periods are the same, the function cannot differ
-            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfPeriodsMatchAndFunctionsDiffer( existingTimeScale,
-                                                                                                  desiredTimeScale ) );
+            allEvents.add( RescalingHelper.checkIfPeriodsMatchAndFunctionsDiffer( existingTimeScale,
+                                                                                  desiredTimeScale ) );
 
             // If the existing time scale is instantaneous, do not allow accumulations (for now)
-            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfAccumulatingInstantaneous( existingTimeScale,
-                                                                                             desiredTimeScale.getFunction() ) );
+            allEvents.add( RescalingHelper.checkIfAccumulatingInstantaneous( existingTimeScale,
+                                                                             desiredTimeScale.getFunction() ) );
 
             // If the desired function is a total, then the existing function must also be a total
-            allEvents.add( TimeSeriesOfDoubleBasicUpscaler.checkIfAccumulatingNonAccumulation( existingTimeScale.getFunction(),
-                                                                                               desiredTimeScale.getFunction() ) );
+            allEvents.add( RescalingHelper.checkIfAccumulatingNonAccumulation( existingTimeScale.getFunction(),
+                                                                               desiredTimeScale.getFunction() ) );
 
         }
 
@@ -841,14 +742,6 @@ public class TimeSeriesOfDoubleBasicUpscaler implements TimeSeriesUpscaler<Doubl
         }
 
         return DID_NOT_DETECT_AN_ATTEMPT_TO_ACCUMULATE;
-    }
-
-    /**
-     * Hidden constructor.
-     */
-
-    private TimeSeriesOfDoubleBasicUpscaler()
-    {
     }
 
 }

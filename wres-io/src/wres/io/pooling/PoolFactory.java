@@ -33,7 +33,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
-import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
+import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairer.TimePairingType;
@@ -150,7 +150,7 @@ public class PoolFactory
         TimeSeriesCrossPairer<Double, Double> crossPairer = PoolFactory.getCrossPairerOrNull( pairConfig );
 
         // Create a default upscaler
-        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
 
         // Create the basic metadata for the pools
         SampleMetadata mainMetadata = PoolFactory.createMetadata( evaluation,
@@ -277,8 +277,8 @@ public class PoolFactory
         TimeSeriesCrossPairer<Double, Ensemble> crossPairer = PoolFactory.getCrossPairerOrNull( pairConfig );
 
         // Create a default upscaler for left-ish data
-        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleBasicUpscaler.of();
-        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( leftUpscaler );
+        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of();
+        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of();
 
         // Create the basic metadata for the pools
         SampleMetadata mainMetadata = PoolFactory.createMetadata( evaluation,

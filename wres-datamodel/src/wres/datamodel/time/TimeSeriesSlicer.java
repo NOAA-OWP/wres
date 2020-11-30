@@ -480,16 +480,15 @@ public final class TimeSeriesSlicer
 
 
     /**
-     * <p>Returns a trace-view of an ensemble time-series. The input series is
-     * decomposed into one Set for each ensemble trace, with the label as a key.
+     * <p>Returns a trace-view of an ensemble time-series. The input series is decomposed into one Set for each ensemble 
+     * trace, with the label as a key.
      *
      * Reference datetimes metadata are lost but ensemble labels are preserved.
      *
      * @param timeSeries The time-series to decompose
      * @return A map with the trace label as key, sorted set of Events as value.
-     * @throws UnsupportedOperationException When the ensemble events contain a
-     * varying number of members and the ensemble labels have not been provided
-     * to distinguish between them.
+     * @throws UnsupportedOperationException When the ensemble events contain a varying number of members and the 
+     *            ensemble labels have not been provided to distinguish between them.
      */
 
     public static Map<Object, SortedSet<Event<Double>>> decomposeWithLabels( TimeSeries<Ensemble> timeSeries )
