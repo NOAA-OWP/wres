@@ -572,7 +572,7 @@ public class EvaluationSubscriber implements Closeable
             String groupId = null;
 
             EvaluationConsumer consumer = null;
-            
+
             try
             {
                 messageId = message.getJMSMessageID();
@@ -616,9 +616,9 @@ public class EvaluationSubscriber implements Closeable
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
-                
+
                 // Try to complete
-                this.completeConsumer( consumer, correlationId );
+                this.completeEvaluation( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -649,7 +649,7 @@ public class EvaluationSubscriber implements Closeable
             String groupId = null;
 
             EvaluationConsumer consumer = null;
-            
+
             try
             {
                 if ( !this.isSubscriberFailed() && this.isThisMessageForMe( message ) )
@@ -682,9 +682,9 @@ public class EvaluationSubscriber implements Closeable
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
-                
+
                 // Try to complete
-                this.completeConsumer( consumer, correlationId );
+                this.completeEvaluation( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -702,24 +702,21 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Attempts to complete a consumer.
+     * Completes an evaluation when the consumption is complete.
      * 
      * @param consumer the consumer
      * @param evaluationId the evaluation identifier
-     * @throws JMSException if the evaluation could not be published complete
      */
-    
-    private void completeConsumer( EvaluationConsumer consumer, String evaluationId ) throws JMSException
+
+    private void completeEvaluation( EvaluationConsumer consumer, String evaluationId )
     {
         // Complete?
         if ( Objects.nonNull( consumer ) && consumer.isComplete() )
         {
-            // Yes, then close
-            consumer.close();
             this.status.registerEvaluationCompleted( evaluationId );
         }
     }
-    
+
     /**
      * Awaits evaluation messages and then consumes them. 
      */
@@ -734,7 +731,7 @@ public class EvaluationSubscriber implements Closeable
             String jobId = null;
 
             EvaluationConsumer consumer = null;
-            
+
             try
             {
                 if ( !this.isSubscriberFailed() && this.isThisMessageForMe( message ) )
@@ -766,9 +763,9 @@ public class EvaluationSubscriber implements Closeable
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
-                
+
                 // Try to complete
-                this.completeConsumer( consumer, correlationId );
+                this.completeEvaluation( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -888,11 +885,10 @@ public class EvaluationSubscriber implements Closeable
     {
         this.status.registerFailedEvaluation( evaluationId );
         EvaluationConsumer consumer = this.getEvaluationConsumer( evaluationId );
-        consumer.markEvaluationFailed( exception );
 
         try
         {
-            consumer.close();
+            consumer.markEvaluationFailed( exception );
         }
         catch ( JMSException | UnrecoverableSubscriberException e )
         {
@@ -921,19 +917,29 @@ public class EvaluationSubscriber implements Closeable
         // Attempt to mark all open evaluations as failed
         this.getEvaluationsLock().lock();
 
-        for ( EvaluationConsumer nextEvaluation : this.evaluations.values() )
+        try
         {
-            if ( !nextEvaluation.isComplete() )
+            for ( EvaluationConsumer nextEvaluation : this.evaluations.values() )
             {
-                nextEvaluation.markEvaluationFailed( exception );
+                if ( !nextEvaluation.isComplete() )
+                {
+                    nextEvaluation.markEvaluationFailed( exception );
+                }
             }
         }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "While closing subscriber {}, failed to close some of the evaluations associated with it.",
+                          this.getSubscriberId() );
+        }
+        finally
+        {
+            this.getEvaluationsLock().unlock();
 
-        this.getEvaluationsLock().unlock();
-
-        // Propagate upwards
-        this.isFailedUnrecoverably.set( true );
-        this.status.markFailedUnrecoverably( exception );
+            // Propagate upwards
+            this.isFailedUnrecoverably.set( true );
+            this.status.markFailedUnrecoverably( exception );
+        }
 
         throw exception;
     }
