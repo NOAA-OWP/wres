@@ -54,7 +54,7 @@ import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 
 /**
- * A consumer that tracks the status of an evaluation via its {@link EvaluationStatus} messages and awaits its 
+ * A class that tracks the status of an evaluation via its {@link EvaluationStatus} messages and awaits its 
  * completion upon request ({@link #await()}).
  * 
  * @author james.brown@hydrosolved.com
@@ -836,11 +836,12 @@ class EvaluationStatusTracker implements Closeable
                 int pick = EvaluationStatusTracker.SUBSCRIBER_RESOLVER.nextInt( size );
                 String newConsumerId = consumers.get( pick );
 
+
                 // Replace, which returns the existing value if one exists
                 existingConsumerId = accepted.replace( nextAccepted, newConsumerId );
 
                 // Replace all instances of the old references with the new one if the winning subscriber offers 
-                // multiple formats that are required. Don't check if the existing and new are the same.
+                // multiple formats that are required. If the existing and new are the same, don't replace.
                 if ( Objects.nonNull( existingConsumerId ) && !existingConsumerId.equals( newConsumerId ) )
                 {
                     replaced.add( newConsumerId );
@@ -948,10 +949,10 @@ class EvaluationStatusTracker implements Closeable
             TimedCountDownLatch subscriberLatch = this.getSubscriberLatch( consumerId );
             subscriberLatch.countDown();
 
-            LOGGER.debug( "Removed a message subscriber {} for evaluation {} as {}.",
-                          consumerId,
-                          this.evaluation.getEvaluationId(),
-                          message.getCompletionStatus() );
+            LOGGER.info( "Message subscriber {} for evaluation {} notified {}.",
+                         consumerId,
+                         this.evaluation.getEvaluationId(),
+                         message.getCompletionStatus() );
         }
     }
 
@@ -1096,7 +1097,7 @@ class EvaluationStatusTracker implements Closeable
         this.timeoutDuringNegotiation = 5;
         this.timeoutDuringNegotiationUnits = TimeUnit.MINUTES;
 
-        // Mutable because some subscriptions may be negotiated and hence latches added upon successful negotiation
+        // Mutable because subscriptions are negotiated and hence latches added upon successful negotiation
         this.subscriberLatches = new ConcurrentHashMap<>();
 
         // A latch whose count equals the number of formats to be delivered by external subscribers

@@ -213,56 +213,13 @@ class EvaluationConsumer
     }
 
     /**
-     * Closes the evaluation on completion.
-     * @throws JMSException if the evaluation failed to close
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
-     */
-    void close() throws JMSException
-    {
-        if ( !this.isClosed() )
-        {
-
-            // Flag closed, regardless of what happens next
-            this.isClosed.set( true );
-
-            LOGGER.debug( "Subscriber {} is closing evaluation {}.",
-                          this.getConsumerId(),
-                          this.getEvaluationId() );
-
-            LOGGER.info( "Subscriber {} closed evaluation {}, which contained {} messages (not "
-                         + "including any evaluation status messages).",
-                         this.getConsumerId(),
-                         this.getEvaluationId(),
-                         this.consumed.get() );
-
-            if ( this.isFailed() )
-            {
-                if ( !this.isFailureNotified() )
-                {
-                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
-                                                 null,
-                                                 List.of() );
-                }
-            }
-            else
-            {
-                this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
-                                             null,
-                                             List.of() );
-            }
-
-            // This instance is not responsible for closing the executor service.
-        }
-    }
-
-    /**
      * Marks an evaluation as failed unrecoverably after exhausting all attempts to recover the subscriber that 
      * delivers messages to this consumer.
      * @param exception an exception to notify
+     * @throws JMSException if the failure cannot be notified
      */
 
-    void markEvaluationFailed( Exception exception )
+    void markEvaluationFailed( Exception exception ) throws JMSException
     {
         // Notify
         try
@@ -292,53 +249,10 @@ class EvaluationConsumer
         {
             this.isFailed.set( true );
             this.isComplete.set( true );
+            
+            // Close the consumer
+            this.close();
         }
-    }
-
-    /**
-     * Publishes the completion status of the consumer.
-     * @param completionStatus the completion status
-     * @param events evaluation status events
-     * @throws NullPointerException if the input is null
-     * @throws JMSException if the status could not be published
-     */
-
-    void publishCompletionState( CompletionStatus completionStatus, String groupId, List<EvaluationStatusEvent> events )
-            throws JMSException
-    {
-        Objects.requireNonNull( completionStatus );
-        Objects.requireNonNull( events );
-
-        // Collect the paths written, if available
-        List<String> addThesePaths = this.getPathsWritten()
-                                         .stream()
-                                         .map( Path::toString )
-                                         .collect( Collectors.toUnmodifiableList() );
-
-        // Create the status message to publish
-        EvaluationStatus.Builder message = EvaluationStatus.newBuilder()
-                                                           .setCompletionStatus( completionStatus )
-                                                           .setConsumer( this.getConsumerDescription() )
-                                                           .addAllStatusEvents( events )
-                                                           .addAllResourcesCreated( addThesePaths );
-
-        if ( Objects.nonNull( groupId ) )
-        {
-            message.setGroupId( groupId );
-        }
-
-        // Create the metadata
-        String messageId = "ID:" + this.getConsumerId() + "-complete";
-
-        ByteBuffer buffer = ByteBuffer.wrap( message.build()
-                                                    .toByteArray() );
-
-        Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
-        properties.put( MessageProperty.JMS_MESSAGE_ID, messageId );
-        properties.put( MessageProperty.JMS_CORRELATION_ID, this.getEvaluationId() );
-        properties.put( MessageProperty.CONSUMER_ID, this.getConsumerId() );
-
-        this.evaluationStatusPublisher.publish( buffer, Collections.unmodifiableMap( properties ) );
     }
 
     /**
@@ -363,6 +277,7 @@ class EvaluationConsumer
         // Yes.
         if ( this.getAreConsumersReady() )
         {
+            // Accept inner, which also calls checkAndCloseIfComplete
             this.acceptStatisticsMessageInner( statistics, groupId, messageId );
         }
         // No. Cache until the consumers are ready.
@@ -407,6 +322,9 @@ class EvaluationConsumer
                       this.getEvaluationId() );
 
         this.consumed.incrementAndGet();
+        
+        // If consumption is complete, then close the consumer
+        this.closeIfComplete();
     }
 
     /**
@@ -440,6 +358,9 @@ class EvaluationConsumer
             default:
                 break;
         }
+        
+        // If consumption is complete, then close the consumer
+        this.closeIfComplete();
     }
 
     /** 
@@ -488,13 +409,123 @@ class EvaluationConsumer
     }
 
     /**
+     * Publishes the completion status of the consumer.
+     * @param completionStatus the completion status
+     * @param events evaluation status events
+     * @throws NullPointerException if the input is null
+     * @throws JMSException if the status could not be published
+     */
+
+    private void publishCompletionState( CompletionStatus completionStatus, String groupId, List<EvaluationStatusEvent> events )
+            throws JMSException
+    {
+        Objects.requireNonNull( completionStatus );
+        Objects.requireNonNull( events );
+
+        // Collect the paths written, if available
+        List<String> addThesePaths = this.getPathsWritten()
+                                         .stream()
+                                         .map( Path::toString )
+                                         .collect( Collectors.toUnmodifiableList() );
+
+        // Create the status message to publish
+        EvaluationStatus.Builder message = EvaluationStatus.newBuilder()
+                                                           .setCompletionStatus( completionStatus )
+                                                           .setConsumer( this.getConsumerDescription() )
+                                                           .addAllStatusEvents( events )
+                                                           .addAllResourcesCreated( addThesePaths );
+
+        if ( Objects.nonNull( groupId ) )
+        {
+            message.setGroupId( groupId );
+        }
+
+        // Create the metadata
+        String messageId = "ID:" + this.getConsumerId() + "-complete";
+
+        ByteBuffer buffer = ByteBuffer.wrap( message.build()
+                                                    .toByteArray() );
+
+        Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
+        properties.put( MessageProperty.JMS_MESSAGE_ID, messageId );
+        properties.put( MessageProperty.JMS_CORRELATION_ID, this.getEvaluationId() );
+        properties.put( MessageProperty.CONSUMER_ID, this.getConsumerId() );
+
+        this.evaluationStatusPublisher.publish( buffer, Collections.unmodifiableMap( properties ) );
+        
+        if( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Published the completion state of {} as {}.", this.getConsumerId(), completionStatus );
+        }
+    }
+    
+    /**
+     * Checks whether consumption is complete and, if so, closes the consumer.
+     * @throws JMSException
+     */
+    
+    private void closeIfComplete() throws JMSException
+    {
+        if( this.isComplete() )
+        {
+            this.close();
+        }
+    }
+
+    /**
+     * Closes the evaluation on completion.
+     * @throws JMSException if the closing state could not be published
+     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
+     *            subscriber that wraps it
+     */
+    private void close() throws JMSException
+    {
+        if ( !this.isClosed() )
+        {
+
+            // Flag closed, regardless of what happens next
+            this.isClosed.set( true );
+
+            LOGGER.debug( "Subscriber {} is closing evaluation {}.",
+                          this.getConsumerId(),
+                          this.getEvaluationId() );
+
+            LOGGER.info( "Subscriber {} closed evaluation {}, which contained {} messages (not "
+                         + "including any evaluation status messages).",
+                         this.getConsumerId(),
+                         this.getEvaluationId(),
+                         this.consumed.get() );
+
+            if ( this.isFailed() )
+            {
+                if ( !this.isFailureNotified() )
+                {
+                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
+                                                 null,
+                                                 List.of() );
+                    
+                    this.isFailureNotified.set( true );
+                }
+            }
+            else
+            {
+                this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
+                                             null,
+                                             List.of() );
+            }
+
+            // This instance is not responsible for closing the executor service.
+        }
+    }
+    
+    /**
      * @return true if the evaluation failure has been notified, otherwise false
      */
     private boolean isFailureNotified()
     {
         return this.isFailureNotified.get();
     }
-
+    
     /**
      * @return the executor to do writing work.
      */
@@ -815,6 +846,9 @@ class EvaluationConsumer
         }
 
         this.consumed.incrementAndGet();
+        
+        // If consumption is complete, then close the consumer
+        this.closeIfComplete();
 
         LOGGER.debug( "Subscriber {} received and consumed a statistics message with identifier {} "
                       + "for evaluation {}.",
