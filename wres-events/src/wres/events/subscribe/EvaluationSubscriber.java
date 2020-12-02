@@ -934,7 +934,8 @@ public class EvaluationSubscriber implements Closeable
         }
         finally
         {
-            this.getEvaluationsLock().unlock();
+            this.getEvaluationsLock()
+                .unlock();
 
             // Propagate upwards
             this.isFailedUnrecoverably.set( true );
