@@ -324,7 +324,7 @@ class EvaluationConsumer
         this.consumed.incrementAndGet();
         
         // If consumption is complete, then close the consumer
-        this.closeIfComplete();
+        this.closeConsumerIfComplete();
     }
 
     /**
@@ -360,7 +360,7 @@ class EvaluationConsumer
         }
         
         // If consumption is complete, then close the consumer
-        this.closeIfComplete();
+        this.closeConsumerIfComplete();
     }
 
     /** 
@@ -464,7 +464,7 @@ class EvaluationConsumer
      * @throws JMSException
      */
     
-    private void closeIfComplete() throws JMSException
+    private void closeConsumerIfComplete() throws JMSException
     {
         if( this.isComplete() )
         {
@@ -482,38 +482,42 @@ class EvaluationConsumer
     {
         if ( !this.isClosed() )
         {
-
-            // Flag closed, regardless of what happens next
-            this.isClosed.set( true );
-
             LOGGER.debug( "Subscriber {} is closing evaluation {}.",
                           this.getConsumerId(),
                           this.getEvaluationId() );
+            
+            try
+            {
+
+                if ( this.isFailed() )
+                {
+                    if ( !this.isFailureNotified() )
+                    {
+                        this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
+                                                     null,
+                                                     List.of() );
+
+                        this.isFailureNotified.set( true );
+                    }
+                }
+                else
+                {
+                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
+                                                 null,
+                                                 List.of() );
+                }
+            }
+            finally
+            {
+                this.isClosed.set( true );
+            }
 
             LOGGER.info( "Subscriber {} closed evaluation {}, which contained {} messages (not "
                          + "including any evaluation status messages).",
                          this.getConsumerId(),
                          this.getEvaluationId(),
                          this.consumed.get() );
-
-            if ( this.isFailed() )
-            {
-                if ( !this.isFailureNotified() )
-                {
-                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
-                                                 null,
-                                                 List.of() );
-                    
-                    this.isFailureNotified.set( true );
-                }
-            }
-            else
-            {
-                this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
-                                             null,
-                                             List.of() );
-            }
-
+            
             // This instance is not responsible for closing the executor service.
         }
     }
@@ -585,19 +589,23 @@ class EvaluationConsumer
     /**
      * Sets the expected message count.
      * @param status the evaluation status message with the expected message count
+     * @throws JMSException if setting the count closes the consumer and notification of closure fails
      */
 
-    private void setExpectedMessageCount( EvaluationStatus status )
+    private void setExpectedMessageCount( EvaluationStatus status ) throws JMSException
     {
         Objects.requireNonNull( status );
 
-        this.expected.addAndGet( status.getMessageCount() );
+        this.expected.set( status.getMessageCount() );
 
         LOGGER.debug( "Subscriber {} received notification of publication complete for evaluation "
                       + "{}. The message indicated an expected message count of {}.",
                       this.getConsumerId(),
                       this.getEvaluationId(),
                       this.expected.get() );
+        
+        // If consumption is complete, then close the consumer
+        this.closeConsumerIfComplete();
     }
 
     /**
@@ -686,7 +694,7 @@ class EvaluationConsumer
         OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
         groupCon.setExpectedMessageCount( status.getMessageCount() );
 
-        this.checkAndCompleteGroup( groupCon );
+        this.closeGroupIfComplete( groupCon );
     }
 
     /**
@@ -842,13 +850,13 @@ class EvaluationConsumer
             OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
             groupCon.accept( messageId, statistics );
 
-            this.checkAndCompleteGroup( groupCon );
+            this.closeGroupIfComplete( groupCon );
         }
 
         this.consumed.incrementAndGet();
         
         // If consumption is complete, then close the consumer
-        this.closeIfComplete();
+        this.closeConsumerIfComplete();
 
         LOGGER.debug( "Subscriber {} received and consumed a statistics message with identifier {} "
                       + "for evaluation {}.",
@@ -866,7 +874,7 @@ class EvaluationConsumer
      * @throws NullPointerException if the input is null
      */
 
-    private void checkAndCompleteGroup( OneGroupConsumer<Statistics> groupCon ) throws JMSException
+    private void closeGroupIfComplete( OneGroupConsumer<Statistics> groupCon ) throws JMSException
     {
         if ( groupCon.isComplete() )
         {
