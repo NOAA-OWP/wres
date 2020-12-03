@@ -213,7 +213,7 @@ class ProcessorHelper
             // Close the formats subscriber
             formatsSubscriber.close();
 
-            // Add the paths written by external subscribers
+            // Add the paths written by subscribers
             returnMe.addAll( evaluation.getPathsWrittenBySubscribers() );
 
             // Clean-up an empty output directory: #67088

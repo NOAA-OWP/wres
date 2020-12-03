@@ -249,7 +249,7 @@ class EvaluationConsumer
         {
             this.isFailed.set( true );
             this.isComplete.set( true );
-            
+
             // Close the consumer
             this.close();
         }
@@ -322,7 +322,7 @@ class EvaluationConsumer
                       this.getEvaluationId() );
 
         this.consumed.incrementAndGet();
-        
+
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
     }
@@ -358,7 +358,7 @@ class EvaluationConsumer
             default:
                 break;
         }
-        
+
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
     }
@@ -416,7 +416,9 @@ class EvaluationConsumer
      * @throws JMSException if the status could not be published
      */
 
-    private void publishCompletionState( CompletionStatus completionStatus, String groupId, List<EvaluationStatusEvent> events )
+    private void publishCompletionState( CompletionStatus completionStatus,
+                                         String groupId,
+                                         List<EvaluationStatusEvent> events )
             throws JMSException
     {
         Objects.requireNonNull( completionStatus );
@@ -452,21 +454,21 @@ class EvaluationConsumer
         properties.put( MessageProperty.CONSUMER_ID, this.getConsumerId() );
 
         this.evaluationStatusPublisher.publish( buffer, Collections.unmodifiableMap( properties ) );
-        
-        if( LOGGER.isDebugEnabled() )
+
+        if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Published the completion state of {} as {}.", this.getConsumerId(), completionStatus );
         }
     }
-    
+
     /**
      * Checks whether consumption is complete and, if so, closes the consumer.
      * @throws JMSException
      */
-    
+
     private void closeConsumerIfComplete() throws JMSException
     {
-        if( this.isComplete() )
+        if ( this.isComplete() )
         {
             this.close();
         }
@@ -485,7 +487,7 @@ class EvaluationConsumer
             LOGGER.debug( "Subscriber {} is closing evaluation {}.",
                           this.getConsumerId(),
                           this.getEvaluationId() );
-            
+
             try
             {
 
@@ -517,11 +519,11 @@ class EvaluationConsumer
                          this.getConsumerId(),
                          this.getEvaluationId(),
                          this.consumed.get() );
-            
+
             // This instance is not responsible for closing the executor service.
         }
     }
-    
+
     /**
      * @return true if the evaluation failure has been notified, otherwise false
      */
@@ -529,7 +531,7 @@ class EvaluationConsumer
     {
         return this.isFailureNotified.get();
     }
-    
+
     /**
      * @return the executor to do writing work.
      */
@@ -603,7 +605,7 @@ class EvaluationConsumer
                       this.getConsumerId(),
                       this.getEvaluationId(),
                       this.expected.get() );
-        
+
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
     }
@@ -854,7 +856,7 @@ class EvaluationConsumer
         }
 
         this.consumed.incrementAndGet();
-        
+
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
 
