@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -61,7 +62,6 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.concurrency.Executor;
@@ -231,21 +231,45 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             throws IOException
     {
         Objects.requireNonNull( thresholds );
-        
-        if( this.getIsReadyToWrite().get() )
+
+        if ( this.getIsReadyToWrite().get() )
         {
             throw new WriteException( "The netcdf blobs have already been created." );
         }
-        
+
         // Time windows
         PairConfig pairConfig = this.getProjectConfig()
                                     .getPair();
         Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
-        Optional<ThresholdsByMetric> possibleThresholds = thresholds.values().stream().findFirst();
+        // Find the feature with the maximum number of thresholds in order to ensure sufficient metric variables are
+        // added. See #85491.
+        Comparator<ThresholdsByMetric> byCount = ( ThresholdsByMetric o1, ThresholdsByMetric o2 ) -> {
+            int first = o1.getOneOrTwoThresholds()
+                          .values()
+                          .stream()
+                          .mapToInt( Set::size )
+                          .max()
+                          .orElse( 0 );
+            int second = o2.getOneOrTwoThresholds()
+                           .values()
+                           .stream()
+                           .mapToInt( Set::size )
+                           .max()
+                           .orElse( 0 );
+            return Integer.compare( first, second );
+        };
 
-        ThresholdsByMetric thresholdsToLoad = possibleThresholds.orElseGet(
-                                                                            () -> ThresholdsGenerator.getThresholdsFromConfig( projectConfig ) );
+        // Find the feature with the largest number of thresholds.
+        Optional<ThresholdsByMetric> maximumExternal = thresholds.values()
+                                                                 .stream()
+                                                                 .max( byCount );
+
+        if ( !maximumExternal.isPresent() )
+        {
+            throw new IOException( "While creating netcdf blobs, expected at least one threshold to write, but found "
+                                   + "none." );
+        }
 
         // Units, if declared
         String units = "UNKNOWN";
@@ -268,17 +292,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                      this.getProjectConfig()
                                                                          .getInputs(),
                                                                      timeWindows,
-                                                                     thresholdsToLoad,
+                                                                     maximumExternal.get(),
                                                                      units,
                                                                      desiredTimeScale );
 
             this.pathsWrittenTo.addAll( pathsCreated );
-            
+
             // Flag ready
             this.getIsReadyToWrite()
                 .set( true );
         }
-        
+
         LOGGER.debug( "Created the following netcdf paths for writing: {}.", this.getPathsWrittenTo() );
     }
 
@@ -836,7 +860,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
 
                     String name = this.getVariableName( score.getMetricName(), componentScore, scores );
-   
+                    
                     // Figure out the location of all values and build the origin in each variable grid
                     FeatureKey location = score.getMetadata()
                                                .getIdentifier()
@@ -932,7 +956,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * the score metadata. Attempts to use the threshold name to locate the threshold. Otherwise, uses the natural 
          * order of the thresholds.
          * 
+         * @param metricName the metric name
          * @param score the score whose metric-threshold standard name is required
+         * @param scores the list of scores to search
          * @return the standard name
          */
 

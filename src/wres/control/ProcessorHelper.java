@@ -213,7 +213,7 @@ class ProcessorHelper
             // Close the formats subscriber
             formatsSubscriber.close();
 
-            // Add the paths written by subscribers
+            // Add the paths written by external subscribers
             returnMe.addAll( evaluation.getPathsWrittenBySubscribers() );
 
             // Clean-up an empty output directory: #67088
@@ -294,12 +294,7 @@ class ProcessorHelper
 
             Set<FeatureTuple> decomposedFeatures = ProcessorHelper.getDecomposedFeatures( project );
 
-            // Read external thresholds from the configuration, per feature
-            // Compare on left dataset's feature name only.
-            // TODO: consider how better to transmit these thresholds
-            // to wres-metrics, given that they are resolved by project configuration that is
-            // passed separately to wres-metrics. Options include moving MetricProcessor* to
-            // wres-control, since they make processing decisions, or passing ResolvedProject onwards
+            // Read all thresholds
             ThresholdReader thresholdReader = new ThresholdReader( systemSettings,
                                                                    projectConfig,
                                                                    unitMapper,
