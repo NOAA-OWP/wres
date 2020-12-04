@@ -296,4 +296,54 @@ public class FeatureKey implements Comparable<FeatureKey>
         return new GeoPoint( x, y );
     }
 
+    /**
+     * Return x,y from a wkt with a POINT in it.
+     * A less strict version of the above method, returns null if anything goes
+     * wrong. The above strict version is needed for gridded evaluation whereas
+     * this one will return null when it cannot get a GeoPoitn out of the wkt.
+     * @param wkt A well-known text geometry that may have POINT
+     * @return GeoPoint with x,y doubles parsed, null when anything goes wrong
+     */
+
+    public static GeoPoint getLonLatOrNullFromWkt( String wkt )
+    {
+        String wktUpperCase = wkt.strip()
+                                 .toUpperCase();
+
+        // Validate it's a point
+        if ( !wktUpperCase.startsWith( "POINT" ) ||
+             !wktUpperCase.contains( "(" )
+             ||
+             !wktUpperCase.contains( ")" ) )
+        {
+            // Not a point, cannot get a single point from a non-point.
+            return null;
+        }
+
+        double x;
+        double y;
+        String[] wktParts = wktUpperCase.split( "[ )(]", 30 );
+        List<String> parts = Arrays.stream( wktParts )
+                                   .filter( s -> !s.isBlank() )
+                                   .collect( Collectors.toList() );
+
+        if ( parts.size() < 3 || parts.size() > 4 )
+        {
+            // Too few or too many eleements parsed, cannot proceed.
+            return null;
+        }
+
+        try
+        {
+            x = Double.parseDouble( parts.get( 1 ) );
+            y = Double.parseDouble( parts.get( 2 ) );
+        }
+        catch ( NumberFormatException nfe )
+        {
+            // Could not parse a double, cannot proceed.
+            return null;
+        }
+
+        return new GeoPoint( x, y );
+    }
 }
