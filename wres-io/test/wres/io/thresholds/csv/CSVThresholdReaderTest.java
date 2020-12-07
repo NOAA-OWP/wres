@@ -71,6 +71,7 @@ public class CSVThresholdReaderTest
                 "-999",
                 null,
                 null,
+                null,
                 null
         );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
@@ -150,6 +151,7 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
+                null,
                 null,
                 null,
                 null
@@ -233,6 +235,7 @@ public class CSVThresholdReaderTest
                 "-999",
                 null,
                 null,
+                null,
                 null
         );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
@@ -305,6 +308,7 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
+                null,
                 null,
                 null,
                 null
@@ -381,6 +385,7 @@ public class CSVThresholdReaderTest
                 "-999",
                 null,
                 null,
+                null,
                 null
         );
         ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
@@ -445,6 +450,7 @@ public class CSVThresholdReaderTest
                 ThresholdFormat.CSV,
                 "CMS",
                 "-999",
+                null,
                 null,
                 null,
                 null
