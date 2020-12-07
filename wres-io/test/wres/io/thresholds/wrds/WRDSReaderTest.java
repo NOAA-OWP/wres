@@ -5,11 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.config.generated.ThresholdDataType;
-import wres.config.generated.ThresholdFormat;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
+import wres.config.generated.*;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -145,7 +141,8 @@ public class WRDSReaderTest {
                     null,
                     "NWS-NRLDB",
                     null,
-                    "stage"
+                    "stage",
+                    LeftOrRightOrBaseline.LEFT
             ),
             ThresholdOperator.GREATER_THAN
     );
@@ -160,7 +157,8 @@ public class WRDSReaderTest {
                     null,
                     "NWS-CMS",
                     null,
-                    "stage"
+                    "stage",
+                    LeftOrRightOrBaseline.LEFT
             ),
             ThresholdOperator.LESS_THAN
     );
@@ -175,7 +173,8 @@ public class WRDSReaderTest {
                     "Totally doesn't matter",
                     "FlavorTown",
                     "DonkeySauce",
-                    "flow"
+                    "flow",
+                    LeftOrRightOrBaseline.LEFT
             ),
             ThresholdOperator.GREATER_THAN
     );
