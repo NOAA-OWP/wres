@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.events.RepeatRule.Repeat;
+//import wres.events.RepeatRule.Repeat;
 import wres.events.subscribe.ConsumerException;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
@@ -55,7 +55,7 @@ public class EvaluationTest
 {
     
     @Rule
-    public RepeatRule repeatRule = new RepeatRule();
+//    public RepeatRule repeatRule = new RepeatRule();
     
     /**
      * One evaluation for testing.
