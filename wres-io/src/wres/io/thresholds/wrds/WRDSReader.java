@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
+import wres.io.reading.wrds.ReadValueManager;
 import wres.io.thresholds.exceptions.StreamIOException;
 import wres.io.thresholds.wrds.response.ThresholdExtractor;
 import wres.io.utilities.WebClient;
@@ -19,6 +21,8 @@ import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.wrds.response.ThresholdResponse;
 import wres.system.SystemSettings;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,8 +34,9 @@ import java.util.stream.Collectors;
 
 public final class WRDSReader {
     private static final Logger LOGGER = LoggerFactory.getLogger( WRDSReader.class );
-    private static final String CERT_NAME = "dod_sw_ca-54_expires_2022-11.pem";
-    private static final WebClient WEB_CLIENT = new WebClient(WebClient.createSSLContext(CERT_NAME), true);
+    private static Pair<SSLContext, X509TrustManager> SSL_CONTEXT
+            = ReadValueManager.getSslContextTrustingDodSigner();
+    private static final WebClient WEB_CLIENT = new WebClient(SSL_CONTEXT, true);
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
@@ -117,16 +122,24 @@ public final class WRDSReader {
         }
 
         WRDSReader reader = new WRDSReader( systemSettings );
+        Map<String, Set<ThresholdOuter>> thresholdMapping;
 
         try {
-            return addresses.parallelStream()
+            thresholdMapping = addresses.parallelStream()
                     .map(reader::getResponse)
+                    .filter(Objects::nonNull)
                     .map(thresholdResponse -> extract(thresholdResponse, threshold, unitMapper))
                     .flatMap(featurePlusSetMap -> featurePlusSetMap.entrySet().stream())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         } catch (StreamIOException streamReadingException) {
             throw new IOException(streamReadingException.getCause());
         }
+
+        if (thresholdMapping.isEmpty()) {
+            throw new IOException("No thresholds could be retrieved from " + fullSourceAddress.toString());
+        }
+
+        return thresholdMapping;
     }
 
     public static Map<String, Set<ThresholdOuter>> extract( ThresholdResponse response,

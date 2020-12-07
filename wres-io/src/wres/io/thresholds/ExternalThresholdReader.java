@@ -1,11 +1,9 @@
 package wres.io.thresholds;
 
 import wres.config.MetricConfigException;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdFormat;
-import wres.config.generated.ThresholdsConfig;
+import wres.config.generated.*;
 import wres.datamodel.DataFactory;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -17,19 +15,20 @@ import wres.system.SystemSettings;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ExternalThresholdReader {
     private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
-    private final Set<String> features;
+    private final Set<FeatureTuple> features;
     private final UnitMapper desiredMeasurementUnitConverter;
     private final ThresholdBuilderCollection sharedBuilders;
-    private final Set<String> recognizedFeatures = new HashSet<>();
+    private final Set<FeatureTuple> recognizedFeatures = new HashSet<>();
 
     public ExternalThresholdReader(
             final SystemSettings systemSettings,
             final ProjectConfig projectConfig,
-            final Set<String> features,
+            final Set<FeatureTuple> features,
             final UnitMapper desiredMeasurementUnitConverter,
             final ThresholdBuilderCollection builders
     ) {
@@ -45,7 +44,7 @@ public class ExternalThresholdReader {
         {
             for ( ThresholdsConfig thresholdsConfig : this.getThresholds( config) )
             {
-                Set<String> readFeatures = this.readThreshold(
+                Set<FeatureTuple> readFeatures = this.readThreshold(
                         thresholdsConfig,
                         DataFactory.getMetricsFromMetricsConfig(config, this.projectConfig)
                 );
@@ -54,7 +53,7 @@ public class ExternalThresholdReader {
         }
     }
 
-    public Set<String> getRecognizedFeatures()
+    public Set<FeatureTuple> getRecognizedFeatures()
     {
         return Collections.unmodifiableSet( this.recognizedFeatures );
     }
@@ -81,14 +80,16 @@ public class ExternalThresholdReader {
      * @throws NullPointerException if the threshold configuration is null or the metrics are null
      */
 
-    private Set<String> readThreshold( ThresholdsConfig thresholdsConfig,
-                                       Set<MetricConstants> metrics )
+    private Set<FeatureTuple> readThreshold( ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics )
     {
         Objects.requireNonNull( thresholdsConfig, "Specify non-null threshold configuration." );
 
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
 
-        Set<String> recognizedFeatures = new HashSet<>();
+        ThresholdsConfig.Source source = (ThresholdsConfig.Source)thresholdsConfig.getCommaSeparatedValuesOrSource();
+        LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
+
+        Set<FeatureTuple> recognizedFeatures = new HashSet<>();
 
         // Threshold type: default to probability
         final ThresholdConstants.ThresholdGroup thresholdGroup;
@@ -103,8 +104,7 @@ public class ExternalThresholdReader {
         try
         {
             Map<String, Set<ThresholdOuter>> readThresholds;
-            ThresholdFormat format =
-                    ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
+            ThresholdFormat format = ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
 
             switch (format) {
                 case CSV:
@@ -120,7 +120,7 @@ public class ExternalThresholdReader {
                             this.systemSettings,
                             thresholdsConfig,
                             this.desiredMeasurementUnitConverter,
-                            this.features
+                            this.features.stream().map(tuple -> tuple.getNameFor(tupleSide)).collect(Collectors.toSet())
                     );
                     break;
                 default:
@@ -131,13 +131,23 @@ public class ExternalThresholdReader {
             // Add the thresholds for each feature
             for ( Map.Entry<String, Set<ThresholdOuter>> thresholds : readThresholds.entrySet() )
             {
-                recognizedFeatures.add( thresholds.getKey() );
+                Optional<FeatureTuple> possibleFeature = this.features.stream()
+                        .filter(tuple -> tuple.getNameFor(tupleSide).equals(thresholds.getKey()))
+                        .findFirst();
+
+                if (possibleFeature.isEmpty())
+                {
+                    continue;
+                }
+
+                FeatureTuple feature = possibleFeature.get();
+                recognizedFeatures.add( feature );
 
                 for(MetricConstants metricName : metrics) {
                     for (ThresholdOuter threshold : thresholds.getValue()) {
                         // This employs the FeaturePlus; this will eventually devolve into just a Feature
                         this.sharedBuilders.addThreshold(
-                                thresholds.getKey(),
+                                feature,
                                 thresholdGroup,
                                 metricName,
                                 threshold
@@ -150,7 +160,7 @@ public class ExternalThresholdReader {
         }
         catch ( IOException e )
         {
-            throw new MetricConfigException( thresholdsConfig, "Failed to read the comma separated thresholds.", e );
+            throw new MetricConfigException( "Failed to read the external thresholds.", e );
         }
     }
 

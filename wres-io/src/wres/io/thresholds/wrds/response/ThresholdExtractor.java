@@ -5,6 +5,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.retrieval.UnitMapper;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -108,6 +109,7 @@ public class ThresholdExtractor {
      */
     public Map<String, Set<ThresholdOuter>> extract()
     {
+        Objects.requireNonNull(this.response, "A valid response was not passed to extract");
         return response.getThresholds()
                 .stream()
                 .filter(

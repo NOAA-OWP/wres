@@ -490,6 +490,7 @@
                                 <xs:attribute name="provider" type="xs:string" />
                                 <xs:attribute name="ratingProvider" type="xs:string" />
                                 <xs:attribute name="parameterToMeasure" type="xs:string" />
+                                <xs:attribute name="featureNameFrom" type="leftOrRightOrBaseline" default="left" />
                             </xs:extension>
                         </xs:simpleContent>
                     </xs:complexType>

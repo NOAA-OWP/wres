@@ -3,6 +3,7 @@ package wres.io.thresholds;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -18,11 +19,11 @@ import java.util.stream.Collectors;
 public class ThresholdBuilderCollection {
     private static final Object BUILDER_ACCESS_LOCK = new Object();
 
-    private final Map<String, ThresholdsByMetricBuilder> builders = new ConcurrentHashMap<>();
+    private final Map<FeatureTuple, ThresholdsByMetricBuilder> builders = new ConcurrentHashMap<>();
 
-    public void initialize( Set<String> features )
+    public void initialize( Set<FeatureTuple> features )
     {
-        for ( String feature : features )
+        for ( FeatureTuple feature : features )
         {
             if (!this.containsFeature(feature)) {
                 this.builders.put(feature, new ThresholdsByMetricBuilder());
@@ -30,7 +31,7 @@ public class ThresholdBuilderCollection {
         }
     }
 
-    public Map<String, ThresholdsByMetric> build()
+    public Map<FeatureTuple, ThresholdsByMetric> build()
     {
         return this.builders.entrySet()
                 .parallelStream()
@@ -44,7 +45,7 @@ public class ThresholdBuilderCollection {
 
     public void addThresholdToAll(ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold) {
         synchronized (BUILDER_ACCESS_LOCK) {
-            for ( String feature : this.builders.keySet() )
+            for ( FeatureTuple feature : this.builders.keySet() )
             {
                 this.addThreshold(feature, group, metric, threshold);
             }
@@ -53,14 +54,14 @@ public class ThresholdBuilderCollection {
 
     public void addThresholdsToAll(ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds) {
         synchronized (BUILDER_ACCESS_LOCK) {
-            for ( String feature : this.builders.keySet() )
+            for ( FeatureTuple feature : this.builders.keySet() )
             {
                 this.addThresholds(feature, group, metric, thresholds);
             }
         }
     }
 
-    public void addThreshold( String feature, ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold )
+    public void addThreshold( FeatureTuple feature, ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold )
     {
         synchronized (BUILDER_ACCESS_LOCK) {
             ThresholdsByMetricBuilder builder = this.getCorrespondingBuilder( feature );
@@ -68,7 +69,7 @@ public class ThresholdBuilderCollection {
         }
     }
 
-    public void addThresholds( String feature, ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds )
+    public void addThresholds( FeatureTuple feature, ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds )
     {
         synchronized (BUILDER_ACCESS_LOCK) {
             ThresholdsByMetricBuilder builder = this.getCorrespondingBuilder(feature);
@@ -76,7 +77,7 @@ public class ThresholdBuilderCollection {
         }
     }
 
-    public boolean containsFeature( final String feature )
+    public boolean containsFeature( final FeatureTuple feature )
     {
         return this.getCorrespondingBuilder(feature) != null;
     }
@@ -108,10 +109,10 @@ public class ThresholdBuilderCollection {
         }
     }
 
-    public ThresholdsByMetricBuilder getCorrespondingBuilder( final String feature )
+    public ThresholdsByMetricBuilder getCorrespondingBuilder( final FeatureTuple feature )
     {
         synchronized (BUILDER_ACCESS_LOCK) {
-            for ( String storedFeature : this.builders.keySet() )
+            for ( FeatureTuple storedFeature : this.builders.keySet() )
             {
                 if ( feature.equals( storedFeature ) )
                 {
