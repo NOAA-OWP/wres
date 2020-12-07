@@ -24,7 +24,7 @@ import javax.naming.NamingException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
+//import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -54,7 +54,7 @@ import wres.statistics.generated.Pairs;
 public class EvaluationTest
 {
     
-    @Rule
+//    @Rule
 //    public RepeatRule repeatRule = new RepeatRule();
     
     /**
