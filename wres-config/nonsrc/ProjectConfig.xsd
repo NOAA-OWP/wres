@@ -651,6 +651,7 @@
             <xs:enumeration value="png" />
             <xs:enumeration value="svg" />
             <xs:enumeration value="netcdf" />
+            <xs:enumeration value="netcdf2" />
             <xs:enumeration value="numeric" />
             <xs:enumeration value="graphic" />
             <xs:enumeration value="pairs" />

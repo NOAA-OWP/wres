@@ -26,12 +26,12 @@ import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
- * Tests the {@link TimeSeriesOfDoubleBasicUpscaler}
+ * Tests the {@link TimeSeriesOfDoubleUpscaler}
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class TimeSeriesOfDoubleBasicUpscalerTest
+public class TimeSeriesOfDoubleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
     private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
@@ -64,7 +64,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     @Before
     public void runBeforeEachTest()
     {
-        upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
+        upscaler = TimeSeriesOfDoubleUpscaler.of();
     }
 
     @Test
@@ -189,7 +189,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     }
 
     /**
-     * Tests the {@link TimeSeriesOfDoubleBasicUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eleven forecast
+     * Tests the {@link TimeSeriesOfDoubleUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eleven forecast
      * values and then pairs them with observations. This integration test is similar to system test scenario103 as of
      * commit 1a93f88202ae98cee85528a51893dd1521db2a29, but uses fake data.
      */
@@ -302,7 +302,7 @@ public class TimeSeriesOfDoubleBasicUpscalerTest
     }
 
     /**
-     * Tests the {@link TimeSeriesOfDoubleBasicUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eighteen 
+     * Tests the {@link TimeSeriesOfDoubleUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eighteen 
      * values into a maximum value that spans PT96H and ends at 2017-01-08T18:00:00Z.
      */
 

@@ -17,7 +17,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
+import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 /**
@@ -352,7 +352,7 @@ public class PersistenceGeneratorTest
         this.desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         this.generator = PersistenceGenerator.of( () -> Stream.of( observations ),
-                                                  TimeSeriesOfDoubleBasicUpscaler.of(),
+                                                  TimeSeriesOfDoubleUpscaler.of(),
                                                   Double::isFinite );
     }
 

@@ -35,7 +35,7 @@ import wres.io.pooling.PoolSupplier.PoolOfPairsSupplierBuilder;
 import wres.io.retrieval.CachingRetriever;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
-import wres.datamodel.time.TimeSeriesOfDoubleBasicUpscaler;
+import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -433,7 +433,7 @@ public class PoolSupplierTest
         this.metadata = SampleMetadata.of( evaluation, pool );
 
         // Upscaler
-        this.upscaler = TimeSeriesOfDoubleBasicUpscaler.of();
+        this.upscaler = TimeSeriesOfDoubleUpscaler.of();
 
         // Pairer
         this.pairer = TimeSeriesPairerByExactTime.of();

@@ -1142,7 +1142,9 @@ project(':wres-tasker')
 
     mainClassName = 'wres.tasker.Tasker'
     applicationDefaultJvmArgs = ['-Xms340m','-Xmx340m',
-                                 '-XX:+HeapDumpOnOutOfMemoryError']
+                                 '-XX:+HeapDumpOnOutOfMemoryError',
+                                 '-Djdk.tls.ephemeralDHKeySize=3072',
+                                 '-Djdk.tls.rejectClientInitiatedRenegotiation=true']
 
     // Add static html files to the classpath when running via script
     startScripts

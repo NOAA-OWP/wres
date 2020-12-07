@@ -14,6 +14,9 @@ import java.util.Map.Entry;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
@@ -27,6 +30,8 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 public class ThresholdsByMetric
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsByMetric.class );
 
     /**
      * Null metric error string.
@@ -381,7 +386,8 @@ public class ThresholdsByMetric
                 this.getThresholds( nextType ).forEach( ( key, value ) -> union.put( key, new HashSet<>( value ) ) );
 
                 // Form union with input sets
-                for ( Entry<MetricConstants, Set<ThresholdOuter>> next : thresholds.getThresholds( nextType ).entrySet() )
+                for ( Entry<MetricConstants, Set<ThresholdOuter>> next : thresholds.getThresholds( nextType )
+                                                                                   .entrySet() )
                 {
                     if ( union.containsKey( next.getKey() ) )
                     {
@@ -620,7 +626,8 @@ public class ThresholdsByMetric
          * Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}.
          */
 
-        private Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
+        private Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
+                new EnumMap<>( MetricConstants.class );
 
         /**
          * Thresholds by {@link ThresholdGroup#QUANTILE}.
@@ -651,65 +658,33 @@ public class ThresholdsByMetric
         }
 
         /**
-         * Adds a map of thresholds.
+         * Adds a map of thresholds. If any of the metrics do not support thresholds according to 
+         * {@link MetricConstants#isAThresholdMetric()}, then the {@link ThresholdOuter#ALL_DATA} threshold is added for
+         * that metric.
          * 
          * @param thresholds the thresholds
-         * @param thresholdType the threshold type
+         * @param group the threshold group
          * @return the builder
          * @throws NullPointerException if any input is null
          */
 
         public ThresholdsByMetricBuilder addThresholds( Map<MetricConstants, Set<ThresholdOuter>> thresholds,
-                                                        ThresholdGroup thresholdType )
+                                                        ThresholdGroup group )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
-            Objects.requireNonNull( thresholdType, "Cannot build a store of thresholds with null threshold type." );
-
             for ( Entry<MetricConstants, Set<ThresholdOuter>> nextEntry : thresholds.entrySet() )
             {
-
-                Map<MetricConstants, Set<ThresholdOuter>> container = null;
-
-                // Determine type of container
-                if ( thresholdType == ThresholdGroup.PROBABILITY )
-                {
-                    container = this.probabilities;
-                }
-                else if ( thresholdType == ThresholdGroup.PROBABILITY_CLASSIFIER )
-                {
-                    container = this.probabilityClassifiers;
-                }
-                else if ( thresholdType == ThresholdGroup.QUANTILE )
-                {
-                    container = this.quantiles;
-                }
-                else if ( thresholdType == ThresholdGroup.VALUE )
-                {
-                    container = this.values;
-                }
-                else
-                {
-                    throw new IllegalArgumentException( "Unrecognized type of threshold '" + thresholdType + "'." );
-                }
-
-                // Append
-                if ( container.containsKey( nextEntry.getKey() ) )
-                {
-                    container.get( nextEntry.getKey() ).addAll( nextEntry.getValue() );
-                }
-                // Add
-                else
-                {
-                    container.put( nextEntry.getKey(), new HashSet<>( nextEntry.getValue() ) );
-                }
+                this.addThresholds( group, nextEntry.getKey(), nextEntry.getValue() );
             }
 
             return this;
         }
 
         /**
-         * Adds a map of thresholds.
+         * Adds a threshold.If the metric does not support thresholds according to 
+         * {@link MetricConstants#isAThresholdMetric()}, then the {@link ThresholdOuter#ALL_DATA} threshold is added 
+         * instead.
          *
          * @param group the threshold group
          * @param metric the metric
@@ -718,55 +693,21 @@ public class ThresholdsByMetric
          * @return the builder
          */
 
-        public ThresholdsByMetricBuilder
-                addThreshold( ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold )
+        public ThresholdsByMetricBuilder addThreshold( ThresholdGroup group,
+                                                       MetricConstants metric,
+                                                       ThresholdOuter threshold )
         {
-            Objects.requireNonNull( threshold, "Cannot build a store of thresholds with null thresholds." );
+            Objects.requireNonNull( metric, "Cannot build a store of thresholds with a null metric." );
 
-            Objects.requireNonNull( group, "Cannot build a store of thresholds with null threshold type." );
-
-            Map<MetricConstants, Set<ThresholdOuter>> container;
-
-            // Determine type of container
-            if ( group == ThresholdGroup.PROBABILITY )
-            {
-                container = this.probabilities;
-            }
-            else if ( group == ThresholdGroup.PROBABILITY_CLASSIFIER )
-            {
-                container = this.probabilityClassifiers;
-            }
-            else if ( group == ThresholdGroup.QUANTILE )
-            {
-                container = this.quantiles;
-            }
-            else if ( group == ThresholdGroup.VALUE )
-            {
-                container = this.values;
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unrecognized type of threshold '" + group + "'." );
-            }
-
-            // Append
-            if ( container.containsKey( metric ) )
-            {
-                container.get( metric ).add( threshold );
-            }
-            // Add
-            else
-            {
-                Set<ThresholdOuter> thresholds = new HashSet<>();
-                thresholds.add( threshold );
-                container.put( metric, thresholds );
-            }
+            this.addThresholds( group, metric, Set.of( threshold ) );
 
             return this;
         }
 
         /**
-         * Adds a map of thresholds.
+         * Adds a map of thresholds. If any the metric does not support thresholds according to 
+         * {@link MetricConstants#isAThresholdMetric()}, then the {@link ThresholdOuter#ALL_DATA} threshold is added 
+         * instead.
          * 
          * @param group the threshold group
          * @param metric the metric
@@ -775,8 +716,9 @@ public class ThresholdsByMetric
          * @throws NullPointerException if any input is null
          */
 
-        public ThresholdsByMetricBuilder
-                addThresholds( ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds )
+        public ThresholdsByMetricBuilder addThresholds( ThresholdGroup group,
+                                                        MetricConstants metric,
+                                                        Set<ThresholdOuter> thresholds )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
@@ -806,15 +748,28 @@ public class ThresholdsByMetric
                 throw new IllegalArgumentException( "Unrecognized type of threshold '" + group + "'." );
             }
 
+            Set<ThresholdOuter> addMe = new HashSet<>();
+            if ( metric.isAThresholdMetric() )
+            {
+                addMe.addAll( thresholds );
+            }
+            else
+            {
+                LOGGER.trace( "While building thresholds-by-metric, discovered metric {}, which does not support "
+                              + "all threshold types. Adding the \"all data\" threshold for this metric.", metric );
+                
+                addMe.add( ThresholdOuter.ALL_DATA );
+            }
+
             // Append
             if ( container.containsKey( metric ) )
             {
-                container.get( metric ).addAll( thresholds );
+                container.get( metric ).addAll( addMe );
             }
             // Add
             else
             {
-                container.put( metric, new HashSet<>( thresholds ) );
+                container.put( metric, addMe );
             }
 
             return this;
@@ -922,7 +877,8 @@ public class ThresholdsByMetric
      * @throws NullPointerException if the input is null
      */
 
-    private Set<MetricConstants> filterByThreshold( Map<MetricConstants, Set<ThresholdOuter>> input, ThresholdOuter threshold )
+    private Set<MetricConstants> filterByThreshold( Map<MetricConstants, Set<ThresholdOuter>> input,
+                                                    ThresholdOuter threshold )
     {
         Objects.requireNonNull( input, "Specify non-null input" );
 
@@ -950,10 +906,10 @@ public class ThresholdsByMetric
     {
 
         Map<MetricConstants, Set<ThresholdOuter>> filtered = thresholds.entrySet()
-                                                                  .stream()
-                                                                  .filter( entry -> test.test( entry.getKey() ) )
-                                                                  .collect( Collectors.toMap( Map.Entry::getKey,
-                                                                                              Map.Entry::getValue ) );
+                                                                       .stream()
+                                                                       .filter( entry -> test.test( entry.getKey() ) )
+                                                                       .collect( Collectors.toMap( Map.Entry::getKey,
+                                                                                                   Map.Entry::getValue ) );
 
         builder.addThresholds( filtered, type );
     }

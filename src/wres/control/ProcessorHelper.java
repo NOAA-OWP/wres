@@ -43,6 +43,7 @@ import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.ThresholdReader;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedSampleDataWriters;
+import wres.io.writing.WriteException;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.statistics.generated.Outputs;
@@ -107,11 +108,16 @@ class ProcessorHelper
                 ProcessorHelper.getEvaluationDescription( projectConfigPlus );
 
         // Create some shared writers
-        SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( systemSettings,
-                                                                        executors.getIoExecutor(),
-                                                                        projectConfig,
-                                                                        evaluationDescription,
-                                                                        outputDirectory );
+        SharedWriters sharedWriters =
+                ProcessorHelper.getSharedWriters( projectConfig,
+                                                  outputDirectory );
+
+        // Create netCDF writers
+        List<NetcdfOutputWriter> netcdfWriters =
+                ProcessorHelper.getNetcdfWriters( projectConfig,
+                                                  systemSettings,
+                                                  executors.getIoExecutor(),
+                                                  outputDirectory );
 
         // Obtain any formats delivered by out-of-process subscribers.
         Set<Format> externalFormats = ProcessorHelper.getFormatsDeliveredByExternalSubscribers( systemSettings );
@@ -125,7 +131,7 @@ class ProcessorHelper
         ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
                                                                          new HashSet<>( internalFormats ),
                                                                          systemSettings,
-                                                                         sharedWriters.getNetcdfWriter(),
+                                                                         netcdfWriters,
                                                                          projectConfig );
 
         EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
@@ -145,8 +151,8 @@ class ProcessorHelper
                                                                            projectConfigPlus,
                                                                            executors,
                                                                            sharedWriters,
+                                                                           netcdfWriters,
                                                                            outputDirectory );
-
             returnMe.addAll( pathsWritten );
 
             // Wait for the evaluation to conclude
@@ -164,6 +170,16 @@ class ProcessorHelper
             // this jvm/process has the same contract as an external subscriber running in another process/jvm. It 
             // should only report completion when consumption is "done done".
             sharedWriters.close();
+
+            if ( !netcdfWriters.isEmpty() )
+            {
+                LOGGER.debug( "Finishing up writing netCDF data..." );
+
+                for ( NetcdfOutputWriter writer : netcdfWriters )
+                {
+                    writer.close();
+                }
+            }
 
             return Collections.unmodifiableSet( returnMe );
         }
@@ -197,7 +213,11 @@ class ProcessorHelper
             }
             catch ( IOException e )
             {
-                LOGGER.error( "Failed to close evaluation {}.", evaluation.getEvaluationId() );
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "Failed to close evaluation {}.",
+                                 evaluation.getEvaluationId(), e );
+                }
             }
 
             // Close the shared writers if they weren't closed already
@@ -207,7 +227,26 @@ class ProcessorHelper
             }
             catch ( IOException e )
             {
-                LOGGER.error( "Failed to close the shared writers for evaluation {}.", evaluation.getEvaluationId() );
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "Failed to close the shared writers for evaluation {}.",
+                                  evaluation.getEvaluationId(),
+                                  e );
+                }
+            }
+
+            // Close the netCDF writers if not closed
+            for ( NetcdfOutputWriter writer : netcdfWriters )
+            {
+                try
+                {
+                    writer.close();
+                }
+                catch ( WriteException we )
+                {
+                    LOGGER.warn( "Failed to finish writing a netCDF {}",
+                                 writer, we );
+                }
             }
 
             // Close the formats subscriber
@@ -244,6 +283,7 @@ class ProcessorHelper
      * @param databaseServices the database services
      * @param projectConfigPlus the project configuration
      * @param executors the executors
+     * @param netcdfWriters netCDF writers
      * @param sharedWriters for writing
      * @param outputDirectory the output directory
      * @throws WresProcessingException if the processing failed for any reason
@@ -256,6 +296,7 @@ class ProcessorHelper
                                                    ProjectConfigPlus projectConfigPlus,
                                                    Executors executors,
                                                    SharedWriters sharedWriters,
+                                                   List<NetcdfOutputWriter> netcdfWriters,
                                                    Path outputDirectory )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
@@ -324,10 +365,13 @@ class ProcessorHelper
             }
 
             // Create any netcdf blobs for writing. See #80267-137.
-            if ( sharedWriters.hasNetcdfWriter() )
+            if ( !netcdfWriters.isEmpty() )
             {
-                sharedWriters.getNetcdfWriter()
-                             .createBlobsForWriting( thresholds );
+                for ( NetcdfOutputWriter writer : netcdfWriters )
+                {
+                    writer.createBlobsForWriting( decomposedFeatures,
+                                                  thresholds );
+                }
             }
 
             // The project code - ideally project hash
@@ -436,48 +480,21 @@ class ProcessorHelper
 
     /**
      * Returns an instance of {@link SharedWriters} for shared writing.
-     * 
-     * @param systemSettings the system settings
-     * @param executor the executor
+     *
      * @param projectConfig the project declaration
-     * @param evaluationDescription the evaluation description
      * @param outputDirectory the output directory for writing
      * @return the shared writer instance
-     * @throws IOException if the shared writer could not be created
      */
 
-    private static SharedWriters getSharedWriters( SystemSettings systemSettings,
-                                                   Executor executor,
-                                                   ProjectConfig projectConfig,
-                                                   wres.statistics.generated.Evaluation evaluationDescription,
+    private static SharedWriters getSharedWriters( ProjectConfig projectConfig,
                                                    Path outputDirectory )
-            throws IOException
     {
-
         // Obtain the duration units for outputs: #55441
         String durationUnitsString = projectConfig.getOutputs()
                                                   .getDurationFormat()
                                                   .value()
                                                   .toUpperCase();
         ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
-
-        // Build any writers of incremental formats that are shared across features
-        NetcdfOutputWriter netcdfWriter = null;
-
-        // The netcdf is an oddball and writing happens in three stages: 1) create writer; 2) create blobs; and 3) 
-        // write to blobs. This adds complexity that could be reduced by creating and writing on-the-fly.
-        if ( evaluationDescription.getOutputs().hasNetcdf() )
-        {
-            // Use the gridded netcdf writer.
-            netcdfWriter = NetcdfOutputWriter.of(
-                                                  systemSettings,
-                                                  executor,
-                                                  projectConfig,
-                                                  durationUnits,
-                                                  outputDirectory );
-
-            LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
-        }
 
         SharedSampleDataWriters sharedSampleWriters = null;
         SharedSampleDataWriters sharedBaselineSampleWriters = null;
@@ -509,9 +526,87 @@ class ProcessorHelper
             }
         }
 
-        return SharedWriters.of( netcdfWriter,
-                                 sharedSampleWriters,
+        return SharedWriters.of( sharedSampleWriters,
                                  sharedBaselineSampleWriters );
+    }
+
+
+    /**
+     * Get the netCDF writers requested by this project declaration.
+     *
+     * @param projectConfig The declaration.
+     * @param systemSettings The system settings.
+     * @param executor The executor to pass to NetcdfOutputWriters.
+     * @param outputDirectory The output directory into which to write.
+     * @return A list of netCDF writers, zero to two.
+     */
+
+    private static List<NetcdfOutputWriter> getNetcdfWriters( ProjectConfig projectConfig,
+                                                              SystemSettings systemSettings,
+                                                              Executor executor,
+                                                              Path outputDirectory )
+    {
+        List<NetcdfOutputWriter> writers = new ArrayList<>( 2 );
+
+        // Obtain the duration units for outputs: #55441
+        String durationUnitsString = projectConfig.getOutputs()
+                                                  .getDurationFormat()
+                                                  .value()
+                                                  .toUpperCase();
+        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
+
+        DestinationConfig firstDeprecatedNetcdf = null;
+        DestinationConfig firstNetcdf2 = null;
+
+        for ( DestinationConfig destination : projectConfig.getOutputs()
+                                                           .getDestination() )
+        {
+            if ( destination.getType()
+                            .equals( DestinationType.NETCDF )
+                 && Objects.isNull( firstDeprecatedNetcdf ) )
+            {
+                firstDeprecatedNetcdf = destination;
+            }
+
+            if ( destination.getType()
+                            .equals( DestinationType.NETCDF_2 )
+                 && Objects.isNull( firstNetcdf2 ) )
+            {
+                firstNetcdf2 = destination;
+            }
+        }
+
+        if ( Objects.nonNull( firstDeprecatedNetcdf ) )
+        {
+            // Use the template-based netcdf writer.
+            NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of(
+                    systemSettings,
+                    executor,
+                    projectConfig,
+                    firstDeprecatedNetcdf,
+                    durationUnits,
+                    outputDirectory,
+                    true );
+            writers.add( netcdfWriterDeprecated );
+            LOGGER.warn( "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
+        }
+
+        if ( Objects.nonNull( firstNetcdf2 ) )
+        {
+            // Use the newer from-scratch netcdf writer.
+            NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of(
+                    systemSettings,
+                    executor,
+                    projectConfig,
+                    firstNetcdf2,
+                    durationUnits,
+                    outputDirectory,
+                    false );
+            writers.add( netcdfWriter );
+            LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
+        }
+
+        return Collections.unmodifiableList( writers );
     }
 
     /**
@@ -739,12 +834,6 @@ class ProcessorHelper
     static class SharedWriters implements Closeable
     {
         /**
-         * Shared netcdf writer.
-         */
-
-        private final NetcdfOutputWriter netcdfWriter;
-
-        /**
          * Shared writers for sample data.
          */
 
@@ -758,28 +847,15 @@ class ProcessorHelper
 
         /**
          * Returns an instance.
-         * 
-         * @param netcdfWriter shared netcdf writer
+         *
          * @param sharedSampleWriters shared writer of pairs
          * @param sharedBaselineSampleWriters shared writer of baseline pairs
          */
-        static SharedWriters of( NetcdfOutputWriter netcdfWriter,
-                                 SharedSampleDataWriters sharedSampleWriters,
+        static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
                                  SharedSampleDataWriters sharedBaselineSampleWriters )
 
         {
-            return new SharedWriters( netcdfWriter, sharedSampleWriters, sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Returns the netcdf writer or null.
-         * 
-         * @return the netcdf writer or null
-         */
-
-        NetcdfOutputWriter getNetcdfWriter()
-        {
-            return this.netcdfWriter;
+            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
         }
 
         /**
@@ -802,17 +878,6 @@ class ProcessorHelper
         SharedSampleDataWriters getBaselineSampleDataWriters()
         {
             return this.sharedBaselineSampleWriters;
-        }
-
-        /**
-         * Returns <code>true</code> if shared netcdf writer is available, otherwise <code>false</code>.
-         * 
-         * @return true if shared netcdf writer is available
-         */
-
-        boolean hasNetcdfWriter()
-        {
-            return Objects.nonNull( this.netcdfWriter );
         }
 
         /**
@@ -845,11 +910,6 @@ class ProcessorHelper
 
         public void close() throws IOException
         {
-            if ( this.hasNetcdfWriter() )
-            {
-                this.getNetcdfWriter().close();
-            }
-
             if ( this.hasSharedSampleWriters() )
             {
                 this.getSampleDataWriters().close();
@@ -863,16 +923,12 @@ class ProcessorHelper
 
         /**
          * Hidden constructor.
-         * 
-         * @param netcdfWriter the netcdf writer
          * @param sharedSampleWriters the shared writer for pairs
          * @param sharedBaselineSampleWriters the shared writer for baseline pairs
          */
-        private SharedWriters( NetcdfOutputWriter netcdfWriter,
-                               SharedSampleDataWriters sharedSampleWriters,
+        private SharedWriters( SharedSampleDataWriters sharedSampleWriters,
                                SharedSampleDataWriters sharedBaselineSampleWriters )
         {
-            this.netcdfWriter = netcdfWriter;
             this.sharedSampleWriters = sharedSampleWriters;
             this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
         }

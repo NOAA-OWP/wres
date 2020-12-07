@@ -48,11 +48,11 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Evaluation;
 
 /**
- * <p>Abstracts a subscription to evaluation messages. The subscriber wraps one {@link EvaluationConsumer} for each 
- * evaluation, which is mapped against its unique evaluation identifier. The {@link EvaluationConsumer} consumes all of 
- * the messages related to one evaluation and the subscriber ensures that these messages are routed to the correct
- * consumer. It also handles retries and other administrative tasks that satisfy the contract for a well-behaving 
- * subscriber. Specifically, a well-behaving subscriber:
+ * <p>Abstracts a subscription to evaluation messages. A subscriber contains one {@link EvaluationConsumer} for each 
+ * evaluation in progress, which is mapped against its unique evaluation identifier. The {@link EvaluationConsumer} 
+ * consumes all of the messages related to one evaluation and the subscriber ensures that these messages are routed to 
+ * the correct consumer. It also handles retries and other administrative tasks that satisfy the contract for a 
+ * well-behaving subscriber. Specifically, a well-behaving subscriber:
  * 
  * <ol>
  * <li>Notifies any listening clients with an {@link EvaluationStatus} message that contains
@@ -60,7 +60,7 @@ import wres.statistics.generated.Evaluation;
  * <li>Notifies the {@link EvaluationConsumer} when an evaluation fails unrecoverably. The consumer then reports on the 
  * failure to all listening clients with a {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}.</li>
  * <li>Notifies the {@link EvaluationConsumer} of every open evaluation when the subscriber fails unrecoverably. Each 
- * consumer then reports on the failure to all listening clients with a with a 
+ * consumer then reports on the failure to all listening clients with a
  * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}. This notification is attempted, but cannot be 
  * guaranteed as the subscriber may be in a state that prevents such notification.</li>
  * </ol>
@@ -536,7 +536,7 @@ public class EvaluationSubscriber implements Closeable
 
     private String getEvaluationStatusSubscriberName()
     {
-        return this.getSubscriberId() + "-EXTERNAL-status";
+        return this.getSubscriberId() + "-status";
     }
 
     /**
@@ -545,7 +545,7 @@ public class EvaluationSubscriber implements Closeable
 
     private String getEvaluationSubscriberName()
     {
-        return this.getSubscriberId() + "-EXTERNAL-evaluation";
+        return this.getSubscriberId() + "-evaluation";
     }
 
     /**
@@ -554,7 +554,7 @@ public class EvaluationSubscriber implements Closeable
 
     private String getStatisticsSubscriberName()
     {
-        return this.getSubscriberId() + "-EXTERNAL-statistics";
+        return this.getSubscriberId() + "-statistics";
     }
 
     /**
@@ -570,6 +570,8 @@ public class EvaluationSubscriber implements Closeable
             String correlationId = UNKNOWN;
             String consumerId = UNKNOWN;
             String groupId = null;
+
+            EvaluationConsumer consumer = null;
 
             try
             {
@@ -606,22 +608,17 @@ public class EvaluationSubscriber implements Closeable
                                       messageId,
                                       correlationId );
 
-                        EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+                        consumer = this.getEvaluationConsumer( correlationId );
 
                         consumer.acceptStatusMessage( statusEvent, groupId, messageId );
-
-                        // Complete?
-                        if ( consumer.isComplete() )
-                        {
-                            // Yes, then close
-                            consumer.close();
-                            this.status.registerEvaluationCompleted( correlationId );
-                        }
                     }
                 }
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
+
+                // Try to complete
+                this.completeEvaluation( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -651,6 +648,8 @@ public class EvaluationSubscriber implements Closeable
             String correlationId = UNKNOWN;
             String groupId = null;
 
+            EvaluationConsumer consumer = null;
+
             try
             {
                 if ( !this.isSubscriberFailed() && this.isThisMessageForMe( message ) )
@@ -664,7 +663,7 @@ public class EvaluationSubscriber implements Closeable
                                   messageId,
                                   correlationId );
 
-                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+                    consumer = this.getEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -679,18 +678,13 @@ public class EvaluationSubscriber implements Closeable
 
                     consumer.acceptStatisticsMessage( statistics, groupId, messageId );
                     this.status.registerStatistics( messageId );
-
-                    // Complete?
-                    if ( consumer.isComplete() )
-                    {
-                        // Yes, then close
-                        consumer.close();
-                        this.status.registerEvaluationCompleted( correlationId );
-                    }
                 }
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
+
+                // Try to complete
+                this.completeEvaluation( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -708,6 +702,22 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
+     * Completes an evaluation when the consumption is complete.
+     * 
+     * @param consumer the consumer
+     * @param evaluationId the evaluation identifier
+     */
+
+    private void completeEvaluation( EvaluationConsumer consumer, String evaluationId )
+    {
+        // Complete?
+        if ( Objects.nonNull( consumer ) && consumer.isComplete() )
+        {
+            this.status.registerEvaluationCompleted( evaluationId );
+        }
+    }
+
+    /**
      * Awaits evaluation messages and then consumes them. 
      */
 
@@ -719,6 +729,8 @@ public class EvaluationSubscriber implements Closeable
             String messageId = UNKNOWN;
             String correlationId = UNKNOWN;
             String jobId = null;
+
+            EvaluationConsumer consumer = null;
 
             try
             {
@@ -733,7 +745,7 @@ public class EvaluationSubscriber implements Closeable
                                   messageId,
                                   correlationId );
 
-                    EvaluationConsumer consumer = this.getEvaluationConsumer( correlationId );
+                    consumer = this.getEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -747,18 +759,13 @@ public class EvaluationSubscriber implements Closeable
                     Evaluation evaluation = Evaluation.parseFrom( buffer );
 
                     consumer.acceptEvaluationMessage( evaluation, messageId, jobId );
-
-                    // Complete?
-                    if ( consumer.isComplete() )
-                    {
-                        // Yes, then close
-                        consumer.close();
-                        this.status.registerEvaluationCompleted( correlationId );
-                    }
                 }
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
+
+                // Try to complete
+                this.completeEvaluation( consumer, correlationId );
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
             }
@@ -878,11 +885,10 @@ public class EvaluationSubscriber implements Closeable
     {
         this.status.registerFailedEvaluation( evaluationId );
         EvaluationConsumer consumer = this.getEvaluationConsumer( evaluationId );
-        consumer.markEvaluationFailed( exception );
 
         try
         {
-            consumer.close();
+            consumer.markEvaluationFailed( exception );
         }
         catch ( JMSException | UnrecoverableSubscriberException e )
         {
@@ -911,19 +917,30 @@ public class EvaluationSubscriber implements Closeable
         // Attempt to mark all open evaluations as failed
         this.getEvaluationsLock().lock();
 
-        for ( EvaluationConsumer nextEvaluation : this.evaluations.values() )
+        try
         {
-            if ( !nextEvaluation.isComplete() )
+            for ( EvaluationConsumer nextEvaluation : this.evaluations.values() )
             {
-                nextEvaluation.markEvaluationFailed( exception );
+                if ( !nextEvaluation.isComplete() )
+                {
+                    nextEvaluation.markEvaluationFailed( exception );
+                }
             }
         }
+        catch ( JMSException e )
+        {
+            LOGGER.error( "While closing subscriber {}, failed to close some of the evaluations associated with it.",
+                          this.getSubscriberId() );
+        }
+        finally
+        {
+            this.getEvaluationsLock()
+                .unlock();
 
-        this.getEvaluationsLock().unlock();
-
-        // Propagate upwards
-        this.isFailedUnrecoverably.set( true );
-        this.status.markFailedUnrecoverably( exception );
+            // Propagate upwards
+            this.isFailedUnrecoverably.set( true );
+            this.status.markFailedUnrecoverably( exception );
+        }
 
         throw exception;
     }
