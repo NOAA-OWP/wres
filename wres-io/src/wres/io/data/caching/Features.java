@@ -454,8 +454,7 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
 
         for ( FeatureTuple feature : features )
         {
-            result.add( feature.getRight()
-                               .getName() );
+            result.add( feature.toStringShort() );
         }
 
         return result.toString();

@@ -1,24 +1,26 @@
 package wres.datamodel.time;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.function.DoubleUnaryOperator;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.scale.ScaleValidationEvent;
+import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 
 /**
- * <p>Upscales each trace within an ensemble time-series using an atomic upscaler for the trace values.
+ * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Ensemble} 
+ * values. Makes the same assumptions as the {@link TimeSeriesOfDoubleUpscaler}, but additionally requires that every
+ * {@link Ensemble} contains the same number of ensemble members.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -27,33 +29,28 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 {
 
     /**
-     * Atomic upscaler.
+     * Lenient on values that match the {@link MissingValues#DOUBLE}? TODO: expose this to declaration.
      */
 
-    private final TimeSeriesUpscaler<Double> upscaler;
+    private static final boolean LENIENT = false;
 
     /**
-     * Creates an instance with a default upscaler for the individual traces.
+     * Function that returns a double value or {@link MissingValues#DOUBLE} if the
+     * input is not finite. 
+     */
+
+    private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
+            a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
+
+    /**
+     * Creates an instance.
      * 
      * @return an instance of the ensemble upscaler
      */
 
     public static TimeSeriesOfEnsembleUpscaler of()
     {
-        return new TimeSeriesOfEnsembleUpscaler( TimeSeriesOfDoubleBasicUpscaler.of() );
-    }
-
-    /**
-     * Creates an instance with a default upscaler for the individual traces.
-     * 
-     * @param upscaler the upscaler to use for the traces
-     * @return an instance of the ensemble upscaler
-     * @throws NullPointerException if the upscaler is null
-     */
-
-    public static TimeSeriesOfEnsembleUpscaler of( TimeSeriesUpscaler<Double> upscaler )
-    {
-        return new TimeSeriesOfEnsembleUpscaler( upscaler );
+        return new TimeSeriesOfEnsembleUpscaler();
     }
 
     @Override
@@ -68,71 +65,156 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
                                                                TimeScaleOuter desiredTimeScale,
                                                                Set<Instant> endsAt )
     {
-        Objects.requireNonNull( timeSeries );
-
         Objects.requireNonNull( desiredTimeScale );
 
-        Objects.requireNonNull( endsAt );
+        TimeScaleFunction desiredFunction = desiredTimeScale.getFunction();
+        Function<SortedSet<Event<Ensemble>>, Ensemble> upscaler = this.getEnsembleUpscaler( desiredFunction );
 
-        // Decompose
-        List<TimeSeries<Double>> traces = TimeSeriesSlicer.decompose( timeSeries );
-
-        // Upscale each trace separately and then recompose
-        List<TimeSeries<Double>> upscaled = new ArrayList<>();
-
-        Set<ScaleValidationEvent> uniqueEvents = new HashSet<>();
-
-        for ( TimeSeries<Double> next : traces )
-        {
-            RescaledTimeSeriesPlusValidation<Double> nextUp =
-                    this.getUpscaler().upscale( next, desiredTimeScale, endsAt );
-            upscaled.add( nextUp.getTimeSeries() );
-
-            // Only retain the unique validation events
-            uniqueEvents.addAll( nextUp.getValidationEvents() );
-        }
-
-        // Get the labels
-        SortedSet<String> labels = new TreeSet<>();
-
-        if ( Objects.nonNull( timeSeries.getEvents().first() ) )
-        {
-            Optional<String[]> labs = timeSeries.getEvents().first().getValue().getLabels();
-            if ( labs.isPresent() )
-            {
-                labels.addAll( Arrays.stream( labs.get() ).collect( Collectors.toSet() ) );
-            }
-        }
-
-        TimeSeries<Ensemble> up = TimeSeriesSlicer.compose( Collections.unmodifiableList( upscaled ),
-                                                            labels );
-
-        return RescaledTimeSeriesPlusValidation.of( up, new ArrayList<>( uniqueEvents ) );
+        return RescalingHelper.upscale( timeSeries, upscaler, desiredTimeScale, endsAt );
     }
 
     /**
-     * Returns the trace upscaler used by this instance.
+     * Returns the ensemble upscaler used by this instance.
      * 
-     * @return the trace upscaler
+     * @param function the time-scale function
+     * @return the ensemble upscaler
      */
 
-    private TimeSeriesUpscaler<Double> getUpscaler()
+    private Function<SortedSet<Event<Ensemble>>, Ensemble> getEnsembleUpscaler( TimeScaleFunction function )
     {
-        return this.upscaler;
+        ToDoubleFunction<List<Double>> upscaler = this.getTraceUpscaler( function );
+
+        return events -> {
+
+            int memberCount = this.getMemberCountAndValidateConstant( events );
+
+            Optional<String[]> labels = events.last()
+                                              .getValue()
+                                              .getLabels();
+
+            double[] upscaled = new double[memberCount];
+
+            for ( int i = 0; i < memberCount; i++ )
+            {
+                int nextIndex = i;
+                List<Double> doubles = events.stream()
+                                             .map( next -> next.getValue().getMembers()[nextIndex] )
+                                             .collect( Collectors.toList() );
+
+                double nextUpscaled = upscaler.applyAsDouble( doubles );
+                upscaled[i] = nextUpscaled;
+            }
+
+            if ( labels.isPresent() )
+            {
+                return Ensemble.of( upscaled, labels.get() );
+            }
+
+            return Ensemble.of( upscaled );
+        };
     }
+
+    /**
+     * Returns the number of ensemble members associated with every ensemble in the set of events.
+     * 
+     * @param events the events
+     * @return the number of ensemble members
+     * @throws UnsupportedOperationException if the number of ensemble members is not fixed
+     */
+    private int getMemberCountAndValidateConstant( SortedSet<Event<Ensemble>> events )
+    {
+        // A map of ensemble members per valid time organized by label or index
+        Set<Integer> counts =
+                events.stream()
+                      .map( next -> next.getValue()
+                                        .size() )
+                      .collect( Collectors.toSet() );
+
+        // No labels, so check for a constant number of ensemble members
+        if ( counts.size() > 1 )
+        {
+            throw new UnsupportedOperationException( "Encountered a collection of ensembles to upscale that contained "
+                                                     + "a varying number of ensemble members, which is not supported. "
+                                                     + "The ensemble member counts were: "
+                                                     + counts
+                                                     + "." );
+        }
+
+        return counts.stream()
+                     .findAny()
+                     .orElse( 0 );
+    }
+
+    /**
+     * Returns a function that corresponds to a {@link TimeScaleFunction}, additionally wrapped by 
+     * {@link #RETURN_DOUBLE_OR_MISSING} so that missing input produces missing output.
+     * 
+     * @param function The nominated function
+     * @return a function for upscaling
+     * @throws UnsupportedOperationException if the nominated function is not recognized
+     */
+
+    private ToDoubleFunction<List<Double>> getTraceUpscaler( TimeScaleFunction function )
+    {
+        return events -> {
+
+            double upscaled;
+
+            List<Double> eventsToUse = events;
+
+            if ( TimeSeriesOfEnsembleUpscaler.LENIENT )
+            {
+                eventsToUse = eventsToUse.stream()
+                                         .filter( Double::isFinite )
+                                         .collect( Collectors.toList() );
+            }
+
+            switch ( function )
+            {
+                case MAXIMUM:
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Double::valueOf )
+                                          .max()
+                                          .getAsDouble();
+                    break;
+                case MEAN:
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Double::valueOf )
+                                          .average()
+                                          .getAsDouble();
+                    break;
+                case MINIMUM:
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Double::valueOf )
+                                          .min()
+                                          .getAsDouble();
+                    break;
+                case TOTAL:
+                    upscaled = eventsToUse.stream()
+                                          .mapToDouble( Double::valueOf )
+                                          .sum();
+                    break;
+                default:
+                    throw new UnsupportedOperationException( "Could not create an upscaling function for the "
+                                                             + "function identifier '"
+                                                             + function
+                                                             + "'." );
+
+            }
+
+            return RETURN_DOUBLE_OR_MISSING.applyAsDouble( upscaled );
+        };
+    }
+
 
     /**
      * Hidden constructor.
      * 
-     * @param upscaler the upscaler instance
      * @throws NullPointerException of the input is null
      */
 
-    private TimeSeriesOfEnsembleUpscaler( TimeSeriesUpscaler<Double> upscaler )
+    private TimeSeriesOfEnsembleUpscaler()
     {
-        Objects.requireNonNull( upscaler );
-
-        this.upscaler = upscaler;
     }
 
 }

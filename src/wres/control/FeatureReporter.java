@@ -155,7 +155,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
-            LOGGER.info( "The following features succeeded: {}",
+            LOGGER.info( "The following feature tuples succeeded: {}",
                          Features.getFeaturesDescription( successfulFeaturesToReport ) );
         }
 

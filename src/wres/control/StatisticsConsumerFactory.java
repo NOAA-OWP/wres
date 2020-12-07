@@ -64,7 +64,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
      * The netcdf writer.
      */
 
-    private final NetcdfOutputWriter netcdfWriter;
+    private final List<NetcdfOutputWriter> netcdfWriters;
 
     /**
      * Decimal formatter.
@@ -91,7 +91,11 @@ class StatisticsConsumerFactory implements ConsumerFactory
         // happens on-the-fly, this can be simplified
         if ( formats.contains( Format.NETCDF ) )
         {
-            builder.addDoubleScoreConsumer( DestinationType.NETCDF, this.netcdfWriter );
+            for ( NetcdfOutputWriter writer : this.netcdfWriters )
+            {
+                builder.addDoubleScoreConsumer( DestinationType.NETCDF,
+                                                writer );
+            }
         }
 
         // Protobuf
@@ -226,7 +230,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
      * @param consumerId the consumer identifier
      * @param formats the formats to be delivered
      * @param systemSettings the system settings for netcdf writing
-     * @param netcdfWriter a netcdf writer
+     * @param netcdfWriters The netcdf writers, if any.
      * @param projectConfig the project declaration for netcdf writing
      * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if no formats are declared
@@ -235,7 +239,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
     StatisticsConsumerFactory( String consumerId,
                                Set<Format> formats,
                                SystemSettings systemSettings,
-                               NetcdfOutputWriter netcdfWriter,
+                               List<NetcdfOutputWriter> netcdfWriters,
                                ProjectConfig projectConfig )
     {
         Objects.requireNonNull( consumerId );
@@ -245,7 +249,12 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
         if ( formats.contains( Format.NETCDF ) )
         {
-            Objects.requireNonNull( netcdfWriter );
+            Objects.requireNonNull( netcdfWriters );
+
+            if ( netcdfWriters.isEmpty() )
+            {
+                throw new IllegalArgumentException( "Expected at least one netCDF writer." );
+            }
         }
 
         this.consumerDescription = Consumer.newBuilder()
@@ -254,7 +263,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                            .build();
         this.systemSettings = systemSettings;
         this.projectConfig = projectConfig;
-        this.netcdfWriter = netcdfWriter;
+        this.netcdfWriters = netcdfWriters;
 
         this.decimalFormatter = this.getDecimalFormatter( this.projectConfig );
     }

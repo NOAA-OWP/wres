@@ -171,15 +171,6 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                         + "You probably want 'ensemble forecasts' type or to "
                         + "change the source URI to point to another type." );
             }
-
-            if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
-            {
-                LOGGER.warn( "{}{}{}{}",
-                             "Evaluating only the deterministic medium range ",
-                             "forecast because 'single valued forecasts' was ",
-                             "declared. To evaluate the ensemble forecast, ",
-                             "declare 'ensemble forecasts'." );
-            }
         }
 
         // See comments in wres.io.reading.WebSource for info on below approach.

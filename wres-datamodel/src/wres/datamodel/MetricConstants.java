@@ -274,7 +274,8 @@ public enum MetricConstants
      * Mean statistic.
      */
 
-    MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC, MetricGroup.LRB ),
+    MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
+            MetricGroup.LRB ),
 
     /**
      * Median statistic.
@@ -413,21 +414,21 @@ public enum MetricConstants
     /**
      * Identifier for the component of a univariate statistic that applies to the left-sided data within a pairing.
      */
-    
+
     LEFT( MetricGroup.LRB ),
-    
+
     /**
      * Identifier for the component of a univariate statistic that applies to the right-sided data within a pairing.
      */
-    
+
     RIGHT( MetricGroup.LRB ),
-    
+
     /**
      * Identifier for the component of a univariate statistic that applies to the baseline-sided data within a pairing.
      */
-    
+
     BASELINE( MetricGroup.LRB );
-    
+
     /**
      * The {@link SampleDataGroup}.
      */
@@ -445,13 +446,13 @@ public enum MetricConstants
      */
 
     private final MetricGroup[] metricGroups;
-    
+
     /**
      * Is <code>true</code> if the metric measures skill relative to a baseline, otherwise <code>false</code>.
      */
 
     private final boolean isSkillMetric;
-    
+
     /**
      * Default constructor
      */
@@ -535,7 +536,7 @@ public enum MetricConstants
     public boolean isInGroup( SampleDataGroup inGroup )
     {
         Objects.requireNonNull( inGroup );
-        
+
         return Arrays.asList( this.inGroups ).contains( inGroup );
     }
 
@@ -551,7 +552,7 @@ public enum MetricConstants
     public boolean isInGroup( StatisticType outGroup )
     {
         Objects.requireNonNull( outGroup );
-        
+
         return this.outGroup == outGroup;
     }
 
@@ -566,7 +567,7 @@ public enum MetricConstants
     public boolean isInGroup( MetricGroup inGroup )
     {
         Objects.requireNonNull( inGroup );
-        
+
         return Arrays.asList( this.metricGroups ).contains( inGroup );
     }
 
@@ -584,6 +585,20 @@ public enum MetricConstants
     public boolean isInGroup( SampleDataGroup inGroup, StatisticType outGroup )
     {
         return isInGroup( inGroup ) && isInGroup( outGroup );
+    }
+
+    /**
+     * Returns true if this is a metric that supports filtering or classifying by threshold (i.e., not including the 
+     * "all data" threshold, which all metrics support, by definition).
+     * 
+     * @return true if the metric supports thresholds
+     */
+
+    public boolean isAThresholdMetric()
+    {
+        return ! ( this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
+                   || this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
+                   || this == MetricConstants.QUANTILE_QUANTILE_DIAGRAM );
     }
 
     /**
@@ -630,7 +645,7 @@ public enum MetricConstants
     {
         Objects.requireNonNull( inGroup );
         Objects.requireNonNull( outGroup );
-        
+
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.inGroups ) || !Arrays.asList( a.inGroups ).contains( inGroup )
                            || a.outGroup != outGroup );
@@ -648,7 +663,7 @@ public enum MetricConstants
     public static Set<MetricConstants> getMetrics( SampleDataGroup inGroup )
     {
         Objects.requireNonNull( inGroup );
-        
+
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.inGroups ) || !Arrays.asList( a.inGroups ).contains( inGroup ) );
         return Collections.unmodifiableSet( all );
@@ -665,12 +680,12 @@ public enum MetricConstants
     public static Set<MetricConstants> getMetrics( StatisticType outGroup )
     {
         Objects.requireNonNull( outGroup );
-        
+
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.outGroup ) || a.outGroup != outGroup );
         return Collections.unmodifiableSet( all );
     }
-    
+
     /**
      * Returns <code>true</code> if the metric measures skill, otherwise <code>false</code>.
      * 
@@ -681,7 +696,7 @@ public enum MetricConstants
     {
         return this.isSkillMetric;
     }
-    
+
     /**
      * Returns a string representation.
      * 
@@ -902,13 +917,13 @@ public enum MetricConstants
          */
 
         UNIVARIATE_STATISTIC,
-        
+
         /**
          * Identifier for a Left/right/baseline decomposition.
          */
 
         LRB,
-        
+
         /**
          * Identifier for a contingency table group.
          */

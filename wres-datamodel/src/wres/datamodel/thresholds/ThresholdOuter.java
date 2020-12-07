@@ -37,6 +37,10 @@ import wres.statistics.generated.Threshold.ThresholdOperator;
 
 public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredicate
 {
+    /**
+     * Threshold that represents "all data", i.e., no filtering.
+     */
+    
     public static final ThresholdOuter ALL_DATA = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                      ThresholdConstants.Operator.GREATER,
                                                                      ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
@@ -462,6 +466,17 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         return returnMe;
     }
 
+    /**
+     * Returns true if this threshold is the "all data" threshold.
+     * @return true if this threshold is the all data threshold, otherwise false
+     */
+    
+    public boolean isAllDataThreshold()
+    {
+        // Identity equals, followed by content equals
+        return ThresholdOuter.ALL_DATA == this || ThresholdOuter.ALL_DATA.equals( this );
+    }
+    
     /**
      * Returns a string representation of the {@link ThresholdOuter} that contains only alphanumeric characters A-Z, a-z, 
      * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as

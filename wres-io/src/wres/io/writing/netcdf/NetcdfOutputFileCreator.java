@@ -19,6 +19,9 @@ import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.time.TimeWindowOuter;
 
+/**
+ * @deprecated in 5.2, replaced by NetcdfOutputFileCreator2
+ */
 class NetcdfOutputFileCreator
 {
     private NetcdfOutputFileCreator(){}

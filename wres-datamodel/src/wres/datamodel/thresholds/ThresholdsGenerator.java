@@ -20,7 +20,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.MetricConstants.SampleDataGroup;
-import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
@@ -98,8 +97,8 @@ public class ThresholdsGenerator
             for ( MetricConstants next : metrics )
             {
                 Set<ThresholdOuter> allData = ThresholdsGenerator.getAdjustedThresholds( next,
-                                                                                    Collections.emptySet(),
-                                                                                    ThresholdConstants.ThresholdGroup.VALUE );
+                                                                                         Collections.emptySet(),
+                                                                                         ThresholdConstants.ThresholdGroup.VALUE );
 
                 builder.addThresholds( Collections.singletonMap( next, allData ),
                                        ThresholdConstants.ThresholdGroup.VALUE );
@@ -150,8 +149,8 @@ public class ThresholdsGenerator
      */
 
     private static Set<ThresholdOuter> getAdjustedThresholds( MetricConstants metric,
-                                                         Set<ThresholdOuter> thresholds,
-                                                         ThresholdConstants.ThresholdGroup type )
+                                                              Set<ThresholdOuter> thresholds,
+                                                              ThresholdConstants.ThresholdGroup type )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
 
@@ -166,17 +165,10 @@ public class ThresholdsGenerator
 
         Set<ThresholdOuter> returnMe = new HashSet<>();
 
-        ThresholdOuter allData =
-                ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                              Operator.GREATER,
-                              ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
-
         // All data only
-        if ( metric.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
-             || metric.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
-             || metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
+        if ( ! metric.isAThresholdMetric() )
         {
-            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( allData ) ) );
+            return Set.of( ThresholdOuter.ALL_DATA );
         }
 
         // Otherwise, add the input thresholds
@@ -186,7 +178,7 @@ public class ThresholdsGenerator
         if ( metric.isInGroup( SampleDataGroup.ENSEMBLE ) || metric.isInGroup( SampleDataGroup.SINGLE_VALUED )
              || metric.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            returnMe.add( allData );
+            returnMe.add( ThresholdOuter.ALL_DATA );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -205,7 +197,7 @@ public class ThresholdsGenerator
      */
 
     private static Set<ThresholdOuter> getInternalThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
-                                                                             MeasurementUnit units )
+                                                                                  MeasurementUnit units )
     {
         Objects.requireNonNull( thresholds, "Specify non-null thresholds configuration." );
 
@@ -265,10 +257,10 @@ public class ThresholdsGenerator
      */
 
     private static Set<ThresholdOuter> getThresholdsFromCommaSeparatedValues( String inputString,
-                                                                         Operator oper,
-                                                                         ThresholdConstants.ThresholdDataType dataType,
-                                                                         boolean areProbs,
-                                                                         MeasurementUnit units )
+                                                                              Operator oper,
+                                                                              ThresholdConstants.ThresholdDataType dataType,
+                                                                              boolean areProbs,
+                                                                              MeasurementUnit units )
     {
         Objects.requireNonNull( inputString, "Specify a non-null input string." );
 
@@ -294,19 +286,19 @@ public class ThresholdsGenerator
                 if ( areProbs )
                 {
                     returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
-                                                                                        addMe.get( i
-                                                                                                   + 1 ) ),
-                                                                    oper,
-                                                                    dataType,
-                                                                    units ) );
+                                                                                             addMe.get( i
+                                                                                                        + 1 ) ),
+                                                                         oper,
+                                                                         dataType,
+                                                                         units ) );
                 }
                 else
                 {
                     returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( addMe.get( i ),
-                                                                    addMe.get( i + 1 ) ),
-                                                oper,
-                                                dataType,
-                                                units ) );
+                                                                         addMe.get( i + 1 ) ),
+                                                     oper,
+                                                     dataType,
+                                                     units ) );
                 }
             }
         }
@@ -316,16 +308,16 @@ public class ThresholdsGenerator
             if ( areProbs )
             {
                 addMe.forEach( threshold -> returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
-                                                                                            oper,
-                                                                                            dataType,
-                                                                                            units ) ) );
+                                                                                                 oper,
+                                                                                                 dataType,
+                                                                                                 units ) ) );
             }
             else
             {
                 addMe.forEach( threshold -> returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( threshold ),
-                                                                        oper,
-                                                                        dataType,
-                                                                        units ) ) );
+                                                                             oper,
+                                                                             dataType,
+                                                                             units ) ) );
             }
         }
 

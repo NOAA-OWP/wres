@@ -178,6 +178,7 @@ class WebSource implements Callable<List<IngestResult>>
         // The size of this latch is for reason (2) above
         this.startGettingResults = new CountDownLatch( concurrentCount );
         this.now = now;
+        this.validateSource( this.getDataSource() );
         LOGGER.debug( "Created WebSource for {}", this.dataSource );
     }
 
@@ -453,6 +454,36 @@ class WebSource implements Callable<List<IngestResult>>
         }
 
         return Collections.unmodifiableList( ingestResults );
+    }
+
+
+    /**
+     * Log a WARN message when a subset of a medium-range dataset is used.
+     *
+     * This used to be in WrdsNwmReader but was logged per URL rather than per
+     * source.
+     * @param source The data source.
+     */
+
+    private void validateSource( DataSource source )
+    {
+        if ( source.getContext()
+                   .getType()
+                   .equals( DatasourceType.SINGLE_VALUED_FORECASTS )
+             && source.getSource()
+                      .getInterface()
+                      .equals( InterfaceShortHand.WRDS_NWM )
+             && source.getUri()
+                      .toString()
+                      .toLowerCase()
+                      .contains( "medium_range" ) )
+        {
+            LOGGER.warn( "{}{}{}{}",
+                         "Evaluating only the deterministic medium range ",
+                         "forecast because 'single valued forecasts' was ",
+                         "declared. To evaluate the ensemble forecast, ",
+                         "declare 'ensemble forecasts'." );
+        }
     }
 
     private boolean isWrdsNwmSource( DataSource source )

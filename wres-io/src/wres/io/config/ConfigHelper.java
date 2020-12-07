@@ -521,7 +521,8 @@ public class ConfigHelper
         filename.add( leadUnits.name().toUpperCase() );
 
         String extension = "";
-        if ( destinationConfig.getType() == DestinationType.NETCDF )
+        if ( destinationConfig.getType() == DestinationType.NETCDF
+             || destinationConfig.getType() == DestinationType.NETCDF_2 )
         {
             extension = ".nc";
         }
