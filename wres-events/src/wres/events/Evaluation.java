@@ -383,26 +383,26 @@ public class Evaluation implements Closeable
      * 
      * @param statistics the statistics message
      * @param groupId an optional group identifier to identify grouped status messages (required if group subscribers)
-     * @throws NullPointerException if the message is null or the groupId is null when there are group subscriptions
+     * @throws NullPointerException if the message is null
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
      * @throws IllegalArgumentException if the group has already been marked complete
      */
 
     public void publish( Statistics statistics, String groupId )
     {
+        Objects.requireNonNull( statistics );
+
+        this.validateRequestToPublish();
+        this.validateGroupId( groupId );
+
+        // Acquire a publication lock when producer flow control is engaged
+        if ( Objects.nonNull( groupId ) )
+        {
+            this.startFlowControl();
+        }
+
         try
         {
-            this.validateRequestToPublish();
-
-            Objects.requireNonNull( statistics );
-
-            this.validateGroupId( groupId );
-
-            // Acquire a publication lock when producer flow control is engaged
-            if ( Objects.nonNull( groupId ) )
-            {
-                this.acquireFlowControlLock();
-            }
 
             ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
 
@@ -423,7 +423,10 @@ public class Evaluation implements Closeable
                                                        .build();
 
             ByteBuffer status = ByteBuffer.wrap( ongoing.toByteArray() );
-            this.internalPublish( status, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, groupId );
+            this.internalPublish( status,
+                                  this.evaluationStatusPublisher,
+                                  Evaluation.EVALUATION_STATUS_QUEUE,
+                                  groupId );
             this.statusMessageCount.getAndIncrement();
 
             // Record group
@@ -438,10 +441,10 @@ public class Evaluation implements Closeable
                 }
             }
         }
-        // Release the flow control lock
+        // Release the flow control lock, if acquired by this thread
         finally
         {
-            this.releaseFlowControlLock();
+            this.stopFlowControl();
         }
     }
 
@@ -1411,16 +1414,16 @@ public class Evaluation implements Closeable
         {
             properties.put( MessageProperty.JMSX_GROUP_ID, groupId );
         }
-        
+
         // Add the evaluation job identifier if this has been configured as a system property. See #84942. This is not
         // present in most contexts but, at the time of writing, is present when running in cluster mode with a short-
         // running wres process. In that case, it is needed by client subscribers to qualify the output directory
         String wresJobId = System.getProperty( "wres.jobId" );
-        if( Objects.nonNull( wresJobId ) )
+        if ( Objects.nonNull( wresJobId ) )
         {
             properties.put( MessageProperty.EVALUATION_JOB_ID, wresJobId );
         }
-        
+
         // Add the formats delivered by external subscribers to allow for competing subscribers to identify the
         // messages that belong to them
         Map<Format, String> negotiatedSubscribers = this.statusTracker.getNegotiatedSubscribers();
@@ -1487,27 +1490,6 @@ public class Evaluation implements Closeable
                              + this.getEvaluationId();
 
             LOGGER.error( message, e );
-        }
-    }
-
-    /**
-     * Acquire the producer flow control lock.
-     */
-
-    private void acquireFlowControlLock()
-    {
-        this.flowControlLock.lock();
-    }
-
-    /**
-     * Release the producer flow control lock.
-     */
-
-    private void releaseFlowControlLock()
-    {
-        if ( this.flowControlLock.isHeldByCurrentThread() )
-        {
-            this.flowControlLock.unlock();
         }
     }
 

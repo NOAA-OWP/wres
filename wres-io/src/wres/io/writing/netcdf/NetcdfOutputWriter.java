@@ -13,12 +13,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -57,6 +57,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.MissingValues;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -125,7 +126,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Guarded by windowLock
      */
     private final List<Future<Set<Path>>> writingTasksSubmitted = new ArrayList<>();
-    
+
     /**
      * Project declaration.
      */
@@ -135,9 +136,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * Records whether the writer is ready to write. It is ready when all blobs have been created.
      */
-    
+
     private final AtomicBoolean isReadyToWrite;
-    
+
     /**
      * Mapping between standard threshold names and representative thresholds for those standard names. This is used
      * to help determine the threshold portion of a variable name to which a statistic corresponds, based on the 
@@ -151,6 +152,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * the use of deprecated code.
      * @deprecated
      */
+    @Deprecated( since = "5.1", forRemoval = true )
     private final boolean deprecatedVersion;
 
     /**
@@ -159,6 +161,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @param systemSettings The system settings to use.
      * @param executor The executor to use.
      * @param projectConfig the project configuration
+     * @param destinationDeclaration the destination declaration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
      * @param deprecatedVersion True if using deprecated code, false otherwise
@@ -174,8 +177,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                          Path outputDirectory,
                                          boolean deprecatedVersion )
     {
-        return new NetcdfOutputWriter(
-                                       systemSettings,
+        return new NetcdfOutputWriter( systemSettings,
                                        executor,
                                        projectConfig,
                                        destinationDeclaration,
@@ -262,33 +264,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                     .getPair();
         Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
-        // Find the feature with the maximum number of thresholds in order to ensure sufficient metric variables are
-        // added. See #85491.
-        Comparator<ThresholdsByMetric> byCount = ( ThresholdsByMetric o1, ThresholdsByMetric o2 ) -> {
-            int first = o1.getOneOrTwoThresholds()
-                          .values()
-                          .stream()
-                          .mapToInt( Set::size )
-                          .max()
-                          .orElse( 0 );
-            int second = o2.getOneOrTwoThresholds()
-                           .values()
-                           .stream()
-                           .mapToInt( Set::size )
-                           .max()
-                           .orElse( 0 );
-            return Integer.compare( first, second );
-        };
-
-        // Find the feature with the largest number of thresholds.
-        Optional<ThresholdsByMetric> maximumExternal = thresholds.values()
-                                                                 .stream()
-                                                                 .max( byCount );
-
-        if ( !maximumExternal.isPresent() )
+        // Find the thresholds-by-metric for which blobs should be created
+        ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholds( thresholds );
+        
+        // Should be at least one metric with at least one threshold
+        if( thresholdsToWrite.hasThresholdsForTheseMetrics().isEmpty() )
         {
-            throw new IOException( "While creating netcdf blobs, expected at least one threshold to write, but found "
-                                   + "none." );
+            throw new IOException( "Could not identify any thresholds from which to create blobs." );
         }
 
         // Units, if declared
@@ -312,7 +294,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                          .getInputs(),
                                                                      features,
                                                                      timeWindows,
-                                                                     maximumExternal.get(),
+                                                                     thresholdsToWrite,
                                                                      units,
                                                                      desiredTimeScale,
                                                                      this.deprecatedVersion );
@@ -329,21 +311,21 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * @return whether the writer is ready to write.
      */
-    
+
     private AtomicBoolean getIsReadyToWrite()
     {
         return this.isReadyToWrite;
     }
-    
+
     /**
      * @return the project declaration.
      */
-    
+
     private ProjectConfig getProjectConfig()
     {
         return this.projectConfig;
     }
-    
+
     /**
      * Creates the blobs into which outputs will be written.
      * 
@@ -504,8 +486,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // Statistics for a separate baseline? If no, there's a single set of variables
         if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
         {
-            return this.getMetricVariablesForOneTimeWindow( timeWindow, thresholds, units, desiredTimeScale, null,
-                                                            Objects.nonNull( inputs.getBaseline( ) ) );
+            return this.getMetricVariablesForOneTimeWindow( timeWindow,
+                                                            thresholds,
+                                                            units,
+                                                            desiredTimeScale,
+                                                            null,
+                                                            Objects.nonNull( inputs.getBaseline() ) );
         }
 
         // Two sets of variables, one for the right and one for the baseline with separate metrics.
@@ -522,7 +508,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                        units,
                                                                                        desiredTimeScale,
                                                                                        LeftOrRightOrBaseline.BASELINE,
-                                                                                       Objects.nonNull( inputs.getBaseline( ) ) );
+                                                                                       Objects.nonNull( inputs.getBaseline() ) );
 
         Collection<MetricVariable> merged = new ArrayList<>( right );
         merged.addAll( baseline );
@@ -624,7 +610,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             SortedSet<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
 
             Set<MetricConstants> components = nextMetric.getAllComponents();
-            
+
             // Univariate scores are part of both their own group and a decomposition group. We are only interested
             // in the decomposition group here, so filter out components that are also univariate scores
             // #81790
@@ -633,9 +619,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 components = components.stream()
                                        .filter( next -> !next.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
                                        .collect( Collectors.toSet() );
-                
+
                 // Remove the baseline component if there is no baseline: saves an empty variable
-                if( !hasBaseline )
+                if ( !hasBaseline )
                 {
                     components.remove( MetricConstants.BASELINE );
                 }
@@ -680,13 +666,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     @Override
     public Set<Path> apply( List<DoubleScoreStatisticOuter> output )
     {
-        if( ! this.getIsReadyToWrite().get() )
+        if ( !this.getIsReadyToWrite().get() )
         {
             throw new WriteException( "This netcdf output writer is not ready for writing. The blobs must be "
-                    + "created first. The caller has made an error by asking the writer to accept statistics "
-                    + "before calling createBlobsForWriting." );
+                                      + "created first. The caller has made an error by asking the writer to accept statistics "
+                                      + "before calling createBlobsForWriting." );
         }
-        
+
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
 
         Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow = wres.util.Collections.group(
@@ -732,7 +718,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 this.writingTasksSubmitted.add( taskFuture );
             }
         }
-        
+
         return this.getPathsWrittenTo();
     }
 
@@ -848,7 +834,100 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
+    
+    /**
+     * <p>Returns a {@link ThresholdsByMetric} that contains the union of thresholds across all features and metrics for 
+     * which blobs should be created. The goal is to identify the thresholds whose statistics should be recorded in the 
+     * same blob versus different blobs when the blob includes multiple features. The attribute of a threshold that 
+     * determines whether it is distinct from other thresholds is (in this order):
+     * 
+     * <ol>
+     * <li>The label, if the threshold contains a label. This is the column header in a csv or the threshold name 
+     * supplied to a threshold service. Otherwise:</li>
+     * <li>The threshold probability if the threshold is a probability threshold. Otherwise:</li>
+     * <li>The threshold value.</li>
+     * 
+     * <p> See #85491. It is essential that the logic for creating blobs in this method is mirrored by the logic for
+     * finding blobs in {@link TimeWindowWriter#getVariableName(MetricConstants, DoubleScoreComponentOuter)}.
+     * 
+     * @param thresholds the thresholds to search
+     * @return the unique thresholds for which blobs should be created
+     */
 
+    private ThresholdsByMetric getUniqueThresholds( Map<FeatureTuple, ThresholdsByMetric> thresholds )
+    {
+        Objects.requireNonNull( thresholds );
+
+        // The metrics are constant across all features because metrics cannot be declared per feature. However, the
+        // thresholds can vary across features. 
+
+        // First, create a comparator that compares two threshold tuples.
+        Comparator<OneOrTwoThresholds> thresholdComparator = ( OneOrTwoThresholds one, OneOrTwoThresholds another ) -> {
+
+            // Compare the second/decision threshold first, which is compared on all content if it exists.
+            int compare = Objects.compare( one.second(),
+                                           another.second(),
+                                           Comparator.nullsFirst( Comparator.naturalOrder() ) );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            // Compare the first threshold by label if both have a label. Thresholds with a label have the same meaning
+            // across features, so statistics should be stored accordingly.
+            if ( one.first().hasLabel() && another.first().hasLabel() )
+            {
+                return Objects.compare( one.first().getLabel(),
+                                        another.first().getLabel(),
+                                        Comparator.naturalOrder() );
+            }
+
+            // Compare by probability threshold if both are probability thresholds. Thresholds that are probability 
+            // thresholds have the same meaning across features, so should be stored accordingly.
+            if ( one.first().hasProbabilities() && another.first().hasProbabilities() )
+            {
+                return Objects.compare( one.first().getProbabilities(),
+                                        another.first().getProbabilities(),
+                                        Comparator.naturalOrder() );
+            }
+
+            // Resort to a full comparison.           
+            return Objects.compare( one,
+                                    another,
+                                    Comparator.nullsFirst( Comparator.naturalOrder() ) );
+        };
+
+        // Create a set of thresholds for each metric in a map.        
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsMap = new EnumMap<>( MetricConstants.class );
+
+        for ( ThresholdsByMetric next : thresholds.values() )
+        {
+            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping = next.getOneOrTwoThresholds();
+
+            for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : nextMapping.entrySet() )
+            {
+                MetricConstants nextMetric = nextEntry.getKey();
+
+                // Get the existing mapping or a new sorted set instantiated with the threshold comparator
+                SortedSet<OneOrTwoThresholds> mapped =
+                        thresholdsMap.getOrDefault( nextMetric,
+                                                    new TreeSet<>( thresholdComparator ) );
+
+                mapped.addAll( nextEntry.getValue() );
+
+                // Add it to the map if not already there
+                if ( !thresholdsMap.containsKey( nextMetric ) )
+                {
+                    thresholdsMap.put( nextMetric, mapped );
+                }
+            }
+        }
+        
+        return new ThresholdsByMetric.Builder().addThresholds( thresholdsMap )
+                                               .build();
+    }
+    
     /**
      * Writes output for a specific pair of lead times, representing the {@link TimeWindowOuter#getEarliestLeadDuration()} and
      * the {@link TimeWindowOuter#getLatestLeadDuration()}.
@@ -903,7 +982,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 {
                     DoubleScoreComponentOuter componentScore = score.getComponent( nextComponent );
 
-                    String name = this.getVariableName( score.getMetricName(), componentScore, scores );
+                    String name = this.getVariableName( score.getMetricName(), componentScore );
 
                     // Figure out the location of all values and build the origin in each variable grid
                     GeometryTuple location = score.getMetadata()
@@ -950,7 +1029,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                         }
                     }
 
-                    LOGGER.trace( "Actual value found for {}: {}", componentScore.getMetricName(),
+                    LOGGER.trace( "Actual value found for {}: {}",
+                                  componentScore.getMetricName(),
                                   actualValue );
                     this.saveValues( name, origin, actualValue );
                 }
@@ -1042,19 +1122,23 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * the score metadata. Attempts to use the threshold name to locate the threshold. Otherwise, uses the natural 
          * order of the thresholds.
          * 
+         * @param metricName the metric name
          * @param score the score whose metric-threshold standard name is required
          * @return the standard name
          */
 
         private String getVariableName( MetricConstants metricName,
-                                        DoubleScoreComponentOuter score,
-                                        List<DoubleScoreStatisticOuter> scores )
+                                        DoubleScoreComponentOuter score )
         {
             SampleMetadata sampleMetadata = score.getMetadata();
 
             // Find the metric name
             MetricConstants metricComponentName =
-                    MetricConstants.valueOf( score.getData().getMetric().getName().name() );
+                    MetricConstants.valueOf( score.getData()
+                                                  .getMetric()
+                                                  .getName()
+                                                  .name() );
+
             String metricNameString = metricName.name();
             if ( metricComponentName != MetricConstants.MAIN )
             {
@@ -1077,55 +1161,99 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             for ( Map.Entry<String, OneOrTwoThresholds> nextThreshold : metricMap.entrySet() )
             {
                 String nextName = nextThreshold.getKey();
-                OneOrTwoThresholds threshold = nextThreshold.getValue();
-                if ( threshold.first().hasLabel() )
+                OneOrTwoThresholds thresholdFromArchive = nextThreshold.getValue();
+                OneOrTwoThresholds thresholdFromScore = score.getMetadata()
+                                                             .getThresholds();
+
+                // Second threshold is always a decision threshold and can be compared directly
+                boolean secondThresholdIsEqual =
+                        Objects.equals( thresholdFromArchive.second(), thresholdFromScore.second() );
+
+                String name = this.getVariableNameOrNull( thresholdFromScore,
+                                                          thresholdFromArchive,
+                                                          nextName,
+                                                          sampleMetadata,
+                                                          metricNameString,
+                                                          append,
+                                                          secondThresholdIsEqual );
+
+                //Name discovered? return it
+                if ( Objects.nonNull( name ) )
                 {
-
-                    // Label associated with event threshold is equal, and any decision threshold is equal
-                    String thresholdWithValuesOne = threshold.first().getLabel();
-                    String thresholdWithValuesTwo = sampleMetadata.getThresholds().first().getLabel();
-
-                    // Decision threshold equal?
-                    boolean hasSecond = threshold.hasTwo();
-                    boolean secondEqual = hasSecond &&
-                                          threshold.second().equals( sampleMetadata.getThresholds().second() );
-
-                    if ( thresholdWithValuesOne.equals( thresholdWithValuesTwo )
-                         && ( !hasSecond || secondEqual ) )
-                    {
-                        return metricNameString + "_" + nextName + append;
-                    }
+                    return name;
                 }
             }
 
-            // Couldn't find a similar threshold, so look in the context instead
-            // Filter the scores by identifier, then return the threshold name based on order
-            SortedSet<OneOrTwoThresholds> statistics = scores.stream()
-                                                             .filter( a -> a.getMetricName() == metricName )
-                                                             .map( a -> a.getMetadata().getThresholds() )
-                                                             .collect( Collectors.toCollection( TreeSet::new ) );
-
-            // Find the elements strictly less than the element of interest, then add one
-            int thresholdNumber = statistics.headSet( sampleMetadata.getThresholds() )
-                                            .size()
-                                  + 1;
-
-            if ( thresholdNumber < 1 )
-            {
-                throw new IllegalArgumentException( "Could not find the name of the thresholds variable corresponding to "
-                                                    + "the threshold "
-                                                    + sampleMetadata.getThresholds()
-                                                    + " and metric "
-                                                    + metricNameString
-                                                    + " associated with "
-                                                    + sampleMetadata
-                                                    + ". Looked in this list of thresholds: "
-                                                    + statistics );
-            }
-
-            return metricNameString + "_THRESHOLD_" + thresholdNumber + append;
+            // Couldn't find a variable name, which is not allowed
+            throw new IllegalArgumentException( "Could not find the name of the thresholds variable corresponding to "
+                                                + "the threshold "
+                                                + sampleMetadata.getThresholds()
+                                                + " and metric "
+                                                + metricNameString
+                                                + " associated with "
+                                                + sampleMetadata
+                                                + "." );
         }
 
+        /**
+         * Returns a variable name or null from the inputs.
+         * 
+         * @param thresholdFromScore the threshold from the score statistic whose netcdf variable name is required
+         * @param thresholdFromArchive a threshold from the archive of thresholds whose names should be searched
+         * @param thresholdFromArchiveName the standard name given to the threshold from the archive 
+         * @param sampleMetadata the sample metadata
+         * @param metricNameString a string name for the metric
+         * @param append a string to append to the variable name
+         * @param secondThresholdIsEqual
+         * @return
+         */
+
+        private String getVariableNameOrNull( OneOrTwoThresholds thresholdFromScore,
+                                              OneOrTwoThresholds thresholdFromArchive,
+                                              String thresholdFromArchiveName,
+                                              SampleMetadata sampleMetadata,
+                                              String metricNameString,
+                                              String append,
+                                              boolean secondThresholdIsEqual )
+        {
+            // First threshold needs to be compared more selectively. First look for a label.
+            if ( thresholdFromScore.first().hasLabel() && thresholdFromArchive.first().hasLabel() )
+            {
+
+                // Label associated with event threshold is equal, and any decision threshold is equal
+                String thresholdWithValuesOne = thresholdFromArchive.first()
+                                                                    .getLabel();
+                String thresholdWithValuesTwo = sampleMetadata.getThresholds()
+                                                              .first()
+                                                              .getLabel();
+
+                if ( thresholdWithValuesOne.equals( thresholdWithValuesTwo )
+                     && secondThresholdIsEqual )
+                {
+                    return metricNameString + "_" + thresholdFromArchiveName + append;
+                }
+            }
+            // Next, use the probability identifier for a probability threshold
+            else if ( thresholdFromScore.first().hasProbabilities()
+                      && thresholdFromArchive.first().hasProbabilities() )
+            {
+                OneOrTwoDoubles doubles = thresholdFromScore.first().getProbabilities();
+                OneOrTwoDoubles otherDoubles = thresholdFromArchive.first().getProbabilities();
+
+                if ( doubles.equals( otherDoubles ) && secondThresholdIsEqual )
+                {
+                    return metricNameString + "_" + thresholdFromArchiveName + append;
+                }
+            }
+            // Resort to comparing all.
+            else if ( thresholdFromScore.first().equals( thresholdFromArchive.first() ) && secondThresholdIsEqual )
+            {
+                return metricNameString + "_" + thresholdFromArchiveName + append;
+            }
+
+            return null;
+        }     
+        
         private void saveValues( String name, int[] origin, double value )
                 throws IOException, InvalidRangeException
         {
@@ -1184,7 +1312,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * @return The coordinates for the location within the Netcdf variable describing where to place data
          * @deprecated As of 5.1, TODO remove this whole method, keep 1-arg one
          */
-
+        @Deprecated( since = "5.1", forRemoval = true )
         private int[] getOrigin( String name, GeometryTuple tuple ) throws IOException, CoordinateNotFoundException
         {
             int[] origin;
@@ -1231,9 +1359,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             {
                 // Only contains the vector id
                 Integer vectorIndex = this.getVectorCoordinate(
-                        tuple,
-                        this.outputWriter.getNetcdfConfiguration()
-                                         .getVectorVariable() );
+                                                                tuple,
+                                                                this.outputWriter.getNetcdfConfiguration()
+                                                                                 .getVectorVariable() );
 
                 if ( vectorIndex == null )
                 {
@@ -1298,11 +1426,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                             {
                                 int[] origin = new int[] { wordIndex, 0 };
                                 int[] shape = new int[] { 1,
-                                        dimensions.get( 1 ).getLength() };
+                                                          dimensions.get( 1 ).getLength() };
                                 char[] characters =
-                                        ( char[] ) coordinate.read( origin,
-                                                                    shape )
-                                                             .get1DJavaArray( DataType.CHAR );
+                                        (char[]) coordinate.read( origin,
+                                                                  shape )
+                                                           .get1DJavaArray( DataType.CHAR );
                                 String word =
                                         String.valueOf( characters ).trim();
                                 vectorCoordinatesMap.put( word, wordIndex );

@@ -373,7 +373,7 @@ public class ThresholdsByMetric
             return this;
         }
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Find the union for each type
         for ( ThresholdGroup nextType : ThresholdGroup.values() )
@@ -530,7 +530,7 @@ public class ThresholdsByMetric
             return this;
         }
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Add the stored types within the input array
         if ( Objects.nonNull( type ) )
@@ -578,7 +578,7 @@ public class ThresholdsByMetric
             return metric.isInGroup( outGroup );
         };
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Add the filtered thresholds for each type
         for ( ThresholdGroup nextType : ThresholdGroup.values() )
@@ -607,7 +607,7 @@ public class ThresholdsByMetric
      * Builder.
      */
 
-    public static class ThresholdsByMetricBuilder
+    public static class Builder
     {
 
         /**
@@ -635,23 +635,36 @@ public class ThresholdsByMetric
 
         private Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
 
+        /**
+         * @return true if the builder contains no thresholds, otherwise false.
+         */
+
         public boolean isEmpty()
         {
-            boolean empty = this.values.values().stream().allMatch( Set::isEmpty );
+            boolean empty = this.values.values()
+                                       .stream()
+                                       .allMatch( Set::isEmpty );
 
             if ( empty )
             {
-                empty = this.probabilities.values().stream().allMatch( Set::isEmpty );
+                empty = this.probabilities.values()
+                                          .stream()
+                                          .allMatch( Set::isEmpty );
             }
 
             if ( empty )
             {
-                empty = this.probabilityClassifiers.values().stream().allMatch( Set::isEmpty );
+                empty = this.probabilityClassifiers
+                                                   .values()
+                                                   .stream()
+                                                   .allMatch( Set::isEmpty );
             }
 
             if ( empty )
             {
-                empty = this.quantiles.values().stream().allMatch( Set::isEmpty );
+                empty = this.quantiles.values()
+                                      .stream()
+                                      .allMatch( Set::isEmpty );
             }
 
             return empty;
@@ -668,8 +681,8 @@ public class ThresholdsByMetric
          * @throws NullPointerException if any input is null
          */
 
-        public ThresholdsByMetricBuilder addThresholds( Map<MetricConstants, Set<ThresholdOuter>> thresholds,
-                                                        ThresholdGroup group )
+        public Builder addThresholds( Map<MetricConstants, Set<ThresholdOuter>> thresholds,
+                                      ThresholdGroup group )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
@@ -693,9 +706,9 @@ public class ThresholdsByMetric
          * @return the builder
          */
 
-        public ThresholdsByMetricBuilder addThreshold( ThresholdGroup group,
-                                                       MetricConstants metric,
-                                                       ThresholdOuter threshold )
+        public Builder addThreshold( ThresholdGroup group,
+                                     MetricConstants metric,
+                                     ThresholdOuter threshold )
         {
             Objects.requireNonNull( metric, "Cannot build a store of thresholds with a null metric." );
 
@@ -716,9 +729,9 @@ public class ThresholdsByMetric
          * @throws NullPointerException if any input is null
          */
 
-        public ThresholdsByMetricBuilder addThresholds( ThresholdGroup group,
-                                                        MetricConstants metric,
-                                                        Set<ThresholdOuter> thresholds )
+        public Builder addThresholds( ThresholdGroup group,
+                                      MetricConstants metric,
+                                      Set<ThresholdOuter> thresholds )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
@@ -756,8 +769,9 @@ public class ThresholdsByMetric
             else
             {
                 LOGGER.trace( "While building thresholds-by-metric, discovered metric {}, which does not support "
-                              + "all threshold types. Adding the \"all data\" threshold for this metric.", metric );
-                
+                              + "all threshold types. Adding the \"all data\" threshold for this metric.",
+                              metric );
+
                 addMe.add( ThresholdOuter.ALL_DATA );
             }
 
@@ -770,6 +784,63 @@ public class ThresholdsByMetric
             else
             {
                 container.put( metric, addMe );
+            }
+
+            return this;
+        }
+
+        /**
+         * Adds a {@link OneOrTwoThresholds to the builder}.
+         * 
+         * @param thresholds the thresholds to add
+         * @throws NullPointerException if any input is null
+         */
+
+        public Builder addThreshold( MetricConstants metric,
+                                     OneOrTwoThresholds thresholds )
+        {
+            Objects.requireNonNull( metric );
+            Objects.requireNonNull( thresholds );
+
+            if ( thresholds.hasTwo() )
+            {
+                this.addThreshold( ThresholdGroup.PROBABILITY_CLASSIFIER, metric, thresholds.second() );
+            }
+
+            if ( thresholds.first().isQuantile() )
+            {
+                this.addThreshold( ThresholdGroup.QUANTILE, metric, thresholds.first() );
+            }
+            else if ( thresholds.first().hasProbabilities() )
+            {
+                this.addThreshold( ThresholdGroup.PROBABILITY, metric, thresholds.first() );
+            }
+            else
+            {
+                this.addThreshold( ThresholdGroup.VALUE, metric, thresholds.first() );
+            }
+
+            return this;
+        }
+
+        /**
+         * Adds a collection of thresholds to the builder.
+         * @param thresholds the thresholds
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+
+        public Builder addThresholds( Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholds )
+        {
+            Objects.requireNonNull( thresholds );
+
+            for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> next : thresholds.entrySet() )
+            {
+                MetricConstants nextMetric = next.getKey();
+                SortedSet<OneOrTwoThresholds> nextThresholds = next.getValue();
+
+                nextThresholds.stream()
+                              .forEach( aThreshold -> this.addThreshold( nextMetric, aThreshold ) );
             }
 
             return this;
@@ -794,7 +865,7 @@ public class ThresholdsByMetric
      * @param builder the builder
      */
 
-    private ThresholdsByMetric( ThresholdsByMetricBuilder builder )
+    private ThresholdsByMetric( Builder builder )
     {
         // Set immutable stores
         for ( Entry<MetricConstants, Set<ThresholdOuter>> next : builder.probabilities.entrySet() )
@@ -899,7 +970,7 @@ public class ThresholdsByMetric
      * @param test the predicate to indicate whether thresholds should be included
      */
 
-    private void addFilteredThresholdsByGroup( ThresholdsByMetricBuilder builder,
+    private void addFilteredThresholdsByGroup( Builder builder,
                                                ThresholdGroup type,
                                                Map<MetricConstants, Set<ThresholdOuter>> thresholds,
                                                Predicate<MetricConstants> test )

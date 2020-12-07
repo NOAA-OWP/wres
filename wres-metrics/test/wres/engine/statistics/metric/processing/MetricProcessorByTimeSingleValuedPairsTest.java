@@ -52,7 +52,7 @@ import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.*;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -674,7 +674,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                  Operator.GREATER_EQUAL,
                                                                  ThresholdDataType.LEFT ) ) );
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         canonical.put( MetricConstants.MEAN_ERROR, thresholds );
         canonical.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, thresholds );

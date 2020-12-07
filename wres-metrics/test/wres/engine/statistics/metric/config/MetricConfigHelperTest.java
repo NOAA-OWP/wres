@@ -47,7 +47,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 
@@ -256,7 +256,7 @@ public final class MetricConfigHelperTest
         mockExternal.put( MetricConstants.BIAS_FRACTION, atomicExternal );
 
         ThresholdsByMetric externalThresholds =
-                new ThresholdsByMetricBuilder().addThresholds( mockExternal, ThresholdGroup.VALUE ).build();
+                new Builder().addThresholds( mockExternal, ThresholdGroup.VALUE ).build();
 
         // Compute combined thresholds
         ThresholdsByMetric actualByMetric =
