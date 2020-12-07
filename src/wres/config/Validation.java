@@ -1,11 +1,9 @@
 package wres.config;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -33,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.xml.bind.Locatable;
 
+import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
@@ -149,6 +148,10 @@ public class Validation
         // Validate pair section
         result = Validation.isPairConfigValid( projectConfigPlus ) && result;
 
+        // Validate combination of data source section with pair section
+        result = Validation.isInputsAndPairCombinationValid( projectConfigPlus )
+                 && result;
+
         // Validate metrics section
         result = Validation.isMetricsConfigValid( systemSettings,
                                                   projectConfigPlus )
@@ -162,6 +165,125 @@ public class Validation
                  && result;
 
         return result;
+    }
+
+    /**
+     * Checks to see if there are input declarations requiring other declaration
+     * in the pair declaration.
+     * @param projectConfigPlus The project declaration to check.
+     * @return false if there are known invalid combinations present.
+     */
+
+    private static boolean isInputsAndPairCombinationValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Locatable firstSourceThatRequiresFeatures = null;
+        boolean noFeatureDeclaration = false;
+        DataSourceConfig left = projectConfigPlus.getProjectConfig()
+                                                 .getInputs()
+                                                 .getLeft();
+        DataSourceConfig right = projectConfigPlus.getProjectConfig()
+                                                  .getInputs()
+                                                  .getRight();
+        DataSourceBaselineConfig baselineConfig =
+                projectConfigPlus.getProjectConfig()
+                                 .getInputs()
+                                 .getBaseline();
+
+        for ( DataSourceConfig.Source source : left.getSource() )
+        {
+            if ( Validation.requiresFeatureOrFeatureService( source ) )
+            {
+                firstSourceThatRequiresFeatures = source;
+                break;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : right.getSource() )
+        {
+            if ( Validation.requiresFeatureOrFeatureService( source ) )
+            {
+                firstSourceThatRequiresFeatures = source;
+                break;
+            }
+        }
+
+        if ( Objects.nonNull( baselineConfig ) )
+        {
+            for ( DataSourceConfig.Source source : baselineConfig.getSource() )
+            {
+                if ( Validation.requiresFeatureOrFeatureService( source ) )
+                {
+                    firstSourceThatRequiresFeatures = source;
+                    break;
+                }
+            }
+        }
+
+        PairConfig pairDeclaration = projectConfigPlus.getProjectConfig()
+                                                      .getPair();
+
+        if ( ( Objects.isNull( pairDeclaration.getFeature() )
+               || pairDeclaration.getFeature()
+                                 .isEmpty() )
+             && ( Objects.isNull( pairDeclaration.getFeatureService() )
+                  || Objects.isNull( pairDeclaration.getFeatureService()
+                                                    .getBaseUrl() ) ) )
+        {
+            noFeatureDeclaration = true;
+        }
+
+        if ( Objects.nonNull( firstSourceThatRequiresFeatures )
+             && noFeatureDeclaration )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + ": at least one data source declaration required"
+                             + " <feature> or <featureService> declaration but"
+                             + " none was declared.",
+                             projectConfigPlus.getOrigin(),
+                             firstSourceThatRequiresFeatures.sourceLocation()
+                                                            .getLineNumber(),
+                             firstSourceThatRequiresFeatures.sourceLocation()
+                                                            .getColumnNumber() );
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private static boolean requiresFeatureOrFeatureService( DataSourceConfig.Source source )
+    {
+        if ( Objects.nonNull( source.getInterface() ) )
+        {
+            if ( source.getInterface()
+                       .equals( InterfaceShortHand.WRDS_AHPS ) )
+            {
+                return true;
+            }
+            else if ( source.getInterface()
+                            .equals( InterfaceShortHand.WRDS_NWM ) )
+            {
+                return true;
+            }
+            else if ( source.getInterface()
+                            .equals( InterfaceShortHand.USGS_NWIS ) )
+            {
+                return true;
+            }
+            else if ( source.getInterface()
+                            .value()
+                            .toLowerCase()
+                            .startsWith( "nwm_" ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
