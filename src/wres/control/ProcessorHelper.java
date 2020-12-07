@@ -300,11 +300,12 @@ class ProcessorHelper
             // to wres-metrics, given that they are resolved by project configuration that is
             // passed separately to wres-metrics. Options include moving MetricProcessor* to
             // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-            ThresholdReader thresholdReader = new ThresholdReader( systemSettings,
-                                                                   projectConfig,
-                                                                   unitMapper,
-                                                                   decomposedFeatures,
-                                                                   LeftOrRightOrBaseline.LEFT );
+            ThresholdReader thresholdReader = new ThresholdReader(
+                    systemSettings,
+                    projectConfig,
+                    unitMapper,
+                    decomposedFeatures
+            );
             Map<FeatureTuple, ThresholdsByMetric> thresholds = thresholdReader.read();
 
             // Features having thresholds as reported by the threshold reader.
