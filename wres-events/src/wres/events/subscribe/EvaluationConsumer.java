@@ -273,16 +273,38 @@ class EvaluationConsumer
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( messageId );
 
+        
+        
+        
         // Consumers ready to consume? 
         // Yes.
         if ( this.getAreConsumersReady() )
         {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Evaluation consumer {} accepted a statistics message with message identifier {} and "
+                              + "group identifier {}. The message was routed to a waiting format consumer.",
+                              this.getConsumerId(),
+                              messageId,
+                              groupId );
+            }
+
             // Accept inner, which also calls checkAndCloseIfComplete
             this.acceptStatisticsMessageInner( statistics, groupId, messageId );
         }
         // No. Cache until the consumers are ready.
         else
         {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Evaluation consumer {} accepted a statistics message with message identifier {} and "
+                              + "group identifier {}. The message was routed to a temporary cache until a format "
+                              + "consumer becomes available.",
+                              this.getConsumerId(),
+                              messageId,
+                              groupId );
+            }
+
             this.statisticsCache.add( new StatisticsCache( statistics, groupId, messageId ) );
         }
     }
@@ -857,14 +879,14 @@ class EvaluationConsumer
 
         this.consumed.incrementAndGet();
 
-        // If consumption is complete, then close the consumer
-        this.closeConsumerIfComplete();
-
         LOGGER.debug( "Subscriber {} received and consumed a statistics message with identifier {} "
                       + "for evaluation {}.",
                       this.getConsumerId(),
                       messageId,
                       this.getEvaluationId() );
+
+        // If consumption is complete, then close the consumer
+        this.closeConsumerIfComplete();
     }
 
     /**

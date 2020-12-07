@@ -9,7 +9,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 
 import java.util.Map;
 import java.util.Set;
@@ -19,14 +19,14 @@ import java.util.stream.Collectors;
 public class ThresholdBuilderCollection {
     private static final Object BUILDER_ACCESS_LOCK = new Object();
 
-    private final Map<FeatureTuple, ThresholdsByMetricBuilder> builders = new ConcurrentHashMap<>();
+    private final Map<FeatureTuple, Builder> builders = new ConcurrentHashMap<>();
 
     public void initialize( Set<FeatureTuple> features )
     {
         for ( FeatureTuple feature : features )
         {
             if (!this.containsFeature(feature)) {
-                this.builders.put(feature, new ThresholdsByMetricBuilder());
+                this.builders.put(feature, new Builder());
             }
         }
     }
@@ -64,7 +64,7 @@ public class ThresholdBuilderCollection {
     public void addThreshold( FeatureTuple feature, ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold )
     {
         synchronized (BUILDER_ACCESS_LOCK) {
-            ThresholdsByMetricBuilder builder = this.getCorrespondingBuilder( feature );
+            Builder builder = this.getCorrespondingBuilder( feature );
             builder.addThreshold(group, metric, threshold);
         }
     }
@@ -72,7 +72,7 @@ public class ThresholdBuilderCollection {
     public void addThresholds( FeatureTuple feature, ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds )
     {
         synchronized (BUILDER_ACCESS_LOCK) {
-            ThresholdsByMetricBuilder builder = this.getCorrespondingBuilder(feature);
+            Builder builder = this.getCorrespondingBuilder(feature);
             builder.addThresholds(group, metric, thresholds);
         }
     }
@@ -105,11 +105,11 @@ public class ThresholdBuilderCollection {
 
     public boolean isEmpty() {
         synchronized (BUILDER_ACCESS_LOCK) {
-            return this.builders.values().stream().allMatch(ThresholdsByMetricBuilder::isEmpty);
+            return this.builders.values().stream().allMatch(Builder::isEmpty);
         }
     }
 
-    public ThresholdsByMetricBuilder getCorrespondingBuilder( final FeatureTuple feature )
+    public Builder getCorrespondingBuilder( final FeatureTuple feature )
     {
         synchronized (BUILDER_ACCESS_LOCK) {
             for ( FeatureTuple storedFeature : this.builders.keySet() )
@@ -120,7 +120,7 @@ public class ThresholdBuilderCollection {
                 }
             }
 
-            ThresholdsByMetricBuilder newBuilder = new ThresholdsByMetricBuilder();
+            Builder newBuilder = new Builder();
             this.builders.put(feature, newBuilder);
 
             return newBuilder;
