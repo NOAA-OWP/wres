@@ -77,9 +77,9 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
     private static Pair<SSLContext, X509TrustManager> SSL_CONTEXT
             = ReadValueManager.getSslContextTrustingDodSigner();
-
+    private static final boolean TRACK_TIMINGS = false;
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT,
-                                                               true );
+                                                               TRACK_TIMINGS );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
@@ -596,7 +596,7 @@ public class WrdsNwmReader implements Callable<List<IngestResult>>
                          abandoned.size(), this.getUri() );
         }
 
-        if ( LOGGER.isInfoEnabled() )
+        if ( TRACK_TIMINGS && LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "{}", WEB_CLIENT.getTimingInformation() );
         }
