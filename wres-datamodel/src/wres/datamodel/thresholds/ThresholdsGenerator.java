@@ -22,7 +22,7 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 
 /**
  * Reads thresholds from project declaration.
@@ -57,7 +57,7 @@ public class ThresholdsGenerator
         }
 
         // Builder 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Iterate through the metric groups
         for ( MetricsConfig nextGroup : projectConfig.getMetrics() )
@@ -84,7 +84,7 @@ public class ThresholdsGenerator
 
     private static void addThresholdsToBuilderForOneMetricGroup( ProjectConfig projectConfig,
                                                                  MetricsConfig metricsConfig,
-                                                                 ThresholdsByMetricBuilder builder,
+                                                                 Builder builder,
                                                                  MeasurementUnit units )
     {
 

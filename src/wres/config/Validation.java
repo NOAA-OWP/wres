@@ -1,11 +1,9 @@
 package wres.config;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -33,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.xml.bind.Locatable;
 
+import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
@@ -149,6 +148,10 @@ public class Validation
         // Validate pair section
         result = Validation.isPairConfigValid( projectConfigPlus ) && result;
 
+        // Validate combination of data source section with pair section
+        result = Validation.isInputsAndPairCombinationValid( projectConfigPlus )
+                 && result;
+
         // Validate metrics section
         result = Validation.isMetricsConfigValid( systemSettings,
                                                   projectConfigPlus )
@@ -162,6 +165,125 @@ public class Validation
                  && result;
 
         return result;
+    }
+
+    /**
+     * Checks to see if there are input declarations requiring other declaration
+     * in the pair declaration.
+     * @param projectConfigPlus The project declaration to check.
+     * @return false if there are known invalid combinations present.
+     */
+
+    private static boolean isInputsAndPairCombinationValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Locatable firstSourceThatRequiresFeatures = null;
+        boolean noFeatureDeclaration = false;
+        DataSourceConfig left = projectConfigPlus.getProjectConfig()
+                                                 .getInputs()
+                                                 .getLeft();
+        DataSourceConfig right = projectConfigPlus.getProjectConfig()
+                                                  .getInputs()
+                                                  .getRight();
+        DataSourceBaselineConfig baselineConfig =
+                projectConfigPlus.getProjectConfig()
+                                 .getInputs()
+                                 .getBaseline();
+
+        for ( DataSourceConfig.Source source : left.getSource() )
+        {
+            if ( Validation.requiresFeatureOrFeatureService( source ) )
+            {
+                firstSourceThatRequiresFeatures = source;
+                break;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : right.getSource() )
+        {
+            if ( Validation.requiresFeatureOrFeatureService( source ) )
+            {
+                firstSourceThatRequiresFeatures = source;
+                break;
+            }
+        }
+
+        if ( Objects.nonNull( baselineConfig ) )
+        {
+            for ( DataSourceConfig.Source source : baselineConfig.getSource() )
+            {
+                if ( Validation.requiresFeatureOrFeatureService( source ) )
+                {
+                    firstSourceThatRequiresFeatures = source;
+                    break;
+                }
+            }
+        }
+
+        PairConfig pairDeclaration = projectConfigPlus.getProjectConfig()
+                                                      .getPair();
+
+        if ( ( Objects.isNull( pairDeclaration.getFeature() )
+               || pairDeclaration.getFeature()
+                                 .isEmpty() )
+             && ( Objects.isNull( pairDeclaration.getFeatureService() )
+                  || Objects.isNull( pairDeclaration.getFeatureService()
+                                                    .getBaseUrl() ) ) )
+        {
+            noFeatureDeclaration = true;
+        }
+
+        if ( Objects.nonNull( firstSourceThatRequiresFeatures )
+             && noFeatureDeclaration )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + ": at least one data source declaration required"
+                             + " <feature> or <featureService> declaration but"
+                             + " none was declared.",
+                             projectConfigPlus.getOrigin(),
+                             firstSourceThatRequiresFeatures.sourceLocation()
+                                                            .getLineNumber(),
+                             firstSourceThatRequiresFeatures.sourceLocation()
+                                                            .getColumnNumber() );
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private static boolean requiresFeatureOrFeatureService( DataSourceConfig.Source source )
+    {
+        if ( Objects.nonNull( source.getInterface() ) )
+        {
+            if ( source.getInterface()
+                       .equals( InterfaceShortHand.WRDS_AHPS ) )
+            {
+                return true;
+            }
+            else if ( source.getInterface()
+                            .equals( InterfaceShortHand.WRDS_NWM ) )
+            {
+                return true;
+            }
+            else if ( source.getInterface()
+                            .equals( InterfaceShortHand.USGS_NWIS ) )
+            {
+                return true;
+            }
+            else if ( source.getInterface()
+                            .value()
+                            .toLowerCase()
+                            .startsWith( "nwm_" ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -501,13 +623,33 @@ public class Validation
                                                                   || next.getType() == ThresholdType.VALUE
                                                                   || next.getType() == ThresholdType.PROBABILITY );
 
+        // Has decision thresholds?
+        boolean decisionThresholds = metricsConfig.getThresholds()
+                                                  .stream()
+                                                  .anyMatch( next -> next.getType() == ThresholdType.PROBABILITY_CLASSIFIER );
+
+        DatasourceType declaredRightDataType = projectConfig.getInputs()
+                                                            .getRight()
+                                                            .getType();
+
+        // Not ensemble forecasts
+        if ( decisionThresholds && declaredRightDataType != DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            isValid = false;
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The declaration contains decision thresholds, which are only valid for ensemble or "
+                         + "probability forecasts and no such forecasts were declared. Please remove the thresholds "
+                         + "of type 'probability classifier' from this evaluation.",
+                         projectConfigPlus.getOrigin(),
+                         metricsConfig.sourceLocation().getLineNumber(),
+                         metricsConfig.sourceLocation().getColumnNumber() );
+        }
+
         // Input type declaration is ensemble
         if ( !categorical.isEmpty()
-             && projectConfig.getInputs().getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
+             && declaredRightDataType == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            boolean decisionThresholds = metricsConfig.getThresholds()
-                                                      .stream()
-                                                      .anyMatch( next -> next.getType() == ThresholdType.PROBABILITY_CLASSIFIER );
 
             // Order by number of failures - up to two possible
             if ( !eventThresholds && !decisionThresholds )
@@ -698,15 +840,15 @@ public class Validation
                             destinationPath = systemSettings.getDataDirectory()
                                                             .resolve( thresholdData.getPath() );
                         }
-                        else if (thresholdData.getScheme().toLowerCase().startsWith("http")) {
+                        else if ( thresholdData.getScheme().toLowerCase().startsWith( "http" ) )
+                        {
                             // Further checks are not really reasonable since it is entirely likely that we
                             // could get 404s when we hit a correct server because the URL passed in won't be the
                             // complete request. The best we can do is see if it can actually be used as a URL
                             URL possibleURL = thresholdData.toURL();
                             LOGGER.debug(
-                                    "The remote thresholds at {} can presumably be accessed since it is a valid url",
-                                    thresholdData
-                            );
+                                          "The remote thresholds at {} can presumably be accessed since it is a valid url",
+                                          thresholdData );
                             continue;
                         }
                         else
@@ -714,16 +856,17 @@ public class Validation
                             destinationPath = Paths.get( thresholdData );
                         }
                     }
-                    catch (MalformedURLException exception) {
-                        LOGGER.warn(FILE_LINE_COLUMN_BOILERPLATE +
-                                "The URL '{}' is not a proper address and therefore cannot be used to access a " +
-                                        "remote threshold dataset. {}",
-                                projectConfigPlus.getOrigin(),
-                                nextThreshold.sourceLocation().getLineNumber(),
-                                nextThreshold.sourceLocation().getColumnNumber(),
-                                thresholdData,
-                                PLEASE_UPDATE
-                        );
+                    catch ( MalformedURLException exception )
+                    {
+                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                                     "The URL '{}' is not a proper address and therefore cannot be used to access a "
+                                     +
+                                     "remote threshold dataset. {}",
+                                     projectConfigPlus.getOrigin(),
+                                     nextThreshold.sourceLocation().getLineNumber(),
+                                     nextThreshold.sourceLocation().getColumnNumber(),
+                                     thresholdData,
+                                     PLEASE_UPDATE );
 
                         result = false;
                         continue;
