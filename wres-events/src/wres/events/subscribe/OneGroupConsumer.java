@@ -215,7 +215,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
         {
             LOGGER.debug( "Received notification of publication complete for group {}. The expected number of messages "
                           + "within the group is {} but {} of these messages are outstanding. Grouped consumption will "
-                          + "happen when all of the oustanding messages have been received.",
+                          + "happen when all of the outstanding messages have been received.",
                           this.getGroupId(),
                           this.expectedMessageCount.get(),
                           this.expectedMessageCount.get() - this.actualMessageCount.get() );
@@ -255,8 +255,9 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
                 // Clear the cache
                 this.cache.clear();
 
-                LOGGER.trace( "Group consumer {} consumed a new group of {} message.",
+                LOGGER.debug( "Group consumer {} completed message group {}, which contained {} messages.",
                               this,
+                              this.getGroupId(),
                               this.actualMessageCount.get() );
 
                 this.pathsWritten.addAll( paths );

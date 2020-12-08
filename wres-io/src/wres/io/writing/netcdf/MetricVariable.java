@@ -72,9 +72,31 @@ class MetricVariable
 
         this.variableName = variableName;
 
+        // Build the long_name. This should not contain numbers for the thresholds because they can vary by feature.
         String fullName = metricName + " " + this.getThreshold();
+        
+        // Primary threshold has a label? If so, ignore that when replacing numbers in the long_name.
+        // See #85465.
+        if( thresholds.first().hasLabel() )
+        {
+            String label = thresholds.first().getLabel();
+            // Replace with a temporary placeholder that contains no numbers
+            fullName = fullName.replace( label, "oHhcAqApZQLTLmtDvaX" );
+        }
+        
+        // Replace all numbers with a "variable number" placeholder because these numbers can vary by feature. A more 
+        // sophisticated approach would determine whether they do actually vary by feature and only replace them in that 
+        // case. The CF convention is silent about variable names for thresholds that vary by feature. Some related 
+        // discussion here: https://is.enes.org/archive-1/phase-2/documents/Talks/2nd-joint-clipc-is-enes2-workshop-on-metadata-drs-for-climate-indices/l-barring_data-variable-attributes-for-climate-indices
         fullName = fullName.replaceAll( "\\d+", "#" );
 
+        // Add back any label removed.
+        if( thresholds.first().hasLabel() )
+        {
+            String label = thresholds.first().getLabel();
+            fullName = fullName.replace( "oHhcAqApZQLTLmtDvaX", label );
+        }
+        
         this.longName = fullName;
 
         this.measurementUnit = units;

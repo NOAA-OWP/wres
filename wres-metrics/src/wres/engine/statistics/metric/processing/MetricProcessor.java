@@ -410,7 +410,7 @@ public abstract class MetricProcessor<S extends SampleData<?>>
             this.thresholdsByMetric = externalThresholds;
         }
         else {
-            this.thresholdsByMetric = new ThresholdsByMetric.ThresholdsByMetricBuilder().build();
+            this.thresholdsByMetric = new ThresholdsByMetric.Builder().build();
         }
 
         if ( Objects.nonNull( mergeSet ) )

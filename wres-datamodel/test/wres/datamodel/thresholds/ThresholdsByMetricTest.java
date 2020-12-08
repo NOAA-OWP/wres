@@ -16,7 +16,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
@@ -577,7 +577,7 @@ public class ThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerOne()
     {
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Probability thresholds
         Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
@@ -629,7 +629,7 @@ public class ThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerTwo()
     {
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Probability thresholds
         Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
@@ -651,7 +651,7 @@ public class ThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerThree()
     {
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Probability thresholds
         Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
@@ -673,7 +673,7 @@ public class ThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerFour()
     {
 
-        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
+        Builder builder = new Builder();
 
         // Probability thresholds
         Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );

@@ -77,15 +77,15 @@ public class EvaluationSubscriber implements Closeable
     private static final String EVALUATION = "evaluation ";
 
     private static final String SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION =
-            "Subscriber {} has claimed ownership of message {} for evaluation {}.";
+            "Subscriber {} has claimed ownership of {} message with messageId {} for evaluation {}.";
 
     private static final String ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR =
             "Encountered an error while attempting to remove a durable subscription for ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationSubscriber.class );
 
-    private static final String ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID =
-            "Acknowledged message {} with correlationId {}.";
+    private static final String ACKNOWLEDGED_MESSAGE_FOR_EVALUATION =
+            "Subscriber {} has acknowledged {} message with messageId {} for evaluation {}.";
 
     private static final String UNKNOWN = "unknown";
 
@@ -605,6 +605,7 @@ public class EvaluationSubscriber implements Closeable
                     {
                         LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                                       this.getSubscriberId(),
+                                      "an evaluation status",
                                       messageId,
                                       correlationId );
 
@@ -617,10 +618,14 @@ public class EvaluationSubscriber implements Closeable
                 // Acknowledge and flag success locally
                 message.acknowledge();
 
-                // Try to complete
-                this.completeEvaluation( consumer, correlationId );
+                LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
+                              this.getSubscriberId(),
+                              "an evaluation status",
+                              messageId,
+                              correlationId );
 
-                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
+                // Register complete if complete
+                this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
             }
             // Do not attempt to recover
             catch ( UnrecoverableSubscriberException e )
@@ -660,6 +665,7 @@ public class EvaluationSubscriber implements Closeable
 
                     LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                                   this.getSubscriberId(),
+                                  "a statistics",
                                   messageId,
                                   correlationId );
 
@@ -677,16 +683,22 @@ public class EvaluationSubscriber implements Closeable
                     Statistics statistics = Statistics.parseFrom( buffer );
 
                     consumer.acceptStatisticsMessage( statistics, groupId, messageId );
+
+                    // Register with the status monitor
                     this.status.registerStatistics( messageId );
                 }
 
                 // Acknowledge and flag success locally
                 message.acknowledge();
 
-                // Try to complete
-                this.completeEvaluation( consumer, correlationId );
+                LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
+                              this.getSubscriberId(),
+                              "a statistics",
+                              messageId,
+                              correlationId );
 
-                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
+                // Register complete if complete
+                this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
             }
             // Do not attempt to recover
             catch ( UnrecoverableSubscriberException e )
@@ -702,13 +714,13 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Completes an evaluation when the consumption is complete.
+     * Registers an evaluation complete when the consumption is complete.
      * 
      * @param consumer the consumer
      * @param evaluationId the evaluation identifier
      */
 
-    private void completeEvaluation( EvaluationConsumer consumer, String evaluationId )
+    private void registerEvaluationCompleteIfConsumptionComplete( EvaluationConsumer consumer, String evaluationId )
     {
         // Complete?
         if ( Objects.nonNull( consumer ) && consumer.isComplete() )
@@ -742,6 +754,7 @@ public class EvaluationSubscriber implements Closeable
 
                     LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                                   this.getSubscriberId(),
+                                  "an evaluation",
                                   messageId,
                                   correlationId );
 
@@ -764,10 +777,14 @@ public class EvaluationSubscriber implements Closeable
                 // Acknowledge and flag success locally
                 message.acknowledge();
 
-                // Try to complete
-                this.completeEvaluation( consumer, correlationId );
+                LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
+                              this.getSubscriberId(),
+                              "an evaluation",
+                              messageId,
+                              correlationId );
 
-                LOGGER.debug( ACKNOWLEDGED_MESSAGE_WITH_CORRELATION_ID, messageId, correlationId );
+                // Register complete if complete
+                this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
             }
             // Do not attempt to recover
             catch ( UnrecoverableSubscriberException e )
@@ -966,35 +983,37 @@ public class EvaluationSubscriber implements Closeable
                                 "Cannot request an evaluation consumer for an evaluation with a "
                                               + "missing identifier." );
 
-        // Lock to avoid sweeping
         this.getEvaluationsLock()
             .lock();
 
-        // Check initially
-        EvaluationConsumer consumer = this.evaluations.get( evaluationId );
-
-        if ( Objects.isNull( consumer ) )
+        try
         {
-            consumer = new EvaluationConsumer( evaluationId,
-                                               this.getConsumerDescription(),
-                                               this.consumerFactory,
-                                               this.evaluationStatusPublisher,
-                                               this.getExecutor() );
-            this.status.registerEvaluationStarted( evaluationId );
-        }
+            EvaluationConsumer consumer = this.evaluations.get( evaluationId );
 
-        // Check atomically
-        EvaluationConsumer added = this.evaluations.putIfAbsent( evaluationId, consumer );
-        if ( Objects.nonNull( added ) )
+            if ( Objects.isNull( consumer ) )
+            {
+                consumer = new EvaluationConsumer( evaluationId,
+                                                   this.getConsumerDescription(),
+                                                   this.consumerFactory,
+                                                   this.evaluationStatusPublisher,
+                                                   this.getExecutor() );
+                this.status.registerEvaluationStarted( evaluationId );
+            }
+
+            // Check atomically
+            EvaluationConsumer added = this.evaluations.putIfAbsent( evaluationId, consumer );
+            if ( Objects.nonNull( added ) )
+            {
+                consumer = added;
+            }
+
+            return consumer;
+        }
+        finally
         {
-            consumer = added;
+            this.getEvaluationsLock()
+                .unlock();
         }
-
-        // Unlock to allow sweeping
-        this.getEvaluationsLock()
-            .unlock();
-
-        return consumer;
     }
 
     /**
@@ -1051,11 +1070,11 @@ public class EvaluationSubscriber implements Closeable
 
     private boolean isThisMessageForMe( Message message ) throws JMSException
     {
-        for ( String next : this.formatStrings )
+        for ( String nextFormat : this.formatStrings )
         {
-            String nextFormat = message.getStringProperty( next );
+            String subscriberId = message.getStringProperty( nextFormat );
 
-            if ( Objects.nonNull( nextFormat ) && this.getSubscriberId().equals( nextFormat ) )
+            if ( Objects.nonNull( subscriberId ) && this.getSubscriberId().equals( subscriberId ) )
             {
                 return true;
             }
