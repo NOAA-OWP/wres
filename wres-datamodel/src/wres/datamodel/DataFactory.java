@@ -37,6 +37,7 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
+import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -762,7 +763,8 @@ public final class DataFactory
             // Allow dichotomous metrics when probability classifiers are defined
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY_CLASSIFIER ) )
             {
-                returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
+                Set<MetricConstants> metrics = DataFactory.getDichotomousMetrics();
+                returnMe.addAll( metrics );
             }
         }
 
@@ -793,11 +795,29 @@ public final class DataFactory
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY )
                  || DataFactory.hasThresholds( metricsConfig, ThresholdType.VALUE ) )
             {
-                returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
+                Set<MetricConstants> metrics = DataFactory.getDichotomousMetrics();
+                returnMe.addAll( metrics );
             }
         }
 
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
+    }
+    
+    /**
+     * Returns the set of available dichotomous metrics, not including the component elements of the 
+     * {@link MetricConstants#CONTINGENCY_TABLE}, only the {@link MetricConstants#CONTINGENCY_TABLE} itself.
+     * 
+     * @return the dichotomous metrics
+     */
+
+    private static Set<MetricConstants> getDichotomousMetrics()
+    {
+        Set<MetricConstants> metrics = new HashSet<>( SampleDataGroup.DICHOTOMOUS.getMetrics() );
+
+        Set<MetricConstants> contingencyTableComponents = MetricGroup.CONTINGENCY_TABLE.getAllComponents();
+        metrics.removeAll( contingencyTableComponents );
+
+        return Collections.unmodifiableSet( metrics );
     }
 
     /**

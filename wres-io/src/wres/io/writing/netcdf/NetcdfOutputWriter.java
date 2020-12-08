@@ -55,6 +55,7 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
+import wres.datamodel.MetricConstants.StatisticType;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.MissingValues;
 import wres.datamodel.OneOrTwoDoubles;
@@ -265,7 +266,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
 
         // Find the thresholds-by-metric for which blobs should be created
-        ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholds( thresholds );
+        ThresholdsByMetric thresholdsToWrite = this.getUniqueThresholdsForScoreMetrics( thresholds );
         
         // Should be at least one metric with at least one threshold
         if( thresholdsToWrite.hasThresholdsForTheseMetrics().isEmpty() )
@@ -304,7 +305,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             this.getIsReadyToWrite()
                 .set( true );
         }
-
+        
         LOGGER.debug( "Created the following netcdf paths for writing: {}.", this.getPathsWrittenTo() );
     }
 
@@ -550,12 +551,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             append = "_" + context.name();
         }
 
-        // One variable for each combination of metric and threshold
+        // One variable for each combination of metric and threshold. 
+        // When forming threshold names, thresholds should be mapped all metrics.
+        Map<OneOrTwoThresholds, String> thresholdNames = new HashMap<>();
+        int thresholdNumber = 1;
         for ( Map.Entry<String, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
         {
             String nextMetric = nextEntry.getKey();
             Set<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
-            int thresholdNumber = 1;
 
             Map<String, OneOrTwoThresholds> nextMap = this.standardThresholdNames.get( nextMetric );
             if ( Objects.isNull( nextMap ) )
@@ -566,7 +569,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             for ( OneOrTwoThresholds nextThreshold : nextThresholds )
             {
-                String thresholdName = "THRESHOLD_" + thresholdNumber;
+                String thresholdName = null;
+                if ( thresholdNames.containsKey( nextThreshold ) )
+                {
+                    thresholdName = thresholdNames.get( nextThreshold );
+                }
+                else
+                {
+                    thresholdName = "THRESHOLD_" + thresholdNumber;
+                    thresholdNames.put( nextThreshold, thresholdName );
+                    thresholdNumber++;
+                }
 
                 // Add to the cache of standard threshold names
                 nextMap.put( thresholdName, nextThreshold );
@@ -581,7 +594,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                   desiredTimeScale,
                                                                   this.getDurationUnits() );
                 returnMe.add( nextVariable );
-                thresholdNumber++;
             }
         }
 
@@ -603,7 +615,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
 
         Map<String, SortedSet<OneOrTwoThresholds>> returnMe = new TreeMap<>();
-
+        
         for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : thresholdsByMetric.entrySet() )
         {
             MetricConstants nextMetric = nextEntry.getKey();
@@ -639,7 +651,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 returnMe.put( nextMetric.name(), nextThresholds );
             }
         }
-
+        
         return Collections.unmodifiableMap( returnMe );
     }
 
@@ -847,17 +859,64 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * <li>The threshold probability if the threshold is a probability threshold. Otherwise:</li>
      * <li>The threshold value.</li>
      * 
-     * <p> See #85491. It is essential that the logic for creating blobs in this method is mirrored by the logic for
+     * <p>See #85491. It is essential that the logic for creating blobs in this method is mirrored by the logic for
      * finding blobs in {@link TimeWindowWriter#getVariableName(MetricConstants, DoubleScoreComponentOuter)}.
+     * 
+     * <p>Removes any metrics that do not produce {@link MetricConstants.StatisticType#DOUBLE_SCORE} because this writer
+     * currently only handles scores.
      * 
      * @param thresholds the thresholds to search
      * @return the unique thresholds for which blobs should be created
      */
 
-    private ThresholdsByMetric getUniqueThresholds( Map<FeatureTuple, ThresholdsByMetric> thresholds )
+    private ThresholdsByMetric getUniqueThresholdsForScoreMetrics( Map<FeatureTuple, ThresholdsByMetric> thresholds )
     {
         Objects.requireNonNull( thresholds );
 
+        Comparator<OneOrTwoThresholds> thresholdComparator = this.getThresholdComparator();
+
+        // Create a set of thresholds for each metric in a map.        
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsMap = new EnumMap<>( MetricConstants.class );
+
+        for ( ThresholdsByMetric next : thresholds.values() )
+        {
+            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping = next.getOneOrTwoThresholds();
+
+            for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : nextMapping.entrySet() )
+            {
+                MetricConstants nextMetric = nextEntry.getKey();
+
+                // Only allow scores 
+                if ( nextMetric.isInGroup( StatisticType.DOUBLE_SCORE ) )
+                {
+                    // Get the existing mapping or a new sorted set instantiated with the threshold comparator
+                    SortedSet<OneOrTwoThresholds> mapped =
+                            thresholdsMap.getOrDefault( nextMetric,
+                                                        new TreeSet<>( thresholdComparator ) );
+
+                    mapped.addAll( nextEntry.getValue() );
+
+                    // Add it to the map if not already there
+                    if ( !thresholdsMap.containsKey( nextMetric ) )
+                    {
+                        thresholdsMap.put( nextMetric, mapped );
+                    }
+                }
+            }
+        }
+
+        return new ThresholdsByMetric.Builder().addThresholds( thresholdsMap )
+                                               .build();
+    }
+    
+    /**
+     * Returns a threshold comparator for determining which thresholds should generate distinct netcdf variables.
+     * 
+     * @return a threshold comparator
+     */
+    
+    private Comparator<OneOrTwoThresholds> getThresholdComparator()
+    {
         // The metrics are constant across all features because metrics cannot be declared per feature. However, the
         // thresholds can vary across features. 
 
@@ -898,34 +957,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                     Comparator.nullsFirst( Comparator.naturalOrder() ) );
         };
 
-        // Create a set of thresholds for each metric in a map.        
-        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsMap = new EnumMap<>( MetricConstants.class );
-
-        for ( ThresholdsByMetric next : thresholds.values() )
-        {
-            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping = next.getOneOrTwoThresholds();
-
-            for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : nextMapping.entrySet() )
-            {
-                MetricConstants nextMetric = nextEntry.getKey();
-
-                // Get the existing mapping or a new sorted set instantiated with the threshold comparator
-                SortedSet<OneOrTwoThresholds> mapped =
-                        thresholdsMap.getOrDefault( nextMetric,
-                                                    new TreeSet<>( thresholdComparator ) );
-
-                mapped.addAll( nextEntry.getValue() );
-
-                // Add it to the map if not already there
-                if ( !thresholdsMap.containsKey( nextMetric ) )
-                {
-                    thresholdsMap.put( nextMetric, mapped );
-                }
-            }
-        }
-        
-        return new ThresholdsByMetric.Builder().addThresholds( thresholdsMap )
-                                               .build();
+        return thresholdComparator;
     }
     
     /**
@@ -1138,7 +1170,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                   .getMetric()
                                                   .getName()
                                                   .name() );
-
+            
             String metricNameString = metricName.name();
             if ( metricComponentName != MetricConstants.MAIN )
             {

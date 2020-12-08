@@ -623,13 +623,33 @@ public class Validation
                                                                   || next.getType() == ThresholdType.VALUE
                                                                   || next.getType() == ThresholdType.PROBABILITY );
 
+        // Has decision thresholds?
+        boolean decisionThresholds = metricsConfig.getThresholds()
+                                                  .stream()
+                                                  .anyMatch( next -> next.getType() == ThresholdType.PROBABILITY_CLASSIFIER );
+
+        DatasourceType declaredRightDataType = projectConfig.getInputs()
+                                                            .getRight()
+                                                            .getType();
+
+        // Not ensemble forecasts
+        if ( decisionThresholds && declaredRightDataType != DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            isValid = false;
+
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The declaration contains decision thresholds, which are only valid for ensemble or "
+                         + "probability forecasts and no such forecasts were declared. Please remove the thresholds "
+                         + "of type 'probability classifier' from this evaluation.",
+                         projectConfigPlus.getOrigin(),
+                         metricsConfig.sourceLocation().getLineNumber(),
+                         metricsConfig.sourceLocation().getColumnNumber() );
+        }
+
         // Input type declaration is ensemble
         if ( !categorical.isEmpty()
-             && projectConfig.getInputs().getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
+             && declaredRightDataType == DatasourceType.ENSEMBLE_FORECASTS )
         {
-            boolean decisionThresholds = metricsConfig.getThresholds()
-                                                      .stream()
-                                                      .anyMatch( next -> next.getType() == ThresholdType.PROBABILITY_CLASSIFIER );
 
             // Order by number of failures - up to two possible
             if ( !eventThresholds && !decisionThresholds )
@@ -820,15 +840,15 @@ public class Validation
                             destinationPath = systemSettings.getDataDirectory()
                                                             .resolve( thresholdData.getPath() );
                         }
-                        else if (thresholdData.getScheme().toLowerCase().startsWith("http")) {
+                        else if ( thresholdData.getScheme().toLowerCase().startsWith( "http" ) )
+                        {
                             // Further checks are not really reasonable since it is entirely likely that we
                             // could get 404s when we hit a correct server because the URL passed in won't be the
                             // complete request. The best we can do is see if it can actually be used as a URL
                             URL possibleURL = thresholdData.toURL();
                             LOGGER.debug(
-                                    "The remote thresholds at {} can presumably be accessed since it is a valid url",
-                                    thresholdData
-                            );
+                                          "The remote thresholds at {} can presumably be accessed since it is a valid url",
+                                          thresholdData );
                             continue;
                         }
                         else
@@ -836,16 +856,17 @@ public class Validation
                             destinationPath = Paths.get( thresholdData );
                         }
                     }
-                    catch (MalformedURLException exception) {
-                        LOGGER.warn(FILE_LINE_COLUMN_BOILERPLATE +
-                                "The URL '{}' is not a proper address and therefore cannot be used to access a " +
-                                        "remote threshold dataset. {}",
-                                projectConfigPlus.getOrigin(),
-                                nextThreshold.sourceLocation().getLineNumber(),
-                                nextThreshold.sourceLocation().getColumnNumber(),
-                                thresholdData,
-                                PLEASE_UPDATE
-                        );
+                    catch ( MalformedURLException exception )
+                    {
+                        LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE +
+                                     "The URL '{}' is not a proper address and therefore cannot be used to access a "
+                                     +
+                                     "remote threshold dataset. {}",
+                                     projectConfigPlus.getOrigin(),
+                                     nextThreshold.sourceLocation().getLineNumber(),
+                                     nextThreshold.sourceLocation().getColumnNumber(),
+                                     thresholdData,
+                                     PLEASE_UPDATE );
 
                         result = false;
                         continue;

@@ -297,7 +297,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Check for the expected number of metrics
         int expected = SampleDataGroup.SINGLE_VALUED.getMetrics().size()
-                       + SampleDataGroup.DICHOTOMOUS.getMetrics().size();
+                       + SampleDataGroup.DICHOTOMOUS.getMetrics().size()
+                       - MetricConstants.CONTINGENCY_TABLE.getAllComponents().size();
         int actual = processor.metrics.size();
 
         assertEquals( expected, actual );
