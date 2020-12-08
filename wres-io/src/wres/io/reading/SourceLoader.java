@@ -194,8 +194,13 @@ public class SourceLoader
      */
     public List<Future<List<IngestResult>>> load() throws IOException
     {
-        LOGGER.info( "Parsing files. Only {} files may be parsed at once.",
-                     systemSettings.maximumThreadCount() + 1);
+        LOGGER.info( "Parsing the declared datasets. {}{}{}{}{}{}",
+                     "Depending on many factors (including dataset size, ",
+                     "dataset design, data service implementation, service ",
+                     "availability, network bandwidth, network latency, ",
+                     "storage bandwidth, storage latency, concurrent ",
+                     "evaluations on shared resources, concurrent computation ",
+                     "on shared resources) this can take a while..." );
         List<Future<List<IngestResult>>> savingSources = new ArrayList<>();
 
         // Create the sources for which ingest should be attempted, together with

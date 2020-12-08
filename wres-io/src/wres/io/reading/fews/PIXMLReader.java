@@ -1055,12 +1055,12 @@ public final class PIXMLReader extends XMLReader
 
     private void completeIngest()
     {
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "Parsed and ingested {} timeseries from {}",
-                         ingested.size(),
-                         this.getDataSource()
-                             .getUri() );
+            LOGGER.debug( "Parsed and ingested {} timeseries from {}",
+                          ingested.size(),
+                          this.getDataSource()
+                              .getUri() );
         }
     }
 

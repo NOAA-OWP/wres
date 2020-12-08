@@ -369,9 +369,9 @@ public class DatacardSource extends BasicSource
 			} //end of loop for all value lines
 		}
 
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "Parsed timeseries from '{}'", this.getFilename() );
+            LOGGER.debug( "Parsed timeseries from '{}'", this.getFilename() );
         }
 
         FeatureKey location = new FeatureKey( featureName, featureDescription, null, null );
@@ -397,10 +397,10 @@ public class DatacardSource extends BasicSource
                                        timeSeries );
         List<IngestResult> results = ingester.call();
 
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "Ingested {} timeseries from '{}'",
-                         results.size(), this.getFilename() );
+            LOGGER.debug( "Ingested {} timeseries from '{}'",
+						  results.size(), this.getFilename() );
         }
 
         return results;

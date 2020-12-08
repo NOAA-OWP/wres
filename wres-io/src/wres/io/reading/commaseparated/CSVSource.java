@@ -817,12 +817,12 @@ public class CSVSource extends BasicSource
                                        + this.getDataSource(), ee );
         }
 
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "Parsed and ingested {} timeseries from {}",
-                         ingested.size(),
-                         this.getDataSource()
-                             .getUri() );
+            LOGGER.debug( "Parsed and ingested {} timeseries from {}",
+                          ingested.size(),
+                          this.getDataSource()
+                              .getUri() );
         }
     }
 
