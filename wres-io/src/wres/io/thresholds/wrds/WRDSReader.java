@@ -135,6 +135,14 @@ public final class WRDSReader {
             throw new IOException(streamReadingException.getCause());
         }
 
+        // Filter out locations that only have all data
+        thresholdMapping = thresholdMapping
+                .entrySet()
+                .parallelStream()
+                .filter(
+                        entry -> !entry.getValue().stream().allMatch(ThresholdOuter::isAllDataThreshold)
+                ).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+
         if (thresholdMapping.isEmpty()) {
             throw new IOException("No thresholds could be retrieved from " + fullSourceAddress.toString());
         }
