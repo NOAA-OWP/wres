@@ -24,11 +24,9 @@ import javax.naming.NamingException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-//import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-//import wres.events.RepeatRule.Repeat;
 import wres.events.subscribe.ConsumerException;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
@@ -53,10 +51,7 @@ import wres.statistics.generated.Pairs;
 
 public class EvaluationTest
 {
-    
-//    @Rule
-//    public RepeatRule repeatRule = new RepeatRule();
-    
+
     /**
      * One evaluation for testing.
      */
@@ -255,7 +250,6 @@ public class EvaluationTest
     }
 
     @Test
-    //@Repeat( times = 10 )
     public void publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumer()
             throws IOException, NamingException, JMSException, InterruptedException
     {
@@ -343,6 +337,7 @@ public class EvaluationTest
         // Assertions about the disaggregated statistics
         List<Statistics> expectedWithoutGroups = new ArrayList<>( this.oneStatistics );
         expectedWithoutGroups.addAll( this.anotherStatistics );
+        
         assertEquals( expectedWithoutGroups, actualStatistics );
 
         // Assertions about the aggregated statistics
@@ -614,23 +609,22 @@ public class EvaluationTest
     private static Function<Collection<Statistics>, Statistics> getStatisticsAggregator()
     {
         return statistics -> {
-
+            
             // Build the aggregate statistics
             Statistics.Builder aggregate = Statistics.newBuilder();
 
             // Sort the statistics
             List<Statistics> sortedStatistics = new ArrayList<>( statistics );
-            sortedStatistics.sort( ( a,
-                                     b ) -> Double.compare( a.getScoresList()
-                                                             .get( 0 )
-                                                             .getStatisticsList()
-                                                             .get( 0 )
-                                                             .getValue(),
-                                                            b.getScoresList()
-                                                             .get( 0 )
-                                                             .getStatisticsList()
-                                                             .get( 0 )
-                                                             .getValue() ) );
+            sortedStatistics.sort( ( a, b ) -> Double.compare( a.getScoresList()
+                                                                .get( 0 )
+                                                                .getStatisticsList()
+                                                                .get( 0 )
+                                                                .getValue(),
+                                                               b.getScoresList()
+                                                                .get( 0 )
+                                                                .getStatisticsList()
+                                                                .get( 0 )
+                                                                .getValue() ) );
 
             // Merge the cached statistics
             for ( Statistics next : sortedStatistics )
