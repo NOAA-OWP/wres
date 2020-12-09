@@ -77,10 +77,10 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
             }
         }
 
-        if ( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.info( "{} USGS time series parsed from URL {}",
-                         allTimeSeries.size(), this.dataSource.getUri() );
+            LOGGER.debug( "{} USGS time series parsed from URL {}",
+                          allTimeSeries.size(), this.dataSource.getUri() );
         }
 
         return Collections.unmodifiableList( allTimeSeries );

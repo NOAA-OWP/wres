@@ -272,13 +272,13 @@ public class WaterMLBasicSource extends BasicSource
                 ingestResults.addAll( result );
             }
 
-            if ( LOGGER.isInfoEnabled() )
+            if ( LOGGER.isDebugEnabled() )
             {
                 long countIngested = ingestResults.stream()
                                                   .filter( f -> !f.requiresRetry() )
                                                   .count();
-                LOGGER.info( "{} USGS time series ingested from URL {}",
-                             countIngested, dataSource.getUri() );
+                LOGGER.debug( "{} USGS time series ingested from URL {}",
+                              countIngested, dataSource.getUri() );
             }
 
             return Collections.unmodifiableList( ingestResults );

@@ -483,10 +483,10 @@ class NetcdfOutputFileCreator2
 
         if ( Objects.nonNull( datasetWithGeo ) )
         {
-            LOGGER.info( "Found geometry available, writing geometry {} to netCDF {}",
-                         first,
-                         writer.getNetcdfFile()
-                               .getLocation() );
+            LOGGER.debug( "Found geometry available, writing geometry {} to netCDF {}",
+                          first,
+                          writer.getNetcdfFile()
+                                .getLocation() );
             List<FeatureKey.GeoPoint> points = Collections.emptyList();
             Integer srid = null;
 

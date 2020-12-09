@@ -289,7 +289,7 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
                 FeatureTuple featureTuple =
                         new FeatureTuple( featureKey, featureKey, featureKey );
                 featureTuples.add( featureTuple );
-                LOGGER.info( "Added gridded feature: {}", featureKey );
+                LOGGER.debug( "Added gridded feature: {}", featureKey );
             }
         }
 

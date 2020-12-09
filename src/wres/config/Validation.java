@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.xml.bind.Locatable;
+import org.xml.sax.Locator;
 
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
@@ -325,13 +326,76 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
-        return Validation.isNetcdfOutputConfigValid(
-                                                     projectConfigPlus.toString(),
-                                                     projectConfigPlus.getProjectConfig()
-                                                                      .getOutputs()
-                                                                      .getDestination() );
+        boolean result = true;
+        result = Validation.isNetcdfOutputConfigValid( projectConfigPlus.toString(),
+                                                       projectConfigPlus.getProjectConfig()
+                                                                        .getOutputs()
+                                                                        .getDestination() )
+                 && result;
+        result = Validation.areNetcdfOutputsValid( projectConfigPlus )
+                 && result;
+        return result;
     }
 
+    /**
+     * Checks that only zero or one type of 'netcdf', 'netcdf2' are declared.
+     * @param projectConfigPlus The project to validate.
+     * @return true when valid, false otherwise
+     */
+    private static boolean areNetcdfOutputsValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( projectConfigPlus.getProjectConfig() );
+        Objects.requireNonNull( projectConfigPlus.getProjectConfig()
+                                                 .getOutputs() );
+        Objects.requireNonNull( projectConfigPlus.getProjectConfig()
+                                                 .getOutputs()
+                                                 .getDestination() );
+        boolean foundTemplateNetcdf = false;
+        boolean foundScratchNetcdf = false;
+        Locator locator = null;
+
+        for ( DestinationConfig destination : projectConfigPlus.getProjectConfig()
+                                                               .getOutputs()
+                                                               .getDestination() )
+        {
+            if ( Objects.nonNull( destination.getType() ) )
+            {
+                if ( destination.getType()
+                                .equals( DestinationType.NETCDF ) )
+                {
+                    foundTemplateNetcdf = true;
+                    locator = destination.sourceLocation();
+                }
+                else if ( destination.getType()
+                                     .equals( DestinationType.NETCDF_2 ) )
+                {
+                    foundScratchNetcdf = true;
+                    locator = destination.sourceLocation();
+                }
+            }
+        }
+
+        if ( foundScratchNetcdf && foundTemplateNetcdf )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " In this version of WRES, \"netcdf\" and "
+                         + "\"netcdf2\" are mutually exclusive within a single "
+                         + "evaluation. Declare one or the other but not both "
+                         + "simultaneously.",
+                         projectConfigPlus.getOrigin(),
+                         locator.getLineNumber(),
+                         locator.getColumnNumber() );
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /**
+     * @deprecated since 5.2 ('netcdf' is deprecated, 'netcdf2' ignores extra declarations)
+     */
     private static boolean isNetcdfOutputConfigValid( String path, List<DestinationConfig> destinations )
     {
         Objects.requireNonNull( destinations, NON_NULL );
