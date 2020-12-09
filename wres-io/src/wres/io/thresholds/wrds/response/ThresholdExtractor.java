@@ -2,6 +2,7 @@ package wres.io.thresholds.wrds.response;
 
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
+import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
 
 import java.util.Map;
@@ -107,7 +108,7 @@ public class ThresholdExtractor {
      *
      * @return A mapping between feature definitions and all of their thresholds
      */
-    public Map<String, Set<ThresholdOuter>> extract()
+    public Map<WrdsLocation, Set<ThresholdOuter>> extract()
     {
         Objects.requireNonNull(this.response, "A valid response was not passed to extract");
         return response.getThresholds()
@@ -126,7 +127,7 @@ public class ThresholdExtractor {
                                 this.desiredUnitMapper
                         )
                 )
-                .flatMap(featurePlusSetMap -> featurePlusSetMap.entrySet().stream())
+                .flatMap(locationThresholds -> locationThresholds.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

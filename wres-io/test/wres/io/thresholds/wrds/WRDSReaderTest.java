@@ -10,6 +10,7 @@ import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.wrds.response.*;
 import wres.system.SystemSettings;
@@ -17,63 +18,64 @@ import wres.system.SystemSettings;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class WRDSReaderTest {
     private static final URI path = URI.create( "testinput/thresholds/wrds/thresholds.json" );
     private static final double EPSILON = 0.00001;
 
-    private static String createFeature( final String lid )
+    private static WrdsLocation createFeature(final String featureId, final String usgsSiteCode, final String lid )
     {
-        return lid;
+        return new WrdsLocation(featureId, usgsSiteCode, lid, null);
     }
 
-    private static final String PTSA1 = WRDSReaderTest.createFeature("PTSA1");
-    private static final String MNTG1 = WRDSReaderTest.createFeature("MNTG1");
-    private static final String BLOF1 = WRDSReaderTest.createFeature("BLOF1");
-    private static final String CEDG1 = WRDSReaderTest.createFeature("CEDG1");
-    private static final String SMAF1 = WRDSReaderTest.createFeature("SMAF1");
-    private static final String CHAF1 = WRDSReaderTest.createFeature("CHAF1");
-    private static final String OKFG1 = WRDSReaderTest.createFeature("OKFG1");
-    private static final String TLPT2 = WRDSReaderTest.createFeature("TLPT2");
-    private static final String NUTF1 = WRDSReaderTest.createFeature("NUTF1");
-    private static final String CDRA1 = WRDSReaderTest.createFeature("CDRA1");
-    private static final String MUCG1 = WRDSReaderTest.createFeature("MUCG1");
-    private static final String PRSG1 = WRDSReaderTest.createFeature("PRSG1");
-    private static final String LSNO2 = WRDSReaderTest.createFeature("LSNO2");
-    private static final String HDGA4 = WRDSReaderTest.createFeature("HDGA4");
-    private static final String FAKE3 = WRDSReaderTest.createFeature("FAKE3");
-    private static final String CNMP1 = WRDSReaderTest.createFeature("CNMP1");
-    private static final String WLLM2 = WRDSReaderTest.createFeature("WLLM2");
-    private static final String RCJD2 = WRDSReaderTest.createFeature("RCJD2");
-    private static final String MUSM5 = WRDSReaderTest.createFeature("MUSM5");
-    private static final String DUMM5 = WRDSReaderTest.createFeature("DUMM5");
-    private static final String DMTM5 = WRDSReaderTest.createFeature("DMTM5");
-    private static final String PONS2 = WRDSReaderTest.createFeature("PONS2");
-    private static final String MCKG1 = WRDSReaderTest.createFeature("MCKG1");
-    private static final String DSNG1 = WRDSReaderTest.createFeature("DSNG1");
-    private static final String BVAW2 = WRDSReaderTest.createFeature("BVAW2");
-    private static final String CNEO2 = WRDSReaderTest.createFeature("CNEO2");
-    private static final String CMKT2 = WRDSReaderTest.createFeature("CMKT2");
-    private static final String BDWN6 = WRDSReaderTest.createFeature("BDWN6");
-    private static final String CFBN6 = WRDSReaderTest.createFeature("CFBN6");
-    private static final String CCSA1 = WRDSReaderTest.createFeature("CCSA1");
-    private static final String LGNN8 = WRDSReaderTest.createFeature("LGNN8");
-    private static final String BCLN7 = WRDSReaderTest.createFeature("BCLN7");
-    private static final String KERV2 = WRDSReaderTest.createFeature("KERV2");
-    private static final String ARDS1 = WRDSReaderTest.createFeature("ARDS1");
-    private static final String WINW2 = WRDSReaderTest.createFeature("WINW2");
-    private static final String SRDN5 = WRDSReaderTest.createFeature("SRDN5");
-    private static final String MNTN1 = WRDSReaderTest.createFeature("MNTN1");
-    private static final String GNSW4 = WRDSReaderTest.createFeature("GNSW4");
-    private static final String JAIO1 = WRDSReaderTest.createFeature("JAIO1");
-    private static final String INCO1 = WRDSReaderTest.createFeature("INCO1");
-    private static final String PRMO1 = WRDSReaderTest.createFeature("PRMO1");
-    private static final String PARO1 = WRDSReaderTest.createFeature("PARO1");
-    private static final String BRCO1 = WRDSReaderTest.createFeature("BRCO1");
-    private static final String WRNO1 = WRDSReaderTest.createFeature("WRNO1");
-    private static final String BLEO1 = WRDSReaderTest.createFeature("BLEO1");
+    private static final WrdsLocation PTSA1 = WRDSReaderTest.createFeature("2323396", "02372250","PTSA1");
+    private static final WrdsLocation MNTG1 = WRDSReaderTest.createFeature("6444276", "02349605", "MNTG1");
+    private static final WrdsLocation BLOF1 = WRDSReaderTest.createFeature("2297254", "02358700", "BLOF1");
+    private static final WrdsLocation CEDG1 = WRDSReaderTest.createFeature("2310009", "02343940", "CEDG1");
+    private static final WrdsLocation SMAF1 = WRDSReaderTest.createFeature("2298964", "02359170", "SMAF1");
+    private static final WrdsLocation CHAF1 = WRDSReaderTest.createFeature("2293124", "02358000", "CHAF1");
+    private static final WrdsLocation OKFG1 = WRDSReaderTest.createFeature("6447636", "02350512","OKFG1");
+    private static final WrdsLocation TLPT2 = WRDSReaderTest.createFeature("13525368", "07311630", "TLPT2");
+    private static final WrdsLocation NUTF1 = WRDSReaderTest.createFeature(null, null, "NUTF1");
+    private static final WrdsLocation CDRA1 = WRDSReaderTest.createFeature(null, null, "CDRA1");
+    private static final WrdsLocation MUCG1 = WRDSReaderTest.createFeature(null, null, "MUCG1");
+    private static final WrdsLocation PRSG1 = WRDSReaderTest.createFeature(null, null, "PRSG1");
+    private static final WrdsLocation LSNO2 = WRDSReaderTest.createFeature(null, null, "LSNO2");
+    private static final WrdsLocation HDGA4 = WRDSReaderTest.createFeature(null, null, "HDGA4");
+    private static final WrdsLocation FAKE3 = WRDSReaderTest.createFeature(null, null, "FAKE3");
+    private static final WrdsLocation CNMP1 = WRDSReaderTest.createFeature(null, null, "CNMP1");
+    private static final WrdsLocation WLLM2 = WRDSReaderTest.createFeature(null, null, "WLLM2");
+    private static final WrdsLocation RCJD2 = WRDSReaderTest.createFeature(null, null, "RCJD2");
+    private static final WrdsLocation MUSM5 = WRDSReaderTest.createFeature(null, null, "MUSM5");
+    private static final WrdsLocation DUMM5 = WRDSReaderTest.createFeature(null, null, "DUMM5");
+    private static final WrdsLocation DMTM5 = WRDSReaderTest.createFeature(null, null, "DMTM5");
+    private static final WrdsLocation PONS2 = WRDSReaderTest.createFeature(null, null, "PONS2");
+    private static final WrdsLocation MCKG1 = WRDSReaderTest.createFeature(null, null, "MCKG1");
+    private static final WrdsLocation DSNG1 = WRDSReaderTest.createFeature(null, null, "DSNG1");
+    private static final WrdsLocation BVAW2 = WRDSReaderTest.createFeature(null, null, "BVAW2");
+    private static final WrdsLocation CNEO2 = WRDSReaderTest.createFeature(null, null, "CNEO2");
+    private static final WrdsLocation CMKT2 = WRDSReaderTest.createFeature(null, null, "CMKT2");
+    private static final WrdsLocation BDWN6 = WRDSReaderTest.createFeature(null, null, "BDWN6");
+    private static final WrdsLocation CFBN6 = WRDSReaderTest.createFeature(null, null, "CFBN6");
+    private static final WrdsLocation CCSA1 = WRDSReaderTest.createFeature(null, null, "CCSA1");
+    private static final WrdsLocation LGNN8 = WRDSReaderTest.createFeature(null, null, "LGNN8");
+    private static final WrdsLocation BCLN7 = WRDSReaderTest.createFeature(null, null, "BCLN7");
+    private static final WrdsLocation KERV2 = WRDSReaderTest.createFeature(null, null, "KERV2");
+    private static final WrdsLocation ARDS1 = WRDSReaderTest.createFeature(null, null, "ARDS1");
+    private static final WrdsLocation WINW2 = WRDSReaderTest.createFeature(null, null, "WINW2");
+    private static final WrdsLocation SRDN5 = WRDSReaderTest.createFeature(null, null, "SRDN5");
+    private static final WrdsLocation MNTN1 = WRDSReaderTest.createFeature(null, null, "MNTN1");
+    private static final WrdsLocation GNSW4 = WRDSReaderTest.createFeature(null, null, "GNSW4");
+    private static final WrdsLocation JAIO1 = WRDSReaderTest.createFeature(null, null, "JAIO1");
+    private static final WrdsLocation INCO1 = WRDSReaderTest.createFeature(null, null, "INCO1");
+    private static final WrdsLocation PRMO1 = WRDSReaderTest.createFeature(null, null, "PRMO1");
+    private static final WrdsLocation PARO1 = WRDSReaderTest.createFeature(null, null, "PARO1");
+    private static final WrdsLocation BRCO1 = WRDSReaderTest.createFeature(null, null, "BRCO1");
+    private static final WrdsLocation WRNO1 = WRDSReaderTest.createFeature(null, null, "WRNO1");
+    private static final WrdsLocation BLEO1 = WRDSReaderTest.createFeature(null, null, "BLEO1");
 
-    private static final List<String> DESIRED_FEATURES = List.of(
+    private static final List<WrdsLocation> DESIRED_FEATURES = List.of(
             PTSA1,
             MNTG1,
             BLOF1,
@@ -121,8 +123,8 @@ public class WRDSReaderTest {
             BLEO1
     );
 
-    private static final String STEAK = WRDSReaderTest.createFeature("STEAK");
-    private static final String BAKED_POTATO = WRDSReaderTest.createFeature("BakedPotato");
+    private static final WrdsLocation STEAK = WRDSReaderTest.createFeature(null, null, "STEAK");
+    private static final WrdsLocation BAKED_POTATO = WRDSReaderTest.createFeature(null, null, "BakedPotato");
 
     private UnitMapper unitMapper;
 
@@ -182,6 +184,9 @@ public class WRDSReaderTest {
     private ThresholdResponse createNormalThresholdResponse() {
         ThresholdMetadata ptsa1NWSMetadata = new ThresholdMetadata();
         ptsa1NWSMetadata.setLocation_id("PTSA1");
+        ptsa1NWSMetadata.setNws_lid("PTSA1");
+        ptsa1NWSMetadata.setUsgs_site_code("02372250");
+        ptsa1NWSMetadata.setNwm_feature_id("2323396");
         ptsa1NWSMetadata.setThreshold_source("NWS-CMS");
         ptsa1NWSMetadata.setStage_unit("FT");
 
@@ -201,6 +206,9 @@ public class WRDSReaderTest {
 
         ThresholdMetadata mntg1NWSMetadata = new ThresholdMetadata();
         mntg1NWSMetadata.setLocation_id("MNTG1");
+        mntg1NWSMetadata.setNws_lid("MNTG1");
+        mntg1NWSMetadata.setUsgs_site_code("02349605");
+        mntg1NWSMetadata.setNwm_feature_id("6444276");
         mntg1NWSMetadata.setThreshold_source("NWS-CMS");
         mntg1NWSMetadata.setStage_unit("FT");
 
@@ -220,6 +228,9 @@ public class WRDSReaderTest {
 
         ThresholdMetadata mntg1NRLDBMetadata = new ThresholdMetadata();
         mntg1NRLDBMetadata.setLocation_id("MNTG1");
+        mntg1NRLDBMetadata.setNws_lid("MNTG1");
+        mntg1NRLDBMetadata.setUsgs_site_code("02349605");
+        mntg1NRLDBMetadata.setNwm_feature_id("6444276");
         mntg1NRLDBMetadata.setThreshold_source("NWS-NRLDB");
         mntg1NRLDBMetadata.setStage_unit("FT");
 
@@ -246,6 +257,7 @@ public class WRDSReaderTest {
     private ThresholdResponse createFunThresholdResponse() {
         ThresholdMetadata steakMetadata = new ThresholdMetadata();
         steakMetadata.setLocation_id("STEAK");
+        steakMetadata.setNws_lid("STEAK");
         steakMetadata.setFlow_unit("CFS");
         steakMetadata.setStage_unit("MM");
         steakMetadata.setThreshold_source("FlavorTown");
@@ -290,6 +302,7 @@ public class WRDSReaderTest {
 
         ThresholdMetadata grossSteakMetadata = new ThresholdMetadata();
         grossSteakMetadata.setLocation_id("STEAK");
+        grossSteakMetadata.setNws_lid("STEAK");
         grossSteakMetadata.setFlow_unit("CFS");
         grossSteakMetadata.setStage_unit("MM");
         grossSteakMetadata.setThreshold_source("NWS-NRLDB");
@@ -320,6 +333,7 @@ public class WRDSReaderTest {
 
         ThresholdMetadata flatIronSsteakMetadata = new ThresholdMetadata();
         flatIronSsteakMetadata.setLocation_id("STEAK");
+        flatIronSsteakMetadata.setNws_lid("STEAK");
         flatIronSsteakMetadata.setFlow_unit("CFS");
         flatIronSsteakMetadata.setStage_unit("MM");
         flatIronSsteakMetadata.setThreshold_source("FlatIron");
@@ -364,6 +378,7 @@ public class WRDSReaderTest {
 
         ThresholdMetadata bakedPotatoMetadata = new ThresholdMetadata();
         bakedPotatoMetadata.setLocation_id("BakedPotato");
+        bakedPotatoMetadata.setNws_lid("BakedPotato");
         bakedPotatoMetadata.setFlow_unit("CFS");
         bakedPotatoMetadata.setStage_unit("MM");
         bakedPotatoMetadata.setThreshold_source("FlavorTown");
@@ -408,6 +423,7 @@ public class WRDSReaderTest {
 
         ThresholdMetadata grossBakedPotatoMetadata = new ThresholdMetadata();
         grossBakedPotatoMetadata.setLocation_id("BakedPotato");
+        grossBakedPotatoMetadata.setNws_lid("BakedPotato");
         grossBakedPotatoMetadata.setFlow_unit("CFS");
         grossBakedPotatoMetadata.setStage_unit("MM");
         grossBakedPotatoMetadata.setThreshold_source("NWS-NRLDB");
@@ -481,7 +497,7 @@ public class WRDSReaderTest {
     @Test
     public void testExtract()
     {
-        Map<String, Set<ThresholdOuter>> normalExtraction = WRDSReader.extract(
+        Map<WrdsLocation, Set<ThresholdOuter>> normalExtraction = WRDSReader.extract(
                 normalResponse,
                 normalThresholdConfig,
                 this.unitMapper
@@ -514,7 +530,7 @@ public class WRDSReaderTest {
             );
         }
 
-        Map<String, Set<ThresholdOuter>> funExtraction = WRDSReader.extract(
+        Map<WrdsLocation, Set<ThresholdOuter>> funExtraction = WRDSReader.extract(
                 funResponse,
                 funThresholdConfig,
                 this.unitMapper
@@ -569,7 +585,7 @@ public class WRDSReaderTest {
             );
         }
 
-        Map<String, Set<ThresholdOuter>> alternativeNormalExtraction = WRDSReader.extract(
+        Map<WrdsLocation, Set<ThresholdOuter>> alternativeNormalExtraction = WRDSReader.extract(
                 normalResponse,
                 alternativeThresholdConfig,
                 this.unitMapper
@@ -618,7 +634,7 @@ public class WRDSReaderTest {
             );
         }
 
-        Map<String, Set<ThresholdOuter>> normalButFunExtraction = WRDSReader.extract(
+        Map<WrdsLocation, Set<ThresholdOuter>> normalButFunExtraction = WRDSReader.extract(
                 funResponse,
                 normalThresholdConfig,
                 this.unitMapper
@@ -674,7 +690,7 @@ public class WRDSReaderTest {
     @Test
     public void testGroupLocations()
     {
-        Set<String> desiredFeatures = new LinkedHashSet<>( DESIRED_FEATURES );
+        Set<String> desiredFeatures = DESIRED_FEATURES.stream().map(WrdsLocation::getNwsLid).collect(Collectors.toSet());
         Set<String> groupedLocations = WRDSReader.groupLocations( desiredFeatures );
         Assert.assertEquals(groupedLocations.size(), 3);
 
@@ -1541,11 +1557,11 @@ public class WRDSReaderTest {
 
     @Test
     public void testReadThresholds() throws IOException {
-        Map<String, Set<ThresholdOuter>> readThresholds = WRDSReader.readThresholds(
+        Map<WrdsLocation, Set<ThresholdOuter>> readThresholds = WRDSReader.readThresholds(
                 systemSettings,
                 normalThresholdConfig,
                 this.unitMapper,
-                new HashSet<>( DESIRED_FEATURES)
+                DESIRED_FEATURES.stream().map(WrdsLocation::getNwsLid).collect(Collectors.toSet())
         );
 
         Assert.assertTrue(readThresholds.containsKey(MNTG1));

@@ -13,6 +13,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
+import wres.io.geography.wrds.WrdsLocation;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.thresholds.exceptions.StreamIOException;
 import wres.io.thresholds.wrds.response.ThresholdExtractor;
@@ -66,7 +67,7 @@ public final class WRDSReader {
         this.systemSettings = systemSettings;
     }
 
-    public static Map<String, Set<ThresholdOuter>> readThresholds(
+    public static Map<WrdsLocation, Set<ThresholdOuter>> readThresholds(
             final SystemSettings systemSettings,
             final ThresholdsConfig threshold,
             final UnitMapper unitMapper,
@@ -122,7 +123,7 @@ public final class WRDSReader {
         }
 
         WRDSReader reader = new WRDSReader( systemSettings );
-        Map<String, Set<ThresholdOuter>> thresholdMapping;
+        Map<WrdsLocation, Set<ThresholdOuter>> thresholdMapping;
 
         try {
             thresholdMapping = addresses.parallelStream()
@@ -150,9 +151,9 @@ public final class WRDSReader {
         return thresholdMapping;
     }
 
-    public static Map<String, Set<ThresholdOuter>> extract( ThresholdResponse response,
-                                                            ThresholdsConfig config,
-                                                            UnitMapper desiredUnitMapper )
+    public static Map<WrdsLocation, Set<ThresholdOuter>> extract(ThresholdResponse response,
+                                                                 ThresholdsConfig config,
+                                                                 UnitMapper desiredUnitMapper )
     {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)config.getCommaSeparatedValuesOrSource();
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;

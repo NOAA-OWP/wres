@@ -5,6 +5,7 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
+import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
 
 import java.io.Serializable;
@@ -28,6 +29,15 @@ public class ThresholdDefinition implements Serializable {
      */
     public ThresholdMetadata getMetadata() {
         return metadata;
+    }
+
+    public WrdsLocation getLocation() {
+        return new WrdsLocation(
+                this.metadata.getNwm_feature_id(),
+                this.metadata.getUsgs_site_code(),
+                this.metadata.getNws_lid(),
+                null
+        );
     }
 
     /**
@@ -321,14 +331,14 @@ public class ThresholdDefinition implements Serializable {
     OriginalThresholdValues original_values;
     CalculatedThresholdValues calculated_values;
 
-    public Map<String, Set<ThresholdOuter>> getThresholds(
+    public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds(
             WRDSThresholdType thresholdType,
             ThresholdConstants.Operator thresholdOperator,
             ThresholdConstants.ThresholdDataType dataType,
             boolean getCalculated,
             UnitMapper desiredUnitMapper
     ) {
-        String featureName = this.getMetadata().getLocation_id();
+        WrdsLocation location = this.getLocation();
 
         Set<ThresholdOuter> thresholds;
 
@@ -338,7 +348,7 @@ public class ThresholdDefinition implements Serializable {
         else {
             thresholds = this.getStageThresholds(getCalculated, thresholdOperator, dataType, desiredUnitMapper);
         }
-        return Map.of( featureName, thresholds );
+        return Map.of( location, thresholds );
     }
 
     private Set<ThresholdOuter> getFlowThresholds(

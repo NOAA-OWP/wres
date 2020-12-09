@@ -8,6 +8,9 @@
         {
             "metadata": {
                 "location_id": "PTSA1",
+                "nws_lid": "PTSA1",
+                "usgs_site_code": "02372250",
+                "nwm_feature_id": "2323396",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -31,6 +34,9 @@
         {
             "metadata": {
                 "location_id": "MNTG1",
+                "nws_lid": "MNTG1",
+                "usgs_site_code": "02349605",
+                "nwm_feature_id": "6444276",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -54,6 +60,9 @@
         {
             "metadata": {
                 "location_id": "MNTG1",
+                "nws_lid": "MNTG1",
+                "usgs_site_code": "02349605",
+                "nwm_feature_id": "6444276",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-NRLDB",
                 "threshold_source_description": "National Weather Service - National River Location Database",
@@ -77,6 +86,9 @@
         {
             "metadata": {
                 "location_id": "BLOF1",
+                "nws_lid": "BLOF1",
+                "usgs_site_code": "02358700",
+                "nwm_feature_id": "2297254",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -100,6 +112,9 @@
         {
             "metadata": {
                 "location_id": "BLOF1",
+                "nws_lid": "BLOF1",
+                "usgs_site_code": "02358700",
+                "nwm_feature_id": "2297254",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-NRLDB",
                 "threshold_source_description": "National Weather Service - National River Location Database",
@@ -123,6 +138,9 @@
         {
             "metadata": {
                 "location_id": "CEDG1",
+                "nws_lid": "CEDG1",
+                "usgs_site_code": "02343940",
+                "nwm_feature_id": "2310009",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -146,6 +164,9 @@
         {
             "metadata": {
                 "location_id": "SMAF1",
+                "nws_lid": "SMAF1",
+                "usgs_site_code": "02359170",
+                "nwm_feature_id": "2298964",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -169,6 +190,9 @@
         {
             "metadata": {
                 "location_id": "SMAF1",
+                "nws_lid": "SMAF1",
+                "usgs_site_code": "02359170",
+                "nwm_feature_id": "2298964",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-NRLDB",
                 "threshold_source_description": "National Weather Service - National River Location Database",
@@ -192,6 +216,9 @@
         {
             "metadata": {
                 "location_id": "CHAF1",
+                "nws_lid": "CHAF1",
+                "usgs_site_code": "02358000",
+                "nwm_feature_id": "2293124",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -215,6 +242,9 @@
         {
             "metadata": {
                 "location_id": "OKFG1",
+                "nws_lid": "OKFG1",
+                "usgs_site_code": "02350512",
+                "nwm_feature_id": "6447636",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -238,6 +268,9 @@
         {
             "metadata": {
                 "location_id": "OKFG1",
+                "nws_lid": "OKFG1",
+                "usgs_site_code": "02350512",
+                "nwm_feature_id": "6447636",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-NRLDB",
                 "threshold_source_description": "National Weather Service - National River Location Database",
@@ -261,6 +294,9 @@
         {
             "metadata": {
                 "location_id": "TLPT2",
+                "nws_lid": "TLPT2",
+                "usgs_site_code": "07311630",
+                "nwm_feature_id": "13525368",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -284,6 +320,9 @@
         {
             "metadata": {
                 "location_id": "TLPT2",
+                "nws_lid": "TLPT2",
+                "usgs_site_code": "07311630",
+                "nwm_feature_id": "13525368",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-NRLDB",
                 "threshold_source_description": "National Weather Service - National River Location Database",

@@ -16,6 +16,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Maintains a thread safe map between feature tuples and the builders that will supply the metrics, with
+ * their thresholds, that will need to be evaluated.
+ *
+ * Usage:
+ * 1. Create the collection
+ * 2. Initialize it with the expected set of features
+ * 3. Add thresholds and metrics for features as encountered
+ * 4. Call 'build' to get the final mapping between features and every one of their metrics/thresholds to evaluate
+ */
 public class ThresholdBuilderCollection {
     private static final Object BUILDER_ACCESS_LOCK = new Object();
 

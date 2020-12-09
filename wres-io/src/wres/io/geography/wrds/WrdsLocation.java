@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.util.Objects;
+
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class WrdsLocation
 {
@@ -59,5 +61,21 @@ public class WrdsLocation
                 .append( "nwsLid", nwsLid )
                 .append( "huc", huc )
                 .toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WrdsLocation that = (WrdsLocation) o;
+        return Objects.equals(nwmFeatureId, that.nwmFeatureId) &&
+                Objects.equals(usgsSiteCode, that.usgsSiteCode) &&
+                Objects.equals(nwsLid, that.nwsLid) &&
+                Objects.equals(huc, that.huc);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nwmFeatureId, usgsSiteCode, nwsLid, huc);
     }
 }
