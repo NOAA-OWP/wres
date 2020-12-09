@@ -8,6 +8,9 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ThresholdMetadata implements Serializable {
     String location_id;
+    String nws_lid;
+    String usgs_site_code;
+    String nwm_feature_id;
     String id_type;
     String threshold_source;
     String threshold_source_description;
@@ -33,6 +36,39 @@ public class ThresholdMetadata implements Serializable {
             return null;
         }
         return this.threshold_source;
+    }
+
+    public String getNws_lid() {
+        if (this.nws_lid == null || this.nws_lid.equals("None")) {
+            return null;
+        }
+        return nws_lid;
+    }
+
+    public void setNws_lid(String nws_lid) {
+        this.nws_lid = nws_lid;
+    }
+
+    public String getUsgs_site_code() {
+        if (this.usgs_site_code == null || this.usgs_site_code.equals("None")) {
+            return null;
+        }
+        return usgs_site_code;
+    }
+
+    public void setUsgs_site_code(String usgs_site_code) {
+        this.usgs_site_code = usgs_site_code;
+    }
+
+    public String getNwm_feature_id() {
+        if (this.nwm_feature_id == null || this.nwm_feature_id.equals("None")) {
+            return null;
+        }
+        return nwm_feature_id;
+    }
+
+    public void setNwm_feature_id(String nwm_feature_id) {
+        this.nwm_feature_id = nwm_feature_id;
     }
 
     public String getThreshold_source_description()
