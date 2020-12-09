@@ -101,10 +101,7 @@ evaluation <- '<?xml version="1.0" encoding="UTF-8"?>
 print( "Here is the WRES evaluation project configuration:" )
 cat( evaluation )
 
-# There is a -dev environment (WRES Test Platform) and a -ti environment (WRES
-# Deployment Platform), therefore we need to specify which one we wish to use.
-# Change the following variable to -ti if you are using this program in -ti.
-env_suffix <- "-dev"
+env_suffix <- "-prod"
 
 print( paste( "We are using the", env_suffix, "environment in this example." ) )
 

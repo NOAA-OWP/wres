@@ -792,7 +792,9 @@ public class ThresholdsByMetric
         /**
          * Adds a {@link OneOrTwoThresholds to the builder}.
          * 
+         * @param metric the metric
          * @param thresholds the thresholds to add
+         * @return the builder
          * @throws NullPointerException if any input is null
          */
 
