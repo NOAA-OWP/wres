@@ -8,6 +8,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
+import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.retrieval.UnitMapper;
 import wres.io.thresholds.csv.CSVThresholdReader;
@@ -214,112 +215,12 @@ public class ExternalThresholdReader {
                 dataSourceConfig = this.projectConfig.getInputs().getLeft();
         }
 
-        // If the user declares "This is a usgs site code", we want to default to that
-        FeatureDimension dimension = dataSourceConfig.getFeatureDimension();
-
-        // If the user DOESN'T say what the dimension is or gives a vague definition, we need to explore the
-        // declaration and try to pull out any other hints
-        if (dimension == null || dimension == FeatureDimension.CUSTOM) {
-            FeatureDimension foundDimension = null;
-
-            // Since a DataSourceConfig must have 1+ definitions, we need to look through all of them to first get an
-            // idea of what the identifiers are and second make sure there aren't any conflicts
-            for (DataSourceConfig.Source source : dataSourceConfig.getSource()) {
-                // First declare the format, interface, and address so as to make the coming if statements less
-                // ridiculous
-                String sourceFormat = "";
-
-                if (source.getFormat() != null) {
-                    sourceFormat = source.getFormat().value().toLowerCase();
-                }
-
-                String sourceInterface = "";
-
-                if (source.getInterface() != null) {
-                    sourceInterface = source.getInterface().value().toLowerCase();
-                }
-
-                String address = "";
-
-                if (source.getValue() != null) {
-                    address = source.getValue().toString().toLowerCase();
-                }
-
-                /*
-                    This is hacky, but assumptions need to be made to make these leaps:
-
-                    nwm_feature_id:
-
-                    - Our only file based netcdf data at the moment is indexed via feature_id, so declaring netcdf
-                        (for the time being) means that we're going to use nwm_feature_id
-                    - If we're using an interface that contains 'nwm', we are definitely using data that is indexed via
-                        the nwm_feature_id
-
-                    usgs_site_code:
-
-                    - Our only theoretical waterml input apes USGS data, so, if we define WaterML (for the time being),
-                        locations will be identified via the USGS site code
-                    - If we explicitly tell the system to utilize a USGS interface, we know that our location will be
-                        identified through a USGS site code
-                    - If the address the user declares contains the major portions of the NWIS URL, we know that we'll
-                        be using the USGS site code
-                            * There are two end points for NWIS - one they hope we use for small requests, one for
-                                large - so we can't hard code it to the entire beginning of the URL
-
-                     nws_lid:
-
-                     - The nws_lid has been our standard so far and has been used in most, if not all, of the
-                        user-tailored inputs, so we use it as our fallback in order to cover as many bases as possible.
-                 */
-                if (sourceFormat.equals("netcdf") || sourceInterface.contains("nwm")) {
-                    if (foundDimension == null || foundDimension == FeatureDimension.NWM_FEATURE_ID) {
-                        foundDimension = FeatureDimension.NWM_FEATURE_ID;
-                    }
-                    else {
-                        throw new IllegalStateException(
-                                "External threshold identifiers cannot be interpretted if the input data is both " +
-                                        foundDimension + " and " + FeatureDimension.NWM_FEATURE_ID
-                        );
-                    }
-                }
-                else if (sourceFormat.equals("waterml") || sourceInterface.contains("usgs") || address.contains("usgs.gov/nwis")) {
-                    if (foundDimension == null || foundDimension == FeatureDimension.USGS_SITE_CODE) {
-                        foundDimension = FeatureDimension.USGS_SITE_CODE;
-                    }
-                    else {
-                        throw new IllegalStateException(
-                                "External threshold identifiers cannot be interpretted if the input data is both " +
-                                        foundDimension + " and " + FeatureDimension.USGS_SITE_CODE
-                        );
-                    }
-                }
-                else {
-                    if (foundDimension == null || foundDimension == FeatureDimension.NWS_LID) {
-                        foundDimension = FeatureDimension.NWS_LID;
-                    }
-                    else {
-                        throw new IllegalStateException(
-                                "External threshold identifiers cannot be interpretted if the input data is both " +
-                                        foundDimension + " and " + FeatureDimension.NWS_LID
-                        );
-                    }
-                }
-            }
-
-            dimension = foundDimension;
-        }
-
-        // There's nothing more that we can do if we haven't been able to infer from the sources, so we just need
-        // to error out
-        if (dimension == null) {
-            throw new IllegalStateException(
-                    "The type of location identifier to use when interpreting WRDS responses could not be determined. " +
-                            "Please supply the feature dimension on the " + side + " data source configuration.");
-
-        }
+        FeatureDimension dimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
 
         // Now that we know what dimension to use, we just have to return a function that will pluck the right
-        // one off of the WrdsLocation
+        // one off of the WrdsLocation. WRDS only supports three different formats and it's fairly obvious which
+        // sources use NWM ids or USGS sites, not so much for NWS lids. Since what CAN use NWS lids is so vague,
+        // we assume that as the base case.
         switch (dimension) {
             case NWM_FEATURE_ID:
                 return WrdsLocation::getNwmFeatureId;
