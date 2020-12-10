@@ -8,6 +8,9 @@
         {
             "metadata": {
                 "location_id": "CKLN6",
+                "nws_lid": "CKLN6",
+                "usgs_site_code": "01503000",
+                "nwm_feature_id": "8088149",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-CMS",
                 "threshold_source_description": "National Weather Service - CMS",
@@ -31,6 +34,9 @@
         {
             "metadata": {
                 "location_id": "CKLN6",
+                "nws_lid": "CKLN6",
+                "usgs_site_code": "01503000",
+                "nwm_feature_id": "8088149",
                 "id_type": "NWS Station",
                 "threshold_source": "NWS-NRLDB",
                 "threshold_source_description": "National Weather Service - National River Location Database",
