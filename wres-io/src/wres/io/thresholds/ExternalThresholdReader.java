@@ -98,6 +98,9 @@ public class ExternalThresholdReader {
         ThresholdsConfig.Source source = (ThresholdsConfig.Source)thresholdsConfig.getCommaSeparatedValuesOrSource();
         LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
 
+        DataSourceConfig dataSourceConfig = ConfigHelper.getDataSourceBySide(this.projectConfig, tupleSide);
+        FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
+
         Set<FeatureTuple> recognizedFeatures = new HashSet<>();
 
         // Threshold type: default to probability
@@ -126,11 +129,28 @@ public class ExternalThresholdReader {
                     );
                     break;
                 case WRDS:
+                    final Function<FeatureTuple, String> identifyFeatureName;
+
+                    // Only 5 character handbook-5 ids are supported, so we need to ensure that feature names that
+                    // are passed are 5 characters long, at most, when passing to the reader if the user indicates
+                    // that it uses NWS LIDs
+                    if (featureDimension == FeatureDimension.NWS_LID) {
+                        identifyFeatureName = tuple ->
+                                tuple.getNameFor(tupleSide)
+                                        .substring(
+                                                0,
+                                                Math.min(tuple.getNameFor(tupleSide).length(), 5)
+                                        );
+                    }
+                    else {
+                        identifyFeatureName = tuple -> tuple.getNameFor(tupleSide);
+                    }
+
                     Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds = WRDSReader.readThresholds(
                             this.systemSettings,
                             thresholdsConfig,
                             this.desiredMeasurementUnitConverter,
-                            this.features.stream().map(tuple -> tuple.getNameFor(tupleSide)).collect(Collectors.toSet())
+                            this.features.stream().map(identifyFeatureName).collect(Collectors.toSet())
                     );
 
                     // WRDS returns a series of identifiers that don't match to 'left' 'right', or 'baseline'.
@@ -156,9 +176,6 @@ public class ExternalThresholdReader {
                     String message = "The threshold format of " + format.toString() + " is not supported.";
                     throw new IllegalArgumentException(message);
             }
-
-            DataSourceConfig dataSourceConfig = ConfigHelper.getDataSourceBySide(this.projectConfig, tupleSide);
-            FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
 
             final BiPredicate<String, String> equalityCheck;
 
