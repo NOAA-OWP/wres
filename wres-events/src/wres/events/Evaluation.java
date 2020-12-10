@@ -1238,7 +1238,8 @@ public class Evaluation implements Closeable
      * @throws EvaluationEventException if the evaluation could not be constructed for any reason
      * @throws NullPointerException if the broker is null
      * @throws IllegalArgumentException if there are zero subscribers for any queue 
-     * @throws IllegalStateException if the evaluation message fails to declare the expected number of pools
+     * @throws IllegalStateException if the evaluation message fails to declare the expected number of pools or contains
+     *            no formats
      */
 
     private Evaluation( Builder builder )
@@ -1259,14 +1260,22 @@ public class Evaluation implements Closeable
 
         this.evaluationDescription = builder.evaluationDescription;
 
-        // Get the formats that are required, but not delivered by internal subscribers, i.e., are awaiting 
-        // subscriptions
-        Set<Format> formatsAwaited = this.getFormatsAwaited( this.evaluationDescription.getOutputs() );
+        // Get the formats that are required
+        Set<Format> formatsRequired = this.getFormatsAwaited( this.evaluationDescription.getOutputs() );
 
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
         Objects.requireNonNull( this.evaluationDescription,
-                                "Cannot create an evaluation without an evaluation "
-                                                            + "message." );
+                                "Cannot create an evaluation without an evaluation description message." );
+        
+        // Must have one or more formats
+        if ( formatsRequired.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Encountered an error while building evaluation "
+                                                + this.evaluationId
+                                                + ": there are no formats to be delivered by format "
+                                                + "subscribers. An evaluation must write statistics to at least one "
+                                                + "format." );
+        }
 
         this.publicationComplete = new AtomicBoolean();
         this.isStopped = new AtomicBoolean();
@@ -1284,7 +1293,7 @@ public class Evaluation implements Closeable
             String statusTrackerId = Evaluation.getUniqueId();
             this.statusTracker = new EvaluationStatusTracker( this,
                                                               broker,
-                                                              formatsAwaited,
+                                                              formatsRequired,
                                                               statusTrackerId,
                                                               broker.getMaximumMessageRetries() );
 
