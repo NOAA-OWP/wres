@@ -1,38 +1,10 @@
-FROM centos:8.2.2004
+FROM centos:8.3.2011
 
 RUN dnf install -y \
-    java-11-openjdk-headless-11.0.9.11-0.el8_2 \
+    java-11-openjdk-headless-11.0.9.11-2.el8_3 \
     unzip-6.0-43.el8 \
     which-2.21-12.el8 \
-    # The following aren't direct dependencies of WRES, are updates post-8.2.2004
-    bind-export-libs-9.11.13-6.el8_2.1 \
-    ca-certificates-2020.2.41-80.0.el8_2 \
-    centos-gpg-keys-8.2-2.2004.0.2.el8 \
-    centos-release-8.2-2.2004.0.2.el8 \
-    centos-repos-8.2-2.2004.0.2.el8 \
-    dbus-1.12.8-10.el8_2 \
-    dbus-common-1.12.8-10.el8_2 \
-    dbus-daemon-1.12.8-10.el8_2 \
-    dbus-libs-1.12.8-10.el8_2 \
-    dbus-tools-1.12.8-10.el8_2 \
-    dnf-4.2.17-7.el8_2 \
-    dnf-data-4.2.17-7.el8_2 \
-    gnutls-3.6.8-11.el8_2 \
-    iptables-libs-1.8.4-10.el8_2.1 \
-    libdnf-0.39.1-6.el8_2 \
-    libnghttp2-1.33.0-3.el8_2.1 \
-    librepo-1.11.0-3.el8_2 \
-    python3-dnf-4.2.17-7.el8_2 \
-    python3-hawkey-0.39.1-6.el8_2 \
-    python3-libdnf-0.39.1-6.el8_2 \
-    systemd-239-31.el8_2.2 \
-    systemd-libs-239-31.el8_2.2 \
-    systemd-pam-239-31.el8_2.2 \
-    systemd-udev-239-31.el8_2.2 \
-    tzdata-2020d-1.el8 \
-    tzdata-java-2020d-1.el8 \
-    yum-4.2.17-7.el8_2 \
-    zlib-1.2.11-16.el8_2 \
+    # The following aren't direct dependencies of WRES, are updates post-8.3.2011
     && dnf clean all
 
 # See comments in main/worker/root wres Dockerfile
