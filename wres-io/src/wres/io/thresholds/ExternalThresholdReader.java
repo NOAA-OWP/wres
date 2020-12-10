@@ -15,12 +15,17 @@ import wres.io.thresholds.csv.CSVThresholdReader;
 import wres.io.thresholds.wrds.WRDSReader;
 import wres.system.SystemSettings;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ExternalThresholdReader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExternalThresholdReader.class);
+
     private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
     private final Set<FeatureTuple> features;
@@ -216,6 +221,12 @@ public class ExternalThresholdReader {
         }
 
         FeatureDimension dimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
+
+        if (dimension == null || dimension == FeatureDimension.CUSTOM) {
+            LOGGER.warn("A definitive feature dimension could not be determined for linking thresholds to features; " +
+                    "defaulting to the NWS lid");
+            return WrdsLocation::getNwsLid;
+        }
 
         // Now that we know what dimension to use, we just have to return a function that will pluck the right
         // one off of the WrdsLocation. WRDS only supports three different formats and it's fairly obvious which
