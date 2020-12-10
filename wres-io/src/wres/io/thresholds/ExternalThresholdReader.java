@@ -118,6 +118,12 @@ public class ExternalThresholdReader {
             Map<String, Set<ThresholdOuter>> readThresholds;
             ThresholdFormat format = ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
 
+            // If we're going with NWS_LIDs with WRDS, we want to do equality checks on the strict handbook-5s.
+            // Some RFC data append an added identifier to the end of their handbook 5, preventing a match, so we
+            // want to roll with equivalence based on those first five characters. To achieve this, we use a custom
+            // function for the equivalency checks in the coming loop rather than a strict String::equals
+            BiPredicate<String, String> equalityCheck = String::equals;
+
             // Produce mappings between the identifiers for data that may be linked to the features to their thresholds
             switch (format) {
                 case CSV:
@@ -141,6 +147,11 @@ public class ExternalThresholdReader {
                                                 0,
                                                 Math.min(tuple.getNameFor(tupleSide).length(), 5)
                                         );
+
+                        // We want to mimic the five character equality check later on as well
+                        equalityCheck = (first, second) ->
+                                first != null
+                                        && first.substring(0, Math.min(first.length(), 5)).equals(second);
                     }
                     else {
                         identifyFeatureName = tuple -> tuple.getNameFor(tupleSide);
@@ -176,21 +187,8 @@ public class ExternalThresholdReader {
                     String message = "The threshold format of " + format.toString() + " is not supported.";
                     throw new IllegalArgumentException(message);
             }
-
-            final BiPredicate<String, String> equalityCheck;
-
-            // If we're going with NWS_LIDs, we want to do equality checks on the strict handbook-5s.
-            // Some RFC data append an added identifier to the end of their handbook 5, preventing a match, so we
-            // want to roll with equivalence based on those first five characters. To achieve this, we use a custom
-            // function for the equivalency checks in the coming loop rather than a strict String::equals
-            if (featureDimension == FeatureDimension.NWS_LID) {
-                equalityCheck = (first, second) ->
-                        first != null
-                                && first.substring(0, Math.min(first.length(), 5)).equals(second);
-            }
-            else {
-                equalityCheck = String::equals;
-            }
+            
+            final BiPredicate<String, String> finalEqualityCheck = equalityCheck;
 
             // Now that we have mappings between location identifiers and their thresholds,
             // try to match those up with our features
@@ -201,7 +199,7 @@ public class ExternalThresholdReader {
                 // Try to find one of our configured features whose side matches what we were able to pluck out
                 // from our threshold requests
                 Optional<FeatureTuple> possibleFeature = this.features.stream()
-                        .filter(tuple -> equalityCheck.test(tuple.getNameFor(tupleSide), locationIdentifier))
+                        .filter(tuple -> finalEqualityCheck.test(tuple.getNameFor(tupleSide), locationIdentifier))
                         .findFirst();
 
                 // If none were found, just move on. This might happen in the case where a CSV returns a mountain of
