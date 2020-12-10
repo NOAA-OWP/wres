@@ -722,6 +722,17 @@ public class ConfigHelper
         return Collections.unmodifiableSortedSet( featureNames );
     }
 
+    public static DataSourceConfig getDataSourceBySide(final ProjectConfig projectConfig, final LeftOrRightOrBaseline side) {
+        switch (side) {
+            case LEFT:
+                return projectConfig.getInputs().getLeft();
+            case RIGHT:
+                return projectConfig.getInputs().getRight();
+            default:
+                return projectConfig.getInputs().getBaseline();
+        }
+    }
+
     public static FeatureDimension getConcreteFeatureDimension(final DataSourceConfig datasource) {
         FeatureDimension dimension = datasource.getFeatureDimension();
 

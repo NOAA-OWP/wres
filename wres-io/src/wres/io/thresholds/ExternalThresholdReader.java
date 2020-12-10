@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -155,14 +157,34 @@ public class ExternalThresholdReader {
                     throw new IllegalArgumentException(message);
             }
 
+            DataSourceConfig dataSourceConfig = ConfigHelper.getDataSourceBySide(this.projectConfig, tupleSide);
+            FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
+
+            final BiPredicate<String, String> equalityCheck;
+
+            // If we're going with NWS_LIDs, we want to do equality checks on the strict handbook-5s.
+            // Some RFC data append an added identifier to the end of their handbook 5, preventing a match, so we
+            // want to roll with equivalence based on those first five characters. To achieve this, we use a custom
+            // function for the equivalency checks in the coming loop rather than a strict String::equals
+            if (featureDimension == FeatureDimension.NWS_LID) {
+                equalityCheck = (first, second) ->
+                        first != null
+                                && first.substring(0, Math.min(first.length(), 5)).equals(second);
+            }
+            else {
+                equalityCheck = String::equals;
+            }
+
             // Now that we have mappings between location identifiers and their thresholds,
             // try to match those up with our features
             for ( Map.Entry<String, Set<ThresholdOuter>> thresholds : readThresholds.entrySet() )
             {
+                final String locationIdentifier = thresholds.getKey();
+
                 // Try to find one of our configured features whose side matches what we were able to pluck out
                 // from our threshold requests
                 Optional<FeatureTuple> possibleFeature = this.features.stream()
-                        .filter(tuple -> tuple.getNameFor(tupleSide).equals(thresholds.getKey()))
+                        .filter(tuple -> equalityCheck.test(tuple.getNameFor(tupleSide), locationIdentifier))
                         .findFirst();
 
                 // If none were found, just move on. This might happen in the case where a CSV returns a mountain of
