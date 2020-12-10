@@ -614,6 +614,8 @@ class EvaluationStatusTracker implements Closeable
         Objects.requireNonNull( message );
 
         this.flowController.start();
+
+        LOGGER.debug( "Started flow control for message group {}.", message.getGroupId() );
     }
 
     /**
@@ -638,6 +640,8 @@ class EvaluationStatusTracker implements Closeable
             LOGGER.debug( "Registering group consumption complete for subscriber {}.", consumerId );
 
             this.flowController.stop( consumerId );
+
+            LOGGER.debug( "Stopped flow control for message group {}.", message.getGroupId() );
         }
         else
         {
@@ -892,13 +896,13 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * Registers a subscriber as completed successfully.
+     * Registers consumption as completed successfully.
      * 
      * @param message the status message containing the subscriber event
      * @throws IllegalStateException if the consumer has already been marked as failed
      */
 
-    private void registerSubscriberCompleteReportedSuccess( EvaluationStatus message )
+    private void registerConsumptionCompleteReportedSuccess( EvaluationStatus message )
     {
         String consumerId = message.getConsumer()
                                    .getConsumerId();
@@ -1032,7 +1036,7 @@ class EvaluationStatusTracker implements Closeable
      * @param identifier the consumer identifier of this instance, used to ignore messages related to the tracker
      * @param maximum retries the maximum number of retries on failing to consume a message
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the list of subscribers is empty or the maximum number of retries is < 0
+     * @throws IllegalArgumentException if the set of formats is empty or the maximum number of retries is < 0
      * @throws EvaluationEventException if the status tracker could not be created for any other reason
      */
 
@@ -1052,6 +1056,14 @@ class EvaluationStatusTracker implements Closeable
             throw new IllegalArgumentException( "While building an evaluation status tracker, discovered a maximum "
                                                 + "retry count that is less than zero, which is not allowed: "
                                                 + maximumRetries );
+        }
+
+        if ( formatsRequired.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot build a status tracker for evaluation "
+                                                + evaluation.getEvaluationId()
+                                                + " because there are no formats to be delivered by format "
+                                                + "subscribers." );
         }
 
         this.evaluation = evaluation;
@@ -1237,7 +1249,7 @@ class EvaluationStatusTracker implements Closeable
                 this.registerAnOfferToDeliverFormats( message );
                 break;
             case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
-                this.registerSubscriberCompleteReportedSuccess( message );
+                this.registerConsumptionCompleteReportedSuccess( message );
                 break;
             case CONSUMPTION_COMPLETE_REPORTED_FAILURE:
                 this.stopOnFailure( message );

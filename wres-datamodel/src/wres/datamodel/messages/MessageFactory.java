@@ -682,7 +682,7 @@ public class MessageFactory
 
         return Collections.unmodifiableSet( returnMe );
     }
-    
+
     /**
      * Uncovers a set of declared formats from a description of the outputs.
      * 
@@ -695,34 +695,34 @@ public class MessageFactory
         Objects.requireNonNull( outputs );
 
         Set<Format> formats = new HashSet<>();
-        
-        if( outputs.hasPng() )
+
+        if ( outputs.hasPng() )
         {
             formats.add( Format.PNG );
         }
-        
-        if( outputs.hasSvg() )
+
+        if ( outputs.hasSvg() )
         {
             formats.add( Format.SVG );
         }
-        
-        if( outputs.hasCsv() )
+
+        if ( outputs.hasCsv() )
         {
             formats.add( Format.CSV );
         }
-        
-        if( outputs.hasNetcdf() )
+
+        if ( outputs.hasNetcdf() )
         {
             formats.add( Format.NETCDF );
         }
-        
-        if( outputs.hasProtobuf() )
+
+        if ( outputs.hasProtobuf() )
         {
             formats.add( Format.PROTOBUF );
         }
 
         return Collections.unmodifiableSet( formats );
-    }    
+    }
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
@@ -1334,6 +1334,7 @@ public class MessageFactory
      * @param builder the builder
      * @param issuedDatesPools is true if there are issued dates pools
      * @param override optional overrides
+     * @throws IllegalArgumentException if the declared format does not map to a recognized type
      */
     private static void addDestination( DestinationConfig destination,
                                         wres.config.generated.DurationUnit durationFormat,
@@ -1346,45 +1347,101 @@ public class MessageFactory
         // Graphic formats
         if ( ProjectConfigs.isGraphicsType( destinationType ) )
         {
-            GraphicFormat generalOptions = MessageFactory.getGeneralGraphicOptions( destination,
-                                                                                    durationFormat,
-                                                                                    issuedDatesPools,
-                                                                                    override );
-
-            if ( destinationType == DestinationType.PNG || destinationType == DestinationType.GRAPHIC )
-            {
-                builder.setPng( PngFormat.newBuilder()
-                                         .setOptions( generalOptions ) );
-            }
-            else if ( destinationType == DestinationType.SVG )
-            {
-                builder.setSvg( SvgFormat.newBuilder()
-                                         .setOptions( generalOptions ) );
-            }
+            MessageFactory.addGraphicsDestination( destination, durationFormat, builder, issuedDatesPools, override );
         }
         // Numeric formats
         else
         {
-            NumericFormat.Builder generalOptions = NumericFormat.newBuilder();
+            MessageFactory.addNumericDestination( destination, builder );
+        }
+    }
 
-            if ( Objects.nonNull( destination.getDecimalFormat() ) )
-            {
-                generalOptions.setDecimalFormat( destination.getDecimalFormat() );
-            }
+    /**
+     * Adds a graphics destination to an outputs builder.
+     * @param destination the destination
+     * @param durationFormat the optional duration format
+     * @param builder the builder
+     * @param issuedDatesPools is true if there are issued dates pools
+     * @param override optional overrides
+     * @throws IllegalArgumentException if the declared format does not map to a recognized type
+     */
 
-            if ( destinationType == DestinationType.CSV || destinationType == DestinationType.NUMERIC )
-            {
-                builder.setCsv( CsvFormat.newBuilder()
-                                         .setOptions( generalOptions ) );
-            }
-            else if ( destinationType == DestinationType.PROTOBUF )
-            {
-                builder.setProtobuf( ProtobufFormat.newBuilder() );
-            }
-            else if ( destinationType == DestinationType.NETCDF )
-            {
-                builder.setNetcdf( NetcdfFormat.newBuilder() );
-            }
+    private static void addGraphicsDestination( DestinationConfig destination,
+                                                wres.config.generated.DurationUnit durationFormat,
+                                                Outputs.Builder builder,
+                                                boolean issuedDatesPools,
+                                                String override )
+    {
+        DestinationType destinationType = destination.getType();
+
+        GraphicFormat generalOptions = MessageFactory.getGeneralGraphicOptions( destination,
+                                                                                durationFormat,
+                                                                                issuedDatesPools,
+                                                                                override );
+
+        if ( destinationType == DestinationType.PNG || destinationType == DestinationType.GRAPHIC )
+        {
+            builder.setPng( PngFormat.newBuilder()
+                                     .setOptions( generalOptions ) );
+        }
+        else if ( destinationType == DestinationType.SVG )
+        {
+            builder.setSvg( SvgFormat.newBuilder()
+                                     .setOptions( generalOptions ) );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "While creating an evaluation description, encountered an "
+                                                + "unrecognized format '"
+                                                + destinationType
+                                                + "'." );
+        }
+    }
+
+    /**
+     * Adds a numeric destination to an outputs message.
+     * @param destination the destination
+     * @param builder the builder
+     * @throws IllegalArgumentException if the declared format does not map to a recognized type
+     */
+
+    private static void addNumericDestination( DestinationConfig destination,
+                                               Outputs.Builder builder )
+    {
+        DestinationType destinationType = destination.getType();
+
+        NumericFormat.Builder generalOptions = NumericFormat.newBuilder();
+
+        if ( Objects.nonNull( destination.getDecimalFormat() ) )
+        {
+            generalOptions.setDecimalFormat( destination.getDecimalFormat() );
+        }
+
+        if ( destinationType == DestinationType.CSV || destinationType == DestinationType.NUMERIC )
+        {
+            builder.setCsv( CsvFormat.newBuilder()
+                                     .setOptions( generalOptions ) );
+        }
+        else if ( destinationType == DestinationType.PROTOBUF )
+        {
+            builder.setProtobuf( ProtobufFormat.newBuilder() );
+        }
+        else if ( destinationType == DestinationType.NETCDF || destinationType == DestinationType.NETCDF_2 )
+        {
+            builder.setNetcdf( NetcdfFormat.newBuilder() );
+        }
+        else if ( destinationType == DestinationType.PAIRS )
+        {
+            LOGGER.debug( "Encountered a declaration that requires {}. This destination is not currently mapped "
+                          + "to a message format type.",
+                          destinationType );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "While creating an evaluation description, encountered an "
+                                                + "unrecognized format '"
+                                                + destinationType
+                                                + "'." );
         }
     }
 
