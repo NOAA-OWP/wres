@@ -220,20 +220,14 @@ public class FeatureFinder
         // Figure out if the same authority is used on multiple sides. If so,
         // consolidate lists.
         FeatureDimension leftDimension =
-                FeatureFinder.determineDimension( projectConfig,
-                                                  projectConfig.getInputs()
-                                                               .getLeft() );
+                FeatureFinder.determineDimension( projectConfig.getInputs().getLeft() );
         FeatureDimension rightDimension =
-                FeatureFinder.determineDimension( projectConfig,
-                                                  projectConfig.getInputs()
-                                                               .getRight() );
+                FeatureFinder.determineDimension( projectConfig.getInputs().getRight() );
         FeatureDimension baselineDimension = null;
 
         if ( projectHasBaseline )
         {
-            baselineDimension = FeatureFinder.determineDimension( projectConfig,
-                                                                  projectConfig.getInputs()
-                                                                               .getBaseline() );
+            baselineDimension = FeatureFinder.determineDimension( projectConfig.getInputs().getBaseline() );
         }
 
 
@@ -831,7 +825,6 @@ public class FeatureFinder
 
     /**
      * Determine the location authority of the given datasource.
-     * @param projectConfig The project declaration to use.
      * @param dataSourceConfig The data source declaration within projectConfig.
      * @return The WrdsLocationDimension or null if custom dimension.
      * @throws ProjectConfigException On inconsistent or incomplete declaration.
@@ -839,75 +832,13 @@ public class FeatureFinder
      * @throws UnsupportedOperationException When code cannot handle something.
      */
 
-    private static FeatureDimension determineDimension( ProjectConfig projectConfig,
-                                                        DataSourceConfig dataSourceConfig )
+    private static FeatureDimension determineDimension( DataSourceConfig dataSourceConfig )
     {
-        Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( dataSourceConfig );
 
-        SortedSet<FeatureDimension> dimensions = new TreeSet<>();
-        FeatureDimension featureDimension = dataSourceConfig.getFeatureDimension();
+        FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension(dataSourceConfig);
 
-        if ( Objects.nonNull( featureDimension ) )
-        {
-            dimensions.add( featureDimension );
-        }
-
-        for ( DataSourceConfig.Source source : dataSourceConfig.getSource() )
-        {
-            if ( Objects.isNull( featureDimension )
-                 && Objects.isNull( source.getInterface() ) )
-            {
-                throw new ProjectConfigException( source,
-                                                  "Either the geographic "
-                                                  + "feature dimension ('"
-                                                  + "featureDimension' "
-                                                  + "attribute) of the dataset "
-                                                  + "or the interface on each "
-                                                  + "source must be declared "
-                                                  + "to determine how to ask "
-                                                  + "for location correlations."
-                                                  + " Valid values for "
-                                                  + "featureDimension include: "
-                                                  + FeatureFinder.getValidFeatureDimensionValues() );
-            }
-
-            if ( Objects.nonNull( source.getInterface() ) )
-            {
-                if ( source.getInterface()
-                           .equals( InterfaceShortHand.USGS_NWIS ) )
-                {
-                    dimensions.add( FeatureDimension.USGS_SITE_CODE );
-                }
-                else if ( source.getInterface()
-                                .equals( InterfaceShortHand.WRDS_AHPS ) )
-                {
-                    dimensions.add( FeatureDimension.NWS_LID );
-                }
-                else if ( source.getInterface()
-                                .equals( InterfaceShortHand.WRDS_NWM ) )
-                {
-                    dimensions.add( FeatureDimension.NWM_FEATURE_ID );
-                }
-                else if ( source.getInterface()
-                                .toString()
-                                .toLowerCase()
-                                .startsWith( "nwm_" ) )
-                {
-                    dimensions.add( FeatureDimension.NWM_FEATURE_ID );
-                }
-                else
-                {
-                    throw new UnsupportedOperationException(
-                            "Unable to determine what geographic identifiers to use for source "
-                            + source
-                            + " having interface "
-                            + source.getInterface() );
-                }
-            }
-        }
-
-        if ( dimensions.isEmpty() )
+        if ( featureDimension == null )
         {
             throw new ProjectConfigException( dataSourceConfig,
                                               "Unable to determine what "
@@ -925,20 +856,8 @@ public class FeatureFinder
                                               + FeatureFinder.getValidFeatureDimensionValues() );
 
         }
-        else if ( dimensions.size() > 1 )
-        {
-            throw new ProjectConfigException( dataSourceConfig,
-                                              "Cannot have more than one "
-                                              + "geographic feature dimension "
-                                              + "for a given dataset (e.g. all "
-                                              + "sources on the left could use "
-                                              + "usgs_site_code but not a mix "
-                                              + "of usgs_site_code and nws_lid."
-                                              + " Found these: "
-                                              + dimensions );
-        }
 
-        return dimensions.first();
+        return featureDimension;
     }
 
 

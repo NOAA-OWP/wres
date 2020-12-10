@@ -721,4 +721,69 @@ public class ConfigHelper
 
         return Collections.unmodifiableSortedSet( featureNames );
     }
+
+    public static FeatureDimension getConcreteFeatureDimension(final DataSourceConfig datasource) {
+        FeatureDimension dimension = datasource.getFeatureDimension();
+
+        if (dimension == null) {
+            FeatureDimension foundDimension = null;
+
+            for (DataSourceConfig.Source source : datasource.getSource()) {
+                String sourceFormat = "";
+
+                if (source.getFormat() != null) {
+                    sourceFormat = source.getFormat().value().toLowerCase();
+                }
+
+                String sourceInterface = "";
+
+                if (source.getInterface() != null) {
+                    sourceInterface = source.getInterface().value().toLowerCase();
+                }
+
+                String address = "";
+
+                if (source.getValue() != null) {
+                    address = source.getValue().toString().toLowerCase();
+                }
+                if (sourceFormat.equals("netcdf") || sourceInterface.contains("nwm")) {
+                    if (foundDimension == null || foundDimension == FeatureDimension.NWM_FEATURE_ID) {
+                        foundDimension = FeatureDimension.NWM_FEATURE_ID;
+                    }
+                    else {
+                        throw new IllegalStateException(
+                                "External threshold identifiers cannot be interpretted if the input data is both " +
+                                        foundDimension + " and " + FeatureDimension.NWM_FEATURE_ID
+                        );
+                    }
+                }
+                else if (sourceFormat.equals("waterml") || sourceInterface.contains("usgs") || address.contains("usgs.gov/nwis")) {
+                    if (foundDimension == null || foundDimension == FeatureDimension.USGS_SITE_CODE) {
+                        foundDimension = FeatureDimension.USGS_SITE_CODE;
+                    }
+                    else {
+                        throw new IllegalStateException(
+                                "External threshold identifiers cannot be interpretted if the input data is both " +
+                                        foundDimension + " and " + FeatureDimension.USGS_SITE_CODE
+                        );
+                    }
+                }
+                else if (sourceFormat.equals("pi-xml") || sourceFormat.equals("datacard") || sourceInterface.contains("ahps")) {
+                    if (foundDimension == null || foundDimension == FeatureDimension.NWS_LID) {
+                        foundDimension = FeatureDimension.NWS_LID;
+                    }
+                    else {
+                        throw new IllegalStateException(
+                                "External threshold identifiers cannot be interpretted if the input data is both " +
+                                        foundDimension + " and " + FeatureDimension.NWS_LID
+                        );
+                    }
+                }
+            }
+
+            dimension = foundDimension;
+        }
+
+        return dimension;
+    }
 }
