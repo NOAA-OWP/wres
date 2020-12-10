@@ -31,14 +31,7 @@ public class Scenario705
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "07309435_673192_NWM_Short_Range_BIAS_FRACTION.csv" ),
-                    Path.of( "07309435_673192_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),
-                    Path.of( "07309435_673192_NWM_Short_Range_MEAN_ABSOLUTE_ERROR.csv" ),
-                    Path.of( "07309435_673192_NWM_Short_Range_MEAN_ERROR.csv" ),
-                    Path.of( "07309435_673192_NWM_Short_Range_MEAN_SQUARE_ERROR.csv" ),
-                    Path.of( "07309435_673192_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
-                    Path.of( "07309435_673192_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.csv" ),
-                    Path.of( "07309435_673192_NWM_Short_Range_SAMPLE_SIZE.csv" ),
+            Set.of( 
                     Path.of( "07328100_19958172_NWM_Short_Range_BIAS_FRACTION.csv" ),
                     Path.of( "07328100_19958172_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),
                     Path.of( "07328100_19958172_NWM_Short_Range_MEAN_ABSOLUTE_ERROR.csv" ),

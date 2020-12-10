@@ -37,6 +37,7 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.NetcdfFormat;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Pairs.Pair;
@@ -238,15 +239,50 @@ public class EvaluationTest
     @Test
     public void testPublishThrowsExceptionAfterStop() throws IOException
     {
-        // Create and start a broker and open an evaluation, closing on completion
-        Evaluation evaluationOne = Evaluation.of( wres.statistics.generated.Evaluation.getDefaultInstance(),
-                                                  EvaluationTest.connections );
+        ConsumerFactory consumer = new ConsumerFactory()
+        {
+            @Override
+            public Function<Statistics, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> {
+                    return Set.of();
+                };
+            }
 
-        // Stop the evaluation
-        evaluationOne.stop( new Exception( "an exception" ) );
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> Set.of();
+            }
 
-        EvaluationStatus message = EvaluationStatus.getDefaultInstance();
-        assertThrows( IllegalStateException.class, () -> evaluationOne.publish( message ) );
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.NETCDF )
+                               .build();
+            }
+        };
+
+        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+                                                                         Executors.newSingleThreadExecutor(),
+                                                                         EvaluationTest.connections );
+              Evaluation evaluation =
+                      Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                         .setOutputs( Outputs.newBuilder()
+                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                         .build(),
+                                     EvaluationTest.connections ) )
+        {
+            // Stop the evaluation
+            evaluation.stop( new Exception( "an exception" ) );
+
+            EvaluationStatus message = EvaluationStatus.getDefaultInstance();
+            assertThrows( IllegalStateException.class, () -> evaluation.publish( message ) );
+        }
     }
 
     @Test
@@ -337,7 +373,7 @@ public class EvaluationTest
         // Assertions about the disaggregated statistics
         List<Statistics> expectedWithoutGroups = new ArrayList<>( this.oneStatistics );
         expectedWithoutGroups.addAll( this.anotherStatistics );
-        
+
         assertEquals( expectedWithoutGroups, actualStatistics );
 
         // Assertions about the aggregated statistics
@@ -361,10 +397,45 @@ public class EvaluationTest
         // Create and start a broker and open an evaluation, closing on completion
         Evaluation evaluation = null;
         Integer exitCode = null;
-        try
+
+        ConsumerFactory consumer = new ConsumerFactory()
         {
-            evaluation = Evaluation.of( wres.statistics.generated.Evaluation.getDefaultInstance(),
-                                        EvaluationTest.connections );
+            @Override
+            public Function<Statistics, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> {
+                    return Set.of();
+                };
+            }
+
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> Set.of();
+            }
+
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.NETCDF )
+                               .build();
+            }
+        };
+
+        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+                                                                         Executors.newSingleThreadExecutor(),
+                                                                         EvaluationTest.connections ); )
+        {
+            evaluation =
+                    Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                       .setOutputs( Outputs.newBuilder()
+                                                                                           .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                       .build(),
+                                   EvaluationTest.connections );
 
             // Notify publication done, even though nothing published, as this 
             // has the expected message count
@@ -609,7 +680,7 @@ public class EvaluationTest
     private static Function<Collection<Statistics>, Statistics> getStatisticsAggregator()
     {
         return statistics -> {
-            
+
             // Build the aggregate statistics
             Statistics.Builder aggregate = Statistics.newBuilder();
 
