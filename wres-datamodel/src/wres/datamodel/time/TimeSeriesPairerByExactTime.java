@@ -357,9 +357,9 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     {
 
         // Log inadmissible cases
-        if ( LOGGER.isTraceEnabled() && ( leftInadmissible > 0 || rightInadmissible > 0 ) )
+        if ( LOGGER.isDebugEnabled() && ( leftInadmissible > 0 || rightInadmissible > 0 ) )
         {
-            LOGGER.trace( "While pairing left time-series {} with right time-series {}, found {} of {} left values that"
+            LOGGER.debug( "While pairing left time-series {} with right time-series {}, found {} of {} left values that"
                           + " were inadmissible and {} of {} right values that were inadmissible.",
                           left.hashCode(),
                           right.hashCode(),
