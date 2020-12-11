@@ -248,7 +248,10 @@ class JobOutputMessenger implements Runnable, Closeable
 
                         if ( Files.isRegularFile( fullOutput ) )
                         {
-                            if ( fullOutput.endsWith( ".nc.tmp" ) )
+                            if ( fullOutput.getFileName()
+                                           .toString()
+                                           .toLowerCase()
+                                           .endsWith( ".nc.tmp" ) )
                             {
                                 LOGGER.info( "Skipping temporary netCDF file {}",
                                              fullOutput );
