@@ -230,11 +230,11 @@ class EvaluationConsumer
     /**
      * Marks an evaluation as failed unrecoverably after exhausting all attempts to recover the subscriber that 
      * delivers messages to this consumer.
-     * @param exception an exception to notify
+     * @param exception an exception to notify in an evaluation status message
      * @throws JMSException if the failure cannot be notified
      */
 
-    void markEvaluationFailed( Exception exception ) throws JMSException
+    void markEvaluationFailedOnConsumption( Exception exception ) throws JMSException
     {
         // Notify
         try
@@ -267,6 +267,28 @@ class EvaluationConsumer
 
             // Close the consumer
             this.close();
+        }
+    }
+
+    /**
+     * Marks an evaluation as failed on publication. In other words, the failure was not caused by this consumer and the
+     * evaluation should be marked complete, from the perspective of this consumer, without notification.
+     * @param status the completion status notified to this consumer
+     */
+
+    void markEvaluationFailedOnPublication( CompletionStatus status )
+    {
+        if ( !this.isClosed() )
+        {
+            LOGGER.debug( "Consumer {} has marked evaluation {} as failed unrecoverably. The failure was not caused by "
+                          + "this consumer. The failure was notified to this consumer as {}.",
+                          this.getConsumerId(),
+                          this.getEvaluationId(),
+                          status );
+
+            this.isFailed.set( true );
+            this.isComplete.set( true );
+            this.isClosed.set( true );
         }
     }
 
@@ -400,6 +422,8 @@ class EvaluationConsumer
             case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
                 this.setExpectedMessageCount( status );
                 break;
+            case PUBLICATION_COMPLETE_REPORTED_FAILURE:
+                this.markEvaluationFailedOnPublication( status.getCompletionStatus() );
             default:
                 break;
         }
