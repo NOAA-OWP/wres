@@ -49,6 +49,11 @@ public class SystemSettings extends XMLReader
 	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
 	private boolean hasExternalGraphics = false;
 	private boolean updateProgressMonitor = false;
+    private int maximumFeatureThreads = 2;
+	private int maximumPairThreads = 6;
+	private int maximumThresholdThreads = 1;
+	private int maximumMetricThreads = 1;
+	private int maximumProductThreads = 3;
 
     public static SystemSettings fromDefaultClasspathXmlFile()
     {
@@ -182,6 +187,21 @@ public class SystemSettings extends XMLReader
                         break;
                     case "subscribers":
                         this.setSubscribers( reader );
+                        break;
+                    case "maximum_feature_threads":
+                        this.setMaximumFeatureThreads( reader );
+                        break;
+                    case "maximum_pair_threads":
+                        this.setMaximumPairThreads( reader );
+                        break;
+                    case "maximum_threshold_threads":
+                        this.setMaximumThresholdThreads( reader );
+                        break;
+                    case "maximum_metric_threads":
+                        this.setMaximumMetricThreads( reader );
+                        break;
+                    case "maximum_product_threads":
+                        this.setMaximumProductThreads( reader );
                         break;
                     case "wresconfig":
                         //Do nothing, but make sure no debug message implying it is skipped is output.
@@ -560,6 +580,111 @@ public class SystemSettings extends XMLReader
         return this.databaseConfiguration.getRawConnection(null);
     }
 
+    public int getMaximumFeatureThreads()
+    {
+        return maximumFeatureThreads;
+    }
+
+    private void setMaximumFeatureThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumFeatureThreads = Integer.parseInt( value );
+        }
+        else
+        {
+            LOGGER.warn( "'{}' is not a valid value for maximum_feature_threads. Falling back to {}",
+                         value, this.maximumFeatureThreads );
+        }
+    }
+
+    public int getMaximumPairThreads()
+    {
+        return maximumPairThreads;
+    }
+
+    private void setMaximumPairThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumPairThreads = Integer.parseInt( value );
+        }
+        else
+        {
+            LOGGER.warn( "'{}' is not a valid value for maximum_pair_threads. Falling back to {}",
+                         value, this.maximumPairThreads );
+        }
+    }
+
+    public int getMaximumThresholdThreads()
+    {
+        return maximumThresholdThreads;
+    }
+
+    private void setMaximumThresholdThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumThresholdThreads = Integer.parseInt( value );
+        }
+        else
+        {
+            LOGGER.warn( "'{}' is not a valid value for maximum_threshold_threads. Falling back to {}",
+                         value, this.maximumThresholdThreads );
+        }
+    }
+
+    public int getMaximumMetricThreads()
+    {
+        return maximumMetricThreads;
+    }
+
+    private void setMaximumMetricThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumMetricThreads = Integer.parseInt( value );
+        }
+        else
+        {
+            LOGGER.warn( "'{}' is not a valid value for maximum_metric_threads. Falling back to {}",
+                         value, this.maximumMetricThreads );
+        }
+    }
+
+    public int getMaximumProductThreads()
+    {
+        return maximumProductThreads;
+    }
+
+    private void setMaximumProductThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumProductThreads = Integer.parseInt( value );
+        }
+        else
+        {
+            LOGGER.warn( "'{}' is not a valid value for maximum_product_threads. Falling back to {}",
+                         value, this.maximumProductThreads );
+        }
+    }
+
     private void applySystemPropertyOverrides()
     {
         String maxIngestThreads = System.getProperty( "wres.maxIngestThreads" );
@@ -694,6 +819,85 @@ public class SystemSettings extends XMLReader
                               directory, this.dataDirectory );
              }
         }
+
+        String maxFeatureThreads = System.getProperty( "wres.maximumFeatureThreads" );
+
+        if ( maxFeatureThreads != null )
+        {
+            if ( StringUtils.isNumeric( maxFeatureThreads ) )
+            {
+                this.maximumFeatureThreads = Integer.parseInt( maxFeatureThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumFeatureThreads. Falling back to {}",
+                             maxFeatureThreads, this.maximumFeatureThreads );
+            }
+        }
+
+
+        String maxPairThreads = System.getProperty( "wres.maximumPairThreads" );
+
+        if ( maxPairThreads != null )
+        {
+            if ( StringUtils.isNumeric( maxPairThreads ) )
+            {
+                this.maximumPairThreads = Integer.parseInt( maxPairThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumPairThreads. Falling back to {}",
+                             maxPairThreads, this.maximumPairThreads );
+            }
+        }
+
+
+        String maxMetricThreads = System.getProperty( "wres.maximumMetricThreads" );
+
+        if ( maxMetricThreads != null )
+        {
+            if ( StringUtils.isNumeric( maxMetricThreads ) )
+            {
+                this.maximumMetricThreads = Integer.parseInt( maxMetricThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumMetricThreads. Falling back to {}",
+                             maxMetricThreads, this.maximumMetricThreads );
+            }
+        }
+
+
+        String maxThresholdThreads = System.getProperty( "wres.maximumThresholdThreads" );
+
+        if ( maxThresholdThreads != null )
+        {
+            if ( StringUtils.isNumeric( maxThresholdThreads ) )
+            {
+                this.maximumThresholdThreads = Integer.parseInt( maxThresholdThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumThresholdThreads. Falling back to {}",
+                             maxThresholdThreads, this.maximumThresholdThreads );
+            }
+        }
+
+
+        String maxProductThreads = System.getProperty( "wres.maximumProductThreads" );
+
+        if ( maxProductThreads != null )
+        {
+            if ( StringUtils.isNumeric( maxProductThreads ) )
+            {
+                this.maximumProductThreads = Integer.parseInt( maxProductThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumProductThreads. Falling back to {}",
+                             maxProductThreads, this.maximumProductThreads );
+            }
+        }
     }
 
     @Override
@@ -712,8 +916,15 @@ public class SystemSettings extends XMLReader
                 .append( "netcdfStorePath", netcdfStorePath )
                 .append( "maximumArchiveThreads", maximumArchiveThreads )
                 .append( "maximumWebClientThreads", maximumWebClientThreads )
+                .append( "maximumNwmIngestThreads", maximumNwmIngestThreads )
                 .append( "dataDirectory", dataDirectory )
-                .append( "graphicsSubscribers", this.hasExternalGraphics )
+                .append( "hasExternalGraphics", hasExternalGraphics )
+                .append( "updateProgressMonitor", updateProgressMonitor )
+                .append( "maximumFeatureThreads", maximumFeatureThreads )
+                .append( "maximumPairThreads", maximumPairThreads )
+                .append( "maximumThresholdThreads", maximumThresholdThreads )
+                .append( "maximumMetricThreads", maximumMetricThreads )
+                .append( "maximumProductThreads", maximumProductThreads )
                 .toString();
     }
 
