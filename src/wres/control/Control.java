@@ -211,47 +211,47 @@ public class Control implements Function<String[], Integer>,
 
         // Name our queues in order to easily monitor them
         BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( systemSettings
-                                                                                .maximumThreadCount() * 5 );
-        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 );
+                                                                                .getMaximumFeatureThreads() + 20 );
+        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumPairThreads() + 20 );
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
-        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 );
-        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumMetricThreads() + 20 );
+        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumProductThreads() + 20 );
 
         // Processes features
-        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
-                                                                  systemSettings.maximumThreadCount(),
+        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( systemSettings.getMaximumFeatureThreads(),
+                                                                  systemSettings.getMaximumFeatureThreads(),
                                                                   systemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   featureQueue,
                                                                   featureFactory );
 
         // Processes pairs       
-        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
-                                                                  systemSettings.maximumThreadCount(),
+        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( systemSettings.getMaximumPairThreads(),
+                                                                  systemSettings.getMaximumPairThreads(),
                                                                   systemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   pairQueue,
                                                                   pairFactory );
 
         // Dispatches thresholds
-        ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( 1,
-                                                                       1,
+        ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( systemSettings.getMaximumThresholdThreads(),
+                                                                       systemSettings.getMaximumThresholdThreads(),
                                                                        0,
                                                                        TimeUnit.SECONDS,
                                                                        thresholdQueue,
                                                                        thresholdFactory );
 
         // Processes metrics
-        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
-                                                                    systemSettings.maximumThreadCount(),
+        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( systemSettings.getMaximumMetricThreads(),
+                                                                    systemSettings.getMaximumMetricThreads(),
                                                                     systemSettings.poolObjectLifespan(),
                                                                     TimeUnit.MILLISECONDS,
                                                                     metricQueue,
                                                                     metricFactory );
 
         // Processes products
-        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
-                                                                     systemSettings.maximumThreadCount(),
+        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( systemSettings.getMaximumProductThreads(),
+                                                                     systemSettings.getMaximumProductThreads(),
                                                                      systemSettings.poolObjectLifespan(),
                                                                      TimeUnit.MILLISECONDS,
                                                                      productQueue,
