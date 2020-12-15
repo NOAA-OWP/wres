@@ -661,7 +661,7 @@ public class Evaluation implements Closeable
     {
         LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
 
-        if ( this.isClosed() )
+        if ( this.isClosed.getAndSet( true ) )
         {
             LOGGER.debug( "Evaluation {} has already been closed.", this.getEvaluationId() );
 
@@ -699,9 +699,6 @@ public class Evaluation implements Closeable
                           this,
                           e.getMessage() );
         }
-
-        // Flag that the evaluation has closed (if not already flagged), in order to obtain the exit code
-        this.isClosed.set( true );
 
         CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
         if ( this.getExitCode() != 0 )

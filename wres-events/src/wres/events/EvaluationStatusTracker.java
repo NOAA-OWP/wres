@@ -598,6 +598,20 @@ class EvaluationStatusTracker implements Closeable
 
         // Stop any flow control blocking
         this.evaluation.stopFlowControl();
+
+        // Close the evaluation
+        try
+        {
+            this.evaluation.close();
+        }
+        catch ( IOException e )
+        {
+            String message = "Encountered an exception while closeing evaluation "
+                             + this.evaluation.getEvaluationId()
+                             + ".";
+
+            LOGGER.warn( message, e );
+        }
     }
 
     /**
@@ -1194,10 +1208,10 @@ class EvaluationStatusTracker implements Closeable
                     this.acceptStatusMessage( statusMessage );
 
                     consumeSucceeded.set( true );
+                    
+                    // Acknowledge
+                    message.acknowledge();
                 }
-
-                // Acknowledge
-                message.acknowledge();
             }
             catch ( JMSException | InvalidProtocolBufferException | RuntimeException e )
             {

@@ -817,7 +817,7 @@ public class EvaluationSubscriber implements Closeable
     private void recover( String messageId, String correlationId, Session session, Exception e )
     {
         // Only try to recover if an evaluation hasn't already failed
-        if ( !this.getEvaluationConsumer( correlationId ).isFailed() )
+        if ( !this.getEvaluationConsumer( correlationId ).isFailed() && !this.isSubscriberFailed() )
         {
             try ( StringWriter sw = new StringWriter();
                   PrintWriter pw = new PrintWriter( sw ); )
@@ -831,7 +831,7 @@ public class EvaluationSubscriber implements Closeable
                 LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
                               + "{} in subscriber {}, encountered an error. This is {} of {} allowed "
                               + "consumption failures before the subscriber will notify an unrecoverable failure "
-                              + "for evaluation {}. The error is: {}",
+                              + "for evaluation {}, unless the subscriber is otherwise marked failed. The error is: {}",
                               messageId,
                               correlationId,
                               this.getSubscriberId(),
@@ -855,20 +855,20 @@ public class EvaluationSubscriber implements Closeable
                 LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception writer.",
                               this.getSubscriberId() );
             }
-        }
 
-        // Stop if the maximum number of retries has been reached
-        if ( this.getNumberOfRetriesAttempted( correlationId )
-                 .incrementAndGet() == this.broker.getMaximumMessageRetries() )
-        {
-            LOGGER.error( "Subscriber {} encountered a consumption failure for evaluation {}. Recovery failed after {} "
-                          + "attempts.",
-                          this.getSubscriberId(),
-                          correlationId,
-                          this.broker.getMaximumMessageRetries() );
+            // Stop if the maximum number of retries has been reached
+            if ( this.getNumberOfRetriesAttempted( correlationId )
+                     .incrementAndGet() == this.broker.getMaximumMessageRetries() )
+            {
+                LOGGER.error( "Subscriber {} encountered a consumption failure for evaluation {}. Recovery failed "
+                              + "after {} attempts.",
+                              this.getSubscriberId(),
+                              correlationId,
+                              this.broker.getMaximumMessageRetries() );
 
-            // Register the evaluation as failed
-            this.markEvaluationFailed( correlationId, e );
+                // Register the evaluation as failed
+                this.markEvaluationFailed( correlationId, e );
+            }
         }
     }
 
@@ -905,7 +905,7 @@ public class EvaluationSubscriber implements Closeable
 
         try
         {
-            consumer.markEvaluationFailed( exception );
+            consumer.markEvaluationFailedOnConsumption( exception );
         }
         catch ( JMSException | UnrecoverableSubscriberException e )
         {
@@ -940,7 +940,7 @@ public class EvaluationSubscriber implements Closeable
             {
                 if ( !nextEvaluation.isComplete() )
                 {
-                    nextEvaluation.markEvaluationFailed( exception );
+                    nextEvaluation.markEvaluationFailedOnConsumption( exception );
                 }
             }
         }
