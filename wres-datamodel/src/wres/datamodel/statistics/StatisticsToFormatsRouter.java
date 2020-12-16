@@ -115,8 +115,9 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     /**
      * Paths written by this instance.
      */
-    private final Set<Path> pathsWritten;
 
+    private final Set<Path> pathsWritten;
+    
     /**
      * The evaluation description.
      */
@@ -627,7 +628,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
             // Consume the output
             Set<Path> paths = next.getValue().apply( filtered );
-            this.pathsWritten.addAll( paths );
+            this.addPaths( paths );
 
             this.log( outputs, next.getKey(), false );
         }
@@ -654,7 +655,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
             // Consume the output
             Set<Path> paths = next.getValue().apply( filtered );
-            this.pathsWritten.addAll( paths );
+            this.addPaths( paths );
 
             this.log( outputs, next.getKey(), false );
         }
@@ -681,7 +682,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
             // Consume the output
             Set<Path> paths = next.getValue().apply( filtered );
-            this.pathsWritten.addAll( paths );
+            this.addPaths( paths );
 
             this.log( outputs, next.getKey(), false );
         }
@@ -708,7 +709,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
             // Consume the output
             Set<Path> paths = next.getValue().apply( filtered );
-            this.pathsWritten.addAll( paths );
+            this.addPaths( paths );
 
             this.log( outputs, next.getKey(), false );
         }
@@ -735,7 +736,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
             // Consume the output
             Set<Path> paths = next.getValue().apply( filtered );
-            this.pathsWritten.addAll( paths );
+            this.addPaths( paths );
 
             this.log( outputs, next.getKey(), false );
         }
@@ -762,7 +763,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
             // Consume the output
             Set<Path> paths = next.getValue().apply( filtered );
-            this.pathsWritten.addAll( paths );
+            this.addPaths( paths );
 
             this.log( outputs, next.getKey(), false );
         }
@@ -785,7 +786,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             for ( Statistics nextStatistics : statistics )
             {
                 Set<Path> paths = next.getValue().apply( nextStatistics );
-                this.pathsWritten.addAll( paths );
+                this.addPaths( paths );
             }
         }
     }
@@ -915,6 +916,18 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         return Collections.unmodifiableMap( returnMe );
+    }
+      
+    /**
+     * Adds a new set of paths to the existing set of paths. This method is synchronized to prevent concurrent
+     * modification of the underlying set of paths; see #86049.
+     * 
+     * @param paths the paths to add
+     */
+    
+    private synchronized void addPaths( Set<Path> paths )
+    {
+        this.pathsWritten.addAll( paths );
     }
 
     /**

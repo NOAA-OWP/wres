@@ -3,6 +3,8 @@ package wres.vis;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.xy.AbstractXYDataset;
 
+import wres.datamodel.FeatureKey;
+import wres.datamodel.FeatureTuple;
 import wres.datamodel.sampledata.SampleData;
 
 /**
@@ -17,33 +19,33 @@ import wres.datamodel.sampledata.SampleData;
 public class SingleValuedPairsXYDataset
         extends WRESAbstractXYDataset<SampleData<Pair<Double, Double>>, SampleData<Pair<Double, Double>>> //implements DomainInfo, XisSymbolic, RangeInfo
 {
-    public SingleValuedPairsXYDataset(final SampleData<Pair<Double,Double>> input)
+    public SingleValuedPairsXYDataset( final SampleData<Pair<Double, Double>> input )
     {
-        super(input);
+        super( input );
     }
 
     @Override
-    protected void preparePlotData(final SampleData<Pair<Double,Double>> rawData)
+    protected void preparePlotData( final SampleData<Pair<Double, Double>> rawData )
     {
-        setPlotData(rawData);
+        setPlotData( rawData );
     }
 
     @Override
-    public int getItemCount(final int series)
+    public int getItemCount( final int series )
     {
         return getPlotData().getRawData().size();
     }
 
     @Override
-    public Number getX(final int series, final int item)
+    public Number getX( final int series, final int item )
     {
-        return getPlotData().getRawData().get(item).getLeft();
+        return getPlotData().getRawData().get( item ).getLeft();
     }
 
     @Override
-    public Number getY(final int series, final int item)
+    public Number getY( final int series, final int item )
     {
-        return getPlotData().getRawData().get(item).getRight();
+        return getPlotData().getRawData().get( item ).getRight();
     }
 
     @Override
@@ -53,14 +55,60 @@ public class SingleValuedPairsXYDataset
     }
 
     @Override
-    public Comparable<String> getSeriesKey(final int series)
+    public Comparable<String> getSeriesKey( final int series )
     {
-        if(isLegendNameOverridden(series))
+        if ( isLegendNameOverridden( series ) )
         {
-            return getOverrideLegendName(series);
+            return getOverrideLegendName( series );
         }
-        return getPlotData().getMetadata().getIdentifier().getFeatureTuple() + "."
-            + getPlotData().getMetadata().getIdentifier().getVariableName() + "."
-            + getPlotData().getMetadata().getIdentifier().getScenarioName();
+
+        String leftName = this.getPlotData()
+                              .getMetadata()
+                              .getPool()
+                              .getGeometryTuplesList()
+                              .get( 0 )
+                              .getLeft()
+                              .getName();
+
+        FeatureKey leftKey = FeatureKey.of( leftName );
+
+        String rightName = this.getPlotData()
+                               .getMetadata()
+                               .getPool()
+                               .getGeometryTuplesList()
+                               .get( 0 )
+                               .getRight()
+                               .getName();
+
+        FeatureKey rightKey = FeatureKey.of( rightName );
+
+        FeatureKey baselineKey = null;
+        
+        boolean hasBaseline = this.getPlotData()
+                .getMetadata()
+                .getPool()
+                .getGeometryTuplesList()
+                .get( 0 )
+                .hasBaseline();
+        
+        if( hasBaseline )
+        {
+            String baselineName = this.getPlotData()
+                    .getMetadata()
+                    .getPool()
+                    .getGeometryTuplesList()
+                    .get( 0 )
+                    .getBaseline()
+                    .getName();
+            
+            baselineKey = FeatureKey.of( baselineName );
+        }
+        
+        FeatureTuple tuple = new FeatureTuple( leftKey, rightKey, baselineKey );
+        
+        return tuple + "."
+               + getPlotData().getMetadata().getEvaluation().getRightVariableName()
+               + "."
+               + getPlotData().getMetadata().getEvaluation().getRightDataName();
     }
 }

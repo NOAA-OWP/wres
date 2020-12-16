@@ -48,10 +48,8 @@ import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
-import wres.config.ProjectConfigs;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricGroup;
@@ -365,7 +363,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // Create the blob path
             Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
                                                                                  this.getDestinationConfig(),
-                                                                                 this.getIdentifierForBlob( inputs ),
+                                                                                 this.getScenarioNameForBlobOrNull( inputs ),
                                                                                  nextWindow,
                                                                                  this.getDurationUnits() );
 
@@ -411,26 +409,21 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     /**
-     * Returns an identifier to be used in naming a blob.
+     * Returns a scenario name to be used in naming a blob or null.
      * 
      * @param inputs the inputs declaration
-     * @return an identifier
+     * @return an identifier or null
      */
 
-    private DatasetIdentifier getIdentifierForBlob( Inputs inputs )
+    private String getScenarioNameForBlobOrNull( Inputs inputs )
     {
-        // Dataset identifier, without a feature/location identifier
-        // Use the main variable identifier in case there is a different one for the baseline
-        String variableId = ProjectConfigs.getVariableIdFromProjectConfig( inputs, false );
-        // Use the scenarioId for the right, unless there is a baseline that requires separate metrics
-        // in which case, do not use a scenarioId
-        String scenarioId = inputs.getRight().getLabel();
+        String scenarioName = inputs.getRight().getLabel();
         if ( Objects.nonNull( inputs.getBaseline() ) && inputs.getBaseline().isSeparateMetrics() )
         {
-            scenarioId = null;
+            scenarioName = null;
         }
 
-        return DatasetIdentifier.of( null, variableId, scenarioId );
+        return scenarioName;
     }
 
     private String getTemplatePath()
@@ -1178,7 +1171,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
 
             String append = "";
-            if ( LeftOrRightOrBaseline.BASELINE.equals( sampleMetadata.getIdentifier().getLeftOrRightOrBaseline() ) )
+            if ( sampleMetadata.getPool().getIsBaselinePool() )
             {
                 append = "_" + LeftOrRightOrBaseline.BASELINE.name();
             }

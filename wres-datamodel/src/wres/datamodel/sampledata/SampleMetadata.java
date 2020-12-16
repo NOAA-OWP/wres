@@ -575,7 +575,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         }
 
         return outer;
-    }
+    } 
 
     /**
      * Returns the evaluation description.

@@ -737,7 +737,7 @@ class EvaluationConsumer
 
         for ( int i = 0; i < 5; i++ )
         {
-            if ( Objects.nonNull( cause ) )
+            if ( Objects.nonNull( cause ) && Objects.nonNull( cause.getMessage() ) )
             {
                 EvaluationStatusEvent eventInner = EvaluationStatusEvent.newBuilder()
                                                                         .setEventType( StatusMessageType.ERROR )
