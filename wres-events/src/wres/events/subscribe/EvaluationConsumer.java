@@ -58,7 +58,7 @@ class EvaluationConsumer
     private static final String FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION =
             " failed to complete a consumption task for evaluation ";
 
-    private static final String CONSUMER = "Consumer ";
+    private static final String CONSUMER_STRING = "Consumer ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
 
@@ -424,6 +424,7 @@ class EvaluationConsumer
                 break;
             case PUBLICATION_COMPLETE_REPORTED_FAILURE:
                 this.markEvaluationFailedOnPublication( status.getCompletionStatus() );
+                break;
             default:
                 break;
         }
@@ -661,14 +662,14 @@ class EvaluationConsumer
             // Most unchecked exceptions are worth a recovery attempt 
             if ( e.getCause() instanceof RuntimeException )
             {
-                throw new ConsumerException( CONSUMER + this.getConsumerId()
+                throw new ConsumerException( CONSUMER_STRING + this.getConsumerId()
                                              + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                              + this.getEvaluationId()
                                              + ".",
                                              e );
             }
 
-            throw new UnrecoverableSubscriberException( CONSUMER + this.getConsumerId()
+            throw new UnrecoverableSubscriberException( CONSUMER_STRING + this.getConsumerId()
                                                         + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                                         + this.getEvaluationId()
                                                         + ".",
@@ -678,7 +679,7 @@ class EvaluationConsumer
         {
             Thread.currentThread().interrupt();
 
-            throw new ConsumerException( CONSUMER + this.getConsumerId()
+            throw new ConsumerException( CONSUMER_STRING + this.getConsumerId()
                                          + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                          + this.getEvaluationId()
                                          + ".",
@@ -857,7 +858,6 @@ class EvaluationConsumer
      * @param evaluationDescription a description of the evaluation
      * @param consumerFactory the consumer factory
      * @param jobId an optional job identifier
-     * @throws JMSException if a group completion could not be notified
      * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
      *            subscriber that wraps it
      */
@@ -865,7 +865,6 @@ class EvaluationConsumer
     private void createConsumers( Evaluation evaluationDescription,
                                   ConsumerFactory consumerFactory,
                                   String jobId )
-            throws JMSException
     {
         synchronized ( this.getConsumerCreationLock() )
         {
