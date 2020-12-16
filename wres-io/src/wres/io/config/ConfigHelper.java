@@ -33,7 +33,6 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Outputs;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.reading.PreIngestException;
@@ -470,7 +469,7 @@ public class ConfigHelper
      *
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination information
-     * @param identifier the dataset identifier
+     * @param scenarioName the optional scenario name
      * @param timeWindow the time window
      * @param leadUnits the time units to use for the lead durations
      * @return the file name
@@ -481,7 +480,7 @@ public class ConfigHelper
 
     public static Path getOutputPathToWriteForOneTimeWindow( Path outputDirectory,
                                                              DestinationConfig destinationConfig,
-                                                             DatasetIdentifier identifier,
+                                                             String scenarioName,
                                                              TimeWindowOuter timeWindow,
                                                              ChronoUnit leadUnits )
             throws IOException
@@ -497,9 +496,9 @@ public class ConfigHelper
         StringJoiner filename = new StringJoiner( "_" );
 
         // Add optional scenario identifier
-        if ( identifier.hasScenarioName() )
+        if ( Objects.nonNull( scenarioName ) )
         {
-            filename.add( identifier.getScenarioName() );
+            filename.add( scenarioName );
         }
 
         if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX ) )

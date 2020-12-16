@@ -212,11 +212,8 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
     {
         Objects.requireNonNull( pairs, "Cannot write null pairs." );
 
-        Objects.requireNonNull( pairs.getMetadata().getIdentifier(),
-                                "Cannot write pairs with a null dataset identifier." );
-
-        Objects.requireNonNull( pairs.getMetadata().getIdentifier().getFeatureTuple(),
-                                "Cannot write pairs with a null geospatial identifier." );
+        Objects.requireNonNull( pairs.getMetadata().getPool().getGeometryTuplesList().isEmpty(),
+                                "Cannot write pairs with an empty list of geometries." );
 
         try
         {
@@ -233,8 +230,8 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
                 // Time window to write, which is fixed across all pairs
                 TimeWindowOuter timeWindow = pairs.getMetadata().getTimeWindow();
 
-                LOGGER.debug( "Writing pairs for {} at time window {} to {}",
-                              pairs.getMetadata().getIdentifier(),
+                LOGGER.debug( "Writing pairs for geometries {} at time window {} to {}",
+                              pairs.getMetadata().getPool().getGeometryTuplesList(),
                               timeWindow,
                               this.getPath() );
 
@@ -302,10 +299,10 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
                     // Flush the buffer
                     sharedWriter.flush();
 
-                    LOGGER.debug( "{} pairs written to {} for {} at time window {}.",
+                    LOGGER.debug( "{} pairs written to {} for geometries {} at time window {}.",
                                   pairs.getRawData().size(),
                                   this.getPath(),
-                                  pairs.getMetadata().getIdentifier(),
+                                  pairs.getMetadata().getPool().getGeometryTuplesList(),
                                   timeWindow );
                 }
                 // Clean-up

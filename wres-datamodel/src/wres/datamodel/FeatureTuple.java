@@ -14,7 +14,7 @@ import wres.statistics.generated.GeometryTuple;
  * at least a left and right, optionally a baseline. Optionally (eventually) a
  * climatology.
  * 
- * TODO: This class should probably compose a canonical {@link GeometryTuple} as it is 1:1 with the canonical 
+ * TODO: This class should compose a canonical {@link GeometryTuple} as it is 1:1 with the canonical 
  * representation. See #73842-38 - #73842-40.
  */
 
