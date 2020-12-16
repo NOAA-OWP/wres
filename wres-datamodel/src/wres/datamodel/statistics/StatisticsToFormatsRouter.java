@@ -4,12 +4,12 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -112,12 +112,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
     private final Map<DestinationType, Set<MetricConstants>> suppressTheseDestinationsForTheseMetrics;
 
-    /**
-     * Paths written by this instance.
-     */
-
-    private final Set<Path> pathsWritten;
-    
     /**
      * The evaluation description.
      */
@@ -333,6 +327,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * Produces output for each type available in the input.
      * 
      * @param statistics the list of statistics
+     * @return the paths written
      * @throws StatisticsToFormatsRoutingException if consumption fails for any reason
      */
 
@@ -343,6 +338,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             throw new StatisticsToFormatsRoutingException( "Cannot consumer null statistics." );
         }
+
+        Set<Path> paths = new HashSet<>();
 
         try
         {
@@ -361,7 +358,13 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                               .collect( Collectors.groupingBy( classifier ) );
 
             // Iterate the types
-            groups.forEach( ( ( a, b ) -> this.accept( b, a == LeftOrRightOrBaseline.BASELINE ) ) );
+            for ( Map.Entry<LeftOrRightOrBaseline, List<Statistics>> nextEntry : groups.entrySet() )
+            {
+                LeftOrRightOrBaseline key = nextEntry.getKey();
+                List<Statistics> value = nextEntry.getValue();
+                Set<Path> innerPaths = this.accept( value, key == LeftOrRightOrBaseline.BASELINE );
+                paths.addAll( innerPaths );
+            }
         }
         // Better to throw a common type here as a JMS MessageListener is expected to handle all exceptions
         // and it is better to aggregate them into one type than to catch a generic java.lang.Exception in 
@@ -373,7 +376,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             throw new StatisticsToFormatsRoutingException( "While routing evaluation statistics for consumption.", e );
         }
 
-        return this.getPathsWritten();
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
@@ -381,12 +384,15 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * @param statistics the statistics
      * @param isBaselinePool is true if the statistics refer to a baseline pool (when generating separate statistics 
      *            for both a main pool and baseline pool).
+     * @return the paths written
      * @throws NullPointerException if the statistics are null
      */
 
-    private void accept( Collection<Statistics> statistics, boolean isBaselinePool )
+    private Set<Path> accept( Collection<Statistics> statistics, boolean isBaselinePool )
     {
         Objects.requireNonNull( statistics );
+
+        Set<Path> paths = new HashSet<>();
 
         // Supplies the pool metadata from either the baseline pool or the main pool
         Function<Statistics, Pool> poolSupplier = statistic -> {
@@ -402,7 +408,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             List<DiagramStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
                                                                                       this.getDiagramMapper( poolSupplier ) );
-            this.processDiagramOutputs( wrapped );
+            Set<Path> innerPaths = this.processDiagramOutputs( wrapped );
+            paths.addAll( innerPaths );
         }
 
         // Box-plot output available per pair
@@ -412,7 +419,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<BoxplotStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
                                                                                       this.getBoxplotMapper( supplier,
                                                                                                              poolSupplier ) );
-            this.processBoxPlotOutputsPerPair( wrapped );
+            Set<Path> innerPaths = this.processBoxPlotOutputsPerPair( wrapped );
+            paths.addAll( innerPaths );
         }
 
         // Box-plot output available per pool
@@ -423,7 +431,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                       this.getBoxplotMapper( supplier,
                                                                                                              poolSupplier ) );
 
-            this.processBoxPlotOutputsPerPool( wrapped );
+            Set<Path> innerPaths = this.processBoxPlotOutputsPerPool( wrapped );
+            paths.addAll( innerPaths );
         }
 
         // Ordinary scores available
@@ -432,7 +441,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<DoubleScoreStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
                                                                                           this.getDoubleScoreMapper( poolSupplier ) );
 
-            this.processDoubleScoreOutputs( wrapped );
+            Set<Path> innerPaths = this.processDoubleScoreOutputs( wrapped );
+            paths.addAll( innerPaths );
         }
 
         // Duration scores available
@@ -441,7 +451,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<DurationScoreStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
                                                                                             this.getDurationScoreMapper( poolSupplier ) );
 
-            this.processDurationScoreOutputs( wrapped );
+            Set<Path> innerPaths = this.processDurationScoreOutputs( wrapped );
+            paths.addAll( innerPaths );
         }
 
         // Duration diagrams available
@@ -450,15 +461,18 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<DurationDiagramStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
                                                                                               this.getDurationDiagramMapper( poolSupplier ) );
 
-            this.processDurationDiagramStatistic( wrapped );
+            Set<Path> innerPaths = this.processDurationDiagramStatistic( wrapped );
+            paths.addAll( innerPaths );
         }
 
         // Consumers of all statistics
         if ( !this.allStatisticsConsumers.isEmpty() )
         {
-            this.processMultiStatistics( statistics );
+            Set<Path> innerPaths = this.processMultiStatistics( statistics );
+            paths.addAll( innerPaths );
         }
 
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
@@ -598,25 +612,18 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     }
 
     /**
-     * @return paths actually written to by this processor so far.
-     */
-
-    private Set<Path> getPathsWritten()
-    {
-        LOGGER.debug( "Returning paths from {} {}: {}", this.getClass().getName(), this, this.pathsWritten );
-        return Collections.unmodifiableSet( this.pathsWritten );
-    }
-
-    /**
      * Processes {@link DiagramStatisticOuter}.
      * 
      * @param outputs the outputs to consume
+     * @return the paths written
      * @throws NullPointerException if the input is null
      */
 
-    private void processDiagramOutputs( List<DiagramStatisticOuter> outputs )
+    private Set<Path> processDiagramOutputs( List<DiagramStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DiagramStatisticOuter>, Set<Path>>> next : this.diagramConsumers.entrySet() )
@@ -627,23 +634,28 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                                      next.getKey() );
 
             // Consume the output
-            Set<Path> paths = next.getValue().apply( filtered );
-            this.addPaths( paths );
+            Set<Path> innerPaths = next.getValue().apply( filtered );
+            paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Processes {@link BoxplotStatisticOuter} per pair.
      * 
      * @param outputs the output to consume
+     * @return the paths written
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputsPerPair( List<BoxplotStatisticOuter> outputs )
+    private Set<Path> processBoxPlotOutputsPerPair( List<BoxplotStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxplotConsumersPerPair.entrySet() )
@@ -654,23 +666,28 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                                      next.getKey() );
 
             // Consume the output
-            Set<Path> paths = next.getValue().apply( filtered );
-            this.addPaths( paths );
+            Set<Path> innerPaths = next.getValue().apply( filtered );
+            paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Processes {@link BoxplotStatisticOuter} per pool.
      * 
      * @param outputs the output to consume
+     * @return the paths written
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputsPerPool( List<BoxplotStatisticOuter> outputs )
+    private Set<Path> processBoxPlotOutputsPerPool( List<BoxplotStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxplotConsumersPerPool.entrySet() )
@@ -681,23 +698,28 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                                      next.getKey() );
 
             // Consume the output
-            Set<Path> paths = next.getValue().apply( filtered );
-            this.addPaths( paths );
+            Set<Path> innerPaths = next.getValue().apply( filtered );
+            paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Processes {@link DoubleScoreStatisticOuter}.
      * 
      * @param outputs the output to consume
+     * @return the paths written
      * @throws NullPointerException if the input is null
      */
 
-    private void processDoubleScoreOutputs( List<DoubleScoreStatisticOuter> outputs )
+    private Set<Path> processDoubleScoreOutputs( List<DoubleScoreStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> next : this.doubleScoreConsumers.entrySet() )
@@ -708,23 +730,28 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                                          next.getKey() );
 
             // Consume the output
-            Set<Path> paths = next.getValue().apply( filtered );
-            this.addPaths( paths );
+            Set<Path> innerPaths = next.getValue().apply( filtered );
+            paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Processes {@link DurationScoreStatisticOuter}.
      * 
      * @param outputs the output to consume
+     * @return the paths written
      * @throws NullPointerException if the input is null
      */
 
-    private void processDurationScoreOutputs( List<DurationScoreStatisticOuter> outputs )
+    private Set<Path> processDurationScoreOutputs( List<DurationScoreStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DurationScoreStatisticOuter>, Set<Path>>> next : this.durationScoreConsumers.entrySet() )
@@ -735,23 +762,28 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                                            next.getKey() );
 
             // Consume the output
-            Set<Path> paths = next.getValue().apply( filtered );
-            this.addPaths( paths );
+            Set<Path> innerPaths = next.getValue().apply( filtered );
+            paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Processes {@link DiagramDiagramStatisticOuter}.
      * 
      * @param outputs the output to consume
+     * @return the paths written
      * @throws NullPointerException if the input is null
      */
 
-    private void processDurationDiagramStatistic( List<DurationDiagramStatisticOuter> outputs )
+    private Set<Path> processDurationDiagramStatistic( List<DurationDiagramStatisticOuter> outputs )
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> next : this.durationDiagramConsumers.entrySet() )
@@ -762,33 +794,40 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                     this.getFilteredStatisticsForThisDestinationType( outputs, next.getKey() );
 
             // Consume the output
-            Set<Path> paths = next.getValue().apply( filtered );
-            this.addPaths( paths );
+            Set<Path> innerPaths = next.getValue().apply( filtered );
+            paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Processes {@link Statistics} for consumers of all statistics.
      * 
      * @param statistics the statistics to consume
+     * @return the paths mutated
      * @throws NullPointerException if the input is null
      */
 
-    private void processMultiStatistics( Collection<Statistics> statistics )
+    private Set<Path> processMultiStatistics( Collection<Statistics> statistics )
     {
         Objects.requireNonNull( statistics, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<Statistics, Set<Path>>> next : this.allStatisticsConsumers.entrySet() )
         {
             for ( Statistics nextStatistics : statistics )
             {
-                Set<Path> paths = next.getValue().apply( nextStatistics );
-                this.addPaths( paths );
+                Set<Path> innerPaths = next.getValue().apply( nextStatistics );
+                paths.addAll( innerPaths );
             }
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
@@ -917,18 +956,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         return Collections.unmodifiableMap( returnMe );
     }
-      
-    /**
-     * Adds a new set of paths to the existing set of paths. This method is synchronized to prevent concurrent
-     * modification of the underlying set of paths; see #86049.
-     * 
-     * @param paths the paths to add
-     */
-    
-    private synchronized void addPaths( Set<Path> paths )
-    {
-        this.pathsWritten.addAll( paths );
-    }
 
     /**
      * Build a product processor that writes conditionally.
@@ -944,8 +971,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         this.evaluationDescription = builder.evaluationDescription;
 
         Objects.requireNonNull( this.evaluationDescription );
-
-        this.pathsWritten = new TreeSet<>();
 
         Outputs outputsDescription = this.getEvaluationDescription()
                                          .getOutputs();
