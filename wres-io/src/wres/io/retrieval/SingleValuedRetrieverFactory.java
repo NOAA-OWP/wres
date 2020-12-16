@@ -177,21 +177,39 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( TimeWindowOuter timeWindow )
     {
-        return get( this.getProject().getProjectConfig(),
-                    this.rightConfig,
-                    timeWindow,
-                    this.featureString );
+        return this.get( this.getProject().getProjectConfig(),
+                         this.rightConfig,
+                         timeWindow,
+                         this.featureString );
     }
+    
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever()
+    {
+        return this.get( this.getProject().getProjectConfig(),
+                         this.baselineConfig,
+                         null,
+                         this.featureString );
+    }    
 
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( TimeWindowOuter timeWindow )
     {
-        return get( this.getProject().getProjectConfig(),
-                    this.baselineConfig,
-                    timeWindow,
-                    this.featureString );
+        return this.get( this.getProject().getProjectConfig(),
+                         this.baselineConfig,
+                         timeWindow,
+                         this.featureString );
     }
 
+    /**
+     * Returns a supplier of time-series.
+     * 
+     * @param projectConfig the project declaration
+     * @param dataSourceConfig the data source configuration
+     * @param timeWindow the time window
+     * @param featureName the feature name
+     * @return the supplier
+     */
 
     private Supplier<Stream<TimeSeries<Double>>> get( ProjectConfig projectConfig,
                                                       DataSourceConfig dataSourceConfig,
@@ -411,13 +429,13 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         return declaredExistingTimeScale;
     }
-    
+
     /**
      * Returns the project associated with this factory instance.
      * 
      * @return the project
      */
-    
+
     private Project getProject()
     {
         return this.project;

@@ -178,7 +178,7 @@ public class PoolFactory
             if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
             {
                 baselineGenerator = PoolFactory.getGeneratedBaseline( baselineConfig,
-                                                                      retrieverFactory.getLeftRetriever(),
+                                                                      retrieverFactory.getBaselineRetriever(),
                                                                       Function.identity(),
                                                                       upscaler,
                                                                       baselineMetadata,

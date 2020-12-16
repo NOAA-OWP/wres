@@ -26,7 +26,7 @@ public interface RetrieverFactory<L, R>
 {
 
     /**
-     * Creates a retriever for all left-ish data, i.e., without any pool boundaries.
+     * Creates a retriever for all left-ish data without any pool boundaries.
      * 
      * @return a retriever for left data
      * @throws DataAccessException if the retriever could not be created for any reason
@@ -34,6 +34,15 @@ public interface RetrieverFactory<L, R>
 
     Supplier<Stream<TimeSeries<L>>> getLeftRetriever();
 
+    /**
+     * Creates a retriever for all baseline-ish data without any pool boundaries.
+     * 
+     * @return a retriever for baseline data
+     * @throws DataAccessException if the retriever could not be created for any reason
+     */
+
+    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever();
+    
     /**
      * Creates a retriever for the left-ish data associated with a particular {@link TimeWindowOuter}.
      * 

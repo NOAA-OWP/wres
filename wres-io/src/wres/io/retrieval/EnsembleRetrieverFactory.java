@@ -200,6 +200,12 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                                            e );
         }
     }
+    
+    @Override
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever()
+    {
+        return this.getBaselineRetriever( null );
+    }
 
     @Override
     public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( TimeWindowOuter timeWindow )
