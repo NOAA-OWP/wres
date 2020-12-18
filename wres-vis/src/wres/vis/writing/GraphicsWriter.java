@@ -120,13 +120,17 @@ abstract class GraphicsWriter
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
                 Path resolvedPath = path.resolveSibling( path.getFileName() + ".png" );
 
-                // Add now to enable clean-up on failure
-                returnMe.add( resolvedPath );
+                // Write if the path has not already been written
+                if ( GraphicsWriter.validatePath( resolvedPath ) )
+                {
+                    // Add now to enable clean-up on failure
+                    returnMe.add( resolvedPath );
 
-                File outputImageFile = GraphicsWriter.validatePathAndReturnFile( resolvedPath );
+                    File outputImageFile = resolvedPath.toFile();
 
-                // #58735-18
-                ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
+                    // #58735-18
+                    ChartUtilities.saveChartAsPNG( outputImageFile, engine.buildChart(), width, height );
+                }
             }
             if ( outputs.hasSvg() )
             {
@@ -134,23 +138,27 @@ abstract class GraphicsWriter
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
                 Path resolvedPath = path.resolveSibling( path.getFileName() + ".svg" );
 
-                // Add now to enable clean-up on failure
-                returnMe.add( resolvedPath );
+                // Write if the path has not already been written
+                if ( GraphicsWriter.validatePath( resolvedPath ) )
+                {
+                    // Add now to enable clean-up on failure
+                    returnMe.add( resolvedPath );
 
-                File outputImageFile = GraphicsWriter.validatePathAndReturnFile( resolvedPath );
+                    File outputImageFile = resolvedPath.toFile();
 
-                // Create the chart
-                JFreeChart chart = engine.buildChart();
+                    // Create the chart
+                    JFreeChart chart = engine.buildChart();
 
-                // Create the svg string
-                SVGGraphics2D svg2d = new SVGGraphics2D( width, height );
-                // Need to set this to a fixed value as it will otherwise use the system time in nanos, preventing
-                // automated testing. #81628-21.
-                svg2d.setDefsKeyPrefix( "4744385419576815639" );
-                chart.draw( svg2d, new Rectangle2D.Double( 0, 0, width, height ) );
-                String svgElement = svg2d.getSVGElement();
+                    // Create the svg string
+                    SVGGraphics2D svg2d = new SVGGraphics2D( width, height );
+                    // Need to set this to a fixed value as it will otherwise use the system time in nanos, preventing
+                    // automated testing. #81628-21.
+                    svg2d.setDefsKeyPrefix( "4744385419576815639" );
+                    chart.draw( svg2d, new Rectangle2D.Double( 0, 0, width, height ) );
+                    String svgElement = svg2d.getSVGElement();
 
-                SVGUtils.writeToSVG( outputImageFile, svgElement );
+                    SVGUtils.writeToSVG( outputImageFile, svgElement );
+                }
             }
 
             return Collections.unmodifiableSet( returnMe );
@@ -166,22 +174,28 @@ abstract class GraphicsWriter
     }
 
     /**
-     * Validates that the path does not already exist.
+     * Validates that the file object represented by the path does not already exist.
      * 
-     * @return a valid file
+     * @throws CommaSeparatedWriteException if the path exists
+     * @return true if the path is valid to write, false if it exists and is, therefore, invalid
      */
 
-    private static File validatePathAndReturnFile( Path path )
+    private static boolean validatePath( Path path )
     {
         File file = path.toFile();
 
-        if ( file.exists() )
+        boolean fileExists = file.exists();
+        
+        // #81735-173 and #86077
+        if ( fileExists && LOGGER.isWarnEnabled() )
         {
-            // But see #81735-173
-            throw new GraphicsWriteException( "Cannot write file " + file + " because it already exists." );
+            LOGGER.warn( "Cannot write file {} because it already exists. This may occur when retrying several format "
+                         + "writers of which only some failed previously, but is otherwise unexpected behavior that "
+                         + "may indicate an error in format writing. The file has been retained and not modified.",
+                         file );
         }
-
-        return file;
+        
+        return !fileExists;
     }
 
     /**

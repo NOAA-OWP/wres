@@ -132,45 +132,55 @@ abstract class CommaSeparatedStatisticsWriter
         // Append a file extension to the path
         Path extendedPath = outputPath.resolveSibling( outputPath.getFileName() + ".csv" );
 
-        // Validate
-        CommaSeparatedStatisticsWriter.validatePath( extendedPath );
+        // Write if the path has not already been written
+        if ( CommaSeparatedStatisticsWriter.validatePath( extendedPath ) )
+        {
 
-        try ( BufferedWriter w = Files.newBufferedWriter( extendedPath,
-                                                          StandardCharsets.UTF_8,
-                                                          StandardOpenOption.CREATE,
-                                                          StandardOpenOption.TRUNCATE_EXISTING ) )
-        {
-            for ( RowCompareByLeft row : rows )
+            try ( BufferedWriter w = Files.newBufferedWriter( extendedPath,
+                                                              StandardCharsets.UTF_8,
+                                                              StandardOpenOption.CREATE,
+                                                              StandardOpenOption.TRUNCATE_EXISTING ) )
             {
-                w.write( row.getRight().toString() );
-                w.write( System.lineSeparator() );
+                for ( RowCompareByLeft row : rows )
+                {
+                    w.write( row.getRight().toString() );
+                    w.write( System.lineSeparator() );
+                }
             }
-        }
-        catch ( IOException e )
-        {
-            // Clean up, to allow recovery. See #83816
-            CommaSeparatedStatisticsWriter.deletePath( extendedPath );
-            throw new CommaSeparatedWriteException( "Encountered an error while writing " + extendedPath, e );
+            catch ( IOException e )
+            {
+                // Clean up, to allow recovery. See #83816
+                CommaSeparatedStatisticsWriter.deletePath( extendedPath );
+                throw new CommaSeparatedWriteException( "Encountered an error while writing " + extendedPath, e );
+            }
         }
 
         return extendedPath;
     }
 
     /**
-     * Validates that the path does not already exist.
+     * Validates that the file object represented by the path does not already exist.
      * 
      * @throws CommaSeparatedWriteException if the path exists
+     * @return true if the path is valid to write, false if it exists and is, therefore, invalid
      */
 
-    private static void validatePath( Path path )
+    private static boolean validatePath( Path path )
     {
         File file = path.toFile();
 
-        if ( file.exists() )
+        boolean fileExists = file.exists();
+        
+        // #81735-173 and #86077
+        if ( fileExists && LOGGER.isWarnEnabled() )
         {
-            // But see #81735-173. This would apply where the retry tested all consumers attached to one subscriber.
-            throw new CommaSeparatedWriteException( "Cannot write file " + file + " because it already exists." );
+            LOGGER.warn( "Cannot write file {} because it already exists. This may occur when retrying several format "
+                         + "writers of which only some failed previously, but is otherwise unexpected behavior that "
+                         + "may indicate an error in format writing. The file has been retained and not modified.",
+                         file );
         }
+        
+        return !fileExists;
     }
 
     /**
