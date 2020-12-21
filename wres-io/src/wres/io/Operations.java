@@ -475,7 +475,9 @@ public final class Operations {
                 retriesNeeded = retriesFinishedThisIteration.stream()
                                                             .filter( IngestResult::requiresRetry )
                                                             .collect( Collectors.toUnmodifiableList() );
-                retriesFinished.addAll( retriesFinishedThisIteration );
+                retriesFinished.addAll( retriesFinishedThisIteration.stream()
+                                                                    .filter( r -> !r.requiresRetry() )
+                                                                    .collect( Collectors.toUnmodifiableList() ) );
             }
 
             LOGGER.debug( "After iterations, all retries finished: {}",
