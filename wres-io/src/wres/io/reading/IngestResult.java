@@ -58,7 +58,7 @@ public class IngestResult
         this.requiresRetry = requiresRetry;
     }
 
-    public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
+    private static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
                                    DataSource dataSource,
                                    int surrogateKey,
                                    boolean foundAlready,
@@ -67,7 +67,7 @@ public class IngestResult
         return new IngestResult( leftOrRightOrBaseline, dataSource, surrogateKey, foundAlready, requiresRetry );
     }
 
-    public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
+    private static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
                                    int surrogateKey,
                                    DataSource dataSource,
                                    boolean foundAlready )
@@ -85,7 +85,7 @@ public class IngestResult
      * @param requiresRetry true if this requires retry, false otherwise
      * @return the IngestResult
      */
-    public static IngestResult from( ProjectConfig projectConfig,
+    private static IngestResult from( ProjectConfig projectConfig,
                                      DataSource dataSource,
                                      int surrogateKey,
                                      boolean foundAlready,
@@ -109,7 +109,7 @@ public class IngestResult
      * @param foundAlready true if found in the database, false otherwise
      * @return the IngestResult
      */
-    public static IngestResult from( ProjectConfig projectConfig,
+    private static IngestResult from( ProjectConfig projectConfig,
                                      DataSource dataSource,
                                      int surrogateKey,
                                      boolean foundAlready )
@@ -149,31 +149,6 @@ public class IngestResult
                                                        surrogateKey,
                                                        foundAlready,
                                                        requiresRetry );
-        return List.of( ingestResult );
-    }
-
-
-    /**
-     * List with a single IngestResult from the given config, hash, foundAlready
-     * <br>
-     * For convenience (since this will be done all over the various ingesters).
-     * @param projectConfig the ProjectConfig causing the ingest
-     * @param dataSource the data source information
-     * @param surrogateKey The surrogate key of the source data.
-     * @param foundAlready true if found in the database, false otherwise
-     * @return a list with a single IngestResult in it
-     */
-
-    public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
-                                                         DataSource dataSource,
-                                                         int surrogateKey,
-                                                         boolean foundAlready )
-    {
-        IngestResult ingestResult = IngestResult.from( projectConfig,
-                                                       dataSource,
-                                                       surrogateKey,
-                                                       foundAlready,
-                                                       false );
         return List.of( ingestResult );
     }
 
