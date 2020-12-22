@@ -970,14 +970,24 @@ public class SourceLoader
             // Evaluate the path, which is null for a source that is not file-like
             Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
 
+            // Allow GC of new empty Sets by letting the links ref empty set.
+            Set<LeftOrRightOrBaseline> links = Collections.emptySet();
+
+            if ( !nextSource.getValue()
+                            .getRight()
+                            .isEmpty() )
+            {
+                links = nextSource.getValue()
+                                  .getRight();
+            }
+
             // If there is a file-like source, test for a directory and decompose it as required
             if( Objects.nonNull( path ) )
             {
                 DataSource source = DataSource.of( nextSource.getKey(),
                                                    nextSource.getValue()
                                                              .getLeft(),
-                                                   nextSource.getValue()
-                                                             .getRight(),
+                                                   links,
                                                    path.toUri() );
 
                 returnMe.addAll( SourceLoader.decomposeFileSource( source ) );
@@ -988,8 +998,7 @@ public class SourceLoader
                 DataSource source = DataSource.of( nextSource.getKey(),
                                                    nextSource.getValue()
                                                              .getLeft(),
-                                                   nextSource.getValue()
-                                                             .getRight(),
+                                                   links,
                                                    nextSource.getKey()
                                                              .getValue() );
                 returnMe.add( source );
