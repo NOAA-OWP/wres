@@ -287,20 +287,22 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         // Retrieve the data
         List<TimeSeries<L>> leftData = cStream.collect( Collectors.toList() );
-        List<TimeSeries<R>> rightData = this.right.get().collect( Collectors.toList() );
+        List<TimeSeries<R>> rightData = this.right.get()
+                                                  .collect( Collectors.toList() );
         List<TimeSeries<R>> baselineData = null;
 
+        // Baseline that is not generated?
+        if ( this.hasBaseline() && Objects.isNull( this.baselineGenerator ) )
+        {
+            baselineData = this.baseline.get()
+                                        .collect( Collectors.toList() );
+        }
+        
         // Apply any time offsets immediately, in order to simplify further evaluation,
         // which is then in the target time system
         leftData = this.applyValidTimeOffset( leftData, this.leftOffset );
         rightData = this.applyValidTimeOffset( rightData, this.rightOffset );
         baselineData = this.applyValidTimeOffset( baselineData, this.baselineOffset );
-
-        // Baseline that contains data?
-        if ( this.hasBaseline() && Objects.isNull( this.baselineGenerator ) )
-        {
-            baselineData = this.baseline.get().collect( Collectors.toList() );
-        }
 
         // Obtain the desired time scale. If this is unavailable, use the Least Common Scale.
         TimeScaleOuter desiredTimeScaleToUse =
@@ -312,11 +314,11 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         // The left data is most likely to contain a large set of observations, such as climatology
         // Snipping a large observation-like dataset helps with performance and does not affect accuracy
-        // For now, only apply to the left side, as this is most like to contain the observation-like data that extends
+        // For now, only apply to the left side, as this is most likely to contain observation-like data that extends
         // far beyond the bounds of the right data
         leftData = this.snip( leftData, rightData );
 
-        // Consolidate any observation-like time-series as these values can be shared/combined (w.g., when rescaling)
+        // Consolidate any observation-like time-series as these values can be shared/combined (e.g., when rescaling)
         leftData = this.consolidateTimeSeriesWithZeroReferenceTimes( leftData );
         rightData = this.consolidateTimeSeriesWithZeroReferenceTimes( rightData );
         baselineData = this.consolidateTimeSeriesWithZeroReferenceTimes( baselineData );
@@ -342,7 +344,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           this.metadata,
                           this.baselineMetadata );
 
-            // Generator?
+            // Baseline that is generated?
             if ( Objects.nonNull( this.baselineGenerator ) )
             {
                 baselineData = this.createBaseline( this.baselineGenerator, mainPairs );
@@ -1499,7 +1501,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * 
      * @param <T> the type of event values
      * @param timeSeries the time-series to consolidate, if possible
-     * @return any time-series that were consolidated plus any time -series that were not consolidated
+     * @return any time-series that were consolidated plus any time-series that were not consolidated
      */
 
     private <T> List<TimeSeries<T>> consolidateTimeSeriesWithZeroReferenceTimes( List<TimeSeries<T>> timeSeries )

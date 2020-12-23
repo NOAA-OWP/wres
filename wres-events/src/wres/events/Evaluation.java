@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -659,8 +660,6 @@ public class Evaluation implements Closeable
     @Override
     public void close() throws IOException
     {
-        LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
-
         if ( this.isClosed.getAndSet( true ) )
         {
             LOGGER.debug( "Evaluation {} has already been closed.", this.getEvaluationId() );
@@ -668,8 +667,22 @@ public class Evaluation implements Closeable
             return;
         }
 
-        // Close the status tracker
-        this.statusTracker.close();
+        LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
+        
+        // Determine and publish the completion status
+        CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
+        if ( this.getExitCode() != 0 )
+        {
+            onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
+        }
+        
+        EvaluationStatus reportComplete = EvaluationStatus.newBuilder()
+                                                          .setCompletionStatus( onCompletion )
+                                                          .build();
+        
+        ByteBuffer body = ByteBuffer.wrap( reportComplete.toByteArray() );
+
+        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, null );
 
         // Close the publishers gracefully
         this.closeGracefully( this.evaluationPublisher );
@@ -700,11 +713,8 @@ public class Evaluation implements Closeable
                           e.getMessage() );
         }
 
-        CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
-        if ( this.getExitCode() != 0 )
-        {
-            onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
-        }
+        // Close the status tracker
+        this.statusTracker.close();
 
         LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained 1 evaluation description "
                      + "message, {} statistics messages, {} pairs messages and {} evaluation status messages. The "
@@ -1015,7 +1025,21 @@ public class Evaluation implements Closeable
 
     void startFlowControl()
     {
-        this.flowControlLock.lock();
+        try
+        {
+            // See #86076-9. The goal is to replace this locking with broker-managed flow control. Until then, it is
+            // probably safer to control flow only if the current thread can acquire the lock within a short period.
+            // This increases the risk of broker overflow if a subscriber dies, temporarily, but reduces the risk of
+            // application deadlock.
+            this.flowControlLock.tryLock( 10, TimeUnit.SECONDS );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            
+            LOGGER.warn( "Thread {} failed to acquire a flow control lock within a period of PT10S.",
+                         Thread.currentThread() );
+        }
     }
 
     /**
@@ -1028,6 +1052,11 @@ public class Evaluation implements Closeable
         if ( this.flowControlLock.isHeldByCurrentThread() )
         {
             this.flowControlLock.unlock();
+        }
+        else
+        {
+            LOGGER.debug( "Cannot stop flow control with thread {} because it does not hold the flow control lock.",
+                          Thread.currentThread() );
         }
     }
 
@@ -1263,7 +1292,7 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
         Objects.requireNonNull( this.evaluationDescription,
                                 "Cannot create an evaluation without an evaluation description message." );
-        
+
         // Must have one or more formats
         if ( formatsRequired.isEmpty() )
         {

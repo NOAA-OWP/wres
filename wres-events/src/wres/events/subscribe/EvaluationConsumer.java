@@ -239,17 +239,7 @@ class EvaluationConsumer
         // Notify
         try
         {
-            // Create the exception events to notify
-            List<EvaluationStatusEvent> events = this.getExceptionEvents( exception );
-
-            this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
-                                         null,
-                                         events );
-            this.isFailureNotified.set( true );
-
-            LOGGER.warn( "Consumer {} has marked evaluation {} as failed unrecoverably.",
-                         this.getConsumerId(),
-                         this.getEvaluationId() );
+            this.notifyFailure( exception );
         }
         catch ( JMSException e )
         {
@@ -271,12 +261,14 @@ class EvaluationConsumer
     }
 
     /**
-     * Marks an evaluation as failed on publication. In other words, the failure was not caused by this consumer and the
-     * evaluation should be marked complete, from the perspective of this consumer, without notification.
+     * Marks an evaluation as failed for reasons outside the control of this consumer. In other words, the evaluation 
+     * should be marked complete from the perspective of this consumer.
+     * 
      * @param status the completion status notified to this consumer
+     * @throws JMSException if the failure cannot be notified
      */
 
-    void markEvaluationFailedOnPublication( CompletionStatus status )
+    void markEvaluationFailedOnExternalAction( EvaluationStatus status ) throws JMSException
     {
         if ( !this.isClosed() )
         {
@@ -284,11 +276,13 @@ class EvaluationConsumer
                           + "this consumer. The failure was notified to this consumer as {}.",
                           this.getConsumerId(),
                           this.getEvaluationId(),
-                          status );
+                          status.getCompletionStatus() );
 
             this.isFailed.set( true );
             this.isComplete.set( true );
-            this.isClosed.set( true );
+
+            // Close the consumer
+            this.close();
         }
     }
 
@@ -423,8 +417,9 @@ class EvaluationConsumer
                 this.setExpectedMessageCount( status );
                 break;
             case PUBLICATION_COMPLETE_REPORTED_FAILURE:
-                this.markEvaluationFailedOnPublication( status.getCompletionStatus() );
-                break;
+            case EVALUATION_COMPLETE_REPORTED_FAILURE:
+                this.markEvaluationFailedOnExternalAction( status );
+                break;                
             default:
                 break;
         }
@@ -479,6 +474,62 @@ class EvaluationConsumer
     boolean isFailed()
     {
         return this.isFailed.get();
+    }
+
+    /**
+     * Notifies the failure of this evaluation by first notifying any incomplete groups as completed and then notifying
+     * the overall consumption complete. Only notifies if the notification has not already happened.
+     * 
+     * @param cause an optional exception to notify 
+     * @throws JMSException if the notification fails for any reason
+     */
+
+    private void notifyFailure( Exception cause ) throws JMSException
+    {
+        if ( !this.isFailureNotified.getAndSet( true ) )
+        {
+            // Notify any incomplete groups
+            for ( OneGroupConsumer<Statistics> next : this.groupConsumers.values() )
+            {
+                if ( !next.isComplete() )
+                {
+                    // Notify completion
+                    this.publishCompletionState( CompletionStatus.GROUP_CONSUMPTION_COMPLETE,
+                                                 next.getGroupId(),
+                                                 List.of() );
+
+                    LOGGER.debug( "Consumer {} registered consumption as forcibly completed (failed) for group {} of "
+                                  + "evaluation {}.",
+                                  this.consumerDescription.getConsumerId(),
+                                  next.getGroupId(),
+                                  this.getEvaluationId() );
+                }
+            }
+
+            // Create the exception events to notify
+            List<EvaluationStatusEvent> events = this.getExceptionEvents( cause );
+
+            this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
+                                         null,
+                                         events );
+
+            LOGGER.warn( "Consumer {} has marked evaluation {} as failed unrecoverably.",
+                         this.getConsumerId(),
+                         this.getEvaluationId() );
+        }
+    }
+
+    /**
+     * Notifies successful completion of the evaluation.
+     * 
+     * @throws JMSException if the notification fails for any reason
+     */
+
+    private void notifySuccess() throws JMSException
+    {
+        this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
+                                     null,
+                                     List.of() );
     }
 
     /**
@@ -589,23 +640,13 @@ class EvaluationConsumer
 
             try
             {
-
                 if ( this.isFailed() )
                 {
-                    if ( !this.isFailureNotified() )
-                    {
-                        this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE,
-                                                     null,
-                                                     List.of() );
-
-                        this.isFailureNotified.set( true );
-                    }
+                    this.notifyFailure( null );
                 }
                 else
                 {
-                    this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
-                                                 null,
-                                                 List.of() );
+                    this.notifySuccess();
                 }
             }
             finally
@@ -621,14 +662,6 @@ class EvaluationConsumer
 
             // This instance is not responsible for closing the executor service.
         }
-    }
-
-    /**
-     * @return true if the evaluation failure has been notified, otherwise false
-     */
-    private boolean isFailureNotified()
-    {
-        return this.isFailureNotified.get();
     }
 
     /**

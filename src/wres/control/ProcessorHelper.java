@@ -419,7 +419,7 @@ class ProcessorHelper
             // or one completes exceptionally for reasons other than lack of data
             // Complete the feature tasks
             ProcessorHelper.doAllOrException( featureTasks ).join();
-
+            
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when they are done/
             evaluation.markPublicationCompleteReportedSuccess();
