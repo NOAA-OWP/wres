@@ -1,7 +1,7 @@
 package wres.events.subscribe;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -22,11 +22,11 @@ import wres.statistics.generated.Statistics;
  * @author james.brown@hydrosolved.com
  */
 
-public class OneGroupConsumerTest
+class OneGroupConsumerTest
 {
 
     @Test
-    public void testAdditionOfIntegers()
+    void testAdditionOfIntegers()
     {
         // Actual value of integers added within a group
         AtomicInteger sum = new AtomicInteger();
@@ -51,7 +51,7 @@ public class OneGroupConsumerTest
     }
 
     @Test
-    public void testAggregationOfStatistics()
+    void testAggregationOfStatistics()
     {
         // Aggregated statistics
         AtomicReference<Statistics> aggregated = new AtomicReference<>();
@@ -73,7 +73,7 @@ public class OneGroupConsumerTest
 
         // Set the expected group size, which triggers completion when both messages have been received
         group.setExpectedMessageCount( 2 );
-        
+
         group.accept( "a", one.build() );
 
         Statistics.Builder another = Statistics.newBuilder();
@@ -95,7 +95,7 @@ public class OneGroupConsumerTest
     }
 
     @Test
-    public void checkForExpectedExceptionWhenSettingTheExpectedMessageCountTwice()
+    void checkForExpectedExceptionWhenSettingTheExpectedMessageCountTwice()
     {
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
             return Set.of();
@@ -113,7 +113,7 @@ public class OneGroupConsumerTest
     }
 
     @Test
-    public void checkForExpectedExceptionOnReusingAConsumer()
+    void checkForExpectedExceptionOnReusingAConsumer()
     {
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
             return Set.of();
@@ -123,7 +123,7 @@ public class OneGroupConsumerTest
 
         // Completes the group
         group.accept( "aMessage", Statistics.getDefaultInstance() );
-        
+
         Statistics defaultInstance = Statistics.getDefaultInstance();
 
         IllegalStateException expected = assertThrows( IllegalStateException.class,
@@ -135,7 +135,7 @@ public class OneGroupConsumerTest
     }
 
     @Test
-    public void testGetGroupId()
+    void testGetGroupId()
     {
         // No-op consumer
         OneGroupConsumer<Statistics> group = OneGroupConsumer.of( statistics -> {
