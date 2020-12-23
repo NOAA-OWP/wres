@@ -27,10 +27,6 @@ import wres.system.SystemSettings;
  */
 public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 {
-    /**
-     * To track whether something was a temp file or not, look for this prefix.
-     */
-    public static final String TEMP_FILE_PREFIX = "wres_zipped_source_";
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
 
     private final SystemSettings systemSettings;

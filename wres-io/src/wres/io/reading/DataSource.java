@@ -32,7 +32,9 @@ public class DataSource
     private final Set<LeftOrRightOrBaseline> links;
 
     /**
-     * URI of the source.
+     * URI of the source. Required when ingesting, but null when this object is
+     * used in {@link IngestResult} to report back that ingest is complete, for
+     * heap savings.
      */
 
     private final URI uri;
@@ -66,6 +68,7 @@ public class DataSource
                                  Set<LeftOrRightOrBaseline> links,
                                  URI uri )
     {
+        Objects.requireNonNull( uri );
         return new DataSource( source, context, links, uri, null );
     }
 
@@ -96,7 +99,27 @@ public class DataSource
                                  URI uri,
                                  TimeSeries<?> timeSeries )
     {
+        Objects.requireNonNull( uri );
+        Objects.requireNonNull( source );
         return new DataSource( source, context, links, uri, timeSeries );
+    }
+
+
+    /**
+     * Create a copy of this DataSource to be used when fully ingested.
+     * The difference here is no URI is reported back, no individual source,
+     * only the l/r/b and the additional l/r/b links. To be used by
+     * {@link IngestResult} which is why it's package private.
+     * @return The shrunken version of the datasource
+     */
+
+    DataSource withMinimalDetail()
+    {
+        return new DataSource( null,
+                               this.context,
+                               this.links,
+                               null,
+                               null );
     }
 
     /**
@@ -113,10 +136,8 @@ public class DataSource
                         URI uri,
                         TimeSeries<?> timeSeries )
     {
-        Objects.requireNonNull( source );
         Objects.requireNonNull( context );
         Objects.requireNonNull( links );
-        Objects.requireNonNull( uri );
 
         this.source = source;
         this.context = context;
@@ -215,10 +236,10 @@ public class DataSource
             return false;
         }
         DataSource that = ( DataSource ) o;
-        return context.equals( that.context ) &&
-               source.equals( that.source ) &&
+        return source.equals( that.source ) &&
                links.equals( that.links ) &&
-               uri.equals( that.uri ) &&
+               Objects.equals( context, that.context ) &&
+               Objects.equals( uri, that.uri ) &&
                Objects.equals( timeSeries, that.timeSeries );
     }
 

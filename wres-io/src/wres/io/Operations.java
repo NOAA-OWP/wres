@@ -494,39 +494,6 @@ public final class Operations {
             throw new IngestException( message, ee );
         }
 
-        Set<Path> pathsToDelete = new HashSet<>();
-
-        for ( IngestResult retryResult : retriesFinished )
-        {
-            // In the case where a zipped source is retried, it will be a temp
-            // file on the filesystem somewhere, and needs to be cleaned up after
-            // it has been saved.
-            URI resultUri = retryResult.getDataSource()
-                                       .getUri();
-            if ( resultUri.getRawPath()
-                          .contains( ZippedPIXMLIngest.TEMP_FILE_PREFIX ) )
-            {
-                Path pathToDelete = Paths.get( resultUri );
-                pathsToDelete.add( pathToDelete );
-            }
-        }
-
-        for ( Path pathToDelete : pathsToDelete )
-        {
-            try
-            {
-                Files.delete( pathToDelete );
-                LOGGER.info( "Deleted temporary zipped source {}",
-                             pathToDelete );
-            }
-            catch ( IOException ioe )
-            {
-                LOGGER.warn( "Failed to delete temporary file {}",
-                             pathToDelete,
-                             ioe );
-            }
-        }
-
         if ( !retriesNeeded.isEmpty() )
         {
             throw new IngestException( "Could not finish ingest because the "
