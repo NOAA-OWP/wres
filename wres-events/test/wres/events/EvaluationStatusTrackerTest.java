@@ -1,7 +1,7 @@
 package wres.events;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,8 +12,8 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
@@ -26,7 +26,7 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Outputs.NetcdfFormat;
 
-public class EvaluationStatusTrackerTest
+class EvaluationStatusTrackerTest
 {
     /**
      * Connection factory.
@@ -34,14 +34,14 @@ public class EvaluationStatusTrackerTest
 
     private static BrokerConnectionFactory connections = null;
 
-    @BeforeClass
-    public static void runBeforeAllTests()
+    @BeforeAll
+    static void runBeforeAllTests()
     {
         EvaluationStatusTrackerTest.connections = BrokerConnectionFactory.of();
     }
 
     @Test
-    public void testNegotiationWithCompetingSubscribersAndOneBestSubscriber() throws IOException, InterruptedException
+    void testNegotiationWithCompetingSubscribersAndOneBestSubscriber() throws IOException, InterruptedException
     {
 
         // Use an evaluation instance as a publisher and a separate status tracker as a receiver in order to test the
@@ -131,7 +131,7 @@ public class EvaluationStatusTrackerTest
     }
 
     @Test
-    public void testNegotiationWithCompetingSubscribersAndThreeEqualSubscribers()
+    void testNegotiationWithCompetingSubscribersAndThreeEqualSubscribers()
             throws IOException, InterruptedException
     {
         ConsumerFactory consumer = new ConsumerFactory()

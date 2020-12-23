@@ -1,6 +1,6 @@
 package wres.events.publish;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,9 +15,9 @@ import javax.jms.MessageConsumer;
 import javax.jms.Session;
 import javax.naming.NamingException;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.eventsbroker.BrokerConnectionFactory;
@@ -28,7 +28,7 @@ import wres.eventsbroker.BrokerConnectionFactory;
  * @author james.brown@hydrosolved.com
  */
 
-public class MessagePublisherTest
+class MessagePublisherTest
 {
 
     /**
@@ -37,30 +37,31 @@ public class MessagePublisherTest
 
     private static BrokerConnectionFactory connections = null;
 
-    @BeforeClass
-    public static void runBeforeAllTests()
+    @BeforeAll
+    static void runBeforeAllTests()
     {
         MessagePublisherTest.connections = BrokerConnectionFactory.of();
     }
 
     @Test
-    public void publishOneMessage()
+    void publishOneMessage()
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Create and start a broker and open an evaluation, closing on completion
-        try ( MessagePublisher publisher = MessagePublisher.of( MessagePublisherTest.connections.get().createConnection(),
-                                                                MessagePublisherTest.connections.getDestination( "status" ) );
+        try ( MessagePublisher publisher =
+                MessagePublisher.of( MessagePublisherTest.connections.get().createConnection(),
+                                     MessagePublisherTest.connections.getDestination( "status" ) );
               Connection connection = MessagePublisherTest.connections.get().createConnection();
               Session session = connection.createSession( false, Session.AUTO_ACKNOWLEDGE );
               MessageConsumer consumer = session.createConsumer( connections.getDestination( "status" ) ) )
         {
             connection.start();
 
-            Map<MessageProperty,String> properties = new EnumMap<>( MessageProperty.class );
+            Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:someId" );
             properties.put( MessageProperty.JMS_CORRELATION_ID, "someCorrelationId" );
             properties.put( MessageProperty.JMSX_GROUP_ID, "aGroupId" );
-            
+
             publisher.publish( ByteBuffer.wrap( "some bytes".getBytes() ), Collections.unmodifiableMap( properties ) );
 
             // Blocking wait
@@ -76,7 +77,7 @@ public class MessagePublisherTest
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void runAfterAllTests() throws IOException
     {
         MessagePublisherTest.connections.close();

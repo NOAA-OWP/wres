@@ -1,10 +1,10 @@
 package wres.events;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -21,10 +21,10 @@ import java.util.function.Function;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import wres.events.subscribe.ConsumerException;
@@ -50,7 +50,7 @@ import wres.statistics.generated.Pairs;
  * @author james.brown@hydrosolved.com
  */
 
-public class EvaluationTest
+class EvaluationTest
 {
 
     /**
@@ -89,13 +89,13 @@ public class EvaluationTest
 
     private static BrokerConnectionFactory connections = null;
 
-    @BeforeClass
+    @BeforeAll
     public static void runBeforeAllTests()
     {
         EvaluationTest.connections = BrokerConnectionFactory.of();
     }
 
-    @Before
+    @BeforeEach
     public void runBeforeEachTest()
     {
         // First evaluation
@@ -149,7 +149,7 @@ public class EvaluationTest
     }
 
     @Test
-    public void publishAndConsumeTwoEvaluationsSimultaneously()
+    void publishAndConsumeTwoEvaluationsSimultaneously()
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Containers to hold the statistics
@@ -237,7 +237,7 @@ public class EvaluationTest
 
 
     @Test
-    public void testPublishThrowsExceptionAfterStop() throws IOException
+    void testPublishThrowsExceptionAfterStop() throws IOException
     {
         ConsumerFactory consumer = new ConsumerFactory()
         {
@@ -286,7 +286,7 @@ public class EvaluationTest
     }
 
     @Test
-    public void publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumer()
+    void publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumer()
             throws IOException, NamingException, JMSException, InterruptedException
     {
         // Statistics incremented as the pipeline progresses
@@ -392,7 +392,7 @@ public class EvaluationTest
     }
 
     @Test
-    public void testEmptyEvaluation() throws IOException
+    void testEmptyEvaluation() throws IOException
     {
         // Create and start a broker and open an evaluation, closing on completion
         Evaluation evaluation = null;
@@ -458,7 +458,7 @@ public class EvaluationTest
     }
 
     @Test
-    public void testEvaluationWithUnrecoverableConsumerException() throws IOException
+    void testEvaluationWithUnrecoverableConsumerException() throws IOException
     {
         // Create a statistics consumer that fails always, together with some no-op consumers for other message types
         // Consumer factory implementation that simply adds the statistics to the above containers
@@ -534,7 +534,7 @@ public class EvaluationTest
     }
 
     @Test
-    public void testEvaluationWithRecoverableConsumerException() throws IOException
+    void testEvaluationWithRecoverableConsumerException() throws IOException
     {
         // Create a statistics consumer that fails always, together with some no-op consumers for other message types
         // Consumer factory implementation that simply adds the statistics to the above containers
@@ -596,7 +596,7 @@ public class EvaluationTest
 
 
     @Test
-    public void testEvaluationWithUnrecoverablePublisherException() throws IOException
+    void testEvaluationWithUnrecoverablePublisherException() throws IOException
     {
         // Open an evaluation, closing on completion
         Evaluation evaluation = null;
@@ -707,7 +707,7 @@ public class EvaluationTest
         };
     }
 
-    @AfterClass
+    @AfterAll
     public static void runAfterAllTests() throws IOException
     {
         EvaluationTest.connections.close();
