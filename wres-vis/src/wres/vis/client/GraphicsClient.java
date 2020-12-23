@@ -54,12 +54,6 @@ class GraphicsClient implements Closeable
     private static final long STATUS_UPDATE_MILLISECONDS = 60_000;
 
     /**
-     * The frequency with which to publish a subscriber-alive message in ms.
-     */
-
-    private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
-
-    /**
      * The frequency with which to check the health of the subscriber in ms.
      */
 
@@ -201,19 +195,7 @@ class GraphicsClient implements Closeable
                 LOGGER.info( "{}", status );
             }
         };
-
-        // Create a timer task to update any listening clients that the subscriber is alive in case of long-running 
-        // writing tasks
-        TimerTask updater = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                // I am still alive
-                subscriber.notifyAlive();
-            }
-        };
-
+        
         // Create a timer task to check on the health of the subscriber
         TimerTask healthChecker = new TimerTask()
         {
@@ -232,7 +214,6 @@ class GraphicsClient implements Closeable
         };
 
         this.timer.schedule( sweeper, 0, GraphicsClient.STATUS_UPDATE_MILLISECONDS );
-        this.timer.schedule( updater, 0, GraphicsClient.NOTIFY_ALIVE_MILLISECONDS );
         this.timer.schedule( healthChecker, 0, GraphicsClient.HEALTH_CHECK_MILLISECONDS );
     }
 

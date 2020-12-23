@@ -12,6 +12,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -124,6 +126,13 @@ public class EvaluationSubscriber implements Closeable
      */
 
     private static final String GROUP_ID_STRING = MessageProperty.JMSX_GROUP_ID.toString();
+
+
+    /**
+     * The frequency with which to publish a subscriber-alive message in ms.
+     */
+
+    private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
 
     /**
      * Re-usable status message.
@@ -260,6 +269,12 @@ public class EvaluationSubscriber implements Closeable
     private final ConsumerFactory consumerFactory;
 
     /**
+     * A timer task to publish information about the status of the subscriber.
+     */
+
+    private final Timer timer;
+
+    /**
      * Creates an instance.
      * 
      * @param consumerFactory the consumer factory
@@ -334,6 +349,11 @@ public class EvaluationSubscriber implements Closeable
             LOGGER.error( message, e );
         }
 
+        // Cancel notifications
+        this.timer.cancel();
+
+        LOGGER.debug( "Closed subscriber {}.", this.getSubscriberId() );
+
         // This subscriber is not responsible for closing the broker.
     }
 
@@ -372,25 +392,6 @@ public class EvaluationSubscriber implements Closeable
 
         this.getEvaluationsLock()
             .unlock();
-    }
-
-    /**
-     * Sends an evaluation status message with a status of {@link CompletionStatus#READY_TO_CONSUME} for each open
-     * evaluation so that any listening listening client knows that the subscriber is still alive.
-     * @throws EvaluationEventException if the notification failed
-     */
-
-    public void notifyAlive()
-    {
-        // Iterate the evaluations
-        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
-        {
-            // Consider only open evaluations
-            if ( !next.getValue().isComplete() )
-            {
-                this.publishReadyToConsume( next.getKey() );
-            }
-        }
     }
 
     /**
@@ -594,25 +595,11 @@ public class EvaluationSubscriber implements Closeable
 
                     EvaluationStatus statusEvent = EvaluationStatus.parseFrom( buffer );
 
-                    // Request for a consumer?
-                    if ( statusEvent.getCompletionStatus() == CompletionStatus.CONSUMER_REQUIRED )
-                    {
-                        // Offer services if services are required
-                        this.offerServices( statusEvent, correlationId );
-                    }
-                    // Request for consumption, but only if the message is flagged for me
-                    else if ( this.isThisMessageForMe( message ) )
-                    {
-                        LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
-                                      this.getSubscriberId(),
-                                      "an evaluation status",
-                                      messageId,
-                                      correlationId );
-
-                        consumer = this.getEvaluationConsumer( correlationId );
-
-                        consumer.acceptStatusMessage( statusEvent, groupId, messageId );
-                    }
+                    consumer = this.processStatusEvent( statusEvent,
+                                                        correlationId,
+                                                        message,
+                                                        messageId,
+                                                        groupId );
                 }
 
                 // Acknowledge and flag success locally
@@ -711,6 +698,52 @@ public class EvaluationSubscriber implements Closeable
                 this.recover( messageId, correlationId, this.statisticsSession, e );
             }
         };
+    }
+
+    /**
+     * Consumes an {@link EvaluationStatus} message.
+     * 
+     * @param statusEvent the evaluation status message
+     * @param evaluationId the evaluation identifier
+     * @param message the originating message
+     * @param messageId the identifier of the originating message
+     * @param groupId the message group identifier
+     * @return the evaluation consumer used, where applicable
+     * @throws JMSException if the processing fails
+     */
+
+    private EvaluationConsumer processStatusEvent( EvaluationStatus statusEvent,
+                                                   String evaluationId,
+                                                   Message message,
+                                                   String messageId,
+                                                   String groupId )
+            throws JMSException
+    {
+        EvaluationConsumer consumer = null;
+
+        CompletionStatus completionStatus = statusEvent.getCompletionStatus();
+        
+        // Request for a consumer?
+        if ( completionStatus == CompletionStatus.CONSUMER_REQUIRED )
+        {
+            // Offer services if services are required
+            this.offerServices( statusEvent, evaluationId );
+        }
+        // Request for consumption, but only if the message is flagged for me
+        else if ( this.isThisMessageForMe( message ) )
+        {
+            LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
+                          this.getSubscriberId(),
+                          "an evaluation status",
+                          messageId,
+                          evaluationId );
+
+            consumer = this.getEvaluationConsumer( evaluationId );
+
+            consumer.acceptStatusMessage( statusEvent, groupId, messageId );
+        }
+
+        return consumer;
     }
 
     /**
@@ -816,7 +849,7 @@ public class EvaluationSubscriber implements Closeable
 
     private void recover( String messageId, String correlationId, Session session, Exception e )
     {
-        // Only try to recover if an evaluation hasn't already failed
+        // Only try to recover if the subscriber and the relevant consumer has not failed
         if ( !this.getEvaluationConsumer( correlationId ).isFailed() && !this.isSubscriberFailed() )
         {
             try ( StringWriter sw = new StringWriter();
@@ -868,6 +901,46 @@ public class EvaluationSubscriber implements Closeable
 
                 // Register the evaluation as failed
                 this.markEvaluationFailed( correlationId, e );
+            }
+        }
+        // Consumer or subscriber has failed unrecoverably: no retry, just mark failed and warn
+        else
+        {
+            LOGGER.debug( "Subscriber {} encountered an unrecoverable failure on consumption of evaluation {}. The "
+                          + "evaluation has been marked failed.",
+                          this.getSubscriberId(),
+                          correlationId );
+
+            this.markEvaluationFailed( correlationId, e );
+
+            // Warn?
+            if ( LOGGER.isWarnEnabled() )
+            {
+                try ( StringWriter sw = new StringWriter();
+                      PrintWriter pw = new PrintWriter( sw ); )
+                {
+                    // Create a stack trace to log
+                    e.printStackTrace( pw );
+                    String message = sw.toString();
+
+                    LOGGER.warn( "While attempting to consume a message with identifier {} and correlation identifier "
+                                 + "{} in subscriber {}, encountered an error. No further retries will be attmpted "
+                                 + "because the evaluation subscriber has been marked failed unrecoverably. At the "
+                                 + "time of unrecoverable failure, {} of {} retries had been attempted. The error is: "
+                                 + "{}",
+                                 messageId,
+                                 correlationId,
+                                 this.getSubscriberId(),
+                                 this.getNumberOfRetriesAttempted( correlationId ).get(),
+                                 this.broker.getMaximumMessageRetries(),
+                                 message );
+
+                }
+                catch ( IOException g )
+                {
+                    LOGGER.error( "While attempting recovery in subscriber {}, failed to close an exception writer.",
+                                  this.getSubscriberId() );
+                }
             }
         }
     }
@@ -1125,6 +1198,75 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
+     * Notifies all clients that depend on this subscriber that it is still alive. The notification happens at a fixed
+     * time interval.
+     */
+
+    private void publishAliveAtFixedInterval()
+    {
+        EvaluationSubscriber subscriber = this;
+
+        // Create a timer task to update any listening clients that the subscriber is alive in case of long-running 
+        // writing tasks
+        TimerTask updater = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                // Notify alive
+                subscriber.notifyAlive();
+
+                if ( subscriber.isSubscriberFailed() )
+                {
+                    subscriber.close();
+                }
+            }
+        };
+
+        this.timer.schedule( updater, 0, EvaluationSubscriber.NOTIFY_ALIVE_MILLISECONDS );
+    }
+
+    /**
+     * Sends an evaluation status message with a status of {@link CompletionStatus#READY_TO_CONSUME} for each open
+     * evaluation so that any listening client knows that the subscriber is still alive.
+     * @throws EvaluationEventException if the notification failed
+     */
+
+    private void notifyAlive()
+    {
+        // Iterate the evaluations
+        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.entrySet() )
+        {
+            // Consider only open evaluations
+            if ( !next.getValue().isComplete() )
+            {
+                this.publishReadyToConsume( next.getKey() );
+            }
+        }
+    }
+
+    /**
+     * Returns a consumer.
+     * 
+     * @param session the session
+     * @param topic the topic
+     * @param name the name of the subscriber
+     * @return a consumer
+     * @throws JMSException if the consumer could not be created for any reason
+     */
+
+    private MessageConsumer getMessageConsumer( Session session, Topic topic, String name )
+            throws JMSException
+    {
+        if ( EvaluationSubscriber.DURABLE_SUBSCRIBERS )
+        {
+            return session.createDurableSubscriber( topic, name, null, false );
+        }
+
+        return session.createConsumer( topic, null );
+    }
+
+    /**
      * Builds a subscriber.
      * 
      * @param consumerFactory the consumer factory
@@ -1150,6 +1292,7 @@ public class EvaluationSubscriber implements Closeable
                      this.getSubscriberId() );
 
         this.status = new SubscriberStatus( this.getSubscriberId() );
+        this.timer = new Timer( true );
 
         try
         {
@@ -1228,6 +1371,9 @@ public class EvaluationSubscriber implements Closeable
                                                         + " to receive evaluation messages, encountered an error.",
                                                         e );
         }
+
+        // Publish the status at a regular interval to producers that listen for it
+        this.publishAliveAtFixedInterval();
 
         String tempDir = System.getProperty( "java.io.tmpdir" );
 
@@ -1415,27 +1561,6 @@ public class EvaluationSubscriber implements Closeable
 
             this.clientId = clientId;
         }
-    }
-
-    /**
-     * Returns a consumer.
-     * 
-     * @param session the session
-     * @param topic the topic
-     * @param name the name of the subscriber
-     * @return a consumer
-     * @throws JMSException if the consumer could not be created for any reason
-     */
-
-    private MessageConsumer getMessageConsumer( Session session, Topic topic, String name )
-            throws JMSException
-    {
-        if ( EvaluationSubscriber.DURABLE_SUBSCRIBERS )
-        {
-            return session.createDurableSubscriber( topic, name, null, false );
-        }
-
-        return session.createConsumer( topic, null );
     }
 
     /**
