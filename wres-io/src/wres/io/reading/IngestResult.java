@@ -53,9 +53,19 @@ public class IngestResult
 
         this.leftOrRightOrBaseline = leftOrRightOrBaseline;
         this.surrogateKey = surrogateKey;
-        this.dataSource = dataSource;
-        this.foundAlready = foundAlready;
+
+        if ( requiresRetry )
+        {
+            this.dataSource = dataSource;
+        }
+        else
+        {
+            // Heap savings. Maybe there's a better way.
+            this.dataSource = dataSource.withMinimalDetail();
+        }
+
         this.requiresRetry = requiresRetry;
+        this.foundAlready = foundAlready;
     }
 
     private static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
@@ -65,14 +75,6 @@ public class IngestResult
                                    boolean requiresRetry )
     {
         return new IngestResult( leftOrRightOrBaseline, dataSource, surrogateKey, foundAlready, requiresRetry );
-    }
-
-    private static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
-                                   int surrogateKey,
-                                   DataSource dataSource,
-                                   boolean foundAlready )
-    {
-        return IngestResult.of( leftOrRightOrBaseline, dataSource, surrogateKey, foundAlready, false );
     }
 
 
@@ -101,28 +103,6 @@ public class IngestResult
                                 requiresRetry );
     }
 
-    /**
-     * Get an IngestResult using the configuration elements, for convenience
-     * @param projectConfig the ProjectConfig causing the ingest
-     * @param dataSource the data source information
-     * @param surrogateKey The surrogate key of the source data.
-     * @param foundAlready true if found in the database, false otherwise
-     * @return the IngestResult
-     */
-    private static IngestResult from( ProjectConfig projectConfig,
-                                     DataSource dataSource,
-                                     int surrogateKey,
-                                     boolean foundAlready )
-    {
-        LeftOrRightOrBaseline leftOrRightOrBaseline =
-                ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
-                                                       dataSource.getContext() );
-        return IngestResult.of( leftOrRightOrBaseline,
-                                dataSource,
-                                surrogateKey,
-                                foundAlready,
-                                false );
-    }
 
 
 
