@@ -1,13 +1,13 @@
 package wres.datamodel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 /**
@@ -15,7 +15,7 @@ import org.junit.Test;
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class EnsembleTest
+final class EnsembleTest
 {
 
     /**
@@ -26,7 +26,7 @@ public final class EnsembleTest
             Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
 
     @Test
-    public void testGetMembersReturnsExpectedMembers()
+    void testGetMembersReturnsExpectedMembers()
     {
         double[] expected = new double[] { 1, 2, 3, 4 };
 
@@ -36,7 +36,7 @@ public final class EnsembleTest
     }
 
     @Test
-    public void testGetLabelsReturnsExpectedLabels()
+    void testGetLabelsReturnsExpectedLabels()
     {
         String[] expected = new String[] { "A", "B", "C", "D" };
 
@@ -46,7 +46,7 @@ public final class EnsembleTest
     }
 
     @Test
-    public void testGetMember()
+    void testGetMember()
     {
         assertEquals( 1.0, this.testInstance.getMember( "A" ), 0.0001 );
         assertEquals( 2.0, this.testInstance.getMember( "B" ), 0.0001 );
@@ -57,13 +57,13 @@ public final class EnsembleTest
     }
 
     @Test
-    public void testGetSizeReturnsExpectedSize()
+    void testGetSizeReturnsExpectedSize()
     {
         assertEquals( 4, this.testInstance.size() );
     }
 
     @Test
-    public void testLabelsAreEmptyWhenExpected()
+    void testLabelsAreEmptyWhenExpected()
     {
         Ensemble emptyLabels = Ensemble.of( new double[] { 1, 2, 3, 4 } );
 
@@ -71,10 +71,10 @@ public final class EnsembleTest
     }
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         // Reflexive 
-        assertTrue( this.testInstance.equals( this.testInstance ) );
+        assertEquals( this.testInstance, this.testInstance );
 
         // Symmetric
         Ensemble anotherInstance = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
@@ -90,7 +90,7 @@ public final class EnsembleTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( this.testInstance.equals( anotherInstance ) );
+            assertEquals( this.testInstance, anotherInstance );
         }
 
         // Equals without labels
@@ -100,7 +100,6 @@ public final class EnsembleTest
 
         // Nullity
         assertNotEquals( null, testInstance );
-        assertNotEquals( testInstance, null );
 
         // Check unequal cases
         Ensemble unequalOnMembers = Ensemble.of( new double[] { 1, 2, 3, 5 }, new String[] { "A", "B", "C", "D" } );
@@ -117,7 +116,7 @@ public final class EnsembleTest
     }
 
     @Test
-    public void testHashCode()
+    void testHashCode()
     {
         // Equal objects have the same hashcode
         assertEquals( this.testInstance.hashCode(), this.testInstance.hashCode() );
@@ -142,16 +141,16 @@ public final class EnsembleTest
     }
 
     @Test
-    public void testCompareTo()
+    void testCompareTo()
     {
         //Equal
         Ensemble anotherInstance = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
-        assertTrue( this.testInstance.compareTo( anotherInstance ) == 0 );
+        assertEquals( 0, this.testInstance.compareTo( anotherInstance ) );
 
 
         Ensemble noLabels = Ensemble.of( new double[] { 1, 2, 3, 4 } );
         Ensemble anotherWithoutLabels = Ensemble.of( new double[] { 1, 2, 3, 4 } );
-        assertTrue( noLabels.compareTo( anotherWithoutLabels ) == 0 );
+        assertEquals( 0, noLabels.compareTo( anotherWithoutLabels ) );
 
         Ensemble less = Ensemble.of( new double[] { 0, 2, 3, 4 } );
 
@@ -178,7 +177,7 @@ public final class EnsembleTest
     }
 
     @Test
-    public void testToString()
+    void testToString()
     {
         String expected = "[{A,1.0},{B,2.0},{C,3.0},{D,4.0}]";
 
@@ -197,13 +196,13 @@ public final class EnsembleTest
     }
 
     @Test
-    public void checkForExpectedExceptionOnConstructionWhenThereAreMoreLabelsThanMembers()
+    void checkForExpectedExceptionOnConstructionWhenThereAreMoreLabelsThanMembers()
     {
         IllegalArgumentException expected =
                 assertThrows( IllegalArgumentException.class,
                               () -> Ensemble.of( new double[] { 1 }, new String[] { "A", "B" } ) );
 
-        assertEquals( expected.getMessage(), "Expected the same number of members (1) as labels (2)." );
+        assertEquals( "Expected the same number of members (1) as labels (2).", expected.getMessage() );
 
     }
 

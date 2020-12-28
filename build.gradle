@@ -297,7 +297,17 @@ project(':wres-datamodel')
         // Mocking help
         testCompile 'org.mockito:mockito-core:3.6.28'
 
-        testCompile 'junit:junit:4.13.1'
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+
+        // Backwards compatibility for JUnit 4 tests
+        testCompileOnly 'junit:junit:4.13.1' 
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.7.0'
+    }
+    // Facilitate unit tests with JUnit
+    test {
+        useJUnitPlatform()
     }
 }
 
