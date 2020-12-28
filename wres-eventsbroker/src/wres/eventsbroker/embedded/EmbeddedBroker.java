@@ -276,8 +276,6 @@ public class EmbeddedBroker implements Closeable
      * Listener that extracts port information on broker startup, allowing for dynamic port assignment by the broker to
      * be respected by the application.
      * 
-     * Hint provided here: 
-     * 
      * @author james.brown@hydrosolved.com
      */
 

@@ -4,14 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
@@ -54,9 +53,6 @@ public final class DataFactoryTest
      */
 
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     public static final double THRESHOLD = 0.00001;
 
@@ -154,9 +150,7 @@ public final class DataFactoryTest
         assertTrue( fifth.compareTo( sixth ) + sixth.compareTo( fifth ) == 0 );
 
         //Check nullity contract
-        exception.expect( NullPointerException.class );
-        first.compareTo( null );
-
+        assertThrows( NullPointerException.class, () -> first.compareTo( null ) );
     }
 
     /**
@@ -268,14 +262,12 @@ public final class DataFactoryTest
         assertTrue( DataFactory.getThresholdOperator( fourth ) == Operator.LESS_EQUAL );
 
         //Test exception cases
-        exception.expect( NullPointerException.class );
-
-        DataFactory.getThresholdOperator( (ThresholdsConfig) null );
-
-        DataFactory.getThresholdOperator( new ThresholdsConfig( null,
-                                                                null,
-                                                                null,
-                                                                null ) );
+        assertThrows( NullPointerException.class, () -> DataFactory.getThresholdOperator( (ThresholdsConfig) null ) );
+        assertThrows( NullPointerException.class,
+                      () -> DataFactory.getThresholdOperator( new ThresholdsConfig( null,
+                                                                                    null,
+                                                                                    null,
+                                                                                    null ) ) );
     }
 
     /**
@@ -306,10 +298,10 @@ public final class DataFactoryTest
     @Test
     public void testGetMetricNameThrowsNPEWhenInputIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
+        NullPointerException actual =
+                assertThrows( NullPointerException.class, () -> DataFactory.getMetricName( (MetricConfigName) null ) );
 
-        DataFactory.getMetricName( (MetricConfigName) null );
+        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
     }
 
     /**
@@ -340,10 +332,11 @@ public final class DataFactoryTest
     @Test
     public void testGetTimeSeriesMetricNameThrowsNPEWhenInputIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
+        NullPointerException actual =
+                assertThrows( NullPointerException.class,
+                              () -> DataFactory.getMetricName( (TimeSeriesMetricConfigName) null ) );
 
-        DataFactory.getMetricName( (TimeSeriesMetricConfigName) null );
+        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
     }
 
     /**
@@ -369,10 +362,11 @@ public final class DataFactoryTest
     @Test
     public void testGetThresholdDataTypeThrowsNPEWhenInputIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
+        NullPointerException actual =
+                assertThrows( NullPointerException.class,
+                              () -> DataFactory.getThresholdDataType( null ) );
 
-        DataFactory.getThresholdDataType( null );
+        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
     }
 
     /**
@@ -397,10 +391,11 @@ public final class DataFactoryTest
     @Test
     public void testGetThresholdGroupThrowsNPEWhenInputIsNull()
     {
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( EXPECTED_EXCEPTION_ON_NULL );
+        NullPointerException actual =
+                assertThrows( NullPointerException.class,
+                              () -> DataFactory.getThresholdGroup( null ) );
 
-        DataFactory.getThresholdGroup( null );
+        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
     }
 
 }
