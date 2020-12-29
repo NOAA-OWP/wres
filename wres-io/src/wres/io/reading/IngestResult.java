@@ -1,81 +1,103 @@
 package wres.io.reading;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 
 /**
- * High-level result for a single fragment of ingest.
- * Multiple fragments can be used in a single source collection, and one can
- * be used multiple times in a single source collection (witness scenario400)
+ * High-level result for a single fragment of ingest, namely a timeseries.
+ * One can be used multiple times in a single dataset (witness scenario400).
+ *
+ * Due to the history of this class, it has been split into two implementations
+ * and modes: one for retry and one not for retry. The caller must test by
+ * calling requiresRetry() before calling getDataSource() or
+ * getLeftOrRightOrBaseline() because when requiresRetry() is false, those
+ * methods are unsupported and will throw UnsupportedOperationException.
  */
 
-public class IngestResult
+public interface IngestResult
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( IngestResult.class );
-    private final LeftOrRightOrBaseline leftOrRightOrBaseline;
-    private final DataSource dataSource;
-    private final int surrogateKey;
-    private final boolean foundAlready;
-    private final boolean requiresRetry;
+    /**
+     * @return The surrogate key (the auto-incremented integer) for the source.
+     */
+    int getSurrogateKey();
 
-    private IngestResult( LeftOrRightOrBaseline leftOrRightOrBaseline,
-                          DataSource dataSource,
-                          int surrogateKey,
-                          boolean foundAlready,
-                          boolean requiresRetry )
+    /**
+     * The DataSource to use when retrying ingest.
+     * @throws UnsupportedOperationException when requiresRetry() is false.
+     */
+    DataSource getDataSource();
+
+    /**
+     * Whether Left or Right or Baseline when retrying ingest.
+     * @throws UnsupportedOperationException when requiresRetry() is false.
+     */
+    LeftOrRightOrBaseline getLeftOrRightOrBaseline();
+
+    /**
+     * Whether the data source existed already.
+     * @return True when the data source was already in existence.
+     */
+    boolean wasFoundAlready();
+
+    /**
+     * Whether this data requires another try at ingest.
+     * @return true when ingest needs to be retried.
+     */
+
+    boolean requiresRetry();
+
+    /**
+     * How many times the timeseries is included in the left dataset.
+     * @return Count of left dataset associations.
+     */
+    short getLeftCount();
+
+    /**
+     * How many times the timeseries is included in the right dataset.
+     * @return Count of right dataset associations.
+     */
+    short getRightCount();
+
+    /**
+     * How many times the timeseries is included in the baseline dataset.
+     * @return Count of baseline dataset associations.
+     */
+    short getBaselineCount();
+
+
+    private static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
+                                    DataSource dataSource,
+                                    int surrogateKey,
+                                    boolean foundAlready,
+                                    boolean requiresRetry )
     {
-        Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
-        Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
-
-        if ( surrogateKey == 0 )
+        if ( requiresRetry && !foundAlready )
         {
-            LOGGER.warn( "Suspicious surrogate key id=0 given for dataSource={} with l/r/b={} foundAlready={} requiresRetry={}",
-                         dataSource, leftOrRightOrBaseline, foundAlready, requiresRetry );
+            throw new IllegalArgumentException( "If requiring retry, it must have been found already!" );
         }
-
-        if ( surrogateKey < 0 )
-        {
-            throw new IllegalArgumentException( "Auto-generated ids are usually positive, but given surrogateKey was "
-                                                + surrogateKey );
-        }
-
-        this.leftOrRightOrBaseline = leftOrRightOrBaseline;
-        this.surrogateKey = surrogateKey;
 
         if ( requiresRetry )
         {
-            this.dataSource = dataSource;
+            return new IngestResultNeedingRetry( leftOrRightOrBaseline,
+                                                 dataSource,
+                                                 surrogateKey );
         }
         else
         {
-            // Heap savings. Maybe there's a better way.
-            this.dataSource = dataSource.withMinimalDetail();
+            return new IngestResultCompact( leftOrRightOrBaseline,
+                                            dataSource,
+                                            surrogateKey,
+                                            foundAlready );
         }
-
-        this.requiresRetry = requiresRetry;
-        this.foundAlready = foundAlready;
     }
 
-    private static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
-                                   DataSource dataSource,
-                                   int surrogateKey,
-                                   boolean foundAlready,
-                                   boolean requiresRetry )
-    {
-        return new IngestResult( leftOrRightOrBaseline, dataSource, surrogateKey, foundAlready, requiresRetry );
-    }
 
 
     /**
@@ -88,10 +110,10 @@ public class IngestResult
      * @return the IngestResult
      */
     private static IngestResult from( ProjectConfig projectConfig,
-                                     DataSource dataSource,
-                                     int surrogateKey,
-                                     boolean foundAlready,
-                                     boolean requiresRetry )
+                                      DataSource dataSource,
+                                      int surrogateKey,
+                                      boolean foundAlready,
+                                      boolean requiresRetry )
     {
         LeftOrRightOrBaseline leftOrRightOrBaseline =
                 ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
@@ -102,8 +124,6 @@ public class IngestResult
                                 foundAlready,
                                 requiresRetry );
     }
-
-
 
 
     /**
@@ -118,11 +138,11 @@ public class IngestResult
      * @return a list with a single IngestResult in it
      */
 
-    public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
-                                                         DataSource dataSource,
-                                                         int surrogateKey,
-                                                         boolean foundAlready,
-                                                         boolean requiresRetry )
+    static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
+                                                  DataSource dataSource,
+                                                  int surrogateKey,
+                                                  boolean foundAlready,
+                                                  boolean requiresRetry )
     {
         IngestResult ingestResult = IngestResult.from( projectConfig,
                                                        dataSource,
@@ -131,7 +151,6 @@ public class IngestResult
                                                        requiresRetry );
         return List.of( ingestResult );
     }
-
 
     /**
      * Wrap a single item list of "already-found-in-database" ingest result in
@@ -143,10 +162,10 @@ public class IngestResult
      * @return an immediately-returning Future
      */
 
-    public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
-                                                                           DataSource dataSource,
-                                                                           int surrogateKey,
-                                                                           boolean requiresRetry )
+    static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
+                                                                    DataSource dataSource,
+                                                                    int surrogateKey,
+                                                                    boolean requiresRetry )
     {
         return FakeFutureListOfIngestResults.from( projectConfig,
                                                    dataSource,
@@ -155,49 +174,12 @@ public class IngestResult
     }
 
 
-    public DataSource getDataSource()
-    {
-        return this.dataSource;
-    }
-
-    public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
-    {
-        return this.leftOrRightOrBaseline;
-    }
-
-    public int getSurrogateKey()
-    {
-        return this.surrogateKey;
-    }
-
-    public boolean wasFoundAlready()
-    {
-        return this.foundAlready;
-    }
-
-    public boolean requiresRetry()
-    {
-        return this.requiresRetry;
-    }
-
-    @Override
-    public String toString()
-    {
-        return new ToStringBuilder( this )
-                .append( "leftOrRightOrBaseline", leftOrRightOrBaseline )
-                .append( "dataSource", dataSource )
-                .append( "surrogateKey", surrogateKey )
-                .append( "foundAlready", foundAlready )
-                .append( "requiresRetry", requiresRetry )
-                .toString();
-    }
-
     /**
      * For convenience of those clients needing an immediately-returning Future
      * this encapsulates an "already-found" IngestResult in a Future List.
      */
 
-    private static class FakeFutureListOfIngestResults implements Future<List<IngestResult>>
+    class FakeFutureListOfIngestResults implements Future<List<IngestResult>>
     {
         private final List<IngestResult> results;
 

@@ -104,24 +104,6 @@ public class DataSource
         return new DataSource( source, context, links, uri, timeSeries );
     }
 
-
-    /**
-     * Create a copy of this DataSource to be used when fully ingested.
-     * The difference here is no URI is reported back, no individual source,
-     * only the l/r/b and the additional l/r/b links. To be used by
-     * {@link IngestResult} which is why it's package private.
-     * @return The shrunken version of the datasource
-     */
-
-    DataSource withMinimalDetail()
-    {
-        return new DataSource( null,
-                               this.context,
-                               this.links,
-                               null,
-                               null );
-    }
-
     /**
      * Create a source.
      * @param source the source
@@ -141,7 +123,16 @@ public class DataSource
 
         this.source = source;
         this.context = context;
-        this.links = Collections.unmodifiableSet( links );
+
+        if ( links.equals( Collections.emptySet() ) )
+        {
+            this.links = links;
+        }
+        else
+        {
+            this.links = Collections.unmodifiableSet( links );
+        }
+
         this.uri = uri;
         this.timeSeries = timeSeries;
     }
