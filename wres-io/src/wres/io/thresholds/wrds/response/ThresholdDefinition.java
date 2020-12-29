@@ -11,6 +11,7 @@ import wres.io.retrieval.UnitMapper;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.DoubleUnaryOperator;
 
@@ -75,11 +76,23 @@ public class ThresholdDefinition implements Serializable {
     }
 
     public String getThresholdProvider() {
-        return this.getMetadata().getThreshold_source();
+        String thresholdProvider = null;
+        if( Objects.nonNull( this.getMetadata() ) )
+        {
+            thresholdProvider = this.getMetadata().getThreshold_source();
+        }
+        
+        return thresholdProvider;
     }
 
     public String getRatingProvider() {
-        return this.getMetadata().getRating_source();
+        String ratingProvider = null;
+        if( Objects.nonNull( this.getMetadata() ) )
+        {
+            ratingProvider = this.getMetadata().getRating_source();
+        }
+        
+        return ratingProvider;
     }
 
     public Double getLowFlow(boolean getCalculated, UnitMapper unitMapper) {
