@@ -365,8 +365,6 @@ project(':wres-io')
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.0-jre'
 
-        testCompile 'junit:junit:4.13.1'
-
         testCompile group: 'org.liquibase', name: 'liquibase-core', version: '3.10.3'
 
         // Mocking help
@@ -381,10 +379,20 @@ project(':wres-io')
 
         // Use H2 for truly embedded SQL db
         testCompile 'com.h2database:h2:1.4.200'
+
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+
+        // Backwards compatibility for JUnit 4 tests
+        testCompileOnly 'junit:junit:4.13.1' 
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.7.0'
     }
 
     test
     {
+        useJUnitPlatform()
+
         // Set the socket timeout for tests involving mockserver to 120s
         systemProperties += [ "mockserver.maxSocketTimeout": 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,

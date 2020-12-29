@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ThresholdMetadata implements Serializable {
@@ -32,7 +33,8 @@ public class ThresholdMetadata implements Serializable {
 
     public String getThreshold_source()
     {
-        if (this.threshold_source.equals("None")) {
+        if ( Objects.isNull( this.threshold_source ) || this.threshold_source.equals( "None" ) )
+        {
             return null;
         }
         return this.threshold_source;
@@ -98,7 +100,8 @@ public class ThresholdMetadata implements Serializable {
 
     public String getRating_source()
     {
-        if (this.rating_source.equals("None")) {
+        if ( Objects.isNull( this.rating_source ) || this.rating_source.equals( "None" ) )
+        {
             return null;
         }
         return rating_source;
