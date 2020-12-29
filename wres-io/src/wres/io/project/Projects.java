@@ -1,7 +1,5 @@
 package wres.io.project;
 
-import static wres.config.generated.LeftOrRightOrBaseline.*;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -19,7 +17,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
@@ -102,52 +99,22 @@ public class Projects
         {
             int countAdded = 0;
 
-            if ( ingestResult.getLeftOrRightOrBaseline()
-                             .equals( LeftOrRightOrBaseline.LEFT ) )
+            for ( short i = 0; i < ingestResult.getLeftCount(); i++ )
             {
                 leftIds.add( ingestResult.getSurrogateKey() );
                 countAdded++;
             }
-            else if ( ingestResult.getLeftOrRightOrBaseline()
-                                  .equals( LeftOrRightOrBaseline.RIGHT ) )
+
+            for ( short i = 0; i < ingestResult.getRightCount(); i++ )
             {
                 rightIds.add( ingestResult.getSurrogateKey() );
                 countAdded++;
             }
-            else if ( ingestResult.getLeftOrRightOrBaseline()
-                                  .equals( LeftOrRightOrBaseline.BASELINE ) )
+
+            for ( short i = 0; i < ingestResult.getBaselineCount(); i++ )
             {
                 baselineIds.add( ingestResult.getSurrogateKey() );
                 countAdded++;
-            }
-            else
-            {
-                throw new IllegalArgumentException( "An ingest result did not "
-                                                    + "have left/right/baseline"
-                                                    + " associated with it: "
-                                                    + ingestResult );
-            }
-
-            // Additionally include links when a source is re-used in a project.
-            for ( LeftOrRightOrBaseline leftOrRightOrBaseline :
-                    ingestResult.getDataSource()
-                                .getLinks() )
-            {
-                if ( leftOrRightOrBaseline.equals( LEFT ) )
-                {
-                    leftIds.add( ingestResult.getSurrogateKey() );
-                    countAdded++;
-                }
-                else if ( leftOrRightOrBaseline.equals( RIGHT ) )
-                {
-                    rightIds.add( ingestResult.getSurrogateKey() );
-                    countAdded++;
-                }
-                else if ( leftOrRightOrBaseline.equals( BASELINE ) )
-                {
-                    baselineIds.add( ingestResult.getSurrogateKey() );
-                    countAdded++;
-                }
             }
 
             LOGGER.debug( "Noticed {} has {} links.", ingestResult, countAdded );
@@ -277,16 +244,26 @@ public class Projects
             for ( IngestResult ingestResult : ingestResults )
             {
                 int sourceID = ingestResult.getSurrogateKey();
-                copyStatement.add( details.getId() + delimiter
-                                   + sourceID + delimiter
-                                   + ingestResult.getLeftOrRightOrBaseline().value() );
 
-                for ( LeftOrRightOrBaseline additionalLink :
-                        ingestResult.getDataSource().getLinks() )
+                for ( short i = 0; i < ingestResult.getLeftCount(); i++ )
                 {
                     copyStatement.add( details.getId() + delimiter
                                        + sourceID + delimiter
-                                       + additionalLink.value() );
+                                       + "left" );
+                }
+
+                for ( short i = 0; i < ingestResult.getRightCount(); i++ )
+                {
+                    copyStatement.add( details.getId() + delimiter
+                                       + sourceID + delimiter
+                                       + "right" );
+                }
+
+                for ( short i = 0; i < ingestResult.getBaselineCount(); i++ )
+                {
+                    copyStatement.add( details.getId() + delimiter
+                                       + sourceID + delimiter
+                                       + "baseline" );
                 }
             }
 
