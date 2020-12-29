@@ -193,10 +193,11 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
             source.save( database );
             foundAlready = !source.performedInsert();
         }
-        catch ( SQLException e )
+        catch ( SQLException se )
         {
             throw new IngestException( "Source metadata about '" + location +
-                                       "' could not be stored or retrieved from the database." );
+                                       "' could not be stored or retrieved from the database.",
+                                       se );
         }
 
         LOGGER.debug( "Found {}? {}", source, foundAlready );
