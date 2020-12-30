@@ -1143,13 +1143,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         /**
-         * Attempts to find the standard metric-threshold name of a variable within the netCDF blob that corresponding to 
-         * the score metadata. Attempts to use the threshold name to locate the threshold. Otherwise, uses the natural 
-         * order of the thresholds.
+         * Attempts to find the standard metric-threshold name of a variable within the netCDF blob that corresponding 
+         * to the score metadata.
          * 
          * @param metricName the metric name
          * @param score the score whose metric-threshold standard name is required
          * @return the standard name
+         * @throws IllegalStateException if the variable name could not be found
          */
 
         private String getVariableName( MetricConstants metricName,
@@ -1163,7 +1163,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                   .getMetric()
                                                   .getName()
                                                   .name() );
-            
+
             String metricNameString = metricName.name();
             if ( metricComponentName != MetricConstants.MAIN )
             {
@@ -1177,11 +1177,26 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
 
             // Look for a threshold with a standard name that is like the threshold associated with this score
-            // Only use this technique when the thresholds are named
             LOGGER.debug( "Searching the standard threshold names for metric name {}.", metricNameString );
 
             Map<String, OneOrTwoThresholds> metricMap =
                     this.outputWriter.standardThresholdNames.get( metricNameString );
+
+            // #81594
+            if ( Objects.isNull( metricMap ) )
+            {
+                throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric "
+                                                 + "variable "
+                                                 + metricNameString
+                                                 + " and threshold "
+                                                 + sampleMetadata.getThresholds()
+                                                 + ", failed to locate the variable name in the map of metric "
+                                                 + "variables. The map contains the following metric variable names: "
+                                                 + this.outputWriter.standardThresholdNames.keySet()
+                                                 + ". The sample metadata of the statistic that could not be written "
+                                                 + "is: "
+                                                 + sampleMetadata );
+            }
 
             for ( Map.Entry<String, OneOrTwoThresholds> nextThreshold : metricMap.entrySet() )
             {
@@ -1209,15 +1224,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 }
             }
 
-            // Couldn't find a variable name, which is not allowed
-            throw new IllegalArgumentException( "Could not find the name of the thresholds variable corresponding to "
-                                                + "the threshold "
-                                                + sampleMetadata.getThresholds()
-                                                + " and metric "
-                                                + metricNameString
-                                                + " associated with "
-                                                + sampleMetadata
-                                                + "." );
+            throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric variable "
+                                             + metricNameString
+                                             + " and threshold "
+                                             + sampleMetadata.getThresholds()
+                                             + ", discovered the variable name "
+                                             + metricNameString
+                                             + ", but failed to discover the standard threshold name within the map of "
+                                             + "standard names. The map contained the following names: "
+                                             + metricMap.keySet()
+                                             + ". The sample metadata of the statistic that could not be written is: "
+                                             + sampleMetadata );
         }
 
         /**
