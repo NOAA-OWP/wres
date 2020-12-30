@@ -35,6 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.time.DayOfWeek.SUNDAY;
+import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
+import static java.time.temporal.TemporalAdjusters.firstDayOfNextYear;
 import static java.time.temporal.TemporalAdjusters.next;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
 
@@ -265,10 +267,9 @@ class WebSource implements Callable<List<IngestResult>>
                 ConfigHelper.getFeatureNamesForSource( this.getProjectConfig(),
                                                        this.getDataSourceConfig() );
 
-        Set<Pair<Instant, Instant>> weekRanges =
-                createWeekRanges( this.getProjectConfig(),
-                                  this.getDataSource(),
-                                  this.getNow() );
+        Set<Pair<Instant, Instant>> dateRanges = createRanges( this.getProjectConfig(),
+                                                               this.getDataSource(),
+                                                               this.getNow() );
         Set<URI> alreadySubmittedUris = new HashSet<>();
 
         if ( this.usesFeatureBlocks() )
@@ -281,7 +282,7 @@ class WebSource implements Callable<List<IngestResult>>
             {
                 for ( String[] featureBlock : featureBlocks )
                 {
-                    for ( Pair<Instant, Instant> range : weekRanges )
+                    for ( Pair<Instant, Instant> range : dateRanges )
                     {
                         URI uri = createUri( this.getBaseUri(),
                                              this.getDataSource(),
@@ -368,7 +369,7 @@ class WebSource implements Callable<List<IngestResult>>
         {
             for ( String featureName : features )
             {
-                for ( Pair<Instant, Instant> range : weekRanges )
+                for ( Pair<Instant, Instant> range : dateRanges )
                 {
                     URI uri = createUri( this.getBaseUri(),
                                          this.getDataSource(),
@@ -546,8 +547,7 @@ class WebSource implements Callable<List<IngestResult>>
      */
     private boolean usesFeatureBlocks()
     {
-        return this.isWrdsNwmSource( this.getDataSource() )
-               || this.isUsgsSource( this.getDataSource() );
+        return this.isWrdsNwmSource( this.getDataSource() );
     }
 
 
@@ -627,6 +627,44 @@ class WebSource implements Callable<List<IngestResult>>
         return Collections.unmodifiableList( featureBlocks );
     }
 
+
+    /**
+     * Returns a set of datetime ranges based on the kind of DataSource given.
+     *
+     * Calls the appropriate method below based on the DataSource.
+     *
+     * For NWM data, for example, the ranges may be weekly, whereas for USGS
+     * NWIS data the ranges may be annual.
+     *
+     * @param declaration The project declaration.
+     * @param dataSource The to-be-ingested data source.
+     * @param nowDate The date "now", to avoid putting future date into ranges.
+     * @return A set of datetime ranges.
+     */
+
+    private Set<Pair<Instant,Instant>> createRanges( ProjectConfig declaration,
+                                                     DataSource dataSource,
+                                                     OffsetDateTime nowDate )
+    {
+        if ( this.isUsgsSource( dataSource )
+             || this.isWrdsAhpsSource( dataSource ) )
+        {
+            return this.createYearRanges( declaration,
+                                          dataSource,
+                                          nowDate );
+        }
+        else if ( this.isWrdsNwmSource( dataSource ) )
+        {
+            return this.createWeekRanges( declaration,
+                                          dataSource,
+                                          nowDate );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Could not create ranges for "
+                                                     + dataSource );
+        }
+    }
 
     /**
      * Break up dates into weeks starting at T00Z Sunday and ending T00Z the
@@ -743,8 +781,103 @@ class WebSource implements Callable<List<IngestResult>>
 
 
     /**
+     * Similar to above, but deeper-in-duration: a year.
+     */
+    private Set<Pair<Instant,Instant>> createYearRanges( ProjectConfig config,
+                                                         DataSource dataSource,
+                                                         OffsetDateTime nowDate )
+    {
+        Objects.requireNonNull( config );
+        Objects.requireNonNull( config.getPair() );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getContext() );
+
+        boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
+
+        if ( ( isForecast && config.getPair().getIssuedDates() == null )
+             || ( !isForecast && config.getPair().getDates() == null ) )
+        {
+            throw new ProjectConfigException( config.getPair(),
+                                              DATES_ERROR_MESSAGE );
+        }
+
+        DateCondition dates = config.getPair()
+                                    .getDates();
+
+        if ( isForecast )
+        {
+            dates = config.getPair()
+                          .getIssuedDates();
+        }
+
+        if ( dates.getEarliest() == null
+             || dates.getLatest() == null )
+        {
+            throw new ProjectConfigException( dates,
+                                              DATES_ERROR_MESSAGE );
+        }
+
+        Set<Pair<Instant,Instant>> yearRanges = new HashSet<>();
+
+        OffsetDateTime earliest;
+        String specifiedEarliest = dates.getEarliest();
+
+        OffsetDateTime latest;
+        String specifiedLatest = dates.getLatest();
+
+        earliest = OffsetDateTime.parse( specifiedEarliest )
+                                 .with( firstDayOfYear() )
+                                 .withHour( 0 )
+                                 .withMinute( 0 )
+                                 .withSecond( 0 )
+                                 .withNano( 0 );
+
+        LOGGER.debug( "createYearRanges(): given {} calculated {} for earliest.",
+                      specifiedEarliest, earliest );
+
+        // Intentionally keep this raw, un-next-year-ified.
+        latest = OffsetDateTime.parse( specifiedLatest );
+
+        LOGGER.debug( "createYearRanges(): given {} parsed {} for latest.",
+                      specifiedLatest, latest );
+
+        OffsetDateTime left = earliest;
+        OffsetDateTime right = left.with( firstDayOfNextYear() );
+
+        while ( left.isBefore( latest ) )
+        {
+            // Because we chunk a year at a time, and because these will not
+            // be retrieved again if already present, we need to ensure the
+            // right hand date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
+            {
+                if ( latest.isAfter( nowDate ) )
+                {
+                    right = nowDate;
+                }
+                else
+                {
+                    right = latest;
+                }
+            }
+
+            Pair<Instant,Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "createYearRanges(): created range {}", range );
+            yearRanges.add( range );
+            left = left.with( firstDayOfNextYear() );
+            right = right.with( firstDayOfNextYear() );
+        }
+
+        LOGGER.debug( "createYearRanges(): calculated ranges {}", yearRanges );
+
+        return Collections.unmodifiableSet( yearRanges );
+    }
+
+
+    /**
      * Create a uri for a single location. Older method than below createUri.
-     * Used for USGS NWIS and WRDS AHPS services as of 2020-02-25.
+     * Used for USGS NWIS and WRDS AHPS services as of 2020-12-30.
+     * Supports both USGS NWIS and WRDS AHPS services.
      * @param baseUri The uri prefix.
      * @param dataSource The data source.
      * @param range The date range.
@@ -765,6 +898,13 @@ class WebSource implements Callable<List<IngestResult>>
                                            dataSource.getContext()
                                                      .getUrlParameter() );
         }
+        else if ( this.isUsgsSource( dataSource ) )
+        {
+            return this.createUsgsNwisUri( baseUri,
+                                           dataSource,
+                                           range,
+                                           new String[] { featureName } );
+        }
         else
         {
             // #74994-8
@@ -784,7 +924,8 @@ class WebSource implements Callable<List<IngestResult>>
 
     /**
      * Create a URI for multiple locations. Newer method than above createUri.
-     * Only used for WRDS NWM services as of 2020-02-25.
+     * Only used for WRDS NWM services as of 2020-12-30.
+     * Supports both USGS NWIS and WRDS NWM services.
      * @param baseUri The URI prefix.
      * @param dataSource The data source.
      * @param range The date range.
