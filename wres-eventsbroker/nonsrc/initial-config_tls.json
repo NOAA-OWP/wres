@@ -1,0 +1,163 @@
+{
+	"name": "wres-eventsbroker",
+	"modelVersion": "8.0",
+	"context": {
+		"qpid.security.tls.protocolAllowList": "[\"TLSv1.3\",\"TLSv1.2\"]"
+	},
+	"authenticationproviders": [
+		{
+			"name": "externalAuthProvider",
+			"type": "External",
+			"Use the full DN as the Username": "false"
+		},
+		{
+			"name": "anonymousAuthProvider",
+			"type": "Anonymous",
+			"Use the full DN as the Username": "false"
+		}
+	],
+	"keystores": [
+		{
+			"name": "wres-keystore",
+			"type": "NonJavaKeyStore",
+			"privateKeyUrl": "${wres.secrets_dir}${file.separator}wres-eventsbroker_server_private_rsa_key.pem",
+			"certificateUrl": "${wres.secrets_dir}${file.separator}wres-eventsbroker_server_x509_cert.pem"
+		}
+	],
+	"truststores": [
+		{
+			"name": "wres-truststore",
+			"type": "NonJavaTrustStore",
+			"certificatesUrl": "${wres.secrets_dir}${file.separator}wres_ca.pem"
+		}
+	],
+	"brokerloggers": [
+		{
+			"name": "logfile",
+			"type": "File",
+			"fileName": "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
+			"brokerloginclusionrules": [
+				{
+					"name": "Operational",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "qpid.message.*"
+				},
+				{
+					"name": "Qpid",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "org.apache.qpid.*"
+				},
+				{
+					"name": "Root",
+					"type": "NameAndLevel",
+					"level": "WARN",
+					"loggerName": "ROOT"
+				},
+				{
+					"name": "Statistics",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "qpid.statistics.*"
+				}
+			]
+		},
+		{
+			"name": "memory",
+			"type": "Memory",
+			"brokerloginclusionrules": [
+				{
+					"name": "Operational",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "qpid.message.*"
+				},
+				{
+					"name": "Qpid",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "org.apache.qpid.*"
+				},
+				{
+					"name": "Root",
+					"type": "NameAndLevel",
+					"level": "WARN",
+					"loggerName": "ROOT"
+				},
+				{
+					"name": "Statistics",
+					"type": "NameAndLevel",
+					"level": "INFO",
+					"loggerName": "qpid.statistics.*"
+				}
+			]
+		}
+	],
+	"plugins": [
+		{
+			"type": "MANAGEMENT-HTTP",
+			"name": "httpManagement"
+		}
+	],
+	"ports": [
+		{
+			"name": "wres-AMQP",
+			"port": "${qpid.amqp_port}",
+			"bindingAddress": "0.0.0.0",
+			"transports": [
+				"TCP"
+			],
+			"protocols": [
+				"AMQP_0_9_1"
+			],
+			"authenticationProvider": "anonymousAuthProvider",
+			"needClientAuth": "false",
+			"maxOpenConnections": "-1",
+			"threadPoolSize": "4",
+			"virtualhostaliases": [
+				{
+					"name": "defaultAlias",
+					"type": "defaultAlias"
+				},
+				{
+					"name": "hostnameAlias",
+					"type": "hostnameAlias"
+				},
+				{
+					"name": "nameAlias",
+					"type": "nameAlias"
+				}
+			]
+		},
+		{
+			"name": "wres-HTTP",
+			"port": "${qpid.http_port}",
+			"bindingAddress": "0.0.0.0",
+			"transports": [
+				"SSL"
+			],
+			"protocols": [
+				"HTTP"
+			],
+			"keyStore": "wres-keystore",
+			"trustStores": [
+				"wres-truststore"
+			],
+			"authenticationProvider": "externalAuthProvider",
+			"needClientAuth": "true"
+		}
+	],
+	"virtualhostnodes": [
+		{
+			"name": "wres-statistics",
+			"type": "JSON",
+			"context": {
+				"uncomment_for_dlqs:queue.defaultAlternateBinding": "{\"destination\": \"$${this:name}_DLQ\"} }",
+				"queue.maximumDeliveryAttempts": "4"
+			},
+			"defaultVirtualHostNode": "true",
+			"virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"
+		}
+	]
+}
