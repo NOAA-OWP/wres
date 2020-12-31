@@ -14,7 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -126,9 +126,9 @@ public class ConfigHelper
      *                               source data
      * @return A unique hash code for the project's circumstances
      */
-    public static Integer hashProject( final List<String> leftHashesIngested,
-                                       final List<String> rightHashesIngested,
-                                       final List<String> baselineHashesIngested )
+    public static String hashProject( final String[] leftHashesIngested,
+                                      final String[] rightHashesIngested,
+                                      final String[] baselineHashesIngested )
     {
         MessageDigest md5Digest;
 
@@ -143,37 +143,31 @@ public class ConfigHelper
         }
 
         // Sort for deterministic hash result for same list of ingested
-        Collection<String> sortedLeftHashes =
-                wres.util.Collections.copyAndSort( leftHashesIngested );
+        Arrays.sort( leftHashesIngested );
 
-        for ( String leftHash : sortedLeftHashes )
+        for ( String leftHash : leftHashesIngested )
         {
             DigestUtils.updateDigest( md5Digest, leftHash );
         }
 
         // Sort for deterministic hash result for same list of ingested
-        Collection<String> sortedRightHashes =
-                wres.util.Collections.copyAndSort( rightHashesIngested );
+        Arrays.sort( rightHashesIngested );
 
-        for ( String rightHash : sortedRightHashes )
+        for ( String rightHash : rightHashesIngested )
         {
             DigestUtils.updateDigest( md5Digest, rightHash );
         }
 
         // Sort for deterministic hash result for same list of ingested
-        Collection<String> sortedBaselineHashes =
-                wres.util.Collections.copyAndSort( baselineHashesIngested );
+        Arrays.sort( baselineHashesIngested );
 
-        for ( String baselineHash : sortedBaselineHashes )
+        for ( String baselineHash : baselineHashesIngested )
         {
             DigestUtils.updateDigest( md5Digest, baselineHash );
         }
 
         byte[] digestAsHex = md5Digest.digest();
-        String digestAsString = Hex.encodeHexString( digestAsHex );
-
-        // TODO, return the digest/hash rather than a hashcode of the digest.
-        return digestAsString.hashCode();
+        return Hex.encodeHexString( digestAsHex );
     }
 
     /**

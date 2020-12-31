@@ -3,8 +3,6 @@ package wres.io.project;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,9 +39,9 @@ public class Projects
                                                      Database database,
                                                      Executor executor,
                                                      ProjectConfig projectConfig,
-                                                     List<String> leftHashes,
-                                                     List<String> rightHashes,
-                                                     List<String> baselineHashes )
+                                                     String[] leftHashes,
+                                                     String[] rightHashes,
+                                                     String[] baselineHashes )
             throws SQLException
     {
         Objects.requireNonNull( systemSettings );
@@ -53,11 +51,14 @@ public class Projects
         Objects.requireNonNull( leftHashes );
         Objects.requireNonNull( rightHashes );
         Objects.requireNonNull( baselineHashes );
-        Integer inputCode = ConfigHelper.hashProject(
+        String identity = ConfigHelper.hashProject(
                 leftHashes,
                 rightHashes,
                 baselineHashes
         );
+
+        // TODO, use the digest/hash rather than a hashcode of the digest.
+        Integer inputCode = identity.hashCode();
 
         Project details = new Project( systemSettings,
                                        database,
@@ -91,42 +92,70 @@ public class Projects
                                                 List<IngestResult> ingestResults )
             throws SQLException, IOException
     {
-        List<Integer> leftIds = new ArrayList<>();
-        List<Integer> rightIds = new ArrayList<>();
-        List<Integer> baselineIds = new ArrayList<>();
+        int[] leftIds = Projects.getLeftIds( ingestResults );
+        int[] rightIds = Projects.getRightIds( ingestResults );
+        int[] baselineIds = Projects.getBaselineIds( ingestResults );
+        int countOfIngestResults = ingestResults.size();
 
-        for ( IngestResult ingestResult : ingestResults )
+        // Check assumption that at least one left and one right source have
+        // been created.
+        int leftCount = leftIds.length;
+        int rightCount = rightIds.length;
+
+        if ( leftCount < 1 || rightCount < 1 )
         {
-            int countAdded = 0;
-
-            for ( short i = 0; i < ingestResult.getLeftCount(); i++ )
-            {
-                leftIds.add( ingestResult.getSurrogateKey() );
-                countAdded++;
-            }
-
-            for ( short i = 0; i < ingestResult.getRightCount(); i++ )
-            {
-                rightIds.add( ingestResult.getSurrogateKey() );
-                countAdded++;
-            }
-
-            for ( short i = 0; i < ingestResult.getBaselineCount(); i++ )
-            {
-                baselineIds.add( ingestResult.getSurrogateKey() );
-                countAdded++;
-            }
-
-            LOGGER.debug( "Noticed {} has {} links.", ingestResult, countAdded );
+            throw new IllegalStateException( "At least one source for left and "
+                                             + "one source for right must be "
+                                             + "linked, but left had "
+                                             + leftCount + " sources and right "
+                                             + "had " + rightCount
+                                             + " sources." );
         }
 
-        List<Integer> finalLeftIds = Collections.unmodifiableList( leftIds );
-        List<Integer> finalRightIds = Collections.unmodifiableList( rightIds );
-        List<Integer> finalBaselineIds = Collections.unmodifiableList( baselineIds );
+        // Permit the List<IngestResult> to be garbage collected here, which
+        // should leave space on heap for creating collections in the following.
+        return Projects.getProjectFromIngestStepTwo( systemSettings,
+                                                     database,
+                                                     executor,
+                                                     projectConfig,
+                                                     leftIds,
+                                                     rightIds,
+                                                     baselineIds,
+                                                     countOfIngestResults );
+    }
 
-        Set<Integer> uniqueSourcesUsed = new HashSet<>( finalLeftIds );
-        uniqueSourcesUsed.addAll( finalRightIds );
-        uniqueSourcesUsed.addAll( finalBaselineIds );
+    private static Project getProjectFromIngestStepTwo( SystemSettings systemSettings,
+                                                        Database database,
+                                                        Executor executor,
+                                                        ProjectConfig projectConfig,
+                                                        int[] leftIds,
+                                                        int[] rightIds,
+                                                        int[] baselineIds,
+                                                        int countOfIngestResults )
+            throws SQLException, IOException
+    {
+        // We don't yet know how many unique timeseries there are. For example,
+        // a baseline forecast could be the same as a right forecast. So we
+        // can't as easily drop to primitive arrays because we would want to
+        // know how to size them up front. The countOfIngestResults is a
+        // maximum, though.
+        Set<Integer> uniqueSourcesUsed = new HashSet<>( countOfIngestResults );
+
+        for ( int leftId : leftIds )
+        {
+            uniqueSourcesUsed.add( leftId );
+        }
+
+        for ( int rightId : rightIds )
+        {
+            uniqueSourcesUsed.add( rightId );
+        }
+
+        for ( int baselineId : baselineIds )
+        {
+            uniqueSourcesUsed.add( baselineId );
+        }
+
         int countOfUniqueHashes = uniqueSourcesUsed.size();
         final int MAX_PARAMETER_COUNT = 999;
         Map<Integer,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
@@ -150,17 +179,18 @@ public class Projects
         Projects.selectIdsAndHashes( database, batchOfIds, idsToHashes );
 
         // "select hash from wres.Source S inner join ( select ... ) I on S.source_id = I.source_id"
-        List<String> leftHashes = new ArrayList<>( finalLeftIds.size() );
-        List<String> rightHashes = new ArrayList<>( finalRightIds.size() );
-        List<String> baselineHashes = new ArrayList<>( finalBaselineIds.size() );
+        String[] leftHashes = new String[leftIds.length];
+        String[] rightHashes = new String[rightIds.length];
+        String[] baselineHashes = new String[baselineIds.length];
 
-        for ( Integer id : finalLeftIds )
+        for ( int i = 0; i < leftIds.length; i++ )
         {
+            int id = leftIds[i];
             String hash = idsToHashes.get( id );
 
             if ( Objects.nonNull( hash ) )
             {
-                leftHashes.add( hash );
+                leftHashes[i] = hash;
             }
             else
             {
@@ -169,13 +199,14 @@ public class Projects
             }
         }
 
-        for ( Integer id : finalRightIds )
+        for ( int i = 0; i < rightIds.length; i++ )
         {
+            int id = rightIds[i];
             String hash = idsToHashes.get( id );
 
             if ( Objects.nonNull( hash ) )
             {
-                rightHashes.add( hash );
+                rightHashes[i] = hash;
             }
             else
             {
@@ -184,13 +215,14 @@ public class Projects
             }
         }
 
-        for ( Integer id : finalBaselineIds )
+        for ( int i = 0; i < baselineHashes.length; i++ )
         {
+            int id = baselineIds[i];
             String hash = idsToHashes.get( id );
 
             if ( Objects.nonNull( hash ) )
             {
-                baselineHashes.add( hash );
+                baselineHashes[i] = hash;
             }
             else
             {
@@ -199,33 +231,14 @@ public class Projects
             }
         }
 
-        List<String> finalLeftHashes = Collections.unmodifiableList( leftHashes );
-        List<String> finalRightHashes = Collections.unmodifiableList( rightHashes );
-        List<String> finalBaselineHashes = Collections.unmodifiableList( baselineHashes );
-
-        // Check assumption that at least one left and one right source have
-        // been created.
-        int leftCount = finalLeftHashes.size();
-        int rightCount = finalRightHashes.size();
-
-        if ( leftCount < 1 || rightCount < 1 )
-        {
-            throw new IllegalStateException( "At least one source for left and "
-                                             + "one source for right must be "
-                                             + "linked, but left had "
-                                             + leftCount + " sources and right "
-                                             + "had " + rightCount
-                                             + " sources." );
-        }
-
         Pair<Project,Boolean> detailsResult =
                 Projects.getProject( systemSettings,
                                      database,
                                      executor,
                                      projectConfig,
-                                     finalLeftHashes,
-                                     finalRightHashes,
-                                     finalBaselineHashes );
+                                     leftHashes,
+                                     rightHashes,
+                                     baselineHashes );
         Project details = detailsResult.getLeft();
         int detailsId = details.getId();
 
@@ -241,30 +254,25 @@ public class Projects
             String delimiter = "|";
             StringJoiner copyStatement = new StringJoiner( NEWLINE );
 
-            for ( IngestResult ingestResult : ingestResults )
+            for ( int sourceID : leftIds )
             {
-                int sourceID = ingestResult.getSurrogateKey();
+                copyStatement.add( details.getId() + delimiter
+                                   + sourceID + delimiter
+                                   + "left" );
+            }
 
-                for ( short i = 0; i < ingestResult.getLeftCount(); i++ )
-                {
-                    copyStatement.add( details.getId() + delimiter
-                                       + sourceID + delimiter
-                                       + "left" );
-                }
+            for ( int sourceID : rightIds )
+            {
+                copyStatement.add( details.getId() + delimiter
+                                   + sourceID + delimiter
+                                   + "right" );
+            }
 
-                for ( short i = 0; i < ingestResult.getRightCount(); i++ )
-                {
-                    copyStatement.add( details.getId() + delimiter
-                                       + sourceID + delimiter
-                                       + "right" );
-                }
-
-                for ( short i = 0; i < ingestResult.getBaselineCount(); i++ )
-                {
-                    copyStatement.add( details.getId() + delimiter
-                                       + sourceID + delimiter
-                                       + "baseline" );
-                }
+            for ( int sourceID : baselineIds )
+            {
+                copyStatement.add( details.getId() + delimiter
+                                   + sourceID + delimiter
+                                   + "baseline" );
             }
 
             String allCopyValues = copyStatement.toString();
@@ -393,5 +401,116 @@ public class Projects
                 }
             }
         }
+    }
+
+
+    /**
+     * Get the list of left surrogate keys from given ingest results.
+     *
+     * Intended to save heap by doing one dataset at a time, using primitive[]
+     *
+     * @param ingestResults The ingest results.
+     * @return The ids for the left dataset
+     */
+
+    private static int[] getLeftIds( List<IngestResult> ingestResults )
+    {
+        // How big to make the array? We don't want to guess because then we
+        // would need to resize, which requires more heap again. Better to get
+        // it correct at the outset.
+        int sizeNeeded = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            sizeNeeded += ingestResult.getLeftCount();
+        }
+
+        int[] leftIds = new int[sizeNeeded];
+        int i = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            for ( short j = 0; j < ingestResult.getLeftCount(); j++ )
+            {
+                leftIds[i] = ingestResult.getSurrogateKey();
+                i++;
+            }
+        }
+
+        return leftIds;
+    }
+
+
+    /**
+     * Get the list of right surrogate keys from given ingest results.
+     *
+     * Intended to save heap by doing one dataset at a time, using primitive[]
+     *
+     * @param ingestResults The ingest results.
+     * @return The ids for the right dataset
+     */
+
+    private static int[] getRightIds( List<IngestResult> ingestResults )
+    {
+        // How big to make the array? We don't want to guess because then we
+        // would need to resize, which requires more heap again. Better to get
+        // it correct at the outset.
+        int sizeNeeded = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            sizeNeeded += ingestResult.getRightCount();
+        }
+
+        int[] rightIds = new int[sizeNeeded];
+        int i = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            for ( short j = 0; j < ingestResult.getRightCount(); j++ )
+            {
+                rightIds[i] = ingestResult.getSurrogateKey();
+                i++;
+            }
+        }
+
+        return rightIds;
+    }
+
+
+    /**
+     * Get the list of baseline surrogate keys from given ingest results.
+     *
+     * Intended to save heap by doing one dataset at a time, using primitive[]
+     *
+     * @param ingestResults The ingest results.
+     * @return The ids for the baseline dataset
+     */
+
+    private static int[] getBaselineIds( List<IngestResult> ingestResults )
+    {
+        // How big to make the array? We don't want to guess because then we
+        // would need to resize, which requires more heap again. Better to get
+        // it correct at the outset.
+        int sizeNeeded = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            sizeNeeded += ingestResult.getBaselineCount();
+        }
+
+        int[] baselineIds = new int[sizeNeeded];
+        int i = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            for ( short j = 0; j < ingestResult.getBaselineCount(); j++ )
+            {
+                baselineIds[i] = ingestResult.getSurrogateKey();
+                i++;
+            }
+        }
+
+        return baselineIds;
     }
 }
