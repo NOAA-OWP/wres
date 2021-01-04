@@ -1,5 +1,6 @@
 package wres.config;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static junit.framework.TestCase.assertFalse;
@@ -9,12 +10,17 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.xml.sax.Locator;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
+import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
-
+import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Outputs;
 public class ValidationTest
 {
     private Locator fakeSourceLocator;
@@ -104,4 +110,31 @@ public class ValidationTest
         boolean isValid = Validation.areFeaturesValid( features );
         assertFalse( isValid );
     }
+    
+    @Test
+    public void moreThanOneDestinationPerDestinationTypeFailsValidation()
+    {
+        List<DestinationConfig> destinations = new ArrayList<>();
+
+        // Add two destinations of one type, which is not allowed
+        DestinationConfig one = new DestinationConfig( null, null, null, DestinationType.PNG, null );
+        DestinationConfig two = new DestinationConfig( null, null, null, DestinationType.GRAPHIC, null );
+
+        destinations.add( one );
+        destinations.add( two );
+
+        Outputs outputs = new Outputs( destinations, DurationUnit.HOURS );
+        outputs.setSourceLocation( this.fakeSourceLocator );
+
+        ProjectConfig mockProjectConfig = new ProjectConfig( null, null, null, outputs, null, null );
+
+        ProjectConfigPlus mockProjectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( mockProjectConfigPlus.getProjectConfig() )
+               .thenReturn( mockProjectConfig );
+
+        boolean isValid = Validation.hasUpToOneDestinationPerDestinationType( mockProjectConfigPlus );
+
+        assertFalse( isValid );
+    }
+    
 }
