@@ -1430,8 +1430,11 @@ dependencies
     testCompile group: 'commons-io', name: 'commons-io', version: '2.8.0'
     testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.0-jre'
     testCompile group: 'com.google.guava', name: 'guava', version: '30.0-jre'
-    testCompile 'junit:junit:4.13.1'
+
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testCompile 'org.mockito:mockito-core:3.6.28'
+
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
 
 sourceSets
