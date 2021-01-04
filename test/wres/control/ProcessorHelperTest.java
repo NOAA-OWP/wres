@@ -8,12 +8,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProcessorHelperTest
 {
@@ -91,11 +91,11 @@ public class ProcessorHelperTest
         Instant end = Instant.now();
         assertTrue( cause instanceof DummyException );
         Duration executionDuration = Duration.between( start, end );
-        assertTrue( "Expected execution duration " + executionDuration
+        assertTrue( executionDuration.toMillis() > shorterDuration.toMillis()
+                    && executionDuration.toMillis() < longerDuration.toMillis(),
+                    "Expected execution duration " + executionDuration
                     + " to be shorter than " + longerDuration
-                    + " and longer than " + shorterDuration,
-                    executionDuration.toMillis() > shorterDuration.toMillis()
-                    && executionDuration.toMillis() < longerDuration.toMillis() );
+                    + " and longer than " + shorterDuration );
     }
 
 
