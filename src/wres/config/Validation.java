@@ -17,8 +17,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,6 +53,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
@@ -327,14 +330,96 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
         boolean result = true;
-        result = Validation.isNetcdfOutputConfigValid( projectConfigPlus.toString(),
+        
+        // #58737
+        result = Validation.hasUpToOneDestinationPerDestinationType( projectConfigPlus );
+        
+        result = result && Validation.isNetcdfOutputConfigValid( projectConfigPlus.toString(),
                                                        projectConfigPlus.getProjectConfig()
                                                                         .getOutputs()
                                                                         .getDestination() )
                  && result;
+        
         result = Validation.areNetcdfOutputsValid( projectConfigPlus )
                  && result;
+        
         return result;
+    }
+
+    /**
+     * Checks that there is no more than one <code>destination</code> of a given <code>type</code>, otherwise the
+     * declaration is invalid. See #58737.
+     * 
+     * @param projectConfigPlus the project to validate
+     * @return true when valid, false otherwise
+     */
+    static boolean hasUpToOneDestinationPerDestinationType( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( projectConfigPlus.getProjectConfig() );
+
+        Outputs outputs = projectConfigPlus.getProjectConfig()
+                                           .getOutputs();
+
+        Objects.requireNonNull( outputs );
+
+        List<DestinationConfig> destinations = projectConfigPlus.getProjectConfig()
+                                                                .getOutputs()
+                                                                .getDestination();
+
+        Objects.requireNonNull( destinations );
+
+        boolean isValid = true;
+
+        // Create a map of destination types and counts
+        Map<DestinationType, Integer> destinationsByType = new HashMap<>();
+        for ( DestinationConfig destination : destinations )
+        {
+            DestinationType nextType = destination.getType();
+            
+            // Normalize synonyms
+            if( nextType == DestinationType.PNG )
+            {
+                nextType = DestinationType.GRAPHIC;
+            }
+            else if( nextType == DestinationType.CSV )
+            {
+                nextType = DestinationType.NUMERIC;
+            }
+
+            // Map the type
+            if ( destinationsByType.containsKey( nextType ) )
+            {
+                int currentCount = destinationsByType.get( nextType );
+                int newCount = currentCount + 1;
+                destinationsByType.put( nextType, newCount );
+                isValid = false;
+            }
+            else
+            {
+                destinationsByType.put( nextType, 1 );
+            }
+        }
+
+        if ( !isValid )
+        {
+            // Make the synonyms intelligible
+            String mapString = destinationsByType.toString();
+
+            mapString = mapString.replaceAll( DestinationType.GRAPHIC.name(), "GRAPHIC/PNG" );
+            mapString = mapString.replaceAll( DestinationType.NUMERIC.name(), "NUMERIC/CSV" );
+            
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The declaration contains more than one destination of a given type, which is not allowed. "
+                         + "Please declare only one destination per destination type. The number of destinations by "
+                         + "type is: {}.",
+                         projectConfigPlus.getOrigin(),
+                         outputs.sourceLocation().getLineNumber(),
+                         outputs.sourceLocation().getColumnNumber(),
+                         mapString );
+        }
+
+        return isValid;
     }
 
     /**
