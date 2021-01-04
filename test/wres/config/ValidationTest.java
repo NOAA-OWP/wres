@@ -3,13 +3,13 @@ package wres.config;
 import java.util.ArrayList;
 import java.util.List;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.xml.sax.Locator;
 
@@ -25,7 +25,7 @@ public class ValidationTest
 {
     private Locator fakeSourceLocator;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         this.fakeSourceLocator =
@@ -80,8 +80,8 @@ public class ValidationTest
 
         boolean result = Validation.isDateConfigValid( mockProjectConfigPlus,
                                                        source );
-        assertFalse( "Expected validation failure when offset for "
-                     + "PI-XML data is specified.", result );
+        assertFalse( result, "Expected validation failure when offset "
+                     + " for PI-XML data is specified." );
     }
 
     @Test
