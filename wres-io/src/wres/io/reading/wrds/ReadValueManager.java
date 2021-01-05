@@ -482,10 +482,10 @@ public class ReadValueManager
         {
             return ingester.call();
         }
-        catch ( IOException ioe )
+        catch ( IngestException ie )
         {
             throw new IngestException( "Failed to ingest data from "
-                                       + this.getLocation(), ioe );
+                                       + this.getLocation(), ie );
         }
     }
 }

@@ -332,7 +332,7 @@ public class NWMReader implements Callable<List<IngestResult>>
     }
 
     @Override
-    public List<IngestResult> call() throws IOException
+    public List<IngestResult> call()
     {
         try
         {
@@ -344,7 +344,7 @@ public class NWMReader implements Callable<List<IngestResult>>
         }
     }
 
-    private List<IngestResult> ingest() throws IngestException
+    private List<IngestResult> ingest()
     {
         List<IngestResult> ingestResults = new ArrayList<>();
         Set<String> features = ConfigHelper.getFeatureNamesForSource( this.getProjectConfig(),

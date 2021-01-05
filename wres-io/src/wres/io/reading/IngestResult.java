@@ -1,8 +1,8 @@
 package wres.io.reading;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -162,10 +162,10 @@ public interface IngestResult
      * @return an immediately-returning Future
      */
 
-    static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
-                                                                    DataSource dataSource,
-                                                                    int surrogateKey,
-                                                                    boolean requiresRetry )
+    static CompletableFuture<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
+                                                                               DataSource dataSource,
+                                                                               int surrogateKey,
+                                                                               boolean requiresRetry )
     {
         return FakeFutureListOfIngestResults.from( projectConfig,
                                                    dataSource,
@@ -179,7 +179,8 @@ public interface IngestResult
      * this encapsulates an "already-found" IngestResult in a Future List.
      */
 
-    class FakeFutureListOfIngestResults implements Future<List<IngestResult>>
+    class FakeFutureListOfIngestResults
+            extends CompletableFuture<List<IngestResult>>
     {
         private final List<IngestResult> results;
 

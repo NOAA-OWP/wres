@@ -1046,10 +1046,10 @@ public final class PIXMLReader extends XMLReader
             List<IngestResult> ingestResults = timeSeriesIngester.call();
             this.ingested.addAll( ingestResults );
         }
-        catch ( IOException ioe )
+        catch ( IngestException ie )
         {
             throw new IngestException( "Failed to ingest data from "
-                                       + this.getFilename() + ":", ioe );
+                                       + this.getFilename() + ":", ie );
         }
     }
 

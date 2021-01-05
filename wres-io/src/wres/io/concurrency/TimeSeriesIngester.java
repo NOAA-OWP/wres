@@ -167,7 +167,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
 
     @Override
-    public List<IngestResult> call() throws IOException
+    public List<IngestResult> call()
     {
         URI location = this.getLocation();
 
@@ -280,7 +280,6 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                    Ensembles ensemblesCache,
                                    TimeSeries<?> timeSeries,
                                    int sourceId )
-            throws IOException
     {
         SortedSet<? extends Event<?>> events = timeSeries.getEvents();
 
