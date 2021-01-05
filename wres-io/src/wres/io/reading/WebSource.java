@@ -1232,6 +1232,17 @@ class WebSource implements Callable<List<IngestResult>>
     {
         Map<String,String> urlParameters = new HashMap<>( 3 );
 
+        // Start with a WRES guess here, but allow this one to be overridden by
+        // caller-supplied additional parameters. See #76880
+        if ( isEnsemble )
+        {
+            urlParameters.put( "forecast_type", "ensemble" );
+        }
+        else
+        {
+            urlParameters.put( "forecast_type", "deterministic" );
+        }
+
         // Caller-supplied additional parameters are lower precedence, put first
         for ( UrlParameter parameter : additionalParameters )
         {
@@ -1244,15 +1255,6 @@ class WebSource implements Callable<List<IngestResult>>
                                          + "," + rightWrdsFormattedDate
                                          + "]" );
         urlParameters.put( "validTime", "all" );
-
-        if ( isEnsemble )
-        {
-            urlParameters.put( "forecast_type", "ensemble" );
-        }
-        else
-        {
-            urlParameters.put( "forecast_type", "deterministic" );
-        }
 
         return Collections.unmodifiableMap( urlParameters );
     }
