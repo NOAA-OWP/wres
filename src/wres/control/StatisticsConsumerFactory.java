@@ -27,7 +27,6 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Consumer.Format;
-import wres.system.SystemSettings;
 import wres.vis.writing.BoxPlotGraphicsWriter;
 import wres.vis.writing.DiagramGraphicsWriter;
 import wres.vis.writing.DoubleScoreGraphicsWriter;
@@ -47,12 +46,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
      */
 
     private final Consumer consumerDescription;
-
-    /**
-     * System settings.
-     */
-
-    private final SystemSettings systemSettings;
 
     /**
      * Project declaration.
@@ -214,22 +207,22 @@ class StatisticsConsumerFactory implements ConsumerFactory
     }
 
     /**
+     * Returns <code>true</code> if graphics are required and they will be delivered by this consumer factory, 
+     * otherwise <code>false</code>.
+     * 
      * @param formats the formats
      * @return true if graphics consumers are required, otherwise false.
      */
 
     private boolean hasGraphics( Collection<Format> formats )
     {
-        // No external graphics, and some graphics formats required, then graphics needed 
-        return !this.systemSettings.hasExternalGraphics()
-               && ( formats.contains( Format.PNG ) || formats.contains( Format.SVG ) );
+        return formats.contains( Format.PNG ) || formats.contains( Format.SVG );
     }
 
     /**
      * Builds an instance.
      * @param consumerId the consumer identifier
      * @param formats the formats to be delivered
-     * @param systemSettings the system settings for netcdf writing
      * @param netcdfWriters The netcdf writers, if any.
      * @param projectConfig the project declaration for netcdf writing
      * @throws NullPointerException if any required input is null
@@ -238,13 +231,11 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
     StatisticsConsumerFactory( String consumerId,
                                Set<Format> formats,
-                               SystemSettings systemSettings,
                                List<NetcdfOutputWriter> netcdfWriters,
                                ProjectConfig projectConfig )
     {
         Objects.requireNonNull( consumerId );
         Objects.requireNonNull( formats );
-        Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfig );
 
         if ( formats.contains( Format.NETCDF ) )
@@ -261,7 +252,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                            .setConsumerId( consumerId )
                                            .addAllFormats( formats )
                                            .build();
-        this.systemSettings = systemSettings;
+
         this.projectConfig = projectConfig;
         this.netcdfWriters = netcdfWriters;
 

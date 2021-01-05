@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Objects;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -47,7 +46,6 @@ public class SystemSettings extends XMLReader
 	private int maximumWebClientThreads = 3;
 	private int maximumNwmIngestThreads = 6;
 	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
-	private boolean hasExternalGraphics = false;
 	private boolean updateProgressMonitor = false;
     private int maximumFeatureThreads = 2;
 	private int maximumPairThreads = 6;
@@ -83,24 +81,6 @@ public class SystemSettings extends XMLReader
         {
             throw new IllegalStateException( "Could not read system settings from " + uri, e );
         }
-    }
-
-    /**
-     * @return true if graphics should be delivered by an external provider. Looks for the system property, 
-     * <code>wres.externalGraphics</code>, then looks at the system settings configuration. When both are defined, the
-     * former is canonical.
-     */
-    
-    public boolean hasExternalGraphics()
-    {
-        // Java property defined?
-        String sysProp = System.getProperty( "wres.externalGraphics" );
-        if( Objects.nonNull( sysProp ) )
-        {
-            return "true".equalsIgnoreCase( sysProp );
-        }
-            
-        return this.hasExternalGraphics;
     }
     
 	/**
@@ -184,9 +164,6 @@ public class SystemSettings extends XMLReader
                         break;
                     case "data_directory":
                         this.setDataDirectory( reader );
-                        break;
-                    case "subscribers":
-                        this.setSubscribers( reader );
                         break;
                     case "maximum_feature_threads":
                         this.setMaximumFeatureThreads( reader );
@@ -373,65 +350,6 @@ public class SystemSettings extends XMLReader
         if ( dir != null && !dir.isEmpty() && Strings.isValidPathFormat( dir ) )
         {
             this.dataDirectory = Paths.get( dir );
-        }
-    }
-    
-    private void setSubscribers( XMLStreamReader reader )
-            throws XMLStreamException
-    {
-        try
-        {
-            while ( reader.hasNext() )
-            {
-                if ( reader.isStartElement() && reader.getLocalName()
-                                                      .equalsIgnoreCase(
-                                                                         "subscribers" ) )
-                {
-                    reader.next();
-                }
-                else if ( reader.isEndElement() && reader.getLocalName()
-                                                         .equalsIgnoreCase(
-                                                                            "subscribers" ) )
-                {
-                    break;
-                }
-                else
-                {
-                    parseSubscriberElement( reader );
-                    reader.next();
-                }
-            }
-        }
-        catch ( XMLStreamException e )
-        {
-            throw new ExceptionInInitializerError( e );
-        }
-    }
-    
-    private void parseSubscriberElement( XMLStreamReader reader )
-            throws XMLStreamException
-    {
-        if ( reader.isStartElement() )
-        {
-            String tagName = reader.getLocalName();
-            reader.next();
-            if ( reader.isCharacters() )
-            {
-                int beginIndex = reader.getTextStart();
-                int endIndex = reader.getTextLength();
-                String value = new String( reader.getTextCharacters(), beginIndex, endIndex ).trim();
-
-                if ( tagName.equalsIgnoreCase( "graphics" ) )
-                {
-                    this.hasExternalGraphics = "true".equalsIgnoreCase( value );
-                }
-                else
-                {
-                    LOGGER.warn( "Subscriber configuration option '{}'{}",
-                                 tagName,
-                                 " was skipped because it's not used." );
-                }
-            }
         }
     }
     
@@ -918,7 +836,6 @@ public class SystemSettings extends XMLReader
                 .append( "maximumWebClientThreads", maximumWebClientThreads )
                 .append( "maximumNwmIngestThreads", maximumNwmIngestThreads )
                 .append( "dataDirectory", dataDirectory )
-                .append( "hasExternalGraphics", hasExternalGraphics )
                 .append( "updateProgressMonitor", updateProgressMonitor )
                 .append( "maximumFeatureThreads", maximumFeatureThreads )
                 .append( "maximumPairThreads", maximumPairThreads )
