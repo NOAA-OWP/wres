@@ -121,7 +121,7 @@ class ProcessorHelper
                                                   outputDirectory );
 
         // Obtain any formats delivered by out-of-process subscribers.
-        Set<Format> externalFormats = ProcessorHelper.getFormatsDeliveredByExternalSubscribers( systemSettings );
+        Set<Format> externalFormats = ProcessorHelper.getFormatsDeliveredByExternalSubscribers();
         // Formats delivered by within-process subscribers, in a mutable list
         Set<Format> internalFormats = MessageFactory.getDeclaredFormats( evaluationDescription.getOutputs() );
         internalFormats = new HashSet<>( internalFormats );
@@ -131,7 +131,6 @@ class ProcessorHelper
         String consumerId = Evaluation.getUniqueId();
         ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
                                                                          new HashSet<>( internalFormats ),
-                                                                         systemSettings,
                                                                          netcdfWriters,
                                                                          projectConfig );
 
@@ -905,23 +904,21 @@ class ProcessorHelper
     }
 
     /**
-     * Returns a set of formats that are delivered by external subscribers, according to a feature toggle in the 
-     * supplied system settings.
+     * Returns a set of formats that are delivered by external subscribers, according to system property.
      * 
-     * @param systemSettings the system settings where external subscribers are registered
      * @return the formats delivered by external subscribers
      * @deprecated for removal when the feature toggle is no longer required
      */
 
     @Deprecated( since = "5.0", forRemoval = true )
-    private static Set<Format> getFormatsDeliveredByExternalSubscribers( SystemSettings systemSettings )
+    private static Set<Format> getFormatsDeliveredByExternalSubscribers()
     {
-        Objects.requireNonNull( systemSettings );
+        String externalGraphics = System.getProperty( "wres.externalGraphics" );
 
         Set<Format> formats = new HashSet<>();
 
         // Add external graphics if required
-        if ( systemSettings.hasExternalGraphics() )
+        if ( Objects.nonNull( externalGraphics ) && "true".equalsIgnoreCase( externalGraphics ) )
         {
             formats.add( Format.PNG );
             formats.add( Format.SVG );
