@@ -260,7 +260,7 @@ class WebSource implements Callable<List<IngestResult>>
     }
 
     @Override
-    public List<IngestResult> call() throws IOException
+    public List<IngestResult> call()
     {
         List<IngestResult> ingestResults = new ArrayList<>();
         Set<String> features =

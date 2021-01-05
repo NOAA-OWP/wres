@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,7 +32,6 @@ import wres.config.generated.Format;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.TimeSeriesIngester;
 import wres.io.config.ConfigHelper;
@@ -61,7 +61,7 @@ public class SourceLoader
     private static final int KEY_NOT_FOUND = Integer.MIN_VALUE;
 
     private final SystemSettings systemSettings;
-    private final Executor executor;
+    private final ExecutorService executor;
     private final Database database;
     private final DataSources dataSourcesCache;
     private final Features featuresCache;
@@ -104,7 +104,7 @@ public class SourceLoader
      * @param lockManager the tool to manage ingest locks, shared per ingest
      */
     public SourceLoader( SystemSettings systemSettings,
-                         Executor executor,
+                         ExecutorService executor,
                          Database database,
                          DataSources dataSourcesCache,
                          Features featuresCache,
@@ -141,7 +141,7 @@ public class SourceLoader
         return this.systemSettings;
     }
 
-    private Executor getExecutor()
+    private ExecutorService getExecutor()
     {
         return this.executor;
     }
@@ -192,7 +192,7 @@ public class SourceLoader
      * @throws IOException when no data is found
      * @throws IngestException when getting project details fails
      */
-    public List<Future<List<IngestResult>>> load() throws IOException
+    public List<CompletableFuture<List<IngestResult>>> load() throws IOException
     {
         LOGGER.info( "Parsing the declared datasets. {}{}{}{}{}{}",
                      "Depending on many factors (including dataset size, ",
@@ -201,7 +201,7 @@ public class SourceLoader
                      "storage bandwidth, storage latency, concurrent ",
                      "evaluations on shared resources, concurrent computation ",
                      "on shared resources) this can take a while..." );
-        List<Future<List<IngestResult>>> savingSources = new ArrayList<>();
+        List<CompletableFuture<List<IngestResult>>> savingSources = new ArrayList<>();
 
         // Create the sources for which ingest should be attempted, together with
         // any required links. A link is an additional entry in wres.ProjectSource.
@@ -229,11 +229,11 @@ public class SourceLoader
      * @throws FileNotFoundException when a source file is not found
      * @throws IOException when a source file was not readable
      */
-    private List<Future<List<IngestResult>>> loadSource( DataSource source )
+    private List<CompletableFuture<List<IngestResult>>> loadSource( DataSource source )
             throws IOException
     {
         // Try to load non-file source
-        Future<List<IngestResult>> nonFileIngest = loadNonFileSource( source );
+        CompletableFuture<List<IngestResult>> nonFileIngest = loadNonFileSource( source );
 
         // When the non-file source is detected, short-circuit the file way.
         if ( nonFileIngest != null )
@@ -242,7 +242,7 @@ public class SourceLoader
         }
 
         // Proceed with files
-        List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
+        List<CompletableFuture<List<IngestResult>>> savingFiles = new ArrayList<>();
 
         if ( !source.hasSourcePath() )
         {
@@ -271,7 +271,7 @@ public class SourceLoader
         }
         else if ( sourceFile.isFile() )
         {
-            List<Future<List<IngestResult>>> futureResults =
+            List<CompletableFuture<List<IngestResult>>> futureResults =
                     this.ingestFile( source,
                                      this.getProjectConfig(),
                                      this.getLockManager() );
@@ -300,7 +300,7 @@ public class SourceLoader
      * @return a single future list of results or null if source was file-like
      */
 
-    private Future<List<IngestResult>> loadNonFileSource( DataSource source )
+    private CompletableFuture<List<IngestResult>> loadNonFileSource( DataSource source )
     {
         InterfaceShortHand interfaceShortHand = source.getSource()
                                                       .getInterface();
@@ -323,8 +323,8 @@ public class SourceLoader
                                                     this.getProjectConfig(),
                                                     source,
                                                     this.getLockManager() );
-                Executor executor = this.getExecutor();
-                return executor.submit( webSource );
+                return CompletableFuture.supplyAsync( webSource::call,
+                                                      this.getExecutor() );
             }
             else
             {
@@ -338,8 +338,8 @@ public class SourceLoader
                                                      this.getProjectConfig(),
                                                      source,
                                                      this.getLockManager() );
-                Executor executor = this.getExecutor();
-                return executor.submit( nwmReader );
+                return CompletableFuture.supplyAsync( nwmReader::call,
+                                                      this.getExecutor() );
             }
         }
 
@@ -369,8 +369,8 @@ public class SourceLoader
                                                 this.getProjectConfig(),
                                                 source,
                                                 this.getLockManager() );
-            Executor executor = this.getExecutor();
-            return executor.submit( webSource );
+            return CompletableFuture.supplyAsync( webSource::call,
+                                                  this.getExecutor() );
         }
         else
         {
@@ -399,10 +399,10 @@ public class SourceLoader
      * @return a list of future lists of ingest results, possibly empty
      */
 
-    private List<Future<List<IngestResult>>> ingestData( DataSource source,
-                                                         ProjectConfig projectConfig,
-                                                         DatabaseLockManager lockManager,
-                                                         String hash )
+    private List<CompletableFuture<List<IngestResult>>> ingestData( DataSource source,
+                                                                    ProjectConfig projectConfig,
+                                                                    DatabaseLockManager lockManager,
+                                                                    String hash )
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
@@ -419,8 +419,8 @@ public class SourceLoader
                           source );
         }
 
-        List<Future<List<IngestResult>>> tasks = new ArrayList<>();
-        Future<List<IngestResult>> task;
+        List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
+        CompletableFuture<List<IngestResult>> task;
 
         // When the TimeSeries is present, bypass IngestSaver route, use a
         // TimeSeriesIngester instead.
@@ -437,7 +437,8 @@ public class SourceLoader
                                            source,
                                            this.getLockManager(),
                                            source.getTimeSeries() );
-            task = executor.submit( ingester );
+            task = CompletableFuture.supplyAsync( ingester::call,
+                                                  this.getExecutor() );
         }
         else if ( Objects.nonNull( hash ) )
         {
@@ -456,7 +457,8 @@ public class SourceLoader
                                .withProgressMonitoring()
                                .withLockManager( lockManager )
                                .build();
-            task = executor.submit( ingestSaver );
+            task = CompletableFuture.supplyAsync( ingestSaver::call,
+                                                  this.getExecutor() );
         }
         else
         {
@@ -475,7 +477,8 @@ public class SourceLoader
                                .withProgressMonitoring()
                                .withLockManager( lockManager )
                                .build();
-            task = executor.submit( ingestSaver );
+            task = CompletableFuture.supplyAsync( ingestSaver::call,
+                                                  this.getExecutor() );
         }
 
         tasks.add( task );
@@ -493,9 +496,9 @@ public class SourceLoader
      * @param lockManager the lock manager to use
      * @return a list of future lists of ingest results, possibly empty
      */
-    private List<Future<List<IngestResult>>> ingestFile( DataSource source,
-                                                         ProjectConfig projectConfig,
-                                                         DatabaseLockManager lockManager )
+    private List<CompletableFuture<List<IngestResult>>> ingestFile( DataSource source,
+                                                                    ProjectConfig projectConfig,
+                                                                    DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( projectConfig );
@@ -504,7 +507,7 @@ public class SourceLoader
         LOGGER.debug( "ingestFile called: {}", source );
 
         URI sourceUri = source.getUri();
-        List<Future<List<IngestResult>>> tasks = new ArrayList<>();
+        List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
         FileEvaluation checkIngest = shouldIngest( source.getUri(),
                                                    source.getSource(),
                                                    source.getContext().getVariable().getValue(),
@@ -531,13 +534,15 @@ public class SourceLoader
                                                  .withProgressMonitoring()
                                                  .withLockManager( lockManager )
                                                  .build();
-            Future<List<IngestResult>> future = executor.submit( ingestSaver );
+            CompletableFuture<List<IngestResult>> future =
+                    CompletableFuture.supplyAsync( ingestSaver::call,
+                                                   this.getExecutor() );
             tasks.add( future );
         }
         else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING )
                   || sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING ) )
         {
-                List<Future<List<IngestResult>>> futureList =
+                List<CompletableFuture<List<IngestResult>>> futureList =
                         this.ingestData( source,
                                          projectConfig,
                                          lockManager,
@@ -559,7 +564,7 @@ public class SourceLoader
                                                      this.getDataSourcesCache(),
                                                      surrogateKey,
                                                      lockManager );
-            List<Future<List<IngestResult>>> futureList =
+            List<CompletableFuture<List<IngestResult>>> futureList =
                     this.ingestData( source,
                                      projectConfig,
                                      lockManager,
@@ -799,7 +804,7 @@ public class SourceLoader
      * @return a new list of future results of the retried source
      */
 
-    public List<Future<List<IngestResult>>> retry( IngestResult ingestResult )
+    public List<CompletableFuture<List<IngestResult>>> retry( IngestResult ingestResult )
     {
         if ( !ingestResult.requiresRetry() )
         {
@@ -819,7 +824,7 @@ public class SourceLoader
         {
             LOGGER.debug( "Already finished source {}, changing to say requiresRetry=false",
                           ingestResult );
-            Future<List<IngestResult>> futureResult =
+            CompletableFuture<List<IngestResult>> futureResult =
                     IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
                                                                ingestResult.getDataSource(),
                                                                ingestResult.getSurrogateKey(),
@@ -857,7 +862,7 @@ public class SourceLoader
         }
 
         // For whatever reason, retry is required.
-        Future<List<IngestResult>> futureResult =
+        CompletableFuture<List<IngestResult>> futureResult =
                 IngestResult.fakeFutureSingleItemListFrom( this.projectConfig,
                                                            ingestResult.getDataSource(),
                                                            ingestResult.getSurrogateKey(),

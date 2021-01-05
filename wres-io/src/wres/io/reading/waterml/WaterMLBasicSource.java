@@ -283,13 +283,6 @@ public class WaterMLBasicSource extends BasicSource
 
             return Collections.unmodifiableList( ingestResults );
         }
-        catch ( JsonMappingException jme )
-        {
-            throw new PreIngestException( "Failed to parse the response body"
-                                          + " from USGS url "
-                                          + location,
-                                          jme );
-        }
         catch ( IngestException e )
         {
             throw new IngestException( "Values from USGS url "

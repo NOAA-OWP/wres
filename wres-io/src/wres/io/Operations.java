@@ -1,7 +1,6 @@
 package wres.io;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,15 +12,18 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.LoggerFactory;
 
 import static java.time.ZoneOffset.UTC;
@@ -29,7 +31,6 @@ import static java.time.ZoneOffset.UTC;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
-import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -359,6 +360,17 @@ public final class Operations {
                                          DatabaseLockManager lockManager )
             throws IOException
     {
+        ThreadFactory threadFactoryWithNaming = new BasicThreadFactory.Builder()
+                .namingPattern( "Outer Reading/Ingest Thread %d" )
+                .build();
+        ThreadPoolExecutor ingestExecutor =
+                new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
+                                        systemSettings.maximumThreadCount(),
+                                        systemSettings.poolObjectLifespan(),
+                                        TimeUnit.MILLISECONDS,
+                                        new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() + 20 ),
+                                        threadFactoryWithNaming );
+        ingestExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         Project result = null;
         List<IngestResult> projectSources = new ArrayList<>();
         DataSources dataSourcesCache = new DataSources( database );
@@ -368,7 +380,7 @@ public final class Operations {
         MeasurementUnits measurementUnitsCache = new MeasurementUnits( database );
 
         SourceLoader loader = new SourceLoader( systemSettings,
-                                                executor,
+                                                ingestExecutor,
                                                 database,
                                                 dataSourcesCache,
                                                 featuresCache,
@@ -380,7 +392,7 @@ public final class Operations {
 
         try
         {
-            List<Future<List<IngestResult>>> ingestions = loader.load();
+            List<CompletableFuture<List<IngestResult>>> ingestions = loader.load();
             ProgressMonitor.setSteps( (long)ingestions.size());
 
             if ( LOGGER.isDebugEnabled() )
@@ -388,7 +400,7 @@ public final class Operations {
                 LOGGER.debug( ingestions.size() + " direct ingest results." );
             }
 
-            for (Future<List<IngestResult>> task : ingestions)
+            for ( CompletableFuture<List<IngestResult>> task : ingestions )
             {
                 List<IngestResult> ingested = task.get();
                 ProgressMonitor.completeStep();
@@ -446,7 +458,7 @@ public final class Operations {
                 LOGGER.debug( "Iteration {}, retries needed: {}",
                               retriesAttempted,retriesNeeded );
 
-                List<Future<List<IngestResult>>> retriedIngests =
+                List<CompletableFuture<List<IngestResult>>> retriedIngests =
                         new ArrayList<>( retriesNeeded.size() );
                 List<IngestResult> retriesFinishedThisIteration =
                         new ArrayList<>( retriesNeeded.size() );
@@ -458,11 +470,11 @@ public final class Operations {
 
                 for ( IngestResult ingestResult : doRetryOnThese )
                 {
-                    List<Future<List<IngestResult>>> retriedIngest = loader.retry( ingestResult );
+                    List<CompletableFuture<List<IngestResult>>> retriedIngest = loader.retry( ingestResult );
                     retriedIngests.addAll( retriedIngest );
                 }
 
-                for ( Future<List<IngestResult>> futureRetriedIngest : retriedIngests )
+                for ( CompletableFuture<List<IngestResult>> futureRetriedIngest : retriedIngests )
                 {
                     List<IngestResult> retried = futureRetriedIngest.get();
                     retriesFinishedThisIteration.addAll( retried );

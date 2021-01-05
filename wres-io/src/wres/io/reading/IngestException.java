@@ -20,7 +20,7 @@ import java.io.IOException;
  * </p>
  */
 
-public class IngestException extends IOException
+public class IngestException extends RuntimeException
 {
     public IngestException( String message, Throwable cause )
     {
