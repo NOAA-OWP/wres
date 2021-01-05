@@ -936,6 +936,17 @@ class EvaluationStatusTracker implements Closeable
             TimedCountDownLatch latch = this.formatNegotiationLatches.get( next );
             latch.countDown();
         }
+        
+        // Report on formats still awaiting subscribers
+        Set<Format> formatsAwaited = this.getFormatsAwaitingSubscribers();
+
+        if ( !formatsAwaited.isEmpty() && LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "While processing evaluation {}, awaiting the negotiation of subscribers for output "
+                         + "formats {}...",
+                         evaluationId,
+                         formatsAwaited );
+        }
     }
 
     /**
