@@ -33,6 +33,7 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.events.Evaluation;
+import wres.io.concurrency.Pipelines;
 import wres.io.pooling.PoolFactory;
 import wres.io.project.Project;
 import wres.io.retrieval.UnitMapper;
@@ -346,8 +347,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         try
         {
             // Wait for completion of all data slices
-            ProcessorHelper.doAllOrException( listOfFutures ).join();
-            
+            Pipelines.doAllOrException( listOfFutures ).join();
+
             // Publish any end of pipeline/cached statistics and notify complete
             if ( published.get() )
             {
