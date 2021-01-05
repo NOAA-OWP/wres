@@ -36,6 +36,7 @@ import wres.events.subscribe.EvaluationSubscriber;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
+import wres.io.concurrency.Pipelines;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.FeatureFinder;
 import wres.io.project.Project;
@@ -418,7 +419,7 @@ class ProcessorHelper
             // Run the tasks, and join on all tasks. The main thread will wait until all are completed successfully
             // or one completes exceptionally for reasons other than lack of data
             // Complete the feature tasks
-            ProcessorHelper.doAllOrException( featureTasks ).join();
+            Pipelines.doAllOrException( featureTasks ).join();
             
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when they are done/
@@ -665,38 +666,6 @@ class ProcessorHelper
         }
 
         return outputDirectory;
-    }
-
-    /**
-     * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
-     * or any one future completes exceptionally. None of the {@link CompletableFuture} passed to this utility method
-     * should already handle exceptions otherwise the exceptions will not be caught here (i.e. all futures will process
-     * to completion).
-     *
-     * @param <T> the type of future
-     * @param futures the futures to compose
-     * @return the composed futures
-     * @throws CompletionException if completing exceptionally 
-     */
-
-    static <T> CompletableFuture<Object> doAllOrException( final List<CompletableFuture<T>> futures )
-    {
-        //Complete when all futures are completed
-        final CompletableFuture<Void> allDone =
-                CompletableFuture.allOf( futures.toArray( new CompletableFuture[futures.size()] ) );
-        //Complete when any of the underlying futures completes exceptionally
-        final CompletableFuture<T> oneExceptional = new CompletableFuture<>();
-        //Link the two
-        for ( final CompletableFuture<T> completableFuture : futures )
-        {
-            //When one completes exceptionally, propagate
-            completableFuture.exceptionally( exception -> {
-                oneExceptional.completeExceptionally( exception );
-                return null;
-            } );
-        }
-        //Either all done OR one completes exceptionally
-        return CompletableFuture.anyOf( allDone, oneExceptional );
     }
 
     /**

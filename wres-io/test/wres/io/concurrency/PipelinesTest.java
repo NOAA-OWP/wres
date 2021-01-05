@@ -1,4 +1,4 @@
-package wres.control;
+package wres.io.concurrency;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ProcessorHelperTest
+public class PipelinesTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelperTest.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( PipelinesTest.class );
     private static final String TASK_RESULT_STRING_PREFIX = "I took a little more than ";
 
     @Test
@@ -26,7 +26,7 @@ public class ProcessorHelperTest
         DummyTask failingTask = new DummyTask( Duration.ofMillis( 1 ),
                                                       true );
         CompletableFuture<String> f = CompletableFuture.supplyAsync( failingTask::call );
-        CompletableFuture<Object> result = ProcessorHelper.doAllOrException( List.of( f ) );
+        CompletableFuture<Object> result = Pipelines.doAllOrException( List.of( f ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
         assertTrue( cause instanceof DummyException );
     }
@@ -39,8 +39,8 @@ public class ProcessorHelperTest
         DummyTask succeedingTask = new DummyTask( Duration.ofMillis( 1 ),
                                                   false );
         CompletableFuture<String> f = CompletableFuture.supplyAsync( succeedingTask::call );
-        ProcessorHelper.doAllOrException( List.of( f ) )
-                       .join();
+        Pipelines.doAllOrException( List.of( f ) )
+                 .join();
         assertTrue( f.isDone() );
         assertTrue( f.get()
                      .startsWith( TASK_RESULT_STRING_PREFIX ) );
@@ -57,8 +57,8 @@ public class ProcessorHelperTest
                                            false );
         CompletableFuture<String> f1 = CompletableFuture.supplyAsync( taskOne::call );
         CompletableFuture<String> f2 = CompletableFuture.supplyAsync( taskTwo::call );
-        ProcessorHelper.doAllOrException( List.of( f1, f2 ) )
-                       .join();
+        Pipelines.doAllOrException( List.of( f1, f2 ) )
+                 .join();
         assertTrue( f1.isDone() );
         assertTrue( f2.isDone() );
         assertTrue( f1.get()
@@ -86,7 +86,7 @@ public class ProcessorHelperTest
         Instant start = Instant.now();
         CompletableFuture<String> f1 = CompletableFuture.supplyAsync( firstLongerSucceedingTask::call );
         CompletableFuture<String> f2 = CompletableFuture.supplyAsync( secondShorterFailingTask::call );
-        CompletableFuture<Object> result = ProcessorHelper.doAllOrException( List.of( f1, f2 ) );
+        CompletableFuture<Object> result = Pipelines.doAllOrException( List.of( f1, f2 ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
         Instant end = Instant.now();
         assertTrue( cause instanceof DummyException );
