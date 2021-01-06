@@ -2,9 +2,6 @@ package wres.io.reading;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -167,10 +164,10 @@ public interface IngestResult
                                                                                int surrogateKey,
                                                                                boolean requiresRetry )
     {
-        return FakeFutureListOfIngestResults.from( projectConfig,
-                                                   dataSource,
-                                                   surrogateKey,
-                                                   requiresRetry );
+        return IngestResult.fakeFuturefrom( projectConfig,
+                                            dataSource,
+                                            surrogateKey,
+                                            requiresRetry );
     }
 
 
@@ -179,65 +176,16 @@ public interface IngestResult
      * this encapsulates an "already-found" IngestResult in a Future List.
      */
 
-    class FakeFutureListOfIngestResults
-            extends CompletableFuture<List<IngestResult>>
+    private static CompletableFuture<List<IngestResult>> fakeFuturefrom( ProjectConfig projectConfig,
+                                                                         DataSource dataSource,
+                                                                         int surrogateKey,
+                                                                         boolean requiresRetry )
     {
-        private final List<IngestResult> results;
-
-        private FakeFutureListOfIngestResults( IngestResult result )
-        {
-            this.results = List.of( result );
-        }
-
-        public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,
-                                                          DataSource dataSource,
-                                                          int surrogateKey,
-                                                          boolean requiresRetry )
-        {
-            IngestResult results = IngestResult.from( projectConfig,
-                                                      dataSource,
-                                                      surrogateKey,
-                                                      true,
-                                                      requiresRetry );
-            return new FakeFutureListOfIngestResults( results );
-        }
-
-        @Override
-        public boolean cancel( boolean b )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isCancelled()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isDone()
-        {
-            return true;
-        }
-
-        @Override
-        public List<IngestResult> get()
-                throws InterruptedException, ExecutionException
-        {
-            return this.getResults();
-        }
-
-        @Override
-        public List<IngestResult> get( long l, TimeUnit timeUnit )
-                throws InterruptedException, ExecutionException,
-                TimeoutException
-        {
-            return get();
-        }
-
-        private List<IngestResult> getResults()
-        {
-            return this.results;
-        }
+        IngestResult results = IngestResult.from( projectConfig,
+                                                  dataSource,
+                                                  surrogateKey,
+                                                  true,
+                                                  requiresRetry );
+        return CompletableFuture.completedFuture( List.of( results ) );
     }
 }

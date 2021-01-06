@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
@@ -31,6 +32,7 @@ import static java.time.ZoneOffset.UTC;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
+import wres.io.concurrency.Pipelines;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -38,6 +40,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.TimeSeries;
 import wres.io.project.Projects;
+import wres.io.reading.PreIngestException;
 import wres.io.removal.IncompleteIngest;
 import wres.io.project.Project;
 import wres.io.reading.IngestException;
@@ -48,7 +51,6 @@ import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.netcdf.NetCDFCopier;
-import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.CalculationException;
 
@@ -351,14 +353,13 @@ public final class Operations {
      * @param projectConfig the projectConfig to ingest
      * @param lockManager The lock manager to use.
      * @return the projectdetails object from ingesting this project
-     * @throws IOException when anything goes wrong
+     * @throws IngestException when anything goes wrong
      */
     private static Project doIngestWork( SystemSettings systemSettings,
                                          Database database,
                                          Executor executor,
                                          ProjectConfig projectConfig,
                                          DatabaseLockManager lockManager )
-            throws IOException
     {
         ThreadFactory threadFactoryWithNaming = new BasicThreadFactory.Builder()
                 .namingPattern( "Outer Reading/Ingest Thread %d" )
@@ -368,7 +369,11 @@ public final class Operations {
                                         systemSettings.maximumThreadCount(),
                                         systemSettings.poolObjectLifespan(),
                                         TimeUnit.MILLISECONDS,
-                                        new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() + 20 ),
+                                        // Queue should be large enough to allow
+                                        // join() call below to be reached with
+                                        // zero or few rejected submissions to
+                                        // the executor service.
+                                        new ArrayBlockingQueue<>( 100_000 ),
                                         threadFactoryWithNaming );
         ingestExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         Project result = null;
@@ -393,17 +398,24 @@ public final class Operations {
         try
         {
             List<CompletableFuture<List<IngestResult>>> ingestions = loader.load();
-            ProgressMonitor.setSteps( (long)ingestions.size());
 
+            // If the count of the list above exceeds the queue in the
+            // ExecutorService above, then this Thread will be stuck helping
+            // start ingest tasks until the service can catch up. The downside
+            // is a delay in exception propagation in some circumstances.
             if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( ingestions.size() + " direct ingest results." );
             }
 
+            // Give exception on any of these ingests a chance to propagate fast
+            Pipelines.doAllOrException( ingestions )
+                     .join();
+
+            // The loading happened above during join(), now read the results.
             for ( CompletableFuture<List<IngestResult>> task : ingestions )
             {
                 List<IngestResult> ingested = task.get();
-                ProgressMonitor.completeStep();
                 projectSources.addAll( ingested );
             }
         }
@@ -412,7 +424,7 @@ public final class Operations {
             LOGGER.warn( "Interrupted during ingest.", ie );
             Thread.currentThread().interrupt();
         }
-        catch ( ExecutionException e )
+        catch ( CompletionException | IOException | ExecutionException e )
         {
             String message = "An ingest task could not be completed.";
             throw new IngestException( message, e );
@@ -420,12 +432,12 @@ public final class Operations {
         finally
         {
             List<IngestResult> leftovers = database.completeAllIngestTasks();
-
             if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( leftovers.size() + " indirect ingest results" );
             }
             projectSources.addAll( leftovers );
+            ingestExecutor.shutdownNow();
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
@@ -543,14 +555,9 @@ public final class Operations {
                 database.refreshStatistics( false );
             }
         }
-        catch ( SQLException se )
+        catch ( SQLException | IngestException | PreIngestException e )
         {
-            throw new IngestException( "Failed to finalize ingest.", se );
-        }
-
-        if ( result == null )
-        {
-            throw new IngestException( "Result of ingest was null" );
+            throw new IngestException( "Failed to finalize ingest.", e );
         }
 
         return result;
