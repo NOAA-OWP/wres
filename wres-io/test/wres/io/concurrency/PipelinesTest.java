@@ -91,7 +91,7 @@ public class PipelinesTest
         Instant end = Instant.now();
         assertTrue( cause instanceof DummyException );
         Duration executionDuration = Duration.between( start, end );
-        assertTrue( executionDuration.toMillis() > shorterDuration.toMillis()
+        assertTrue( executionDuration.toMillis() >= shorterDuration.toMillis()
                     && executionDuration.toMillis() < longerDuration.toMillis(),
                     "Expected execution duration " + executionDuration
                     + " to be shorter than " + longerDuration
