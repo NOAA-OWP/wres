@@ -83,14 +83,15 @@ public class Projects
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
      * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
-     * @throws IOException when a source identifier cannot be determined
+     * @throws PreIngestException
+     * @throws IngestException
      */
     public static Project getProjectFromIngest( SystemSettings systemSettings,
                                                 Database database,
                                                 Executor executor,
                                                 ProjectConfig projectConfig,
                                                 List<IngestResult> ingestResults )
-            throws SQLException, IOException
+            throws SQLException
     {
         int[] leftIds = Projects.getLeftIds( ingestResults );
         int[] rightIds = Projects.getRightIds( ingestResults );
@@ -132,7 +133,7 @@ public class Projects
                                                         int[] rightIds,
                                                         int[] baselineIds,
                                                         int countOfIngestResults )
-            throws SQLException, IOException
+            throws SQLException
     {
         // We don't yet know how many unique timeseries there are. For example,
         // a baseline forecast could be the same as a right forecast. So we
