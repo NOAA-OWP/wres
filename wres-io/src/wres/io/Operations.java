@@ -422,10 +422,12 @@ public final class Operations {
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted during ingest.", ie );
+            ingestExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
         catch ( CompletionException | IOException | ExecutionException e )
         {
+            ingestExecutor.shutdownNow();
             String message = "An ingest task could not be completed.";
             throw new IngestException( message, e );
         }
@@ -437,7 +439,6 @@ public final class Operations {
                 LOGGER.debug( leftovers.size() + " indirect ingest results" );
             }
             projectSources.addAll( leftovers );
-            ingestExecutor.shutdownNow();
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
@@ -516,6 +517,10 @@ public final class Operations {
         {
             String message = "An ingest task could not be completed.";
             throw new IngestException( message, ee );
+        }
+        finally
+        {
+            ingestExecutor.shutdownNow();
         }
 
         if ( !retriesNeeded.isEmpty() )
