@@ -29,7 +29,7 @@ read -d '' project_config << EOF
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="FAKE1" />
+        <feature left="FAKE1" right="FAKE1" />
     </pair>
 
     <metrics>
@@ -50,7 +50,11 @@ echo "$project_config"
 
 # The quotes above around $project_config are important to preserve line breaks.
 
-env_suffix=-prod
+# There is a -dev environment (development), -ti environment (staging), and a
+# -prod environment (production).  Set the suffix appropriately for the version
+# of the COWRES to be used.  Note that this may also have implications for the
+# name of the CA .pem file to use; see below.
+env_suffix=-dev
 
 echo "We are using the $env_suffix environment in this example."
 
@@ -66,7 +70,8 @@ echo "We are using the $env_suffix environment in this example."
 # contains the certificate of the server. The file may be retrieved at
 # https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 
-wres_ca_file=cacerts/wres_ca_x509_cert.pem
+# For production: wres_ca_file=wres_ca_x509_cert.pem
+wres_ca_file=dod_sw_ca-54_expires_2022-11.pem #for -ti and -dev COWRES
 
 if [ -f $wres_ca_file ]
 then
