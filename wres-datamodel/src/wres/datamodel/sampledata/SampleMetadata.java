@@ -1,17 +1,13 @@
 package wres.datamodel.sampledata;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.FeatureTuple;
-import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -304,30 +300,14 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         Objects.requireNonNull( input, "Specify non-null metadata for comparison." );
 
         // Check measurement units, which are always available
-        int returnMe = this.getMeasurementUnit().compareTo( input.getMeasurementUnit() );
+        int returnMe = MessageUtilities.compare( this.getEvaluation(), input.getEvaluation() );
+
         if ( returnMe != 0 )
         {
             return returnMe;
         }
 
-        // Check identifier via the string representation
-        returnMe = Objects.compare( this.getIdentifier() + "", input.getIdentifier() + "", Comparator.naturalOrder() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        // Check the time window
-        Comparator<TimeWindowOuter> compareWindows = Comparator.nullsFirst( Comparator.naturalOrder() );
-        returnMe = Objects.compare( this.getTimeWindow(), input.getTimeWindow(), compareWindows );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        // Check the thresholds
-        Comparator<OneOrTwoThresholds> compareThresholds = Comparator.nullsFirst( Comparator.naturalOrder() );
-        return Objects.compare( this.getThresholds(), input.getThresholds(), compareThresholds );
+        return MessageUtilities.compare( this.getPool(), input.getPool() );
     }
 
     @Override
@@ -352,9 +332,27 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     @Override
     public String toString()
     {
+        // Use a limited subset of the most important/useful descriptors
+        Evaluation evaluation = this.getEvaluation();
+        Pool pool = this.getPool();
+        
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "datasetIdentifier",
-                                                                                     this.getIdentifier() )
+                                                                            .append( "leftDataName",
+                                                                                     evaluation.getLeftDataName() )
+                                                                            .append( "rightDataName",
+                                                                                     evaluation.getRightDataName() )
+                                                                            .append( "baselineDataName",
+                                                                                     evaluation.getBaselineDataName() )
+                                                                            .append( "leftVariableName",
+                                                                                     evaluation.getLeftVariableName() )
+                                                                            .append( "rightVariableName",
+                                                                                     evaluation.getRightVariableName() )
+                                                                            .append( "baselineVariableName",
+                                                                                     evaluation.getBaselineVariableName() )
+                                                                            .append( "isBaselinePool",
+                                                                                     pool.getIsBaselinePool() )
+                                                                            .append( "geometryTuples",
+                                                                                     pool.getGeometryTuplesList() )
                                                                             .append( "timeWindow",
                                                                                      this.getTimeWindow() )
                                                                             .append( "thresholds",
@@ -439,75 +437,6 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     {
         String unit = this.getEvaluation().getMeasurementUnit();
         return MeasurementUnit.of( unit );
-    }
-
-    /**
-     * Returns an optional dataset identifier or null.
-     * 
-     * @return an identifier or null
-     * @deprecated makes too many assumptions in mapping from the canonical form. Obtain the canonical contents 
-     *            directly.
-     */
-    @Deprecated( since = "4.3", forRemoval = true )
-    public DatasetIdentifier getIdentifier()
-    {
-        DatasetIdentifier returnMe = null;
-
-        // For now, only one GeometryTuple per DatasetIdentifier
-        // TODO: allow a DatasetIdentifier to contain N GeometryTuple
-        FeatureTuple localLocation = null;
-
-        if ( this.getPool().getGeometryTuplesCount() > 0 )
-        {
-            localLocation = MessageFactory.parse( this.getPool().getGeometryTuples( 0 ) );
-        }
-
-        LeftOrRightOrBaseline localContext = LeftOrRightOrBaseline.RIGHT;
-
-        String variableName = this.getEvaluation().getLeftVariableName();
-        String scenario = null;
-        String baselineScenario = null;
-
-        if ( variableName.isBlank() && !this.getEvaluation().getRightVariableName().isBlank() )
-        {
-            variableName = this.getEvaluation().getRightVariableName();
-        }
-
-        if ( this.getPool().getIsBaselinePool() )
-        {
-            localContext = LeftOrRightOrBaseline.BASELINE;
-
-            // Use the baseline variable name for a baseline pool
-            if ( !this.getEvaluation().getBaselineVariableName().isBlank() )
-            {
-                variableName = this.getEvaluation().getBaselineVariableName();
-            }
-            
-            // Use the baseline scenario name for a baseline pool
-            if ( !this.getEvaluation().getBaselineDataName().isBlank() )
-            {
-                scenario = this.getEvaluation().getBaselineDataName();
-            }
-        }
-
-        if ( Objects.isNull( scenario ) )
-        {
-            scenario = this.getEvaluation().getRightDataName();
-        }
-
-        if ( !this.getEvaluation().getBaselineDataName().isBlank() && !this.getPool().getIsBaselinePool() )
-        {
-            baselineScenario = this.getEvaluation().getBaselineDataName();
-        }
-
-        if ( Objects.nonNull( localLocation ) || Objects.nonNull( variableName )
-             || Objects.nonNull( scenario )
-             || Objects.nonNull( baselineScenario ) )
-        {
-            returnMe = DatasetIdentifier.of( localLocation, variableName, scenario, baselineScenario, localContext );
-        }
-
-        return returnMe;
     }
 
     /**

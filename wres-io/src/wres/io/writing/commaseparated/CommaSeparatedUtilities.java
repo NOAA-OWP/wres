@@ -4,8 +4,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.Pool;
