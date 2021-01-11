@@ -297,7 +297,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             baselineData = this.baseline.get()
                                         .collect( Collectors.toList() );
         }
-        
+
         // Apply any time offsets immediately, in order to simplify further evaluation,
         // which is then in the target time system
         leftData = this.applyValidTimeOffset( leftData, this.leftOffset );
@@ -768,7 +768,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           right.size(),
                           returnMe.size() );
         }
-        
+
         return Collections.unmodifiableList( returnMe );
     }
 
@@ -1511,75 +1511,32 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         // Tolerate null input (e.g., for a baseline)
         if ( Objects.nonNull( timeSeries ) )
         {
-            TimeSeriesBuilder<T> consolidatedbuilder = new TimeSeriesBuilder<>();
-            TimeSeriesMetadata previousMetadata = null;
-
-            int countAdded = 0;
-
+            // Separate into time-series that have reference times and those that do not. Those with reference times
+            // are not consolidated
+            List<TimeSeries<T>> withoutReferenceTimes = new ArrayList<>();
             for ( TimeSeries<T> next : timeSeries )
             {
-                TimeSeriesMetadata localMetadata = next.getMetadata();
-                Map<ReferenceTimeType, Instant> referenceTimes = localMetadata.getReferenceTimes();
-
-                // No reference times? Then consolidate into one series
-                if ( referenceTimes.isEmpty() )
-                {
-                    consolidatedbuilder.addEvents( next.getEvents() );
-                    consolidatedbuilder.setMetadata( localMetadata );
-
-                    this.validateMetadataMatchesForConsolidatedTimeSeries( previousMetadata, localMetadata );
-
-                    previousMetadata = localMetadata;
-                    countAdded++;
-                }
-                // Some reference times: do not consolidate these time-series
-                else
+                if ( !next.getReferenceTimes().isEmpty() )
                 {
                     returnMe.add( next );
                 }
-            }
-
-            // Consolidated series with some events?
-            if ( countAdded > 0 )
-            {
-                TimeSeries<T> consolidated = consolidatedbuilder.build();
-
-                if ( !consolidated.getEvents().isEmpty() )
+                else
                 {
-                    returnMe.add( consolidated );
+                    withoutReferenceTimes.add( next );
                 }
             }
-            else if ( returnMe.isEmpty() )
-            {
-                // Nothing was added, no need for an empty TimeSeries.
-                return Collections.emptyList();
-            }
+
+            // Consolidate the time-series without reference times
+            List<TimeSeries<T>> withoutReferenceTimesUnmodifiable =
+                    Collections.unmodifiableList( withoutReferenceTimes );
+            
+            Collection<TimeSeries<T>> consolidated =
+                    TimeSeriesSlicer.consolidateTimeSeriesWithZeroReferenceTimes( withoutReferenceTimesUnmodifiable );
+
+            returnMe.addAll( consolidated );
         }
 
         return Collections.unmodifiableList( returnMe );
-    }
-
-    /**
-     * Throws an exception if the metadata instances are both non-null and do not match.
-     * 
-     * @param previousMetadata the previous metadata 
-     * @param localMetadata the new local metadata 
-     * @throws an exception if the metadata instances do not match
-     */
-
-    private void validateMetadataMatchesForConsolidatedTimeSeries( TimeSeriesMetadata previousMetadata,
-                                                                   TimeSeriesMetadata localMetadata )
-    {
-        // Validate metadata is same.
-        if ( Objects.nonNull( previousMetadata )
-             && !localMetadata.equals( previousMetadata ) )
-        {
-            throw new IllegalArgumentException( "TimeSeries instances cannot be consolidated due to"
-                                                + " non-homogenous metadata. One was "
-                                                + previousMetadata.toString()
-                                                + " and the other was "
-                                                + localMetadata.toString() );
-        }
     }
 
     /**
