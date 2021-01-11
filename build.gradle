@@ -539,9 +539,18 @@ project(':wres-statistics')
        // Enable all options
        markdownToHtml.all = true
     }
-
+    
+    // Clean the generated java bindings before regenerating them: #86722
+    task cleanProtoGeneratedDir() {
+        def javaBindingsDir = file("${project.projectDir}/src/main/java/wres")
+        delete fileTree(dir: javaBindingsDir).include('**/generated/*.java')
+    }
+    
     // Tie the preparation of the Protobuf distribution into the java compile task for convenience. 
     compileJava.dependsOn copyProtoSchemaToDist
+
+    // Tie the clean of the protobuf java bindings directory to the compile task
+    compileJava.dependsOn cleanProtoGeneratedDir
 
     // Tie the python wheel generation into the java compile task for convenience
     // TODO: cannot install miniconda in current build environment
