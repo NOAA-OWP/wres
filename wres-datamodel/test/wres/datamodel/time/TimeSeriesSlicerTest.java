@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,15 +63,6 @@ public final class TimeSeriesSlicerTest
     private static final FeatureKey FEATURE_NAME = FeatureKey.of( "Tropics" );
     private static final String UNIT = "kg/h";
 
-    private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
-    {
-        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
-                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
-                                      VARIABLE_NAME,
-                                      FEATURE_NAME,
-                                      UNIT );
-    }
-
     @Test
     public void testFilterByReferenceTime()
     {
@@ -95,22 +87,22 @@ public final class TimeSeriesSlicerTest
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         firstBasisTime ),
                                                                 TimeScaleOuter
-                                                                        .of( Duration.ofHours( 1 ) ),
-                                                                STREAMFLOW,
-                                                                DRRC2,
-                                                                CFS );
-        
-        TimeSeriesMetadata metadataOneNoRefTimes = TimeSeriesMetadata.of( Map.of(),
-                                                                TimeScaleOuter
-                                                                        .of( Duration.ofHours( 1 ) ),
+                                                                              .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
                                                                 CFS );
 
+        TimeSeriesMetadata metadataOneNoRefTimes = TimeSeriesMetadata.of( Map.of(),
+                                                                          TimeScaleOuter
+                                                                                        .of( Duration.ofHours( 1 ) ),
+                                                                          STREAMFLOW,
+                                                                          DRRC2,
+                                                                          CFS );
+
         TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         secondBasisTime ),
                                                                 TimeScaleOuter
-                                                                        .of( Duration.ofHours( 1 ) ),
+                                                                              .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
                                                                 CFS );
@@ -118,14 +110,14 @@ public final class TimeSeriesSlicerTest
         TimeSeriesMetadata metadataThree = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                           thirdBasisTime ),
                                                                   TimeScaleOuter
-                                                                          .of( Duration.ofHours( 1 ) ),
+                                                                                .of( Duration.ofHours( 1 ) ),
                                                                   STREAMFLOW,
                                                                   DRRC2,
                                                                   CFS );
-        
+
         TimeSeriesMetadata metadataThreeNoRefTimes = TimeSeriesMetadata.of( Map.of(),
                                                                             TimeScaleOuter
-                                                                                     .of( Duration.ofHours( 1 ) ),
+                                                                                          .of( Duration.ofHours( 1 ) ),
                                                                             STREAMFLOW,
                                                                             DRRC2,
                                                                             CFS );
@@ -138,27 +130,27 @@ public final class TimeSeriesSlicerTest
         TimeSeries<Pair<Double, Double>> filteredOne =
                 TimeSeriesSlicer.filter( one,
                                          TimeWindowOuter.of( secondBasisTime,
-                                                        secondBasisTime,
-                                                        TimeWindowOuter.DURATION_MIN,
-                                                        TimeWindowOuter.DURATION_MAX ) );
+                                                             secondBasisTime,
+                                                             TimeWindowOuter.DURATION_MIN,
+                                                             TimeWindowOuter.DURATION_MAX ) );
 
         assertEquals( TimeSeries.of( metadataOneNoRefTimes ), filteredOne );
 
         TimeSeries<Pair<Double, Double>> filteredTwo =
                 TimeSeriesSlicer.filter( two,
                                          TimeWindowOuter.of( secondBasisTime,
-                                                        secondBasisTime,
-                                                        TimeWindowOuter.DURATION_MIN,
-                                                        TimeWindowOuter.DURATION_MAX ) );
+                                                             secondBasisTime,
+                                                             TimeWindowOuter.DURATION_MIN,
+                                                             TimeWindowOuter.DURATION_MAX ) );
 
         assertEquals( two, filteredTwo );
 
         TimeSeries<Pair<Double, Double>> filteredThree =
                 TimeSeriesSlicer.filter( three,
                                          TimeWindowOuter.of( secondBasisTime,
-                                                        secondBasisTime,
-                                                        TimeWindowOuter.DURATION_MIN,
-                                                        TimeWindowOuter.DURATION_MAX ) );
+                                                             secondBasisTime,
+                                                             TimeWindowOuter.DURATION_MIN,
+                                                             TimeWindowOuter.DURATION_MAX ) );
 
         assertEquals( TimeSeries.of( metadataThreeNoRefTimes ), filteredThree );
 
@@ -187,7 +179,7 @@ public final class TimeSeriesSlicerTest
         TimeSeries<Pair<Double, Double>> actual =
                 TimeSeriesSlicer.filter( one,
                                          TimeWindowOuter.of( T1985_01_01T01_00_00Z,
-                                                        T1985_01_01T02_00_00Z ) );
+                                                             T1985_01_01T02_00_00Z ) );
 
         // Create the expected series
         SortedSet<Event<Pair<Double, Double>>> expectedEvents = new TreeSet<>();
@@ -300,12 +292,12 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> expectedEvents = new TreeSet<>();
         expectedEvents.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         expectedEvents.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
-        
+
         TimeSeries<Pair<Double, Double>> expected = TimeSeries.of( metadata, expectedEvents );
 
         assertEquals( expected, actual );
     }
-    
+
     @Test
     public void testGroupEventsByIntervalProducesThreeGroupsEachWithTwoEvents()
     {
@@ -834,6 +826,123 @@ public final class TimeSeriesSlicerTest
 
         assertEquals( Map.of(), actualEmptyMapping );
 
+    }
+
+    @Test
+    public void testConsolidateTimeSeriesWithZeroReferenceTimes()
+    {
+        TimeSeries<Double> one =
+                new TimeSeriesBuilder<Double>().addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ),
+                                                                    5.812511 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ),
+                                                                    6.759735 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ),
+                                                                    7.3409863 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ),
+                                                                    7.9222374 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T03:00:00Z" ),
+                                                                    8.503489 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T04:00:00Z" ),
+                                                                    9.08474 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T05:00:00Z" ),
+                                                                    9.665991 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                    10.247243 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                    9.52606 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                    8.804878 ) )
+                                               .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                               .build();
+
+        TimeSeries<Double> two =
+                new TimeSeriesBuilder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                    10.247243 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                    9.52606 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                    8.804878 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T09:00:00Z" ),
+                                                                    8.083696 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T10:00:00Z" ),
+                                                                    7.3517504 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T11:00:00Z" ),
+                                                                    6.6305685 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T12:00:00Z" ),
+                                                                    5.9093866 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T13:00:00Z" ),
+                                                                    5.489594 ) )
+                                               .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                               .build();
+
+        Collection<TimeSeries<Double>> actual =
+                TimeSeriesSlicer.consolidateTimeSeriesWithZeroReferenceTimes( List.of( one, two ) );
+
+        assertEquals( 2, actual.size() );
+
+        TimeSeries<Double> expectedOne =
+                new TimeSeriesBuilder<Double>().addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ),
+                                                                    5.812511 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ),
+                                                                    6.759735 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ),
+                                                                    7.3409863 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ),
+                                                                    7.9222374 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T03:00:00Z" ),
+                                                                    8.503489 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T04:00:00Z" ),
+                                                                    9.08474 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T05:00:00Z" ),
+                                                                    9.665991 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                    10.247243 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                    9.52606 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                    8.804878 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T09:00:00Z" ),
+                                                                    8.083696 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T10:00:00Z" ),
+                                                                    7.3517504 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T11:00:00Z" ),
+                                                                    6.6305685 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T12:00:00Z" ),
+                                                                    5.9093866 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T13:00:00Z" ),
+                                                                    5.489594 ) )
+                                               .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                               .build();
+
+        TimeSeries<Double> expectedTwo =
+                new TimeSeriesBuilder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                    10.247243 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                    9.52606 ) )
+                                               .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                    8.804878 ) )
+                                               .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                               .build();
+
+        assertEquals( List.of( expectedOne, expectedTwo ), actual );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
+    }
+
+    private static TimeSeriesMetadata getBoilerplateMetadata()
+    {
+        return TimeSeriesMetadata.of( Map.of(),
+                                      TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                      VARIABLE_NAME,
+                                      FEATURE_NAME,
+                                      UNIT );
     }
 
 }
