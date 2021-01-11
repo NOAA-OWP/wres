@@ -1,6 +1,5 @@
  package wres.io.reading;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;

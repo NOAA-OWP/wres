@@ -375,7 +375,7 @@ public final class TimeSeriesSlicer
 
             // Is event time within (start,nextEnd]?
             SortedSet<Event<T>> nextGroup = grouped.get( nextEnd );
-            
+
             for ( int i = startIndex; i < eventCount; i++ )
             {
                 Event<T> nextEvent = listedEvents.get( i );
@@ -442,42 +442,6 @@ public final class TimeSeriesSlicer
 
         return Collections.unmodifiableMap( returnMe );
     }
-
-    /**
-     * Inspects the sorted list of events by counting backwards from the input index. Returns the index of the earliest 
-     * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
-     * events by time. See {@link #groupEventsByInterval(SortedSet, Set, Duration)}.
-     * 
-     * @param workBackFromHere the index at which to begin searching backwards
-     * @param startTime the start time that must be exceeded
-     * @param events the list of events in time order
-     */
-
-    private static <T> int getIndexOfEarliestTimeThatIsGreaterThanInputTime( int workBackFromHere,
-                                                                             Instant startTime,
-                                                                             List<Event<T>> events )
-    {
-        // Set the new start time
-        int nextStartIndex = workBackFromHere;
-        int onePriorToStart = nextStartIndex - 1;
-        for ( int j = onePriorToStart; j > -1; j-- )
-        {
-            Event<T> backEvent = events.get( j );
-            Instant backTime = backEvent.getTime();
-
-            if ( backTime.isAfter( startTime ) )
-            {
-                nextStartIndex--;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        return nextStartIndex;
-    }
-
 
     /**
      * <p>Returns a trace-view of an ensemble time-series. The input series is decomposed into one Set for each ensemble 
@@ -857,12 +821,14 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Consolidates the input collection into one series.
+     * Consolidates the input collection of time-series into one time-series. Requires that none of the valid datetimes 
+     * are duplicates.
      * 
      * @param <T> the time-series event value type
      * @param collectedSeries the collected series
      * @return the consolidated series
      * @throws NullPointerException if the consolidatedSeries is null
+     * @throws IllegalArgumentException if there are two or more events with the same valid datetime
      */
 
     public static <T> TimeSeries<T> consolidate( Collection<TimeSeries<T>> collectedSeries )
@@ -873,9 +839,9 @@ public final class TimeSeriesSlicer
         if ( collectedSeries.isEmpty() )
         {
             // TODO: restore empty timeseries capability after weeding out spots
-            // where some kind of metadata can be put in.
+            // where some kind of metadata can be put in. Then return an empty 
+            // time-series with metadata.
             throw new IllegalStateException( "Cannot consolidate an empty timeseries" );
-            //return TimeSeries.of();
         }
         // Singleton series
         else if ( collectedSeries.size() == 1 )
@@ -892,6 +858,138 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
+    }
+
+    /**
+     * Consolidates the input collection of time-series into as few time-series as necessary, such that events with 
+     * duplicate valid times belong to different time-series. Only accepts time-series that do not have reference
+     * times.
+     * 
+     * @param <T> the time-series event value type
+     * @param collectedSeries the collected series
+     * @return the consolidated series
+     * @throws NullPointerException if the consolidatedSeries is null
+     * @throws IllegalArgumentException if any of the input series contains one or more reference times
+     */
+
+    public static <T> Collection<TimeSeries<T>>
+            consolidateTimeSeriesWithZeroReferenceTimes( Collection<TimeSeries<T>> collectedSeries )
+    {
+        Objects.requireNonNull( collectedSeries );
+
+        // Validate metadata
+        TimeSeriesSlicer.validateForZeroReferenceTimesAndCommonMetadata( collectedSeries );
+
+        // The time-series builders
+        Collection<TimeSeriesBuilder<T>> builders = new ArrayList<>();
+
+        // Iterate through the series and their events. Add the events to the first builder that does not contain an
+        // event at the same valid datetime. If all builders are exhausted, add a new one and place the event in that 
+        for ( TimeSeries<T> nextSeries : collectedSeries )
+        {
+            for ( Event<T> nextEvent : nextSeries.getEvents() )
+            {
+                boolean added = false;
+
+                for ( TimeSeriesBuilder<T> nextBuilder : builders )
+                {
+                    // Does this builder already contain this valid time? No, so add it
+                    if ( !nextBuilder.hasEventAtThisTime( nextEvent ) )
+                    {
+                        nextBuilder.addEvent( nextEvent );
+                        added = true;
+                        // Only add to one builder
+                        break;
+                    }
+                }
+
+                // Event not added to any existing builders, so create a new one and add the event to that
+                if ( !added )
+                {
+                    TimeSeriesBuilder<T> newBuilder = new TimeSeriesBuilder<>();
+                    newBuilder.addEvent( nextEvent );
+                    newBuilder.setMetadata( nextSeries.getMetadata() );
+                    builders.add( newBuilder );
+                }
+            }
+        }
+
+        return builders.stream()
+                       .map( TimeSeriesBuilder::build )
+                       .collect( Collectors.toUnmodifiableList() );
+    }
+
+    /**
+     * Throws an exception if any time-series has one or more reference times or metadata that is inconsistent with 
+     * another time-series
+     * 
+     * @param <T> the time-series event value type
+     * @param collectedSeries the collected series
+     * @throws IllegalArgumentException if one or more time-series have reference times or inconsistent metadata
+     */
+
+    private static <T> void validateForZeroReferenceTimesAndCommonMetadata( Collection<TimeSeries<T>> collectedSeries )
+    {
+        TimeSeriesMetadata first = null;
+
+        for ( TimeSeries<T> next : collectedSeries )
+        {
+            if ( Objects.isNull( first ) )
+            {
+                first = next.getMetadata();
+            }
+            // Compare to last
+            else if ( !next.getMetadata().equals( first ) )
+            {
+                throw new IllegalArgumentException( "Cannot consolidate time-series that contain unequal metadata. "
+                                                    + "The unequal metadata instances are "
+                                                    + first
+                                                    + " and "
+                                                    + next.getMetadata()
+                                                    + "." );
+            }
+
+            // Zero reference times of current
+            if ( !next.getReferenceTimes().isEmpty() )
+            {
+                throw new IllegalArgumentException( "Cannot consolidate time-series that contain reference times." );
+            }
+        }
+    }
+
+    /**
+     * Inspects the sorted list of events by counting backwards from the input index. Returns the index of the earliest 
+     * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
+     * events by time. See {@link #groupEventsByInterval(SortedSet, Set, Duration)}.
+     * 
+     * @param workBackFromHere the index at which to begin searching backwards
+     * @param startTime the start time that must be exceeded
+     * @param events the list of events in time order
+     */
+
+    private static <T> int getIndexOfEarliestTimeThatIsGreaterThanInputTime( int workBackFromHere,
+                                                                             Instant startTime,
+                                                                             List<Event<T>> events )
+    {
+        // Set the new start time
+        int nextStartIndex = workBackFromHere;
+        int onePriorToStart = nextStartIndex - 1;
+        for ( int j = onePriorToStart; j > -1; j-- )
+        {
+            Event<T> backEvent = events.get( j );
+            Instant backTime = backEvent.getTime();
+
+            if ( backTime.isAfter( startTime ) )
+            {
+                nextStartIndex--;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return nextStartIndex;
     }
 
     /**
