@@ -290,7 +290,7 @@ public class TimeSeries<T>
          * Convenience method that allows the builder to be tested for events whose valid times correspond to the input, 
          * since a time-series cannot contain more than one event at the same valid time.
          * 
-         * @param event the event whose valid time should be checked
+         * @param validTime the event whose valid time should be checked
          * @return true if the builder contains an event with the same valid time as the input
          */
 
