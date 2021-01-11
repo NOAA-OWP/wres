@@ -8,8 +8,8 @@
 # The sha256sum is published alongside releases visible at
 # https://www.azul.com/downloads/zulu-community/
 
-zulu_java_sha256sum="df0de67998ac0c58b3c9e83c86e2a81daca05dc5adc189d942bc5d3f4691e749"
-zulu_java_version="zulu11.39.15-ca-jdk11.0.7-linux_x64"
+zulu_java_sha256sum="6c79bfe8bb06c82b72ef2f293a14becef56b3078d298dc75fda4225cbb2d3d0c"
+zulu_java_version="zulu11.43.55-ca-jdk11.0.9.1-linux_x64"
 zulu_java_tarball="${zulu_java_version}.tar.gz"
 zulu_java_url="https://cdn.azul.com/zulu/bin/${zulu_java_tarball}"
 
@@ -26,7 +26,7 @@ else
     echo "Found existing zulu java at ${zulu_java_version}"
 fi
 
-old_zulu_java_version="zulu11.35.13-ca-jdk11.0.5-linux_x64"
+old_zulu_java_version="zulu11.39.15-ca-jdk11.0.7-linux_x64"
 
 if [ -d ${old_zulu_java_version} ]
 then
