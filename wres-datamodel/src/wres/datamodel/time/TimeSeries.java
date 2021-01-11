@@ -30,13 +30,13 @@ import wres.datamodel.scale.TimeScaleOuter;
 
 public class TimeSeries<T>
 {
-    
+
     /**
      * Logger.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );    
-    
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
+
     /**
      * Any non-event-related metadata that apply to the time-series as a whole.
      */
@@ -187,7 +187,7 @@ public class TimeSeries<T>
         this.events = Collections.unmodifiableSortedSet( localEvents );
         this.metadata = builder.metadata;
 
-        if( Objects.isNull( this.metadata ) )
+        if ( Objects.isNull( this.metadata ) )
         {
             throw new UnsupportedOperationException( "Use complete metadata in your TimeSeries instances." );
         }
@@ -209,7 +209,7 @@ public class TimeSeries<T>
             LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
                           builder,
                           this );
-        }        
+        }
     }
 
     /**
@@ -284,6 +284,20 @@ public class TimeSeries<T>
             this.metadata = metadata;
 
             return this;
+        }
+
+        /**
+         * Convenience method that allows the builder to be tested for events whose valid times correspond to the input, 
+         * since a time-series cannot contain more than one event at the same valid time.
+         * 
+         * @param event the event whose valid time should be checked
+         * @return true if the builder contains an event with the same valid time as the input
+         */
+
+        public boolean hasEventAtThisTime( Event<T> validTime )
+        {
+            // Explicit comparator set on the event map that checks time
+            return this.events.contains( validTime );
         }
 
         /**
