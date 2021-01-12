@@ -45,10 +45,6 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         extends CommaSeparatedStatisticsWriter
         implements Function<List<T>, Set<Path>>
 {
-    /**
-     * Set of paths that this writer actually wrote to
-     */
-    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Mapper that provides a string representation of the score.
@@ -97,6 +93,9 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
                 ProjectConfigs.getNumericalDestinations( this.getProjectConfig() );
+
+        Set<Path> paths = new HashSet<>();
+
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
             // Write per time-window
@@ -116,7 +115,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                                                                                nextGroup,
                                                                                this.getDurationUnits(),
                                                                                this.mapper );
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                    paths.addAll( innerPathsWrittenTo );
                 }
             }
             catch ( IOException e )
@@ -124,8 +123,8 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
             }
         }
-        
-        return this.getPathsWrittenTo();
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
@@ -284,7 +283,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
     /**
      * Mutates the input header and rows, adding results for one score component.
      *
-     * @param <T> the score component type
+     * @param <S> the score component type
      * @param name the column name
      * @param component the score component results
      * @param headerRow the header row
@@ -293,7 +292,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
      * @param mapper a mapper function that provides a string representation of the score
      */
 
-    private static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> void
+    private static <S extends ScoreComponent<?>> void
             addRowsForOneScoreComponent( String name,
                                          List<S> component,
                                          StringJoiner headerRow,
@@ -351,15 +350,6 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 }
             }
         }
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     */
-
-    private Set<Path> getPathsWrittenTo()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**

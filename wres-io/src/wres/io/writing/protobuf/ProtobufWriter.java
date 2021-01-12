@@ -39,12 +39,10 @@ public class ProtobufWriter implements Function<Statistics,Set<Path>>
     private static final Logger LOGGER = LoggerFactory.getLogger( ProtobufWriter.class );
 
     /**The path to write.*/
-
     @GuardedBy( "lock" )
     private final Path path;
 
     /**A lock that guards the path to write.*/
-
     private final ReentrantLock lock;
 
     /**

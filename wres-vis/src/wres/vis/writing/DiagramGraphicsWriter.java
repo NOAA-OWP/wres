@@ -36,7 +36,6 @@ import wres.vis.ChartEngineFactory;
 public class DiagramGraphicsWriter extends GraphicsWriter
         implements Function<List<DiagramStatisticOuter>,Set<Path>>
 {
-    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -58,6 +57,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      * Writes all output for one diagram type.
      *
      * @param output the diagram output
+     * @return the paths written
      * @throws NullPointerException if the input is null
      * @throws GraphicsWriteException if the output cannot be written
      */
@@ -67,6 +67,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
+        Set<Path> paths = new HashSet<>();
+        
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DiagramStatisticOuter::getMetricName );
         for ( MetricConstants next : metrics )
@@ -85,22 +87,11 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                         DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
                                                              super.getOutputsDescription(),
                                                              nextGroup );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                paths.addAll( innerPathsWrittenTo );
             }
         }
         
-        return this.getPathsWritten();
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    private Set<Path> getPathsWritten()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
@@ -110,8 +101,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the outputs required
      * @param output the metric results
+     * @return the paths written
      * @throws GraphicsWriteException when an error occurs during writing
-     * @return the paths actually written to
      */
 
     private static Set<Path> writeDiagrams( Path outputDirectory,

@@ -44,10 +44,6 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         implements Function<List<DiagramStatisticOuter>,Set<Path>>
 {
-    /**
-     * Set of paths that this writer actually wrote to
-     */
-    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -80,6 +76,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
+        Set<Path> paths = new HashSet<>();
+        
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
@@ -109,7 +107,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                                    nextGroup,
                                                                                    formatter,
                                                                                    super.getDurationUnits() );
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                    paths.addAll( innerPathsWrittenTo );
                 }
             }
             catch ( IOException e )
@@ -118,8 +116,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             }
         }
 
-        return this.getPathsWrittenTo();
-        
+        return Collections.unmodifiableSet( paths );      
     }
 
     /**
@@ -163,7 +160,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             {
                 innerPathsWrittenTo =
                         CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( outputDirectory,
-                                                                                            destinationConfig,
                                                                                             Slicer.filter( output, m ),
                                                                                             headerRow,
                                                                                             formatter,
@@ -174,7 +170,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             {
                 innerPathsWrittenTo =
                         CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( outputDirectory,
-                                                                                           destinationConfig,
                                                                                            Slicer.filter( output, m ),
                                                                                            headerRow,
                                                                                            formatter,
@@ -192,8 +187,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     /**
      * Writes one diagram for all thresholds at each time window in the input.
      *
-     * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration    
+     * @param outputDirectory the directory into which to write 
      * @param output the diagram output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
@@ -203,7 +197,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static Set<Path> writeOneDiagramOutputTypePerTimeWindow( Path outputDirectory,
-                                                                     DestinationConfig destinationConfig,
                                                                      List<DiagramStatisticOuter> output,
                                                                      StringJoiner headerRow,
                                                                      Format formatter,
@@ -253,8 +246,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     /**
      * Writes one diagram for all time windows at each threshold in the input.
      *
-     * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration    
+     * @param outputDirectory the directory into which to write 
      * @param output the diagram output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
@@ -264,7 +256,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static Set<Path> writeOneDiagramOutputTypePerThreshold( Path outputDirectory,
-                                                                    DestinationConfig destinationConfig,
                                                                     List<DiagramStatisticOuter> output,
                                                                     StringJoiner headerRow,
                                                                     Format formatter,
@@ -477,17 +468,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         }
 
         return returnMe;
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    private Set<Path> getPathsWrittenTo()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**

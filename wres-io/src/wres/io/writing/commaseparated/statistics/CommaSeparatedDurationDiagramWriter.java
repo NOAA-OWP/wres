@@ -21,8 +21,6 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigs;
-import wres.config.generated.DestinationConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -42,12 +40,6 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatisticsWriter
         implements Function<List<DurationDiagramStatisticOuter>,Set<Path>>
 {
-
-    /**
-     * Set of paths that this writer actually wrote to
-     */
-
-    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -80,53 +72,40 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
-        // Write output
-        // In principle, each destination could have a different formatter, so 
-        // the output must be generated separately for each destination
-        List<DestinationConfig> numericalDestinations =
-                ProjectConfigs.getNumericalDestinations( super.getProjectConfig() );
-        for ( DestinationConfig destinationConfig : numericalDestinations )
+        Set<Path> paths = new HashSet<>();
+        
+        // Write per time-window
+        try
         {
+            // Group the statistics by the LRB context in which they appear. There will be one path written
+            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
+            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+            Map<LeftOrRightOrBaseline, List<DurationDiagramStatisticOuter>> groups =
+                    Slicer.getStatisticsGroupedByContext( output );
 
-            // Formatter
-            Format formatter = null;
-
-            // Write per time-window
-            try
+            for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
             {
-                // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<DurationDiagramStatisticOuter>> groups =
-                        Slicer.getStatisticsGroupedByContext( output );
+                Set<Path> innerPathsWrittenTo =
+                        CommaSeparatedDurationDiagramWriter.writeOnePairedOutputType( super.getOutputDirectory(),
+                                                                                      nextGroup,
+                                                                                      null,
+                                                                                      super.getDurationUnits() );
 
-                for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
-                {
-                    Set<Path> innerPathsWrittenTo =
-                            CommaSeparatedDurationDiagramWriter.writeOnePairedOutputType( super.getOutputDirectory(),
-                                                                                          destinationConfig,
-                                                                                          nextGroup,
-                                                                                          formatter,
-                                                                                          super.getDurationUnits() );
-
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
-                }
+                paths.addAll( innerPathsWrittenTo );
             }
-            catch ( IOException e )
-            {
-                throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
-            }
-
+        }
+        catch ( IOException e )
+        {
+            throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
         }
 
-        return this.getPathsWrittenTo();
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Writes all output for one paired type.
      *
-     * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration    
+     * @param outputDirectory the directory into which to write  
      * @param output the paired output to iterate through
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
@@ -135,7 +114,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
      */
 
     private static Set<Path> writeOnePairedOutputType( Path outputDirectory,
-                                                       DestinationConfig destinationConfig,
                                                        List<DurationDiagramStatisticOuter> output,
                                                        Format formatter,
                                                        ChronoUnit durationUnits )
@@ -253,17 +231,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
         }
 
         return returnMe;
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    private Set<Path> getPathsWrittenTo()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**
