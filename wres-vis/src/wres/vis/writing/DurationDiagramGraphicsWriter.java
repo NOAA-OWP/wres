@@ -33,7 +33,6 @@ import wres.vis.ChartEngineFactory;
 public class DurationDiagramGraphicsWriter extends GraphicsWriter
         implements Function<List<DurationDiagramStatisticOuter>,Set<Path>>
 {
-    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -55,6 +54,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
      * Writes all output for one paired type.
      *
      * @param output the paired output
+     * @return the paths written
      * @throws NullPointerException if the input is null
      * @throws GraphicsWriteException if the output cannot be written
      */
@@ -64,6 +64,8 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing duration diagram outputs." );
 
+        Set<Path> paths = new HashSet<>();
+        
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics =
                 Slicer.discover( output, DurationDiagramStatisticOuter::getMetricName );
@@ -83,22 +85,11 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                         DurationDiagramGraphicsWriter.writePairedOutputByInstantDurationCharts( super.getOutputDirectory(),
                                                                                                 super.getOutputsDescription(),
                                                                                                 nextGroup );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                paths.addAll( innerPathsWrittenTo );
             }
         }
         
-        return this.getPathsWritten();
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-    
-    private Set<Path> getPathsWritten()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
+        return Collections.unmodifiableSet( paths );
     }
 
     /**

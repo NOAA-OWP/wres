@@ -40,8 +40,6 @@ import wres.vis.ChartEngineFactory;
 public class DoubleScoreGraphicsWriter extends GraphicsWriter
         implements Function<List<DoubleScoreStatisticOuter>,Set<Path>>
 {
-    private Set<Path> pathsWrittenTo = new HashSet<>();
-
     private static final Logger LOGGER = LoggerFactory.getLogger( DoubleScoreGraphicsWriter.class );
 
     /**
@@ -64,6 +62,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * Writes all output for one score type.
      *
      * @param output the score output
+     * @return the paths written
      * @throws NullPointerException if the input is null
      * @throws GraphicsWriteException if the output cannot be written
      */
@@ -73,6 +72,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing duration score outputs." );
 
+        Set<Path> paths = new HashSet<>();
+        
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DoubleScoreStatisticOuter::getMetricName );
         for ( MetricConstants next : metrics )
@@ -97,23 +98,12 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                             DoubleScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
                                                                         super.getOutputsDescription(),
                                                                         nextGroup );
-                    this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                    paths.addAll( innerPathsWrittenTo );
                 }
             }
         }
         
-        return this.getPathsWritten();
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    private Set<Path> getPathsWritten()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
@@ -123,8 +113,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the outputs required
      * @param output the metric output
+     * @return the paths written
      * @throws GraphicsWriteException when an error occurs during writing
-     * @return the paths actually written to
      */
 
     private static Set<Path> writeScoreCharts( Path outputDirectory,

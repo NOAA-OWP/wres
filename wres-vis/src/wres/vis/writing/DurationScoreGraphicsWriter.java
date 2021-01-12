@@ -33,7 +33,6 @@ import wres.vis.ChartEngineFactory;
 public class DurationScoreGraphicsWriter extends GraphicsWriter
         implements Function<List<DurationScoreStatisticOuter>,Set<Path>>
 {
-    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -56,6 +55,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      * Writes all output for one score type.
      *
      * @param output the score output
+     * @return the paths written
      * @throws NullPointerException if the input is null
      * @throws GraphicsWriteException if the output cannot be written
      */
@@ -65,6 +65,8 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing duration score outputs." );
 
+        Set<Path> paths = new HashSet<>();
+        
         // Iterate through each metric 
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DurationScoreStatisticOuter::getMetricName );
         for ( MetricConstants next : metrics )
@@ -83,22 +85,11 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
                         DurationScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
                                                                       super.getOutputsDescription(),
                                                                       nextGroup );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                paths.addAll( innerPathsWrittenTo );
             }
         }
         
-        return this.getPathsWritten();
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    private Set<Path> getPathsWritten()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
+        return Collections.unmodifiableSet( paths );
     }
 
     /**

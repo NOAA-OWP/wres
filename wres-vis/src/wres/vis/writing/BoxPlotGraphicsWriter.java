@@ -37,12 +37,10 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class BoxPlotGraphicsWriter extends GraphicsWriter
-        implements Function<List<BoxplotStatisticOuter>,Set<Path>>
+        implements Function<List<BoxplotStatisticOuter>, Set<Path>>
 {
     private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS =
             "Specify non-null input data when writing box plot outputs.";
-
-    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -64,6 +62,7 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
      * Writes all output for one box plot type.
      *
      * @param output the box plot output
+     * @return the paths written
      * @throws NullPointerException if the input is null
      * @throws GraphicsWriteException if the output cannot be written
      */
@@ -73,23 +72,29 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
     {
         Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
 
-        this.writeBoxPlotsPerPair( output );
-        this.writeBoxPlotsPerPool( output );
-        
-        return this.getPathsWritten();
+        Set<Path> perPairPaths = this.writeBoxPlotsPerPair( output );
+        Set<Path> perPoolPaths = this.writeBoxPlotsPerPool( output );
+
+        Set<Path> paths = new HashSet<>( perPairPaths );
+        paths.addAll( perPoolPaths );
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Writes all output for the {@link StatisticType#BOXPLOT_PER_PAIR}.
      *
      * @param output the box plot output
+     * @return the paths written
      * @throws NullPointerException if the input is null
      * @throws GraphicsWriteException if the output cannot be written
      */
 
-    private void writeBoxPlotsPerPair( List<BoxplotStatisticOuter> output )
+    private Set<Path> writeBoxPlotsPerPair( List<BoxplotStatisticOuter> output )
     {
         Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through types per pair
         List<BoxplotStatisticOuter> perPair =
@@ -113,22 +118,27 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                         BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetricAndPool( super.getOutputDirectory(),
                                                                                     super.getOutputsDescription(),
                                                                                     nextGroup );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                paths.addAll( innerPathsWrittenTo );
             }
         }
+
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Writes all output for the {@link StatisticType#BOXPLOT_PER_POOL}.
      *
      * @param output the box plot output
+     * @return the paths written
      * @throws NullPointerException if the input is null
      * @throws GraphicsWriteException if the output cannot be written
      */
 
-    private void writeBoxPlotsPerPool( List<BoxplotStatisticOuter> output )
+    private Set<Path> writeBoxPlotsPerPool( List<BoxplotStatisticOuter> output )
     {
         Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
+
+        Set<Path> paths = new HashSet<>();
 
         // Iterate through the pool types
         List<BoxplotStatisticOuter> perPool =
@@ -152,20 +162,11 @@ public class BoxPlotGraphicsWriter extends GraphicsWriter
                         BoxPlotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
                                                                              super.getOutputsDescription(),
                                                                              nextGroup );
-                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+                paths.addAll( innerPathsWrittenTo );
             }
         }
-    }
 
-    /**
-     * Return a snapshot of the paths written to (so far)
-     * 
-     * @return the paths written so far.
-     */
-
-    private Set<Path> getPathsWritten()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
+        return Collections.unmodifiableSet( paths );
     }
 
     /**

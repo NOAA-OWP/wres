@@ -46,11 +46,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 {
 
     /**
-     * Set of paths that this writer actually wrote to
-     */
-    private final Set<Path> pathsWrittenTo = new HashSet<>();
-
-    /**
      * Returns an instance of a writer.
      * 
      * @param projectConfig the project configuration
@@ -79,9 +74,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     @Override
     public Set<Path> apply( final List<BoxplotStatisticOuter> output )
     {
-        Set<Path> pathsWrittenLocal = new HashSet<>();
-
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
+
+        Set<Path> paths = new HashSet<>();
 
         // Write output
         // In principle, each destination could have a different formatter, so 
@@ -107,11 +102,10 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                 {
                     Set<Path> innerPathsWrittenTo =
                             CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( super.getOutputDirectory(),
-                                                                                   destinationConfig,
                                                                                    nextGroup,
                                                                                    formatter,
                                                                                    super.getDurationUnits() );
-                    pathsWrittenLocal.addAll( innerPathsWrittenTo );
+                    paths.addAll( innerPathsWrittenTo );
                 }
             }
             catch ( IOException e )
@@ -120,16 +114,13 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             }
         }
 
-        this.pathsWrittenTo.addAll( pathsWrittenLocal );
-
-        return this.getPathsWrittenTo();
+        return Collections.unmodifiableSet( paths );
     }
 
     /**
      * Writes all output for one box plot type.
      *
      * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration    
      * @param output the box plot output to iterate through
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
@@ -137,7 +128,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static Set<Path> writeOneBoxPlotOutputType( Path outputDirectory,
-                                                        DestinationConfig destinationConfig,
                                                         List<BoxplotStatisticOuter> output,
                                                         Format formatter,
                                                         ChronoUnit durationUnits )
@@ -159,7 +149,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         {
             Set<Path> innerPathsWrittenTo =
                     CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerTimeWindow( outputDirectory,
-                                                                                        destinationConfig,
                                                                                         Slicer.filter( output, next ),
                                                                                         formatter,
                                                                                         durationUnits );
@@ -177,7 +166,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         {
             Set<Path> innerPathsWrittenTo =
                     CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerMetric( outputDirectory,
-                                                                                    destinationConfig,
                                                                                     Slicer.filter( output, next ),
                                                                                     formatter,
                                                                                     durationUnits );
@@ -190,8 +178,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     /**
      * Writes one box plot for all thresholds at each time window in the input.
      *
-     * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration    
+     * @param outputDirectory the directory into which to write  
      * @param output the box plot output
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
@@ -200,7 +187,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static Set<Path> writeOneBoxPlotOutputTypePerTimeWindow( Path outputDirectory,
-                                                                     DestinationConfig destinationConfig,
                                                                      List<BoxplotStatisticOuter> output,
                                                                      Format formatter,
                                                                      ChronoUnit durationUnits )
@@ -249,8 +235,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     /**
      * Writes all box plot output into a single destination for one metric.
      *
-     * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration    
+     * @param outputDirectory the directory into which to write  
      * @param output the box plot output
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
@@ -259,7 +244,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static Set<Path> writeOneBoxPlotOutputTypePerMetric( Path outputDirectory,
-                                                                 DestinationConfig destinationConfig,
                                                                  List<BoxplotStatisticOuter> output,
                                                                  Format formatter,
                                                                  ChronoUnit durationUnits )
@@ -417,15 +401,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         }
 
         return returnMe;
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     */
-
-    private Set<Path> getPathsWrittenTo()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**
