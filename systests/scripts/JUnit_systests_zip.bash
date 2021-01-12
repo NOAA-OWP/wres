@@ -161,7 +161,7 @@ else
 	if [ -s testDBError.txt ]
 	then
 		MAIL_SUBJECT="Dudes, JUnit in $SYSTESTS_DIR Tested $WRES_REVISION with Database problem"
-		/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" $WRES_GROUP < testDBError.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+		/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" $WRES_GROUP < testDBError.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 		cat testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 		rm -v testDBError.txt testDBError.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 		rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -258,14 +258,14 @@ LOGFILESIZE=`ls -s $LOGFILE | gawk '{print $1}'`
 echo "LOGFILESIZE = $LOGFILESIZE" 2>&1 | /usr/bin/tee --append $LOGFILE
 if [ $LOGFILESIZE -lt 9999 ]
 then
-	#/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
-	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	#/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 else
 	echo "$LOGFILE block size $LOGFILESIZE is too large to attach in email" > tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	echo ".................." >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	mv -v tempfile.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-	/usr/bin/mailx -F -S smtp=140.90.91.135 -s "$MAIL_SUBJECT" $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 fi
 ls -l passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 rm -v passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
