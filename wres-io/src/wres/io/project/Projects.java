@@ -1,6 +1,5 @@
 package wres.io.project;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -83,8 +82,8 @@ public class Projects
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
      * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
-     * @throws PreIngestException
-     * @throws IngestException
+     * @throws PreIngestException if the hashes of the ingested sources cannot be determined
+     * @throws IngestException if another wres instance failed to complete ingest on which this evaluation depends
      */
     public static Project getProjectFromIngest( SystemSettings systemSettings,
                                                 Database database,

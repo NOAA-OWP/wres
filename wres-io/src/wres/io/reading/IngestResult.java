@@ -26,13 +26,13 @@ public interface IngestResult
     int getSurrogateKey();
 
     /**
-     * The DataSource to use when retrying ingest.
+     * @return The DataSource to use when retrying ingest.
      * @throws UnsupportedOperationException when requiresRetry() is false.
      */
     DataSource getDataSource();
 
     /**
-     * Whether Left or Right or Baseline when retrying ingest.
+     * @return Whether Left or Right or Baseline when retrying ingest.
      * @throws UnsupportedOperationException when requiresRetry() is false.
      */
     LeftOrRightOrBaseline getLeftOrRightOrBaseline();
