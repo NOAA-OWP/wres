@@ -330,19 +330,19 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
         boolean result = true;
-        
+
         // #58737
         result = Validation.hasUpToOneDestinationPerDestinationType( projectConfigPlus );
-        
+
         result = result && Validation.isNetcdfOutputConfigValid( projectConfigPlus.toString(),
-                                                       projectConfigPlus.getProjectConfig()
-                                                                        .getOutputs()
-                                                                        .getDestination() )
+                                                                 projectConfigPlus.getProjectConfig()
+                                                                                  .getOutputs()
+                                                                                  .getDestination() )
                  && result;
-        
+
         result = Validation.areNetcdfOutputsValid( projectConfigPlus )
                  && result;
-        
+
         return result;
     }
 
@@ -376,13 +376,13 @@ public class Validation
         for ( DestinationConfig destination : destinations )
         {
             DestinationType nextType = destination.getType();
-            
+
             // Normalize synonyms
-            if( nextType == DestinationType.PNG )
+            if ( nextType == DestinationType.PNG )
             {
                 nextType = DestinationType.GRAPHIC;
             }
-            else if( nextType == DestinationType.CSV )
+            else if ( nextType == DestinationType.CSV )
             {
                 nextType = DestinationType.NUMERIC;
             }
@@ -408,7 +408,7 @@ public class Validation
 
             mapString = mapString.replaceAll( DestinationType.GRAPHIC.name(), "GRAPHIC/PNG" );
             mapString = mapString.replaceAll( DestinationType.NUMERIC.name(), "NUMERIC/CSV" );
-            
+
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                          + " The declaration contains more than one destination of a given type, which is not allowed. "
                          + "Please declare only one destination per destination type. The number of destinations by "
@@ -690,9 +690,11 @@ public class Validation
                        {
                            result.set( false );
                            LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
-                                        + "Only verification scores are allowed in "
-                                        + "combination with a pooling window configuration.",
+                                        + "Verification diagrams are not currently supported in "
+                                        + "combination with leadTimesPoolingWindow configuration. Please remove either "
+                                        + "the {} or the leadTimesPoolingWindow.",
                                         projectConfigPlus.getOrigin(),
+                                        nextMetric.getName(),
                                         nextMetric.getName() );
                        }
 
