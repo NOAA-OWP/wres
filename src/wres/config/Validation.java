@@ -691,7 +691,7 @@ public class Validation
                            result.set( false );
                            LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
                                         + "Verification diagrams are not currently supported in "
-                                        + "combination with leadTimesPoolingWindow configuration. Please remove either "
+                                        + "combination with leadTimesPoolingWindow. Please remove either "
                                         + "the {} or the leadTimesPoolingWindow.",
                                         projectConfigPlus.getOrigin(),
                                         nextMetric.getName(),
@@ -998,8 +998,10 @@ public class Validation
                             // complete request. The best we can do is see if it can actually be used as a URL
                             URL possibleURL = thresholdData.toURL();
                             LOGGER.debug(
-                                          "The remote thresholds at {} can presumably be accessed since it is a valid url",
-                                          thresholdData );
+                                          "The remote thresholds at {} can presumably be accessed since {} is a valid "
+                                          + "url.",
+                                          thresholdData,
+                                          possibleURL );
                             continue;
                         }
                         else
@@ -1348,29 +1350,24 @@ public class Validation
         boolean isValid = true;
         Set<String> distinctNames = new HashSet<>( names.size() );
         Set<String> duplicateNames = new HashSet<>( 1 );
-        int nullCount = 0;
         int blankCount = 0;
 
         for ( String name : names )
         {
-            if ( Objects.nonNull( name )
-                 && distinctNames.contains( name ) )
+            if ( Objects.nonNull( name ) )
             {
-                duplicateNames.add( name );
-            }
-            else if ( Objects.isNull( name ) )
-            {
-                // As long as there is a service declared, OK, but don't add to
-                // the Set.
-                nullCount++;
-            }
-            else if ( name.isBlank() )
-            {
-                blankCount++;
-            }
-            else
-            {
-                distinctNames.add( name );
+                if ( distinctNames.contains( name ) )
+                {
+                    duplicateNames.add( name );
+                }
+                else if ( name.isBlank() )
+                {
+                    blankCount++;
+                }
+                else
+                {
+                    distinctNames.add( name );
+                }
             }
         }
 
