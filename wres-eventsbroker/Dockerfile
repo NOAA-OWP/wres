@@ -4,7 +4,7 @@
 # Build image
 FROM alpine AS builder
 
-ARG BROKER_J_VERSION=8.0.1
+ARG BROKER_J_VERSION=8.0.3
 
 WORKDIR /workspace
 
