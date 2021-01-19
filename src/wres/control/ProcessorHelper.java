@@ -904,13 +904,11 @@ class ProcessorHelper
     }
 
     /**
-     * Returns a set of formats that are delivered by external subscribers, according to system property.
+     * Returns a set of formats that are delivered by external subscribers, according to relevant system properties.
      * 
      * @return the formats delivered by external subscribers
-     * @deprecated for removal when the feature toggle is no longer required
      */
 
-    @Deprecated( since = "5.0", forRemoval = true )
     private static Set<Format> getFormatsDeliveredByExternalSubscribers()
     {
         String externalGraphics = System.getProperty( "wres.externalGraphics" );

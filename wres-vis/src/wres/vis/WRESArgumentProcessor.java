@@ -37,7 +37,7 @@ import wres.vis.ChartEngineFactory.ChartType;
  * 
  * @author Hank.Herr
  */
-public class WRESArgumentProcessor extends DefaultArgumentsProcessor
+class WRESArgumentProcessor extends DefaultArgumentsProcessor
 {
     private static final String VARIABLE_NAME = "variableName";
     private static final String LEGEND_TITLE = "legendTitle";
@@ -73,7 +73,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( final SampleMetadata meta, String metricUnits, final ChronoUnit durationUnits )
+    WRESArgumentProcessor( final SampleMetadata meta, String metricUnits, final ChronoUnit durationUnits )
     {
         super();
 
@@ -104,7 +104,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( final BoxplotStatisticOuter displayPlotInput, final ChronoUnit durationUnits )
+    WRESArgumentProcessor( final BoxplotStatisticOuter displayPlotInput, final ChronoUnit durationUnits )
     {
         super();
 
@@ -181,12 +181,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param durationUnits the time units for durations
      * @throws NullPointerException if the displayedPlotInput or the durationUnits are null
      */
-    public <T extends Statistic<?>> WRESArgumentProcessor( final MetricConstants metricName,
-                                                           final MetricConstants metricComponentName,
-                                                           final String metricUnits,
-                                                           final List<T> displayedPlotInput,
-                                                           final ChartType plotType,
-                                                           final ChronoUnit durationUnits )
+    <T extends Statistic<?>> WRESArgumentProcessor( final MetricConstants metricName,
+                                                    final MetricConstants metricComponentName,
+                                                    final String metricUnits,
+                                                    final List<T> displayedPlotInput,
+                                                    final ChartType plotType,
+                                                    final ChronoUnit durationUnits )
     {
         super();
 

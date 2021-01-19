@@ -33,7 +33,7 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
@@ -99,7 +99,7 @@ public final class SingleValuedPairsWriterTest
     {
 
         // Create the pairs
-        PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> tsBuilder = new Builder<>();
 
         SortedSet<Event<Pair<Double, Double>>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -131,7 +131,7 @@ public final class SingleValuedPairsWriterTest
                                                      .build();
 
         // Create the second time-series of pairs
-        PoolOfPairsBuilder<Double, Double> tsBuilderTwo = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> tsBuilderTwo = new Builder<>();
         SortedSet<Event<Pair<Double, Double>>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
@@ -164,7 +164,7 @@ public final class SingleValuedPairsWriterTest
 
 
         // Create the third time-series of pairs
-        PoolOfPairsBuilder<Double, Double> tsBuilderThree = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> tsBuilderThree = new Builder<>();
         SortedSet<Event<Pair<Double, Double>>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
@@ -220,7 +220,7 @@ public final class SingleValuedPairsWriterTest
         try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
-            PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
+            Builder<Double, Double> tsBuilder = new Builder<>();
 
             // Set the measurement units and time scale
             FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
@@ -313,8 +313,8 @@ public final class SingleValuedPairsWriterTest
         {
 
             // Create the pairs with a time window
-            PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
-            tsBuilder.addTimeSeries( pairs );
+            Builder<Double, Double> tsBuilder = new Builder<>();
+            tsBuilder.addPoolOfPairs( pairs );
             tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
                                                       TimeWindowOuter.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "1990-01-01T00:00:00Z" ),

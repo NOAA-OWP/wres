@@ -13,7 +13,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  * 
  * @author Hank.Herr
  */
-public class BoxPlotDiagramXYDataset extends
+class BoxPlotDiagramXYDataset extends
         WRESAbstractXYDataset<List<BoxplotStatisticOuter>, List<BoxplotStatisticOuter>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
@@ -24,7 +24,7 @@ public class BoxPlotDiagramXYDataset extends
 
     private final List<Box> boxes;
 
-    public BoxPlotDiagramXYDataset( final List<BoxplotStatisticOuter> input )
+    BoxPlotDiagramXYDataset( final List<BoxplotStatisticOuter> input )
     {
         super( input );
 

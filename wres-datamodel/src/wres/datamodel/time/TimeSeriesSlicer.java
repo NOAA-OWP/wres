@@ -24,7 +24,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -666,7 +666,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( transformer );
 
-        PoolOfPairsBuilder<P, Q> builder = new PoolOfPairsBuilder<>();
+        Builder<P, Q> builder = new Builder<>();
 
         builder.setClimatology( input.getClimatology() )
                .setMetadata( input.getMetadata() );
@@ -714,7 +714,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( condition );
 
-        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
+        Builder<L, R> builder = new Builder<>();
 
         builder.setMetadata( input.getMetadata() );
 
@@ -775,7 +775,7 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( condition );
 
-        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
+        Builder<L, R> builder = new Builder<>();
 
         builder.setMetadata( input.getMetadata() );
 

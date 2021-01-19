@@ -30,7 +30,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -201,7 +201,7 @@ public final class MetricTestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
         events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
 
-        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder = new Builder<>();
         builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                               events ) )
                .setMetadata( SampleMetadata.of() );
@@ -264,7 +264,7 @@ public final class MetricTestDataFactory
 
         SampleMetadata base = SampleMetadata.of( evaluation, poolTwo );
 
-        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      events ) )
                       .setMetadata( main )
@@ -312,7 +312,7 @@ public final class MetricTestDataFactory
 
         SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
-        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      events ) )
                       .setMetadata( meta )
@@ -363,7 +363,7 @@ public final class MetricTestDataFactory
 
         SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
-        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      events ) )
                       .setMetadata( meta )
@@ -462,7 +462,7 @@ public final class MetricTestDataFactory
 
         SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
-        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      events ) )
                       .setMetadata( meta )
@@ -497,7 +497,7 @@ public final class MetricTestDataFactory
 
         SampleMetadata base = SampleMetadata.of( evaluationTwo, pool );
 
-        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      Collections.emptySortedSet() ) )
                       .setMetadata( main )
@@ -534,7 +534,7 @@ public final class MetricTestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 12 ) ), Pair.of( 93.0, Double.NaN ) ) );
         events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
 
-        PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder = new Builder<>();
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      events ) )
                       .setMetadata( SampleMetadata.of() )
@@ -551,7 +551,7 @@ public final class MetricTestDataFactory
 
     public static PoolOfPairs<Double, Double> getSingleValuedPairsNine()
     {
-        PoolOfPairsBuilder<Double, Double> tsBuilder = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> tsBuilder = new Builder<>();
 
         // Add the first time-series
         Instant basisTimeOne = Instant.parse( "2551-03-17T12:00:00Z" );
@@ -756,7 +756,7 @@ public final class MetricTestDataFactory
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
-        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> builder = new Builder<>();
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      values ) )
@@ -841,7 +841,7 @@ public final class MetricTestDataFactory
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
-        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> builder = new Builder<>();
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      values ) )
@@ -911,7 +911,7 @@ public final class MetricTestDataFactory
 
         VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
 
-        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> builder = new Builder<>();
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      values ) )
@@ -952,7 +952,7 @@ public final class MetricTestDataFactory
 
         SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
-        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> builder = new Builder<>();
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      values ) )
@@ -996,7 +996,7 @@ public final class MetricTestDataFactory
 
         SampleMetadata base = SampleMetadata.of( evaluation, basePool );
 
-        PoolOfPairsBuilder<Double, Ensemble> builder = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> builder = new Builder<>();
 
         return builder.addTimeSeries( TimeSeries.of( getBoilerplateMetadata(),
                                                      Collections.emptySortedSet() ) )
@@ -1569,8 +1569,8 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsOne()
     {
         // Build an immutable regular time-series of single-valued pairs
-        PoolOfPairsBuilder<Double, Double> builder =
-                new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder =
+                new Builder<>();
 
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( FIRST_TIME );
@@ -1629,8 +1629,8 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsTwo()
     {
         // Build an immutable regular time-series of single-valued pairs
-        PoolOfPairsBuilder<Double, Double> builder =
-                new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder =
+                new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( FIRST_TIME );
         SortedSet<Event<Pair<Double, Double>>> firstValues = new TreeSet<>();
@@ -1676,8 +1676,8 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsThree()
     {
         // Build an immutable regular time-series of single-valued pairs
-        PoolOfPairsBuilder<Double, Double> builder =
-                new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder =
+                new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add a time-series
@@ -1726,8 +1726,8 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFour()
     {
         // Build an immutable regular time-series of single-valued pairs
-        PoolOfPairsBuilder<Double, Double> builder =
-                new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder =
+                new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
@@ -1763,8 +1763,8 @@ public final class MetricTestDataFactory
     public static PoolOfPairs<Double, Double> getTimeSeriesOfSingleValuedPairsFive()
     {
         // Build an immutable regular time-series of single-valued pairs
-        PoolOfPairsBuilder<Double, Double> builder =
-                new PoolOfPairsBuilder<>();
+        Builder<Double, Double> builder =
+                new Builder<>();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add a time-series

@@ -43,7 +43,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -52,7 +52,6 @@ import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.*;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -211,7 +210,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
             PoolOfPairs<Double, Double> next =
-                    new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs )
+                    new Builder<Double, Double>().addPoolOfPairs( pairs )
                                                             .setMetadata( meta )
                                                             .build();
 
@@ -675,7 +674,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                  Operator.GREATER_EQUAL,
                                                                  ThresholdDataType.LEFT ) ) );
 
-        Builder builder = new Builder();
+        ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
 
         canonical.put( MetricConstants.MEAN_ERROR, thresholds );
         canonical.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, thresholds );
@@ -728,7 +727,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
             PoolOfPairs<Double, Double> next =
-                    new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
+                    new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
 
             processor.apply( next );
         }
@@ -835,7 +834,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
             PoolOfPairs<Double, Double> next =
-                    new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
+                    new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
 
             processor.apply( next );
         }
@@ -999,7 +998,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         SampleMetadata meta = SampleMetadata.of( evaluation, pool );
 
         PoolOfPairs<Double, Double> next =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( pairs ).setMetadata( meta ).build();
+                new Builder<Double, Double>().addPoolOfPairs( pairs ).setMetadata( meta ).build();
 
         processor.apply( next );
 

@@ -25,7 +25,7 @@ import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
  * 
  * @author Hank.Herr
  */
-public class WRESChartEngine extends ChartEngine
+class WRESChartEngine extends ChartEngine
 {
 
     private final Map<Integer, SeriesDrawingParameters> subplotIndexToParameters = new HashMap<>();
@@ -43,12 +43,12 @@ public class WRESChartEngine extends ChartEngine
      * @param axisToSquareAgainstDomain A string indicating the axes to square. This should be either "left" or "right".
      * @throws ChartEngineException if the {@link ChartEngine} could not be constructed
      */
-    public WRESChartEngine( final List<XYChartDataSource> sources,
-                            final ArgumentsProcessor arguments,
-                            final ChartDrawingParameters defaultParameters,
-                            final ChartDrawingParameters overrideParameters,
-                            final int[] diagonalDataSourceIndices,
-                            final String axisToSquareAgainstDomain )
+    WRESChartEngine( final List<XYChartDataSource> sources,
+                     final ArgumentsProcessor arguments,
+                     final ChartDrawingParameters defaultParameters,
+                     final ChartDrawingParameters overrideParameters,
+                     final int[] diagonalDataSourceIndices,
+                     final String axisToSquareAgainstDomain )
             throws ChartEngineException
     {
         super( arguments, sources, defaultParameters );

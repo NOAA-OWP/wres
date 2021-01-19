@@ -12,7 +12,7 @@ import wres.util.TimeHelper;
 /**
  * The {@link XYDataset} for use in building a box plot by lead duration.
  */
-public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
+class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
 {
 
     private static final long serialVersionUID = 2818742289181492762L;
@@ -31,7 +31,7 @@ public class BoxPlotDiagramByLeadXYDataset extends BoxPlotDiagramXYDataset
      * @throws NullPointerException if either input is null
      */
 
-    public BoxPlotDiagramByLeadXYDataset( List<BoxplotStatisticOuter> input, ChronoUnit durationUnits )
+    BoxPlotDiagramByLeadXYDataset( List<BoxplotStatisticOuter> input, ChronoUnit durationUnits )
     {
         super( input );
 

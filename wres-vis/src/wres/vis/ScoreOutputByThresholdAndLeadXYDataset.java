@@ -22,7 +22,7 @@ import wres.util.TimeHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public class ScoreOutputByThresholdAndLeadXYDataset extends
+class ScoreOutputByThresholdAndLeadXYDataset extends
         WRESAbstractXYDataset<List<List<DoubleScoreComponentOuter>>, List<DoubleScoreComponentOuter>>
 {
     private static final long serialVersionUID = 1598160458133121056L;
@@ -32,7 +32,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      */
     
     private final ChronoUnit durationUnits;
-    
+
     /**
      * Build a new score output by threshold and lead duration.
      * 
@@ -41,8 +41,8 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      * @throws NullPointerException if any input is null
      */
 
-    public ScoreOutputByThresholdAndLeadXYDataset( final List<DoubleScoreComponentOuter> input,
-                                                   final ChronoUnit durationUnits )
+    ScoreOutputByThresholdAndLeadXYDataset( final List<DoubleScoreComponentOuter> input,
+                                            final ChronoUnit durationUnits )
     {
         super( input );
 
@@ -51,7 +51,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
 
         this.durationUnits = durationUnits;
-        
+
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         int seriesIndex = 0;
         SortedSet<TimeWindowOuter> timeWindows =
