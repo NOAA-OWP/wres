@@ -32,7 +32,7 @@ import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.CrossPairs;
 import wres.datamodel.sampledata.pairs.PairingException;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.ScaleValidationEvent;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -272,7 +272,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
     private PoolOfPairs<L, R> createPool()
     {
-        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
+        Builder<L, R> builder = new Builder<>();
 
         // Left data provided or is climatology the left data?
         Stream<TimeSeries<L>> cStream;

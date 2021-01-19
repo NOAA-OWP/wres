@@ -22,7 +22,7 @@ import wres.util.TimeHelper;
  * 
  * @author Hank.Herr
  */
-public class DiagramStatisticXYDataset
+class DiagramStatisticXYDataset
         extends WRESAbstractXYDataset<List<DiagramStatisticOuter>, List<DiagramStatisticOuter>>
 {
     private static final long serialVersionUID = 4741283362664043745L;
@@ -45,10 +45,10 @@ public class DiagramStatisticXYDataset
      * @throws NullPointerException if any input is null
      */
 
-    public DiagramStatisticXYDataset( final List<DiagramStatisticOuter> input,
-                                      final MetricDimension xConstant,
-                                      final MetricDimension yConstant,
-                                      final ChronoUnit durationUnits )
+    DiagramStatisticXYDataset( final List<DiagramStatisticOuter> input,
+                               final MetricDimension xConstant,
+                               final MetricDimension yConstant,
+                               final ChronoUnit durationUnits )
     {
         super( input );
 

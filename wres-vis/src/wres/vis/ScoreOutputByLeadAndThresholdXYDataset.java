@@ -22,7 +22,7 @@ import wres.util.TimeHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public class ScoreOutputByLeadAndThresholdXYDataset extends
+class ScoreOutputByLeadAndThresholdXYDataset extends
         WRESAbstractXYDataset<List<List<DoubleScoreComponentOuter>>, List<DoubleScoreComponentOuter>>
 {
     private static final long serialVersionUID = 2251263309545763140L;
@@ -41,8 +41,8 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
      * @throws NullPointerException if any input is null
      */
 
-    public ScoreOutputByLeadAndThresholdXYDataset( final List<DoubleScoreComponentOuter> input,
-                                                   final ChronoUnit durationUnits )
+    ScoreOutputByLeadAndThresholdXYDataset( final List<DoubleScoreComponentOuter> input,
+                                            final ChronoUnit durationUnits )
     {
         super( input );
 

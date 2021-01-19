@@ -4,7 +4,7 @@ package wres.vis.writing;
  * Exception that indicates a required font could not be loaded.
  */
 
-public class CouldNotLoadRequiredFontException extends RuntimeException
+class CouldNotLoadRequiredFontException extends RuntimeException
 {
     /**
      * Serial identifier.
@@ -15,7 +15,7 @@ public class CouldNotLoadRequiredFontException extends RuntimeException
      * Constructs an {@link CouldNotLoadRequiredFontException} with no message.
      */
 
-    public CouldNotLoadRequiredFontException()
+    CouldNotLoadRequiredFontException()
     {
         super();
     }
@@ -26,7 +26,7 @@ public class CouldNotLoadRequiredFontException extends RuntimeException
      * @param message the message.
      */
 
-    public CouldNotLoadRequiredFontException( final String message )
+    CouldNotLoadRequiredFontException( final String message )
     {
         super( message );
     }
@@ -38,7 +38,7 @@ public class CouldNotLoadRequiredFontException extends RuntimeException
      * @param cause the cause of the exception
      */
 
-    public CouldNotLoadRequiredFontException( final String message, final Throwable cause )
+    CouldNotLoadRequiredFontException( final String message, final Throwable cause )
     {
         super( message, cause );
     }

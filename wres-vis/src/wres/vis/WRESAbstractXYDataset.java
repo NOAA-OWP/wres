@@ -36,9 +36,12 @@ import org.jfree.data.xy.XYDataset;
  *            {@link WRESAbstractXYDataset#WRESAbstractXYDataset(Object)}. Most often, this will be identical to the
  *            plot data generic type.
  */
-@SuppressWarnings( "serial" )
-public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYDataset
+
+abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYDataset
 {
+
+    private static final long serialVersionUID = 4544588941175866239L;
+
     /**
      * Generic storage container for the data to plot which is derived from the raw data passed into constructor.
      */
@@ -66,7 +69,7 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
         this.plotData = plotData;
     }
 
-    public T getPlotData()
+    T getPlotData()
     {
         return plotData;
     }
@@ -80,17 +83,17 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
      */
     abstract void preparePlotData(U rawData);
 
-    public void setOverrideLegendName(final int seriesIndex, final String name)
+    void setOverrideLegendName(final int seriesIndex, final String name)
     {
         overrideLegendNames.set(seriesIndex, name);
     }
 
-    public String getOverrideLegendName(final int seriesIndex)
+    String getOverrideLegendName(final int seriesIndex)
     {
         return overrideLegendNames.get(seriesIndex);
     }
 
-    public boolean isLegendNameOverridden(final int seriesIndex)
+    boolean isLegendNameOverridden(final int seriesIndex)
     {
         return overrideLegendNames.get(seriesIndex) != null;
     }

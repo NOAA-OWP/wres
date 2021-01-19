@@ -47,7 +47,7 @@ import wres.util.TimeHelper;
  * @author Hank.Herr
  *
  */
-public abstract class XYChartDataSourceFactory
+abstract class XYChartDataSourceFactory
 {
 
     private static final String METRIC_SHORT_NAME_METRIC_COMPONENT_NAME_SUFFIX_OUTPUT_UNITS_LABEL_SUFFIX =
@@ -67,10 +67,10 @@ public abstract class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      * @throws IllegalArgumentException if the input is empty
      */
-    public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
-                                                            List<BoxplotStatisticOuter> input,
-                                                            Integer subPlotIndex,
-                                                            ChronoUnit durationUnits )
+    static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
+                                                     List<BoxplotStatisticOuter> input,
+                                                     Integer subPlotIndex,
+                                                     ChronoUnit durationUnits )
     {
         Objects.requireNonNull( input );
 
@@ -171,8 +171,8 @@ public abstract class XYChartDataSourceFactory
      * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
-    public static DefaultXYChartDataSource ofSingleValuedPairs( int orderIndex,
-                                                                final SampleData<Pair<Double, Double>> input )
+    static DefaultXYChartDataSource ofSingleValuedPairs( int orderIndex,
+                                                         final SampleData<Pair<Double, Double>> input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -208,7 +208,7 @@ public abstract class XYChartDataSourceFactory
      * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
-    public static DefaultXYChartDataSource
+    static DefaultXYChartDataSource
             ofPairedOutputInstantDuration( int orderIndex,
                                            final List<DurationDiagramStatisticOuter> input )
     {
@@ -298,15 +298,15 @@ public abstract class XYChartDataSourceFactory
      * @param durationUnits the duration units
      * @return A data source that can be used to draw the diagram.
      */
-    public static DefaultXYChartDataSource ofMultiVectorOutputDiagram( final int orderIndex,
-                                                                       final List<DiagramStatisticOuter> input,
-                                                                       final MetricDimension xConstant,
-                                                                       final MetricDimension yConstant,
-                                                                       final String domainTitle,
-                                                                       final String rangeTitle,
-                                                                       final Integer subPlotIndex,
-                                                                       final Supplier<XYDataset> buildDataSetSupplier,
-                                                                       final ChronoUnit durationUnits )
+    static DefaultXYChartDataSource ofMultiVectorOutputDiagram( final int orderIndex,
+                                                                final List<DiagramStatisticOuter> input,
+                                                                final MetricDimension xConstant,
+                                                                final MetricDimension yConstant,
+                                                                final String domainTitle,
+                                                                final String rangeTitle,
+                                                                final Integer subPlotIndex,
+                                                                final Supplier<XYDataset> buildDataSetSupplier,
+                                                                final ChronoUnit durationUnits )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -361,7 +361,7 @@ public abstract class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      * @throws NullPointerException if the input or durationUnits are null
      */
-    public static DefaultXYChartDataSource
+    static DefaultXYChartDataSource
             ofDoubleScoreOutputByPoolingWindow( final int orderIndex,
                                                 final List<DoubleScoreComponentOuter> input,
                                                 final ChronoUnit durationUnits )
@@ -484,7 +484,7 @@ public abstract class XYChartDataSourceFactory
      * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
      */
-    public static DefaultXYChartDataSource
+    static DefaultXYChartDataSource
             ofDoubleScoreOutputByThresholdAndLead( final int orderIndex,
                                                    final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
@@ -529,7 +529,7 @@ public abstract class XYChartDataSourceFactory
      * @return A data source to be used to draw the plot.
      * @throws NullPointerException if the input or durationUnits are null
      */
-    public static DefaultXYChartDataSource
+    static DefaultXYChartDataSource
             ofDoubleScoreOutputByLeadAndThreshold( final int orderIndex,
                                                    final List<DoubleScoreComponentOuter> input,
                                                    final ChronoUnit durationUnits )
@@ -576,7 +576,7 @@ public abstract class XYChartDataSourceFactory
      * @param input The input required for this of method.
      * @return An instance of {@link CategoricalXYChartDataSource}.
      */
-    public static CategoricalXYChartDataSource
+    static CategoricalXYChartDataSource
             ofDurationScoreCategoricalOutput( int orderIndex,
                                               List<DurationScoreStatisticOuter> input )
     {

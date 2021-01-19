@@ -23,7 +23,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
@@ -505,7 +505,7 @@ public class PoolSupplierTest
                                                              .build();
 
         PoolOfPairs<Double, Double> poolOneExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneSeries )
+                new Builder<Double, Double>().addTimeSeries( poolOneSeries )
                                                         .setMetadata( poolOneMetadata )
                                                         .build();
 
@@ -602,7 +602,7 @@ public class PoolSupplierTest
         VectorOfDoubles expectedClimatology = VectorOfDoubles.of( climatologyArray );
 
         PoolOfPairs<Double, Double> poolOneExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolOneSeries )
+                new Builder<Double, Double>().addTimeSeries( poolOneSeries )
                                                         .setClimatology( expectedClimatology )
                                                         .setMetadata( poolOneMetadataBaseline )
                                                         .build();
@@ -703,7 +703,7 @@ public class PoolSupplierTest
                                                              .build();
 
         PoolOfPairs<Double, Double> poolElevenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolElevenOneSeries )
+                new Builder<Double, Double>().addTimeSeries( poolElevenOneSeries )
                                                         .addTimeSeries( poolElevenTwoSeries )
                                                         .setMetadata( poolElevenMetadata )
                                                         .build();
@@ -754,7 +754,7 @@ public class PoolSupplierTest
                                                              .build();
 
         PoolOfPairs<Double, Double> poolEighteenExpected =
-                new PoolOfPairsBuilder<Double, Double>().addTimeSeries( poolEighteenSeries )
+                new Builder<Double, Double>().addTimeSeries( poolEighteenSeries )
                                                         .setMetadata( poolEighteenMetadata )
                                                         .build();
 

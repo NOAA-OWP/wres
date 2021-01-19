@@ -83,7 +83,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
             return null;
         }
 
-        PoolOfPairsBuilder<L, R> builder = new PoolOfPairsBuilder<>();
+        Builder<L, R> builder = new Builder<>();
         builder.setMetadata( this.baselineMeta ).setClimatology( this.climatology );
 
         for ( TimeSeries<Pair<L, R>> next : baseline )
@@ -195,7 +195,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
      * A builder to build the time-series.
      */
 
-    public static class PoolOfPairsBuilder<L, R>
+    public static class Builder<L, R>
     {
 
         /**
@@ -236,7 +236,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * @throws NullPointerException if the input is null
          */
 
-        public PoolOfPairsBuilder<L, R> addTimeSeries( TimeSeries<Pair<L, R>> timeSeries )
+        public Builder<L, R> addTimeSeries( TimeSeries<Pair<L, R>> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
@@ -253,7 +253,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * @throws NullPointerException if the input is null
          */
 
-        public PoolOfPairsBuilder<L, R> addTimeSeriesForBaseline( TimeSeries<Pair<L, R>> timeSeries )
+        public Builder<L, R> addTimeSeriesForBaseline( TimeSeries<Pair<L, R>> timeSeries )
         {
             Objects.requireNonNull( timeSeries, NULL_INPUT );
 
@@ -263,26 +263,26 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
         }
 
         /**
-         * Adds a time-series to the builder.
+         * Adds a pool of pairs to the builder.
          * 
-         * @param timeSeries the time-series
+         * @param poolOfPairs the pool of pairs
          * @return the builder
          * @throws NullPointerException if the input is null
          */
 
-        public PoolOfPairsBuilder<L, R> addTimeSeries( PoolOfPairs<L, R> timeSeries )
+        public Builder<L, R> addPoolOfPairs( PoolOfPairs<L, R> poolOfPairs )
         {
-            Objects.requireNonNull( timeSeries, NULL_INPUT );
+            Objects.requireNonNull( poolOfPairs, NULL_INPUT );
 
-            this.main.addAll( timeSeries.get() );
-            this.mainMeta = timeSeries.mainMeta;
-            this.climatology = timeSeries.climatology;
+            this.main.addAll( poolOfPairs.get() );
+            this.mainMeta = poolOfPairs.mainMeta;
+            this.climatology = poolOfPairs.climatology;
 
-            if ( timeSeries.hasBaseline() )
+            if ( poolOfPairs.hasBaseline() )
             {
-                PoolOfPairs<L, R> base = timeSeries.getBaselineData();
+                PoolOfPairs<L, R> base = poolOfPairs.getBaselineData();
                 this.baseline.addAll( base.get() );
-                this.baselineMeta = timeSeries.baselineMeta;
+                this.baselineMeta = poolOfPairs.baselineMeta;
             }
 
             return this;
@@ -295,7 +295,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * @return the builder
          */
 
-        public PoolOfPairsBuilder<L, R> setMetadata( SampleMetadata mainMeta )
+        public Builder<L, R> setMetadata( SampleMetadata mainMeta )
         {
             this.mainMeta = mainMeta;
 
@@ -309,7 +309,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * @return the builder
          */
 
-        public PoolOfPairsBuilder<L, R> setMetadataForBaseline( SampleMetadata baselineMeta )
+        public Builder<L, R> setMetadataForBaseline( SampleMetadata baselineMeta )
         {
             this.baselineMeta = baselineMeta;
 
@@ -323,7 +323,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
          * @return the builder
          */
 
-        public PoolOfPairsBuilder<L, R> setClimatology( VectorOfDoubles climatology )
+        public Builder<L, R> setClimatology( VectorOfDoubles climatology )
         {
             this.climatology = climatology;
 
@@ -350,7 +350,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
      * @throws SampleDataException if the pairs are invalid
      */
 
-    PoolOfPairs( final PoolOfPairsBuilder<L, R> b )
+    PoolOfPairs( final Builder<L, R> b )
     {
         //Ensure safe types
         this.main = Collections.unmodifiableList( b.main );

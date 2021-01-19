@@ -27,7 +27,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeries.TimeSeriesBuilder;
 
@@ -197,7 +197,7 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> b = new Builder<>();
 
         Instant firstBasisTime = T1985_01_01T00_00_00Z;
         TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
@@ -253,7 +253,7 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> fourth = new TreeSet<>();
         fourth.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
 
-        PoolOfPairsBuilder<Double, Double> bu = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> bu = new Builder<>();
 
         PoolOfPairs<Double, Double> durationCheck =
                 bu.addTimeSeries( TimeSeries.of( firstMetadata,
@@ -621,7 +621,7 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
-        PoolOfPairsBuilder<Double, Double> b = new PoolOfPairsBuilder<>();
+        Builder<Double, Double> b = new Builder<>();
 
         Instant firstBasisTime = T1985_01_01T00_00_00Z;
         TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );

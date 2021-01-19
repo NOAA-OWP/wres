@@ -21,7 +21,7 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -114,7 +114,7 @@ public final class BoxPlotPercentageErrorTest
                 events.addAll( filtered.getEvents() );
             }
 
-            PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
+            Builder<Double, Double> builder = new Builder<>();
             builder.setMetadata( input.getMetadata() );
             for ( Event<Pair<Double, Double>> next : events )
             {

@@ -37,7 +37,7 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.sampledata.MeasurementUnit;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -802,7 +802,7 @@ public class MessageFactoryTest
 
     private PoolOfPairs<Double, Ensemble> getPoolOfEnsemblePairs()
     {
-        PoolOfPairsBuilder<Double, Ensemble> b = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> b = new Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
         Instant basisTime = FIRST_TIME;

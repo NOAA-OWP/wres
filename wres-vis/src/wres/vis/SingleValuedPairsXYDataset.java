@@ -15,11 +15,12 @@ import wres.datamodel.sampledata.SampleData;
 //TODO Note that this needs further work whenever we let wres-vis build scatter plots for display.
 //Specifically, we need to think about what the legend entry should look like (see below for a first attempt)
 //as well as how to handle multiple sereis being plotted (i.e., how to store the data.).
-@SuppressWarnings( "serial" )
-public class SingleValuedPairsXYDataset
+class SingleValuedPairsXYDataset
         extends WRESAbstractXYDataset<SampleData<Pair<Double, Double>>, SampleData<Pair<Double, Double>>> //implements DomainInfo, XisSymbolic, RangeInfo
 {
-    public SingleValuedPairsXYDataset( final SampleData<Pair<Double, Double>> input )
+    private static final long serialVersionUID = 4183134607345060330L;
+
+    SingleValuedPairsXYDataset( final SampleData<Pair<Double, Double>> input )
     {
         super( input );
     }

@@ -6,7 +6,7 @@ package wres.vis.writing;
  * @author james.brown@hydrosolved.com
  */
 
-public class GraphicsWriteException extends RuntimeException
+class GraphicsWriteException extends RuntimeException
 {
 
     /**
@@ -19,7 +19,7 @@ public class GraphicsWriteException extends RuntimeException
      * Constructs an {@link GraphicsWriteException} with no message.
      */
 
-    public GraphicsWriteException()
+    GraphicsWriteException()
     {
         super();
     }
@@ -30,7 +30,7 @@ public class GraphicsWriteException extends RuntimeException
      * @param message the message.
      */
 
-    public GraphicsWriteException( String message )
+    GraphicsWriteException( String message )
     {
         super( message );
     }
@@ -42,7 +42,7 @@ public class GraphicsWriteException extends RuntimeException
      * @param cause the cause of the exception
      */
 
-    public GraphicsWriteException( String message, Throwable cause )
+    GraphicsWriteException( String message, Throwable cause )
     {
         super( message, cause );
     }

@@ -6,7 +6,7 @@ import java.util.List;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 
-public class RankHistogramXYDataset extends DiagramStatisticXYDataset
+class RankHistogramXYDataset extends DiagramStatisticXYDataset
 {
     private static final long serialVersionUID = -798561678672865289L;
 
@@ -20,7 +20,7 @@ public class RankHistogramXYDataset extends DiagramStatisticXYDataset
      * @throws NullPointerException if any input is null
      */
 
-    public RankHistogramXYDataset( final List<DiagramStatisticOuter> input,
+    RankHistogramXYDataset( final List<DiagramStatisticOuter> input,
                                    final MetricDimension xConstant,
                                    final MetricDimension yConstant,
                                    final ChronoUnit durationUnits )

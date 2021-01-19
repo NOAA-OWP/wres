@@ -35,7 +35,7 @@ import wres.datamodel.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
@@ -101,7 +101,7 @@ public final class EnsemblePairsWriterTest
     {
 
         // Create the pairs
-        PoolOfPairsBuilder<Double, Ensemble> tsBuilder = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> tsBuilder = new Builder<>();
 
         SortedSet<Event<Pair<Double, Ensemble>>> setOfPairs = new TreeSet<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -133,7 +133,7 @@ public final class EnsemblePairsWriterTest
         EnsemblePairsWriterTest.pairs = tsBuilder.addTimeSeries( timeSeriesOne ).setMetadata( meta ).build();
 
         // Create the second time-series of pairs
-        PoolOfPairsBuilder<Double, Ensemble> tsBuilderTwo = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> tsBuilderTwo = new Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> setOfPairsTwo = new TreeSet<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
@@ -167,7 +167,7 @@ public final class EnsemblePairsWriterTest
                                                        .build();
 
         // Create the third time-series of pairs
-        PoolOfPairsBuilder<Double, Ensemble> tsBuilderThree = new PoolOfPairsBuilder<>();
+        Builder<Double, Ensemble> tsBuilderThree = new Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> setOfPairsThree = new TreeSet<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
         setOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
@@ -223,7 +223,7 @@ public final class EnsemblePairsWriterTest
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
         {
 
-            PoolOfPairsBuilder<Double, Ensemble> tsBuilder = new PoolOfPairsBuilder<>();
+            Builder<Double, Ensemble> tsBuilder = new Builder<>();
 
             // Set the measurement units and time scale
             FeatureTuple featureTuple = new FeatureTuple( FeatureKey.of( "PINEAPPLE" ),
@@ -282,7 +282,7 @@ public final class EnsemblePairsWriterTest
         try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
         {
 
-            PoolOfPairsBuilder<Double, Ensemble> tsBuilder = new PoolOfPairsBuilder<>();
+            Builder<Double, Ensemble> tsBuilder = new Builder<>();
 
             SortedSet<Event<Pair<Double, Ensemble>>> setOfPairs = new TreeSet<>();
 

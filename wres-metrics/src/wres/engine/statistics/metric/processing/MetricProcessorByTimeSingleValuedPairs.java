@@ -32,7 +32,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
-import wres.datamodel.sampledata.pairs.PoolOfPairs.PoolOfPairsBuilder;
+import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsForProject;
@@ -457,8 +457,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 baselineMeta = SampleMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
             }
 
-            PoolOfPairsBuilder<Double, Double> builder = new PoolOfPairsBuilder<>();
-            pairs = builder.addTimeSeries( pairs )
+            Builder<Double, Double> builder = new Builder<>();
+            pairs = builder.addPoolOfPairs( pairs )
                            .setMetadata( SampleMetadata.of( pairs.getMetadata(), oneOrTwo ) )
                            .setMetadataForBaseline( baselineMeta )
                            .build();
