@@ -15,8 +15,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -560,7 +562,7 @@ class WebSource implements Callable<List<IngestResult>>
         }
         else if ( this.isUsgsSource( this.getDataSource() ) )
         {
-            FEATURE_READ_COUNT = 100;
+            FEATURE_READ_COUNT = 10;
         }
         else
         {
@@ -645,8 +647,7 @@ class WebSource implements Callable<List<IngestResult>>
                                                      DataSource dataSource,
                                                      OffsetDateTime nowDate )
     {
-        if ( this.isUsgsSource( dataSource )
-             || this.isWrdsAhpsSource( dataSource ) )
+        if ( this.isUsgsSource( dataSource ) )
         {
             return this.createYearRanges( declaration,
                                           dataSource,
@@ -658,11 +659,74 @@ class WebSource implements Callable<List<IngestResult>>
                                           dataSource,
                                           nowDate );
         }
+        else if ( this.isWrdsAhpsSource( dataSource ) )
+        {
+            return this.createWrdsAhpsRanges( declaration,
+                                              dataSource,
+                                              nowDate );
+        }
         else
         {
             throw new UnsupportedOperationException( "Could not create ranges for "
                                                      + dataSource );
         }
+    }
+
+    private Set<Pair<Instant,Instant>> createWrdsAhpsRanges( ProjectConfig declaration,
+                                                             DataSource dataSource,
+                                                             OffsetDateTime nowDate )
+    {
+        return this.createSimpleRange( declaration, dataSource );
+    }
+
+    /**
+     * Returns the exact forecast range from the declaration instead of breaking
+     * it apart.
+     * @param declaration
+     * @param dataSource
+     * @return
+     */
+    private Set<Pair<Instant,Instant>> createSimpleRange( ProjectConfig declaration,
+                                                          DataSource dataSource )
+    {
+
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( declaration.getPair() );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getContext() );
+
+        boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
+
+        if ( ( isForecast && declaration.getPair().getIssuedDates() == null )
+             || ( !isForecast && declaration.getPair().getDates() == null ) )
+        {
+            throw new ProjectConfigException( declaration.getPair(),
+                                              DATES_ERROR_MESSAGE );
+        }
+
+        DateCondition dates = declaration.getPair()
+                                         .getDates();
+
+        if ( isForecast )
+        {
+            dates = declaration.getPair()
+                               .getIssuedDates();
+        }
+
+        if ( dates.getEarliest() == null
+             || dates.getLatest() == null )
+        {
+            throw new ProjectConfigException( dates,
+                                              DATES_ERROR_MESSAGE );
+        }
+
+        String specifiedEarliest = dates.getEarliest();
+        Instant earliest = Instant.parse( specifiedEarliest );
+
+        String specifiedLatest = dates.getLatest();
+        Instant latest = Instant.parse( specifiedLatest );
+        Pair<Instant,Instant> range = Pair.of( earliest, latest );
+        return Set.of( range );
     }
 
     /**
@@ -722,7 +786,7 @@ class WebSource implements Callable<List<IngestResult>>
                                               DATES_ERROR_MESSAGE );
         }
 
-        Set<Pair<Instant,Instant>> weekRanges = new HashSet<>();
+        SortedSet<Pair<Instant,Instant>> weekRanges = new TreeSet<>();
 
         OffsetDateTime earliest;
         String specifiedEarliest = dates.getEarliest();
@@ -816,7 +880,7 @@ class WebSource implements Callable<List<IngestResult>>
                                               DATES_ERROR_MESSAGE );
         }
 
-        Set<Pair<Instant,Instant>> yearRanges = new HashSet<>();
+        SortedSet<Pair<Instant,Instant>> yearRanges = new TreeSet<>();
 
         OffsetDateTime earliest;
         String specifiedEarliest = dates.getEarliest();
