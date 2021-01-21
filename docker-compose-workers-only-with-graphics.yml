@@ -1,0 +1,81 @@
+version: '2.2'
+networks:
+    wres_net:
+        driver: bridge
+        enable_ipv6: false
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.19.254.192/26
+                  gateway: 172.19.254.193
+services:
+    worker:
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20201216-f1206da"
+        restart: always
+        depends_on:
+         - "eventsbroker"
+         - "graphics"
+        volumes:
+         # For input and output data:
+         - /mnt/wres_share:/mnt/wres_share
+         # For certificates, keys that correspond to them, and .pgpass:
+         - /mnt/wres_keys:/wres_secrets:ro
+         # For input data:
+         - /home:/home:ro
+         # For logs (inside container, avoid writing to read-only /home)
+         - /container_home
+        environment:
+         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+         - PGPASSFILE=/wres_secrets/.pgpass
+         # Use caller-specified db hostname from env var WRES_DB_FQDN.
+         # Do not auto-liquibase-migrate on each evaluation. This requires an
+         # administrator to run the migration(s) during or after deployment.
+         # Write heap dumps to the root of the volume above.
+         # Override the broker address and port in the binding URL of the event.properties.
+         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.url=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+        # Shim JVM should have 32m max heap, core JVM should have 1680m max heap
+        mem_limit: 2600m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
+    eventsbroker:
+        expose:
+         - 5673
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20201211-8d6117d"
+        restart: always
+        volumes:
+         # Writable container home (for application logs) 
+         - /container_home
+        environment:
+         # The broker uses heap memory to run and direct memory for messages
+         - QPID_JAVA_MEM=-Xmx256m -XX:MaxDirectMemorySize=512m
+         - JAVA_OPTS=-XX:HeapDumpPath=/mnt/wres_share/
+        # Broker heap plus direct memory is 768m in QPID_JAVA_MEM
+        mem_limit: 1024m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
+    graphics:
+        depends_on:
+        - eventsbroker
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20201215-c351700"
+        restart: always
+        # For graphics outputs
+        volumes:
+         - /mnt/wres_share:/mnt/wres_share
+         # Writable container home (for application logs) 
+         - /container_home
+        environment:
+         # Override the broker address and port in the binding URL of the event.properties
+         - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms512m -Xmx512m -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+        # Graphics limit is 512m in JAVA_OPTS
+        mem_limit: 768m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
