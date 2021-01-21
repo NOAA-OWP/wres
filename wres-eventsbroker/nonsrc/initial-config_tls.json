@@ -3,7 +3,7 @@
 	"modelVersion": "8.0",
 	"context": {
 		"qpid.security.tls.protocolAllowList": "[\"TLSv1.3\",\"TLSv1.2\"]"
-	},
+    },
 	"authenticationproviders": [
 		{
 			"name": "externalAuthProvider",
@@ -157,7 +157,7 @@
 				"queue.maximumDeliveryAttempts": "4"
 			},
 			"defaultVirtualHostNode": "true",
-			"virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"
+			"virtualHostInitialConfiguration": "{\"type\": \"DERBY\", \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"
 		}
 	]
 }

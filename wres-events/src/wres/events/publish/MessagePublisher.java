@@ -210,7 +210,7 @@ public class MessagePublisher implements Closeable
      * 
      * @param messageBytes the message bytes to publish
      * @param metadata the message metadata, minimally including a message identifier and correlation identifier
-     * @throws JMSException - if the session fails to create a MessageProducerdue to some internal error
+     * @throws JMSException - if the session fails to create or publish a message due to some internal error
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if expected input is missing
      */
