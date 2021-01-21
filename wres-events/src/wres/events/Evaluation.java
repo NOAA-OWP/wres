@@ -645,11 +645,8 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * <p>Closes the evaluation. After closure, the status of this evaluation can be acquired from {@link #getExitCode()}.
-     * However, this evaluation will only publish its completion status when the completion status is exceptional, i.e.,
-     * {@link CompletionStatus#EVALUATION_COMPLETE_REPORTED_FAILURE}. Indeed, a nominal closure only occurs after all
-     * registered consumers have reported {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS}. Thus, any 
-     * message about a nominal exit status would be unheard by any consumers.
+     * <p>Closes the evaluation. After closure, the status of this evaluation can be acquired from 
+     * {@link #getExitCode()}.
      * 
      * <p>This method does not wait for publication or consumption to complete. To await completion, call 
      * {@link #await()} before calling {@link #close()}. An exception may be notified with {@link #stop(Exception)}.
@@ -1430,6 +1427,7 @@ public class Evaluation implements Closeable
      * @param publisher the publisher
      * @param queue the queue name on the amq.topic
      * @param groupId the optional message group identifier
+     * @throws EvaluationEventException if the message could not be published
      */
 
     private void internalPublish( ByteBuffer body,

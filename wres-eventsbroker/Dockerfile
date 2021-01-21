@@ -47,7 +47,7 @@ COPY nonsrc/initial-config.json ${QPID_HOME}/etc/
 
 USER wres_eventsbroker
 EXPOSE 5673 15673
-VOLUME ${QPID_WORK}
+VOLUME /container_home
 
 VOLUME /wres_secrets
 
