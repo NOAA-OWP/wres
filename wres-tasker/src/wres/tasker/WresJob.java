@@ -111,6 +111,16 @@ public class WresJob
             String redisAddress = "redis://" + redisHost + ":" + redisPort;
             redissonConfig.useSingleServer()
                           .setAddress( redisAddress );
+
+            // The reasoning here is any server thread can cause access of an
+            // object in redis (e.g. output, stdout, etc), regardless of whether
+            // the job is currently active. So at least that number. Then there
+            // are internal threads writing to active jobs, which includes all
+            // jobs in the queue, and there are four objects per job. Do not
+            // forget to update docker memory limits to account for the stack
+            // space required per thread here.
+            redissonConfig.setNettyThreads( Tasker.MAX_SERVER_THREADS
+                                            + MAXIMUM_EVALUATION_COUNT * 4 );
             REDISSON_CLIENT = Redisson.create( redissonConfig );
             LOGGER.info( "Redis host specified: {}, using redis at {}",
                          specifiedRedisHost, redisAddress );

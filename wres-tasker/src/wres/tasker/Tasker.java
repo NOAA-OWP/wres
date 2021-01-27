@@ -65,7 +65,7 @@ public class Tasker
      * in the docker environment. It is probably fine to use Jetty's default of
      * 200 or another value, but starting with something small.
      */
-    private static final int MAX_SERVER_THREADS = 100;
+    static final int MAX_SERVER_THREADS = 100;
 
 
     /**

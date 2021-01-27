@@ -39,7 +39,7 @@ services:
          - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
-        mem_limit: 940m
+        mem_limit: 1240m
         cap_drop:
          - ALL
         read_only: true
