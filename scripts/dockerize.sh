@@ -20,6 +20,7 @@ all_versions=$( scripts/versions.sh )
 overall_version=$( echo "$all_versions" | grep "^Main version" | cut -d' ' -f3 )
 tasker_version=$( echo "$all_versions" | grep "^wres-tasker version" | cut -d' ' -f3 )
 broker_version=$( echo "$all_versions" | grep "^wres-broker version" | cut -d' ' -f3 )
+redis_version=$( echo "$all_versions" | grep "^wres-redis version" | cut -d' ' -f3 )
 
 wres_worker_shim_version=$( echo "$all_versions" | grep "^wres-worker version" | cut -d' ' -f3 )
 wres_core_version=$overall_version
@@ -49,12 +50,18 @@ then
     broker_version=$4
 fi
 
+if [[ "$5" != "" && "$5" != "auto" ]]
+then
+    redis_version=$5
+fi
+
 echo "Core WRES binary zip version is $wres_core_version"
 echo "WRES Worker shim binary zip version is $wres_worker_shim_version"
 echo "WRES Tasker binary zip version is $wres_tasker_version"
 echo "Primary docker image version is $overall_version"
 echo "Tasker docker image version is $tasker_version"
 echo "Broker docker image version is $broker_version"
+echo "Redis docker image version is $redis_version"
 
 wres_core_file=wres-${wres_core_version}.zip
 worker_shim_file=wres-worker-${wres_worker_shim_version}.zip
@@ -97,8 +104,16 @@ popd
 
 echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 
-echo "Displaying most recent 10 docker images"
-docker image ls | head -n 11
+# Build and tag the redis image
+echo "Building redis image..."
+pushd wres-redis
+redis_image_id=$( docker build --build-arg version=$redis_version --quiet --tag wres/wres-redis:$redis_version . )
+popd
+
+echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
+
+echo "Displaying most recent 20 docker images"
+docker image ls | head -n 21
 
 # Optional: set environment variable DOCKER_REGISTRY to the FQDN of a docker
 # registry (without any path, full fqdn, without scheme)
@@ -147,6 +162,17 @@ then
         echo "Tagging wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version"
         docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
         docker push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+    fi
+
+    redis_image_dev_status=$( echo ${redis_version} | grep "dev" )
+
+    if [[ "$redis_image_dev_status" != "" ]]
+    then
+        echo "Refusing to tag and push redis docker image version ${redis_version} because its Dockerfile has not been committed to the repository yet."
+    else
+        echo "Tagging wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version"
+        docker tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+        docker push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
     fi
 else
     echo "No variable 'DOCKER_REGISTRY' found, not attempting to docker push."
