@@ -1,4 +1,4 @@
-version: '2.2'
+version: '2.3'
 networks:
     wres_net:
         driver: bridge
@@ -21,14 +21,19 @@ services:
         read_only: true
         networks:
             wres_net:
+        # Allow 15 minutes for startup before marking unhealthy
+        healthcheck:
+            start_period: 15m
     tasker:
         ports:
          - "443:8443"
         image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210114-7f78a93"
         restart: always
         depends_on:
-         - "broker"
-         - "persister"
+            broker:
+                condition: service_healthy
+            persister:
+                condition: service_healthy
         volumes:
          # For certificates and keys that correspond to them:
          - /mnt/wres_keys:/wres_secrets:ro
@@ -62,11 +67,15 @@ services:
          - ALL
         networks:
             wres_net:
+        # Allow 5 minutes for startup before marking unhealthy
+        healthcheck:
+            start_period: 5m
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:20210119-74698fa"
         restart: always
         depends_on:
-         - "broker"
+            broker:
+                condition: service_healthy
         volumes:
          # For input and output data:
          - /mnt/wres_share:/mnt/wres_share
