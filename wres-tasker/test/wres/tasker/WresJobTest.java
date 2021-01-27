@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.StringJoiner;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.bouncycastle.asn1.x500.X500Name;

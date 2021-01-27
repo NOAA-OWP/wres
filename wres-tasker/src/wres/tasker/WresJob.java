@@ -8,29 +8,29 @@ import java.util.Random;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
-import static javax.ws.rs.core.MediaType.TEXT_HTML;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
+import static jakarta.ws.rs.core.MediaType.TEXT_HTML;
 
 import wres.messages.BrokerHelper;
 import wres.messages.generated.Job;
@@ -109,6 +109,8 @@ public class WresJob
         if ( Objects.nonNull( redisHost ) )
         {
             String redisAddress = "redis://" + redisHost + ":" + redisPort;
+            LOGGER.info( "Redis host specified: {}, using redis at {}",
+                         specifiedRedisHost, redisAddress );
             redissonConfig.useSingleServer()
                           .setAddress( redisAddress );
 
@@ -122,8 +124,6 @@ public class WresJob
             redissonConfig.setNettyThreads( Tasker.MAX_SERVER_THREADS
                                             + MAXIMUM_EVALUATION_COUNT * 4 );
             REDISSON_CLIENT = Redisson.create( redissonConfig );
-            LOGGER.info( "Redis host specified: {}, using redis at {}",
-                         specifiedRedisHost, redisAddress );
         }
         else
         {
@@ -145,6 +145,23 @@ public class WresJob
     @Produces( MediaType.TEXT_PLAIN )
     public String getWresJob()
     {
+        // Test connectivity to broker
+        try ( Connection conn = CONNECTION_FACTORY.newConnection() )
+        {
+            if ( LOGGER.isInfoEnabled() )
+            {
+                LOGGER.info( "Successfully connected to broker at {}:{}",
+                             conn.getAddress(), conn.getPort() );
+            }
+        }
+        catch( IOException | TimeoutException e )
+        {
+            throw new ConnectivityException( "broker",
+                                             CONNECTION_FACTORY.getHost(),
+                                             CONNECTION_FACTORY.getPort(),
+                                             e );
+        }
+
         return "Up";
     }
 
@@ -464,6 +481,18 @@ public class WresJob
                                  ioe );
                 }
             }
+        }
+    }
+
+    private static final class ConnectivityException extends RuntimeException
+    {
+        private ConnectivityException( String serviceName,
+                                       String host,
+                                       int port,
+                                       Throwable cause )
+        {
+            super( "Failed to connect to " + serviceName + " at " + host + ":"
+                   + port, cause );
         }
     }
 }

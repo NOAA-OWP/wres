@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -23,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import javax.ws.rs.core.StreamingOutput;
-
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.GeneratedMessageV3;
@@ -32,12 +29,14 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import jakarta.ws.rs.core.StreamingOutput;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.map.event.EntryExpiredListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import static wres.tasker.JobMessageHelper.JOB_NOT_DONE_YET;
 
