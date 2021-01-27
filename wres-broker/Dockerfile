@@ -1,4 +1,4 @@
-FROM rabbitmq:3.8.9-management-alpine
+FROM rabbitmq:3.8.11-management-alpine
 
 # Wish we could do the following, but busybox does not support long gids:
 #RUN addgroup -g 1370800073 wres && adduser -D -u 498 -g 1370800073 wres_docker
@@ -6,7 +6,7 @@ FROM rabbitmq:3.8.9-management-alpine
 # Instead, very manually create user and group:
 RUN echo "wres_docker:x:498:1370800073::/home/wres_docker:" >> /etc/passwd \
     && echo "user:!:1:0:99999:7:::" >> /etc/shadow \
-    && echo "wres:x:1370800073:" >> etc/group \
+    && echo "wres:x:1370800073:" >> /etc/group \
     && mkdir /home/wres_docker \
     && chown wres_docker: /home/wres_docker
 
@@ -19,7 +19,10 @@ COPY nonsrc/rabbitmq-prod.config .
 COPY nonsrc/rabbitmq-ti.config .
 COPY nonsrc/rabbitmq-dev.config .
 COPY nonsrc/definitions.json .
+COPY docker-healthcheck /usr/local/bin/
 
 USER wres_docker
 
 VOLUME /wres_secrets
+
+HEALTHCHECK CMD ["docker-healthcheck"]
