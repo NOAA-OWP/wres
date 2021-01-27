@@ -2,8 +2,14 @@ package wres.tasker;
 
 import java.security.Security;
 
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -72,13 +78,16 @@ public class Tasker
      * Tasker receives requests for wres runs and passes them along to queue.
      * Actual work is done in WresJob restlet class, Tasker sets up a server.
      * @param args unused args
-     * @throws Exception when jetty server start fails
+     * @throws TaskerFailedToStartException when jetty server start fails (?)
      */
 
     public static void main( String[] args )
-            throws Exception
     {
-        LOGGER.info( "I will take wres job requests and queue them." );
+        // Test connectivity to services (dependencies) by creating WresJob
+        WresJob wresJob = new WresJob();
+        String result = wresJob.getWresJob();
+        LOGGER.info( "{}: I will take wres job requests and queue them.",
+                     result );
 
         // Following example:
         // http://nikgrozev.com/2014/10/16/rest-with-embedded-jetty-and-jersey-in-a-single-jar-step-by-step/
@@ -92,7 +101,7 @@ public class Tasker
         // Multiple ways of binding using jersey, but Application is standard,
         // see here:
         // https://stackoverflow.com/questions/22994690/which-init-param-to-use-jersey-config-server-provider-packages-or-javax-ws-rs-a#23041643
-        dynamicHolder.setInitParameter( "javax.ws.rs.Application",
+        dynamicHolder.setInitParameter( "jakarta.ws.rs.Application",
                                         JaxRSApplication.class.getCanonicalName() );
 
         // Static handler:
@@ -110,10 +119,29 @@ public class Tasker
 
         jettyServer.setHandler( resourceHandler );
 
-        // Use TLS
-        SslContextFactory contextFactory = Tasker.getSslContextFactory();
+        HttpConfiguration httpConfig = new HttpConfiguration();
 
-        try ( ServerConnector serverConnector = new ServerConnector( jettyServer, contextFactory ) )
+        // Support HTTP/1.1
+        HttpConnectionFactory httpOneOne = new HttpConnectionFactory( httpConfig );
+
+        // Support HTTP/2
+        HTTP2ServerConnectionFactory httpTwo = new HTTP2ServerConnectionFactory( httpConfig);
+
+        // Support ALPN
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol( httpOneOne.getProtocol() );
+
+        // Use TLS
+        SslContextFactory.Server contextFactory = Tasker.getSslContextFactory();
+        httpConfig.addCustomizer( new SecureRequestCustomizer() );
+        SslConnectionFactory tlsConnectionFactory =
+                new SslConnectionFactory( contextFactory, httpOneOne.getProtocol() );
+
+        try ( ServerConnector serverConnector = new ServerConnector( jettyServer,
+                                                                     tlsConnectionFactory,
+                                                                     alpn,
+                                                                     httpOneOne,
+                                                                     httpTwo ) )
         {
             serverConnector.setPort( Tasker.SERVER_PORT );
             ServerConnector[] serverConnectors = { serverConnector };
@@ -149,13 +177,13 @@ public class Tasker
     {
         private static final long serialVersionUID = 8797327489673141317L;
 
-        private TaskerFailedToStartException( String message, Exception e )
+        private TaskerFailedToStartException( String message, Throwable cause )
         {
-            super( message, e );
+            super( message, cause );
         }
     }
 
-    private static SslContextFactory getSslContextFactory()
+    private static SslContextFactory.Server getSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         String ourServerCertificateFilename = BrokerHelper.getSecretsDir()
