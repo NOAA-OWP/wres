@@ -135,7 +135,7 @@ public class Tasker
         SslContextFactory.Server contextFactory = Tasker.getSslContextFactory();
         httpConfig.addCustomizer( new SecureRequestCustomizer() );
         SslConnectionFactory tlsConnectionFactory =
-                new SslConnectionFactory( contextFactory, httpOneOne.getProtocol() );
+                new SslConnectionFactory( contextFactory, alpn.getProtocol() );
 
         try ( ServerConnector serverConnector = new ServerConnector( jettyServer,
                                                                      tlsConnectionFactory,
