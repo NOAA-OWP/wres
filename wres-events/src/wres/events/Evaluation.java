@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Topic;
 import javax.naming.NamingException;
@@ -66,7 +64,7 @@ import wres.statistics.generated.Statistics;
  * <p> The lifecycle for an evaluation is composed of three parts:
  * <ol>
  * <li>Opening, which corresponds to 
- * {@link #of(wres.statistics.generated.Evaluation, BrokerConnectionFactory)} or an overloaded version;</li>
+ * {@link #of(wres.statistics.generated.Evaluation, BrokerConnectionFactory, String)} or an overloaded version;</li>
  * <li>Awaiting completion {@link #await()}; and</li>
  * <li>Closing, either forcibly ({@link #stop(Exception)}) or nominally {@link #close()}.</li>
  * </ol>
@@ -171,6 +169,12 @@ public class Evaluation implements Closeable
     private final String evaluationId;
 
     /**
+     * The identifier of the messaging client responsible for creating this evaluation.
+     */
+
+    private final String clientId;
+
+    /**
      * The total message count, excluding evaluation status messages. This is one more than the number of statistics
      * messages because an evaluation begins with an evaluation description message. This is mutable state.
      */
@@ -232,24 +236,18 @@ public class Evaluation implements Closeable
     private final AtomicInteger exitCode = new AtomicInteger( -1 );
 
     /**
-     * A publisher connection for re-use.
-     */
-
-    private final Connection producerConnection;
-
-    /**
-     * A subscriber connection for re-use.
-     */
-
-    private final Connection consumerConnection;
-
-    /**
      * A lock to control the flow of producers and thereby avoid overwhelming the broker when consumers a much slower
      * than producers (a.k.a. producer flow control). TODO: delegate this to the broker when adopting a broker than 
      * supports flow control for topic exchanges via JMS (Qpid does not).
      */
 
     private final ReentrantLock flowControlLock;
+
+    /**
+     * When an evaluation completes with a non-zero exit code, a record of the errors encountered.
+     */
+
+    private final Set<EvaluationStatusEvent> errorsOnCompletion;
 
     /**
      * Returns the unique evaluation identifier.
@@ -267,6 +265,7 @@ public class Evaluation implements Closeable
      * 
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
+     * @param clientId the identifier of the messaging client requesting an evaluation
      * @return an open evaluation
      * @throws NullPointerException if any input is null
      * @throws EvaluationEventException if the evaluation could not be constructed
@@ -274,18 +273,21 @@ public class Evaluation implements Closeable
      */
 
     public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
-                                 BrokerConnectionFactory broker )
+                                 BrokerConnectionFactory broker,
+                                 String clientId )
     {
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
+                            .setClientId( clientId )
                             .build();
     }
 
     /**
-     * Opens an evaluation with a prescribed identifier.
+     * Opens an evaluation with a prescribed evaluation identifier.
      * 
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
+     * @param clientId the identifier of the messaging client requesting an evaluation
      * @param evaluationId the evaluation identifier
      * @return an open evaluation
      * @throws NullPointerException if any input is null
@@ -295,10 +297,12 @@ public class Evaluation implements Closeable
 
     public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
                                  BrokerConnectionFactory broker,
+                                 String clientId,
                                  String evaluationId )
     {
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
+                            .setClientId( clientId )
                             .setEvaluationId( evaluationId )
                             .build();
     }
@@ -416,19 +420,7 @@ public class Evaluation implements Closeable
                              + " with pool boundaries "
                              + statistics.getPool();
 
-            EvaluationStatus ongoing = EvaluationStatus.newBuilder()
-                                                       .setCompletionStatus( CompletionStatus.EVALUATION_ONGOING )
-                                                       .addStatusEvents( EvaluationStatusEvent.newBuilder()
-                                                                                              .setEventType( StatusMessageType.INFO )
-                                                                                              .setEventMessage( message ) )
-                                                       .build();
-
-            ByteBuffer status = ByteBuffer.wrap( ongoing.toByteArray() );
-            this.internalPublish( status,
-                                  this.evaluationStatusPublisher,
-                                  Evaluation.EVALUATION_STATUS_QUEUE,
-                                  groupId );
-            this.statusMessageCount.getAndIncrement();
+            this.notifyAlive( message, groupId );
 
             // Record group
             if ( Objects.nonNull( groupId ) )
@@ -460,17 +452,26 @@ public class Evaluation implements Closeable
      * failure and then evaluation should then be stopped promptly. This is achieved by 
      * {@link #stop(Exception)}.
      * 
-     * @throws IllegalStateException if publication was already marked complete
      * @see #stop(Exception)
      */
 
     public void markPublicationCompleteReportedSuccess()
     {
+        if ( !this.isAlive() )
+        {
+            LOGGER.warn( "Cannot mark publication complete for evaluation {} because the evaluation itself has "
+                         + "already been marked complete.",
+                         this.getEvaluationId() );
+
+            return;
+        }
+
         this.completeAllMessageGroups();
 
         CompletionStatus status = CompletionStatus.PUBLICATION_COMPLETE_REPORTED_SUCCESS;
 
         EvaluationStatus complete = EvaluationStatus.newBuilder()
+                                                    .setClientId( this.getClientId() )
                                                     .setCompletionStatus( status )
                                                     .setMessageCount( this.getPublishedMessageCount() )
                                                     .setPairsMessageCount( this.getPublishedPairsMessageCount() )
@@ -531,6 +532,7 @@ public class Evaluation implements Closeable
         AtomicInteger count = this.messageGroups.get( groupId );
 
         EvaluationStatus complete = EvaluationStatus.newBuilder()
+                                                    .setClientId( this.getClientId() )
                                                     .setCompletionStatus( status )
                                                     .setGroupId( groupId )
                                                     .setMessageCount( count.get() )
@@ -589,8 +591,6 @@ public class Evaluation implements Closeable
     {
         LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
 
-        CompletionStatus status = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
-
         // Create a string representation of the exception stack
         StringWriter sw = new StringWriter();
 
@@ -609,33 +609,7 @@ public class Evaluation implements Closeable
                                                            .setEventMessage( sw.toString() )
                                                            .build();
 
-        Instant now = Instant.now();
-        long seconds = now.getEpochSecond();
-        int nanos = now.getNano();
-
-        EvaluationStatus complete = EvaluationStatus.newBuilder()
-                                                    .setCompletionStatus( status )
-                                                    .setTime( Timestamp.newBuilder()
-                                                                       .setSeconds( seconds )
-                                                                       .setNanos( nanos ) )
-                                                    .addStatusEvents( event )
-                                                    .build();
-
-        ByteBuffer body = ByteBuffer.wrap( complete.toByteArray() );
-
-        try
-        {
-            // Internal publish in case publication has already been completed for this instance      
-            this.internalPublish( body,
-                                  this.evaluationStatusPublisher,
-                                  Evaluation.EVALUATION_STATUS_QUEUE,
-                                  null );
-        }
-        catch ( EvaluationEventException e )
-        {
-            LOGGER.debug( "Unable to notify consumers about an exception that stopped evalation {}.",
-                          this.getEvaluationId() );
-        }
+        this.errorsOnCompletion.add( event );
 
         // Set a non-normal exit code
         this.exitCode.set( 1 );
@@ -665,50 +639,47 @@ public class Evaluation implements Closeable
         }
 
         LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
-        
+
         // Determine and publish the completion status
         CompletionStatus onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_SUCCESS;
         if ( this.getExitCode() != 0 )
         {
             onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
         }
-        
-        EvaluationStatus reportComplete = EvaluationStatus.newBuilder()
-                                                          .setCompletionStatus( onCompletion )
-                                                          .build();
-        
-        ByteBuffer body = ByteBuffer.wrap( reportComplete.toByteArray() );
 
-        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, null );
+        Instant now = Instant.now();
+        long seconds = now.getEpochSecond();
+        int nanos = now.getNano();
+
+        EvaluationStatus complete = EvaluationStatus.newBuilder()
+                                                    .setCompletionStatus( onCompletion )
+                                                    .setTime( Timestamp.newBuilder()
+                                                                       .setSeconds( seconds )
+                                                                       .setNanos( nanos ) )
+                                                    .addAllStatusEvents( this.errorsOnCompletion )
+                                                    .build();
+
+        ByteBuffer body = ByteBuffer.wrap( complete.toByteArray() );
+
+        try
+        {
+            // Internal publish in case publication has already been completed for this instance      
+            this.internalPublish( body,
+                                  this.evaluationStatusPublisher,
+                                  Evaluation.EVALUATION_STATUS_QUEUE,
+                                  null );
+        }
+        catch ( EvaluationEventException e )
+        {
+            LOGGER.debug( "Unable to publish the completion status of evaluation {}, which was {}.",
+                          this.getEvaluationId(),
+                          onCompletion );
+        }
 
         // Close the publishers gracefully
         this.closeGracefully( this.evaluationPublisher );
         this.closeGracefully( this.evaluationStatusPublisher );
         this.closeGracefully( this.statisticsPublisher );
-
-        try
-        {
-            this.producerConnection.close();
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a broker connection for the message "
-                          + "publishers associated with evaluation {}: {}.",
-                          this,
-                          e.getMessage() );
-        }
-
-        try
-        {
-            this.consumerConnection.close();
-        }
-        catch ( JMSException e )
-        {
-            LOGGER.error( "Encountered an error while attempting to close a broker connection for the message "
-                          + "subscribers associated with evaluation {}: {}.",
-                          this,
-                          e.getMessage() );
-        }
 
         // Close the status tracker
         this.statusTracker.close();
@@ -771,7 +742,7 @@ public class Evaluation implements Closeable
     {
         if ( this.isStopped() || this.isClosed() )
         {
-            LOGGER.debug( "Evaluation {} has already been closed.", this.getEvaluationId() );
+            LOGGER.debug( "Evaluation {} has already completed.", this.getEvaluationId() );
 
             return this.getExitCode();
         }
@@ -836,7 +807,19 @@ public class Evaluation implements Closeable
 
         return this.getExitCode();
     }
+    
+    /**
+     * Checks whether the evaluation has failed. If the evaluation has not failed at the time of calling, it may yet
+     * fail.
+     * 
+     * @return true if the evaluation has failed, false if the evaluation has succeeded or is ongoing
+     */
 
+    public boolean isFailed()
+    {
+        return this.exitCode.get() > 0;
+    }
+    
     /**
      * Returns the status of the evaluation on exit.
      * 
@@ -880,7 +863,13 @@ public class Evaluation implements Closeable
          * Evaluation identifier.
          */
 
-        private String evaluationId = null;
+        private String evaluationId;
+
+        /**
+         * Messaging client identifier.
+         */
+
+        private String clientId;
 
         /**
          * Sets the broker.
@@ -906,6 +895,20 @@ public class Evaluation implements Closeable
         public Builder setEvaluationDescription( wres.statistics.generated.Evaluation evaluationDescription )
         {
             this.evaluationDescription = evaluationDescription;
+
+            return this;
+        }
+
+        /**
+         * Sets the messaging client identifier.
+         * 
+         * @param clientId the messaging client identifier
+         * @return this builder 
+         */
+
+        public Builder setClientId( String clientId )
+        {
+            this.clientId = clientId;
 
             return this;
         }
@@ -1033,7 +1036,7 @@ public class Evaluation implements Closeable
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
-            
+
             LOGGER.warn( "Thread {} failed to acquire a flow control lock within a period of PT10S.",
                          Thread.currentThread() );
         }
@@ -1055,6 +1058,17 @@ public class Evaluation implements Closeable
             LOGGER.debug( "Cannot stop flow control with thread {} because it does not hold the flow control lock.",
                           Thread.currentThread() );
         }
+    }
+
+    /**
+     * Returns the unique identifier of the client that is responsible for publishing the evaluation being tracked.
+     * 
+     * @return the client identifier
+     */
+
+    String getClientId()
+    {
+        return this.clientId;
     }
 
     /**
@@ -1088,6 +1102,48 @@ public class Evaluation implements Closeable
     private int getPublishedMessageCount()
     {
         return this.messageCount.get();
+    }
+
+    /**
+     * Notifies an existing evaluation as {@link CompletionStatus#EVALUATION_ONGOING} if it is, indeed, ongoing.
+     * 
+     * @param message the message to provide with the update
+     * @param groupId the message group identifier
+     */
+
+    private void notifyAlive( String message, String groupId )
+    {
+        if ( this.isAlive() )
+        {
+            EvaluationStatus.Builder ongoing = EvaluationStatus.newBuilder()
+                                                               .setClientId( this.getClientId() )
+                                                               .setCompletionStatus( CompletionStatus.EVALUATION_ONGOING )
+                                                               .addStatusEvents( EvaluationStatusEvent.newBuilder()
+                                                                                                      .setEventType( StatusMessageType.INFO )
+                                                                                                      .setEventMessage( message ) );
+            if ( Objects.nonNull( groupId ) )
+            {
+                ongoing.setGroupId( groupId );
+            }
+
+            ByteBuffer status = ByteBuffer.wrap( ongoing.build()
+                                                        .toByteArray() );
+            this.internalPublish( status,
+                                  this.evaluationStatusPublisher,
+                                  Evaluation.EVALUATION_STATUS_QUEUE,
+                                  groupId );
+
+            this.statusMessageCount.getAndIncrement();
+        }
+    }
+
+    /**
+     * @return true if the evaluation is still alive, otherwise false
+     */
+
+    private boolean isAlive()
+    {
+        return !this.isStopped() && !this.isClosed();
     }
 
     /**
@@ -1282,6 +1338,7 @@ public class Evaluation implements Closeable
         BrokerConnectionFactory broker = builder.broker;
 
         this.evaluationDescription = builder.evaluationDescription;
+        this.clientId = builder.clientId;
 
         // Get the formats that are required
         Set<Format> formatsRequired = this.getFormatsAwaited( this.evaluationDescription.getOutputs() );
@@ -1289,6 +1346,9 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
         Objects.requireNonNull( this.evaluationDescription,
                                 "Cannot create an evaluation without an evaluation description message." );
+        Objects.requireNonNull( this.clientId,
+                                "Cannot create an evaluation without the identifier of the messaging "
+                                               + "client that requested it." );
 
         // Must have one or more formats
         if ( formatsRequired.isEmpty() )
@@ -1303,35 +1363,28 @@ public class Evaluation implements Closeable
         this.publicationComplete = new AtomicBoolean();
         this.isStopped = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
-
-        // Register publishers and subscribers
-        ConnectionFactory factory = broker.get();
+        this.errorsOnCompletion = new HashSet<>();
 
         try
         {
-            this.producerConnection = factory.createConnection();
-            this.consumerConnection = factory.createConnection();
-
             // Create the status tracker first  so that subscribers can register
-            String statusTrackerId = Evaluation.getUniqueId();
             this.statusTracker = new EvaluationStatusTracker( this,
                                                               broker,
                                                               formatsRequired,
-                                                              statusTrackerId,
                                                               broker.getMaximumMessageRetries() );
 
             Topic status = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
-            this.evaluationStatusPublisher = MessagePublisher.of( this.producerConnection, status );
+            this.evaluationStatusPublisher = MessagePublisher.of( broker, status );
 
             Topic evaluation = (Topic) broker.getDestination( Evaluation.EVALUATION_QUEUE );
-            this.evaluationPublisher = MessagePublisher.of( this.producerConnection, evaluation );
+            this.evaluationPublisher = MessagePublisher.of( broker, evaluation );
 
             Topic statistics = (Topic) broker.getDestination( Evaluation.STATISTICS_QUEUE );
-            this.statisticsPublisher = MessagePublisher.of( this.producerConnection, statistics );
+            this.statisticsPublisher = MessagePublisher.of( broker, statistics );
 
             Topic pairs = (Topic) broker.getDestination( Evaluation.PAIRS_QUEUE );
-            this.pairsPublisher = MessagePublisher.of( this.producerConnection, pairs );
+            this.pairsPublisher = MessagePublisher.of( broker, pairs );
         }
         catch ( JMSException | NamingException e )
         {
@@ -1365,6 +1418,7 @@ public class Evaluation implements Closeable
         int nanos = now.getNano();
         EvaluationStatus started = EvaluationStatus.newBuilder()
                                                    .setCompletionStatus( CompletionStatus.EVALUATION_STARTED )
+                                                   .setClientId( this.getClientId() )
                                                    .setTime( Timestamp.newBuilder()
                                                                       .setSeconds( seconds )
                                                                       .setNanos( nanos ) )
@@ -1436,7 +1490,7 @@ public class Evaluation implements Closeable
                                   String groupId )
     {
         // Published below, so increment by 1 here 
-        String messageId = "ID:" + this.getEvaluationId() + "-m" + ( publisher.getMessageCount() + 1 );
+        String messageId = "ID:" + this.getEvaluationId() + "-m" + Evaluation.getUniqueId();
 
         // Create the metadata
         Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
@@ -1477,7 +1531,7 @@ public class Evaluation implements Closeable
                               queue );
             }
         }
-        catch ( JMSException e )
+        catch ( EvaluationEventException e )
         {
             throw new EvaluationEventException( "Failed to publish a message with metadata " + properties
                                                 + " for evaluation "

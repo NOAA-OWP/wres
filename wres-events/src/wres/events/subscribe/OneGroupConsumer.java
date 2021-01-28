@@ -182,9 +182,11 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
     void setExpectedMessageCount( int expectedMessageCount )
     {
         // Flag as used
-        if ( this.isComplete.get() )
+        if ( this.isComplete() )
         {
-            throw new IllegalStateException( "The message count has already been set and cannot be reset." );
+            throw new IllegalStateException( "Cannot reset the expected message count for message group "
+                                             + this.getGroupId()
+                                             + " after the group has been consumed." );
         }
 
         if ( expectedMessageCount <= 0 )
@@ -199,7 +201,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
 
         this.expectedMessageCount.set( expectedMessageCount );
 
-        // Try to accept the group.
+        // Try to accept the group, which completes the consumer.
         this.acceptGroup();
 
         // Log status
@@ -271,16 +273,16 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
             }
         }
     }
-    
+
     /**
      * @return true if the consumer is ready to complete, otherwise false
      */
-    
+
     private boolean isReadyToComplete()
     {
         return this.expectedMessageCount.get() > 0
-                && this.expectedMessageCount.get() == this.actualMessageCount.get()
-                && ! this.isComplete();
+               && this.expectedMessageCount.get() == this.actualMessageCount.get()
+               && !this.isComplete();
     }
 
     /**

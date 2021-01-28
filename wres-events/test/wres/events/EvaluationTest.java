@@ -2,9 +2,7 @@ package wres.events;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -52,6 +50,8 @@ import wres.statistics.generated.Pairs;
 
 class EvaluationTest
 {
+
+    private static final String A_CLIENT = "aClient";
 
     /**
      * One evaluation for testing.
@@ -202,10 +202,12 @@ class EvaluationTest
               Evaluation evaluationOne =
                       Evaluation.of( this.oneEvaluation,
                                      EvaluationTest.connections,
+                                     A_CLIENT,
                                      "evaluationOne" );
               Evaluation evaluationTwo =
                       Evaluation.of( this.anotherEvaluation,
                                      EvaluationTest.connections,
+                                     A_CLIENT,
                                      "evaluationTwo" ) )
         {
             // First evaluation
@@ -275,7 +277,8 @@ class EvaluationTest
                                                                          .setOutputs( Outputs.newBuilder()
                                                                                              .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
                                                                          .build(),
-                                     EvaluationTest.connections ) )
+                                     EvaluationTest.connections,
+                                     A_CLIENT ) )
         {
             // Stop the evaluation
             evaluation.stop( new Exception( "an exception" ) );
@@ -335,7 +338,8 @@ class EvaluationTest
                                          Executors.newSingleThreadExecutor(),
                                          EvaluationTest.connections );
               Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     EvaluationTest.connections ); )
+                                                     EvaluationTest.connections,
+                                                     A_CLIENT ); )
         {
             // First group
             for ( Statistics next : this.oneStatistics )
@@ -435,7 +439,8 @@ class EvaluationTest
                                                                        .setOutputs( Outputs.newBuilder()
                                                                                            .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
                                                                        .build(),
-                                   EvaluationTest.connections );
+                                   EvaluationTest.connections,
+                                   A_CLIENT );
 
             // Notify publication done, even though nothing published, as this 
             // has the expected message count
@@ -492,14 +497,14 @@ class EvaluationTest
 
         // Open an evaluation, closing on completion
         Evaluation evaluation = null;
-        EvaluationFailedToCompleteException actualException = null;
         try ( EvaluationSubscriber subscriberOne =
                 EvaluationSubscriber.of( consumer,
                                          Executors.newSingleThreadExecutor(),
                                          EvaluationTest.connections ); )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
-                                        EvaluationTest.connections );
+                                        EvaluationTest.connections,
+                                        A_CLIENT );
 
             // Publish a statistics message, which fails to be consumed after retries
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -511,10 +516,9 @@ class EvaluationTest
             evaluation.await();
         }
         // All recovery attempts exhausted and now an exception is caught
-        catch ( EvaluationFailedToCompleteException e )
+        catch ( EvaluationFailedToCompleteException | EvaluationEventException e )
         {
-            // No clean-up to do here, just flag the expected exception
-            actualException = e;
+            // Nothing to do here
         }
         finally
         {
@@ -527,10 +531,6 @@ class EvaluationTest
 
         // Assert that the evaluation failed and that an expected exception was caught
         assertNotEquals( 0, evaluation.getExitCode() );
-        assertNotNull( actualException );
-
-        assertTrue( actualException.getMessage()
-                                   .contains( "Failed to complete evaluation" ) );
     }
 
     @Test
@@ -578,7 +578,8 @@ class EvaluationTest
                                          Executors.newSingleThreadExecutor(),
                                          EvaluationTest.connections );
               Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     EvaluationTest.connections ) )
+                                                     EvaluationTest.connections,
+                                                     A_CLIENT ) )
         {
             // Publish a statistics message, triggering one failed consumption followed by recovery
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -593,7 +594,6 @@ class EvaluationTest
             assertEquals( 0, exitCode );
         }
     }
-
 
     @Test
     void testEvaluationWithUnrecoverablePublisherException() throws IOException
@@ -634,7 +634,8 @@ class EvaluationTest
                                          EvaluationTest.connections ); )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
-                                        EvaluationTest.connections );
+                                        EvaluationTest.connections,
+                                        A_CLIENT );
 
             Statistics mockedStatistics = Mockito.mock( Statistics.class );
             Mockito.when( mockedStatistics.toByteArray() )

@@ -139,7 +139,7 @@ class GraphicsClient implements Closeable
                 graphics.stop();
                 LOGGER.info( "WRES Graphics Client {} ran for '{}' and processed {} packets of statistics across {} "
                              + "evaluations.",
-                             graphics.getSubscriberId(),
+                             graphics.getClientId(),
                              duration,
                              graphics.getSubscriberStatus().getStatisticsCount(),
                              graphics.getSubscriberStatus().getEvaluationCount() );
@@ -175,7 +175,7 @@ class GraphicsClient implements Closeable
 
     private void run()
     {
-        LOGGER.info( "WRES Graphics client {} is running.", this.getSubscriberId() );
+        LOGGER.info( "WRES Graphics client {} is running.", this.getClientId() );
 
         // The status is mutable and is updated by the subscriber
         SubscriberStatus status = this.getSubscriberStatus();
@@ -195,7 +195,7 @@ class GraphicsClient implements Closeable
                 LOGGER.info( "{}", status );
             }
         };
-        
+
         // Create a timer task to check on the health of the subscriber
         TimerTask healthChecker = new TimerTask()
         {
@@ -206,7 +206,7 @@ class GraphicsClient implements Closeable
                 {
                     LOGGER.error( "While checking the graphics client for the health of its subscribers, discovered a "
                                   + "failed subscriber with identifier {}. The graphics client will now close.",
-                                  client.getSubscriberId() );
+                                  client.getClientId() );
 
                     client.close();
                 }
@@ -275,7 +275,18 @@ class GraphicsClient implements Closeable
 
             if ( Objects.nonNull( this.graphicsSubscriber ) )
             {
-                this.graphicsSubscriber.close();
+                try
+                {
+                    this.graphicsSubscriber.close();
+                }
+                catch ( IOException e )
+                {
+                    if ( LOGGER.isWarnEnabled() )
+                    {
+                        String message = "Failed to close subscriber " + this.graphicsSubscriber.getClientId() + ".";
+                        LOGGER.warn( message, e );
+                    }
+                }
             }
 
             this.getGraphicsExecutor()
@@ -291,7 +302,7 @@ class GraphicsClient implements Closeable
                 LOGGER.warn( "Interrupted while shutting down the graphics executor service {} in WRES Graphics "
                              + "Client {}.",
                              this.getGraphicsExecutor(),
-                             this.getSubscriberId() );
+                             this.getClientId() );
 
                 Thread.currentThread().interrupt();
             }
@@ -305,14 +316,14 @@ class GraphicsClient implements Closeable
             }
             catch ( InterruptedException e )
             {
-                LOGGER.warn( "Failed to close all resources used by WRES Graphics Client {}.", this.getSubscriberId() );
+                LOGGER.warn( "Failed to close all resources used by WRES Graphics Client {}.", this.getClientId() );
 
                 Thread.currentThread().interrupt();
             }
 
             this.latch.countDown();
 
-            LOGGER.info( "WRES Graphics Client {} has stopped.", this.getSubscriberId() );
+            LOGGER.info( "WRES Graphics Client {} has stopped.", this.getClientId() );
         }
     }
 
@@ -330,10 +341,10 @@ class GraphicsClient implements Closeable
      * @return the subscriber identifier.
      */
 
-    private String getSubscriberId()
+    private String getClientId()
     {
         return this.getGraphicsSubscriber()
-                   .getSubscriberId();
+                   .getClientId();
     }
 
     /**
@@ -364,7 +375,7 @@ class GraphicsClient implements Closeable
         LOGGER.info( "Creating WRES Graphics Client..." );
 
         UncaughtExceptionHandler handler = ( a, b ) -> {
-            String message = "Encountered an internal error in WRES Graphics Client " + this.getSubscriberId() + ".";
+            String message = "Encountered an internal error in WRES Graphics Client " + this.getClientId() + ".";
             LOGGER.error( message, b );
             this.stop();
         };
@@ -397,7 +408,7 @@ class GraphicsClient implements Closeable
                                                e );
         }
 
-        LOGGER.info( "Finished creating WRES Graphics Client with subscriber identifier {}.", this.getSubscriberId() );
+        LOGGER.info( "Finished creating WRES Graphics Client with subscriber identifier {}.", this.getClientId() );
     }
 
     /**
@@ -409,7 +420,7 @@ class GraphicsClient implements Closeable
     {
         UncaughtExceptionHandler handler = ( a, b ) -> {
             String message = "Encountered an internal error in a WRES Graphics Worker of WRES Graphics Client "
-                             + this.getSubscriberId()
+                             + this.getClientId()
                              + ".";
             LOGGER.error( message, b );
             this.stop();
