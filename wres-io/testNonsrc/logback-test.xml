@@ -6,41 +6,24 @@
     </appender>
 
     <!-- Quiet the connection pooling library with level "warn" or "error" -->
-    <logger name="com.mchange.v2">
-        <level value="warn" />
-    </logger>
+    <logger name="com.mchange.v2" level="warn" />
 
     <!-- Quiet the cdm hdf5 library until it is quieter by default -->
-    <logger name="ucar.nc2.iosp.hdf5">
-      <level value="error" />
-    </logger>
+    <logger name="ucar.nc2.iosp.hdf5" level="error" />
 
     <!-- Quiet the logger used for ucar.nc2.util.cache; it will spit out a
     warning for every acquire/release above the configured limit, resulting in
     thousands of unneccessary messages -->
-    <logger name="cacheLogger">
-        <level value="error" />
-    </logger>
+    <logger name="cacheLogger" level="error" />
 
     <!-- Quiet the remote Netcdf messages where bytes will be dumped to the log -->
-    <logger name="org.apache.http">
-        <level value="error" />
-    </logger>
+    <logger name="org.apache.http" level="error" />
 
     <!-- Quiet liquibase with level "warn" or "error" -->
-    <logger name="liquibase">
-        <level value="warn" />
-    </logger>
+    <logger name="liquibase" level="warn" />
 
     <!-- To quiet mock server it seems we must set level on specific class. -->
-    <logger name="org.mockserver.mock.HttpStateHandler">
-        <level value="warn" />
-    </logger>
-
-    <!-- Quiet test database server with level "warn" or "error" -->
-    <logger name="ru.yandex.qatools">
-        <level value="warn" />
-    </logger>
+    <logger name="org.mockserver.mock.HttpStateHandler" level="warn" />
 
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
     <root level="${wres.logLevel:-info}">
