@@ -107,7 +107,8 @@ class OneGroupConsumerTest
         IllegalStateException expected = assertThrows( IllegalStateException.class,
                                                        () -> group.setExpectedMessageCount( 1 ) );
 
-        String expectedMessage = "The message count has already been set and cannot be reset.";
+        String expectedMessage = "Cannot reset the expected message count for message group someGroupId after the "
+                + "group has been consumed.";
 
         assertEquals( expectedMessage, expected.getMessage() );
     }

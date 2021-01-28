@@ -85,11 +85,11 @@ class EvaluationStatusTrackerTest
                                                                          .setOutputs( Outputs.newBuilder()
                                                                                              .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
                                                                          .build(),
-                                     EvaluationStatusTrackerTest.connections );
+                                     EvaluationStatusTrackerTest.connections,
+                                     "aClient" );
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
                                                                              Set.of( Format.PNG, Format.CSV ),
-                                                                             "anIdentifier",
                                                                              0 ) )
         {
             // The best subscriber: two formats, both required 
@@ -170,11 +170,11 @@ class EvaluationStatusTrackerTest
                                                                          .setOutputs( Outputs.newBuilder()
                                                                                              .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
                                                                          .build(),
-                                     EvaluationStatusTrackerTest.connections );
+                                     EvaluationStatusTrackerTest.connections,
+                                     "aClient" );
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
                                                                              Set.of( Format.PNG ),
-                                                                             "anIdentifier",
                                                                              0 ) )
         {
             Consumer consumerOne = Consumer.newBuilder()

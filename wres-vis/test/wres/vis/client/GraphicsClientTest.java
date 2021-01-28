@@ -113,7 +113,8 @@ public class GraphicsClientTest
 
             try ( // This is the evaluation instance that declares png output
                   Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                         GraphicsClientTest.connections ); )
+                                                         GraphicsClientTest.connections,
+                                                         "aClient" ); )
             {
 
                 // Publish the statistics to a "feature" group

@@ -12,12 +12,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,7 +26,7 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.jcip.annotations.GuardedBy;
+import wres.events.EvaluationEventException;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.statistics.generated.Evaluation;
@@ -40,15 +40,15 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMe
 /**
  * <p>Consumer of messages for one evaluation. Receives messages and forwards them to underlying consumers, which 
  * serialize outputs. The serialization may happen per message or per message group. Where consumption happens per 
- * message group, the {@link EvaluationConsumer} manages the sematics associated with that, forwarding the messages to a 
- * caching consumer until the group has completed and then asking the consumer, finally, to serialize the completed 
+ * message group, the {@link EvaluationConsumer} manages the semantics associated with that, forwarding the messages to 
+ * a caching consumer until the group has completed and then asking the consumer, finally, to serialize the completed 
  * group. 
  * 
  * <p>Also notifies all listening clients of various stages within the lifecycle of an evaluation or exposes methods 
  * that allow a subscriber to drive that notification. In particular, on closure, notifies all listening clients whether 
- * the evaluation succeeded or failed. Also notifies listening clients when the consumption of a message group has 
- * completed. This notification may be used by a client to trigger/release producer flow control by message group (i.e., 
- * allowing for the publication of another group of messages).
+ * the evaluation succeeded or failed. Additionally notifies listening clients when the consumption of a message group 
+ * has completed. This notification may be used by a client to trigger/release producer flow control by message group 
+ * (i.e., allowing for the publication of another group of messages).
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -141,19 +141,6 @@ class EvaluationConsumer
     private final AtomicBoolean hasEvaluationDescriptionArrived;
 
     /**
-     * List of statistics messages and metadata that were received before the consumers were ready.
-     */
-
-    @GuardedBy( "statisticsCacheLock" )
-    private final List<StatisticsCache> statisticsCache;
-
-    /**
-     * A lock to guard the {@link #statisticsCache}.
-     */
-
-    private final ReentrantLock statisticsCacheLock;
-
-    /**
      * Thread pool to do writing work.
      */
 
@@ -182,6 +169,12 @@ class EvaluationConsumer
      */
 
     private final ConsumerFactory consumerFactory;
+
+    /**
+     * To await the arrival of an evaluation description in order to create consumers and then consume statistics.
+     */
+
+    private final CountDownLatch consumersReady;
 
     /**
      * Builds a consumer.
@@ -215,15 +208,14 @@ class EvaluationConsumer
         this.isFailed = new AtomicBoolean();
         this.isFailureNotified = new AtomicBoolean();
         this.groupConsumers = new ConcurrentHashMap<>();
-        this.statisticsCache = new ArrayList<>();
-        this.statisticsCacheLock = new ReentrantLock();
         this.executorService = executorService;
         this.consumerDescription = consumerDescription;
         this.consumerFactory = consumerFactory;
         this.pathsWritten = new HashSet<>();
+        this.consumersReady = new CountDownLatch( 1 );
 
         LOGGER.info( "Consumer {} opened evaluation {}, which is ready to consume messages.",
-                     this.getConsumerId(),
+                     this.getClientId(),
                      this.getEvaluationId() );
     }
 
@@ -241,7 +233,7 @@ class EvaluationConsumer
         {
             this.notifyFailure( exception );
         }
-        catch ( JMSException e )
+        catch ( EvaluationEventException e )
         {
             String message = "While marking evaluation " + this.getEvaluationId()
                              + " as "
@@ -274,7 +266,7 @@ class EvaluationConsumer
         {
             LOGGER.debug( "Consumer {} has marked evaluation {} as failed unrecoverably. The failure was not caused by "
                           + "this consumer. The failure was notified to this consumer as {}.",
-                          this.getConsumerId(),
+                          this.getClientId(),
                           this.getEvaluationId(),
                           status.getCompletionStatus() );
 
@@ -304,37 +296,42 @@ class EvaluationConsumer
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( messageId );
 
-        // Consumers ready to consume? 
-        // Yes.
-        if ( this.getAreConsumersReady() )
+        // Wait until the underlying consumers are built, which requires an evaluation description message
+        try
         {
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Evaluation consumer {} accepted a statistics message with message identifier {} and "
-                              + "group identifier {}. The message was routed to a waiting format consumer.",
-                              this.getConsumerId(),
+                LOGGER.debug( "While processing evaluation {} in evaluation consumer {}, accepted a statistics message "
+                              + "with message identifier {} and group identifier {}. Awaiting an evaluation "
+                              + "description message in order to build the format writers before the statistics "
+                              + "message can be consumed.",
+                              this.getEvaluationId(),
+                              this.getClientId(),
                               messageId,
                               groupId );
             }
 
-            // Accept inner
-            this.acceptStatisticsMessageInner( statistics, groupId, messageId );
+            this.consumersReady.await();
         }
-        // No. Cache until the consumers are ready.
-        else
+        catch ( InterruptedException e )
         {
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Evaluation consumer {} accepted a statistics message with message identifier {} and "
-                              + "group identifier {}. The message was routed to a temporary cache until a format "
-                              + "consumer becomes available.",
-                              this.getConsumerId(),
-                              messageId,
-                              groupId );
-            }
+            Thread.currentThread().interrupt();
 
-            this.addStatisticsToCache( statistics, groupId, messageId );
+            throw new UnrecoverableSubscriberException( "Interrupted while waiting for an evaluation description "
+                                                        + "message." );
         }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Evaluation consumer {} accepted a statistics message with message identifier {} and "
+                          + "group identifier {}. The message was routed to a waiting format consumer.",
+                          this.getClientId(),
+                          messageId,
+                          groupId );
+        }
+
+        // Accept inner
+        this.acceptStatisticsMessageInner( statistics, groupId, messageId );
 
         // If consumption is complete, then close the consumer
         this.closeConsumerIfComplete();
@@ -366,7 +363,7 @@ class EvaluationConsumer
             {
                 LOGGER.debug( "Consumer {} received and consumed an evaluation description message with "
                               + "identifier {} for evaluation {}.",
-                              this.getConsumerId(),
+                              this.getClientId(),
                               messageId,
                               this.getEvaluationId() );
             }
@@ -381,7 +378,7 @@ class EvaluationConsumer
             LOGGER.warn( "While processing evaluation {} in consumer {}, encountered two instances of an evaluation "
                          + "description message. This is unexpected behavior unless a retry is in progress.",
                          this.getEvaluationId(),
-                         this.getConsumerId() );
+                         this.getClientId() );
         }
     }
 
@@ -403,7 +400,7 @@ class EvaluationConsumer
         {
             LOGGER.debug( "Consumer {} received and consumed an evaluation status message with identifier {} "
                           + "for evaluation {}.",
-                          this.getConsumerId(),
+                          this.getClientId(),
                           messageId,
                           this.getEvaluationId() );
         }
@@ -419,7 +416,7 @@ class EvaluationConsumer
             case PUBLICATION_COMPLETE_REPORTED_FAILURE:
             case EVALUATION_COMPLETE_REPORTED_FAILURE:
                 this.markEvaluationFailedOnExternalAction( status );
-                break;                
+                break;
             default:
                 break;
         }
@@ -450,7 +447,7 @@ class EvaluationConsumer
         {
             LOGGER.debug( "For evaluation {}, consumer {} has consumed {} messages {}.",
                           this.getEvaluationId(),
-                          this.getConsumerId(),
+                          this.getClientId(),
                           this.consumed.get(),
                           append );
         }
@@ -481,10 +478,10 @@ class EvaluationConsumer
      * the overall consumption complete. Only notifies if the notification has not already happened.
      * 
      * @param cause an optional exception to notify 
-     * @throws JMSException if the notification fails for any reason
+     * @throws EvaluationEventException if the notification fails for any reason
      */
 
-    private void notifyFailure( Exception cause ) throws JMSException
+    private void notifyFailure( Exception cause )
     {
         if ( !this.isFailureNotified.getAndSet( true ) )
         {
@@ -514,7 +511,7 @@ class EvaluationConsumer
                                          events );
 
             LOGGER.warn( "Consumer {} has marked evaluation {} as failed unrecoverably.",
-                         this.getConsumerId(),
+                         this.getClientId(),
                          this.getEvaluationId() );
         }
     }
@@ -522,10 +519,10 @@ class EvaluationConsumer
     /**
      * Notifies successful completion of the evaluation.
      * 
-     * @throws JMSException if the notification fails for any reason
+     * @throws EvaluationEventException if the notification fails for any reason
      */
 
-    private void notifySuccess() throws JMSException
+    private void notifySuccess()
     {
         this.publishCompletionState( CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS,
                                      null,
@@ -533,39 +530,16 @@ class EvaluationConsumer
     }
 
     /**
-     * Adds a statistics message to the cache.
-     * 
-     * @param statistics the statistics
-     * @param groupId the message group identifier
-     * @param messageId the message identifier
-     */
-
-    private void addStatisticsToCache( Statistics statistics, String groupId, String messageId )
-    {
-        this.statisticsCacheLock.lock();
-
-        try
-        {
-            this.statisticsCache.add( new StatisticsCache( statistics, groupId, messageId ) );
-        }
-        finally
-        {
-            this.statisticsCacheLock.unlock();
-        }
-    }
-
-    /**
      * Publishes the completion status of the consumer.
      * @param completionStatus the completion status
      * @param events evaluation status events
      * @throws NullPointerException if the input is null
-     * @throws JMSException if the status could not be published
+     * @throws EvaluationEventException if the status could not be published
      */
 
     private void publishCompletionState( CompletionStatus completionStatus,
                                          String groupId,
                                          List<EvaluationStatusEvent> events )
-            throws JMSException
     {
         Objects.requireNonNull( completionStatus );
         Objects.requireNonNull( events );
@@ -579,6 +553,7 @@ class EvaluationConsumer
         // Create the status message to publish
         EvaluationStatus.Builder message = EvaluationStatus.newBuilder()
                                                            .setCompletionStatus( completionStatus )
+                                                           .setClientId( this.getClientId() )
                                                            .setConsumer( this.getConsumerDescription() )
                                                            .addAllStatusEvents( events )
                                                            .addAllResourcesCreated( addThesePaths );
@@ -589,7 +564,7 @@ class EvaluationConsumer
         }
 
         // Create the metadata
-        String messageId = "ID:" + this.getConsumerId() + "-complete";
+        String messageId = "ID:" + this.getClientId() + "-m" + wres.events.Evaluation.getUniqueId();
 
         ByteBuffer buffer = ByteBuffer.wrap( message.build()
                                                     .toByteArray() );
@@ -597,26 +572,23 @@ class EvaluationConsumer
         Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
         properties.put( MessageProperty.JMS_MESSAGE_ID, messageId );
         properties.put( MessageProperty.JMS_CORRELATION_ID, this.getEvaluationId() );
-        properties.put( MessageProperty.CONSUMER_ID, this.getConsumerId() );
+        properties.put( MessageProperty.CONSUMER_ID, this.getClientId() );
 
         this.evaluationStatusPublisher.publish( buffer, Collections.unmodifiableMap( properties ) );
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Published the completion state of {} as {}.", this.getConsumerId(), completionStatus );
+            LOGGER.debug( "Published the completion state of {} as {}.", this.getClientId(), completionStatus );
         }
     }
 
     /**
      * Checks whether consumption is complete and, if so, closes the consumer.
-     * @throws JMSException
+     * @throws EvaluationEventException if the completion state could not be notified
      */
 
-    private void closeConsumerIfComplete() throws JMSException
+    private void closeConsumerIfComplete()
     {
-        // Take this opportunity to clear out any cached statistics messages that may be preventing completion
-        this.consumeCachedStatisticsMessages();
-
         // Complete? Then close.
         if ( this.isComplete() )
         {
@@ -626,27 +598,31 @@ class EvaluationConsumer
 
     /**
      * Closes the evaluation on completion.
-     * @throws JMSException if the closing state could not be published
+     * @throws EvaluationEventException if the closing state could not be published
      * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
      *            subscriber that wraps it
      */
-    private void close() throws JMSException
+    private void close()
     {
         if ( !this.isClosed() )
         {
             LOGGER.debug( "Consumer {} is closing evaluation {}.",
-                          this.getConsumerId(),
+                          this.getClientId(),
                           this.getEvaluationId() );
+
+            String append = "";
 
             try
             {
                 if ( this.isFailed() )
                 {
                     this.notifyFailure( null );
+                    append = ", which completed unsuccessfully";
                 }
                 else
                 {
                     this.notifySuccess();
+                    append = ", which completed successfully";
                 }
             }
             finally
@@ -654,11 +630,10 @@ class EvaluationConsumer
                 this.isClosed.set( true );
             }
 
-            LOGGER.info( "Consumer {} closed evaluation {}, which contained {} messages (not "
-                         + "including any evaluation status messages).",
-                         this.getConsumerId(),
+            LOGGER.info( "Consumer {} closed evaluation {}{}.",
+                         this.getClientId(),
                          this.getEvaluationId(),
-                         this.consumed.get() );
+                         append );
 
             // This instance is not responsible for closing the executor service.
         }
@@ -695,14 +670,14 @@ class EvaluationConsumer
             // Most unchecked exceptions are worth a recovery attempt 
             if ( e.getCause() instanceof RuntimeException )
             {
-                throw new ConsumerException( CONSUMER_STRING + this.getConsumerId()
+                throw new ConsumerException( CONSUMER_STRING + this.getClientId()
                                              + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                              + this.getEvaluationId()
                                              + ".",
                                              e );
             }
 
-            throw new UnrecoverableSubscriberException( CONSUMER_STRING + this.getConsumerId()
+            throw new UnrecoverableSubscriberException( CONSUMER_STRING + this.getClientId()
                                                         + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                                         + this.getEvaluationId()
                                                         + ".",
@@ -712,7 +687,7 @@ class EvaluationConsumer
         {
             Thread.currentThread().interrupt();
 
-            throw new ConsumerException( CONSUMER_STRING + this.getConsumerId()
+            throw new ConsumerException( CONSUMER_STRING + this.getClientId()
                                          + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                          + this.getEvaluationId()
                                          + ".",
@@ -723,10 +698,10 @@ class EvaluationConsumer
     /**
      * Sets the expected message count.
      * @param status the evaluation status message with the expected message count
-     * @throws JMSException if setting the count closes the consumer and notification of closure fails
+     * @throws EvaluationEventException if setting the count closes the consumer and notification of closure fails
      */
 
-    private void setExpectedMessageCount( EvaluationStatus status ) throws JMSException
+    private void setExpectedMessageCount( EvaluationStatus status )
     {
         Objects.requireNonNull( status );
 
@@ -734,7 +709,7 @@ class EvaluationConsumer
 
         LOGGER.debug( "Consumer {} received notification of publication complete for evaluation "
                       + "{}. The message indicated an expected message count of {}.",
-                      this.getConsumerId(),
+                      this.getClientId(),
                       this.getEvaluationId(),
                       this.expected.get() );
 
@@ -798,10 +773,10 @@ class EvaluationConsumer
      * @throws JMSException if the group completion could not be notified
      * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
      *            subscriber that wraps it
-     * @throws JMSException if the completion state could not be published
+     * @throws EvaluationEventException if the completion state could not be published
      */
 
-    private void setExpectedMessageCountForGroups( EvaluationStatus status ) throws JMSException
+    private void setExpectedMessageCountForGroups( EvaluationStatus status )
     {
         // Set the expected number of messages per group
         String groupId = status.getGroupId();
@@ -873,6 +848,19 @@ class EvaluationConsumer
     {
         Objects.requireNonNull( groupId );
 
+        // Await for the consumers to be created 
+        try
+        {
+            this.consumersReady.await();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            throw new UnrecoverableSubscriberException( "Interrupted while waiting for an evaluation description "
+                                                        + "message." );
+        }
+
         OneGroupConsumer<Statistics> newGroupConsumer = OneGroupConsumer.of( this.groupConsumer::apply, groupId );
         OneGroupConsumer<Statistics> existingGroupConsumer = this.groupConsumers.putIfAbsent( groupId,
                                                                                               newGroupConsumer );
@@ -905,63 +893,22 @@ class EvaluationConsumer
             {
                 LOGGER.debug( "Creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.getEvaluationId(),
-                              this.getConsumerId() );
+                              this.getClientId() );
 
                 // Create a path to write
-                Path path = ConsumerFactory.getPathToWrite( this.getEvaluationId(), this.getConsumerId(), jobId );
+                Path path = ConsumerFactory.getPathToWrite( this.getEvaluationId(), this.getClientId(), jobId );
 
                 this.consumer = consumerFactory.getConsumer( evaluationDescription, path );
                 this.groupConsumer = consumerFactory.getGroupedConsumer( evaluationDescription, path );
 
                 LOGGER.debug( "Finished creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.getEvaluationId(),
-                              this.getConsumerId() );
+                              this.getClientId() );
 
                 // Flag that the consumers are ready
                 this.areConsumersReady.set( true );
+                this.consumersReady.countDown();
             }
-        }
-    }
-
-    /**
-     * Consumes any statistics messages that arrived before the consumers were ready.
-     * @throws JMSException if a group completion could not be notified 
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
-     */
-
-    private void consumeCachedStatisticsMessages() throws JMSException
-    {
-        // Consume any cached messages that arrived before the consumers were ready and then clear the cache
-        this.statisticsCacheLock.lock();
-
-        try
-        {
-            // Consumers are ready to consume and there are some cached statistics to consume
-            if ( this.getAreConsumersReady() && !this.statisticsCache.isEmpty() )
-            {
-                LOGGER.debug( "While consuming evaluation {} in consumer {}, discovered {} statistics messages that "
-                              + "arrived before the consumers were created. These messages were cached and have now been "
-                              + "consumed.",
-                              this.getEvaluationId(),
-                              this.getConsumerId(),
-                              this.statisticsCache.size() );
-
-                // Iterate the cache and consume
-                for ( StatisticsCache next : this.statisticsCache )
-                {
-                    // Internal call, which does not have logic for caching statistics because the present context is to
-                    // process cached statistics.
-                    this.acceptStatisticsMessageInner( next.getStatistics(), next.getGroupId(), next.getMessageId() );
-                }
-
-                // Clear the cache
-                this.statisticsCache.clear();
-            }
-        }
-        finally
-        {
-            this.statisticsCacheLock.unlock();
         }
     }
 
@@ -971,13 +918,12 @@ class EvaluationConsumer
      * @param statistics the statistics
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
-     * @throws JMSException if the group completion could not be notified
+     * @throws EvaluationEventException if the group completion could not be notified
      * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
      *            subscriber that wraps it
      */
 
     private void acceptStatisticsMessageInner( Statistics statistics, String groupId, String messageId )
-            throws JMSException
     {
         // Accept the incremental types
         this.execute( () -> this.addPathsWritten( this.getConsumer()
@@ -998,7 +944,7 @@ class EvaluationConsumer
         {
             LOGGER.debug( "Consumer {} received and consumed a statistics message with identifier {} "
                           + "for evaluation {}.",
-                          this.getConsumerId(),
+                          this.getClientId(),
                           messageId,
                           this.getEvaluationId() );
         }
@@ -1009,11 +955,11 @@ class EvaluationConsumer
      * {@link CompletionStatus#GROUP_CONSUMPTION_COMPLETE} and updates the paths written.
      * 
      * @param groupCon the group consumer
-     * @throws JMSException if the completion state could not be published
+     * @throws EvaluationEventException if the completion state could not be published
      * @throws NullPointerException if the input is null
      */
 
-    private void closeGroupIfComplete( OneGroupConsumer<Statistics> groupCon ) throws JMSException
+    private void closeGroupIfComplete( OneGroupConsumer<Statistics> groupCon )
     {
         if ( groupCon.isComplete() )
         {
@@ -1074,56 +1020,9 @@ class EvaluationConsumer
      * @return the consumer identifier
      */
 
-    private String getConsumerId()
+    private String getClientId()
     {
         return this.consumerDescription.getConsumerId();
-    }
-
-    /**
-     * Small value object for caching statistics that arrived before the consumers were ready.
-     */
-
-    private static class StatisticsCache
-    {
-        /**The statistics.*/
-        private final Statistics statistics;
-
-        /**The group identifier.*/
-        private final String groupId;
-
-        /**The message identifier.*/
-        private final String messageId;
-
-        private StatisticsCache( Statistics statistics, String groupId, String messageId )
-        {
-            this.statistics = statistics;
-            this.groupId = groupId;
-            this.messageId = messageId;
-        }
-
-        /**
-         * @return the statistics
-         */
-        private Statistics getStatistics()
-        {
-            return statistics;
-        }
-
-        /**
-         * @return the group identifier
-         */
-        private String getGroupId()
-        {
-            return groupId;
-        }
-
-        /**
-         * @return the message identifier
-         */
-        private String getMessageId()
-        {
-            return messageId;
-        }
     }
 
 }

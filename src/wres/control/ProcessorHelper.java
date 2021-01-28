@@ -65,6 +65,12 @@ class ProcessorHelper
     private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
 
     /**
+     * Unique identifier for this instance of the core messaging client.
+     */
+
+    private static final String CLIENT_ID = Evaluation.getUniqueId();
+
+    /**
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
      * thresholds and metrics.
      *
@@ -141,6 +147,7 @@ class ProcessorHelper
         // Open an evaluation, to be closed on completion or stopped on exception
         Evaluation evaluation = Evaluation.of( evaluationDescription,
                                                connections,
+                                               ProcessorHelper.CLIENT_ID,
                                                evaluationId );
 
         try
@@ -186,6 +193,8 @@ class ProcessorHelper
         // Allow a user-error to be distinguished separately
         catch ( ProjectConfigException userError )
         {
+            LOGGER.debug( "Forcibly stopping evaluation {} upon encountering a user error.", evaluationId );
+
             // Stop forcibly
             evaluation.stop( userError );
 
@@ -195,6 +204,8 @@ class ProcessorHelper
         catch ( RuntimeException internalError )
         {
             // Stop forcibly
+            LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.", evaluationId );
+
             evaluation.stop( internalError );
             evaluationId = evaluation.getEvaluationId();
 
@@ -213,11 +224,8 @@ class ProcessorHelper
             }
             catch ( IOException e )
             {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( "Failed to close evaluation {}.",
-                                 evaluation.getEvaluationId(), e );
-                }
+                String message = "Failed to close evaluation " + evaluationId + ".";
+                LOGGER.warn( message, e );
             }
 
             // Close the shared writers if they weren't closed already
@@ -227,12 +235,8 @@ class ProcessorHelper
             }
             catch ( IOException e )
             {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( "Failed to close the shared writers for evaluation {}.",
-                                  evaluation.getEvaluationId(),
-                                  e );
-                }
+                String message = "Failed to close the shared writers for evaluation " + evaluationId + ".";
+                LOGGER.warn( message, e );
             }
 
             // Close the netCDF writers if not closed
@@ -244,13 +248,20 @@ class ProcessorHelper
                 }
                 catch ( WriteException we )
                 {
-                    LOGGER.warn( "Failed to finish writing a netCDF {}",
-                                 writer, we );
+                    LOGGER.warn( "Failed to close netcdf writer.", we );
                 }
             }
 
             // Close the formats subscriber
-            formatsSubscriber.close();
+            try
+            {
+                formatsSubscriber.close();
+            }
+            catch ( IOException e )
+            {
+                String message = "Failed to close formats subscriber " + formatsSubscriber.getClientId() + ".";
+                LOGGER.warn( message, e );
+            }
 
             // Add the paths written by external subscribers
             returnMe.addAll( evaluation.getPathsWrittenBySubscribers() );
@@ -342,11 +353,10 @@ class ProcessorHelper
             // passed separately to wres-metrics. Options include moving MetricProcessor* to
             // wres-control, since they make processing decisions, or passing ResolvedProject onwards
             ThresholdReader thresholdReader = new ThresholdReader(
-                    systemSettings,
-                    projectConfig,
-                    unitMapper,
-                    decomposedFeatures
-            );
+                                                                   systemSettings,
+                                                                   projectConfig,
+                                                                   unitMapper,
+                                                                   decomposedFeatures );
             Map<FeatureTuple, ThresholdsByMetric> thresholds = thresholdReader.read();
 
             // Features having thresholds as reported by the threshold reader.
@@ -419,7 +429,7 @@ class ProcessorHelper
             // or one completes exceptionally for reasons other than lack of data
             // Complete the feature tasks
             Pipelines.doAllOrException( featureTasks ).join();
-            
+
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when they are done/
             evaluation.markPublicationCompleteReportedSuccess();
@@ -580,13 +590,13 @@ class ProcessorHelper
         {
             // Use the template-based netcdf writer.
             NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of(
-                    systemSettings,
-                    executor,
-                    projectConfig,
-                    firstDeprecatedNetcdf,
-                    durationUnits,
-                    outputDirectory,
-                    true );
+                                                                               systemSettings,
+                                                                               executor,
+                                                                               projectConfig,
+                                                                               firstDeprecatedNetcdf,
+                                                                               durationUnits,
+                                                                               outputDirectory,
+                                                                               true );
             writers.add( netcdfWriterDeprecated );
             LOGGER.warn( "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
         }
@@ -595,13 +605,13 @@ class ProcessorHelper
         {
             // Use the newer from-scratch netcdf writer.
             NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of(
-                    systemSettings,
-                    executor,
-                    projectConfig,
-                    firstNetcdf2,
-                    durationUnits,
-                    outputDirectory,
-                    false );
+                                                                     systemSettings,
+                                                                     executor,
+                                                                     projectConfig,
+                                                                     firstNetcdf2,
+                                                                     durationUnits,
+                                                                     outputDirectory,
+                                                                     false );
             writers.add( netcdfWriter );
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
         }
@@ -625,7 +635,7 @@ class ProcessorHelper
         // Where outputs files will be written
         Path outputDirectory = null;
         String tempDir = System.getProperty( "java.io.tmpdir" );
-        
+
         // Is this instance running in a context that uses a wres job identifier?
         // If so, create a directory corresponding to the job identifier. See #84942.
         String jobId = System.getProperty( "wres.jobId" );
@@ -634,7 +644,7 @@ class ProcessorHelper
             LOGGER.debug( "Discovered system property {} with value {}.", "wres.jobId", jobId );
             tempDir = tempDir + System.getProperty( "file.separator" ) + jobId;
         }
-        
+
         Path namedPath = Paths.get( tempDir, "wres_evaluation_" + evaluationId );
 
         // POSIX-compliant    

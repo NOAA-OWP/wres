@@ -67,6 +67,8 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMe
 class EvaluationStatusTracker implements Closeable
 {
 
+    private static final String WHILE_COMPLETING_EVALUATION = "While completing evaluation ";
+
     private static final String FOR_SUBSCRIPTION = "for subscription {}.";
 
     private static final String ENCOUNTERED_AN_ATTEMPT_TO_MARK_SUBSCRIBER =
@@ -226,7 +228,7 @@ class EvaluationStatusTracker implements Closeable
      * were reported by the subscriber to which I am attached.
      */
 
-    private final String identifier;
+    private final String trackerId;
 
     /**
      * The fully qualified name of the durable subscriber on the broker.
@@ -268,7 +270,7 @@ class EvaluationStatusTracker implements Closeable
         }
         catch ( JMSException e )
         {
-            String message = "While attempting to close evaluation status subscriber " + this.getIdentifier()
+            String message = "While attempting to close evaluation status subscriber " + this.getTrackerId()
                              + " for evaluation "
                              + this.getEvaluationId()
                              + ", failed to remove the subscription from the session.";
@@ -283,7 +285,7 @@ class EvaluationStatusTracker implements Closeable
         }
         catch ( JMSException e )
         {
-            String message = "While attempting to close evaluation status subscriber " + this.getIdentifier()
+            String message = "While attempting to close evaluation status subscriber " + this.getTrackerId()
                              + " for evaluation "
                              + this.getEvaluationId()
                              + ", failed to close the connection.";
@@ -393,6 +395,8 @@ class EvaluationStatusTracker implements Closeable
     /**
      * Negotiates a subscriber for each required output format.
      * @throws InterruptedException if the negotiation of subscriptions was interrupted
+     * @throws SubscriberTimedOutException if subscriptions could not be notified within the timeout period
+     * @throws EvaluationEventException if the negotiation failed for any other reason
      */
 
     private void negotiateSubscribers() throws InterruptedException
@@ -405,15 +409,23 @@ class EvaluationStatusTracker implements Closeable
 
         // Add a timer task that sends a notification that the evaluation is ready to publish
         EvaluationStatusTracker tracker = this;
+
+        AtomicReference<Exception> negotiationFailed = new AtomicReference<>();
         TimerTask updater = new TimerTask()
         {
             @Override
             public void run()
             {
-                tracker.notifyConsumerRequired();
-
-                if ( tracker.failed() )
+                try
                 {
+                    tracker.notifyConsumerRequired();
+                }
+                catch ( EvaluationEventException e )
+                {
+                    negotiationFailed.set( e );
+
+                    // Free the latches on subscribers so that the negotiation can fail in an orderly way
+                    tracker.formatNegotiationLatches.forEach( ( a, b ) -> b.countDown() );
                     tracker.close();
                 }
             }
@@ -425,12 +437,23 @@ class EvaluationStatusTracker implements Closeable
         timer.schedule( updater, 0, EvaluationStatusTracker.READY_TO_RECEIVE_CONSUMERS_UPDATE_FREQUENCY );
 
         // Wait for each format to receive an offer
-        for ( TimedCountDownLatch next : this.formatNegotiationLatches.values() )
+        for ( Map.Entry<Format, TimedCountDownLatch> next : this.formatNegotiationLatches.entrySet() )
         {
-            next.await( this.timeoutDuringNegotiation, this.timeoutDuringNegotiationUnits );
+            LOGGER.debug( "Awaiting a format writer for {}.", next.getKey() );
+            TimedCountDownLatch latch = next.getValue();
+            latch.await( this.timeoutDuringNegotiation, this.timeoutDuringNegotiationUnits );
         }
 
         timer.cancel();
+
+        // Negotiation failed completely?
+        if ( Objects.nonNull( negotiationFailed.get() ) )
+        {
+            throw new EvaluationEventException( WHILE_COMPLETING_EVALUATION + evaluationId
+                                                + ", failed to notify subscribers of the need for "
+                                                + "format writers.",
+                                                negotiationFailed.get() );
+        }
 
         // Throw an exception if some formats have no offers
         if ( this.isAwaitingSubscribers() )
@@ -566,7 +589,7 @@ class EvaluationStatusTracker implements Closeable
     {
         // Mark failed
         this.isFailedUnrecoverably.set( true );
-        
+
         // Non-zero exit code
         this.exitCode.set( 1 );
 
@@ -623,6 +646,7 @@ class EvaluationStatusTracker implements Closeable
         // Stop waiting
         this.publicationLatch.countDown();
         this.negotiatedSubscriberLatches.forEach( ( a, b ) -> b.countDown() );
+        this.formatNegotiationLatches.forEach( ( a, b ) -> b.countDown() );
 
         // Stop any flow control blocking
         this.evaluation.stopFlowControl();
@@ -667,10 +691,10 @@ class EvaluationStatusTracker implements Closeable
             AtomicReference<Instant> then = new AtomicReference<>( Instant.now() );
             Duration periodToWait = Duration.of( this.timeoutDuringConsumption,
                                                  ChronoUnit.valueOf( this.timeoutDuringConsumptionUnits.name() ) );
-            
+
             // Don't report that the subscriber is waiting until a minimum period has elapsed without updates.
             Duration reportAfter = Duration.ofMillis( 200_000 );
-            
+
             AtomicInteger resetCount = new AtomicInteger( nextLatch.getResetCount() );
             TimerTask updater = new TimerTask()
             {
@@ -703,13 +727,13 @@ class EvaluationStatusTracker implements Closeable
                     }
 
                     // Insufficient progress?
-                    if ( timeLeft.isNegative() && ! statusTracker.failed() )
+                    if ( timeLeft.isNegative() && !statusTracker.failed() )
                     {
                         EvaluationStatus status =
                                 statusTracker.getStatusMessageIndicatingConsumptionFailureOnInactivity( evaluationId,
                                                                                                         consumerId,
                                                                                                         periodToWait );
-                        
+
                         statusTracker.stopOnFailure( status );
                     }
                 }
@@ -733,8 +757,8 @@ class EvaluationStatusTracker implements Closeable
                                                                                        String consumerId,
                                                                                        Duration timeoutPeriod )
     {
-        String message = "While completing evaluation " + evaluationId
-                         + " encountered an inactive subscriber with identifier "
+        String message = WHILE_COMPLETING_EVALUATION + evaluationId
+                         + ", encountered an inactive subscriber with identifier "
                          + consumerId
                          + " that failed to report progress within the timeout "
                          + "period of "
@@ -744,6 +768,7 @@ class EvaluationStatusTracker implements Closeable
         Set<Format> formats = this.getFormatsOfferedBySubscriber( consumerId, this.subscriptionOffers );
 
         return EvaluationStatus.newBuilder()
+                               .setClientId( this.getClientId() )
                                .setConsumer( Consumer.newBuilder()
                                                      .setConsumerId( consumerId )
                                                      .addAllFormats( formats ) )
@@ -835,6 +860,7 @@ class EvaluationStatusTracker implements Closeable
         if ( !formatsAwaited.isEmpty() )
         {
             EvaluationStatus readyForSubs = EvaluationStatus.newBuilder()
+                                                            .setClientId( this.getClientId() )
                                                             .setCompletionStatus( CompletionStatus.CONSUMER_REQUIRED )
                                                             .addAllFormatsRequired( formatsRequired )
                                                             .build();
@@ -936,7 +962,7 @@ class EvaluationStatusTracker implements Closeable
             TimedCountDownLatch latch = this.formatNegotiationLatches.get( next );
             latch.countDown();
         }
-        
+
         // Report on formats still awaiting subscribers
         Set<Format> formatsAwaited = this.getFormatsAwaitingSubscribers();
 
@@ -1095,12 +1121,10 @@ class EvaluationStatusTracker implements Closeable
 
     private void registerPublicationCompleteReportedSuccess( EvaluationStatus message )
     {
-        String evaluationId = this.getEvaluationId();
-
-        LOGGER.debug( "While processing evaluation {}, received an evaluation status message with status {}: {}",
-                      evaluationId,
-                      message.getCompletionStatus(),
-                      message );
+        LOGGER.info( "Messaging client {} notified {} for evaluation {}.",
+                     message.getClientId(),
+                     message.getCompletionStatus(),
+                     this.getEvaluationId() );
 
         this.publicationLatch.countDown();
     }
@@ -1146,10 +1170,10 @@ class EvaluationStatusTracker implements Closeable
             TimedCountDownLatch subscriberLatch = this.getSubscriberLatch( consumerId );
             subscriberLatch.countDown();
 
-            LOGGER.info( "Message subscriber {} for evaluation {} notified {}.",
-                         consumerId,
-                         this.getEvaluationId(),
-                         message.getCompletionStatus() );
+            LOGGER.info( "Messaging client {} notified {} for evaluation {}.",
+                         message.getClientId(),
+                         message.getCompletionStatus(),
+                         this.getEvaluationId() );
         }
     }
 
@@ -1221,7 +1245,7 @@ class EvaluationStatusTracker implements Closeable
 
     private boolean isThisConsumerMe( String consumerId )
     {
-        return Objects.equals( consumerId, this.identifier );
+        return Objects.equals( consumerId, this.trackerId );
     }
 
     /**
@@ -1239,11 +1263,21 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
+     * Returns the unique identifier of the messaging client that created the evaluation being tracked.
+     * 
+     * @return the client identifier
+     */
+
+    private String getClientId()
+    {
+        return this.evaluation.getClientId();
+    }
+
+    /**
      * Create an instance with an evaluation and an expected list of subscriber identifiers.
      * @param evaluation the evaluation
      * @param broker the broker connection factory
      * @param formatsRequired the formats to be delivered by subscribers yet to be negotiated
-     * @param identifier the consumer identifier of this instance, used to ignore messages related to the tracker
      * @param maximum retries the maximum number of retries on failing to consume a message
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the set of formats is empty or the maximum number of retries is < 0
@@ -1253,13 +1287,11 @@ class EvaluationStatusTracker implements Closeable
     EvaluationStatusTracker( Evaluation evaluation,
                              BrokerConnectionFactory broker,
                              Set<Format> formatsRequired,
-                             String identifier,
                              int maximumRetries )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( broker );
         Objects.requireNonNull( formatsRequired );
-        Objects.requireNonNull( identifier );
 
         if ( maximumRetries < 0 )
         {
@@ -1308,7 +1340,8 @@ class EvaluationStatusTracker implements Closeable
         this.formatNegotiationLatches = new EnumMap<>( Format.class );
         this.formatsRequired.forEach( next -> this.formatNegotiationLatches.put( next, new TimedCountDownLatch( 1 ) ) );
 
-        this.identifier = identifier;
+        // Create a unique identifier for this tracker so that it can ignore messages related to itself
+        this.trackerId = Evaluation.getUniqueId();
         this.resourcesWritten = new HashSet<>();
         this.retriesAttempted = new AtomicInteger();
         this.isFailedUnrecoverably = new AtomicBoolean();
@@ -1319,7 +1352,7 @@ class EvaluationStatusTracker implements Closeable
         {
             this.connection = broker.get()
                                     .createConnection();
-            this.connection.setExceptionListener( new ConnectionExceptionListener( this.getIdentifier() ) );
+            this.connection.setExceptionListener( new ConnectionExceptionListener( this.getTrackerId() ) );
             this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
             Topic topic = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
@@ -1327,7 +1360,7 @@ class EvaluationStatusTracker implements Closeable
             this.subscriberName = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-status-tracker-"
                                   + this.getEvaluationId()
                                   + "-"
-                                  + this.getIdentifier();
+                                  + this.getTrackerId();
 
             this.registerListenerForConsumer( this.getMessageConsumer( topic, this.subscriberName, selector ),
                                               this.getEvaluationId() );
@@ -1516,7 +1549,7 @@ class EvaluationStatusTracker implements Closeable
                               + "evaluation {}. The error is: {}",
                               messageId,
                               correlationId,
-                              this.getIdentifier(),
+                              this.getTrackerId(),
                               this.getNumberOfRetriesAttempted().get() + 1, // Counter starts at zero
                               this.getMaximumRetries(),
                               correlationId,
@@ -1529,14 +1562,14 @@ class EvaluationStatusTracker implements Closeable
                 LOGGER.error( "While attempting to recover a session for evaluation {} in evaluation status tracker {}, "
                               + "encountered an error that prevented recovery: ",
                               correlationId,
-                              this.getIdentifier(),
+                              this.getTrackerId(),
                               f.getMessage() );
             }
             catch ( IOException g )
             {
                 LOGGER.error( "While attempting recovery in evaluation status tracker {}, failed to close an exception "
                               + "writer.",
-                              this.getIdentifier() );
+                              this.getTrackerId() );
             }
         }
 
@@ -1547,7 +1580,7 @@ class EvaluationStatusTracker implements Closeable
 
             LOGGER.error( "Evaluation status tracker {} encountered a consumption failure for evaluation {}. Recovery "
                           + "failed after {} attempts.",
-                          this.getIdentifier(),
+                          this.getTrackerId(),
                           correlationId,
                           this.getMaximumRetries() );
 
@@ -1587,9 +1620,9 @@ class EvaluationStatusTracker implements Closeable
      * @return the identifier of this status tracker.
      */
 
-    private String getIdentifier()
+    private String getTrackerId()
     {
-        return this.identifier;
+        return this.trackerId;
     }
 
     /**
