@@ -9,9 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -23,7 +21,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeatureService;
-import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
@@ -47,8 +44,6 @@ public class FeatureFinder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureFinder.class );
 
-    private static final String RESPONSE_FROM_WRDS_AT = "Response from WRDS at ";
-    private static final String HAD_NULL_OR_BLANK = " had null or blank ";
     private static final String EXPLANATION_OF_WHY_AND_WHAT_TO_DO =
            "By declaring a feature, WRES interprets it as an intent to use that"
            + " feature in the evaluation. If the corresponding feature cannot "
