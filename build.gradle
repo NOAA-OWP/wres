@@ -1031,6 +1031,54 @@ project(':wres-events')
     }
 }
 
+
+project( ':wres-external-services-tests' )
+{
+    // A separate zip allowing independent runs against external deps.
+    // This project is similar to systests in that it is not intended
+    // to run at the usual build or test time on the build server.
+    // Instead, a separate zip is made available with the current
+    // versions of the jars used to run integration tests that rely
+    // on external services (aka external services availability
+    // tests). At the usual build/test time, a zip is produced with
+    // a gradle script inside it that can be used for testing later.
+    apply plugin: 'distribution'
+
+    dependencies
+    {
+        runtime project( ':wres-io' )
+    }
+
+    distributions
+    {
+        main
+        {
+            contents
+            {
+                from( 'dist' )
+                {
+                    include( 'src/test/**/*.java' )
+                    include( 'build.gradle' )
+                    include( 'gradle.properties' )
+                    include( 'settings.gradle' )
+                }
+
+                from
+                {
+                    // Add the wres-io jar.
+                    project( ':wres-io' ).jar
+                }
+
+                from
+                {
+                    // Add all the stuff on which wres-io jar depends.
+                    project( ':wres-io').configurations.runtime.files
+                }
+            }
+        }
+    }
+}
+
 /* Single report for test coverage, thanks to
 https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5
  */

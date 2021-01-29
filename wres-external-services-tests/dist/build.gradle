@@ -1,0 +1,25 @@
+// This build.gradle is released along with gradle wrapper inside a separate
+// integration tests zip. The idea is to defer or make optional the run of
+// these integration tests that rely on external services, to better
+// distinguish these tests from WRES system tests, because these are only
+// partially testing WRES functionality, mostly testing service availability
+// and external service API changes. Unlike the systests distribution that
+// requires an argument of which WRES version to test, this distribution has
+// everything it needs to run. It will update when there are newer versions
+// of the jars at WRES build time. So this should be self-contained, just
+// run it.
+
+// In order to get the test framework software (e.g. junit):
+repositories
+{
+    mavenCentral()
+}
+
+apply plugin: 'java'
+
+dependencies
+{
+    testCompile files( "lib/*.jar" )
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
