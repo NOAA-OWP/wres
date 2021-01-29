@@ -52,7 +52,7 @@ public class WaterMLBasicSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WaterMLBasicSource.class );
     private static final WebClient WEB_CLIENT = new WebClient();
-    private static final ObjectMapper OBJECT_MAPPER =
+    static final ObjectMapper OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
