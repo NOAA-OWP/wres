@@ -19,6 +19,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.imageio.ImageIO;
+
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.graphics2d.svg.SVGGraphics2D;
@@ -48,7 +50,15 @@ abstract class GraphicsWriter
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsWriter.class );
-
+    
+    // Do not use a file cache for image outputs
+    static
+    {
+        LOGGER.debug( "Setting javax.imageio.ImageIO.setUseCache( boolean useCache ) to: {}.", false );
+        
+        ImageIO.setUseCache( false );
+    }
+    
     /**
      * Default chart height in pixels.
      */
@@ -542,6 +552,7 @@ abstract class GraphicsWriter
      * @param outputs a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the path is not a writable directory
      */
 
     GraphicsWriter( Outputs outputs,
@@ -550,6 +561,14 @@ abstract class GraphicsWriter
         Objects.requireNonNull( outputs, "Specify a non-null outputs description." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
+        // Validate
+        File directory = outputDirectory.toFile();
+        if ( !directory.isDirectory() || !directory.exists() || !directory.canWrite() )
+        {
+            throw new IllegalArgumentException( "Cannot create a graphics writer because the path '" + outputDirectory
+                                                + "' is not a writable directory." );
+        }
+        
         this.outputs = outputs;
         this.outputDirectory = outputDirectory;
     }

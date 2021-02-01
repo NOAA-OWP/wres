@@ -81,5 +81,4 @@ public class GraphicsWriterTest
         assertThrows( IllegalArgumentException.class, () -> GraphicsHelper.of( outputs ) );
     }
 
-
 }

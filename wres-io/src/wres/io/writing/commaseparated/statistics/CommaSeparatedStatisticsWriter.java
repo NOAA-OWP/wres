@@ -484,6 +484,7 @@ abstract class CommaSeparatedStatisticsWriter
      * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if the durationUnits are null
+     * @throws IllegalArgumentException if the output directory is not a writable directory
      */
 
     CommaSeparatedStatisticsWriter( ProjectConfig projectConfig, ChronoUnit durationUnits, Path outputDirectory )
@@ -491,6 +492,14 @@ abstract class CommaSeparatedStatisticsWriter
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
+        
+        // Validate
+        File directory = outputDirectory.toFile();
+        if ( !directory.isDirectory() || !directory.exists() || !directory.canWrite() )
+        {
+            throw new IllegalArgumentException( "Cannot create a CSV writer because the path '" + outputDirectory
+                                                + "' is not a writable directory." );
+        }
 
         this.projectConfig = projectConfig;
         this.outputDirectory = outputDirectory;
