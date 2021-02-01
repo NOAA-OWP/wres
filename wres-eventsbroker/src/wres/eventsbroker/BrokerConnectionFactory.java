@@ -619,7 +619,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<ConnectionFa
                 // Success
                 break;
             }
-            catch ( JMSException e )
+            catch ( JMSException | RuntimeException e )
             {
                 if ( i == retries )
                 {
