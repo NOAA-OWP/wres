@@ -1055,6 +1055,7 @@ project( ':wres-external-services-tests' )
         {
             contents
             {
+                // Test software and build script
                 from( 'dist' )
                 {
                     include( 'src/test/**/*.java' )
@@ -1063,16 +1064,24 @@ project( ':wres-external-services-tests' )
                     include( 'settings.gradle' )
                 }
 
-                from
+                // Gradle software itself
+                from('..')
                 {
-                    // Add the wres-io jar.
-                    project( ':wres-io' ).jar
+                    include 'gradlew'
+                    include 'gradlew.bat'
+                    include 'gradle/wrapper/*'
                 }
 
-                from
+                // Add the wres-io jar.
+                from( project( ':wres-io' ).jar )
                 {
-                    // Add all the stuff on which wres-io jar depends.
-                    project( ':wres-io').configurations.runtime.files
+                    into( 'lib' )
+                }
+
+                // Add all the stuff on which wres-io jar depends.
+                from( project( ':wres-io').configurations.runtime.files )
+                {
+                    into( 'lib' )
                 }
             }
         }

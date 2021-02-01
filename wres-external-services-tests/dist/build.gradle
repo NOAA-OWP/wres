@@ -19,7 +19,7 @@ apply plugin: 'java'
 
 dependencies
 {
-    testCompile files( "lib/*.jar" )
+    testCompile fileTree( dir: 'lib', include: '*.jar' )
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
