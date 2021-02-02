@@ -315,8 +315,8 @@ public class EvaluationSubscriber implements Closeable
         // Durable subscriptions are removed if all evaluations succeeded
         this.closeSubscriptions();
 
-        // No need to close any other pubs/subs or sessions (according to the JMS documentation of Connection::close).
-
+        // Close connections; no need to close any other pubs/subs or sessions (according to the JMS documentation of 
+        // Connection::close).
         String message = "Encountered an error while attempting to close a broker connection within "
                          + "subscriber "
                          + this.getClientId()

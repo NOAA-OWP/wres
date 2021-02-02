@@ -23,16 +23,16 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.eclipse.persistence.internal.sessions.factories.model.project.ProjectConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.generated.ProjectConfig;
 import wres.config.Validation;
 import wres.control.ProcessorHelper.Executors;
 import wres.eventsbroker.BrokerConnectionFactory;
@@ -48,7 +48,7 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  * @author jesse
  */
-public class Control implements Function<String[], Integer>,
+public class Control implements ToIntFunction<String[]>,
                                 Consumer<ProjectConfigPlus>,
                                 Supplier<Set<Path>>,
                                 Closeable
@@ -98,7 +98,7 @@ public class Control implements Function<String[], Integer>,
      */
 
     @Override
-    public Integer apply(final String[] args)
+    public int applyAsInt(final String[] args)
     {
         if ( args.length != 1 )
         {
@@ -152,11 +152,11 @@ public class Control implements Function<String[], Integer>,
                      + ", validating further...",
                      projectConfigPlus );
 
-        SystemSettings systemSettings = this.getSystemSettings();
+        SystemSettings innerSystemSettings = this.getSystemSettings();
 
         // Validate unmarshalled configurations
         final boolean validated =
-                Validation.isProjectValid( systemSettings, projectConfigPlus );
+                Validation.isProjectValid( innerSystemSettings, projectConfigPlus );
 
         if ( validated )
         {
@@ -207,52 +207,52 @@ public class Control implements Function<String[], Integer>,
         ThreadFactory productFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "Product Thread %d" )
                 .build();
-        SystemSettings systemSettings = this.getSystemSettings();
+        SystemSettings innerSystemSettings = this.getSystemSettings();
 
         // Name our queues in order to easily monitor them
-        BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( systemSettings
+        BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( innerSystemSettings
                                                                                 .getMaximumFeatureThreads() + 20 );
-        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumPairThreads() + 20 );
+        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumPairThreads() + 20 );
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
-        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumMetricThreads() + 20 );
-        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumProductThreads() + 20 );
+        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumMetricThreads() + 20 );
+        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( innerSystemSettings.getMaximumProductThreads() + 20 );
 
         // Processes features
-        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( systemSettings.getMaximumFeatureThreads(),
-                                                                  systemSettings.getMaximumFeatureThreads(),
-                                                                  systemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumFeatureThreads(),
+                                                                  innerSystemSettings.getMaximumFeatureThreads(),
+                                                                  innerSystemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   featureQueue,
                                                                   featureFactory );
 
         // Processes pairs       
-        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( systemSettings.getMaximumPairThreads(),
-                                                                  systemSettings.getMaximumPairThreads(),
-                                                                  systemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPairThreads(),
+                                                                  innerSystemSettings.getMaximumPairThreads(),
+                                                                  innerSystemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   pairQueue,
                                                                   pairFactory );
 
         // Dispatches thresholds
-        ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( systemSettings.getMaximumThresholdThreads(),
-                                                                       systemSettings.getMaximumThresholdThreads(),
+        ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumThresholdThreads(),
+                                                                       innerSystemSettings.getMaximumThresholdThreads(),
                                                                        0,
                                                                        TimeUnit.SECONDS,
                                                                        thresholdQueue,
                                                                        thresholdFactory );
 
         // Processes metrics
-        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( systemSettings.getMaximumMetricThreads(),
-                                                                    systemSettings.getMaximumMetricThreads(),
-                                                                    systemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumMetricThreads(),
+                                                                    innerSystemSettings.getMaximumMetricThreads(),
+                                                                    innerSystemSettings.poolObjectLifespan(),
                                                                     TimeUnit.MILLISECONDS,
                                                                     metricQueue,
                                                                     metricFactory );
 
         // Processes products
-        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( systemSettings.getMaximumProductThreads(),
-                                                                     systemSettings.getMaximumProductThreads(),
-                                                                     systemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumProductThreads(),
+                                                                     innerSystemSettings.getMaximumProductThreads(),
+                                                                     innerSystemSettings.poolObjectLifespan(),
                                                                      TimeUnit.MILLISECONDS,
                                                                      productQueue,
                                                                      productFactory );
@@ -265,9 +265,9 @@ public class Control implements Function<String[], Integer>,
 
         ScheduledExecutorService monitoringService = new ScheduledThreadPoolExecutor( 1 );
 
-        Database database = this.getDatabase();
+        Database innerDatabase = this.getDatabase();
         Executor ioExecutor = this.getExecutor();
-        QueueMonitor queueMonitor = new QueueMonitor( database,
+        QueueMonitor queueMonitor = new QueueMonitor( innerDatabase,
                                                       ioExecutor,
                                                       featureQueue,
                                                       pairQueue,
@@ -275,11 +275,11 @@ public class Control implements Function<String[], Integer>,
                                                       metricQueue,
                                                       productQueue );
 
-        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( systemSettings );
+        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( innerSystemSettings );
         DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
 
         // Compress database services into one object
-        DatabaseServices databaseServices = new DatabaseServices( database, lockManager );
+        DatabaseServices databaseServices = new DatabaseServices( innerDatabase, lockManager );
         try
         {
             // Mark the WRES as doing an evaluation.
@@ -303,7 +303,7 @@ public class Control implements Function<String[], Integer>,
 
             // Process the configuration
             Set<Path> innerPathsWrittenTo =
-                    ProcessorHelper.processEvaluation( systemSettings,
+                    ProcessorHelper.processEvaluation( innerSystemSettings,
                                                        databaseServices,
                                                        projectConfigPlus,
                                                        executors,
@@ -315,14 +315,12 @@ public class Control implements Function<String[], Integer>,
         catch ( WresProcessingException | IOException | SQLException internalException )
         {
             String message = "Could not complete project execution";
-            LOGGER.error( "{} due to:", message, internalException );
             Control.addException( internalException );
             throw new InternalWresException( message, internalException );
         }
         catch ( ProjectConfigException userException )
         {
             String message = "Please correct the project configuration.";
-            LOGGER.error( "{} Details:", message, userException );
             Control.addException( userException );
             throw new UserInputException( message, userException );
         }
