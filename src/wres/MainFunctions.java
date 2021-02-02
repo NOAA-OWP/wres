@@ -131,13 +131,13 @@ final class MainFunctions
 		return functions;
 	}
 
-    private static Integer execute( SharedResources sharedResources )
+    private static int execute( SharedResources sharedResources )
     {
         try ( Control control = new Control( sharedResources.getSystemSettings(),
                                              sharedResources.getDatabase(),
                                              sharedResources.getExecutor() ); )
         {
-            return control.apply( sharedResources.getArguments() );
+            return control.applyAsInt( sharedResources.getArguments() );
         }
     }
 

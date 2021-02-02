@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
@@ -102,12 +103,17 @@ class GraphicsClient implements Closeable
     private final EvaluationSubscriber graphicsSubscriber;
 
     /**
-     * Start the graphics server.
-     * @param args the command line arguments
-     * @throws IOException if the server failed to stop
+     * Is {@code true} if the client has been stopped, otherwise {@code false}.
      */
 
-    public static void main( String[] args ) throws IOException
+    private final AtomicBoolean isStopped;
+
+    /**
+     * Start the graphics server.
+     * @param args the command line arguments
+     */
+
+    public static void main( String[] args )
     {
         // Print version information
         String processName = ManagementFactory.getRuntimeMXBean().getName();
@@ -133,18 +139,29 @@ class GraphicsClient implements Closeable
             // Given the try-with-resources, this may initiate a close twice, 
             // but a shutdown hook works in more circumstances than a try/finally.
             Runtime.getRuntime().addShutdownHook( new Thread( () -> {
+                LOGGER.info( "Closing WRES Graphics Client {}...", graphics.getClientId() );
+
                 Instant ended = Instant.now();
                 Duration duration = Duration.between( started, ended );
 
-                graphics.stop();
-                LOGGER.info( "WRES Graphics Client {} ran for '{}' and processed {} packets of statistics across {} "
-                             + "evaluations.",
+                // Close the graphics subscriber unless the broker that supports it is running inside this process.
+                // If the broker is running inside this process, all connected resources are destroyed with the broker.
+                // In that case, formally closing these resources can lead to an unclean exit. Revisit this when 
+                // upgrading broker, as a straightforward call to stop, regardless of context, is preferred.
+                if ( !broker.hasEmbeddedBroker() )
+                {
+                    graphics.stop();
+                }
+
+                LOGGER.info( "Closed WRES Graphics Client {}, which ran for '{}' and processed {} packets of "
+                             + "statistics across {} evaluations.",
                              graphics.getClientId(),
                              duration,
                              graphics.getSubscriberStatus().getStatisticsCount(),
                              graphics.getSubscriberStatus().getEvaluationCount() );
             } ) );
 
+            // Start the subscriber
             graphics.start();
 
             // Await termination
@@ -158,10 +175,9 @@ class GraphicsClient implements Closeable
 
             exitCode = 1;
         }
-        catch ( GraphicsClientException f )
+        catch ( GraphicsClientException | IOException f )
         {
-            LOGGER.error( "Encountered an internal error in a WRES Graphics Client, which will now shut down. {}",
-                          f.getMessage() );
+            LOGGER.error( "Encountered an internal error in a WRES Graphics Client, which will now shut down.", f );
 
             exitCode = 1;
         }
@@ -269,7 +285,7 @@ class GraphicsClient implements Closeable
     private void stop()
     {
         // Not stopped already?
-        if ( this.latch.getCount() != 0 )
+        if ( !this.isStopped.getAndSet( true ) )
         {
             this.timer.cancel();
 
@@ -388,6 +404,7 @@ class GraphicsClient implements Closeable
         this.timer = new Timer( true );
         this.latch = new CountDownLatch( 1 );
         this.graphicsWorker = this.createGraphicsExecutor();
+        this.isStopped = new AtomicBoolean();
 
         // Client identifier = identifier of the one subscriber it composes
         String subscriberId = Evaluation.getUniqueId();

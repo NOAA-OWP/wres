@@ -90,7 +90,7 @@ public class ScenarioHelper
         Control wresEvaluation = new Control( SYSTEM_SETTINGS,
                                               DATABASE,
                                               EXECUTOR );
-        int exitCode = wresEvaluation.apply( args );
+        int exitCode = wresEvaluation.applyAsInt( args );
         assertEquals( "Execution of WRES failed with exit code " + exitCode
                       + "; see log for more information!",
                       0,
@@ -119,7 +119,7 @@ public class ScenarioHelper
                 Path secondPath = paths.next();
                 if ( !firstPath.getParent().equals( secondPath.getParent() ) )
                 {
-                    fail( "Not all outputs of WRES Control.apply were written to the same directory.  "
+                    fail( "Not all outputs of WRES Control.applyAsInt were written to the same directory.  "
                           + "That is not allowed in system testing." );
                 }
             }
