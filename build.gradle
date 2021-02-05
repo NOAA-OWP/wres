@@ -1083,6 +1083,12 @@ project( ':wres-external-services-tests' )
                 {
                     into( 'lib' )
                 }
+
+                // Add the DoD intermediate certificate to trust
+                from( '../dist/lib/conf/dod_sw_ca-54_expires_2022-11.pem' )
+                {
+                    into( 'lib/conf' )
+                }
             }
         }
     }

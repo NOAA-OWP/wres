@@ -22,4 +22,17 @@ dependencies
     testCompile fileTree( dir: 'lib', include: '*.jar' )
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    testRuntime files( 'lib/conf' )
+}
+
+test
+{
+    // Don't forget the magic word for JUnit 5:
+    useJUnitPlatform()
+    maxHeapSize = "128m"
+
+    testLogging
+    {
+        showStandardStreams = true
+    }
 }
