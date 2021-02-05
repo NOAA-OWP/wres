@@ -1,4 +1,4 @@
-package wres.testing.nwis;
+package wres.testing;
 
 import java.io.IOException;
 import java.net.URI;
