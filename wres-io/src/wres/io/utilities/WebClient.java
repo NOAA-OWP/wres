@@ -216,10 +216,10 @@ public class WebClient
                     .url( uri.toURL() )
                     .header( "Accept-Encoding", "gzip" )
                     .build();
+            Instant start = Instant.now();
             Response httpResponse = tryRequest( request );
 
             boolean retry = true;
-            Instant start = Instant.now();
             long sleepMillis = 1000;
 
             while ( retry )
