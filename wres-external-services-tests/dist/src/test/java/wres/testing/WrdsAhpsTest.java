@@ -25,18 +25,18 @@ public class WrdsAhpsTest
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsAhpsTest.class );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
             ReadValueManager.getSslContextTrustingDodSigner();
+    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final URI WRDS_AHPS_URI_ONE = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps/nwsLocations/DRRC2?issuedTime=(2018-10-01T00%3A00%3A00Z%2C2018-10-07T23%3A23%3A59Z]&validTime=all&groupsRefTime=basisTime" );
     private static final URI WRDS_AHPS_URI_TWO = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps/nwsLocations/FROV2?issuedTime=(2020-03-01T00%3A00%3A00Z%2C2020-04-30T23%3A23%3A59Z]&validTime=all&groupsRefTime=basisTime" );
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private final WebClient webClient = new WebClient( SSL_CONTEXT, true );
 
     @Test
     void canGetMinimalResponseFromWrdsAhpsWithWebClient() throws IOException
     {
         List<Integer> retryOnThese = Collections.emptyList();
 
-        try ( WebClient.ClientResponse response = webClient.getFromWeb( WRDS_AHPS_URI_ONE,
-                                                                        retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_ONE,
+                                                                         retryOnThese ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -52,8 +52,8 @@ public class WrdsAhpsTest
     {
         List<Integer> retryOnThese = Collections.emptyList();
 
-        try ( WebClient.ClientResponse response = webClient.getFromWeb( WRDS_AHPS_URI_TWO,
-                                                                        retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_TWO,
+                                                                         retryOnThese ) )
         {
             ForecastResponse document = OBJECT_MAPPER.readValue( response.getResponse(),
                                                                  ForecastResponse.class );
