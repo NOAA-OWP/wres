@@ -28,18 +28,17 @@ public class WrdsNwmTest
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
             ReadValueManager.getSslContextTrustingDodSigner();
+    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final URI WRDS_NWM_URI_ONE = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/prod/nwm/ops/medium_range/streamflow/nwm_feature_id/18384141/?forecast_type=ensemble" );
     private static final URI WRDS_NWM_URI_TWO = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/prod/nwm/ops/medium_range/streamflow/nwm_feature_id/5907079/?forecast_type=ensemble" );
-
-    private final WebClient webClient = new WebClient( SSL_CONTEXT, true );
 
     @Test
     void canGetMinimalResponseFromWrdsNwmWithWebClient() throws IOException
     {
         List<Integer> retryOnThese = Collections.emptyList();
 
-        try ( WebClient.ClientResponse response = webClient.getFromWeb( WRDS_NWM_URI_ONE,
-                                                                        retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_ONE,
+                                                                         retryOnThese ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -57,8 +56,8 @@ public class WrdsNwmTest
         List<Integer> retryOnThese = Collections.emptyList();
         NwmRootDocument document;
 
-        try ( WebClient.ClientResponse response = webClient.getFromWeb( WRDS_NWM_URI_TWO,
-                                                                        retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_TWO,
+                                                                         retryOnThese ) )
         {
             // Parse the stream in the way WrdsNwmReader parses a document:
             document = JSON_OBJECT_MAPPER.readValue( response.getResponse(),
