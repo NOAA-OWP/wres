@@ -6,21 +6,28 @@ import java.util.Collections;
 import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import wres.io.reading.wrds.ForecastResponse;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.utilities.WebClient;
 
 public class WrdsAhpsTest
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsAhpsTest.class );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
             ReadValueManager.getSslContextTrustingDodSigner();
-    private static final URI WRDS_AHPS_URI = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps/nwsLocations/DRRC2?issuedTime=(2018-10-01T00%3A00%3A00Z%2C2018-10-07T23%3A23%3A59Z]&validTime=all&excludePast=none&groupInterval=none&groups=9999&groupStatistic=none&minForecastStatus=no_flooding&groupsRefTime=basisTime" );
+    private static final URI WRDS_AHPS_URI_ONE = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps/nwsLocations/DRRC2?issuedTime=(2018-10-01T00%3A00%3A00Z%2C2018-10-07T23%3A23%3A59Z]&validTime=all&groupsRefTime=basisTime" );
+    private static final URI WRDS_AHPS_URI_TWO = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/forecasts/streamflow/ahps/nwsLocations/FROV2?issuedTime=(2020-03-01T00%3A00%3A00Z%2C2020-04-30T23%3A23%3A59Z]&validTime=all&groupsRefTime=basisTime" );
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final WebClient webClient = new WebClient( SSL_CONTEXT, true );
 
     @Test
@@ -28,7 +35,7 @@ public class WrdsAhpsTest
     {
         List<Integer> retryOnThese = Collections.emptyList();
 
-        try ( WebClient.ClientResponse response = webClient.getFromWeb( WRDS_AHPS_URI,
+        try ( WebClient.ClientResponse response = webClient.getFromWeb( WRDS_AHPS_URI_ONE,
                                                                         retryOnThese ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
@@ -39,5 +46,24 @@ public class WrdsAhpsTest
             );
         }
     }
-}
 
+    @Test
+    void canGetAndParseResponseFromWrdsAhpsWithWebClientAndJacksonPojos() throws IOException
+    {
+        List<Integer> retryOnThese = Collections.emptyList();
+
+        try ( WebClient.ClientResponse response = webClient.getFromWeb( WRDS_AHPS_URI_TWO,
+                                                                        retryOnThese ) )
+        {
+            ForecastResponse document = OBJECT_MAPPER.readValue( response.getResponse(),
+                                                                 ForecastResponse.class );
+            LOGGER.debug( "Document parsed: {}", document );
+            assertAll( () -> assertTrue( response.getStatusCode() >= 200
+                                         && response.getStatusCode() < 300,
+                                         "Expected HTTP 2XX response." ),
+                       () -> assertTrue( document.getForecasts().length > 0,
+                                         "Expected at least one forecast." )
+            );
+        }
+    }
+}
