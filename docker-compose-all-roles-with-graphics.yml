@@ -108,15 +108,13 @@ services:
         image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20201211-8d6117d"
         restart: always
         volumes:
-         # For hprof files.
-         - /mnt/wres_share:/mnt/wres_share
          # For qpid work files.
          - /mnt/wres_share/eventsbroker:/container_home
         environment:
          # The broker uses heap memory to run and direct memory for messages
+         - QPID_WORK=/container_home/${HOST_NAME}
          - QPID_JAVA_MEM=-Xmx256m -XX:MaxDirectMemorySize=2048m
-         - QPID_JAVA_GC=-XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/mnt/wres_share/qpid.hprof
-         - QPID_WORK=/container_home/${hostname}
+         - QPID_JAVA_GC=-XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/container_home/${HOST_NAME}/qpid.hprof
         # Broker heap plus direct memory is 2304m in QPID_JAVA_MEM
         mem_limit: 2560m
         cap_drop:
