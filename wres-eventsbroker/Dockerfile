@@ -9,7 +9,6 @@ ARG BROKER_J_VERSION=8.0.3
 WORKDIR /workspace
 
 # Download Broker-J tgz and checksum
-RUN mkdir out
 ADD https://archive.apache.org/dist/qpid/broker-j/${BROKER_J_VERSION}/binaries/apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz \
     apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz
 ADD https://archive.apache.org/dist/qpid/broker-j/${BROKER_J_VERSION}/binaries/apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512 \
@@ -19,8 +18,9 @@ ADD https://archive.apache.org/dist/qpid/broker-j/${BROKER_J_VERSION}/binaries/a
 RUN sha512sum -c apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz.sha512
 
 # Extract binaries to ./out/
-RUN apk add tar
-RUN tar xf apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz -C out --strip-components=2 qpid-broker/${BROKER_J_VERSION}/
+RUN apk add tar && \ 
+    mkdir out && \
+    tar xf apache-qpid-broker-j-${BROKER_J_VERSION}-bin.tar.gz -C out --strip-components=2 qpid-broker/${BROKER_J_VERSION}/
 
 #############
 # Final image
@@ -36,6 +36,7 @@ RUN groupadd --system --gid 1370800073 wres && \
     useradd  --system --no-log-init \
              --create-home --home-dir ${QPID_WORK} \
              --uid 502 --gid 1370800073 wres_eventsbroker
+
 WORKDIR ${QPID_WORK}
 
 # Copy qpid binaries from build stage to QPID_HOME
@@ -45,10 +46,14 @@ COPY --from=builder /workspace/out ${QPID_HOME}
 # Copy initial-config.json
 COPY nonsrc/initial-config.json ${QPID_HOME}/etc/
 
-USER wres_eventsbroker
-EXPOSE 5673 15673
-VOLUME /container_home
+# In order to set umask for file sharing, use a wrapper script
+COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
 
+VOLUME /container_home
 VOLUME /wres_secrets
 
-CMD ["qpid-server", "--initial-config-path", "${QPID_HOME}/etc/initial-config.json", "-prop", "qpid.amqp_port=5673", "-prop", "qpid.http_port=15673"]
+USER wres_eventsbroker
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
+
+EXPOSE 5673 15673
