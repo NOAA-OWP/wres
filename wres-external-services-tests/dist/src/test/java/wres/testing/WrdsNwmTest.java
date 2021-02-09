@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -23,14 +24,34 @@ import wres.io.utilities.WebClient;
 
 public class WrdsNwmTest
 {
+    private static final String WRDS_HOSTNAME;
+
+    static
+    {
+        String wrdsHostname = System.getenv( "WRDS_HOSTNAME" );
+
+        if ( Objects.nonNull( wrdsHostname ) && !wrdsHostname.isBlank() )
+        {
+            WRDS_HOSTNAME = wrdsHostname;
+        }
+        else
+        {
+            throw new ExceptionInInitializerError( "The environment variable WRDS_HOSTNAME must be set." );
+        }
+    }
+
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT =
             ReadValueManager.getSslContextTrustingDodSigner();
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
-    private static final URI WRDS_NWM_URI_ONE = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/prod/nwm/ops/medium_range/streamflow/nwm_feature_id/18384141/?forecast_type=ensemble" );
-    private static final URI WRDS_NWM_URI_TWO = URI.create( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/prod/nwm/ops/medium_range/streamflow/nwm_feature_id/5907079/?forecast_type=ensemble" );
+    private static final URI WRDS_NWM_URI_ONE =
+            URI.create( "https://" + WRDS_HOSTNAME
+                        + "/api/prod/nwm/ops/medium_range/streamflow/nwm_feature_id/18384141/?forecast_type=ensemble" );
+    private static final URI WRDS_NWM_URI_TWO =
+            URI.create( "https://" + WRDS_HOSTNAME
+                        + "/api/prod/nwm/ops/medium_range/streamflow/nwm_feature_id/5907079/?forecast_type=ensemble" );
 
     @Test
     void canGetMinimalResponseFromWrdsNwmWithWebClient() throws IOException
