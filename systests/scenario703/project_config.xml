@@ -3,7 +3,7 @@
     <inputs>
         <left label="USGS">
             <type>observations</type>
-            <source>https://nwis.waterservices.usgs.gov/nwis/iv</source>
+            <source interface="usgs_nwis">https://nwis.waterservices.usgs.gov/nwis/iv</source>
             <variable label="streamflow">00060</variable>
         </left>
         <right label="NWM Short Range">
@@ -12,7 +12,7 @@
             <variable>streamflow</variable>
         </right>
     </inputs>
-    <pair label="Pairs by location and lead time"> <!-- required for unit -->
+    <pair>
         <unit>CMS</unit>
         <feature left="07160350" right="250456" />
         <feature left="07160500" right="251482" />
@@ -514,11 +514,8 @@
         <metric><name>sample size</name></metric>
     </metrics>
     <outputs>
-        <destination type="pairs" decimalFormat="0.000000" />
-        <destination type="numeric" decimalFormat="0.000000" />
-	    <destination type="netcdf">
-            <netcdf vectorVariable="feature_id" />
-        </destination>
+        <destination type="pairs" decimalFormat="0.000" />
+        <destination type="numeric" decimalFormat="0.000" />
+        <destination type="netcdf2" />
     </outputs>
 </project>
-

@@ -117,7 +117,7 @@ public class Scenario703
                       + " while these existed in actual, but not expected: "
                       + Sets.difference( netcdfFilesThatExist, EXPECTED_NC_FILES ),
                       EXPECTED_NC_FILES,
-                      actualFileNamesThatExist );
+                      netcdfFilesThatExist );
 
         // Because NWIS adds and removes sites in this set every so often, this
         // test will do broad-strokes assertions rather than precise ones. The
