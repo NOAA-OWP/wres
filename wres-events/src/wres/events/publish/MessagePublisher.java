@@ -3,6 +3,7 @@ package wres.events.publish;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -258,6 +259,9 @@ public class MessagePublisher implements Closeable
         Objects.requireNonNull( messageBytes );
         Objects.requireNonNull( metadata );
 
+        // Create an immutable copy
+        Map<MessageProperty, String> immutableMeta = Collections.unmodifiableMap( metadata );
+        
         // Still open?
         if ( this.isClosed() )
         {
@@ -266,12 +270,12 @@ public class MessagePublisher implements Closeable
                                                 + "requests." );
         }
 
-        if ( !metadata.containsKey( MessageProperty.JMS_MESSAGE_ID ) )
+        if ( !immutableMeta.containsKey( MessageProperty.JMS_MESSAGE_ID ) )
         {
             throw new IllegalArgumentException( "Expected a " + MessageProperty.JMS_MESSAGE_ID + "." );
         }
 
-        if ( !metadata.containsKey( MessageProperty.JMS_CORRELATION_ID ) )
+        if ( !immutableMeta.containsKey( MessageProperty.JMS_CORRELATION_ID ) )
         {
             throw new IllegalArgumentException( "Expected a " + MessageProperty.JMS_CORRELATION_ID + "." );
         }
@@ -279,7 +283,7 @@ public class MessagePublisher implements Closeable
         try
         {
             this.publicationLock.lock();
-            this.internalPublishWithRetriesAndExponentialBackoff( messageBytes, metadata );
+            this.internalPublishWithRetriesAndExponentialBackoff( messageBytes, immutableMeta );
         }
         catch ( UnrecoverablePublisherException e )
         {

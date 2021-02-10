@@ -37,6 +37,8 @@ RUN unzip wres-vis-${version}.zip \
 
 WORKDIR /opt/wres-vis-${version}
 
+VOLUME /container_home
+
 # Should correspond to the port configured in WORKDIR/lib/conf/eventbroker.properties
 EXPOSE 5673
 USER wres_graphics_docker

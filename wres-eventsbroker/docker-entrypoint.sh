@@ -21,7 +21,7 @@ stop() {
     then
         echo "Stopping the wres-eventsbroker. Bye bye..."
         # Make the qpid files group writable
-        chmod -R 764 ${QPID_WORK}
+        chmod -R 770 ${QPID_WORK}
         stopped="true"
         exit 0
     fi

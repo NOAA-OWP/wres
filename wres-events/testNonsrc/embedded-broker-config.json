@@ -1,0 +1,52 @@
+{
+    "name": "Embedded Broker",
+    "modelVersion": "8.0",
+    "authenticationproviders":
+    [
+        {
+            "name": "externalAuthProvider",
+            "type": "Anonymous",
+            "Use the full DN as the Username": "false"
+        }
+    ],
+    "ports":
+    [
+        {
+            "name": "wres-statistics-AMQP",
+            "port": "${qpid.amqp_port}",
+            "protocols": [ "AMQP_0_9_1" ],
+            "authenticationProvider": "externalAuthProvider",
+            "needClientAuth": "false",
+            "maxOpenConnections": "-1",
+            "threadPoolSize": "4",
+            "virtualhostaliases":
+            [
+                {
+                    "name": "nameAlias",
+                    "type": "nameAlias"
+                },
+                {
+                    "name": "defaultAlias",
+                    "type": "defaultAlias"
+                },
+                {
+                    "name": "hostnameAlias",
+                    "type": "hostnameAlias"
+                }
+            ]
+        }
+    ],
+    "virtualhostnodes":
+    [
+        {
+            "name": "wres-statistics",
+            "type": "Memory",
+            "defaultVirtualHostNode": "true",
+            "context": 
+            { 
+                "queue.maximumDeliveryAttempts": "2"
+            },
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"connectionThreadPoolSize\": \"4\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"
+        }
+    ]
+}
