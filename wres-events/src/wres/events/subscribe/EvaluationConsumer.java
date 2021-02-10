@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -27,8 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.events.EvaluationEventException;
+import wres.events.TimedCountDownLatch;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
+import wres.events.subscribe.EvaluationSubscriber.SubscriberStatus;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.EvaluationStatus;
@@ -61,6 +63,12 @@ class EvaluationConsumer
     private static final String CONSUMER_STRING = "Consumer ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
+
+    /**
+     * Timeout period after an evaluation has started before the evaluation description message can be received.
+     */
+
+    private static final long CONSUMER_TIMEOUT = 60_000;
 
     /**
      * Evaluation identifier.
@@ -159,7 +167,7 @@ class EvaluationConsumer
     private final AtomicBoolean isFailureNotified;
 
     /**
-     * A set of paths written by all consumers.
+     * A set of paths written.
      */
 
     private final Set<Path> pathsWritten;
@@ -174,7 +182,13 @@ class EvaluationConsumer
      * To await the arrival of an evaluation description in order to create consumers and then consume statistics.
      */
 
-    private final CountDownLatch consumersReady;
+    private final TimedCountDownLatch consumersReady;
+
+    /**
+     * Subscriber status.
+     */
+
+    private final SubscriberStatus subscriberStatus;
 
     /**
      * Builds a consumer.
@@ -184,6 +198,7 @@ class EvaluationConsumer
      * @param consumerFactory the consumer factory
      * @param evaluationStatusPublisher the evaluation status publisher
      * @param executorService the executor to do writing work (this instance is not responsible for closing)
+     * @param subscriberStatus subscriber status to update (e.g., if consumption fails here)
      * @throws NullPointerException if any input is null
      */
 
@@ -191,11 +206,13 @@ class EvaluationConsumer
                         Consumer consumerDescription,
                         ConsumerFactory consumerFactory,
                         MessagePublisher evaluationStatusPublisher,
-                        ExecutorService executorService )
+                        ExecutorService executorService,
+                        SubscriberStatus subscriberStatus )
     {
         Objects.requireNonNull( evaluationId );
         Objects.requireNonNull( consumerDescription );
         Objects.requireNonNull( evaluationStatusPublisher );
+        Objects.requireNonNull( subscriberStatus );
 
         this.evaluationId = evaluationId;
         this.evaluationStatusPublisher = evaluationStatusPublisher;
@@ -212,7 +229,8 @@ class EvaluationConsumer
         this.consumerDescription = consumerDescription;
         this.consumerFactory = consumerFactory;
         this.pathsWritten = new HashSet<>();
-        this.consumersReady = new CountDownLatch( 1 );
+        this.consumersReady = new TimedCountDownLatch( 1 );
+        this.subscriberStatus = subscriberStatus;
 
         LOGGER.info( "Consumer {} opened evaluation {}, which is ready to consume messages.",
                      this.getClientId(),
@@ -246,6 +264,7 @@ class EvaluationConsumer
         {
             this.isFailed.set( true );
             this.isComplete.set( true );
+            this.subscriberStatus.registerEvaluationFailed( this.getEvaluationId() );
 
             // Close the consumer
             this.close();
@@ -272,6 +291,7 @@ class EvaluationConsumer
 
             this.isFailed.set( true );
             this.isComplete.set( true );
+            this.subscriberStatus.registerEvaluationFailed( this.getEvaluationId() );
 
             // Close the consumer
             this.close();
@@ -311,7 +331,12 @@ class EvaluationConsumer
                               groupId );
             }
 
-            this.consumersReady.await();
+            this.consumersReady.await( CONSUMER_TIMEOUT, TimeUnit.MILLISECONDS );
+
+            if ( this.consumersReady.timedOut() )
+            {
+                this.markEvaluationTimedOutAwaitingConsumers();
+            }
         }
         catch ( InterruptedException e )
         {
@@ -530,7 +555,30 @@ class EvaluationConsumer
     }
 
     /**
-     * Publishes the completion status of the consumer.
+     * Marks an evaluation timed-out on awaiting an evaluation description message and, therefore, failed. Adds no-op
+     * consumers to consume any messages that arrive after the timeout.
+     * @throws JMSException if the failure cannot be notified
+     */
+
+    private void markEvaluationTimedOutAwaitingConsumers() throws JMSException
+    {
+        SubscriberTimedOutException timeOut =
+                new SubscriberTimedOutException( "Evaluation " + this.getEvaluationId()
+                                                 + " failed to receive the evaluation description message "
+                                                 + "within the timeout period of "
+                                                 + CONSUMER_TIMEOUT
+                                                 + " milliseconds." );
+
+        // Add no-op consumers
+        this.consumer = statistics -> Set.of();
+        this.groupConsumer = statistics -> Set.of();
+
+        this.markEvaluationFailedOnConsumption( timeOut );
+    }
+
+    /**
+     * Publishes the completion status of a message group or the overall consumer.
+     * 
      * @param completionStatus the completion status
      * @param events evaluation status events
      * @throws NullPointerException if the input is null
@@ -544,19 +592,25 @@ class EvaluationConsumer
         Objects.requireNonNull( completionStatus );
         Objects.requireNonNull( events );
 
-        // Collect the paths written, if available
-        List<String> addThesePaths = this.getPathsWritten()
-                                         .stream()
-                                         .map( Path::toString )
-                                         .collect( Collectors.toUnmodifiableList() );
-
         // Create the status message to publish
         EvaluationStatus.Builder message = EvaluationStatus.newBuilder()
                                                            .setCompletionStatus( completionStatus )
                                                            .setClientId( this.getClientId() )
                                                            .setConsumer( this.getConsumerDescription() )
-                                                           .addAllStatusEvents( events )
-                                                           .addAllResourcesCreated( addThesePaths );
+                                                           .addAllStatusEvents( events );
+
+        // Add the paths, but only if the overall evaluation has completed (not if a group completed).
+        if ( completionStatus == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_SUCCESS
+             || completionStatus == CompletionStatus.CONSUMPTION_COMPLETE_REPORTED_FAILURE )
+        {
+            // Collect the paths written, if available
+            List<String> addThesePaths = this.getPathsWritten()
+                                             .stream()
+                                             .map( Path::toString )
+                                             .collect( Collectors.toUnmodifiableList() );
+
+            message.addAllResourcesCreated( addThesePaths );
+        }
 
         if ( Objects.nonNull( groupId ) )
         {
@@ -630,6 +684,9 @@ class EvaluationConsumer
                 this.isClosed.set( true );
             }
 
+            // Make the (potentially large) set of paths eligible for gc as the evaluation may hang around for a while.
+            this.pathsWritten.clear();
+
             LOGGER.info( "Consumer {} closed evaluation {}{}.",
                          this.getClientId(),
                          this.getEvaluationId(),
@@ -667,8 +724,8 @@ class EvaluationConsumer
         }
         catch ( ExecutionException e )
         {
-            // Most unchecked exceptions are worth a recovery attempt 
-            if ( e.getCause() instanceof RuntimeException )
+            // Consumer exceptions are propagated for retries
+            if ( e.getCause() instanceof ConsumerException )
             {
                 throw new ConsumerException( CONSUMER_STRING + this.getClientId()
                                              + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
@@ -676,7 +733,17 @@ class EvaluationConsumer
                                              + ".",
                                              e );
             }
+            // Add context to all other exceptions, which should stop the evaluation
+            else if ( e.getCause() instanceof RuntimeException )
+            {
+                throw new EvaluationEventException( CONSUMER_STRING + this.getClientId()
+                                                    + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                                    + this.getEvaluationId()
+                                                    + ".",
+                                                    e );
+            }
 
+            // All other instances should stop the subscriber
             throw new UnrecoverableSubscriberException( CONSUMER_STRING + this.getClientId()
                                                         + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
                                                         + this.getEvaluationId()
@@ -718,7 +785,7 @@ class EvaluationConsumer
     }
 
     /**
-     * Creates exception events to notify from an exception.
+     * Creates exception events to notify.
      * 
      * @param exception the exception
      * @return the exception events
@@ -732,28 +799,30 @@ class EvaluationConsumer
             return List.of();
         }
 
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
-                                                           .setEventType( StatusMessageType.ERROR )
-                                                           .setEventMessage( exception.getMessage() )
-                                                           .build();
-
-        events.add( event );
+        EvaluationStatusEvent.Builder event = EvaluationStatusEvent.newBuilder()
+                                                                   .setEventType( StatusMessageType.ERROR )
+                                                                   .setEventMessage( exception.getClass() + ": "
+                                                                                     + exception.getMessage() );
 
         // Add up to five causes, where available
         Throwable cause = exception.getCause();
-
+        List<EvaluationStatusEvent.Builder> causes = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            if ( Objects.nonNull( cause ) && Objects.nonNull( cause.getMessage() ) )
+            if ( Objects.nonNull( cause ) )
             {
-                EvaluationStatusEvent eventInner = EvaluationStatusEvent.newBuilder()
-                                                                        .setEventType( StatusMessageType.ERROR )
-                                                                        .setEventMessage( cause.getMessage() )
-                                                                        .build();
+                String causeClass = cause.getClass() + ": ";
+                String message = "";
 
-                events.add( eventInner );
+                if ( Objects.nonNull( cause.getMessage() ) )
+                {
+                    message = cause.getMessage();
+                }
+                EvaluationStatusEvent.Builder causeEvent = EvaluationStatusEvent.newBuilder()
+                                                                                .setEventType( StatusMessageType.ERROR )
+                                                                                .setEventMessage( causeClass
+                                                                                                  + message );
+                causes.add( causeEvent );
             }
             else
             {
@@ -763,7 +832,19 @@ class EvaluationConsumer
             cause = cause.getCause();
         }
 
-        return Collections.unmodifiableList( events );
+        // Add the causes in reverse order so that they propagate up the build
+        if ( !causes.isEmpty() )
+        {
+            for ( int i = causes.size() - 1; i > 0; i-- )
+            {
+                causes.get( i - 1 )
+                      .setCause( causes.get( i ) );
+            }
+
+            event.setCause( causes.get( 0 ) );
+        }
+
+        return List.of( event.build() );
     }
 
     /**
@@ -851,14 +932,24 @@ class EvaluationConsumer
         // Await for the consumers to be created 
         try
         {
-            this.consumersReady.await();
+            this.consumersReady.await( EvaluationConsumer.CONSUMER_TIMEOUT, TimeUnit.MILLISECONDS );
+
+            if ( this.consumersReady.timedOut() )
+            {
+                this.markEvaluationTimedOutAwaitingConsumers();
+            }
         }
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
 
-            throw new UnrecoverableSubscriberException( "Interrupted while waiting for an evaluation description "
-                                                        + "message." );
+            throw new EvaluationEventException( "Interrupted while waiting for an evaluation description "
+                                                + "message.",
+                                                e );
+        }
+        catch ( JMSException e )
+        {
+            throw new EvaluationEventException( "While attempting to notify an evaluation as timed out.", e );
         }
 
         OneGroupConsumer<Statistics> newGroupConsumer = OneGroupConsumer.of( this.groupConsumer::apply, groupId );

@@ -74,6 +74,12 @@ import wres.statistics.generated.Evaluation;
 public class EvaluationSubscriber implements Closeable
 {
 
+    private static final String AN_EVALUATION = "an evaluation";
+
+    private static final String AN_EVALUATION_STATUS = "an evaluation status";
+
+    private static final String A_STATISTICS = "a statistics";
+
     private static final String IN_SUBSCRIBER = " in subscriber ";
 
     private static final String EVALUATION = "evaluation ";
@@ -87,33 +93,14 @@ public class EvaluationSubscriber implements Closeable
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationSubscriber.class );
 
     private static final String ACKNOWLEDGED_MESSAGE_FOR_EVALUATION =
-            "Subscriber {} has acknowledged {} message with messageId {} for evaluation {}.";
-
-    private static final String UNKNOWN = "unknown";
+            "Subscriber {} received a message from a {} queue with messageId {}, correlationId {} and groupId {}. The "
+                                                                      + "message has been acknowledged (ACK-ed).";
 
     /**
      * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
      */
 
     private static final boolean DURABLE_SUBSCRIBERS = true;
-
-    /**
-     * Default name for the queue on the amq.topic that accepts evaluation status messages.
-     */
-
-    private static final String EVALUATION_STATUS_QUEUE = "status";
-
-    /**
-     * Default name for the queue on the amq.topic that accepts evaluation status messages.
-     */
-
-    private static final String EVALUATION_QUEUE = "evaluation";
-
-    /**
-     * Default name for the queue on the amq.topic that accepts evaluation status messages.
-     */
-
-    private static final String STATISTICS_QUEUE = "statistics";
 
     /**
      * String representation of the {@link MessageProperty#CONSUMER_ID}.
@@ -358,7 +345,8 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Maintenance task that removes completed evaluations from the cache.
+     * Maintenance task that removes closed evaluations from the cache that succeeded and retains failed evaluations
+     * up to a cache size limit.
      */
 
     public void sweep()
@@ -369,25 +357,37 @@ public class EvaluationSubscriber implements Closeable
 
         // Find the evaluations to sweep
         Set<String> completed = new HashSet<>();
+        Set<String> failed = new HashSet<>();
 
         // Create an independent set to sweep as this is a mutating loop
         Set<String> toSweep = new HashSet<>( this.evaluations.keySet() );
         for ( String nextEvaluation : toSweep )
         {
             EvaluationConsumer nextValue = this.evaluations.get( nextEvaluation );
-            if ( nextValue.isComplete() )
+
+            if ( nextValue.isClosed() && !nextValue.isFailed() )
             {
                 this.evaluations.remove( nextEvaluation );
                 this.retriesAttempted.remove( nextEvaluation );
+
+                completed.add( nextEvaluation );
+            }
+            else if ( nextValue.isFailed() )
+            {
+                failed.add( nextEvaluation );
             }
         }
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "The sweeper for subscriber {} removed {} completed evaluations, including {}.",
+            LOGGER.debug( "The sweeper for subscriber {} swept away {} closed evaluations: {}. There are {} "
+                          + "evaluations remaining of which {} are marked failed unrecoverably: {}.",
                           this.getClientId(),
                           completed.size(),
-                          completed );
+                          completed,
+                          this.evaluations.size(),
+                          failed.size(),
+                          failed );
         }
 
         this.getEvaluationsLock()
@@ -570,9 +570,8 @@ public class EvaluationSubscriber implements Closeable
         return message -> {
 
             BytesMessage receivedBytes = (BytesMessage) message;
-            String messageId = UNKNOWN;
-            String correlationId = UNKNOWN;
-            String consumerId = UNKNOWN;
+            String messageId = null;
+            String correlationId = null;
             String groupId = null;
 
             EvaluationConsumer consumer = null;
@@ -581,12 +580,10 @@ public class EvaluationSubscriber implements Closeable
             {
                 messageId = message.getJMSMessageID();
                 correlationId = message.getJMSCorrelationID();
-                consumerId = message.getStringProperty( EvaluationSubscriber.CONSUMER_ID_STRING );
                 groupId = message.getStringProperty( EvaluationSubscriber.GROUP_ID_STRING );
 
                 // Ignore status messages about consumers, including this one
-                if ( Objects.isNull( consumerId ) && !this.isSubscriberFailed()
-                     && !this.isEvaluationFailed( correlationId ) )
+                if ( this.shouldIForwardThisMessageForConsumption( message, QueueType.EVALUATION_STATUS_QUEUE ) )
                 {
                     int messageLength = (int) receivedBytes.getBodyLength();
 
@@ -604,6 +601,9 @@ public class EvaluationSubscriber implements Closeable
                                                         message,
                                                         messageId,
                                                         groupId );
+
+                    // Register complete if complete
+                    this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
 
                 // Acknowledge and flag success locally
@@ -611,12 +611,10 @@ public class EvaluationSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
                               this.getClientId(),
-                              "an evaluation status",
+                              QueueType.EVALUATION_STATUS_QUEUE,
                               messageId,
-                              correlationId );
-
-                // Register complete if complete
-                this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
+                              correlationId,
+                              groupId );
             }
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | ConsumerException e )
@@ -639,29 +637,26 @@ public class EvaluationSubscriber implements Closeable
     {
         return message -> {
             BytesMessage receivedBytes = (BytesMessage) message;
-            String messageId = UNKNOWN;
-            String correlationId = UNKNOWN;
+            String messageId = null;
+            String correlationId = null;
             String groupId = null;
-
-            EvaluationConsumer consumer = null;
 
             try
             {
+                messageId = message.getJMSMessageID();
                 correlationId = message.getJMSCorrelationID();
 
-                if ( !this.isSubscriberFailed() && !this.isEvaluationFailed( correlationId )
-                     && this.isThisMessageForMe( message ) )
+                if ( this.shouldIForwardThisMessageForConsumption( message, QueueType.STATISTICS_QUEUE ) )
                 {
-                    messageId = message.getJMSMessageID();
                     groupId = message.getStringProperty( EvaluationSubscriber.GROUP_ID_STRING );
 
                     LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                                   this.getClientId(),
-                                  "a statistics",
+                                  A_STATISTICS,
                                   messageId,
                                   correlationId );
 
-                    consumer = this.getOrCreateNewEvaluationConsumer( correlationId );
+                    EvaluationConsumer consumer = this.getOrCreateNewEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -678,6 +673,9 @@ public class EvaluationSubscriber implements Closeable
 
                     // Register with the status monitor
                     this.status.registerStatistics( messageId );
+
+                    // Register complete if complete
+                    this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
 
                 // Acknowledge and flag success locally
@@ -685,12 +683,10 @@ public class EvaluationSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
                               this.getClientId(),
-                              "a statistics",
+                              QueueType.STATISTICS_QUEUE,
                               messageId,
-                              correlationId );
-
-                // Register complete if complete
-                this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
+                              correlationId,
+                              groupId );
             }
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | ConsumerException e )
@@ -739,7 +735,7 @@ public class EvaluationSubscriber implements Closeable
         {
             LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                           this.getClientId(),
-                          "an evaluation status",
+                          AN_EVALUATION_STATUS,
                           messageId,
                           evaluationId );
 
@@ -776,29 +772,26 @@ public class EvaluationSubscriber implements Closeable
         return message -> {
 
             BytesMessage receivedBytes = (BytesMessage) message;
-            String messageId = UNKNOWN;
-            String correlationId = UNKNOWN;
+            String messageId = null;
+            String correlationId = null;
             String jobId = null;
-
-            EvaluationConsumer consumer = null;
 
             try
             {
+                messageId = message.getJMSMessageID();
                 correlationId = message.getJMSCorrelationID();
 
-                if ( !this.isSubscriberFailed() && !this.isEvaluationFailed( correlationId )
-                     && this.isThisMessageForMe( message ) )
+                if ( this.shouldIForwardThisMessageForConsumption( message, QueueType.EVALUATION_QUEUE ) )
                 {
-                    messageId = message.getJMSMessageID();
                     jobId = message.getStringProperty( MessageProperty.EVALUATION_JOB_ID.toString() );
 
                     LOGGER.debug( SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION,
                                   this.getClientId(),
-                                  "an evaluation",
+                                  AN_EVALUATION,
                                   messageId,
                                   correlationId );
 
-                    consumer = this.getOrCreateNewEvaluationConsumer( correlationId );
+                    EvaluationConsumer consumer = this.getOrCreateNewEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
                     int messageLength = (int) receivedBytes.getBodyLength();
@@ -812,6 +805,9 @@ public class EvaluationSubscriber implements Closeable
                     Evaluation evaluation = Evaluation.parseFrom( buffer );
 
                     consumer.acceptEvaluationMessage( evaluation, messageId, jobId );
+
+                    // Register complete if complete
+                    this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
 
                 // Acknowledge and flag success locally
@@ -819,12 +815,10 @@ public class EvaluationSubscriber implements Closeable
 
                 LOGGER.debug( ACKNOWLEDGED_MESSAGE_FOR_EVALUATION,
                               this.getClientId(),
-                              "an evaluation",
+                              QueueType.EVALUATION_QUEUE,
                               messageId,
-                              correlationId );
-
-                // Register complete if complete
-                this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
+                              correlationId,
+                              null );
             }
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | ConsumerException e )
@@ -837,6 +831,98 @@ public class EvaluationSubscriber implements Closeable
                 this.markSubscriberFailed( e );
             }
         };
+    }
+
+    /**
+     * Checks whether a message should be forwarded to a consumer attached to this subscriber. A message should be 
+     * forwarded if all expected metadata is present and the evaluation is being handled by this subscriber and neither
+     * the evaluation nor the subscriber has failed.
+     * 
+     * @return true if a message should be forward to a consumer, otherwise false
+     * @throws JMSException if the status could not be determined
+     * @throws IllegalArgumentException if the queue type is unrecognized
+     */
+
+    private boolean shouldIForwardThisMessageForConsumption( Message message, QueueType queueType ) throws JMSException
+    {
+
+        String messageId = message.getJMSMessageID();
+        String correlationId = message.getJMSCorrelationID();
+        String consumerId = message.getStringProperty( EvaluationSubscriber.CONSUMER_ID_STRING );
+        String groupId = message.getStringProperty( EvaluationSubscriber.GROUP_ID_STRING );
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Subscriber {} has received a message from a {} queue with messageId {}, correlationId {}, "
+                          + "groupId {} and consumerId {}. The correlationId is the unique evaluation identifier.",
+                          this.getClientId(),
+                          queueType,
+                          messageId,
+                          correlationId,
+                          groupId,
+                          consumerId );
+        }
+
+        // Should always have a messageId and correlationId, but see #87953
+        if ( Objects.isNull( messageId ) || Objects.isNull( correlationId ) )
+        {
+            LOGGER.warn( "The messageId and correlationId are required AMQP metadata and cannot be null. "
+                         + "The messageId is {} and the correlationId is {}. This message will be acknowledged but not "
+                         + "forwarded for consumption. This may indicate a broker or messaging client in distress." );
+
+            return false;
+        }
+
+        // Subscriber failed?
+        if ( this.isSubscriberFailed() )
+        {
+            LOGGER.debug( "A message was received from a {} queue, but subscriber {} has been marked failed. The "
+                          + "messageId is {} and the correlationId is {}. This message will not be forwarded for "
+                          + "consumption.",
+                          queueType,
+                          this.getClientId(),
+                          messageId,
+                          correlationId );
+
+            return false;
+        }
+
+        // Evaluation failed?
+        if ( this.isEvaluationFailed( correlationId ) )
+        {
+            LOGGER.debug( "A message was received from a {} queue, but evaluation {} has been marked failed. The "
+                          + "messageId is {} and the correlationId is {}. This message will not be forwarded for "
+                          + "consumption.",
+                          queueType,
+                          correlationId,
+                          messageId,
+                          correlationId );
+
+            return false;
+        }
+
+        // Iterate through the queue types
+        if ( queueType == QueueType.EVALUATION_QUEUE )
+        {
+            // Accept messages intended for this subscriber
+            return this.isThisMessageForMe( message );
+        }
+        else if ( queueType == QueueType.STATISTICS_QUEUE )
+        {
+            // Accept messages intended for this subscriber
+            return this.isThisMessageForMe( message );
+        }
+        else if ( queueType == QueueType.EVALUATION_STATUS_QUEUE )
+        {
+            // Ignore messages from subscribers/consumers, including this one. This is for status messages from 
+            // publishers only. But accept messages that are not flagged for this subscriber because a subscriber must
+            // be negotiated in the first instance.
+            return Objects.isNull( consumerId );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unrecognized queue type '" + queueType + "'." );
+        }
     }
 
     /**
@@ -856,8 +942,11 @@ public class EvaluationSubscriber implements Closeable
 
     private void recover( String messageId, String evaluationId, Session session, Exception exception )
     {
-        // Only retry if the subscriber and evaluation are both in non-error states
-        if ( !isEvaluationFailed( evaluationId ) && !this.isSubscriberFailed() )
+        // Only retry if the subscriber and evaluation are both in non-error states and there are retries remaining
+        // for this evaluation
+        int retryCount = this.broker.getMaximumMessageRetries();
+        if ( !isEvaluationFailed( evaluationId ) && !this.isSubscriberFailed()
+             && this.getNumberOfRetriesAttempted( evaluationId ).get() < retryCount )
         {
             this.attemptRetry( messageId, evaluationId, session, exception );
         }
@@ -876,10 +965,21 @@ public class EvaluationSubscriber implements Closeable
 
     private boolean isEvaluationFailed( String evaluationId )
     {
-        // Don't ask for the consumer unless the evaluation exists, because asking for a consumer opens a new one if it
-        // does not exist
-        return this.evaluations.containsKey( evaluationId ) && this.getOrCreateNewEvaluationConsumer( evaluationId )
-                                                                   .isFailed();
+        // Wait for any mutation of the evaluations to complete
+        try
+        {
+            this.getEvaluationsLock().lock();
+
+            // Check the cache of failed evaluations as well as the cache of ongoing evaluations, which may contain
+            // failed evaluations that have not yet been swept away.
+            return this.evaluations.containsKey( evaluationId )
+                   && this.evaluations.get( evaluationId )
+                                      .isFailed();
+        }
+        finally
+        {
+            this.getEvaluationsLock().unlock();
+        }
     }
 
     /**
@@ -1007,7 +1107,7 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Marks writing as failed unrecoverably for a given evaluation.
+     * Marks consumption as failed unrecoverably for a given evaluation.
      * @param evaluationId the evaluation identifier
      * @param an exception to notify
      * @throws UnrecoverableSubscriberException if the subscriber fails unrecoverably
@@ -1015,12 +1115,14 @@ public class EvaluationSubscriber implements Closeable
 
     private void markEvaluationFailed( String evaluationId, Exception exception )
     {
-        this.status.registerFailedEvaluation( evaluationId );
-        EvaluationConsumer consumer = this.getOrCreateNewEvaluationConsumer( evaluationId );
-
+        // Close the consumer
         try
         {
-            consumer.markEvaluationFailedOnConsumption( exception );
+            if ( this.evaluations.containsKey( evaluationId ) )
+            {
+                EvaluationConsumer consumer = this.evaluations.get( evaluationId );
+                consumer.markEvaluationFailedOnConsumption( exception );
+            }
         }
         catch ( JMSException | UnrecoverableSubscriberException e )
         {
@@ -1032,6 +1134,9 @@ public class EvaluationSubscriber implements Closeable
 
             LOGGER.error( message, e );
         }
+
+        // Add to the list of failed evaluations
+        this.status.registerEvaluationFailed( evaluationId );
     }
 
     /**
@@ -1055,6 +1160,7 @@ public class EvaluationSubscriber implements Closeable
             {
                 if ( !nextEvaluation.isComplete() )
                 {
+                    // Add to the list of failed evaluations
                     nextEvaluation.markEvaluationFailedOnConsumption( exception );
                 }
             }
@@ -1103,26 +1209,21 @@ public class EvaluationSubscriber implements Closeable
 
         try
         {
-            EvaluationConsumer consumer = this.evaluations.get( evaluationId );
-
-            if ( Objects.isNull( consumer ) )
+            // Exists already?
+            if ( !this.evaluations.containsKey( evaluationId ) )
             {
-                consumer = new EvaluationConsumer( evaluationId,
-                                                   this.getConsumerDescription(),
-                                                   this.consumerFactory,
-                                                   this.evaluationStatusPublisher,
-                                                   this.getExecutor() );
+                EvaluationConsumer consumer = new EvaluationConsumer( evaluationId,
+                                                                      this.getConsumerDescription(),
+                                                                      this.consumerFactory,
+                                                                      this.evaluationStatusPublisher,
+                                                                      this.getExecutor(),
+                                                                      this.status );
+                this.evaluations.put( evaluationId, consumer );
+
                 this.status.registerEvaluationStarted( evaluationId );
             }
 
-            // Check atomically
-            EvaluationConsumer added = this.evaluations.putIfAbsent( evaluationId, consumer );
-            if ( Objects.nonNull( added ) )
-            {
-                consumer = added;
-            }
-
-            return consumer;
+            return this.evaluations.get( evaluationId );
         }
         finally
         {
@@ -1351,9 +1452,10 @@ public class EvaluationSubscriber implements Closeable
         try
         {
 
-            this.evaluationStatusTopic = (Topic) this.broker.getDestination( EVALUATION_STATUS_QUEUE );
-            this.evaluationTopic = (Topic) this.broker.getDestination( EVALUATION_QUEUE );
-            this.statisticsTopic = (Topic) this.broker.getDestination( STATISTICS_QUEUE );
+            this.evaluationStatusTopic =
+                    (Topic) this.broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
+            this.evaluationTopic = (Topic) this.broker.getDestination( QueueType.EVALUATION_QUEUE.toString() );
+            this.statisticsTopic = (Topic) this.broker.getDestination( QueueType.STATISTICS_QUEUE.toString() );
 
             this.consumerConnection = this.broker.get()
                                                  .createConnection();
@@ -1393,6 +1495,7 @@ public class EvaluationSubscriber implements Closeable
 
             this.statisticsConsumer.setMessageListener( this.getStatisticsListener() );
 
+            // An LRU cache that removes old evaluations that succeeded
             this.evaluations = new ConcurrentHashMap<>();
             this.retriesAttempted = new ConcurrentHashMap<>();
 
@@ -1449,7 +1552,7 @@ public class EvaluationSubscriber implements Closeable
         /** The client identifier.*/
         private final String clientId;
 
-        /** The number of evaluations completed.*/
+        /** The number of evaluations started.*/
         private final AtomicInteger evaluationCount = new AtomicInteger();
 
         /** The number of statistics blobs completed.*/
@@ -1528,6 +1631,15 @@ public class EvaluationSubscriber implements Closeable
         }
 
         /**
+         * @return the evaluation failed count.
+         */
+
+        public int getEvaluationFailedCount()
+        {
+            return this.evaluationFailed.size();
+        }
+
+        /**
          * @return the statistics count.
          */
         public int getStatisticsCount()
@@ -1560,22 +1672,11 @@ public class EvaluationSubscriber implements Closeable
         }
 
         /**
-         * Increment the evaluation count and last evaluation identifier.
-         * @param evaluationId the evaluation identifier
-         */
-
-        private void registerEvaluationStarted( String evaluationId )
-        {
-            this.evaluationCount.incrementAndGet();
-            this.evaluationId.set( evaluationId );
-        }
-
-        /**
          * Registers an evaluation completed.
          * @param evaluationId the evaluation identifier
          */
 
-        private void registerEvaluationCompleted( String evaluationId )
+        void registerEvaluationCompleted( String evaluationId )
         {
             this.evaluationComplete.add( evaluationId );
         }
@@ -1585,9 +1686,20 @@ public class EvaluationSubscriber implements Closeable
          * @param evaluationId the evaluation identifier
          */
 
-        private void registerFailedEvaluation( String evaluationId )
+        void registerEvaluationFailed( String evaluationId )
         {
             this.evaluationFailed.add( evaluationId );
+        }
+
+        /**
+         * Increment the evaluation count and last evaluation identifier.
+         * @param evaluationId the evaluation identifier
+         */
+
+        private void registerEvaluationStarted( String evaluationId )
+        {
+            this.evaluationCount.incrementAndGet();
+            this.evaluationId.set( evaluationId );
         }
 
         /**
@@ -1648,4 +1760,49 @@ public class EvaluationSubscriber implements Closeable
             this.subscriber = subscriber;
         }
     }
+
+    /**
+     * Enumeration of queue types on the broker.
+     */
+
+    private enum QueueType
+    {
+        /**
+         * Default name for the queue on the amq.topic that accepts evaluation status messages.
+         */
+
+        EVALUATION_STATUS_QUEUE,
+
+        /**
+         * Default name for the queue on the amq.topic that accepts evaluation status messages.
+         */
+
+        EVALUATION_QUEUE,
+
+        /**
+         * Default name for the queue on the amq.topic that accepts evaluation status messages.
+         */
+
+        STATISTICS_QUEUE;
+
+        /**
+         * @return a string representation.
+         */
+        @Override
+        public String toString()
+        {
+            switch ( this )
+            {
+                case EVALUATION_STATUS_QUEUE:
+                    return "status";
+                case EVALUATION_QUEUE:
+                    return "evaluation";
+                case STATISTICS_QUEUE:
+                    return "statistics";
+                default:
+                    throw new IllegalArgumentException( "Unknown queue '" + this + "'." );
+            }
+        }
+    }
+
 }

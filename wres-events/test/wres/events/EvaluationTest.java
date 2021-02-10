@@ -90,13 +90,13 @@ class EvaluationTest
     private static BrokerConnectionFactory connections = null;
 
     @BeforeAll
-    public static void runBeforeAllTests()
+    static void runBeforeAllTests()
     {
         EvaluationTest.connections = BrokerConnectionFactory.of();
     }
 
     @BeforeEach
-    public void runBeforeEachTest()
+    void runBeforeEachTest()
     {
         // First evaluation
         this.oneEvaluation =
@@ -709,7 +709,7 @@ class EvaluationTest
     }
 
     @AfterAll
-    public static void runAfterAllTests() throws IOException
+    static void runAfterAllTests() throws IOException
     {
         EvaluationTest.connections.close();
     }

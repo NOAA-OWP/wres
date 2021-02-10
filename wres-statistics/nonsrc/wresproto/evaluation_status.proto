@@ -150,6 +150,9 @@ message EvaluationStatus
 
         int32 status_code = 3;
         // A status code, such as an HTTP status code.
+
+        EvaluationStatusEvent cause = 4;
+        // Inner event containing the cause of the outer event
     }    
 
     repeated EvaluationStatusEvent status_events = 7;

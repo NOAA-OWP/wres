@@ -3,6 +3,7 @@ package wres.events;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Similar to {@link CountDownLatch} but facilitates waiting for a fixed period that is reset after each mutation. 
@@ -11,12 +12,13 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * @author james.brown@hydrosolved.com
  */
 
-class TimedCountDownLatch
+public class TimedCountDownLatch
 {
 
     private final Sync sync;
-    private AtomicLong timestamp;
+    private final AtomicLong timestamp;
     private int resetCount;
+    private boolean timedOut = false;
     
     /**
      * Constructs a {@link TimedCountDownLatch} initialized to the prescribed count.
@@ -24,7 +26,7 @@ class TimedCountDownLatch
      * @param count the count
      */
 
-    TimedCountDownLatch( int count )
+    public TimedCountDownLatch( int count )
     {
         this.sync = new Sync( count );
         this.timestamp = new AtomicLong( System.nanoTime() );
@@ -36,7 +38,7 @@ class TimedCountDownLatch
      * @see CountDownLatch#countDown()
      */
 
-    void countDown()
+    public void countDown()
     {
         this.sync.releaseShared( -1 );
     }
@@ -45,12 +47,52 @@ class TimedCountDownLatch
      * Resets the timeout clock.
      */
 
-    void resetClock()
+    public void resetClock()
     {
         this.timestamp.set( System.nanoTime() );
         this.resetCount++;
     }
+    
+    /**
+     * @return {@code true} if the timer timed out, otherwise {@code false}.
+     */
 
+    public boolean timedOut()
+    {
+        return this.timedOut;
+    }
+    
+    /**
+     * Causes the current thread to wait for a fixed period relative to the last mutation.
+     * 
+     * @param timeout the timeout period
+     * @param unit the time unit
+     * @return true if acquired, false if timed out
+     * @throws InterruptedException if the timer is interrupted
+     */
+
+    public boolean await( long timeout, TimeUnit unit ) throws InterruptedException
+    {
+        long start = this.getTime();
+        long periodToWait = unit.toNanos( timeout );
+        for ( ;; )
+        {
+            // Wait until the timeout occurs or the count reaches zero, whichever is sooner
+            boolean acquired = this.waitFor( periodToWait, TimeUnit.NANOSECONDS );
+            
+            this.timedOut = !acquired;
+            
+            // If the count reached zero or the original timeout occurred, then return
+            if ( acquired || start == this.getTime() )
+            {
+                return acquired;
+            }
+            
+            // Subtract the time already waited from the period to wait
+            periodToWait = periodToWait - ( System.nanoTime() - start );
+        }
+    }
+    
     /**
      * @return the number of times the timeout was reset
      */
@@ -79,36 +121,7 @@ class TimedCountDownLatch
     private long getTime()
     {
         return this.timestamp.get();
-    }
-
-    /**
-     * Causes the current thread to wait for a fixed period relative to the last mutation.
-     * 
-     * @param timeout the timeout period
-     * @param unit the time unit
-     * @return true if acquired, false if timed out
-     * @throws InterruptedException
-     */
-
-    boolean await( long timeout, TimeUnit unit ) throws InterruptedException
-    {
-        long start = this.getTime();
-        long periodToWait = unit.toNanos( timeout );
-        for ( ;; )
-        {
-            // Wait until the timeout occurs or the count reaches zero, whichever is sooner
-            boolean acquired = this.waitFor( periodToWait, TimeUnit.NANOSECONDS );
-            
-            // If the count reached zero or the original timeout occurred, then return
-            if ( acquired || start == this.getTime() )
-            {
-                return acquired;
-            }
-            
-            // Subtract the time already waited from the period to wait
-            periodToWait = periodToWait - ( System.nanoTime() - start );
-        }
-    }
+    }    
 
     /**
      * Causes the current thread to wait until the latch has counted down to zero, unless the thread is interrupted, or
