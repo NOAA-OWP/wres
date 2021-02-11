@@ -143,13 +143,16 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
                 LOGGER.debug( "Group consumer {} replaced an existing message with identifier {}.", this, messageId );
             }
         }
-        else if ( LOGGER.isTraceEnabled() )
+        // Only increment the actual message count if this message is not replacing an existing one (e.g., on retry)
+        else
+        {
+            this.actualMessageCount.incrementAndGet();
+        }
+
+        if ( LOGGER.isTraceEnabled() )
         {
             LOGGER.trace( "Group consumer {} accepted a new message, {}.", this, message );
         }
-
-        // Increment the actual message count
-        this.actualMessageCount.incrementAndGet();
 
         // Try to accept the group.
         this.acceptGroup();
@@ -242,6 +245,17 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
 
     private void acceptGroup()
     {
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Consumer {} is attempting to accept message group {}. The expected message count is {}. "
+                          + "The actual message count is {}. The completion status is {}.",
+                          this,
+                          this.getGroupId(),
+                          this.expectedMessageCount.get(),
+                          this.actualMessageCount.get(),
+                          this.isComplete.get() );
+        }
+
         // Lock available and consumer ready to complete.
         // If this method is called by a second thread while a first thread succeeds, the second thread will fail to
         // acquire the lock and the group will complete gracefully (either successfully or exceptionally). This is 
@@ -249,6 +263,8 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
         // count is supplied; and 2) when the last message is supplied.
         if ( this.isReadyToComplete() && this.groupCompletionLock.tryLock() )
         {
+            LOGGER.debug( "Consumer {} is continuing to complete message group {}.", this, this.getGroupId() );
+
             try
             {
                 // Propagate

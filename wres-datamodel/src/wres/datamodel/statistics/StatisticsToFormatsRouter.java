@@ -366,11 +366,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                 paths.addAll( innerPaths );
             }
         }
-        // Better to throw a common type here as a JMS MessageListener is expected to handle all exceptions
-        // and it is better to aggregate them into one type than to catch a generic java.lang.Exception in 
-        // a MessageListener. It is possible that other types could occur, which could make the application
-        // hang on failing to consume all expected messages. This only applies to internal consumers that 
-        // can break the flow with exceptions. Eventually, all consumers will be external. 
+        // Wrap with some context
         catch ( RuntimeException e )
         {
             throw new StatisticsToFormatsRoutingException( "While routing evaluation statistics for consumption.", e );
