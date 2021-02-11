@@ -74,6 +74,9 @@ import wres.statistics.generated.Evaluation;
 public class EvaluationSubscriber implements Closeable
 {
 
+    private static final String ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER =
+            "encountered an exception that will stop the subscriber.";
+
     private static final String AN_EVALUATION = "an evaluation";
 
     private static final String AN_EVALUATION_STATUS = "an evaluation status";
@@ -93,8 +96,8 @@ public class EvaluationSubscriber implements Closeable
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationSubscriber.class );
 
     private static final String ACKNOWLEDGED_MESSAGE_FOR_EVALUATION =
-            "Subscriber {} received a message from a {} queue with messageId {}, correlationId {} and groupId {}. The "
-                                                                      + "message has been acknowledged (ACK-ed).";
+            "Subscriber {} has acknowledged (ACK-ed) a message from a {} queue with messageId {}, correlationId {} "
+                                                                      + "and groupId {}.";
 
     /**
      * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
@@ -601,9 +604,6 @@ public class EvaluationSubscriber implements Closeable
                                                         message,
                                                         messageId,
                                                         groupId );
-
-                    // Register complete if complete
-                    this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
                 }
 
                 // Acknowledge and flag success locally
@@ -615,6 +615,9 @@ public class EvaluationSubscriber implements Closeable
                               messageId,
                               correlationId,
                               groupId );
+
+                // Register complete if complete
+                this.registerEvaluationCompleteIfConsumptionComplete( consumer, correlationId );
             }
             // Attempt to recover
             catch ( JMSException | InvalidProtocolBufferException | ConsumerException e )
@@ -622,8 +625,25 @@ public class EvaluationSubscriber implements Closeable
                 this.recover( messageId, correlationId, this.statusSession, e );
             }
             // Do not attempt to recover
+            catch ( UnrecoverableEvaluationException e )
+            {
+                String failureMessage =
+                        "While processing an evaluation status message, encountered an exception that will "
+                                        + "stop evaluation "
+                                        + correlationId
+                                        + ".";
+
+                LOGGER.error( failureMessage, e );
+
+                this.markEvaluationFailed( correlationId, e );
+            }
+            // Do not attempt to recover and mark the subscriber failed also
             catch ( RuntimeException e )
             {
+                LOGGER.error( "While processing an evaluation status message, "
+                              + ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER,
+                              e );
+
                 this.markSubscriberFailed( e );
             }
         };
@@ -694,8 +714,24 @@ public class EvaluationSubscriber implements Closeable
                 this.recover( messageId, correlationId, this.statisticsSession, e );
             }
             // Do not attempt to recover
+            catch ( UnrecoverableEvaluationException e )
+            {
+                String failureMessage =
+                        "While processing a statistics message, encountered an exception that will stop evaluation "
+                                        + correlationId
+                                        + ".";
+
+                LOGGER.error( failureMessage, e );
+
+                this.markEvaluationFailed( correlationId, e );
+            }
+            // Do not attempt to recover and mark the subscriber failed also
             catch ( RuntimeException e )
             {
+                LOGGER.error( "While processing a statistics message, "
+                              + ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER,
+                              e );
+
                 this.markSubscriberFailed( e );
             }
         };
@@ -826,8 +862,24 @@ public class EvaluationSubscriber implements Closeable
                 this.recover( messageId, correlationId, this.evaluationDescriptionSession, e );
             }
             // Do not attempt to recover
+            catch ( UnrecoverableEvaluationException e )
+            {
+                String failureMessage =
+                        "While processing an evaluation message, encountered an exception that will stop evaluation "
+                                        + correlationId
+                                        + ".";
+
+                LOGGER.error( failureMessage, e );
+
+                this.markEvaluationFailed( correlationId, e );
+            }
+            // Do not attempt to recover and mark the subscriber failed also
             catch ( RuntimeException e )
             {
+                LOGGER.error( "While processing an evaluation message, "
+                              + ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER,
+                              e );
+
                 this.markSubscriberFailed( e );
             }
         };
@@ -942,17 +994,23 @@ public class EvaluationSubscriber implements Closeable
 
     private void recover( String messageId, String evaluationId, Session session, Exception exception )
     {
+        LOGGER.debug( "Recovery triggered for message {} in evaluation {}.", messageId, evaluationId );
+
         // Only retry if the subscriber and evaluation are both in non-error states and there are retries remaining
         // for this evaluation
         int retryCount = this.broker.getMaximumMessageRetries();
         if ( !isEvaluationFailed( evaluationId ) && !this.isSubscriberFailed()
              && this.getNumberOfRetriesAttempted( evaluationId ).get() < retryCount )
         {
+            LOGGER.debug( "Attempting retry of message {} for evaluation {}.", messageId, evaluationId );
+
             this.attemptRetry( messageId, evaluationId, session, exception );
         }
         // Evaluation has failed unrecoverably or all evaluations on this subscriber have failed unrecoverably
         else
         {
+            LOGGER.debug( "Cannot retry message {} of evaluation {}.", messageId, evaluationId );
+
             this.signalFailureOnAttemptedRetry( messageId, evaluationId, exception );
         }
     }

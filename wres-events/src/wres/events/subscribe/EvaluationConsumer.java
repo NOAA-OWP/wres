@@ -119,7 +119,7 @@ class EvaluationConsumer
     private Function<Statistics, Set<Path>> consumer;
 
     /**
-     * Consumer for message groups.
+     * An elementary group consumer for message groups that provides the template for the {@link #groupConsumers}.
      */
 
     private Function<Collection<Statistics>, Set<Path>> groupConsumer;
@@ -303,9 +303,10 @@ class EvaluationConsumer
      * @param statistics the statistics
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
-     * @throws JMSException if the group completion could not be notified
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
+     * @throws JMSException if the evaluation failed in a way that may be recoverable
+     * @throws UnrecoverableEvaluationException if the evaluation fails in a way that should not be retried 
+     * @throws UnrecoverableSubscriberException if the evaluation fails in a way that should not be retried and should 
+     *            stop the subscriber
      */
 
     void acceptStatisticsMessage( Statistics statistics,
@@ -342,8 +343,9 @@ class EvaluationConsumer
         {
             Thread.currentThread().interrupt();
 
-            throw new UnrecoverableSubscriberException( "Interrupted while waiting for an evaluation description "
-                                                        + "message." );
+            throw new UnrecoverableEvaluationException( "Interrupted while waiting for an evaluation description "
+                                                        + "message.",
+                                                        e );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -368,9 +370,6 @@ class EvaluationConsumer
      * @param messageId the message identifier to help with logging
      * @param jobId an optional job identifier
      * @throws JMSException if a consumer could not be created when required
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
-     * @throws IllegalStateException if an evaluation description has already been received
      */
 
     void acceptEvaluationMessage( Evaluation evaluationDescription, String messageId, String jobId )
@@ -393,6 +392,7 @@ class EvaluationConsumer
                               this.getEvaluationId() );
             }
 
+            // Record consumption
             this.consumed.incrementAndGet();
 
             // If consumption is complete, then close the consumer
@@ -413,8 +413,6 @@ class EvaluationConsumer
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
      * @throws JMSException if a group completion could not be notified
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
      */
 
     void acceptStatusMessage( EvaluationStatus status, String groupId, String messageId ) throws JMSException
@@ -477,7 +475,14 @@ class EvaluationConsumer
                           append );
         }
 
-        this.isComplete.set( this.expected.get() > 0 && this.consumed.get() == this.expected.get() );
+        // An evaluation is not complete until all group consumption has succeeded. A group may have received all 
+        // messages and not yet propagated them (because the expected count has not yet been received).
+        boolean allGroupsComplete = this.groupConsumers.values()
+                                                       .stream()
+                                                       .allMatch( OneGroupConsumer::isComplete );
+
+        this.isComplete.set( this.expected.get() > 0 && this.consumed.get() == this.expected.get()
+                             && allGroupsComplete );
 
         return this.isComplete.get();
     }
@@ -495,6 +500,8 @@ class EvaluationConsumer
      */
     boolean isFailed()
     {
+        // Explicitly marked failed or some 
+
         return this.isFailed.get();
     }
 
@@ -652,9 +659,6 @@ class EvaluationConsumer
 
     /**
      * Closes the evaluation on completion.
-     * @throws EvaluationEventException if the closing state could not be published
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
      */
     private void close()
     {
@@ -668,10 +672,39 @@ class EvaluationConsumer
 
             try
             {
+                // All groups complete?
+                boolean groupsIncomplete = this.groupConsumers.values()
+                                                              .stream()
+                                                              .anyMatch( next -> !next.isComplete() );
+
+                // Overall complete?
+                boolean incomplete = !this.isComplete();
+
+                // Marked failed?
                 if ( this.isFailed() )
                 {
                     this.notifyFailure( null );
                     append = ", which completed unsuccessfully";
+                }
+                // Closed prematurely?
+                else if ( groupsIncomplete || incomplete )
+                {
+                    UnrecoverableEvaluationException e =
+                            new UnrecoverableEvaluationException( "Attempted to close evaluation "
+                                                                  + this.getEvaluationId()
+                                                                  + " before consumption had completed. Groups "
+                                                                  + "marked complete: "
+                                                                  + !groupsIncomplete
+                                                                  + ". Overall consumption marked complete: "
+                                                                  + !incomplete
+                                                                  + "." );
+
+                    // Propagate to other clients
+                    this.notifyFailure( e );
+                    append = ", which completed unsuccessfully";
+
+                    // Rethrow
+                    throw e;
                 }
                 else
                 {
@@ -682,15 +715,15 @@ class EvaluationConsumer
             finally
             {
                 this.isClosed.set( true );
+
+                // Make the (potentially large) set of paths eligible for gc as the evaluation may hang around for a while.
+                this.pathsWritten.clear();
+
+                LOGGER.info( "Consumer {} closed evaluation {}{}.",
+                             this.getClientId(),
+                             this.getEvaluationId(),
+                             append );
             }
-
-            // Make the (potentially large) set of paths eligible for gc as the evaluation may hang around for a while.
-            this.pathsWritten.clear();
-
-            LOGGER.info( "Consumer {} closed evaluation {}{}.",
-                         this.getClientId(),
-                         this.getEvaluationId(),
-                         append );
 
             // This instance is not responsible for closing the executor service.
         }
@@ -709,8 +742,9 @@ class EvaluationConsumer
      * Executes a writing task
      * @param task the task to execute
      * @throws ConsumerException if the task fails exceptionally, but potentially in a recoverable way
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
+     * @throws UnrecoverableEvaluationException if the evaluation fails in a way that should not be retried
+     * @throws UnrecoverableSubscriberException if the evaluation fails in a way that should not be retried and should 
+     *            stop the subscriber
      */
 
     private void execute( Runnable task )
@@ -736,11 +770,11 @@ class EvaluationConsumer
             // Add context to all other exceptions, which should stop the evaluation
             else if ( e.getCause() instanceof RuntimeException )
             {
-                throw new EvaluationEventException( CONSUMER_STRING + this.getClientId()
-                                                    + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
-                                                    + this.getEvaluationId()
-                                                    + ".",
-                                                    e );
+                throw new UnrecoverableEvaluationException( CONSUMER_STRING + this.getClientId()
+                                                            + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                                            + this.getEvaluationId()
+                                                            + ".",
+                                                            e );
             }
 
             // All other instances should stop the subscriber
@@ -852,9 +886,8 @@ class EvaluationConsumer
      * 
      * @param status the evaluation status message
      * @throws JMSException if the group completion could not be notified
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
      * @throws EvaluationEventException if the completion state could not be published
+     * @throws IllegalArgumentException if the status message does not have all expected fields
      */
 
     private void setExpectedMessageCountForGroups( EvaluationStatus status )
@@ -882,7 +915,30 @@ class EvaluationConsumer
 
         // Set the expected count
         OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
-        groupCon.setExpectedMessageCount( status.getMessageCount() );
+
+        // May trigger group completion and consumption
+        try
+        {
+            groupCon.setExpectedMessageCount( status.getMessageCount() );
+        }
+        catch ( RuntimeException e )
+        {
+            // Consumer exceptions are propagated for retries
+            if ( e.getCause() instanceof ConsumerException )
+            {
+                throw new ConsumerException( CONSUMER_STRING + this.getClientId()
+                                             + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                             + this.getEvaluationId()
+                                             + ".",
+                                             e );
+            }
+
+            throw new UnrecoverableEvaluationException( CONSUMER_STRING + this.getClientId()
+                                                        + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                                        + this.getEvaluationId()
+                                                        + ".",
+                                                        e );
+        }
 
         this.closeGroupIfComplete( groupCon );
     }
@@ -970,8 +1026,6 @@ class EvaluationConsumer
      * @param evaluationDescription a description of the evaluation
      * @param consumerFactory the consumer factory
      * @param jobId an optional job identifier
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
      */
 
     private void createConsumers( Evaluation evaluationDescription,
@@ -1010,8 +1064,9 @@ class EvaluationConsumer
      * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
      * @throws EvaluationEventException if the group completion could not be notified
-     * @throws UnrecoverableSubscriberException if the consumer fails unrecoverably in a way that should stop the 
-     *            subscriber that wraps it
+     * @throws UnrecoverableEvaluationException if the evaluation fails in a way that should not be retried
+     * @throws UnrecoverableSubscriberException if the evaluation fails in a way that should not be retried and should 
+     *            stop the subscriber
      */
 
     private void acceptStatisticsMessageInner( Statistics statistics, String groupId, String messageId )
@@ -1024,11 +1079,35 @@ class EvaluationConsumer
         if ( Objects.nonNull( groupId ) )
         {
             OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
-            groupCon.accept( messageId, statistics );
+
+            // May trigger group completion and consumption
+            try
+            {
+                groupCon.accept( messageId, statistics );
+            }
+            catch ( RuntimeException e )
+            {
+                // Consumer exceptions are propagated for retries
+                if ( e.getCause() instanceof ConsumerException )
+                {
+                    throw new ConsumerException( CONSUMER_STRING + this.getClientId()
+                                                 + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                                 + this.getEvaluationId()
+                                                 + ".",
+                                                 e );
+                }
+
+                throw new UnrecoverableEvaluationException( CONSUMER_STRING + this.getClientId()
+                                                            + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
+                                                            + this.getEvaluationId()
+                                                            + ".",
+                                                            e );
+            }
 
             this.closeGroupIfComplete( groupCon );
         }
 
+        // Record consumption
         this.consumed.incrementAndGet();
 
         if ( LOGGER.isDebugEnabled() )
