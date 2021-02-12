@@ -268,7 +268,7 @@ public class FutureQueue<V>
             }
             catch ( InterruptedException e )
             {
-                LOGGER.error("Future processing has been interrupted.", e);
+                LOGGER.warn( "Future processing has been interrupted.", e );
 
                 int cancelCount = 0;
                 for (Future futureTask : this.queue)
@@ -278,9 +278,9 @@ public class FutureQueue<V>
                         futureTask.cancel( true );
                         cancelCount++;
                     }
-                    catch ( Exception ce )
+                    catch ( RuntimeException ce )
                     {
-                        LOGGER.debug( "Failed to cancel a task.", ce );
+                        LOGGER.warn( "Failed to cancel a task.", ce );
                     }
                 }
 
