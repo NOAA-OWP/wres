@@ -81,7 +81,7 @@ repositories
 
 subprojects
 {
-    apply plugin: 'java'
+    apply plugin: 'java-library'
     apply plugin: 'jacoco'
     apply plugin: 'org.owasp.dependencycheck'
 
@@ -203,9 +203,12 @@ subprojects
             attributes("Implementation-Title": "Water Resources Evaluation Service",
                        "Implementation-Version": version)
         }
+    }
 
-        // Include source in jars
-        from sourceSets.main.allSource
+    java
+    {
+        withJavadocJar()
+        withSourcesJar()
     }
 }
 
@@ -1210,6 +1213,7 @@ task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildHtmlFromMarkd
 }
 
 apply plugin: 'application'
+apply plugin: 'java-library'
 
 mainClassName = 'wres.Main'
 
@@ -1378,9 +1382,12 @@ jar
         attributes("Implementation-Title": "Water Resources Evaluation Service",
                    "Implementation-Version": version)
     }
+}
 
-    // Include source in jar
-    from sourceSets.main.allSource
+java
+{
+    withJavadocJar()
+    withSourcesJar()
 }
 
 defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
