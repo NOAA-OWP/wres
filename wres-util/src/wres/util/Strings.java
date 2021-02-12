@@ -5,9 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.io.PrintStream;
-import java.io.Serializable;
 import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
@@ -150,35 +148,6 @@ public final class Strings
         return true;
     }
 
-    public static boolean isFloatingPoint(final CharSequence candidate)
-    {
-        boolean decimalEncountered = false;
-
-        for (int i = 0; i < candidate.length(); ++i)
-        {
-            if (i == 0 && candidate.charAt( i ) == '-')
-            {
-                continue;
-            }
-
-            if (candidate.charAt( i ) == '.')
-            {
-                if (decimalEncountered)
-                {
-                    return false;
-                }
-
-                decimalEncountered = true;
-            }
-            else if (!Character.isDigit( candidate.charAt( i ) ))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /**
      * Generates a stack trace from the current thread
      * <br><br>
@@ -205,21 +174,6 @@ public final class Strings
         return baos.toString();
     }
 
-	public static boolean isOneOf(String possible, String... options)
-	{
-		boolean isOne = false;
-
-		for (String option : options)
-		{
-			if (possible.equalsIgnoreCase(option))
-			{
-				isOne = true;
-				break;
-			}
-		}
-
-		return isOne;
-	}
 
     public static String getFileName(String path)
     {
@@ -258,22 +212,6 @@ public final class Strings
 
         return getMD5Checksum( complete.digest() );
 	}
-
-	public static String getMD5Checksum( Serializable object) throws IOException
-    {
-        Objects.requireNonNull(object, "A non-existent object cannot be suitably hashed.");
-        byte[] objectBytes;
-
-        try ( ByteArrayOutputStream byteStream = new ByteArrayOutputStream(  );
-              ObjectOutputStream stream = new ObjectOutputStream( byteStream ))
-        {
-            stream.writeObject( object );
-            stream.flush();
-            objectBytes = byteStream.toByteArray();
-        }
-
-        return Strings.getMD5Checksum( objectBytes );
-    }
 
 	/**
 	 * Determines if buffering should continue for determining a checksum
