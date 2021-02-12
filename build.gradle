@@ -203,6 +203,9 @@ subprojects
             attributes("Implementation-Title": "Water Resources Evaluation Service",
                        "Implementation-Version": version)
         }
+
+        // Include source in jars
+        from sourceSets.main.allSource
     }
 }
 
@@ -1375,6 +1378,9 @@ jar
         attributes("Implementation-Title": "Water Resources Evaluation Service",
                    "Implementation-Version": version)
     }
+
+    // Include source in jar
+    from sourceSets.main.allSource
 }
 
 defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
