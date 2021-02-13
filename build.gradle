@@ -1348,11 +1348,65 @@ distributions
             }
 
             // vis will be split into its own application eventually.
-	    from ( 'wres-vis/dist' )
-	    {
-	        exclude 'lib/conf/eventbroker.properties'
-		exclude 'lib/conf/logback.xml'
-	    }
+            from( 'wres-vis/dist' )
+            {
+                exclude 'lib/conf/eventbroker.properties'
+                exclude 'lib/conf/logback.xml'
+            }
+
+            // Surely there is a more elegant way to get all the source jars
+            // from projects in the runtime or implementation configuration of
+            // this project. Something less brittle than handles transitive deps
+            // and so forth. Admitting defeat for now.
+            from( project(':wres-util').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-system').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-datamodel').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-io').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-metrics').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-config').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-vis').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-events').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-eventsbroker').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-statistics').sourcesJar )
+            {
+                into 'src'
+            }
         }
     }
 }
