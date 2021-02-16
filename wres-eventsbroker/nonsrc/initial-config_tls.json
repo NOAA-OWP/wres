@@ -1,9 +1,11 @@
 {
 	"name": "wres-eventsbroker",
 	"modelVersion": "8.0",
+	"statisticsReportingPeriod": "60",
 	"context": {
-		"qpid.security.tls.protocolAllowList": "[\"TLSv1.3\",\"TLSv1.2\"]"
-    },
+		"qpid.security.tls.protocolAllowList": "[\"TLSv1.3\",\"TLSv1.2\"]",
+		"qpid.broker.statisticsReportPattern": "${broker.name}: usedDirectMemorySize=${usedDirectMemorySize:byteunit}, usedHeapMemorySize=${usedHeapMemorySize:byteunit}"
+	},
 	"authenticationproviders": [
 		{
 			"name": "externalAuthProvider",
@@ -157,7 +159,7 @@
 				"queue.maximumDeliveryAttempts": "4"
 			},
 			"defaultVirtualHostNode": "true",
-			"virtualHostInitialConfiguration": "{\"type\": \"DERBY\", \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"
+			"virtualHostInitialConfiguration": "{\"type\": \"DERBY\", \"statisticsReportingPeriod\": \"60\", \"context\":{\"qpid.virtualhost.statisticsReportPattern\": \"${ancestor:virtualhost:name}: messagesIn=${messagesIn}, bytesIn=${bytesIn:byteunit}, messagesOut=${messagesOut}, bytesOut=${bytesOut:byteunit}, totalDepthOfQueuesMessages=${totalDepthOfQueuesMessages}, totalDepthOfQueuesBytes=${totalDepthOfQueuesBytes:byteunit}, inMemoryMessageSize=${inMemoryMessageSize:byteunit}, bytesFlowedToDisk=${bytesEvacuatedFromMemory:byteunit}\"}, \"connectionThreadPoolSize\": \"8\", \"numberOfSelectors\": \"1\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*_DLQ\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{\"alternateBinding\": \"\", \"maximumDeliveryAttempts\":\"2\"}}] }"
 		}
 	]
 }
