@@ -1,4 +1,4 @@
-package wres.datamodel.units;
+package wres.datamodel;
 
 import javax.measure.Unit;
 
@@ -10,15 +10,15 @@ import static tech.units.indriya.unit.Units.SECOND;
 import static systems.uom.common.USCustomary.CUBIC_FOOT;
 
 /**
- * Experimental class to build flow units using javax.measure. When it is used,
+ * Experimental class to build units using javax.measure. When it is used,
  * visibility will likely need to be public and the library declarations updated
  * in the build.gradle to be "api" instead of "implementation."
  */
 
-class Flow
+class Units
 {
     static final Unit<VolumetricFlowRate> CUBIC_METRE_PER_SECOND =
-            new ProductUnit<VolumetricFlowRate>( CUBIC_METRE.divide( SECOND ) );
+            new ProductUnit<>( CUBIC_METRE.divide( SECOND ) );
     static final Unit<VolumetricFlowRate> CUBIC_FOOT_PER_SECOND =
-            new ProductUnit<VolumetricFlowRate>( CUBIC_FOOT.divide( SECOND ) );
+            new ProductUnit<>( CUBIC_FOOT.divide( SECOND ) );
 }
