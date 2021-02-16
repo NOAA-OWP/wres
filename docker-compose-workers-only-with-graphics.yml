@@ -51,7 +51,7 @@ services:
         environment:
          # The broker uses heap memory to run and direct memory for messages
          - QPID_WORK=/container_home/${HOST_NAME}
-         - QPID_JAVA_MEM=-Xmx256m -XX:MaxDirectMemorySize=2048m
+         - QPID_JAVA_MEM=-Xms256m -Xmx256m -XX:MaxDirectMemorySize=2048m
          - QPID_JAVA_GC=-XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/container_home/${HOST_NAME}
         # Broker heap plus direct memory is 2304m in QPID_JAVA_MEM
         mem_limit: 2560m

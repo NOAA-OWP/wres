@@ -146,8 +146,8 @@ class GraphicsClient implements Closeable
 
                 // Close the graphics subscriber unless the broker that supports it is running inside this process.
                 // If the broker is running inside this process, all connected resources are destroyed with the broker.
-                // In that case, formally closing these resources can lead to an unclean exit. Revisit this when 
-                // upgrading broker, as a straightforward call to stop, regardless of context, is preferred.
+                // In that case, formally closing these resources will lead to an unclean exit because the resources
+                // and connections have already been closed when the shutdown hook has been initiated.
                 if ( !broker.hasEmbeddedBroker() )
                 {
                     graphics.stop();
