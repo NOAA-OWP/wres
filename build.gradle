@@ -303,6 +303,7 @@ project(':wres-datamodel')
         implementation 'javax.measure:unit-api:2.1.2'
         implementation 'si.uom:si-units:2.0.1'
         implementation 'tech.units:indriya:2.1.1'
+        implementation 'systems.uom:systems-common:2.0.2'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
