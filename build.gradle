@@ -290,18 +290,25 @@ project(':wres-datamodel')
 {
     dependencies
     {
-        compile project(':wres-statistics')
-        
-        compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'org.apache.commons:commons-lang3:3.11'
-        compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        compile project(':wres-config')
+        api project(':wres-config')
+        api project(':wres-statistics')
+        api 'org.apache.commons:commons-lang3:3.11'
+
+        implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
+        implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+        implementation 'com.github.ben-manes.caffeine:caffeine:2.8.8'
+
+        // The following three provide units of measure. If used in public
+        // method signatures, they will be upgraded to api (not implementation).
+        implementation 'javax.measure:unit-api:2.1.2'
+        implementation 'si.uom:si-units:2.0.1'
+        implementation 'tech.units:indriya:2.1.1'
+
         // JCIP annotations
-        compile group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
-        compile 'com.github.ben-manes.caffeine:caffeine:2.8.8'
+        compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.7.7'
+        testImplementation 'org.mockito:mockito-core:3.7.7'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
