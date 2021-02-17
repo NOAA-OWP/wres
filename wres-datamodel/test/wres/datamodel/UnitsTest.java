@@ -36,7 +36,8 @@ public class UnitsTest
                      "gallon", "gal", "sec", "m3", "litre", "kilograms", "kg",
                      "metre", "metre/second", "second", "m³", "m³/s", "CFS",
                      "CMS", "cubic metre per second", "m^2", "m^3/s", "meter",
-                     "feet", "foot", "inches", "inch" );
+                     "feet", "foot", "inches", "inch", "ft", "in", "FT", "IN",
+                     "cms", "cfs" );
 
     @Test
     public void testConvertFlow()
