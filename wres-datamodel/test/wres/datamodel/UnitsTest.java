@@ -1,15 +1,20 @@
 package wres.datamodel;
 
+import java.util.List;
 import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
+import javax.measure.format.MeasurementParseException;
+import javax.measure.format.UnitFormat;
 import javax.measure.quantity.Time;
 import javax.measure.quantity.Volume;
+import javax.measure.spi.ServiceProvider;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import si.uom.quantity.VolumetricFlowRate;
+import tech.units.indriya.AbstractUnit;
 import tech.units.indriya.quantity.Quantities;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,6 +31,12 @@ import static wres.datamodel.Units.CUBIC_METRE_PER_SECOND;
 public class UnitsTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( UnitsTest.class );
+    private static final List<String> UNITS_TO_PARSE =
+            List.of( "g/l", "m", "m/s", "metre per second", "square foot",
+                     "gallon", "gal", "sec", "m3", "litre", "kilograms", "kg",
+                     "metre", "metre/second", "second", "m³", "m³/s", "CFS",
+                     "CMS", "cubic metre per second", "m^2", "m^3/s", "meter",
+                     "feet", "foot", "inches", "inch" );
 
     @Test
     public void testConvertFlow()
@@ -76,5 +87,71 @@ public class UnitsTest
         // What about cubic meters?
         Quantity<?> cubicMeters = ( ( Quantity<Volume> ) someVolume).to( CUBIC_METRE );
         LOGGER.debug( "Converted to cubicMeters: {}", cubicMeters );
+    }
+
+
+    @Test
+    public void exploreUnitNamesAndSymbols()
+    {
+        LOGGER.debug( "Name of tech.units.indriya.unit.Units.METRE: {}",
+                      tech.units.indriya.unit.Units.METRE.getName() );
+        LOGGER.debug( "Symbol of tech.units.indriya.unit.Units.METRE: {}",
+                      tech.units.indriya.unit.Units.METRE.getSymbol() );
+        LOGGER.debug( "Name of tech.units.indriya.unit.Units.CUBIC_METRE: {}",
+                      tech.units.indriya.unit.Units.CUBIC_METRE.getName() );
+        LOGGER.debug( "Symbol of tech.units.indriya.unit.Units.CUBIC_METRE: {}",
+                      tech.units.indriya.unit.Units.CUBIC_METRE.getSymbol() );
+        LOGGER.debug( "Name of si.uom.SI.CUBIC_METRE: {}",
+                      si.uom.SI.CUBIC_METRE.getName() );
+        LOGGER.debug( "Symbol of si.uom.SI.CUBIC_METRE: {}",
+                      si.uom.SI.CUBIC_METRE.getSymbol() );
+        LOGGER.debug( "Name of CUBIC_METRE_PER_SECOND: {}",
+                      CUBIC_METRE_PER_SECOND.getName() );
+        LOGGER.debug( "Symbol of CUBIC_METRE_PER_SECOND: {}",
+                      CUBIC_METRE_PER_SECOND.getSymbol() );
+    }
+
+    @Test
+    public void exploreServiceProviderUnitParsing()
+    {
+        UnitFormat unitFormat = ServiceProvider.current()
+                                               .getFormatService()
+                                               .getUnitFormat();
+        for ( String stringToParse : UNITS_TO_PARSE )
+        {
+            try
+            {
+                Unit<?> unit = unitFormat.parse( stringToParse );
+                LOGGER.debug( "SPI parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                              stringToParse, unit, unit.getName(),
+                              unit.getSymbol(), unit.getDimension() );
+            }
+            catch ( MeasurementParseException mpe )
+            {
+                LOGGER.debug( "Exception while parsing '{}': {}",
+                              stringToParse, mpe.getMessage() );
+            }
+        }
+    }
+
+    @Test
+    public void exploreIndriyaUnitParsing()
+    {
+        for ( String stringToParse : UNITS_TO_PARSE )
+        {
+            try
+            {
+                // Apparently identical to the implementation gotten from SPI.
+                Unit<?> unit = AbstractUnit.parse( stringToParse );
+                LOGGER.debug( "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                              stringToParse, unit, unit.getName(),
+                              unit.getSymbol(), unit.getDimension() );
+            }
+            catch ( MeasurementParseException mpe )
+            {
+                LOGGER.debug( "Exception while parsing '{}': {}",
+                              stringToParse, mpe.getMessage() );
+            }
+        }
     }
 }
