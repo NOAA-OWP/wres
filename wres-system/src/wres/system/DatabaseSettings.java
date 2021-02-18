@@ -164,10 +164,24 @@ final class DatabaseSettings
             if ( migrate )
             {
                 LOGGER.info( "Beginning database migration. This takes time." );
-                ConnectionSupplier connectionSupplier =
-                        new ConnectionSupplier( this.getDatabaseName() );
-                DatabaseLockManager lockManager =
-                        new DatabaseLockManager( connectionSupplier );
+                DatabaseLockManager lockManager;
+
+                if ( this.getDatabaseType()
+                         .equalsIgnoreCase( "postgresql" ) )
+                {
+                    ConnectionSupplier connectionSupplier =
+                            new ConnectionSupplier( this.getDatabaseName() );
+                    lockManager = new DatabaseLockManagerPostgres( connectionSupplier );
+                }
+                else if ( this.getDatabaseType()
+                              .equalsIgnoreCase( "h2" ) )
+                {
+                    lockManager = new DatabaseLockManagerNoop();
+                }
+                else
+                {
+                    throw new UnsupportedOperationException( "Only postgresql and h2 are currently supported" );
+                }
 
                 try ( DatabaseSchema schema = new DatabaseSchema( this.getDatabaseName(),
                                                                   lockManager );
@@ -564,6 +578,11 @@ final class DatabaseSettings
 	 */
     private String getConnectionString (String databaseName)
     {
+        if ( this.getDatabaseType().equalsIgnoreCase( "h2" ) )
+        {
+            return "jdbc:h2:mem:" + this.getDatabaseName() + ";MODE=PostgreSQL;TRACE_LEVEL_FILE=4";
+        }
+
         if (!Strings.hasValue( databaseName ))
         {
             databaseName = this.getDatabaseName();

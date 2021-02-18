@@ -275,8 +275,7 @@ public class Control implements ToIntFunction<String[]>,
                                                       metricQueue,
                                                       productQueue );
 
-        Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( innerSystemSettings );
-        DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
+        DatabaseLockManager lockManager = DatabaseLockManager.from( innerSystemSettings );
 
         // Compress database services into one object
         DatabaseServices databaseServices = new DatabaseServices( innerDatabase, lockManager );

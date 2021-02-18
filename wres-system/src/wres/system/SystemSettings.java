@@ -850,4 +850,14 @@ public class SystemSettings extends XMLReader
     {
         return LOGGER;
     }
+
+
+    /**
+     * Return the database type.
+     */
+
+    String getDatabaseType()
+    {
+        return this.databaseConfiguration.getDatabaseType();
+    }
 }

@@ -184,9 +184,7 @@ final class MainFunctions
     private static Integer cleanDatabase( final SharedResources sharedResources )
 	{
         Integer result;
-        Supplier<Connection> connectionSupplier =
-                new DatabaseConnectionSupplier( sharedResources.getSystemSettings() );
-        DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
+        DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
 
         try
         {
@@ -247,9 +245,7 @@ final class MainFunctions
     private static Integer refreshDatabase( final SharedResources sharedResources )
 	{
         Integer result = FAILURE;
-        Supplier<Connection> connectionSupplier =
-                new DatabaseConnectionSupplier( sharedResources.getSystemSettings() );
-        DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
+        DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
 
         try
         {
@@ -281,9 +277,7 @@ final class MainFunctions
             String projectPath = args[0];
 
             ProjectConfig projectConfig;
-            Supplier<Connection> connectionSupplier =
-                    new DatabaseConnectionSupplier( sharedResources.getSystemSettings() );
-            DatabaseLockManager lockManager = new DatabaseLockManager( connectionSupplier );
+            DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
 
             try
             {
