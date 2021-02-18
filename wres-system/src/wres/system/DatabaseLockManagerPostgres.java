@@ -31,7 +31,8 @@ import org.slf4j.LoggerFactory;
  * for queries.
  *
  * If there are different strategies required for locking with one rdbms versus
- * another rdbms, those differences can be encapsulated in this class.
+ * another rdbms, those differences are in different DatabaseLockManager
+ * implementations.
  *
  * Exactly one instance of this class is expected to be used by each WRES
  * process and shared as needed.
@@ -46,10 +47,9 @@ import org.slf4j.LoggerFactory;
  * acquire the same semantic lock twice before releasing the same lock.
  */
 
-public class DatabaseLockManager
+public class DatabaseLockManagerPostgres implements DatabaseLockManager
 {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger( DatabaseLockManager.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseLockManagerPostgres.class );
 
     private static final Duration REFRESH_FREQUENCY = Duration.ofSeconds( 1 );
 
@@ -58,14 +58,6 @@ public class DatabaseLockManager
      * changes (when shared) or destructive changes (when exclusive).
      */
     private static final Integer PREFIX = 1;
-
-    /**
-     * Liquibase changes or "clean" or "remove orphans" should use
-     * exclusive lock on this. Any and every ingest/evaluation should first get
-     * a shared lock on this, except those mentioned above, which should get it
-     * exclusively.
-     */
-    public static final Integer SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME = 1;
 
     /**
      * SQLState codes to treat like connection errors that can be recovered.
@@ -109,8 +101,7 @@ public class DatabaseLockManager
 
     private final ScheduledExecutorService connectionMonitorService;
 
-
-    public DatabaseLockManager( Supplier<Connection> connectionProducer )
+    public DatabaseLockManagerPostgres( Supplier<Connection> connectionProducer )
     {
         LOGGER.debug( "Began construction of lock manager {}.", this );
         this.connectionProducer = connectionProducer;
@@ -1038,9 +1029,9 @@ public class DatabaseLockManager
      */
     private static class RefreshConnectionsTask implements Runnable
     {
-        private final DatabaseLockManager lockManager;
+        private final DatabaseLockManagerPostgres lockManager;
 
-        RefreshConnectionsTask( DatabaseLockManager lockManager )
+        RefreshConnectionsTask( DatabaseLockManagerPostgres lockManager )
         {
             this.lockManager = lockManager;
         }
