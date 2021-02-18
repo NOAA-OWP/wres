@@ -34,6 +34,7 @@ import wres.io.data.caching.Variables;
 import wres.io.reading.DataSource;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.DatabaseLockManagerNoop;
 import wres.system.SystemSettings;
 
 
@@ -103,9 +104,7 @@ public class DataCardSourceTest
                .thenReturn( true );
         Mockito.when( mockDataSources.getID( any() ) )
                .thenReturn( 0 );
-
-        Supplier<Connection> connectionProducer = () -> { return mockConnection; };
-        fakeLockManager = new DatabaseLockManager( connectionProducer );
+        fakeLockManager = new DatabaseLockManagerNoop();
     }
 
 	@Test
