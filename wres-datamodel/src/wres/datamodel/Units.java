@@ -31,7 +31,7 @@ import static tech.units.indriya.unit.Units.SECOND;
  * in the build.gradle to be "api" instead of "implementation."
  */
 
-class Units
+public class Units
 {
     static final Unit<VolumetricFlowRate> CUBIC_METRE_PER_SECOND =
             new ProductUnit<>( CUBIC_METRE.divide( SECOND ) );
@@ -83,7 +83,7 @@ class Units
      * @throws UnsupportedUnitException when unable to find the unit.
      */
 
-    static Unit<?> getUnit( String unitName )
+    public static Unit<?> getUnit( String unitName )
     {
         Unit<?> unit = KNOWN_UNITS.get( unitName );
 
@@ -142,7 +142,7 @@ class Units
         return converted.doubleValue();
     }
 
-    static final class UnsupportedUnitException extends RuntimeException
+    public static final class UnsupportedUnitException extends RuntimeException
     {
         UnsupportedUnitException( String unit,
                                   Set<String> supportedUnits )

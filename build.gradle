@@ -298,9 +298,9 @@ project(':wres-datamodel')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         implementation 'com.github.ben-manes.caffeine:caffeine:2.8.8'
 
-        // The following three provide units of measure. If used in public
+        // The following four provide units of measure. If used in public
         // method signatures, they will be upgraded to api (not implementation).
-        implementation 'javax.measure:unit-api:2.1.2'
+        api 'javax.measure:unit-api:2.1.2'
         implementation 'si.uom:si-units:2.0.1'
         implementation 'tech.units:indriya:2.1.1'
         implementation 'systems.uom:systems-common:2.0.2'
