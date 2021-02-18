@@ -8,10 +8,12 @@ import javax.measure.MetricPrefix;
 import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
+import javax.measure.format.MeasurementParseException;
 import javax.measure.quantity.Length;
 
 import org.apache.commons.lang3.NotImplementedException;
 import si.uom.quantity.VolumetricFlowRate;
+import tech.units.indriya.AbstractUnit;
 import tech.units.indriya.unit.ProductUnit;
 
 import static systems.uom.common.USCustomary.FOOT;
@@ -89,8 +91,16 @@ public class Units
 
         if ( Objects.isNull( unit ) )
         {
-            throw new UnsupportedUnitException( unitName,
-                                                KNOWN_UNITS.keySet() );
+            try
+            {
+                unit = AbstractUnit.parse( unitName );
+            }
+            catch ( MeasurementParseException mpe )
+            {
+                throw new UnsupportedUnitException( unitName,
+                                                    KNOWN_UNITS.keySet(),
+                                                    mpe );
+            }
         }
 
         return unit;
@@ -145,10 +155,13 @@ public class Units
     public static final class UnsupportedUnitException extends RuntimeException
     {
         UnsupportedUnitException( String unit,
-                                  Set<String> supportedUnits )
+                                  Set<String> supportedUnits,
+                                  Throwable cause )
         {
             super( "Unable to find the measurement unit " + unit
-                   + " among the following supported units " + supportedUnits );
+                   + " among the following pre-loaded units " + supportedUnits
+                   + ", nor was it able to be parsed into another known unit.",
+                   cause );
         }
     }
 }
