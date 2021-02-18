@@ -17,6 +17,8 @@ import si.uom.quantity.VolumetricFlowRate;
 import tech.units.indriya.AbstractUnit;
 import tech.units.indriya.quantity.Quantities;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static systems.uom.common.USCustomary.GALLON_LIQUID;
 import static tech.units.indriya.unit.Units.CUBIC_METRE;
@@ -30,7 +32,8 @@ import static wres.datamodel.Units.CUBIC_METRE_PER_SECOND;
 
 public class UnitsTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( UnitsTest.class );
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger( UnitsTest.class );
     private static final List<String> UNITS_TO_PARSE =
             List.of( "g/l", "m", "m/s", "metre per second", "square foot",
                      "gallon", "gal", "sec", "m3", "litre", "kilograms", "kg",
@@ -48,11 +51,14 @@ public class UnitsTest
                                         CUBIC_METRE_PER_SECOND );
         LOGGER.debug( "Quantity of CMS flow: {}", someCubicMetersPerSecond );
         double someCubicFeetPerSecondNoUnits =
-                Units.convertFlow( someCubicMetersPerSecond, CUBIC_FOOT_PER_SECOND );
-        LOGGER.debug( "Converted-to-CFS raw value: {}", someCubicFeetPerSecondNoUnits );
-        assertTrue( someCubicFeetPerSecondNoUnits > someCubicMetersPerSecondNoUnits,
-                    "Expected " + someCubicFeetPerSecondNoUnits
-                    + " to be greater than " + someCubicMetersPerSecondNoUnits );
+                Units.convertFlow( someCubicMetersPerSecond,
+                                   CUBIC_FOOT_PER_SECOND );
+        LOGGER.debug( "Converted-to-CFS raw value: {}",
+                      someCubicFeetPerSecondNoUnits );
+        assertTrue(
+                someCubicFeetPerSecondNoUnits > someCubicMetersPerSecondNoUnits,
+                "Expected " + someCubicFeetPerSecondNoUnits
+                + " to be greater than " + someCubicMetersPerSecondNoUnits );
     }
 
 
@@ -73,20 +79,24 @@ public class UnitsTest
         LOGGER.debug( "Converted-to-volume as system unit: {}",
                       someVolume.toSystemUnit() );
         UnitConverter unitConverter =
-                ( ( Unit<Volume> ) someVolume.getUnit() ).getConverterTo( GALLON_LIQUID );
+                ( ( Unit<Volume> ) someVolume.getUnit() ).getConverterTo(
+                        GALLON_LIQUID );
         double someGallonsDouble = unitConverter.convert( someVolume.getValue()
                                                                     .doubleValue() );
         LOGGER.debug( "Converted to gallons (double): {}", someGallonsDouble );
-        Number someGallonsNumber = unitConverter.convert( someVolume.getValue() );
+        Number someGallonsNumber =
+                unitConverter.convert( someVolume.getValue() );
         LOGGER.debug( "Converted to gallons (Number): {}", someGallonsNumber );
         LOGGER.debug( "Class of the Number: {}", someGallonsNumber.getClass() );
 
         // More straightforward than using a converter:
-        Quantity<Volume> gallons = ( ( Quantity<Volume> ) someVolume).to( GALLON_LIQUID );
+        Quantity<Volume> gallons =
+                ( ( Quantity<Volume> ) someVolume ).to( GALLON_LIQUID );
         LOGGER.debug( "Converted to gallons again: {}", gallons );
 
         // What about cubic meters?
-        Quantity<?> cubicMeters = ( ( Quantity<Volume> ) someVolume).to( CUBIC_METRE );
+        Quantity<?> cubicMeters =
+                ( ( Quantity<Volume> ) someVolume ).to( CUBIC_METRE );
         LOGGER.debug( "Converted to cubicMeters: {}", cubicMeters );
     }
 
@@ -123,9 +133,13 @@ public class UnitsTest
             try
             {
                 Unit<?> unit = unitFormat.parse( stringToParse );
-                LOGGER.debug( "SPI parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
-                              stringToParse, unit, unit.getName(),
-                              unit.getSymbol(), unit.getDimension() );
+                LOGGER.debug(
+                        "SPI parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                        stringToParse,
+                        unit,
+                        unit.getName(),
+                        unit.getSymbol(),
+                        unit.getDimension() );
             }
             catch ( MeasurementParseException mpe )
             {
@@ -144,9 +158,13 @@ public class UnitsTest
             {
                 // Apparently identical to the implementation gotten from SPI.
                 Unit<?> unit = AbstractUnit.parse( stringToParse );
-                LOGGER.debug( "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
-                              stringToParse, unit, unit.getName(),
-                              unit.getSymbol(), unit.getDimension() );
+                LOGGER.debug(
+                        "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                        stringToParse,
+                        unit,
+                        unit.getName(),
+                        unit.getSymbol(),
+                        unit.getDimension() );
             }
             catch ( MeasurementParseException mpe )
             {
@@ -154,5 +172,26 @@ public class UnitsTest
                               stringToParse, mpe.getMessage() );
             }
         }
+    }
+
+    @Test
+    public void getCfsUnit()
+    {
+        Unit<?> cfs = Units.getUnit( "CFS" );
+        assertNotNull( cfs );
+    }
+
+    @Test
+    public void getCmsUnit()
+    {
+        Unit<?> cfs = Units.getUnit( "CMS" );
+        assertNotNull( cfs );
+    }
+
+    @Test
+    public void getPairsPerParsecUnitThrowsException()
+    {
+        assertThrows( Units.UnsupportedUnitException.class,
+                      () -> Units.getUnit( "pears/parsec" ) );
     }
 }

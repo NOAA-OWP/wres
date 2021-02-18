@@ -2,11 +2,15 @@ package wres.datamodel;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import javax.measure.MetricPrefix;
 import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
+import javax.measure.quantity.Length;
 
+import org.apache.commons.lang3.NotImplementedException;
 import si.uom.quantity.VolumetricFlowRate;
 import tech.units.indriya.unit.ProductUnit;
 
@@ -42,13 +46,13 @@ class Units
     static final Unit<VolumetricFlowRate> LITRE_PER_SECOND =
             new ProductUnit<>( LITRE.divide( SECOND ) );
 
+    /** Should there be multiple of these, one per supported dimension? */
     private static final Map<String,Unit<?>> KNOWN_UNITS = new HashMap<>( 18 );
 
     static
     {
-        // Populate some known units. Is this even needed? Is there something
-        // in javax.measure.format that can help? Maybe only needed for boutique
-        // units such as "CMSD"?
+        // Populate some known units. Is this even needed? Sadly, it seems so.
+        // See wres.datamodel.UnitsTest for examples of attempts to parse.
         KNOWN_UNITS.put( "CFS", CUBIC_FOOT_PER_SECOND );
         KNOWN_UNITS.put( "CFSD", CUBIC_FOOT_PER_SECOND );
         KNOWN_UNITS.put( "ft3/s", CUBIC_FOOT_PER_SECOND );
@@ -70,19 +74,60 @@ class Units
 
 
     /**
-     * Given a unit name, return the formal javax.measure Unit of Measure
+     * Given a unit name, return the formal javax.measure Unit of Measure.
+     *
+     * TODO: Do we want this or a separate method for each type of unit?
+     * TODO: Should this method also attempt "parse" with javax.measure?
      * @param unitName The name String
      * @return the javax.measure if known, null otherwise.
+     * @throws UnsupportedUnitException when unable to find the unit.
      */
 
     static Unit<?> getUnit( String unitName )
     {
-        return KNOWN_UNITS.get( unitName );
+        Unit<?> unit = KNOWN_UNITS.get( unitName );
+
+        if ( Objects.isNull( unit ) )
+        {
+            throw new UnsupportedUnitException( unitName,
+                                                KNOWN_UNITS.keySet() );
+        }
+
+        return unit;
+    }
+
+
+    /**
+     * Given a flow unit name, return the formal javax.measure Unit of Measure.
+     * Do we want to go down this road? Have multiple collections? Maybe a map
+     * of maps by type? See below as well for how this snowballs.
+     * TODO: decide whether to keep or axe
+     */
+
+    static Unit<VolumetricFlowRate> getFlowUnit( String unitName )
+    {
+        throw new NotImplementedException( "Do we want this?" );
+    }
+
+
+    /**
+     * Given a length unit name, return the formal javax.measure Unit of Measure.
+     * Do we want to go down this road? Have multiple collections? Maybe a map
+     * of maps by type? See above as well for how this snowballs.
+     * TODO: decide whether to keep or axe
+     */
+
+    static Unit<Length> getLengthUnit( String unitName )
+    {
+        throw new NotImplementedException( "Do we want this?" );
     }
 
 
     /**
      * Given a quantity of flow from and target unit to, convert.
+     *
+     * Probably not needed, given the "to" method on a Quantity.
+     * @deprecated
      * @param from The quantity of flow rate to convert.
      * @param to The resulting quantity in the unit prescribed.
      * @return the primitive double value converted.
@@ -95,5 +140,15 @@ class Units
                                       .getConverterTo( to );
         Number converted = converter.convert( from.getValue() );
         return converted.doubleValue();
+    }
+
+    static final class UnsupportedUnitException extends RuntimeException
+    {
+        UnsupportedUnitException( String unit,
+                                  Set<String> supportedUnits )
+        {
+            super( "Unable to find the measurement unit " + unit
+                   + " among the following supported units " + supportedUnits );
+        }
     }
 }
