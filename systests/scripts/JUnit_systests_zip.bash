@@ -203,7 +203,8 @@ then
 else
 	ls -l passes.txt | /usr/bin/tee --append $LOGFILE
 fi
-/usr/bin/grep EXECUTING $LOGFILE | tr -d "#" | gawk '{printf("%s %s\n", $2,$3)}' > executed_order.txt
+#/usr/bin/grep EXECUTING $LOGFILE | tr -d "#" | gawk '{printf("%s %s\n", $2,$3)}' > executed_order.txt
+/usr/bin/grep EXECUTING $LOGFILE | tr -d "#" | gawk '{printf($NF)}' > executed_order.txt
 if [ -s executed_order.txt ]
 then
 	echo "/usr/bin/cat executed_order.txt" | /usr/bin/tee --append $LOGFILE
@@ -234,7 +235,8 @@ else
 	ls -l  passed_failed.txt | /usr/bin/tee --append $LOGFILE
 fi
 
-scenarios=`cat executed_order.txt | cut -d' ' -f2`
+#scenarios=`cat executed_order.txt | cut -d' ' -f2`
+scenarios=`cat executed_order.txt`
 echo $scenarios | /usr/bin/tee --append $LOGFILE
 cat /dev/null > summary.txt
 /bin/df -h | /bin/grep wres_share > summary.txt
