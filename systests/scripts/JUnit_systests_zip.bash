@@ -204,7 +204,7 @@ else
 	ls -l passes.txt | /usr/bin/tee --append $LOGFILE
 fi
 #/usr/bin/grep EXECUTING $LOGFILE | tr -d "#" | gawk '{printf("%s %s\n", $2,$3)}' > executed_order.txt
-/usr/bin/grep EXECUTING $LOGFILE | tr -d "#" | gawk '{print($NF)} | sed -e s/scenario/Scenario/' > executed_order.txt
+/usr/bin/grep EXECUTING $LOGFILE | tr -d "#" | gawk '{print($NF)}' | sed -e s/scenario/Scenario/ > executed_order.txt
 if [ -s executed_order.txt ]
 then
 	echo "/usr/bin/cat executed_order.txt" | /usr/bin/tee --append $LOGFILE
