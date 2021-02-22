@@ -27,8 +27,8 @@ import org.slf4j.MDC;
 import wres.events.Evaluation;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
+import wres.events.subscribe.SubscriberStatus;
 import wres.events.subscribe.UnrecoverableSubscriberException;
-import wres.events.subscribe.EvaluationSubscriber.SubscriberStatus;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.util.Strings;
 

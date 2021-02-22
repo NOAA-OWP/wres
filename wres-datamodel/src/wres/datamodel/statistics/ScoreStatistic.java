@@ -46,12 +46,9 @@ public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statisti
     Set<MetricConstants> getComponents();
 
     /**
-     * Returns the score component that corresponds to {@link MetricConstants#MAIN}, or the first component in a store
-     * that contains only one component, otherwise null. Use {@link #getComponent(MetricConstants)} to return a specific
-     * component.
+     * Returns the score statistic as a raw type.
      * 
-     * @return the component that corresponds to {@link MetricConstants#MAIN}, or the first component in a store of one
-     *            component, otherwise null
+     * @return the score.
      */
     @Override
     T getData();

@@ -18,10 +18,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import javax.jms.JMSException;
@@ -36,6 +34,7 @@ import com.google.protobuf.Timestamp;
 import net.jcip.annotations.ThreadSafe;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
+import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
@@ -236,12 +235,10 @@ public class Evaluation implements Closeable
     private final AtomicInteger exitCode = new AtomicInteger( -1 );
 
     /**
-     * A lock to control the flow of producers and thereby avoid overwhelming the broker when consumers a much slower
-     * than producers (a.k.a. producer flow control). TODO: delegate this to the broker when adopting a broker than 
-     * supports flow control for topic exchanges via JMS (Qpid does not).
+     * Producer flow controller.
      */
 
-    private final ReentrantLock flowControlLock;
+    private final ProducerFlowController flowController;
 
     /**
      * When an evaluation completes with a non-zero exit code, a record of the errors encountered.
@@ -304,6 +301,34 @@ public class Evaluation implements Closeable
                             .setEvaluationDescription( evaluationDescription )
                             .setClientId( clientId )
                             .setEvaluationId( evaluationId )
+                            .build();
+    }
+
+    /**
+     * Opens an evaluation with a prescribed evaluation identifier and restrictions on approved subscribers.
+     * 
+     * @param evaluationDescription the evaluation description message
+     * @param broker the broker
+     * @param clientId the identifier of the messaging client requesting an evaluation
+     * @param evaluationId the evaluation identifier
+     * @param subscriberApprover a collection of approved subscribers that deliver formats
+     * @return an open evaluation
+     * @throws NullPointerException if any input is null
+     * @throws EvaluationEventException if the evaluation could not be constructed
+     * @throws IllegalArgumentException if any input is invalid
+     */
+
+    public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
+                                 BrokerConnectionFactory broker,
+                                 String clientId,
+                                 String evaluationId,
+                                 SubscriberApprover subscriberApprover )
+    {
+        return new Builder().setBroker( broker )
+                            .setEvaluationDescription( evaluationDescription )
+                            .setClientId( clientId )
+                            .setEvaluationId( evaluationId )
+                            .setSubscriberApprover( subscriberApprover )
                             .build();
     }
 
@@ -807,7 +832,7 @@ public class Evaluation implements Closeable
 
         return this.getExitCode();
     }
-    
+
     /**
      * Checks whether the evaluation has failed. If the evaluation has not failed at the time of calling, it may yet
      * fail.
@@ -819,7 +844,7 @@ public class Evaluation implements Closeable
     {
         return this.exitCode.get() > 0;
     }
-    
+
     /**
      * Returns the status of the evaluation on exit.
      * 
@@ -870,6 +895,12 @@ public class Evaluation implements Closeable
          */
 
         private String clientId;
+
+        /**
+         * Subscriber approver.
+         */
+
+        private SubscriberApprover subscriberApprover;
 
         /**
          * Sets the broker.
@@ -923,6 +954,20 @@ public class Evaluation implements Closeable
         public Builder setEvaluationId( String evaluationId )
         {
             this.evaluationId = evaluationId;
+
+            return this;
+        }
+
+        /**
+         * Sets the {@link SubscriberApprover}.
+         * 
+         * @param subscriberApprover the subscriber approver
+         * @return this builder 
+         */
+
+        public Builder setSubscriberApprover( SubscriberApprover subscriberApprover )
+        {
+            this.subscriberApprover = subscriberApprover;
 
             return this;
         }
@@ -1023,23 +1068,9 @@ public class Evaluation implements Closeable
      * Starts producer flow control when consumption lags behind production.
      */
 
-    void startFlowControl()
+    private void startFlowControl()
     {
-        try
-        {
-            // See #86076-9. The goal is to replace this locking with broker-managed flow control. Until then, it is
-            // probably safer to control flow only if the current thread can acquire the lock within a short period.
-            // This increases the risk of broker overflow if a subscriber dies, temporarily, but reduces the risk of
-            // application deadlock.
-            this.flowControlLock.tryLock( 10, TimeUnit.SECONDS );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-
-            LOGGER.warn( "Thread {} failed to acquire a flow control lock within a period of PT10S.",
-                         Thread.currentThread() );
-        }
+        this.flowController.start();
     }
 
     /**
@@ -1047,17 +1078,9 @@ public class Evaluation implements Closeable
      * started flow control.
      */
 
-    void stopFlowControl()
+    private void stopFlowControl()
     {
-        if ( this.flowControlLock.isHeldByCurrentThread() )
-        {
-            this.flowControlLock.unlock();
-        }
-        else
-        {
-            LOGGER.debug( "Cannot stop flow control with thread {} because it does not hold the flow control lock.",
-                          Thread.currentThread() );
-        }
+        this.flowController.stop();
     }
 
     /**
@@ -1339,6 +1362,13 @@ public class Evaluation implements Closeable
 
         this.evaluationDescription = builder.evaluationDescription;
         this.clientId = builder.clientId;
+        SubscriberApprover subscriberApprover = builder.subscriberApprover;
+
+        if ( Objects.isNull( subscriberApprover ) )
+        {
+            // Permissive approver: accepts any viable subscription
+            subscriberApprover = new SubscriberApprover.Builder().build();
+        }
 
         // Get the formats that are required
         Set<Format> formatsRequired = this.getFormatsAwaited( this.evaluationDescription.getOutputs() );
@@ -1364,6 +1394,7 @@ public class Evaluation implements Closeable
         this.isStopped = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
         this.errorsOnCompletion = new HashSet<>();
+        this.flowController = new ProducerFlowController( this );
 
         try
         {
@@ -1371,7 +1402,9 @@ public class Evaluation implements Closeable
             this.statusTracker = new EvaluationStatusTracker( this,
                                                               broker,
                                                               formatsRequired,
-                                                              broker.getMaximumMessageRetries() );
+                                                              broker.getMaximumMessageRetries(),
+                                                              subscriberApprover,
+                                                              this.flowController );
 
             Topic status = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
@@ -1396,7 +1429,6 @@ public class Evaluation implements Closeable
         this.statusMessageCount = new AtomicInteger();
         this.pairsMessageCount = new AtomicInteger();
         this.messageGroups = new ConcurrentHashMap<>();
-        this.flowControlLock = new ReentrantLock();
 
         // Await all subscribers to be negotiated
         try
