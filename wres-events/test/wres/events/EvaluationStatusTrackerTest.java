@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
+import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
@@ -41,14 +42,14 @@ class EvaluationStatusTrackerTest
     }
 
     @Test
-    void testNegotiationWithCompetingSubscribersAndOneBestSubscriber() throws IOException, InterruptedException
+    void testNegotiationWithTwoCompetingSubscribersAndOneBestSubscriber() throws IOException, InterruptedException
     {
 
         // Use an evaluation instance as a publisher and a separate status tracker as a receiver in order to test the
         // status tracker. Mocking could be used, but this is cleaner. It creates two status trackers, but only 
         // one is tested/asserted against.
         // The evaluation will fail, expectedly, and this behavior is not part of the test.
-        // Consumer factory implementation that simply adds the statistics to the above containers
+        // A fake consumer for a fake evaluation subscriber.
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
@@ -77,6 +78,9 @@ class EvaluationStatusTrackerTest
             }
         };
 
+        // Approve any offer
+        SubscriberApprover subscriberApprover = new SubscriberApprover.Builder().build();
+
         try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
@@ -90,19 +94,21 @@ class EvaluationStatusTrackerTest
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
                                                                              Set.of( Format.PNG, Format.CSV ),
-                                                                             0 ) )
+                                                                             0,
+                                                                             subscriberApprover,
+                                                                             new ProducerFlowController( evaluation ) ) )
         {
-            // The best subscriber: two formats, both required 
+            // A less-good subscriber: delivers only one of the required formats
             Consumer consumerOne = Consumer.newBuilder()
                                            .setConsumerId( "aConsumer" )
                                            .addFormats( Format.PNG )
-                                           .addFormats( Format.CSV )
                                            .build();
 
-            // A less-good subscriber: delivers only one of the required formats
+            // The best subscriber: two formats, both required 
             Consumer consumerTwo = Consumer.newBuilder()
                                            .setConsumerId( "anotherConsumer" )
                                            .addFormats( Format.PNG )
+                                           .addFormats( Format.CSV )
                                            .build();
 
             EvaluationStatus statusOne = EvaluationStatus.newBuilder()
@@ -123,17 +129,21 @@ class EvaluationStatusTrackerTest
             Map<Format, String> actual = tracker.getNegotiatedSubscribers();
             Map<Format, String> expected = new EnumMap<>( Format.class );
 
-            expected.put( Format.CSV, "aConsumer" );
-            expected.put( Format.PNG, "aConsumer" );
+            expected.put( Format.CSV, "anotherConsumer" );
+            expected.put( Format.PNG, "anotherConsumer" );
 
             assertEquals( expected, actual );
         }
     }
 
     @Test
-    void testNegotiationWithCompetingSubscribersAndThreeEqualSubscribers()
-            throws IOException, InterruptedException
+    void testNegotiationWithThreeCompetingSubscribers() throws IOException, InterruptedException
     {
+        // Use an evaluation instance as a publisher and a separate status tracker as a receiver in order to test the
+        // status tracker. Mocking could be used, but this is cleaner. It creates two status trackers, but only 
+        // one is tested/asserted against.
+        // The evaluation will fail, expectedly, and this behavior is not part of the test.
+        // A fake consumer for a fake evaluation subscriber.
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
@@ -162,6 +172,9 @@ class EvaluationStatusTrackerTest
             }
         };
 
+        // Approve any offer
+        SubscriberApprover subscriberApprover = new SubscriberApprover.Builder().build();
+
         try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
@@ -175,7 +188,9 @@ class EvaluationStatusTrackerTest
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
                                                                              Set.of( Format.PNG ),
-                                                                             0 ) )
+                                                                             0,
+                                                                             subscriberApprover,
+                                                                             new ProducerFlowController( evaluation ) ) )
         {
             Consumer consumerOne = Consumer.newBuilder()
                                            .setConsumerId( "aConsumer" )
@@ -222,7 +237,116 @@ class EvaluationStatusTrackerTest
             assertTrue( actualSubscriber.equals( "aConsumer" ) || actualSubscriber.equals( "anotherConsumer" )
                         || actualSubscriber.equals( "yetAnotherConsumer" ) );
         }
-
-
     }
+
+    @Test
+    void testNegotiationWithThreeCompletingSubscribersAndTwoApprovedSubscribers()
+            throws IOException, InterruptedException
+    {
+        // Use an evaluation instance as a publisher and a separate status tracker as a receiver in order to test the
+        // status tracker. Mocking could be used, but this is cleaner. It creates two status trackers, but only 
+        // one is tested/asserted against.
+        // The evaluation will fail, expectedly, and this behavior is not part of the test.
+        // A fake consumer for a fake evaluation subscriber.
+        ConsumerFactory consumer = new ConsumerFactory()
+        {
+            @Override
+            public Function<Statistics, Set<Path>>
+                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> {
+                    return Set.of();
+                };
+            }
+
+            @Override
+            public Function<Collection<Statistics>, Set<Path>>
+                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            {
+                return statistics -> Set.of();
+            }
+
+            @Override
+            public Consumer getConsumerDescription()
+            {
+                return Consumer.newBuilder()
+                               .setConsumerId( "aConsumer" )
+                               .addFormats( Format.NETCDF )
+                               .build();
+            }
+        };
+
+        // Approve only two of the three offers
+        SubscriberApprover subscriberApprover = new SubscriberApprover.Builder()
+                                                                                .addApprovedSubscriber( Format.PNG,
+                                                                                                        "aConsumer" )
+                                                                                .addApprovedSubscriber( Format.PNG,
+                                                                                                        "anotherConsumer" )
+                                                                                .build();
+
+        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+                                                                         Executors.newSingleThreadExecutor(),
+                                                                         EvaluationStatusTrackerTest.connections );
+              Evaluation evaluation =
+                      Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                         .setOutputs( Outputs.newBuilder()
+                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                         .build(),
+                                     EvaluationStatusTrackerTest.connections,
+                                     "aClient" );
+              EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
+                                                                             EvaluationStatusTrackerTest.connections,
+                                                                             Set.of( Format.PNG ),
+                                                                             0,
+                                                                             subscriberApprover,
+                                                                             new ProducerFlowController( evaluation ) ) )
+        {
+            Consumer consumerOne = Consumer.newBuilder()
+                                           .setConsumerId( "aConsumer" )
+                                           .addFormats( Format.PNG )
+                                           .build();
+
+            Consumer consumerTwo = Consumer.newBuilder()
+                                           .setConsumerId( "anotherConsumer" )
+                                           .addFormats( Format.PNG )
+                                           .build();
+
+            Consumer consumerThree = Consumer.newBuilder()
+                                             .setConsumerId( "yetAnotherConsumer" )
+                                             .addFormats( Format.PNG )
+                                             .build();
+
+            EvaluationStatus statusOne = EvaluationStatus.newBuilder()
+                                                         .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
+                                                         .setConsumer( consumerOne )
+                                                         .build();
+
+            EvaluationStatus statusTwo = EvaluationStatus.newBuilder()
+                                                         .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
+                                                         .setConsumer( consumerTwo )
+                                                         .build();
+            EvaluationStatus statusThree = EvaluationStatus.newBuilder()
+                                                           .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
+                                                           .setConsumer( consumerThree )
+                                                           .build();
+
+            evaluation.publish( statusOne );
+            evaluation.publish( statusTwo );
+
+            // This one is not pre-approved
+            evaluation.publish( statusThree );
+
+            tracker.awaitNegotiatedSubscribers();
+
+            Map<Format, String> actual = tracker.getNegotiatedSubscribers();
+
+            assertTrue( actual.containsKey( Format.PNG ) );
+
+            String actualSubscriber = actual.get( Format.PNG );
+
+            // Should be one of the two options, which are both equally good
+            assertTrue( actualSubscriber.equals( "aConsumer" ) || actualSubscriber.equals( "anotherConsumer" ) );
+        }
+    }
+
 }

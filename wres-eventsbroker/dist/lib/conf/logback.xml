@@ -7,21 +7,12 @@
         </encoder>
     </appender>
 
-    <!-- Keep eclipse/jetty libraries at info regardless of wres level -->
-    <logger name="org.eclipse">
-        <level value="WARN" />
-    </logger>
+    <!-- Qpid message logs with level "warn" or "error" -->
+    <logger name="qpid.message" level="warn" />
 
-    <!-- Qpid-->
-    <logger name="org.apache.qpid">
-        <level value="WARN" />
-    </logger>
-
-    <!-- Qpid messaging off.-->
-    <logger name="qpid.message">
-        <level value="OFF" />
-    </logger>
-
+    <!-- Qpid logs with level "warn" or "error" -->
+    <logger name="org.apache.qpid" level="warn" />
+    
     <!-- Allow -Dwres.logLevel to set logging level, otherwise warn. -->
     <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />

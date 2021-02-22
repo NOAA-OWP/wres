@@ -2,8 +2,6 @@ package wres.events;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -11,11 +9,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.jms.BytesMessage;
@@ -49,6 +43,7 @@ import net.jcip.annotations.ThreadSafe;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.events.publish.MessagePublisher.MessageProperty;
+import wres.events.subscribe.SubscriberApprover;
 import wres.events.subscribe.SubscriberTimedOutException;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.EvaluationStatus;
@@ -85,25 +80,10 @@ class EvaluationStatusTracker implements Closeable
     private static final long TIMEOUT_UPDATE_FREQUENCY = 10_000;
 
     /**
-     * The frequency between updates that the evaluation is ready to receive subscription offers from consumers that
-     * deliver output formats.
+     * Minimum period to wait before reporting that a subscriber is inactive.
      */
 
-    private static final long READY_TO_RECEIVE_CONSUMERS_UPDATE_FREQUENCY = 5_000;
-
-    /**
-     * An RNG to randomly pick a subscriber among the valid offers, which guarantees that work is distributed evenly
-     * among the client subscribers, asymptotically.
-     */
-
-    private static final Random SUBSCRIBER_RESOLVER = new Random();
-
-    /**
-     * The negotiation period after receipt of the first valid offer during which other valid offers to deliver formats 
-     * will be considered. The period is in milliseconds and adds latency, so must be kept short. See #82939-27.
-     */
-
-    private static final int NEGOTIATION_PERIOD = 100;
+    private static final Duration MINIMUM_PERIOD_BEFORE_REPORTING_INACTIVE_SUBSCRIBER = Duration.ofMillis( 200_000 );
 
     /**
      * Maximum number of retries allowed.
@@ -169,23 +149,10 @@ class EvaluationStatusTracker implements Closeable
     private final Map<Format, String> negotiatedSubscribers;
 
     /**
-     * A map of subscription offers (by subscriber identifier) for each format.
-     */
-
-    private final Map<Format, Set<String>> subscriptionOffers;
-
-    /**
      * The set of formats required by the evaluation.
      */
 
     private final Set<Format> formatsRequired;
-
-    /**
-     * One latch for each format required. The count of each latch is initially one. When a subscriber arrives that can
-     * deliver the format, the corresponding latch is counted down.
-     */
-
-    private final Map<Format, TimedCountDownLatch> formatNegotiationLatches;
 
     /**
      * A set of subscribers that succeeded.
@@ -210,18 +177,6 @@ class EvaluationStatusTracker implements Closeable
      */
 
     private final TimeUnit timeoutDuringConsumptionUnits;
-
-    /**
-     * The timeout for all subscribers to be negotiated.
-     */
-
-    private final long timeoutDuringNegotiation;
-
-    /**
-     * The units for the timeout associated with the negotiation of all subscriptions.
-     */
-
-    private final TimeUnit timeoutDuringNegotiationUnits;
 
     /**
      * The consumer identifier of the subscriber to which this instance is attached. Helps me ignore messages that 
@@ -258,7 +213,19 @@ class EvaluationStatusTracker implements Closeable
      * Timer used to monitor subscriptions for inactivity.
      */
 
-    private final Timer subscriptionTimer;
+    private final Timer subscriberInactivityTimer;
+
+    /**
+     * Determines whether subscription offers from format writers are viable. 
+     */
+
+    private final SubscriberApprover subscriberApprover;
+
+    /**
+     * Negotiates format subscribers.
+     */
+
+    private final SubscriberNegotiator subscriberNegotiator;
 
     @Override
     public void close()
@@ -294,7 +261,7 @@ class EvaluationStatusTracker implements Closeable
         }
 
         // Stop the subscriber inactivity timer
-        this.subscriptionTimer.cancel();
+        this.subscriberInactivityTimer.cancel();
     }
 
     /**
@@ -336,7 +303,16 @@ class EvaluationStatusTracker implements Closeable
     void awaitNegotiatedSubscribers() throws InterruptedException
     {
         // Negotiate the subscribers
-        this.negotiateSubscribers();
+        Map<Format, String> subscribers = this.subscriberNegotiator.negotiateSubscribers();
+        this.negotiatedSubscribers.putAll( subscribers );
+
+        // Add the subscriber latches that are freed when consumption completes
+        this.negotiatedSubscribers.values()
+                                  .forEach( nextSubscriber -> this.negotiatedSubscriberLatches.put( nextSubscriber,
+                                                                                                    new TimedCountDownLatch( 1 ) ) );
+
+        // Add the subscribers to the flow controller
+        this.negotiatedSubscribers.values().forEach( this.flowController::addSubscriber );
 
         // Monitor the subscribers for inactivity
         this.monitorForInactiveSubscribers( this );
@@ -367,7 +343,7 @@ class EvaluationStatusTracker implements Closeable
      * @return true if an unrecoverable exception occurred.
      */
 
-    boolean failed()
+    boolean isFailed()
     {
         return this.isFailedUnrecoverably.get();
     }
@@ -390,109 +366,6 @@ class EvaluationStatusTracker implements Closeable
     Map<Format, String> getNegotiatedSubscribers()
     {
         return Collections.unmodifiableMap( this.negotiatedSubscribers );
-    }
-
-    /**
-     * Negotiates a subscriber for each required output format.
-     * @throws InterruptedException if the negotiation of subscriptions was interrupted
-     * @throws SubscriberTimedOutException if subscriptions could not be notified within the timeout period
-     * @throws EvaluationEventException if the negotiation failed for any other reason
-     */
-
-    private void negotiateSubscribers() throws InterruptedException
-    {
-        String evaluationId = this.getEvaluationId();
-
-        LOGGER.info( "While processing evaluation {}, awaiting the negotiation of subscribers for output formats {}...",
-                     evaluationId,
-                     this.formatsRequired );
-
-        // Add a timer task that sends a notification that the evaluation is ready to publish
-        EvaluationStatusTracker tracker = this;
-
-        AtomicReference<Exception> negotiationFailed = new AtomicReference<>();
-        TimerTask updater = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    tracker.notifyConsumerRequired();
-                }
-                catch ( EvaluationEventException e )
-                {
-                    negotiationFailed.set( e );
-
-                    // Free the latches on subscribers so that the negotiation can fail in an orderly way
-                    tracker.formatNegotiationLatches.forEach( ( a, b ) -> b.countDown() );
-                    tracker.close();
-                }
-            }
-        };
-
-        Timer timer = new Timer();
-
-        // Send with zero initial delay to avoid latency with awaiting subscriber
-        timer.schedule( updater, 0, EvaluationStatusTracker.READY_TO_RECEIVE_CONSUMERS_UPDATE_FREQUENCY );
-
-        // Wait for each format to receive an offer
-        for ( Map.Entry<Format, TimedCountDownLatch> next : this.formatNegotiationLatches.entrySet() )
-        {
-            LOGGER.debug( "Awaiting a format writer for {}.", next.getKey() );
-            TimedCountDownLatch latch = next.getValue();
-            latch.await( this.timeoutDuringNegotiation, this.timeoutDuringNegotiationUnits );
-        }
-
-        timer.cancel();
-
-        // Negotiation failed completely?
-        if ( Objects.nonNull( negotiationFailed.get() ) )
-        {
-            throw new EvaluationEventException( WHILE_COMPLETING_EVALUATION + evaluationId
-                                                + ", failed to notify subscribers of the need for "
-                                                + "format writers.",
-                                                negotiationFailed.get() );
-        }
-
-        // Throw an exception if some formats have no offers
-        if ( this.isAwaitingSubscribers() )
-        {
-            Duration timeout = Duration.of( this.timeoutDuringNegotiation,
-                                            ChronoUnit.valueOf( this.timeoutDuringNegotiationUnits.name() ) );
-
-            Set<Format> failedFormats = this.getFormatsAwaitingSubscribers();
-
-            throw new SubscriberTimedOutException( "Failed to negotiate all subscriptions within the timeout period "
-                                                   + "of "
-                                                   + timeout
-                                                   + ". Subscribers could not be negotiated for the following output "
-                                                   + "formats: "
-                                                   + failedFormats );
-        }
-
-
-        // At least one valid offer has been received, but wait a minimum period for alternative offers to accrue.
-        // This small latency increases the probability of a fair competition between competing subscribers because 
-        // subscribers that register with the topic exchange earlier may receive messages sooner, even though all 
-        // competing subscribers should be treated equally. This should ensure work is distributed roughly evenly
-        // across subscribers that offer within the short negotiation period. See #82939-27.
-        Thread.sleep( EvaluationStatusTracker.NEGOTIATION_PERIOD );
-
-        // Choose between competing offers. If other offers arrive after this point, they are ignored
-        Map<Format, Set<String>> offers = Collections.unmodifiableMap( this.subscriptionOffers );
-
-        LOGGER.info( "While processing evaluation {}, received the following subscription offers by format within the "
-                     + "subscription negotiation window: {}.",
-                     evaluationId,
-                     offers );
-
-        this.chooseASubscriberForEachFormatRequired( offers );
-
-        LOGGER.info( "While processing evaluation {}, received confirmation that all required subscriptions have "
-                     + "been negotiated. The negotiated subscriptions are {}.",
-                     evaluationId,
-                     this.negotiatedSubscribers );
     }
 
     /**
@@ -588,7 +461,7 @@ class EvaluationStatusTracker implements Closeable
     private void stopOnFailure( EvaluationStatus failure )
     {
         // Mark failed
-        this.isFailedUnrecoverably.set( true );
+        this.markSubscriberFailed();
 
         // Non-zero exit code
         this.exitCode.set( 1 );
@@ -646,10 +519,10 @@ class EvaluationStatusTracker implements Closeable
         // Stop waiting
         this.publicationLatch.countDown();
         this.negotiatedSubscriberLatches.forEach( ( a, b ) -> b.countDown() );
-        this.formatNegotiationLatches.forEach( ( a, b ) -> b.countDown() );
+        this.subscriberNegotiator.stopNegotiation();
 
         // Stop any flow control blocking
-        this.evaluation.stopFlowControl();
+        this.flowController.stop();
 
         // Close the evaluation
         try
@@ -687,19 +560,46 @@ class EvaluationStatusTracker implements Closeable
                           this.getEvaluationId(),
                           consumerId );
 
-            // Create a timer task to log progress while awaiting the subscriber
-            AtomicReference<Instant> then = new AtomicReference<>( Instant.now() );
-            Duration periodToWait = Duration.of( this.timeoutDuringConsumption,
-                                                 ChronoUnit.valueOf( this.timeoutDuringConsumptionUnits.name() ) );
+            TimerTask updater = this.getInactiveSubscriberMonitorTask( statusTracker,
+                                                                       evaluationId,
+                                                                       consumerId,
+                                                                       nextLatch );
 
-            // Don't report that the subscriber is waiting until a minimum period has elapsed without updates.
-            Duration reportAfter = Duration.ofMillis( 200_000 );
+            // Log progress
+            this.subscriberInactivityTimer.schedule( updater, 0, EvaluationStatusTracker.TIMEOUT_UPDATE_FREQUENCY );
+        }
+    }
 
-            AtomicInteger resetCount = new AtomicInteger( nextLatch.getResetCount() );
-            TimerTask updater = new TimerTask()
+    /**
+     * Returns a task for monitoring subscribers and stopping an evaluation if they become inactive beyond an 
+     * prescribed period without a progress report.
+     *  
+     * @param statusTracker the status tracker
+     * @param evaluationId the evaluation identifier
+     * @param consumerId the consumer identifier
+     * @param nextLatch the latch corresponding to the subscriber whose status is being tracked
+     * @return the monitor task
+     */
+
+    private TimerTask getInactiveSubscriberMonitorTask( EvaluationStatusTracker statusTracker,
+                                                        String evaluationId,
+                                                        String consumerId,
+                                                        TimedCountDownLatch nextLatch )
+    {
+        // Create a timer task to log progress while awaiting the subscriber
+        AtomicReference<Instant> then = new AtomicReference<>( Instant.now() );
+        Duration periodToWait = Duration.of( this.timeoutDuringConsumption,
+                                             ChronoUnit.valueOf( this.timeoutDuringConsumptionUnits.name() ) );
+
+        AtomicInteger resetCount = new AtomicInteger( nextLatch.getResetCount() );
+
+        return new TimerTask()
+        {
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
+                // Only continue to monitor if the latch has not been counted down
+                if ( nextLatch.getCount() > 0 )
                 {
                     Duration timeElapsed = Duration.between( then.get(), Instant.now() );
                     Duration timeLeft = periodToWait.minus( timeElapsed );
@@ -716,10 +616,12 @@ class EvaluationStatusTracker implements Closeable
                         then.set( Instant.now() );
                     }
 
-                    if ( timeElapsed.compareTo( reportAfter ) > 0 && LOGGER.isInfoEnabled() )
+                    if ( timeElapsed.compareTo( EvaluationStatusTracker.MINIMUM_PERIOD_BEFORE_REPORTING_INACTIVE_SUBSCRIBER ) > 0
+                         && LOGGER.isInfoEnabled() )
                     {
-                        LOGGER.info( "While completing evaluation {}, awaiting subscriber {}. There is {} remaining before "
-                                     + "the subscriber timeout occurs, unless the subscriber provides an update sooner{}.",
+                        LOGGER.info( "While completing evaluation {}, awaiting subscriber {}. There is {} remaining "
+                                     + "before the subscriber timeout occurs, unless the subscriber provides an update "
+                                     + "sooner{}.",
                                      evaluationId,
                                      consumerId,
                                      timeLeft,
@@ -727,7 +629,7 @@ class EvaluationStatusTracker implements Closeable
                     }
 
                     // Insufficient progress?
-                    if ( timeLeft.isNegative() && !statusTracker.failed() )
+                    if ( timeLeft.isNegative() && !statusTracker.isFailed() )
                     {
                         EvaluationStatus status =
                                 statusTracker.getStatusMessageIndicatingConsumptionFailureOnInactivity( evaluationId,
@@ -737,11 +639,8 @@ class EvaluationStatusTracker implements Closeable
                         statusTracker.stopOnFailure( status );
                     }
                 }
-            };
-
-            // Log progress
-            this.subscriptionTimer.schedule( updater, 0, EvaluationStatusTracker.TIMEOUT_UPDATE_FREQUENCY );
-        }
+            }
+        };
     }
 
     /**
@@ -765,7 +664,7 @@ class EvaluationStatusTracker implements Closeable
                          + timeoutPeriod
                          + ".";
 
-        Set<Format> formats = this.getFormatsOfferedBySubscriber( consumerId, this.subscriptionOffers );
+        Set<Format> formats = this.getFormatsOfferedBySubscriber( consumerId );
 
         return EvaluationStatus.newBuilder()
                                .setClientId( this.getClientId() )
@@ -839,55 +738,6 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * @return true if the evaluation is awaiting subscribers for one or more formats
-     */
-
-    private boolean isAwaitingSubscribers()
-    {
-        return !this.getFormatsAwaitingSubscribers()
-                    .isEmpty();
-    }
-
-    /**
-     * Notifies any listening subscribers that the evaluation is ready to receive offers of subscriptions for 
-     * any of the prescribed formats required.
-     */
-
-    private void notifyConsumerRequired()
-    {
-        Set<Format> formatsAwaited = this.getFormatsAwaitingSubscribers();
-
-        if ( !formatsAwaited.isEmpty() )
-        {
-            EvaluationStatus readyForSubs = EvaluationStatus.newBuilder()
-                                                            .setClientId( this.getClientId() )
-                                                            .setCompletionStatus( CompletionStatus.CONSUMER_REQUIRED )
-                                                            .addAllFormatsRequired( formatsRequired )
-                                                            .build();
-
-            this.evaluation.publish( readyForSubs );
-        }
-    }
-
-    /**
-     * Registers a new subscriber offering formats, else records a negotiated subscriber as alive.
-     * 
-     * @param message the message
-     */
-
-    private void registerAnOfferOrConsumptionOngoing( EvaluationStatus message )
-    {
-        if ( this.isAwaitingSubscribers() )
-        {
-            this.registerAnOfferToDeliverFormats( message );
-        }
-        else
-        {
-            this.registerConsumptionOngoing( message );
-        }
-    }
-
-    /**
      * Attempts to negotiate a subscription for one of the formats required by this evaluation.
      * 
      * @param message the message with the subscription information
@@ -895,222 +745,22 @@ class EvaluationStatusTracker implements Closeable
 
     private void registerAnOfferToDeliverFormats( EvaluationStatus message )
     {
-        String evaluationId = this.getEvaluationId();
-
-        // If the consumer details are not present, then warn and return
-        if ( !message.hasConsumer() )
-        {
-            LOGGER.warn( "While negotiating evaluation {}, encountered an evaluation status message from a consumer "
-                         + "with status {} but whose consumer description was missing. Cannot negotiate with this "
-                         + "consumer, so ignoring it.",
-                         evaluationId,
-                         message.getCompletionStatus() );
-
-            return;
-        }
-
-        // If the consumerId is already valid in this context, then warn and return
-        String consumerId = message.getConsumer()
-                                   .getConsumerId();
-
-        if ( this.validateConsumerId( consumerId ) )
-        {
-            LOGGER.debug( "While negotiating evaluation {}, encountered an evaluation status message from consumer "
-                          + "{} with status {}. The consumer has already been obligated for this evaluation and "
-                          + "will not be considered further.",
-                          evaluationId,
-                          consumerId,
-                          message.getCompletionStatus() );
-
-            return;
-        }
-
-        // All formats offered by the consumer
-        List<Format> formatsList = message.getConsumer()
-                                          .getFormatsList();
-
-        // The set of formats offered by the consumer that are also required by the evaluation
-        Set<Format> formatsOfferedByConsumer = new HashSet<>( this.formatsRequired );
-        formatsOfferedByConsumer.retainAll( formatsList );
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "While negotiating evaluation {}, encountered an evaluation status message from consumer {} "
-                          + "with status {} offering to deliver formats. Formats required: {}. Formats offered: {}. "
-                          + "Formats offered that are required: {}",
-                          evaluationId,
-                          consumerId,
-                          message.getCompletionStatus(),
-                          this.formatsRequired,
-                          formatsList,
-                          formatsOfferedByConsumer );
-        }
-
-        // Register the offer
-        for ( Format next : formatsOfferedByConsumer )
-        {
-            Set<String> offers = new HashSet<>();
-            offers.add( consumerId );
-            Set<String> added = this.subscriptionOffers.putIfAbsent( next, offers );
-
-            // Already exists?
-            if ( Objects.nonNull( added ) )
-            {
-                added.add( consumerId );
-            }
-
-            TimedCountDownLatch latch = this.formatNegotiationLatches.get( next );
-            latch.countDown();
-        }
-
-        // Report on formats still awaiting subscribers
-        Set<Format> formatsAwaited = this.getFormatsAwaitingSubscribers();
-
-        if ( !formatsAwaited.isEmpty() && LOGGER.isInfoEnabled() )
-        {
-            LOGGER.info( "While processing evaluation {}, awaiting the negotiation of subscribers for output "
-                         + "formats {}...",
-                         evaluationId,
-                         formatsAwaited );
-        }
-    }
-
-    /**
-     * Choose one of the viable subscription offers for each required format. See #82939-27.
-     * 
-     * @param offered the offered subscribers
-     */
-
-    private void chooseASubscriberForEachFormatRequired( Map<Format, Set<String>> offered )
-    {
-        Map<Format, String> formatsAgreed = new EnumMap<>( Format.class );
-
-        // Iterate through the required formats and choose a subscriber for each one
-        for ( Format nextFormat : this.formatsRequired )
-        {
-            // Not already agreed
-            if ( !formatsAgreed.containsKey( nextFormat ) )
-            {
-                // Get the subscribers with equally good offers for this format
-                Set<String> offerSet = this.getSubscribersWithBestOffer( nextFormat, offered );
-                // Create a list to facilitate picking
-                List<String> bestOffers = List.copyOf( offerSet );
-
-                // Pick one randomly among the equally good offers. This ensures a fair competition among subscribers
-                // that registered their offers within the subscription window. See #82939-27.
-                int size = bestOffers.size();
-                int pick = EvaluationStatusTracker.SUBSCRIBER_RESOLVER.nextInt( size );
-                String bestOffer = bestOffers.get( pick );
-
-                // Get the formats delivered by this subscriber
-                Set<Format> formats = this.getFormatsOfferedBySubscriber( bestOffer, offered );
-
-                // Accept the best offer for each format it offers
-                formats.forEach( next -> formatsAgreed.put( next, bestOffer ) );
-
-                // Add a consumption latch for the new consumer.
-                this.negotiatedSubscriberLatches.put( bestOffer, new TimedCountDownLatch( 1 ) );
-
-                // Flow control the consumer
-                this.flowController.addSubscriber( bestOffer );
-            }
-        }
-
-        // Register the agreed formats
-        this.negotiatedSubscribers.putAll( formatsAgreed );
-    }
-
-    /**
-     * Returns a set of subscriber identifiers that provide an equally good offer for the specified format. An offer is
-     * equally good if the subscriber delivers the largest number of required formats, including the specified format. 
-     * In other words, this method embeds a particular definition of subscriber "goodness". An alternative definition 
-     * would consider all valid offers equal; this would allow a broader distribution of work across offers, but would 
-     * require more duplication of work, specifically message deserialization work (since every subscriber must 
-     * deserialize messages before routing them to format writers). When N subscribers provide symmetric offers, then 
-     * all of them are equally good.
-     * 
-     * @param format the format required
-     * @param offered the subscribers with format offers
-     * @return the subscriber identifiers of the equally good offers to deliver the required format
-     * @throws IllegalArgumentException if the required format is not present among the offers
-     */
-
-    private Set<String> getSubscribersWithBestOffer( Format format, Map<Format, Set<String>> offered )
-    {
-        if ( !offered.containsKey( format ) )
-        {
-            throw new IllegalArgumentException( "The format " + format + " was not offered by any subscriber." );
-        }
-
-        // The possible subscribers 
-        Set<String> possibilities = offered.get( format );
-
-        Set<String> returnMe = new HashSet<>();
-
-        // For each subscriber, find the number of formats it offers, including the required format, and then map the 
-        // subscribers to their format counts
-        Map<Long, Set<String>> map = offered.values()
-                                            .stream()
-                                            .flatMap( Set::stream )
-                                            // Only consider subscribers that offer the required format
-                                            .filter( possibilities::contains )
-                                            // Find the total number of formats offered per subscriber. This will 
-                                            // produce a map of (subscriberId,formatCount)
-                                            .collect( Collectors.groupingBy( Function.identity(),
-                                                                             Collectors.counting() ) )
-                                            // Iterate the map
-                                            .entrySet()
-                                            .stream()
-                                            // Group by the number of formats offered. This will produce a map of
-                                            // (formatCount,{subscriberId_1,...,subscriberId_N})
-                                            .collect( Collectors.groupingBy( Map.Entry::getValue,
-                                                                             Collectors.mapping( Map.Entry::getKey,
-                                                                                                 Collectors.toSet() ) ) );
-
-        // Return the subscribers that offer the most formats. If there is more than one, then they are "equally good" 
-        // and a fair competition will pick one at random
-        Optional<Map.Entry<Long, Set<String>>> max = map.entrySet()
-                                                        .stream()
-                                                        .max( ( a, b ) -> a.getKey().compareTo( b.getKey() ) );
-
-        // Must be at least one - see exception on entry - but guard nonetheless
-        if ( max.isPresent() )
-        {
-            returnMe.addAll( max.get().getValue() );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
+        this.subscriberNegotiator.registerAnOfferToDeliverFormats( message );
     }
 
     /**
      * Returns the formats offered by the subscriber.
      * @param subscriberId the subscriber identifier
-     * @param offered the formats offered by all subscribers
      * @return the formats offered by the specified subscriber
      */
 
-    private Set<Format> getFormatsOfferedBySubscriber( String subscriberId, Map<Format, Set<String>> offered )
+    private Set<Format> getFormatsOfferedBySubscriber( String subscriberId )
     {
-        return offered.entrySet()
-                      .stream()
-                      .filter( next -> next.getValue().contains( subscriberId ) )
-                      .map( Map.Entry::getKey )
-                      .collect( Collectors.toSet() );
-    }
-
-    /**
-     * Returns the formats to be negotiated.
-     * 
-     * @return the formats awaiting subscribers
-     */
-
-    private Set<Format> getFormatsAwaitingSubscribers()
-    {
-        return this.formatNegotiationLatches.entrySet()
-                                            .stream()
-                                            .filter( next -> next.getValue().getCount() > 0 )
-                                            .map( Map.Entry::getKey )
-                                            .collect( Collectors.toUnmodifiableSet() );
+        return this.negotiatedSubscribers.entrySet()
+                                         .stream()
+                                         .filter( next -> next.getValue().equals( subscriberId ) )
+                                         .map( Map.Entry::getKey )
+                                         .collect( Collectors.toSet() );
     }
 
     /**
@@ -1140,10 +790,9 @@ class EvaluationStatusTracker implements Closeable
     {
         String consumerId = message.getConsumer()
                                    .getConsumerId();
-        boolean isBeingTracked = this.validateConsumerId( consumerId );
 
         // A real consumer
-        if ( isBeingTracked )
+        if ( this.isValidConsumerId( consumerId ) )
         {
             if ( this.failure.contains( consumerId ) )
             {
@@ -1187,10 +836,9 @@ class EvaluationStatusTracker implements Closeable
     {
         String consumerId = message.getConsumer()
                                    .getConsumerId();
-        boolean isBeingTracked = this.validateConsumerId( consumerId );
 
         // A real consumer
-        if ( isBeingTracked )
+        if ( this.isValidConsumerId( consumerId ) )
         {
             // Reset the countdown
             this.getSubscriberLatch( consumerId )
@@ -1204,13 +852,14 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * Throws an exception if the consumer identifier is blank.
+     * Validates the consumer identifier.
+     * 
      * @param consumerId the consumer identifier
-     * @throws EvaluationEventException if the consumer identifier is blank
      * @return true if the consumer is not me and is being tracked by this tracker instance, false otherwise
+     * @throws EvaluationEventException if the consumer identifier is blank
      */
 
-    private boolean validateConsumerId( String consumerId )
+    private boolean isValidConsumerId( String consumerId )
     {
         if ( consumerId.isBlank() )
         {
@@ -1257,7 +906,7 @@ class EvaluationStatusTracker implements Closeable
 
     private TimedCountDownLatch getSubscriberLatch( String consumerId )
     {
-        this.validateConsumerId( consumerId );
+        this.isValidConsumerId( consumerId );
 
         return this.negotiatedSubscriberLatches.get( consumerId );
     }
@@ -1279,6 +928,8 @@ class EvaluationStatusTracker implements Closeable
      * @param broker the broker connection factory
      * @param formatsRequired the formats to be delivered by subscribers yet to be negotiated
      * @param maximum retries the maximum number of retries on failing to consume a message
+     * @param subscriberApprover determines whether subscription offers from format writers are viable
+     * @param flowController producer flow controller
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the set of formats is empty or the maximum number of retries is < 0
      * @throws EvaluationEventException if the status tracker could not be created for any other reason
@@ -1287,11 +938,15 @@ class EvaluationStatusTracker implements Closeable
     EvaluationStatusTracker( Evaluation evaluation,
                              BrokerConnectionFactory broker,
                              Set<Format> formatsRequired,
-                             int maximumRetries )
+                             int maximumRetries,
+                             SubscriberApprover subscriberApprover,
+                             ProducerFlowController flowController )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( broker );
         Objects.requireNonNull( formatsRequired );
+        Objects.requireNonNull( subscriberApprover );
+        Objects.requireNonNull( flowController );
 
         if ( maximumRetries < 0 )
         {
@@ -1312,33 +967,21 @@ class EvaluationStatusTracker implements Closeable
         this.success = ConcurrentHashMap.newKeySet();
         this.failure = ConcurrentHashMap.newKeySet();
         this.negotiatedSubscribers = new EnumMap<>( Format.class );
-        this.subscriptionOffers = new ConcurrentHashMap<>();
-        this.flowController = new ProducerFlowController( evaluation );
+        this.flowController = flowController;
         this.formatsRequired = formatsRequired;
-        this.subscriptionTimer = new Timer( true );
-
-        LOGGER.info( "The following output formats for evaluation {} will be delivered by subscribers that are yet to "
-                     + "be negotiated: {}.",
-                     this.getEvaluationId(),
-                     formatsRequired );
+        this.subscriberInactivityTimer = new Timer( true );
+        this.subscriberApprover = subscriberApprover;
+        this.subscriberNegotiator = new SubscriberNegotiator( this.evaluation,
+                                                              this.formatsRequired,
+                                                              this.subscriberApprover );
 
         // Default timeout for consumption from an individual consumer unless progress is reported
         // In practice, this is extremely lenient. TODO: expose this to configuration.
         this.timeoutDuringConsumption = 120;
         this.timeoutDuringConsumptionUnits = TimeUnit.MINUTES;
 
-        // Timeout period for the negotiation of all subscriptions. This is intentionally much shorter than the timeout
-        // during consumption because it is much easier to resubmit an evaluation when subscribers are down for a short
-        // period than to redo an evaluation whose production has been completed. TODO: expose this to configuration.
-        this.timeoutDuringNegotiation = 5;
-        this.timeoutDuringNegotiationUnits = TimeUnit.MINUTES;
-
         // Mutable because subscriptions are negotiated and hence latches added upon successful negotiation
         this.negotiatedSubscriberLatches = new ConcurrentHashMap<>();
-
-        // A latch for each format to be negotiated
-        this.formatNegotiationLatches = new EnumMap<>( Format.class );
-        this.formatsRequired.forEach( next -> this.formatNegotiationLatches.put( next, new TimedCountDownLatch( 1 ) ) );
 
         // Create a unique identifier for this tracker so that it can ignore messages related to itself
         this.trackerId = Evaluation.getUniqueId();
@@ -1356,6 +999,8 @@ class EvaluationStatusTracker implements Closeable
             this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
             Topic topic = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
+            // Only consider messages that belong to this evaluation. Even when negotiating subscribers, offers should
+            // refer to the specific evaluation that requested one or more format writers
             String selector = MessageProperty.JMS_CORRELATION_ID + "='" + this.getEvaluationId() + "'";
             this.subscriberName = Evaluation.EVALUATION_STATUS_QUEUE + "-HOUSEKEEPING-evaluation-status-tracker-"
                                   + this.getEvaluationId()
@@ -1412,13 +1057,13 @@ class EvaluationStatusTracker implements Closeable
             AtomicBoolean recovering = new AtomicBoolean();
 
             BytesMessage receivedBytes = (BytesMessage) message;
-            String messageId = "unknown";
-            String correlationId = "unknown";
+            String messageId = null;
+            String correlationId = null;
 
             try
             {
                 // Only consume if the subscriber is live
-                if ( !this.failed() )
+                if ( !this.isFailed() )
                 {
                     messageId = message.getJMSMessageID();
                     correlationId = message.getJMSCorrelationID();
@@ -1490,7 +1135,7 @@ class EvaluationStatusTracker implements Closeable
                 this.stopOnFailure( message );
                 break;
             case READY_TO_CONSUME:
-                this.registerAnOfferOrConsumptionOngoing( message );
+                this.registerAnOfferToDeliverFormats( message );
                 break;
             case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
                 this.registerConsumptionCompleteReportedSuccess( message );
@@ -1529,63 +1174,72 @@ class EvaluationStatusTracker implements Closeable
      * @param exception the exception encountered
      */
 
-    private void recover( String messageId, String correlationId, Exception e )
+    private void recover( String messageId, String correlationId, Exception exception )
     {
-        // Only try to recover if an evaluation hasn't already failed
-        if ( !this.failed() )
+        // Only try to recover if an evaluation hasn't already failed        
+        if ( !this.isFailed() )
         {
-            try ( StringWriter sw = new StringWriter();
-                  PrintWriter pw = new PrintWriter( sw ); )
+            int retryCount = this.getNumberOfRetriesAttempted()
+                                 .incrementAndGet(); // Counter starts at zero
+
+            try
             {
-                // Create a stack trace to log
-                e.printStackTrace( pw );
-                String message = sw.toString();
+                // Exponential back-off, which includes a PT2S wait before the first attempt
+                Thread.sleep( (long) Math.pow( 2, retryCount ) * 1000 );
+
+                String errorMessage = "While attempting to consume a message with identifier " + messageId
+                                      + " and correlation identifier "
+                                      + correlationId
+                                      + " in evaluation status tracker "
+                                      + this.getClientId()
+                                      + ", encountered an error. The session will now attempt to recover. This "
+                                      + "is "
+                                      + retryCount
+                                      + " of "
+                                      + this.getMaximumRetries()
+                                      + " allowed consumption failures before the status tracker will notify an "
+                                      + "unrecoverable failure for evaluation "
+                                      + correlationId
+                                      + ", unless the status tracker is otherwise marked "
+                                      + "failed (in which case further retries may not occur).";
+
+                LOGGER.error( errorMessage, exception );
 
                 // Attempt recovery in order to cycle the delivery attempts. When the maximum is reached, poison
-                // messages should hit the dead letter queue/DLQ
-                LOGGER.error( "While attempting to consume a message with identifier {} and correlation identifier "
-                              + "{} in subscriber {}, encountered an error. This is {} of {} allowed consumption "
-                              + "failures before the subscriber will notify an unrecoverable failure for "
-                              + "evaluation {}. The error is: {}",
-                              messageId,
-                              correlationId,
-                              this.getTrackerId(),
-                              this.getNumberOfRetriesAttempted().get() + 1, // Counter starts at zero
-                              this.getMaximumRetries(),
-                              correlationId,
-                              message );
-
+                // messages should hit the Dead Letter Queue (DLQ), assuming a DLQ is configured.
                 this.session.recover();
             }
             catch ( JMSException f )
             {
-                LOGGER.error( "While attempting to recover a session for evaluation {} in evaluation status tracker {}, "
-                              + "encountered an error that prevented recovery: ",
-                              correlationId,
-                              this.getTrackerId(),
-                              f.getMessage() );
+                String message = "While attempting to recover a session for evaluation " + correlationId
+                                 + " in evaluation status tracker "
+                                 + this.getClientId()
+                                 + ", encountered "
+                                 + "an error that prevented recovery.";
+
+                LOGGER.error( message, f );
             }
-            catch ( IOException g )
+            catch ( InterruptedException e )
             {
-                LOGGER.error( "While attempting recovery in evaluation status tracker {}, failed to close an exception "
-                              + "writer.",
-                              this.getTrackerId() );
+                Thread.currentThread().interrupt();
+
+                String message = "Interrupted while waiting to recover a session in evaluation " + correlationId + ".";
+
+                LOGGER.error( message, correlationId );
             }
-        }
 
-        // Stop if the maximum number of retries has been reached
-        if ( this.getNumberOfRetriesAttempted()
-                 .incrementAndGet() == this.getMaximumRetries() )
-        {
+            // Stop if the maximum number of retries has been reached
+            if ( retryCount == this.getMaximumRetries() )
+            {
+                LOGGER.error( "Evaluation status tracker {} encountered a consumption failure for evaluation {}. "
+                              + "Recovery failed after {} attempts.",
+                              this.getTrackerId(),
+                              correlationId,
+                              this.getMaximumRetries() );
 
-            LOGGER.error( "Evaluation status tracker {} encountered a consumption failure for evaluation {}. Recovery "
-                          + "failed after {} attempts.",
-                          this.getTrackerId(),
-                          correlationId,
-                          this.getMaximumRetries() );
-
-            // Register the subscriber as failed
-            this.markSubscriberFailed();
+                // Register the subscriber as failed
+                this.markSubscriberFailed();
+            }
         }
     }
 

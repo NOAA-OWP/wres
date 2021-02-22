@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -36,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import net.jcip.annotations.ThreadSafe;
 import wres.events.EvaluationEventException;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
@@ -71,6 +71,7 @@ import wres.statistics.generated.Evaluation;
  * @author james.brown@hydrosolved.com
  */
 
+@ThreadSafe
 public class EvaluationSubscriber implements Closeable
 {
 
@@ -125,10 +126,18 @@ public class EvaluationSubscriber implements Closeable
     private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
 
     /**
-     * Re-usable status message.
+     * Re-usable status message indicating the consumer is alive with the completion status 
+     * {@link CompletionStatus#CONSUMPTION_ONGOING}.
      */
 
-    private final EvaluationStatus readyToConsume;
+    private final EvaluationStatus consumerIsAlive;
+
+    /**
+     * Re-usable status message that contains a service offer from this subscriber with the completion status 
+     * {@link CompletionStatus#READY_TO_CONSUME}.
+     */
+
+    private final EvaluationStatus serviceOffer;
 
     /**
      * The formats supported as strings.
@@ -920,7 +929,9 @@ public class EvaluationSubscriber implements Closeable
         {
             LOGGER.warn( "The messageId and correlationId are required AMQP metadata and cannot be null. "
                          + "The messageId is {} and the correlationId is {}. This message will be acknowledged but not "
-                         + "forwarded for consumption. This may indicate a broker or messaging client in distress." );
+                         + "forwarded for consumption. This may indicate a broker or messaging client in distress.",
+                         messageId,
+                         correlationId );
 
             return false;
         }
@@ -1324,7 +1335,9 @@ public class EvaluationSubscriber implements Closeable
         if ( status.getFormatsRequiredList().isEmpty()
              || status.getFormatsRequiredList().stream().anyMatch( formatsOffered::contains ) )
         {
-            this.publishReadyToConsume( evaluationId );
+            LOGGER.debug( "Subscriber {} is offering services for formats {}.", this.getClientId(), formatsOffered );
+
+            this.publishStatusMessage( evaluationId, this.serviceOffer );
         }
         else
         {
@@ -1359,15 +1372,16 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Publishes the status message {@link #readyToConsume}.
-     * @param evaluationId the evaluation to notify
+     * Publishes a status message.
+     * @param evaluationId the evaluation identifier to notify
+     * @param status the status message to publish
      */
 
-    private void publishReadyToConsume( String evaluationId )
+    private void publishStatusMessage( String evaluationId, EvaluationStatus status )
     {
         String messageId = "ID:" + this.getClientId() + "-m" + wres.events.Evaluation.getUniqueId();
 
-        ByteBuffer buffer = ByteBuffer.wrap( this.readyToConsume.toByteArray() );
+        ByteBuffer buffer = ByteBuffer.wrap( status.toByteArray() );
 
         try
         {
@@ -1440,7 +1454,7 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Sends an evaluation status message with a status of {@link CompletionStatus#READY_TO_CONSUME} for each open
+     * Sends an evaluation status message with a status of {@link CompletionStatus#CONSUMPTION_ONGOING} for each open
      * evaluation so that any listening client knows that the subscriber is still alive.
      * @throws EvaluationEventException if the notification failed
      */
@@ -1453,7 +1467,7 @@ public class EvaluationSubscriber implements Closeable
             // Consider only open evaluations
             if ( !next.getValue().isComplete() )
             {
-                this.publishReadyToConsume( next.getKey() );
+                this.publishStatusMessage( next.getKey(), this.consumerIsAlive );
             }
         }
     }
@@ -1557,11 +1571,17 @@ public class EvaluationSubscriber implements Closeable
             this.evaluations = new ConcurrentHashMap<>();
             this.retriesAttempted = new ConcurrentHashMap<>();
 
-            this.readyToConsume = EvaluationStatus.newBuilder()
-                                                  .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
-                                                  .setConsumer( this.getConsumerDescription() )
-                                                  .setClientId( this.getClientId() )
-                                                  .build();
+            this.consumerIsAlive = EvaluationStatus.newBuilder()
+                                                   .setCompletionStatus( CompletionStatus.CONSUMPTION_ONGOING )
+                                                   .setConsumer( this.getConsumerDescription() )
+                                                   .setClientId( this.getClientId() )
+                                                   .build();
+
+            this.serviceOffer = EvaluationStatus.newBuilder()
+                                                .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
+                                                .setConsumer( this.getConsumerDescription() )
+                                                .setClientId( this.getClientId() )
+                                                .build();
 
             this.formatStrings = this.getConsumerDescription()
                                      .getFormatsList()
@@ -1595,194 +1615,6 @@ public class EvaluationSubscriber implements Closeable
                      tempDir );
 
         LOGGER.info( "Created subscriber {}", this.getClientId() );
-    }
-
-    /**
-     * A mutable container that records the status of the subscriber and the jobs completed so far. All status 
-     * information is updated atomically.
-     * 
-     * @author james.brown@hydrosolved.com
-     */
-
-    public static class SubscriberStatus
-    {
-
-        /** The client identifier.*/
-        private final String clientId;
-
-        /** The number of evaluations started.*/
-        private final AtomicInteger evaluationCount = new AtomicInteger();
-
-        /** The number of statistics blobs completed.*/
-        private final AtomicInteger statisticsCount = new AtomicInteger();
-
-        /** The last evaluation started.*/
-        private final AtomicReference<String> evaluationId = new AtomicReference<>();
-
-        /** The last statistics message completed.*/
-        private final AtomicReference<String> statisticsMessageId = new AtomicReference<>();
-
-        /** The evaluations that failed.*/
-        private final Set<String> evaluationFailed = ConcurrentHashMap.newKeySet();
-
-        /** The evaluations that have completed.*/
-        private final Set<String> evaluationComplete = ConcurrentHashMap.newKeySet();
-
-        /** Is true if the subscriber has failed.*/
-        private final AtomicBoolean isFailed = new AtomicBoolean();
-
-        @Override
-        public String toString()
-        {
-            String addSucceeded = "";
-            String addFailed = "";
-            String addComplete = "";
-
-            if ( Objects.nonNull( this.evaluationId.get() ) && Objects.nonNull( this.statisticsMessageId.get() ) )
-            {
-                addSucceeded = " The most recent evaluation was "
-                               + this.evaluationId.get()
-                               + " and the most recent statistics were attached to message "
-                               + this.statisticsMessageId.get()
-                               + ".";
-            }
-
-            if ( !this.evaluationFailed.isEmpty() )
-            {
-                addFailed =
-                        " Failed to consume one or more statistics messages for " + this.evaluationFailed.size()
-                            + " evaluations. "
-                            + "The failed evaluation are "
-                            + this.evaluationFailed
-                            + ".";
-            }
-
-            if ( !this.evaluationComplete.isEmpty() )
-            {
-                addComplete = " Evaluation subscriber "
-                              + this.clientId
-                              + " completed "
-                              + this.evaluationComplete.size()
-                              + " of the "
-                              + this.evaluationCount.get()
-                              + " evaluations that were started.";
-            }
-
-            return "Evaluation subscriber "
-                   + this.clientId
-                   + " is waiting for work. Until now, received "
-                   + this.statisticsCount.get()
-                   + " packets of statistics across "
-                   + this.evaluationCount.get()
-                   + " evaluations."
-                   + addSucceeded
-                   + addFailed
-                   + addComplete;
-        }
-
-        /**
-         * @return the evaluation count.
-         */
-        public int getEvaluationCount()
-        {
-            return this.evaluationCount.get();
-        }
-
-        /**
-         * @return the evaluation failed count.
-         */
-
-        public int getEvaluationFailedCount()
-        {
-            return this.evaluationFailed.size();
-        }
-
-        /**
-         * @return the statistics count.
-         */
-        public int getStatisticsCount()
-        {
-            return this.statisticsCount.get();
-        }
-
-        /**
-         * Flags an unrecoverable failure in the subscriber.
-         * @param exception the unrecoverable consumer exception that caused the failure
-         */
-
-        public void markFailedUnrecoverably( RuntimeException exception )
-        {
-            String failure = "Evaluation subscriber " + this.clientId + " has failed unrecoverably and will now stop.";
-
-            LOGGER.error( failure, exception );
-
-            this.isFailed.set( true );
-        }
-
-        /**
-         * Returns the failure state of the subscriber.
-         * @return true if the subscriber has failed, otherwise false
-         */
-
-        public boolean isFailed()
-        {
-            return this.isFailed.get();
-        }
-
-        /**
-         * Registers an evaluation completed.
-         * @param evaluationId the evaluation identifier
-         */
-
-        void registerEvaluationCompleted( String evaluationId )
-        {
-            this.evaluationComplete.add( evaluationId );
-        }
-
-        /**
-         * Increment the failed evaluation count and last failed evaluation identifier.
-         * @param evaluationId the evaluation identifier
-         */
-
-        void registerEvaluationFailed( String evaluationId )
-        {
-            this.evaluationFailed.add( evaluationId );
-        }
-
-        /**
-         * Increment the evaluation count and last evaluation identifier.
-         * @param evaluationId the evaluation identifier
-         */
-
-        private void registerEvaluationStarted( String evaluationId )
-        {
-            this.evaluationCount.incrementAndGet();
-            this.evaluationId.set( evaluationId );
-        }
-
-        /**
-         * Increment the statistics count and last statistics message identifier.
-         * @param messageId the identifier of the message that contained the statistics.
-         */
-
-        private void registerStatistics( String messageId )
-        {
-            this.statisticsCount.incrementAndGet();
-            this.statisticsMessageId.set( messageId );
-        }
-
-        /**
-         * Hidden constructor.
-         * 
-         * @param clientId the client identifier
-         */
-
-        private SubscriberStatus( String clientId )
-        {
-            Objects.requireNonNull( clientId );
-
-            this.clientId = clientId;
-        }
     }
 
     /**

@@ -3,6 +3,7 @@ package wres.events;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -33,6 +34,14 @@ class ProducerFlowController
      */
 
     private final Evaluation evaluation;
+    
+    /**
+     * A lock to control the flow of producers and thereby avoid overwhelming the broker when consumers a much slower
+     * than producers (a.k.a. producer flow control). TODO: delegate this to the broker when adopting a broker than 
+     * supports flow control for topic exchanges via JMS (Qpid does not).
+     */
+
+    private final ReentrantLock flowControlLock;
 
     /**
      * The subscriber identifiers to track. When every subscriber has positive credit, flow control can be turned off. A
@@ -62,20 +71,53 @@ class ProducerFlowController
         this.evaluation = evaluation;
         this.subscriberCredit = new HashMap<>();
         this.subscriberCreditLock = new ReentrantLock();
+        this.flowControlLock = new ReentrantLock();
     }
 
     /**
-     * Starts producer flow control.
+     * Starts producer flow control when consumption lags behind production.
      */
 
     void start()
     {
         LOGGER.debug( "Engaging producer flow control for evaluation {} until all consumers report consumption "
-                      + "complete for one message group.",
-                      this.evaluation.getEvaluationId() );
+                + "complete for one message group.",
+                this.evaluation.getEvaluationId() );
+        
+        try
+        {
+            // See #86076-9. The goal is to replace this locking with broker-managed flow control. Until then, it is
+            // probably safer to control flow only if the current thread can acquire the lock within a short period.
+            // This increases the risk of broker overflow if a subscriber dies, temporarily, but reduces the risk of
+            // application deadlock.
+            this.flowControlLock.tryLock( 10, TimeUnit.SECONDS );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
 
-        this.evaluation.startFlowControl();
+            LOGGER.warn( "Thread {} failed to acquire a flow control lock within a period of PT10S.",
+                         Thread.currentThread() );
+        }
     }
+
+    /**
+     * Stops producer flow control unconditionally. Should be stopped by the thread that started flow control.
+     */
+
+    void stop()
+    {
+        if ( this.flowControlLock.isHeldByCurrentThread() )
+        {
+            this.flowControlLock.unlock();
+        }
+        else
+        {
+            LOGGER.debug( "Cannot stop flow control with thread {} because it does not hold the flow control lock.",
+                          Thread.currentThread() );
+        }
+    }    
+    
 
     /**
      * Attempts to stop producer flow control. Flow control will stop if sufficient credits are available. Sufficient
@@ -123,7 +165,7 @@ class ProducerFlowController
                     next.decrementAndGet();
                 }
 
-                this.evaluation.stopFlowControl();
+                this.stop();
 
                 LOGGER.debug( "Disengaging producer flow control for evaluation {}.",
                               this.evaluation.getEvaluationId() );

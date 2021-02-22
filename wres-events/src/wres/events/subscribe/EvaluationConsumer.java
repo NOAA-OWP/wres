@@ -26,11 +26,11 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jcip.annotations.ThreadSafe;
 import wres.events.EvaluationEventException;
 import wres.events.TimedCountDownLatch;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
-import wres.events.subscribe.EvaluationSubscriber.SubscriberStatus;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.EvaluationStatus;
@@ -55,6 +55,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusMe
  * @author james.brown@hydrosolved.com
  */
 
+@ThreadSafe
 class EvaluationConsumer
 {
     private static final String FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION =

@@ -1,4 +1,4 @@
-package wres.events;
+package wres.events.subscribe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -22,10 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
-import wres.events.subscribe.ConsumerException;
-import wres.events.subscribe.ConsumerFactory;
-import wres.events.subscribe.EvaluationSubscriber;
-import wres.events.subscribe.EvaluationSubscriber.SubscriberStatus;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Statistics;

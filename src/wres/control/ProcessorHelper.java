@@ -33,6 +33,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.events.Evaluation;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
+import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
@@ -144,11 +145,21 @@ class ProcessorHelper
                                                                           executors.getProductExecutor(),
                                                                           connections );
 
+        // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format writing
+        // work from each other. This is expected insofar as all subscribers are par. However, core clients currently 
+        // run in short-running processes, we want to estimate resources for core clients effectively, and some format
+        // writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place all format writers in
+        // long running processes instead. See #88262 and #88267.
+        SubscriberApprover subscriberApprover = new SubscriberApprover.Builder().addApprovedSubscriber( internalFormats,
+                                                                                                        consumerId )
+                                                                                .build();
+
         // Open an evaluation, to be closed on completion or stopped on exception
         Evaluation evaluation = Evaluation.of( evaluationDescription,
                                                connections,
                                                ProcessorHelper.CLIENT_ID,
-                                               evaluationId );
+                                               evaluationId,
+                                               subscriberApprover );
 
         try
         {
