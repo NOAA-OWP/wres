@@ -49,4 +49,5 @@
     <include file="wres.Variable_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.Feature_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v7.xml" relativeToChangelogFile="true" />
+    <include file="add_measurementunit_degc.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
