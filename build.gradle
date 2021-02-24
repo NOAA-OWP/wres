@@ -926,6 +926,14 @@ project(':wres-tasker')
         // To persist job metadata while keeping it relatively fast
         compile 'org.redisson:redisson:3.15.0'
 
+        // CVE-2021-21290 Transitive deps of redisson (when updating redisson, may remove)
+        compile 'io.netty:netty-buffer:4.1.59.Final'
+        compile 'io.netty:netty-codec:4.1.59.Final'
+        compile 'io.netty:netty-common:4.1.59.Final'
+        compile 'io.netty:netty-handler:4.1.59.Final'
+        compile 'io.netty:netty-resolver-dns:4.1.59.Final'
+        compile 'io.netty:netty-transport:4.1.59.Final'
+
         // For ToStringBuilder
         compile 'org.apache.commons:commons-lang3:3.11'        
 
