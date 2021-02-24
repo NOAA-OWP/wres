@@ -40,7 +40,7 @@ plugins
     //id 'org.uulib.gradle.markdown' version '0.0.1'
 
     // To generate de/serialization classes for message bodies
-    id 'com.google.protobuf' version '0.8.14'
+    id 'com.google.protobuf' version '0.8.15'
 
     // To create trusted certificate files (.jks aka cacerts) from dir of .pem
     // (Not working: not friendly to our directory structure nor submodules)
@@ -52,7 +52,7 @@ plugins
     id 'com.github.ksoichiro.console.reporter' version '0.6.2'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '6.1.0'
+    id 'org.owasp.dependencycheck' version '6.1.1'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "4.1.1"
@@ -239,10 +239,10 @@ project(':wres-util')
         // Because cdm uses apache commons logging, bridge to slf4j
         runtime 'org.slf4j:jcl-over-slf4j:2.0.0-alpha1'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.7.7'
+        testCompile 'org.mockito:mockito-core:3.8.0'
 
         // super-duper mocking help (mocking static, private methods)
         testCompile 'org.powermock:powermock-api-mockito2:2.0.9'
@@ -260,11 +260,11 @@ project(':wres-system')
         compile 'com.google.guava:guava:30.1-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.18'
-        compile group: 'org.liquibase', name: 'liquibase-core', version: '4.2.2'
+        compile 'org.postgresql:postgresql:42.2.19'
+        compile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.1'
 
         // connection pooling:
-        compile 'com.zaxxer:HikariCP:4.0.1'
+        compile 'com.zaxxer:HikariCP:4.0.2'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge it, here
         // at compile time because we need to expose a class to JUL.
@@ -273,7 +273,7 @@ project(':wres-system')
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.1-jre'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
 
         // Use mockserver to test certificate utilities
         testCompile 'org.mock-server:mockserver-netty:5.11.2'
@@ -296,27 +296,27 @@ project(':wres-datamodel')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation 'com.github.ben-manes.caffeine:caffeine:2.8.8'
+        implementation 'com.github.ben-manes.caffeine:caffeine:3.0.0'
 
         // The following four provide units of measure. If used in public
         // method signatures, they will be upgraded to api (not implementation).
         api 'javax.measure:unit-api:2.1.2'
         implementation 'si.uom:si-units:2.0.1'
-        implementation 'tech.units:indriya:2.1.1'
+        implementation 'tech.units:indriya:2.1.2'
         implementation 'systems.uom:systems-common:2.0.2'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:3.7.7'
+        testImplementation 'org.mockito:mockito-core:3.8.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 
         // Backwards compatibility for JUnit 4 tests
-        testCompileOnly 'junit:junit:4.13.1' 
+        testCompileOnly 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.7.1'
     }
     // Facilitate unit tests with JUnit
@@ -359,7 +359,7 @@ project(':wres-io')
         compile 'org.postgresql:postgresql:42.2.18'
 
         // connection pooling:
-        compile 'com.zaxxer:HikariCP:4.0.1'
+        compile 'com.zaxxer:HikariCP:4.0.2'
 
         // wres.io.utilities uses javax.json.* imports
         compile 'org.glassfish:javax.json:1.1.4'
@@ -382,10 +382,10 @@ project(':wres-io')
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.1-jre'
 
-        testCompile group: 'org.liquibase', name: 'liquibase-core', version: '4.2.2'
+        testCompile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.1'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.7.7'
+        testCompile 'org.mockito:mockito-core:3.8.0'
 
         // TODO: remove dependence on powermock, remove powermock completely.
         testCompile 'org.powermock:powermock-api-mockito2:2.0.9'
@@ -402,7 +402,7 @@ project(':wres-io')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 
         // Backwards compatibility for JUnit 4 tests
-        testCompileOnly 'junit:junit:4.13.1' 
+        testCompileOnly 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.7.1'
     }
 
@@ -454,8 +454,8 @@ project(':wres-metrics')
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
 
         testCompile project (':wres-datamodel')
-        testCompile 'junit:junit:4.13.1'
-        testCompile 'org.mockito:mockito-core:3.7.7'
+        testCompile 'junit:junit:4.13.2'
+        testCompile 'org.mockito:mockito-core:3.8.0'
     }
 }
 
@@ -478,7 +478,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.14.0'
+            artifact = 'com.google.protobuf:protoc:3.15.2'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -577,7 +577,7 @@ project(':wres-statistics')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.google.protobuf:protobuf-java:3.14.0'
+        compile 'com.google.protobuf:protobuf-java:3.15.2'
         compile project(':wres-config')
 
         // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
@@ -586,7 +586,7 @@ project(':wres-statistics')
 
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha5'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
         testCompile project( ':wres-eventsbroker' )
     }
 }
@@ -660,10 +660,10 @@ project(':wres-vis')
         // SVG graphics from JFreeChart instances
         compile group: 'org.jfree', name: 'jfreesvg', version: '3.4'
         
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.7.7'
+        testCompile 'org.mockito:mockito-core:3.8.0'
 
         testRuntime files('dist/lib/conf')
     }
@@ -689,7 +689,7 @@ project(':wres-config')
 
         runtime 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.8'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
 
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
@@ -787,7 +787,7 @@ project(':wres-grid')
         // Because cdm uses apache commons logging, bridge to slf4j
         runtime 'org.slf4j:jcl-over-slf4j:2.0.0-alpha1'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
     }
 }
 
@@ -802,7 +802,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.14.0'
+            artifact = 'com.google.protobuf:protoc:3.15.2'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -839,9 +839,9 @@ project(':wres-messages')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.google.protobuf:protobuf-java:3.14.0'
+        compile 'com.google.protobuf:protobuf-java:3.15.2'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
     }
 }
 
@@ -852,10 +852,10 @@ project(':wres-worker')
     {
         compile project( ':wres-messages' )
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.rabbitmq:amqp-client:5.10.0'
+        compile 'com.rabbitmq:amqp-client:5.11.0'
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha5'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
     }
 
     apply plugin: 'application'
@@ -894,7 +894,7 @@ project(':wres-tasker')
     {
         compile project( ':wres-messages' )
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.rabbitmq:amqp-client:5.10.0'
+        compile 'com.rabbitmq:amqp-client:5.11.0'
         compile 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
         compile 'jakarta.annotation:jakarta.annotation-api:2.0.0'
 
@@ -902,23 +902,23 @@ project(':wres-tasker')
         compile 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.0'
 
         // Server library to run a web server:
-        compile 'org.eclipse.jetty:jetty-server:11.0.0'
+        compile 'org.eclipse.jetty:jetty-server:11.0.1'
 
         // Support HTTP/2
-        compile 'org.eclipse.jetty.http2:http2-server:11.0.0'
+        compile 'org.eclipse.jetty.http2:http2-server:11.0.1'
 
         // Support ALPN
-        compile 'org.eclipse.jetty:jetty-alpn-java-server:11.0.0'
+        compile 'org.eclipse.jetty:jetty-alpn-java-server:11.0.1'
 
         // Servlet container library to run a web application with:
-        compile 'org.eclipse.jetty:jetty-webapp:11.0.0'
+        compile 'org.eclipse.jetty:jetty-webapp:11.0.1'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
         compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.0.1'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        compile 'com.github.ben-manes.caffeine:caffeine:2.8.8'
+        compile 'com.github.ben-manes.caffeine:caffeine:3.0.0'
 
         // To accurately detect mime types of files.
         compile 'org.apache.tika:tika-core:1.25'
@@ -936,17 +936,17 @@ project(':wres-tasker')
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
         runtime 'org.glassfish.jersey.inject:jersey-hk2:3.0.1'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
 
         // To generate fake certificates and keys for testing
         testCompile 'org.bouncycastle:bcpkix-jdk15on:1.68'
         testCompile 'org.bouncycastle:bcprov-jdk15on:1.68'
 
         // To test against an embedded AMQP broker
-        testCompile 'org.apache.qpid:qpid-broker-core:8.0.3'
+        testCompile 'org.apache.qpid:qpid-broker-core:8.0.4'
         // Provides support for both 0-8 and 0-9-1
-        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.3'
-        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.3'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.4'
     }
 
     apply plugin: 'application'
@@ -996,7 +996,7 @@ project(':wres-eventsbroker')
         compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
         
         // QPID broker
-        compile 'org.apache.qpid:qpid-broker-core:8.0.3'
+        compile 'org.apache.qpid:qpid-broker-core:8.0.4'
 
         // QPID broker support for AMQP 0.8 and 0.9.1 (not 1.0)
         compile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.3'
@@ -1011,7 +1011,7 @@ project(':wres-eventsbroker')
         // QPID JMS client for AMQP 0.X (not 1.0). JMS 1.1 support only
         compile group: 'org.apache.qpid', name: 'qpid-client', version: '6.4.0'
 
-        testCompile 'junit:junit:4.13.1'
+        testCompile 'junit:junit:4.13.2'
     }
 }
 
@@ -1037,9 +1037,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 
         // Mocking help
-        testCompile 'org.mockito:mockito-core:3.7.7'
+        testCompile 'org.mockito:mockito-core:3.8.0'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:3.7.7'
+        testImplementation 'org.mockito:mockito-inline:3.8.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -1269,13 +1269,13 @@ dependencies
 
     compile 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     compile 'javax.annotation:javax.annotation-api:1.3.2'
-    compile 'org.eclipse.jetty:jetty-server:9.4.36.v20210114'
-    compile 'org.eclipse.jetty:jetty-webapp:9.4.36.v20210114'
+    compile 'org.eclipse.jetty:jetty-server:9.4.37.v20210219'
+    compile 'org.eclipse.jetty:jetty-webapp:9.4.37.v20210219'
     compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.33'
     // Update the jetty-continuation that above jersey dep depends on
-    compile 'org.eclipse.jetty:jetty-continuation:9.4.36.v20210114'
+    compile 'org.eclipse.jetty:jetty-continuation:9.4.37.v20210219'
 
-    compile 'com.github.ben-manes.caffeine:caffeine:2.8.8'
+    compile 'com.github.ben-manes.caffeine:caffeine:3.0.0'
 
     runtime 'org.glassfish.jersey.core:jersey-server:2.33'
     runtime 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.33'
@@ -1285,7 +1285,7 @@ dependencies
 
 
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.7.1'
-    testCompile 'org.mockito:mockito-core:3.7.7'
+    testCompile 'org.mockito:mockito-core:3.8.0'
 
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 }
