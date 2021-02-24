@@ -356,7 +356,7 @@ project(':wres-io')
         compile group: 'org.apache.commons', name: 'commons-compress', version: '1.20'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.2.18'
+        compile 'org.postgresql:postgresql:42.2.19'
 
         // connection pooling:
         compile 'com.zaxxer:HikariCP:4.0.2'
@@ -999,14 +999,14 @@ project(':wres-eventsbroker')
         compile 'org.apache.qpid:qpid-broker-core:8.0.4'
 
         // QPID broker support for AMQP 0.8 and 0.9.1 (not 1.0)
-        compile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.3'
+        compile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:8.0.4'
 
         // QPID embedded (aka in-memory) broker support
-        compile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.3'
+        compile 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.4'
 
         // https://mvnrepository.com/artifact/org.apache.qpid/qpid-broker-plugins-management-http
         // Adds too much bloat for the value at test time with an embedded broker
-        //compile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.3'
+        //compile group: 'org.apache.qpid', name: 'qpid-broker-plugins-management-http', version: '8.0.4'
 
         // QPID JMS client for AMQP 0.X (not 1.0). JMS 1.1 support only
         compile group: 'org.apache.qpid', name: 'qpid-client', version: '6.4.0'
