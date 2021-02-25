@@ -400,8 +400,6 @@ public abstract class PairsWriter<L, R> implements Consumer<PoolOfPairs<L, R>>, 
     /**
      * Returns a shared instance of a {@link BufferedWriter}.
      * 
-     * @param path the path to write
-     * @param appender is true to append, false to truncate
      * @return a writer
      * @throws IOException if the writer cannot be constructed
      */

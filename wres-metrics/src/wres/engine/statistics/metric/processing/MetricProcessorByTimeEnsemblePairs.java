@@ -462,7 +462,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             }
             else
             {
-                ignoreTheseMetrics = this.addMetricsToIgnoreWhenBaselineUnavailable( ignoreTheseMetrics, 
+                // Add some more metrics to ignore to the existing metrics to ignore
+                ignoreTheseMetrics = this.addMetricsToIgnoreWhenBaselineUnavailable( ignoreTheseMetrics,
                                                                                      input.getMetadata() );
             }
 
@@ -512,19 +513,19 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
             futures.addDoubleScoreOutput( this.processEnsemblePairs( input,
-                                                                     ensembleScore,
+                                                                     this.ensembleScore,
                                                                      ignoreTheseMetrics ) );
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
             futures.addDiagramOutput( this.processEnsemblePairs( input,
-                                                                     ensembleMultiVector,
-                                                                     ignoreTheseMetrics ) );
+                                                                 this.ensembleMultiVector,
+                                                                 ignoreTheseMetrics ) );
         }
         else if ( outGroup == StatisticType.BOXPLOT_PER_PAIR )
         {
             futures.addBoxPlotOutputPerPair( this.processEnsemblePairs( input,
-                                                                        ensembleBoxPlot,
+                                                                        this.ensembleBoxPlot,
                                                                         ignoreTheseMetrics ) );
         }
     }
@@ -646,15 +647,15 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
     {
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( processDiscreteProbabilityPairs( input,
-                                                                           discreteProbabilityScore,
-                                                                           ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( this.processDiscreteProbabilityPairs( input,
+                                                                                this.discreteProbabilityScore,
+                                                                                ignoreTheseMetrics ) );
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addDiagramOutput( processDiscreteProbabilityPairs( input,
-                                                                           discreteProbabilityMultiVector,
-                                                                           ignoreTheseMetrics ) );
+            futures.addDiagramOutput( this.processDiscreteProbabilityPairs( input,
+                                                                            this.discreteProbabilityMultiVector,
+                                                                            ignoreTheseMetrics ) );
         }
     }
 
@@ -674,7 +675,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                              Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
-                                              thresholdExecutor );
+                                              this.thresholdExecutor );
     }
 
     /**
@@ -695,7 +696,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                   Set<MetricConstants> ignoreTheseMetrics )
     {
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ignoreTheseMetrics ),
-                                              thresholdExecutor );
+                                              this.thresholdExecutor );
     }
 
     /**
@@ -803,8 +804,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Skipping metric {} for pool {} because no baseline was available and this metric requires "
-                              + "an explicit baseline.",
+                LOGGER.debug( "Skipping metric {} for pool {} because no baseline was available and this metric "
+                              + "requires an explicit baseline.",
                               MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                               metadata );
             }

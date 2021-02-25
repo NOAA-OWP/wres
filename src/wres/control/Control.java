@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,7 +37,6 @@ import wres.control.ProcessorHelper.Executors;
 import wres.eventsbroker.BrokerConnectionFactory;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
-import wres.system.DatabaseConnectionSupplier;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
