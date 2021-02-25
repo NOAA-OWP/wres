@@ -154,6 +154,8 @@ public class Units
 
     public static final class UnsupportedUnitException extends RuntimeException
     {
+        private static final long serialVersionUID = -6873574285493867322L;
+
         UnsupportedUnitException( String unit,
                                   Set<String> supportedUnits,
                                   Throwable cause )
