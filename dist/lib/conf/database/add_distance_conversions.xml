@@ -133,11 +133,11 @@
             UPDATE wres.UnitConversion UC
                 SET factor = 10.0
             FROM wres.MeasurementUnit CM
-            INNER JOIN wres.MeasurementUnit MM
-                ON UC.to_unit = MM.measurementunit_id
+            CROSS JOIN wres.MeasurementUnit MM
             WHERE CM.unit_name IN ('CM', 'cm')
                 AND MM.unit_name IN ('MM', 'mm')
-                AND UC.from_unit = CM.measurementunit_id;
+                AND UC.from_unit = CM.measurementunit_id
+                AND UC.to_unit = MM.measurementunit_id;
         </sql>
         <comment>The factor for converting CM to MM has been corrected</comment>
     </changeSet>
