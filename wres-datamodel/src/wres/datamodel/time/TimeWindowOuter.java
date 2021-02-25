@@ -91,6 +91,18 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
     }
 
     /**
+     * Constructs a {@link TimeWindowOuter} with a canonical {@link TimeWindow}.
+     * 
+     * @param timeWindow a time window
+     * @return a time window
+     */
+
+    public static TimeWindowOuter of( TimeWindow timeWindow )
+    {
+        return new Builder( timeWindow ).build();
+    }
+    
+    /**
      * Constructs a {@link TimeWindowOuter} where the earliest lead durations is {@link TimeWindowOuter#DURATION_MIN}, the 
      * latest lead duration is {@link TimeWindowOuter#DURATION_MAX}, the earliest reference time is {@link Instant#MIN}, the 
      * latest reference time is {@link Instant#MAX}, and the valid times are given.
