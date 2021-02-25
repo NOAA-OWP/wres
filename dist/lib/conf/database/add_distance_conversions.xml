@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Add Distance Conversions - MM" author="Christopher Tubbs">
+        <comment>Adding conversions from and to mm</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MM.measurementunit_id, CM.measurementunit_id, 1.0 / 10.0
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND CM.unit_name IN ('CM', 'cm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = MM.measurementunit_id
+                        AND UC.to_unit = CM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from MM to CM has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT CM.measurementunit_id, MM.measurementunit_id, 10.0
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND CM.unit_name IN ('CM', 'cm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = CM.measurementunit_id
+                        AND UC.to_unit = MM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from CM to MM has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MM.measurementunit_id, FT.measurementunit_id, 1.0 / 304.8
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit FT
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND FT.unit_name IN ('FT', 'ft')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = MM.measurementunit_id
+                        AND UC.to_unit = FT.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from MM to FT has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT FT.measurementunit_id, MM.measurementunit_id, 304.8
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit FT
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND FT.unit_name IN ('FT', 'ft')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = FT.measurementunit_id
+                        AND UC.to_unit = MM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from FT to MM has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MM.measurementunit_id, I.measurementunit_id, 1.0 / 25.4
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit I
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND I.unit_name IN ('IN', 'in')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = MM.measurementunit_id
+                        AND UC.to_unit = I.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from MM to IN has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT I.measurementunit_id, MM.measurementunit_id, 25.4
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit I
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND I.unit_name IN ('IN', 'in')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = I.measurementunit_id
+                        AND UC.to_unit = MM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from IN to MM has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT MM.measurementunit_id, M.measurementunit_id, 1.0 / 1000.0
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit M
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = MM.measurementunit_id
+                        AND UC.to_unit = M.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from MM to M has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, MM.measurementunit_id, 1000.0
+            FROM wres.MeasurementUnit MM
+            CROSS JOIN wres.MeasurementUnit M
+            WHERE MM.unit_name IN ('MM', 'mm')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = MM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from M to MM has been added.</comment>
+    </changeSet>
+    <changeSet id="Correct CM to MM" author="Christopher Tubbs">
+        <sql>
+            UPDATE wres.UnitConversion UC
+                SET factor = 10.0
+            FROM wres.MeasurementUnit CM
+            INNER JOIN wres.MeasurementUnit MM
+                ON UC.to_unit = MM.measurementunit_id
+            WHERE CM.unit_name IN ('CM', 'cm')
+                AND MM.unit_name IN ('MM', 'mm')
+                AND UC.from_unit = CM.measurementunit_id;
+        </sql>
+        <comment>The factor for converting CM to MM has been corrected</comment>
+    </changeSet>
+    <changeSet id="Add Distance Conversions - FT" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT FT.measurementunit_id, CM.measurementunit_id, 30.48
+            FROM wres.MeasurementUnit FT
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE FT.unit_name IN ('FT', 'ft')
+                AND CM.unit_name IN ('CM', 'cm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = FT.measurementunit_id
+                        AND UC.to_unit = CM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from FT to CM has been added.</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT CM.measurementunit_id, FT.measurementunit_id, 1.0 / 30.48
+            FROM wres.MeasurementUnit FT
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE FT.unit_name IN ('FT', 'ft')
+                AND CM.unit_name IN ('CM', 'cm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = CM.measurementunit_id
+                        AND UC.to_unit = FT.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from CM to FT has been added.</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT FT.measurementunit_id, I.measurementunit_id, 1.0 / 12.0
+            FROM wres.MeasurementUnit FT
+            CROSS JOIN wres.MeasurementUnit I
+            WHERE FT.unit_name IN ('FT', 'ft')
+                AND I.unit_name IN ('IN', 'in')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = FT.measurementunit_id
+                        AND UC.to_unit = I.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from FT to IN has been added.</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT I.measurementunit_id, FT.measurementunit_id, 12.0
+            FROM wres.MeasurementUnit FT
+            CROSS JOIN wres.MeasurementUnit I
+            WHERE FT.unit_name IN ('FT', 'ft')
+                AND I.unit_name IN ('IN', 'in')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = I.measurementunit_id
+                        AND UC.to_unit = FT.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from IN to FT has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT FT.measurementunit_id, M.measurementunit_id, 3.281
+            FROM wres.MeasurementUnit FT
+            CROSS JOIN wres.MeasurementUnit M
+            WHERE FT.unit_name IN ('FT', 'ft')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = FT.measurementunit_id
+                        AND UC.to_unit = M.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from FT to M has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, FT.measurementunit_id, 1.0 / 3.281
+            FROM wres.MeasurementUnit FT
+            CROSS JOIN wres.MeasurementUnit M
+            WHERE FT.unit_name IN ('FT', 'ft')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = FT.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from M to FT has been added</comment>
+    </changeSet>
+    <changeSet id="Add Distance Conversions - IN" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT I.measurementunit_id, CM.measurementunit_id, 2.54
+            FROM wres.MeasurementUnit I
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE I.unit_name IN ('IN', 'in')
+                AND CM.unit_name IN ('CM', 'cm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = I.measurementunit_id
+                        AND UC.to_unit = CM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from IN to CM has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT CM.measurementunit_id, I.measurementunit_id, 1.0 / 2.54
+            FROM wres.MeasurementUnit I
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE I.unit_name IN ('IN', 'in')
+                AND CM.unit_name IN ('CM', 'cm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = CM.measurementunit_id
+                        AND UC.to_unit = I.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from CM to IN has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT I.measurementunit_id, M.measurementunit_id, 1.0 / 39.37
+            FROM wres.MeasurementUnit I
+            CROSS JOIN wres.MeasurementUnit M
+            WHERE I.unit_name IN ('IN', 'in')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = I.measurementunit_id
+                        AND UC.to_unit = M.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from IN to M has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, I.measurementunit_id, 39.37
+            FROM wres.MeasurementUnit I
+            CROSS JOIN wres.MeasurementUnit M
+            WHERE I.unit_name IN ('IN', 'in')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = I.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from M to IN has been added</comment>
+    </changeSet>
+    <changeSet id="Add Distance Conversions - M" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT M.measurementunit_id, CM.measurementunit_id, 100.0
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE CM.unit_name IN ('CM', 'cm')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = CM.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from M to CM has been added</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT CM.measurementunit_id, M.measurementunit_id, 1.0 / 100.0
+            FROM wres.MeasurementUnit M
+            CROSS JOIN wres.MeasurementUnit CM
+            WHERE CM.unit_name IN ('CM', 'cm')
+                AND M.unit_name IN ('M', 'm')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = CM.measurementunit_id
+                        AND UC.to_unit = M.measurementunit_id
+                );
+        </sql>
+        <comment>The conversion from CM to M has been added</comment>
+    </changeSet>
+</databaseChangeLog>
