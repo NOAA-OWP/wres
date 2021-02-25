@@ -1,0 +1,142 @@
+version: '2.3'
+networks:
+    wres_net:
+        driver: bridge
+        enable_ipv6: false
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.19.254.192/26
+                  gateway: 172.19.254.193
+services:
+    persister:
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:REDIS_IMAGE"
+        restart: always
+        volumes:
+         # For the job data
+         - /mnt/wres_share/job_data:/data
+        # Enable persistence, limit RAM to less than mem_limit, evict any w/LRU
+        command: --appendonly yes --maxmemory 900mb --maxmemory-policy allkeys-lru
+        mem_limit: 940m
+        read_only: true
+        networks:
+            wres_net:
+        # Allow 15 minutes for startup before marking unhealthy
+        healthcheck:
+            start_period: 15m
+    tasker:
+        ports:
+         - "443:8443"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:TASKER_IMAGE"
+        restart: always
+        depends_on:
+            broker:
+                condition: service_healthy
+            persister:
+                condition: service_healthy
+        volumes:
+         # For certificates and keys that correspond to them:
+         - /mnt/wres_keys:/wres_secrets:ro
+         # To read output data:
+         - /mnt/wres_share:/mnt/wres_share
+        environment:
+         # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.environment=${WRES_ENV_SUFFIX} -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+        # Tasker JVM should have 340m max heap specified at launch
+        # The total limit includes stack space which depends on Thread count
+        mem_limit: 1240m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
+    broker:
+        ports:
+         - "5671:5671"
+         - "15671:15671"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:BROKER_IMAGE"
+        restart: always
+        volumes:
+         # For certificates and keys that correspond to them:
+         - /mnt/wres_keys:/wres_secrets:ro
+        environment:
+         - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.config
+        # rabbitmq.conf should have 360m specified as high watermark
+        mem_limit: 720m
+        cap_drop:
+         - ALL
+        networks:
+            wres_net:
+        # Allow 5 minutes for startup before marking unhealthy
+        healthcheck:
+            start_period: 5m
+    worker:
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:WORKER_IMAGE"
+        restart: always
+        depends_on:
+         - "broker"
+         - "eventsbroker"
+         - "graphics"
+        volumes:
+         # For input and output data:
+         - /mnt/wres_share:/mnt/wres_share
+         # For certificates, keys that correspond to them, and .pgpass:
+         - /mnt/wres_keys:/wres_secrets:ro
+         # For input data:
+         - /home:/home:ro
+         # For logs (inside container, avoid writing to read-only /home)
+         - /container_home
+        environment:
+         - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+         - PGPASSFILE=/wres_secrets/.pgpass
+         # Use caller-specified db hostname from env var WRES_DB_FQDN.
+         # Do not auto-liquibase-migrate on each evaluation. This requires an
+         # administrator to run the migration(s) during or after deployment.
+         # Write heap dumps to the root of the volume above.
+         # Override the broker address and port in the binding URL of the event.properties.
+         - INNER_JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.url=${WRES_DB_FQDN} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+        # Shim JVM should have 32m max heap, core JVM should have 1680m max heap
+        mem_limit: 2600m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
+    eventsbroker:
+        expose:
+         - 5673
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:EVENTS_IMAGE"
+        restart: always
+        volumes:
+         # For qpid work files.
+         - /mnt/wres_share/eventsbroker:/container_home
+        environment:
+         # The broker uses heap memory to run and direct memory for messages
+         - QPID_WORK=/container_home/${HOST_NAME}
+         - QPID_JAVA_MEM=-Xms256m -Xmx256m -XX:MaxDirectMemorySize=2048m
+         - QPID_JAVA_GC=-XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/container_home/${HOST_NAME}
+        # Broker heap plus direct memory is 2304m in QPID_JAVA_MEM
+        mem_limit: 2560m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
+    graphics:
+        depends_on:
+        - eventsbroker
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:GRAPHICS_IMAGE"
+        restart: always
+        # For graphics outputs
+        volumes:
+         - /mnt/wres_share:/mnt/wres_share
+        environment:
+         # Override the broker address and port in the binding URL of the event.properties
+         - JAVA_OPTS=-Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms512m -Xmx512m -XX:HeapDumpPath=/mnt/wres_share/ -XX:OnOutOfMemoryError='mv /mnt/wres_share/java_pid%p.hprof /mnt/wres_share/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/java_pid%p_`hostname`.hprof'
+        # Graphics limit is 512m in JAVA_OPTS
+        mem_limit: 768m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
