@@ -8,7 +8,7 @@ package wres.datamodel.thresholds;
 
 public final class ThresholdConstants
 {
-    
+
     /**
      * Operators associated with a {@link ThresholdOuter}.
      */
@@ -50,7 +50,17 @@ public final class ThresholdConstants
          * Identifier for between.
          */
 
-        BETWEEN
+        BETWEEN;
+
+        /**
+         * @return a pretty string representation.
+         */
+
+        @Override
+        public String toString()
+        {
+            return this.name().replace( "_", " " );
+        }
     }
 
     /**
@@ -84,7 +94,16 @@ public final class ThresholdConstants
 
         PROBABILITY_AND_VALUE;
 
-    }    
+        /**
+         * @return a pretty string representation.
+         */
+
+        @Override
+        public String toString()
+        {
+            return this.name().replace( "_", " " );
+        }
+    }
 
     /**
      * An enumeration of the data types to which a {@link ThresholdOuter} should be applied.
@@ -104,19 +123,19 @@ public final class ThresholdConstants
          */
 
         RIGHT,
-        
+
         /**
          * Left side and all values of the right side of a pair meet the threshold condition.
          */
 
         LEFT_AND_RIGHT,
-        
+
         /**
          * Any value on the right side of a pair meet the threshold condition. 
          */
-        
+
         ANY_RIGHT,
-        
+
         /**
          * Left side and any value on the right side of a pair meet the threshold condition.
          */
@@ -128,46 +147,64 @@ public final class ThresholdConstants
          */
 
         RIGHT_MEAN,
-        
+
         /**
          * The left side and the mean value of the right side of a pair meets the threshold condition.
          */
 
         LEFT_AND_RIGHT_MEAN;
 
-    }    
-    
+        /**
+         * @return a pretty string representation.
+         */
+
+        @Override
+        public String toString()
+        {
+            return this.name().replace( "_", " " );
+        }
+    }
+
     /**
      * An enumeration of threshold groups.
      */
-    
+
     public enum ThresholdGroup
     {
-        
+
         /**
          * A group of thresholds that denote probabilities.
          */
-        
+
         PROBABILITY,
-        
+
         /**
          * A group of thresholds that denote real values.
          */
-        
+
         VALUE,
-        
+
         /**
          * A group of thresholds that denote quantiles.
          */
-        
+
         QUANTILE,
-        
+
         /**
          * A group of thresholds that denote probabilities used for classification.
          */
-        
-        PROBABILITY_CLASSIFIER;        
-        
-    }    
-    
+
+        PROBABILITY_CLASSIFIER;
+
+        /**
+         * @return a pretty string representation.
+         */
+
+        @Override
+        public String toString()
+        {
+            return this.name().replace( "_", " " );
+        }
+    }
+
 }
