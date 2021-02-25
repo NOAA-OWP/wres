@@ -306,9 +306,9 @@ read -n1 -r -p "Updating the two yml files, docker-compose-all-roles-with-graphi
 
 cp docker-compose-all-roles-with-graphics.template.yml docker-compose-all-roles-with-graphics.yml 
 sed -i "s/TASKER_IMAGE/${tasker_version}/" docker-compose-all-roles-with-graphics.yml
-sed -i "s/BROKER_IMAGE/${broker_version}/" ddocker-compose-all-roles-with-graphics.yml
+sed -i "s/BROKER_IMAGE/${broker_version}/" docker-compose-all-roles-with-graphics.yml
 sed -i "s/REDIS_IMAGE/${redis_version}/" docker-compose-all-roles-with-graphics.yml
-sed -i "s/WORKER_IMAGE/${wres_worker_shim_version}/" docker-compose-all-roles-with-graphics.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" docker-compose-all-roles-with-graphics.yml # By design... The tag for the worker image is the "overall_version".
 sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" docker-compose-all-roles-with-graphics.yml
 sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" docker-compose-all-roles-with-graphics.yml
 sed -i "s/OVERALL_IMAGE/${overall_version}/" docker-compose-all-roles-with-graphics.yml
@@ -317,7 +317,7 @@ cp docker-compose-workers-only-with-graphics.template.yml docker-compose-workers
 sed -i "s/TASKER_IMAGE/${tasker_version}/" docker-compose-workers-only-with-graphics.yml
 sed -i "s/BROKER_IMAGE/${broker_version}/" docker-compose-workers-only-with-graphics.yml
 sed -i "s/REDIS_IMAGE/${redis_version}/" docker-compose-workers-only-with-graphics.yml
-sed -i "s/WORKER_IMAGE/${wres_worker_shim_version}/" docker-compose-workers-only-with-graphics.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" docker-compose-workers-only-with-graphics.yml # By design... The tag for the worker image is the "overall_version".
 sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" docker-compose-workers-only-with-graphics.yml
 sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" docker-compose-workers-only-with-graphics.yml
 sed -i "s/OVERALL_IMAGE/${overall_version}/" docker-compose-workers-only-with-graphics.yml
