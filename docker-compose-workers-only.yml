@@ -1,7 +1,7 @@
 version: '2.2'
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210224-9a75819"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210225-ee9c6f9"
         restart: always
         volumes:
          - /mnt/wres_share:/mnt/wres_share
