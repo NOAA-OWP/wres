@@ -404,6 +404,10 @@ project(':wres-io')
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.7.1'
+
+        // In-memory implementation of a java.nio.file abstract file system api
+        // to test writing of files without actually writing files on the host machine
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.1'
     }
 
     test
