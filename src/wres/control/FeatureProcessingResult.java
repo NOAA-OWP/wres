@@ -1,10 +1,6 @@
 package wres.control;
 
-import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
-
 import wres.config.generated.Feature;
 import wres.datamodel.FeatureTuple;
 
@@ -17,7 +13,6 @@ import wres.datamodel.FeatureTuple;
 class FeatureProcessingResult
 {
     private final FeatureTuple feature;
-    private final Set<Path> pathsWrittenTo;
 
     /**
      * Is <code>true</code> if statistics were produced for one of more pools, otherwise <code>false</code>.
@@ -25,23 +20,16 @@ class FeatureProcessingResult
     private final boolean hasStatistics;
 
     FeatureProcessingResult( FeatureTuple feature,
-                             Set<Path> pathsWrittenTo,
                              boolean hasStatistics )
     {
         Objects.requireNonNull( feature );
         this.feature = feature;
-        this.pathsWrittenTo = Collections.unmodifiableSet( pathsWrittenTo );
         this.hasStatistics = hasStatistics;
     }
 
     FeatureTuple getFeature()
     {
         return this.feature;
-    }
-
-    Set<Path> getPathsWrittenTo()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**
@@ -61,8 +49,6 @@ class FeatureProcessingResult
         return "Feature "
                + this.getFeature()
                + " produced statistics: "
-               + this.hasStatistics()
-               + "; and created these paths: "
-               + this.getPathsWrittenTo();
+               + this.hasStatistics();
     }
 }

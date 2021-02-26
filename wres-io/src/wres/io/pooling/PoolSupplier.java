@@ -25,6 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jcip.annotations.ThreadSafe;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.VectorOfDoubles;
@@ -67,8 +68,6 @@ import wres.config.generated.LeftOrRightOrBaseline;
  * <li>Supplying the pool-shaped pairs.</li>
  * </ol>
  * 
- * <p>Once retrieved, the {@link PoolOfPairs} is cached and supplied on demand. 
- * 
  * <p><b>Implementation notes:</b></p>
  * 
  * <p>This class is thread safe.
@@ -78,6 +77,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
  * @param <R> the type of right value in each pair and, where applicable, the type of baseline value
  */
 
+@ThreadSafe
 public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 {
 
@@ -181,12 +181,6 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private final SampleMetadata baselineMetadata;
 
     /**
-     * Pool creation lock. Only create a pool once.
-     */
-
-    private final Object creationLock = new Object();
-
-    /**
      * The inputs declaration, which is used to help compute the desired time scale, if required.
      */
 
@@ -229,12 +223,6 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private final Duration frequency;
 
     /**
-     * The pool to return.
-     */
-
-    private PoolOfPairs<L, R> pool;
-
-    /**
      * Returns a {@link PoolOfPairs} for metric calculation.
      * 
      * @return a pool of pairs
@@ -247,17 +235,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     @Override
     public PoolOfPairs<L, R> get()
     {
-        // Create pool if needed
-        synchronized ( this.creationLock )
-        {
-            if ( Objects.isNull( this.pool ) )
-            {
-                LOGGER.debug( "Creating pool {}.", this.metadata );
-                this.pool = this.createPool();
-            }
-        }
-
-        return this.pool;
+        return this.createPool();
     }
 
     /**
@@ -1529,7 +1507,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             // Consolidate the time-series without reference times
             List<TimeSeries<T>> withoutReferenceTimesUnmodifiable =
                     Collections.unmodifiableList( withoutReferenceTimes );
-            
+
             Collection<TimeSeries<T>> consolidated =
                     TimeSeriesSlicer.consolidateTimeSeriesWithZeroReferenceTimes( withoutReferenceTimesUnmodifiable );
 
