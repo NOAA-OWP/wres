@@ -558,31 +558,24 @@ public final class MetricConfigHelperTest
     public void testGetCachedListFromProjectConfig()
     {
         // No outputs configuration defined
-        List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, MetricConfigName.RELIABILITY_DIAGRAM ) );
+        List<TimeSeriesMetricConfig> metrics = new ArrayList<>();
+        metrics.add( new TimeSeriesMetricConfig( null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
 
         // Output configuration defined, but is not by threshold then lead
         ProjectConfig mockedConfigWithOutput =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
-                                   new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
-                                                                                      null,
-                                                                                      null,
-                                                                                      null,
-                                                                                      null ) ),
+                                   Arrays.asList( new MetricsConfig( null, null, metrics ) ),
+                                   new Outputs( null,
                                                 null ),
                                    null,
                                    null );
 
         Set<StatisticType> expected = new HashSet<>();
-        expected.add( StatisticType.DIAGRAM );
+
         expected.add( StatisticType.DURATION_DIAGRAM );
-        expected.add( StatisticType.DOUBLE_SCORE );
-        expected.add( StatisticType.BOXPLOT_PER_POOL );
 
         assertEquals( expected, MetricConfigHelper.getCacheListFromProjectConfig( mockedConfigWithOutput ) );
-
     }
 
 }

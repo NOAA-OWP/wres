@@ -297,32 +297,13 @@ public final class MetricConfigHelper
 
     public static Set<StatisticType> getCacheListFromProjectConfig( ProjectConfig projectConfig )
     {
-        // Always cache ordinary scores and paired output for timing error metrics
-        Set<StatisticType> returnMe = new TreeSet<>();
-        returnMe.add( StatisticType.DOUBLE_SCORE );
-        returnMe.add( StatisticType.DURATION_DIAGRAM );
+        Objects.requireNonNull( projectConfig );
         
-        // Always cache box plot outputs for pooled predictions
-        returnMe.add( StatisticType.BOXPLOT_PER_POOL );
-
-        // Cache other outputs as required
-        StatisticType[] options = StatisticType.values();
-        for ( StatisticType next : options )
-        {
-            if ( !returnMe.contains( next )
-                 && MetricConfigHelper.hasTheseOutputsByThresholdLead( projectConfig, next ) )
-            {
-                returnMe.add( next );
-            }
-        }
-
-        // Never cache box plot output for individual pairs
-        returnMe.remove( StatisticType.BOXPLOT_PER_PAIR );
-
-        // Never cache duration score output as timing error summary statistics are computed once all data 
-        // is available
-        returnMe.remove( StatisticType.DURATION_SCORE );
-
+        Set<StatisticType> returnMe = new TreeSet<>();
+        
+        // Cache duration diagrams in case summary scores are required
+        returnMe.add( StatisticType.DURATION_DIAGRAM );       
+        
         return Collections.unmodifiableSet( returnMe );
     }
 

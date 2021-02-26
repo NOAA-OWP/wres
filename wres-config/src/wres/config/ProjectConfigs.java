@@ -42,7 +42,9 @@ public class ProjectConfigs
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project declaration." );
 
-        return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
+        return projectConfig.getMetrics()
+                            .stream()
+                            .anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
     }
 
     /**

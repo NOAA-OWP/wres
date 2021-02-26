@@ -135,7 +135,12 @@ public class MessageFactory
         for ( StatisticsForProject next : decomposedStatistics )
         {
             Statistics statistics = MessageFactory.parseOnePool( next, ignore );
-            returnMe.add( statistics );
+
+            // Do not add empty statistics
+            if ( Objects.nonNull( statistics ) )
+            {
+                returnMe.add( statistics );
+            }
         }
 
         return Collections.unmodifiableCollection( returnMe );
@@ -759,11 +764,12 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.Statistics} from a 
-     * {@link wres.datamodel.statistics.StatisticsForProject}. Optionally ignores some types of statistics.
+     * {@link wres.datamodel.statistics.StatisticsForProject}. Optionally ignores some types of statistics. If all are
+     * ignored, returns null.
      * 
      * @param onePool the pool-shaped statistics
      * @param ignore the statistic types to ignore
-     * @return the statistics message
+     * @return the statistics message or null
      * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if the input is null
      * @throws InterruptedException if the statistics could not be retrieved from the project
@@ -780,6 +786,8 @@ public class MessageFactory
 
         SampleMetadata metadata = SampleMetadata.of();
 
+        boolean added = false;
+
         // Add the double scores
         if ( onePool.hasStatistic( StatisticType.DOUBLE_SCORE ) && !ignore.contains( StatisticType.DOUBLE_SCORE ) )
         {
@@ -788,6 +796,7 @@ public class MessageFactory
 
             // Because the input is a single pool
             metadata = doubleScores.get( 0 ).getMetadata();
+            added = true;
         }
 
         // Add the diagrams
@@ -798,6 +807,7 @@ public class MessageFactory
 
             // Because the input is a single pool
             metadata = diagrams.get( 0 ).getMetadata();
+            added = true;
         }
 
         // Add the boxplots per pool
@@ -809,6 +819,7 @@ public class MessageFactory
 
             // Because the input is a single pool
             metadata = boxplots.get( 0 ).getMetadata();
+            added = true;
         }
 
         // Add the boxplots per pair
@@ -818,6 +829,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = onePool.getBoxPlotStatisticsPerPair();
             boxplots.forEach( next -> statistics.addOneBoxPerPair( MessageFactory.parse( next ) ) );
             metadata = boxplots.get( 0 ).getMetadata();
+            added = true;
         }
 
         // Add the duration scores
@@ -829,6 +841,7 @@ public class MessageFactory
 
             // Because the input is a single pool
             metadata = durationScores.get( 0 ).getMetadata();
+            added = true;
         }
 
         // Add the duration diagrams with instant/duration pairs
@@ -839,7 +852,19 @@ public class MessageFactory
                     onePool.getInstantDurationPairStatistics();
             durationDiagrams.forEach( next -> statistics.addDurationDiagrams( MessageFactory.parse( next ) ) );
             metadata = durationDiagrams.get( 0 ).getMetadata();
+            added = true;
         }
+
+        // Return null
+        if ( !added )
+        {
+            LOGGER.debug( "Discovered an empty pool of statistics for {} after ignoring {}. Returning null.",
+                          metadata.getPool(),
+                          ignore );
+
+            return null;
+        }
+
 
         // Set the pool information
         if ( metadata.getPool().getIsBaselinePool() )
