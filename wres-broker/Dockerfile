@@ -15,9 +15,6 @@ RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
 
 WORKDIR /etc/rabbitmq
 COPY nonsrc/rabbitmq.config .
-COPY nonsrc/rabbitmq-prod.config .
-COPY nonsrc/rabbitmq-ti.config .
-COPY nonsrc/rabbitmq-dev.config .
 COPY nonsrc/definitions.json .
 COPY docker-healthcheck /usr/local/bin/
 
