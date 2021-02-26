@@ -330,14 +330,19 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             Pipelines.doAllOrException( listOfFutures ).join();
 
             // Publish any end of pipeline/cached statistics and notify complete
-            if ( published.get() )
+            if ( processor.hasCachedMetricOutput() )
             {
                 this.publish( evaluation,
                               processor.getCachedMetricOutput(),
                               this.getGroupId(),
                               Collections.emptySet() );
 
+                published.set( true );
+            }
 
+            // Published? Then mark complete.
+            if ( published.get() )
+            {
                 // Notify consumers that all statistics for this group have been published
                 evaluation.markGroupPublicationCompleteReportedSuccess( this.getGroupId() );
             }
