@@ -118,13 +118,13 @@ tasker_url=$jenkins_workspace/wres-tasker/build/distributions/$tasker_file
 graphics_url=$jenkins_workspace/wres-vis/build/distributions/$graphics_file
 
 # Ensure the distribution zip files are present for successful docker build
-while [[ ! -f ./build/distributions/$wres_core_file || \
+if [[ ! -f ./build/distributions/$wres_core_file || \
          ! -f ./wres-worker/build/distributions/$worker_shim_file || \
          ! -f ./wres-tasker/build/distributions/$tasker_file || \
          ! -f ./wres-vis/build/distributions/$graphics_file  ]]
-do
-    # Allow for ctrl-c interrupt to take effect
-    sleep 1
+then
+    echo ""
+    echo "It appears you are not an automated build server (or something went wrong if you are)."
     echo ""
     echo "Please download these files and place them in the stated directory:"
     echo ""
@@ -133,21 +133,22 @@ do
     echo "    $tasker_url  -  wres-tasker/build/distributions"
     echo "    $graphics_url  -  wres-vis/build/distributions"
     echo ""
-    echo "You can use the following curl commands, with user name and token specified, to obtain the files:"
+    echo "You can use the following curl commands, with user name and token specified in ~/jenkins_token, to obtain the files:"
     echo ""
-    echo "     curl -u <user.name>:<Jenkins API token> -o ./build/distributions/$wres_core_file $core_url"
-    echo "     curl -u <user.name>:<Jenkins API token> -o ./wres-worker/build/distributions/$worker_shim_file $worker_url"
-    echo "     curl -u <user.name>:<Jenkins API token> -o ./wres-tasker/build/distributions/$tasker_file $tasker_url"
-    echo "     curl -u <user.name>:<Jenkins API token> -o ./wres-vis/build/distributions/$graphics_file $graphics_url"
+    echo "     curl --config ~/jenkins_token -o ./build/distributions/$wres_core_file $core_url"
+    echo "     curl --config ~/jenkins_token -o ./wres-worker/build/distributions/$worker_shim_file $worker_url"
+    echo "     curl --config ~/jenkins_token -o ./wres-tasker/build/distributions/$tasker_file $tasker_url"
+    echo "     curl --config ~/jenkins_token -o ./wres-vis/build/distributions/$graphics_file $graphics_url"
     echo ""
-    echo "You can also use the --config option instead of -u and put your user information in a file."
+    echo "You can also use the '-u user:token' option instead of '--config ~/jenkins_token', e.g. '-u <user.name>:<Jenkins API token>'."
     echo ""
     echo "The above URLs are only valid if your .zip files are the latest artifact.  To pull down old artifacts, identify the Jenkins build number associated with the VLab GIT revision and modify the \"ws\" in the url to be \"<build number>/artifact\".  For example,"
     echo ""
     echo "https://***REMOVED***/jenkins/job/Verify_OWP_WRES/3686/artifact/wres-vis/build/distributions/wres-vis-20210225-713c981.zip"
     echo ""
-    read -n1 -r -p "After they have completely finished downloading and have been completely copied into the local directories, press any key to continue.  Press ctrl-c to abort."
-done
+    echo "After they have completely finished downloading and have been completely copied into the local directories, re-run this script."
+    exit 3
+fi
 
 
 #=============================================================
