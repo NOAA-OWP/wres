@@ -1,6 +1,5 @@
 package wres.control;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,6 +12,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -248,12 +248,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param <L> the left data type
      * @param <R> the right data type
      * @param evaluation the evaluation
-     * @param system settings the system settings
      * @param projectConfig the project declaration
      * @param processor the metric processor
      * @param pools the data pools
-     * @param sampleWriter the sample data writer
-     * @param baselineSampleWriter the baseline sample data writer
+     * @param pairsWriter the pairs writer
+     * @param basePairsWriter the baseline pairs writer
      * @return a processing result
      */
 
@@ -261,33 +260,37 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                            ProjectConfig projectConfig,
                                                            MetricProcessor<PoolOfPairs<L, R>> processor,
                                                            List<Supplier<PoolOfPairs<L, R>>> pools,
-                                                           PairsWriter<L, R> sampleWriter,
-                                                           PairsWriter<L, R> baselineSampleWriter )
+                                                           PairsWriter<L, R> pairsWriter,
+                                                           PairsWriter<L, R> basePairsWriter )
     {
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
-        List<CompletableFuture<Set<Path>>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
+        List<CompletableFuture<Void>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
 
         // The union of statistics types for which statistics were actually produced
         Set<StatisticType> typesProduced = new HashSet<>();
+
+        LOGGER.debug( "Submitting {} pools in group {} for asynchronous processing.", pools.size(), this.getGroupId() );
 
         // Something published?
         AtomicBoolean published = new AtomicBoolean();
 
         try
         {
-            // Iterate
-            for ( Supplier<PoolOfPairs<L, R>> nextInput : pools )
+            for ( Supplier<PoolOfPairs<L, R>> poolSupplier : pools )
             {
-                // Complete all statistics tasks asynchronously:
-                // 1. Get some sample data from the database
-                // 2. Compute statistics from the sample data
-                // 3. Produce outputs from the statistics 
-                final CompletableFuture<Set<Path>> statisticsTasks =
-                        CompletableFuture.supplyAsync( nextInput, this.executors.getPairExecutor() )
-                                         .thenApplyAsync( this.getStatisticsProcessingTask( processor, projectConfig ),
-                                                          this.executors.getPairExecutor() )
-                                         .thenApplyAsync( statistics -> {
-                                             
+                // Behold, the feature processing pipeline
+                final CompletableFuture<Void> pipeline =
+                        // Retrieve the pairs                
+                        CompletableFuture.supplyAsync( poolSupplier, this.executors.getPairExecutor() )
+                                         // Write the main pairs, as needed
+                                         .thenApply( this.getPairWritingTask( false, pairsWriter, projectConfig ) )
+                                         // Write the baseline pairs, as needed
+                                         .thenApply( this.getPairWritingTask( true, basePairsWriter, projectConfig ) )
+                                         // Compute the statistics
+                                         .thenApply( this.getStatisticsProcessingTask( processor, projectConfig ) )
+                                         // Publish the statistics for awaiting format consumers
+                                         .thenAcceptAsync( statistics -> {
+
                                              boolean success = this.publish( evaluation,
                                                                              statistics,
                                                                              this.getGroupId(),
@@ -296,45 +299,22 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                              // Notify that something was published
                                              // This is needed to confirm group completion - cannot complete a message
                                              // group if nothing was published to it.
-                                             if( success )
+                                             if ( success )
                                              {
                                                  published.set( true );
                                              }
-                                             
+
                                              // Register statistics produced
                                              typesProduced.addAll( statistics.getStatisticTypes() );
-
-                                             return Collections.emptySet();
                                          },
-                                                          // Consuming happens in the product thread pool and publishing
-                                                          // should happen in a different one because production is
-                                                          // flow-controlled with respect to consumption using a naive 
-                                                          // blocking approach, which would otherwise risk deadlock. 
-                                                          this.executors.getPairExecutor() );
+                                                           // Consuming happens in the product thread pool and publishing
+                                                           // should happen in a different one because production is
+                                                           // flow-controlled with respect to consumption using a naive 
+                                                           // blocking approach, which would otherwise risk deadlock. 
+                                                           this.executors.getPairExecutor() );
 
                 // Add the task to the list
-                listOfFutures.add( statisticsTasks );
-
-                // Create a task for serializing the sample data
-                if ( Objects.nonNull( this.sharedWriters.getSampleDataWriters() ) )
-                {
-                    CompletableFuture<Set<Path>> sampleDataTask =
-                            this.getPairWritingTask( nextInput, false, sampleWriter );
-
-                    listOfFutures.add( sampleDataTask );
-                }
-
-                // Create a task for serializing the baseline sample data
-                if ( Objects.nonNull( projectConfig.getInputs().getBaseline() )
-                     && Objects.nonNull( this.sharedWriters.getBaselineSampleDataWriters() ) )
-                {
-                    CompletableFuture<Set<Path>> baselineSampleDataTask =
-                            this.getPairWritingTask( nextInput,
-                                                     true,
-                                                     baselineSampleWriter );
-
-                    listOfFutures.add( baselineSampleDataTask );
-                }
+                listOfFutures.add( pipeline );
             }
         }
         catch ( IterationFailedException re )
@@ -357,6 +337,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                               this.getGroupId(),
                               Collections.emptySet() );
 
+
                 // Notify consumers that all statistics for this group have been published
                 evaluation.markGroupPublicationCompleteReportedSuccess( this.getGroupId() );
             }
@@ -369,24 +350,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
-            
+
             throw new WresProcessingException( this.errorMessage, e );
         }
 
-        Set<Path> paths = new HashSet<>();
-
-        // Unearth the Set<Path> inside listOfFutures now that join() was called
-        // above.
-        for ( CompletableFuture<Set<Path>> completedFuture : listOfFutures )
-        {
-            Set<Path> innerPaths = completedFuture.getNow( Collections.emptySet() );
-            paths.addAll( innerPaths );
-        }
-
-        Set<Path> allPaths = Collections.unmodifiableSet( paths );
-
         return new FeatureProcessingResult( this.feature,
-                                            allPaths,
                                             !typesProduced.isEmpty() );
     }
 
@@ -422,6 +390,9 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 evaluation.publish( next, groupId );
                 returnMe = true;
             }
+
+            LOGGER.debug( "Published statistics: {}. Ignored these types: {}.", returnMe, ignore );
+
         }
         catch ( InterruptedException e )
         {
@@ -464,34 +435,34 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * 
      * @param <L> the left type of data
      * @param <R> the right type of data
-     * @param pairSupplier the supplier of paired data to write
      * @param useBaseline is true to write the baseline pairs
      * @param sharedWriters the consumers of paired data for writing
+     * @param projectConfig the project declaration
      * @return a task that writes pairs
      */
 
-    private <L, R> CompletableFuture<Set<Path>> getPairWritingTask( Supplier<PoolOfPairs<L, R>> pairSupplier,
-                                                                    boolean useBaseline,
-                                                                    PairsWriter<L, R> sharedWriters )
+    private <L, R> UnaryOperator<PoolOfPairs<L, R>> getPairWritingTask( boolean useBaseline,
+                                                                        PairsWriter<L, R> sharedWriters,
+                                                                        ProjectConfig projectConfig )
     {
-        return CompletableFuture.supplyAsync( pairSupplier, this.executors.getProductExecutor() )
-                                .thenApplyAsync( sampleData -> {
+        return pairs -> {
 
-                                    // Baseline data?
-                                    if ( useBaseline )
-                                    {
-                                        sharedWriters.accept( sampleData.getBaselineData() );
-                                    }
-                                    else
-                                    {
-                                        sharedWriters.accept( sampleData );
-                                    }
-
-                                    // #71874: pairs are not written per feature so do not report on the 
-                                    // paths to pairs for each feature. Report on the pairs for all features.
-                                    return Collections.emptySet();
-                                },
-                                                 this.executors.getProductExecutor() );
+            if ( Objects.nonNull( sharedWriters ) )
+            {
+                // Baseline data?
+                if ( useBaseline && Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+                {
+                    sharedWriters.accept( pairs.getBaselineData() );
+                }
+                else
+                {
+                    sharedWriters.accept( pairs );
+                }
+            }
+            // #71874: pairs are not written per feature so do not report on the 
+            // paths to pairs for each feature. Report on the pairs for all features.
+            return pairs;
+        };
     }
 
     /**
@@ -524,7 +495,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             }
 
             StatisticsForProject statistics = processor.apply( pool );
-            
+
             // Compute separate statistics for the baseline?
             if ( pool.hasBaseline() && projectConfig.getInputs().getBaseline().isSeparateMetrics() )
             {

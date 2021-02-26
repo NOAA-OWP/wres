@@ -126,8 +126,6 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         {
             this.successfulFeatures.add( result.getFeature() );
 
-            this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
-
             if ( LOGGER.isInfoEnabled() )
             {
                 LOGGER.info( "[{}/{}] Completed feature tuple '{}'",
