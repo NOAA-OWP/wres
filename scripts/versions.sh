@@ -4,13 +4,13 @@
 # directory like this: scripts/versions.sh
 
 
-# Accepts a single directory argument, e.g. of a module or the top-level.
-# Returns the WRES version auto-detected from git.
+# Accepts any number of directories arguments, e.g. of modules.
+# Returns the most recent WRES version auto-detected from git.
 # When the Dockerfile has uncommitted modifications, flag "-dev" (dirty).
 function get_ver
 {
-    last_commit_hash=$( git log --format="%h" -n 1 -- $1 build.gradle )
-    last_commit_date=$( git log --date=iso8601 --format="%cd" -n 1 -- $1 build.gradle )
+    last_commit_hash=$( git log --format="%h" -n 1 -- build.gradle $@ )
+    last_commit_date=$( git log --date=iso8601 --format="%cd" -n 1 -- build.gradle $@ )
     last_commit_date_utc=$( date --date "${last_commit_date}" --iso-8601 --utc )
     last_commit_date_short=$( echo ${last_commit_date_utc} | sed 's/\-//g' - )
     potential_version=${last_commit_date_short}-${last_commit_hash}
@@ -33,6 +33,17 @@ shopt -s extglob
 
 for directory in wres-*([a-z])
 do
-    version=$( get_ver ${directory} )
+    # For those with zips, we want to change versions when dependencies change.
+    if [[ "$directory" == "wres-tasker" || "$directory" == "wres-worker" ]]
+    then
+        version=$( get_ver ${directory} "wres-messages" )
+    elif [[ "$directory" == "wres-vis" ]]
+    then
+        version=$( get_ver ${directory} "wres-datamodel" \
+                           "wres-util" "wres-eventsbroker" "wres-events" )
+    else
+        version=$( get_ver ${directory} )
+    fi
+
     echo "${directory} version: ${version}"
 done
