@@ -69,7 +69,7 @@ print( "We are using the " + env_suffix + " environment in this example." )
 # contains the certificate of the server. The file may be retrieved at
 # https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 
-wres_ca_file = "cacerts/wres_ca_x509_cert.pem"
+wres_ca_file = "cacerts/dod_root_ca_3_expires_2029-12.pem"
 
 if os.path.exists( wres_ca_file ):
     print( "Found the WRES CA file at " + wres_ca_file )

@@ -54,7 +54,7 @@ echo "$project_config"
 # -prod environment (production).  Set the suffix appropriately for the version
 # of the COWRES to be used.  Note that this may also have implications for the
 # name of the CA .pem file to use; see below.
-env_suffix=-dev
+env_suffix=-prod
 
 echo "We are using the $env_suffix environment in this example."
 
@@ -70,8 +70,7 @@ echo "We are using the $env_suffix environment in this example."
 # contains the certificate of the server. The file may be retrieved at
 # https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 
-# For production: wres_ca_file=wres_ca_x509_cert.pem
-wres_ca_file=dod_sw_ca-54_expires_2022-11.pem #for -ti and -dev COWRES
+wres_ca_file=cacerts/dod_root_ca_3_expires_2029-12.pem
 
 if [ -f $wres_ca_file ]
 then
