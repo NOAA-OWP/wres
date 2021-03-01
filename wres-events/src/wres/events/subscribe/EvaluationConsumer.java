@@ -750,7 +750,8 @@ class EvaluationConsumer
 
     private void execute( Runnable task )
     {
-        Future<?> future = this.getExecutorService().submit( task );
+        Future<?> future = this.getExecutorService()
+                               .submit( task );
 
         // Get and propagate any exception
         try
@@ -918,28 +919,7 @@ class EvaluationConsumer
         OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
 
         // May trigger group completion and consumption
-        try
-        {
-            groupCon.setExpectedMessageCount( status.getMessageCount() );
-        }
-        catch ( RuntimeException e )
-        {
-            // Consumer exceptions are propagated for retries
-            if ( e.getCause() instanceof ConsumerException )
-            {
-                throw new ConsumerException( CONSUMER_STRING + this.getClientId()
-                                             + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
-                                             + this.getEvaluationId()
-                                             + ".",
-                                             e );
-            }
-
-            throw new UnrecoverableEvaluationException( CONSUMER_STRING + this.getClientId()
-                                                        + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
-                                                        + this.getEvaluationId()
-                                                        + ".",
-                                                        e );
-        }
+        this.execute( () -> groupCon.setExpectedMessageCount( status.getMessageCount() ) );
 
         this.closeGroupIfComplete( groupCon );
     }
@@ -1082,28 +1062,7 @@ class EvaluationConsumer
             OneGroupConsumer<Statistics> groupCon = this.getGroupConsumer( groupId );
 
             // May trigger group completion and consumption
-            try
-            {
-                groupCon.accept( messageId, statistics );
-            }
-            catch ( RuntimeException e )
-            {
-                // Consumer exceptions are propagated for retries
-                if ( e.getCause() instanceof ConsumerException )
-                {
-                    throw new ConsumerException( CONSUMER_STRING + this.getClientId()
-                                                 + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
-                                                 + this.getEvaluationId()
-                                                 + ".",
-                                                 e );
-                }
-
-                throw new UnrecoverableEvaluationException( CONSUMER_STRING + this.getClientId()
-                                                            + FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION
-                                                            + this.getEvaluationId()
-                                                            + ".",
-                                                            e );
-            }
+            this.execute( () -> groupCon.accept( messageId, statistics ) );
 
             this.closeGroupIfComplete( groupCon );
         }

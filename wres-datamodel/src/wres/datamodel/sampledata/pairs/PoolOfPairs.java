@@ -19,7 +19,7 @@ import wres.datamodel.time.TimeSeries;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * <p>A pool of pairs the additionally offers a time-series view of the pairs.
+ * <p>A pool of pairs that additionally offers a time-series view of the pairs.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -86,7 +86,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
         Builder<L, R> builder = new Builder<>();
         builder.setMetadata( this.baselineMeta ).setClimatology( this.climatology );
 
-        for ( TimeSeries<Pair<L, R>> next : baseline )
+        for ( TimeSeries<Pair<L, R>> next : this.baseline )
         {
             builder.addTimeSeries( next );
         }
@@ -97,7 +97,7 @@ public class PoolOfPairs<L, R> implements SampleData<Pair<L, R>>, Supplier<List<
     @Override
     public List<TimeSeries<Pair<L, R>>> get()
     {
-        return main; //Immutable on construction
+        return this.main; //Immutable on construction
     }
 
     @Override
