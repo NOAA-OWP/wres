@@ -24,9 +24,9 @@ dir.create( file.path( local_libraries ), showWarnings = FALSE )
 # Third, for within-R-program dependency management, we get checkpoint.
 # For reproducibility, we specify the version of checkpoint explicitly.
 
-# Expect 0.4.5 src tar.gz to have particular sha256sum
-checkpoint_src_sha256sum <- "8c8b8dcf1456fd6a6f92a624e637280e6be0756f26d771401332dbba51a68656"
-checkpoint_src <- "https://cran.r-project.org/src/contrib/checkpoint_0.4.5.tar.gz"
+# Expect 0.4.10 src tar.gz to have particular sha256sum
+checkpoint_src_sha256sum <- "7362ae9703763fe4652d0b592cd913ce506f072a18e5cf5970d08d7cdf4d126a"
+checkpoint_src <- "https://cran.r-project.org/src/contrib/checkpoint_0.4.10.tar.gz"
 
 # TODO: verify sha256sum, only try to install if package not already installed
 # Important: specify lib to be local_libraries for portability/reproducibility
@@ -49,7 +49,7 @@ library( checkpoint )
 
 # Pick a midnight-UTC date of MRAN repo which has the versions we want, also
 # specify the exact R version we are expected to be running.
-checkpoint( "2018-11-04", checkpointLocation = getwd(), R.version = "3.5.1" )
+checkpoint( "2018-11-04", checkpointLocation = getwd(), R.version = "3.6.0" )
 
 # Finally, proceed as if we already have installed packages. Checkpoint will
 # look ahead to these "library" declarations to get/compile what is needful.
@@ -120,7 +120,7 @@ crul::set_opts( verbose = TRUE )
 # https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 
 wres_ca_directory <- "cacerts"
-wres_ca_file <- paste( wres_ca_directory, "wres_ca_x509_cert.pem", sep = "/" )
+wres_ca_file <- paste( wres_ca_directory, "dod_root_ca_3_expires_2029-12.pem" , sep = "/" )
 
 if ( file.exists( wres_ca_file ) )
 {
