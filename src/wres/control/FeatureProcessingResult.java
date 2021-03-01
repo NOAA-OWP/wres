@@ -33,7 +33,7 @@ class FeatureProcessingResult
     }
 
     /**
-     * Returns <code>true</code> if statistics were produced for one of more pools, otherwise <code>false</code>.
+     * Returns <code>true</code> if statistics were produced for one or more pools, otherwise <code>false</code>.
      * 
      * @return true if statistics were produced, false if no statistics were produced
      */

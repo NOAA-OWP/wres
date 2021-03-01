@@ -17,6 +17,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.Feature;
 import wres.datamodel.FeatureTuple;
 import wres.io.data.caching.Features;
+import wres.events.Evaluation;
 
 /**
  * <p>A {@link Consumer} that records information about the completion state of a {@link Feature}. The 
@@ -28,6 +29,11 @@ import wres.io.data.caching.Features;
  * has sight of success or failure when formats are requested that are written per feature and not for those written
  * across features, such as pairs or netCDF. A different reporting mechanism that does not rely on inspecting paths 
  * written, rather numbers produced, is necessary to report on true success or failure per feature.
+ * 
+ * <p>Furthermore, this class reports on the success (or otherwise) of the publication of statistics and not their
+ * consumption. Consumers are out-of-band to publishers and this mechanism is used by publishers only. TODO: move this
+ * status reporting to the {@link Evaluation}, specifically to the package private EvaluationStatusTracker and report
+ * on "group" consumption more generally, noting that a group may contain more than one feature. See #88698.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -116,7 +122,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
         if ( !result.hasStatistics() && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "[{}/{}] Completed feature tuple '{}', but no statistics were produced. "
+            LOGGER.warn( "[{}/{}] Completed feature tuple '{}', but no statistics were created. "
                          + "This probably occurred because no pools contained valid pairs.",
                          currentFeature,
                          this.totalFeatures,
@@ -128,7 +134,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
 
             if ( LOGGER.isInfoEnabled() )
             {
-                LOGGER.info( "[{}/{}] Completed feature tuple '{}'",
+                LOGGER.info( "[{}/{}] Completed statistics for feature tuple '{}'",
                              currentFeature,
                              this.totalFeatures,
                              result.getFeature().toStringShort() );
@@ -153,7 +159,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
              &&
              !successfulFeaturesToReport.isEmpty() )
         {
-            LOGGER.info( "The following feature tuples succeeded: {}",
+            LOGGER.info( "Statistics were created for these feature tuples: {}",
                          Features.getFeaturesDescription( successfulFeaturesToReport ) );
         }
 
@@ -162,7 +168,7 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         // exceptional behavior
         if ( successfulFeaturesToReport.isEmpty() )
         {
-            throw new WresProcessingException( "No features were successfully evaluated.", null );
+            throw new WresProcessingException( "Statistics could not be produced for any feature tuples.", null );
         }
 
         // Summary report
@@ -170,18 +176,18 @@ class FeatureReporter implements Consumer<FeatureProcessingResult>
         {
             if ( this.totalFeatures == successfulFeaturesToReport.size() )
             {
-                LOGGER.info( "All features in project {} succeeded.",
-                             projectConfigPlus );
+                LOGGER.info( "Finished creating statistics for all feature tuples in project {}.",
+                             this.projectConfigPlus );
             }
             else
             {
-                LOGGER.info( "{} out of {} features in project {} succeeded and "
-                             + "{} out of {} features did not succeed.",
+                LOGGER.info( "{} out of {} feature tuples in project {} produced statistics and "
+                             + "{} out of {} feature tuples did not produce statistics.",
                              successfulFeaturesToReport.size(),
-                             totalFeatures,
-                             projectConfigPlus,
-                             totalFeatures - successfulFeaturesToReport.size(),
-                             totalFeatures );
+                             this.totalFeatures,
+                             this.projectConfigPlus,
+                             this.totalFeatures - successfulFeaturesToReport.size(),
+                             this.totalFeatures );
             }
         }
     }
