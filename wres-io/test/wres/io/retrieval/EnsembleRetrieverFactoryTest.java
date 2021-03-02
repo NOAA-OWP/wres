@@ -533,28 +533,24 @@ public class EnsembleRetrieverFactoryTest
 
         // Add first member
         EnsembleDetails members = new EnsembleDetails();
-        String ensembleName = "ENS";
-        int firstMemberLabel = 123;
+        String ensembleName = "ENS123";
         members.setEnsembleName( ensembleName );
-        members.setEnsembleMemberIndex( firstMemberLabel );
         members.save( this.wresDatabase );
         Integer firstMemberId = members.getId();
 
         assertNotNull( firstMemberId );
 
         // Add second member
-        int secondMemberLabel = 567;
-        members.setEnsembleName( ensembleName );
-        members.setEnsembleMemberIndex( secondMemberLabel );
+        String secondMemberName = "ENSE567";
+        members.setEnsembleName( secondMemberName );
         members.save( this.wresDatabase );
         Integer secondMemberId = members.getId();
 
         assertNotNull( secondMemberId );
 
         // Add third member
-        int thirdMemberLabel = 456;
-        members.setEnsembleName( ensembleName );
-        members.setEnsembleMemberIndex( thirdMemberLabel );
+        String thirdMemberName = "ENS456";
+        members.setEnsembleName( thirdMemberName );
         members.save( this.wresDatabase );
         Integer thirdMemberId = members.getId();
 
