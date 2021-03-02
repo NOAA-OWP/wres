@@ -331,7 +331,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "TS.initialization_date + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "ARRAY_AGG(" );
         scripter.addTab( 2 ).addLine( "TSV.series_value" );
-        scripter.addTab( 2 ).addLine( "ORDER BY E.ensemble_name, E.ensemblemember_id" );
+        scripter.addTab( 2 ).addLine( "ORDER BY E.ensemble_name" );
         scripter.addTab().addLine( ") AS ensemble_members," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
