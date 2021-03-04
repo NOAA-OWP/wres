@@ -54,6 +54,7 @@ public final class MeanTest
         this.template = DoubleScoreMetricComponent.newBuilder()
                                                   .setMinimum( Double.NEGATIVE_INFINITY )
                                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                                  .setOptimum( Double.NaN )
                                                   .build();
     }
 

@@ -99,6 +99,7 @@ public class StandardDeviation extends DecomposableScore<SampleData<Pair<Double,
         DoubleScoreMetricComponent template = DoubleScoreMetricComponent.newBuilder()
                                                                         .setMinimum( 0 )
                                                                         .setMaximum( Double.POSITIVE_INFINITY )
+                                                                        .setOptimum( Double.NaN )
                                                                         .build();
 
         this.score = new UnivariateScore( FunctionFactory.standardDeviation(), metric, template, true );

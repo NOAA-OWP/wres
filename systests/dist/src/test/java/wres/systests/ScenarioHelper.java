@@ -172,7 +172,7 @@ public class ScenarioHelper
             //TODO Implement a better means of handling this.  Do we need a result code with JUnit system testing?
             int resultCode = compareOutputAgainstBenchmarks( scenarioInfo,
                                                          finalOutputSet );
-            assertEquals( "Camparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
+            assertEquals( "Comparison with benchmarks failed with code " + resultCode + ".", 0, resultCode );
         }
         catch ( IllegalStateException e )
         {
