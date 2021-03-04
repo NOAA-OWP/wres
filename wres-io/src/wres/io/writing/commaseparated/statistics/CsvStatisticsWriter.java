@@ -106,7 +106,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                          + "UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD LOWER PROBABILITY,"
                                          + "DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD SIDE,DECISION "
                                          + "THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC COMPONENT "
-                                         + "UNITS,STATISTIC";
+                                         + "UNITS,STATISTIC GROUP NUMBER,STATISTIC";
 
     /**
      * The CSV delimiter.
@@ -143,6 +143,12 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      */
 
     private int poolNumber = 1;
+
+    /**
+     * Group number. Identifies statistics that should be considered within the same group.
+     */
+
+    private int groupNumber = 1;
 
     /**
      * Duration units.
@@ -783,6 +789,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // Add the metric component units
             this.append( joiner, metricComponent.getUnits(), false );
 
+            // Add the statistic group number
+            this.append( joiner, String.valueOf( this.groupNumber ), false );
+
             // Add the statistic value
             String formattedValue = this.getDecimalFormatter()
                                         .apply( next.getValue() );
@@ -790,6 +799,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
             // Write the row
             writer.write( joiner.toString().getBytes() );
+
+            // Increment the group number
+            this.groupNumber++;
         }
     }
 
@@ -836,6 +848,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             {
                 this.append( joiner, this.durationUnits.toString().toUpperCase() + " PER HOUR", false );
 
+                // Add the statistic group number
+                this.append( joiner, String.valueOf( this.groupNumber ), false );
+
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
                 BigDecimal nanoAdd = BigDecimal.valueOf( protoDuration.getNanos(), 9 );
@@ -851,6 +866,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             {
                 this.append( joiner, this.durationUnits.toString().toUpperCase(), false );
 
+                // Add the statistic group number
+                this.append( joiner, String.valueOf( this.groupNumber ), false );
+
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
                 BigDecimal nanoAdd = BigDecimal.valueOf( protoDuration.getNanos(), 9 );
@@ -864,6 +882,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
             // Write the row
             writer.write( joiner.toString().getBytes() );
+
+            // Increment the group number
+            this.groupNumber++;
         }
     }
 
@@ -886,6 +907,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         for ( DiagramStatisticComponent next : diagram.getStatisticsList() )
         {
+            int innerGroupNumber = this.groupNumber;
             for ( Double nextValue : next.getValuesList() )
             {
                 // Add a line separator for the next row
@@ -909,6 +931,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 // Add the metric component units
                 this.append( joiner, metricComponent.getUnits(), false );
 
+                // Add the statistic group number
+                this.append( joiner, String.valueOf( innerGroupNumber ), false );
+
                 // Add the statistic value
                 String formattedValue = this.getDecimalFormatter()
                                             .apply( nextValue );
@@ -917,8 +942,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
                 // Write the row
                 writer.write( joiner.toString().getBytes() );
+
+                // Increment the group number
+                innerGroupNumber++;
             }
         }
+
+        // Increment the group number by the number of elements in one diagram dimension
+        this.groupNumber += diagram.getStatistics( 0 )
+                                   .getValuesCount();
     }
 
     /**
@@ -961,6 +993,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                             .add( nanoAdd )
                                                             .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
 
+            // Add the statistic group number
+            this.append( joiner, String.valueOf( this.groupNumber ), false );
+
             String formattedValue = epochDurationInUserUnits.toPlainString();
             this.append( joiner, formattedValue, false );
             writer.write( joiner.toString().getBytes() );
@@ -979,9 +1014,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                        .add( nanoDurationAdd )
                                                        .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
 
+            // Add the statistic group number
+            this.append( joiner, String.valueOf( this.groupNumber ), false );
+
             String formattedValueDuration = durationInUserUnits.toPlainString();
             this.append( joinerTwo, formattedValueDuration, false );
             writer.write( joinerTwo.toString().getBytes() );
+
+            // Increment the group number
+            this.groupNumber++;
         }
     }
 
@@ -1002,6 +1043,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         BoxplotMetric metric = boxplot.getMetric();
 
+        // Amount by which to increment the group number after writing
+        int addToGroupNumber = 0;
+
         for ( Box next : boxplot.getStatisticsList() )
         {
             LinkedValueType valueType = metric.getLinkedValueType();
@@ -1018,36 +1062,47 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           metricName.toString(),
                                           componentName,
                                           units,
+                                          this.groupNumber + addToGroupNumber,
                                           statistic,
                                           writer );
+                
+                // Do not increment group number here: tie to the first probability/quantile of a box.
             }
 
             // Add the probabilities for the quantiles
             List<Double> probabilities = metric.getQuantilesList();
 
-            for ( double nextProb : probabilities )
+            for ( int i = 0; i < probabilities.size(); i++ )
             {
                 this.writeBoxplotElement( poolDescription,
                                           metricName.toString(),
                                           "PROBABILITY",
                                           "PROBABILITY",
-                                          nextProb,
+                                          this.groupNumber + addToGroupNumber + i,
+                                          probabilities.get( i ),
                                           writer );
             }
 
             // Add the quantiles
             List<Double> quantiles = next.getQuantilesList();
 
-            for ( double nextQuant : quantiles )
+            for ( int i = 0; i < probabilities.size(); i++ )
             {
                 this.writeBoxplotElement( poolDescription,
                                           metricName.toString(),
                                           "QUANTILE",
                                           units,
-                                          nextQuant,
+                                          this.groupNumber + addToGroupNumber + i,
+                                          quantiles.get( i ),
                                           writer );
             }
+
+            // Increment the group number
+            addToGroupNumber += probabilities.size();
         }
+
+        // Increment the group number
+        this.groupNumber += addToGroupNumber;
     }
 
     /**
@@ -1057,6 +1112,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param metricName the metric name
      * @param metricComponentName the metric component name
      * @param units the metric units
+     * @param groupNumber the statistics group number
      * @param statistic the statistic
      * @param writer the writer
      * @throws IOException if the statistic could not be written
@@ -1066,6 +1122,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                       String metricName,
                                       String metricComponentName,
                                       String units,
+                                      int groupNumber,
                                       double statistic,
                                       BufferedOutputStream writer )
             throws IOException
@@ -1086,6 +1143,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         // Add the metric component units
         this.append( joiner, units, false );
+
+        // Add the statistics group number
+        this.append( joiner, String.valueOf( groupNumber ), false );
 
         // Add the statistic value
         String formattedValue = this.getDecimalFormatter()
@@ -1308,7 +1368,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
                                + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
                                + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
-                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\"";
+                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"Integer\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;

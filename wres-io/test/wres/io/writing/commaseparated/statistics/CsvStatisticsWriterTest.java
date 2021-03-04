@@ -57,7 +57,7 @@ class CsvStatisticsWriterTest
                                                      + "UNITS,DECISION THRESHOLD LOWER PROBABILITY,DECISION THRESHOLD "
                                                      + "UPPER PROBABILITY,DECISION THRESHOLD SIDE,DECISION THRESHOLD "
                                                      + "OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC COMPONENT "
-                                                     + "UNITS,STATISTIC";
+                                                     + "UNITS,STATISTIC GROUP NUMBER,STATISTIC";
 
     @BeforeEach
     void runBeforeEachTest()
@@ -97,21 +97,21 @@ class CsvStatisticsWriterTest
         String lineOneExpected = "QINE,SQIN,,1,RIGHT,DRRC2,,,,DRRC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,"
-                                 + "GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,1.0";
+                                 + "GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,1,1.0";
 
         assertEquals( lineOneExpected, actual.get( 1 ) );
 
         String lineTwoExpected = "QINE,SQIN,,1,RIGHT,DRRC2,,,,DRRC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,"
-                                 + "GREATER,,,,,,,,,MEAN ERROR,MAIN,,2.0";
+                                 + "GREATER,,,,,,,,,MEAN ERROR,MAIN,,2,2.0";
 
         assertEquals( lineTwoExpected, actual.get( 2 ) );
 
         String lineThreeExpected = "QINE,SQIN,,1,RIGHT,DRRC2,,,,DRRC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
                                    + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
                                    + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,PT0S,UNKNOWN,,-Infinity,,,,,"
-                                   + "LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,3.0";
+                                   + "LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,3,3.0";
 
         assertEquals( lineThreeExpected, actual.get( 3 ) );
     }
@@ -148,21 +148,21 @@ class CsvStatisticsWriterTest
         String lineOneExpected = "QINE,SQIN,,1,RIGHT,DOLC2,,,,DOLC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,"
-                                 + "GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,MEAN,SECONDS,3600.000000000";
+                                 + "GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,MEAN,SECONDS,1,3600.000000000";
 
         assertEquals( lineOneExpected, actual.get( 1 ) );
 
         String lineTwoExpected = "QINE,SQIN,,1,RIGHT,DOLC2,,,,DOLC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
                                  + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,PT0S,UNKNOWN,,-Infinity,,,,,LEFT,"
-                                 + "GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,MEDIAN,SECONDS,7200.000000000";
+                                 + "GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,MEDIAN,SECONDS,2,7200.000000000";
 
         assertEquals( lineTwoExpected, actual.get( 2 ) );
 
         String lineThreeExpected = "QINE,SQIN,,1,RIGHT,DOLC2,,,,DOLC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
                                    + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
                                    + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,PT0S,UNKNOWN,,-Infinity,,,,,"
-                                   + "LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,MAXIMUM,SECONDS,"
+                                   + "LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,MAXIMUM,SECONDS,3,"
                                    + "10800.000000000";
 
         assertEquals( lineThreeExpected, actual.get( 3 ) );
