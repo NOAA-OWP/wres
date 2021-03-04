@@ -71,6 +71,11 @@ class EvaluationSubscriberTest
                                .addFormats( Format.NETCDF )
                                .build();
             }
+            
+            @Override
+            public void close()
+            {              
+            }
         };
 
         SubscriberStatus status = null;

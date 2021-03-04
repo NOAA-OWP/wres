@@ -1,5 +1,6 @@
 package wres.events.subscribe;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -35,6 +36,8 @@ import wres.statistics.generated.Statistics;
  * <p>Each consumer consumes a collection of {@link Statistics} and returns a set of {@link Path} mutated. The consumer
  * may contain one or more underlying consumers that each consume the same statistics.
  * 
+ * <p>Allows for {@link Closeable} resources to be assembled and closed on completion.
+ * 
  * <p><b>Implementation notes:</b>
  * 
  * <p>At least one of the methods of this interface should return a non-trivial consumer. Both methods should return a
@@ -48,7 +51,7 @@ import wres.statistics.generated.Statistics;
  * @author james.brown@hydrosolved.com
  */
 
-public interface ConsumerFactory
+public interface ConsumerFactory extends Closeable
 {
 
     /**

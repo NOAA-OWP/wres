@@ -1,12 +1,18 @@
 package wres.control;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -42,6 +48,12 @@ class StatisticsConsumerFactory implements ConsumerFactory
 {
 
     /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsConsumerFactory.class );
+
+    /**
      * Consumer description.
      */
 
@@ -58,6 +70,12 @@ class StatisticsConsumerFactory implements ConsumerFactory
      */
 
     private final List<NetcdfOutputWriter> netcdfWriters;
+
+    /**
+     * Resources to close on completion.
+     */
+
+    private final List<Closeable> resources;
 
     /**
      * Decimal formatter.
@@ -120,7 +138,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         Objects.requireNonNull( path );
 
         Outputs outputs = evaluation.getOutputs();
-        
+
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
 
@@ -254,8 +272,11 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                            .build();
 
         this.projectConfig = projectConfig;
+        this.resources = new ArrayList<>();
+        // Do not add the netcdf writers to the list of resources, only the resources created here. Better to destroy
+        // resources where they are created.
         this.netcdfWriters = netcdfWriters;
-
+        
         this.decimalFormatter = this.getDecimalFormatter( this.projectConfig );
     }
 
@@ -278,6 +299,25 @@ class StatisticsConsumerFactory implements ConsumerFactory
         }
 
         return null;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        LOGGER.debug( "Closing the consumer factory." );
+
+        // Best faith effort to close each one, logging errors
+        for ( Closeable closeMe : this.resources )
+        {
+            try
+            {
+                closeMe.close();
+            }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "Failed to close a format writer.", e );
+            }
+        }
     }
 
 }

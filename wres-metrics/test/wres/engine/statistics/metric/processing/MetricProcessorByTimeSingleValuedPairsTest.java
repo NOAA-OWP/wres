@@ -71,6 +71,7 @@ import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponen
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link MetricProcessorByTimeSingleValuedPairs}.
@@ -211,8 +212,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
             PoolOfPairs<Double, Double> next =
                     new Builder<Double, Double>().addPoolOfPairs( pairs )
-                                                            .setMetadata( meta )
-                                                            .build();
+                                                 .setMetadata( meta )
+                                                 .build();
 
             processor.apply( next );
         }
@@ -379,6 +380,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                   .setNanos( FIRST_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -21600 ) )
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedFirst = DurationDiagramStatistic.newBuilder()
@@ -392,6 +394,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                   .setNanos( SECOND_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( 43200 ) )
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedSecond = DurationDiagramStatistic.newBuilder()
@@ -486,6 +489,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                   .setNanos( FIRST_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -21600 ) )
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedFirst = DurationDiagramStatistic.newBuilder()
@@ -499,6 +503,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                   .setNanos( SECOND_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( 43200 ) )
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedSecond = DurationDiagramStatistic.newBuilder()

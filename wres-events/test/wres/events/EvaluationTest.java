@@ -192,6 +192,11 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
+            
+            @Override
+            public void close()
+            {              
+            }
         };
 
         // Create and start a broker and open an evaluation, closing on completion
@@ -267,6 +272,11 @@ class EvaluationTest
                                .addFormats( Format.NETCDF )
                                .build();
             }
+            
+            @Override
+            public void close()
+            {              
+            }
         };
 
         try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
@@ -329,6 +339,11 @@ class EvaluationTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.PNG )
                                .build();
+            }
+            
+            @Override
+            public void close()
+            {              
             }
         };
 
@@ -428,6 +443,11 @@ class EvaluationTest
                                .addFormats( Format.NETCDF )
                                .build();
             }
+            
+            @Override
+            public void close()
+            {              
+            }
         };
 
         try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
@@ -492,6 +512,11 @@ class EvaluationTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.PNG )
                                .build();
+            }
+            
+            @Override
+            public void close()
+            {              
             }
         };
 
@@ -570,6 +595,11 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
+            
+            @Override
+            public void close()
+            {              
+            }
         };
 
         // Open an evaluation, closing on completion
@@ -625,6 +655,11 @@ class EvaluationTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.PNG )
                                .build();
+            }
+            
+            @Override
+            public void close()
+            {              
             }
         };
 

@@ -51,6 +51,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                                                                                             .setName( DiagramComponentName.FORECAST_PROBABILITY )
                                                                                             .setMinimum( 0 )
                                                                                             .setMaximum( 1 )
+                                                                                            .setUnits( "PROBABILITY" )
                                                                                             .build();
 
     /**
@@ -61,6 +62,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                                                                                                    .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
                                                                                                    .setMinimum( 0 )
                                                                                                    .setMaximum( 1 )
+                                                                                                   .setUnits( "PROBABILITY" )
                                                                                                    .build();
 
     /**
@@ -71,6 +73,7 @@ public class ReliabilityDiagram extends Diagram<SampleData<Pair<Probability, Pro
                                                                                    .setName( DiagramComponentName.SAMPLE_SIZE )
                                                                                    .setMinimum( 0 )
                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                   .setUnits( "COUNT" )
                                                                                    .build();
 
     /**

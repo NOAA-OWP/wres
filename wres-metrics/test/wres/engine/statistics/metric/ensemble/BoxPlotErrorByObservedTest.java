@@ -71,6 +71,7 @@ public final class BoxPlotErrorByObservedTest
                                             .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
+                                            .setUnits( "DIMENSIONLESS" )
                                             .build();
 
         Box box = Box.newBuilder()
@@ -106,6 +107,7 @@ public final class BoxPlotErrorByObservedTest
                                             .addAllQuantiles( EnsembleBoxPlot.DEFAULT_PROBABILITIES )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
+                                            .setUnits( "DIMENSIONLESS" )
                                             .build();
 
         BoxplotStatistic expected = BoxplotStatistic.newBuilder()

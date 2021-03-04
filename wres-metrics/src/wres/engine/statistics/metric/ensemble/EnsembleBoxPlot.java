@@ -74,7 +74,7 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         }
 
         List<Box> boxes = new ArrayList<>();
-        
+
         // Create each box
         for ( Pair<Double, Ensemble> next : s.getRawData() )
         {
@@ -85,7 +85,11 @@ abstract class EnsembleBoxPlot extends Diagram<SampleData<Pair<Double, Ensemble>
         boxes.sort( BOX_COMPARATOR );
 
         BoxplotStatistic statistic = BoxplotStatistic.newBuilder()
-                                                     .setMetric( this.getMetric() )
+                                                     .setMetric( this.getMetric()
+                                                                     .toBuilder()
+                                                                     .setUnits( s.getMetadata()
+                                                                                 .getMeasurementUnit()
+                                                                                 .toString() ) )
                                                      .addAllStatistics( boxes )
                                                      .build();
 

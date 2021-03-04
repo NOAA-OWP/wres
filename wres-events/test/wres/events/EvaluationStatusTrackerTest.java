@@ -76,6 +76,11 @@ class EvaluationStatusTrackerTest
                                .addFormats( Format.NETCDF )
                                .build();
             }
+
+            @Override
+            public void close()
+            {
+            }
         };
 
         // Approve any offer
@@ -169,6 +174,11 @@ class EvaluationStatusTrackerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
+            }
+
+            @Override
+            public void close()
+            {
             }
         };
 
@@ -273,6 +283,11 @@ class EvaluationStatusTrackerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
+            }
+
+            @Override
+            public void close()
+            {
             }
         };
 

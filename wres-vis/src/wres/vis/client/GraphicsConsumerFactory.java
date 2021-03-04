@@ -1,5 +1,6 @@
 package wres.vis.client;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -35,10 +36,6 @@ class GraphicsConsumerFactory implements ConsumerFactory
 
     private final Consumer consumerDescription;
     
-    /**
-     * 
-     */
-
     @Override
     public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path )
     {
@@ -108,6 +105,12 @@ class GraphicsConsumerFactory implements ConsumerFactory
                                            .addFormats( Format.PNG )
                                            .addFormats( Format.SVG )
                                            .build();
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        // No-op
     }
 
 }

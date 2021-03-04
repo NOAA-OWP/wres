@@ -31,13 +31,11 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
  * <p>Constructs a {@link Metric} that returns the fractional difference in time between the maximum values recorded in 
  * the left and right side of each time-series in the {@link PoolOfPairs}. The denominator in the fraction is 
  * given by the period, in hours, between the basis time and the time at which the maximum value is recorded in the 
- * left side of the paired input. Thus, for forecast time-series, the output is properly interpreted as the number of 
- * hours of error per hour of forecast lead time until the observed peak occurred.</p>
+ * left side of the paired input. Thus, for forecast time-series, the output is properly interpreted as the duration 
+ * per hour of forecast lead time until the observed peak occurred.</p>
  * 
- * <p>For multiple peaks with the same value, the peak with the latest {@link Instant} is chosen. The timing error is 
- * measured with a {@link Duration}. However, the fraction is measured in relative hours, i.e. the timing error 
- * is divided by a <code>long</code> value of hours using {@link Duration#dividedBy(long)}. A negative {@link Duration} 
- * indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
+ * <p>For multiple peaks with the same value, the peak with the latest {@link Instant} is chosen. A negative 
+ * {@link Duration} indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -64,6 +62,12 @@ public class TimeToPeakRelativeError extends TimingError
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeToPeakRelativeError.class );
+
+    /**
+     * Number of seconds in an hour.
+     */
+
+    private static final BigDecimal SECONDS_PER_HOUR = BigDecimal.valueOf( 60.0 * 60.0 );
 
     /**
      * Returns an instance.
@@ -147,7 +151,7 @@ public class TimeToPeakRelativeError extends TimingError
                     BigDecimal fraction = errorSeconds.divide( denominatorSeconds, RoundingMode.HALF_UP );
 
                     // Fractional seconds
-                    BigDecimal seconds = fraction.multiply( BigDecimal.valueOf( 60.0 * 60.0 ) );
+                    BigDecimal seconds = fraction.multiply( TimeToPeakRelativeError.SECONDS_PER_HOUR );
 
                     // Nearest whole second
                     seconds = seconds.setScale( 0, RoundingMode.HALF_UP );
@@ -158,6 +162,7 @@ public class TimeToPeakRelativeError extends TimingError
                                                                                                .setNanos( referenceTime.getNano() ) )
                                                                             .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                                       .setSeconds( seconds.longValue() ) )
+                                                                            .setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) )
                                                                             .build();
 
                     builder.addStatistics( pair );

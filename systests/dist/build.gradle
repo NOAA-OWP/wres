@@ -162,8 +162,8 @@ dependencies
     // Expose all wres contents here, using unzipArtifactToTest task.
     // Use of fileTree is important, lazily evaluated, meaning that the contents
     // from the unzipArtifactToTest task will be here by now
-    testCompile fileTree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}",
-                          include: '**/*.jar' )
+    testCompile fileTree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib",
+                          include: '*.jar' )
 
     // Add the lib/conf directory to testRuntime classpath like actual WRES does
     testRuntime files( "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf" )

@@ -133,9 +133,22 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
             predictedQ[i] = qRight.applyAsDouble( prob );
         }
 
+        // Add the units to the quantiles
+        DiagramMetricComponent obsWithUnits = QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
+                                                                                        .setUnits( s.getMetadata()
+                                                                                                    .getMeasurementUnit()
+                                                                                                    .toString() )
+                                                                                        .build();
+
+        DiagramMetricComponent predWithUnits = QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
+                                                                                          .setUnits( s.getMetadata()
+                                                                                                      .getMeasurementUnit()
+                                                                                                      .toString() )
+                                                                                          .build();
+
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES )
+                                         .setMetric( obsWithUnits )
                                          .addAllValues( Arrays.stream( observedQ )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
@@ -143,7 +156,7 @@ public class QuantileQuantileDiagram extends Diagram<SampleData<Pair<Double, Dou
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES )
+                                         .setMetric( predWithUnits )
                                          .addAllValues( Arrays.stream( predictedQ )
                                                               .boxed()
                                                               .collect( Collectors.toList() ) )
