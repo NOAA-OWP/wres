@@ -51,6 +51,13 @@ public final class TimingErrorDurationStatisticsTest
 
         DurationScoreMetricComponent metricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                    .setName( ComponentName.MEAN )
+                                                                                   .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( Long.MIN_VALUE ) )
+                                                                                   .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( Long.MAX_VALUE )
+                                                                                                                            .setNanos( 999_999_999 ) )
+                                                                                   .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                            .setSeconds( 0 ) )
                                                                                    .build();
 
         DurationScoreStatisticComponent component = DurationScoreStatisticComponent.newBuilder()
@@ -120,20 +127,38 @@ public final class TimingErrorDurationStatisticsTest
         com.google.protobuf.Duration expectedMax = MessageFactory.parse( Duration.ofHours( 12 ) );
         com.google.protobuf.Duration expectedMeanAbs = MessageFactory.parse( Duration.ofHours( 9 ) );
 
-        DurationScoreMetricComponent meanMetricComponent = DurationScoreMetricComponent.newBuilder()
+        DurationScoreMetricComponent baseMetric =
+                DurationScoreMetricComponent.newBuilder()
+                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                     .setSeconds( Long.MAX_VALUE )
+                                                                                     .setNanos( 999_999_999 ) )
+                                            .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                                     .setSeconds( 0 ) )
+                                            .build();
+
+        DurationScoreMetricComponent meanMetricComponent = DurationScoreMetricComponent.newBuilder( baseMetric )
                                                                                        .setName( ComponentName.MEAN )
                                                                                        .build();
 
-        DurationScoreMetricComponent minMetricComponent = DurationScoreMetricComponent.newBuilder()
+        DurationScoreMetricComponent minMetricComponent = DurationScoreMetricComponent.newBuilder( baseMetric )
                                                                                       .setName( ComponentName.MINIMUM )
                                                                                       .build();
 
-        DurationScoreMetricComponent maxMetricComponent = DurationScoreMetricComponent.newBuilder()
+        DurationScoreMetricComponent maxMetricComponent = DurationScoreMetricComponent.newBuilder( baseMetric )
                                                                                       .setName( ComponentName.MAXIMUM )
                                                                                       .build();
 
         DurationScoreMetricComponent meanAbsMetricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                           .setName( ComponentName.MEAN_ABSOLUTE )
+                                                                                          .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                                   .setSeconds( 0 ) )
+                                                                                          .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                                   .setSeconds( Long.MAX_VALUE )
+                                                                                                                                   .setNanos( 999_999_999 ) )
+                                                                                          .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                                                   .setSeconds( 0 ) )
                                                                                           .build();
 
         DurationScoreStatisticComponent meanComponent = DurationScoreStatisticComponent.newBuilder()

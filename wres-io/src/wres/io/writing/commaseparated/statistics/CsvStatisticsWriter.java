@@ -1080,8 +1080,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                             .add( nanoAdd )
                                                             .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
 
-            // Add the metric limits
-            this.addDurationMetricLimits( joiner, metric.getMinimum(), metric.getMaximum(), metric.getOptimum() );
+            // No limits for the reference time
+            CsvStatisticsWriter.addEmptyValues( joiner, 3 );
 
             // Add the statistic group number
             this.append( joiner, String.valueOf( this.groupNumber ), false );
@@ -1105,10 +1105,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                        .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
 
             // Add the metric limits
-            this.addDurationMetricLimits( joiner, metric.getMinimum(), metric.getMaximum(), metric.getOptimum() );
+            this.addDurationMetricLimits( joinerTwo, metric.getMinimum(), metric.getMaximum(), metric.getOptimum() );
 
             // Add the statistic group number
-            this.append( joiner, String.valueOf( this.groupNumber ), false );
+            this.append( joinerTwo, String.valueOf( this.groupNumber ), false );
 
             String formattedValueDuration = durationInUserUnits.toPlainString();
             this.append( joinerTwo, formattedValueDuration, false );
