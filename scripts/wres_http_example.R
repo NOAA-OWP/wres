@@ -82,7 +82,7 @@ evaluation <- '<?xml version="1.0" encoding="UTF-8"?>
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="FAKE1" />
+        <feature left="FAKE1" right="FAKE1" />
     </pair>
 
     <metrics>
