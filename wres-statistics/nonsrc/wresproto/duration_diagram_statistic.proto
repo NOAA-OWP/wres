@@ -3,6 +3,7 @@ syntax = "proto3";
 package wres.statistics.generated;
 
 import "wresproto/duration_diagram_metric.proto";
+import "wresproto/reference_time.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -26,6 +27,12 @@ message DurationDiagramStatistic
         // A pair of one instant and one duration.
         
         google.protobuf.Timestamp time = 1;
+        // The reference time.
+
         google.protobuf.Duration duration = 2;
+        // The duration.
+
+        ReferenceTime.ReferenceTimeType reference_time_type = 3;
+        // The reference time type.
     }
 }

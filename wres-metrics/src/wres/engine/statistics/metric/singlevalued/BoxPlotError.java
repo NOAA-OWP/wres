@@ -80,7 +80,11 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, Boxp
         }
 
         BoxplotStatistic.Builder builder = BoxplotStatistic.newBuilder()
-                                                           .setMetric( this.getMetric() );
+                                                           .setMetric( this.getMetric()
+                                                                           .toBuilder()
+                                                                           .setUnits( s.getMetadata()
+                                                                                       .getMeasurementUnit()
+                                                                                       .toString() ) );
 
         // Empty output for empty input
         if ( s.getRawData().isEmpty() )
@@ -107,10 +111,8 @@ public class BoxPlotError extends Diagram<SampleData<Pair<Double, Double>>, Boxp
                                 .boxed()
                                 .collect( Collectors.toList() );
 
-        BoxplotStatistic statistic = BoxplotStatistic.newBuilder()
-                                                     .setMetric( this.getMetric() )
-                                                     .addStatistics( Box.newBuilder().addAllQuantiles( box ) )
-                                                     .build();
+        BoxplotStatistic statistic = builder.addStatistics( Box.newBuilder().addAllQuantiles( box ) )
+                                            .build();
 
         return BoxplotStatisticOuter.of( statistic, s.getMetadata() );
     }

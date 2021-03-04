@@ -20,6 +20,7 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link TimeToPeakError}.
@@ -58,6 +59,7 @@ public final class TimeToPeakErrorTest
                                                                                   .setNanos( firstInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -21600 ) )
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
@@ -66,6 +68,7 @@ public final class TimeToPeakErrorTest
                                                                                   .setNanos( secondInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( 43200 ) )
+                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expected = DurationDiagramStatistic.newBuilder()

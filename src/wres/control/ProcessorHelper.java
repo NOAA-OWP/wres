@@ -239,14 +239,25 @@ class ProcessorHelper
                 LOGGER.warn( message, e );
             }
 
-            // Close the shared writers if they weren't closed already
+            // Close the pairs writers if they weren't closed already
             try
             {
                 sharedWriters.close();
             }
             catch ( IOException e )
             {
-                String message = "Failed to close the shared writers for evaluation " + evaluationId + ".";
+                String message = "Failed to close the pair writers.";
+                LOGGER.warn( message, e );
+            }
+
+            // Close the format writers
+            try
+            {
+                consumerFactory.close();
+            }
+            catch ( IOException e )
+            {
+                String message = "Failed to close the format writers.";
                 LOGGER.warn( message, e );
             }
 
@@ -259,7 +270,7 @@ class ProcessorHelper
                 }
                 catch ( WriteException we )
                 {
-                    LOGGER.warn( "Failed to close netcdf writer.", we );
+                    LOGGER.warn( "Failed to close a netcdf writer.", we );
                 }
             }
 

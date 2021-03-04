@@ -48,21 +48,24 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
      * Rank order.
      */
 
-    public static final DiagramMetricComponent RANK_ORDER = DiagramMetricComponent.newBuilder()
-                                                                                                .setName( DiagramComponentName.RANK_ORDER )
-                                                                                                .setMinimum( 0 )
-                                                                                                .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                                .build();
+    public static final DiagramMetricComponent RANK_ORDER =
+            DiagramMetricComponent.newBuilder()
+                                  .setName( DiagramComponentName.RANK_ORDER )
+                                  .setMinimum( 0 )
+                                  .setMaximum( Double.POSITIVE_INFINITY )
+                                  .setUnits( "COUNT" )
+                                  .build();
 
     /**
      * Observed relative frequency.
      */
 
     public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY = DiagramMetricComponent.newBuilder()
-                                                                                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
-                                                                                                      .setMinimum( 0 )
-                                                                                                      .setMaximum( 1 )
-                                                                                                      .build();
+                                                                                                   .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                                                   .setMinimum( 0 )
+                                                                                                   .setMaximum( 1 )
+                                                                                                   .setUnits( "PROBABILITY" )
+                                                                                                   .build();
 
     /**
      * Basic description of the metric.

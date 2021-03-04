@@ -122,6 +122,7 @@ public class TimeToPeakError extends TimingError
                                                                         .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                                   .setSeconds( error.getSeconds() )
                                                                                                                   .setNanos( error.getNano() ) )
+                                                                        .setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) )
                                                                         .build();
 
                 builder.addStatistics( pair );

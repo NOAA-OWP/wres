@@ -48,6 +48,7 @@ public class RelativeOperatingCharacteristicDiagram
                                                                                                 .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
                                                                                                 .setMinimum( 0 )
                                                                                                 .setMaximum( 1 )
+                                                                                                .setUnits( "PROBABILITY" )
                                                                                                 .build();
 
     /**
@@ -58,6 +59,7 @@ public class RelativeOperatingCharacteristicDiagram
                                                                                                       .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
                                                                                                       .setMinimum( 0 )
                                                                                                       .setMaximum( 1 )
+                                                                                                      .setUnits( "PROBABILITY" )
                                                                                                       .build();
 
     /**

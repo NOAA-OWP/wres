@@ -69,13 +69,15 @@ public final class QuantileQuantileDiagramTest
 
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
+                                                                                               .setUnits( "DIMENSIONLESS" ) )
                                          .addAllValues( observedQ )
                                          .build();
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
+                                                                                                .setUnits( "DIMENSIONLESS" ) )
                                          .addAllValues( predictedQ )
                                          .build();
 
@@ -105,13 +107,15 @@ public final class QuantileQuantileDiagramTest
 
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
+                                                                                               .setUnits( "DIMENSIONLESS" ) )
                                          .addAllValues( source )
                                          .build();
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES )
+                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
+                                                                                                .setUnits( "DIMENSIONLESS" ) )
                                          .addAllValues( source )
                                          .build();
 
