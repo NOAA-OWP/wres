@@ -1046,6 +1046,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Amount by which to increment the group number after writing
         int addToGroupNumber = 0;
 
+        MetricDimension quantileValueType = MetricDimension.valueOf( metric.getQuantileValueType().name() );
+        String quantileValueTypeString = quantileValueType.toString();
+
         for ( Box next : boxplot.getStatisticsList() )
         {
             LinkedValueType valueType = metric.getLinkedValueType();
@@ -1065,7 +1068,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           this.groupNumber + addToGroupNumber,
                                           statistic,
                                           writer );
-                
+
                 // Do not increment group number here: tie to the first probability/quantile of a box.
             }
 
@@ -1090,7 +1093,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             {
                 this.writeBoxplotElement( poolDescription,
                                           metricName.toString(),
-                                          "QUANTILE",
+                                          quantileValueTypeString,
                                           units,
                                           this.groupNumber + addToGroupNumber + i,
                                           quantiles.get( i ),

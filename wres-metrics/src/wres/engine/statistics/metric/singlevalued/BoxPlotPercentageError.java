@@ -148,7 +148,7 @@ public class BoxPlotPercentageError extends Diagram<SampleData<Pair<Double, Doub
                                    .addAllQuantiles( BoxPlotPercentageError.DEFAULT_PROBABILITIES )
                                    .setMinimum( Double.NEGATIVE_INFINITY )
                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                   .setUnits( "PERCENT OF VERIFYING VALUE" )
+                                   .setUnits( "PERCENT" )
                                    .build();
     }
 

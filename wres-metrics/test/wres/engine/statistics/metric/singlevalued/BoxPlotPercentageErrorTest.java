@@ -70,7 +70,7 @@ public final class BoxPlotPercentageErrorTest
                                             .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
-                                            .setUnits( "PERCENT OF VERIFYING VALUE" )
+                                            .setUnits( "PERCENT" )
                                             .build();
 
         Box box = Box.newBuilder()
@@ -135,7 +135,7 @@ public final class BoxPlotPercentageErrorTest
                                             .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
-                                            .setUnits( "PERCENT OF VERIFYING VALUE" )
+                                            .setUnits( "PERCENT" )
                                             .build();
 
         expectedRaw.add( BoxplotStatistic.newBuilder()
@@ -276,7 +276,7 @@ public final class BoxPlotPercentageErrorTest
                                             .addAllQuantiles( probabilities )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
-                                            .setUnits( "PERCENT OF VERIFYING VALUE" )
+                                            .setUnits( "PERCENT" )
                                             .build();
 
         Box box = Box.newBuilder()
