@@ -51,7 +51,7 @@ public class RankHistogram extends Diagram<SampleData<Pair<Double, Ensemble>>, D
     public static final DiagramMetricComponent RANK_ORDER =
             DiagramMetricComponent.newBuilder()
                                   .setName( DiagramComponentName.RANK_ORDER )
-                                  .setMinimum( 0 )
+                                  .setMinimum( 1 )
                                   .setMaximum( Double.POSITIVE_INFINITY )
                                   .setUnits( "COUNT" )
                                   .build();

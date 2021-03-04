@@ -106,7 +106,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                          + "UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD LOWER PROBABILITY,"
                                          + "DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD SIDE,DECISION "
                                          + "THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC COMPONENT "
-                                         + "UNITS,STATISTIC GROUP NUMBER,STATISTIC";
+                                         + "UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT MAXIMUM,METRIC COMPONENT "
+                                         + "OPTIMUM,STATISTIC GROUP NUMBER,STATISTIC";
 
     /**
      * The CSV delimiter.
@@ -789,6 +790,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // Add the metric component units
             this.append( joiner, metricComponent.getUnits(), false );
 
+            // Add the minimum value
+            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getMinimum(), true ), false );
+
+            // Add the maximum value
+            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getMaximum(), true ), false );
+
+            // Add the optimum value
+            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getOptimum(), true ), false );
+
             // Add the statistic group number
             this.append( joiner, String.valueOf( this.groupNumber ), false );
 
@@ -803,6 +813,24 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // Increment the group number
             this.groupNumber++;
         }
+    }
+
+    /**
+     * Returns a string representation of a double
+     * 
+     * @param value the value
+     * @param nanAsEmpty is true to treat {@link Double#NaN} as empty.
+     * @return a string representation of a double, else an empty value
+     */
+
+    private static String getDoubleString( double value, boolean nanAsEmpty )
+    {
+        if ( nanAsEmpty && Double.isNaN( value ) )
+        {
+            return "";
+        }
+
+        return String.valueOf( value );
     }
 
     /**
@@ -843,10 +871,16 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName().name() );
             this.append( joiner, namedMetricComponent.toString(), false );
 
-            // Relative timing errors: represent in decimal seconds per hour
+            // Relative timing errors
             if ( metric.getName() == MetricName.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC )
             {
-                this.append( joiner, this.durationUnits.toString().toUpperCase() + " PER HOUR", false );
+                this.append( joiner, durationUnits.toString().toUpperCase() + " PER HOUR", false );
+
+                // Add the metric limits
+                this.addDurationMetricLimits( joiner,
+                                              metricComponent.getMinimum(),
+                                              metricComponent.getMaximum(),
+                                              metricComponent.getOptimum() );
 
                 // Add the statistic group number
                 this.append( joiner, String.valueOf( this.groupNumber ), false );
@@ -861,10 +895,16 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 String formattedValue = durationInUserUnits.toPlainString();
                 this.append( joiner, formattedValue, false );
             }
-            // Absolute timing errors: represent in decimal seconds
+            // Absolute timing errors
             else
             {
-                this.append( joiner, this.durationUnits.toString().toUpperCase(), false );
+                this.append( joiner, durationUnits.toString().toUpperCase(), false );
+
+                // Add the metric limits
+                this.addDurationMetricLimits( joiner,
+                                              metricComponent.getMinimum(),
+                                              metricComponent.getMaximum(),
+                                              metricComponent.getOptimum() );
 
                 // Add the statistic group number
                 this.append( joiner, String.valueOf( this.groupNumber ), false );
@@ -886,6 +926,44 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // Increment the group number
             this.groupNumber++;
         }
+    }
+
+    /**
+     * Adds the metric limits for a duration metric to a joiner.
+     * @param joiner the joiner
+     * @param minimum the minimum limit
+     * @param maximum the maximum limit
+     * @param optimum the optimum
+     */
+
+    private void addDurationMetricLimits( StringJoiner joiner,
+                                          com.google.protobuf.Duration minimum,
+                                          com.google.protobuf.Duration maximum,
+                                          com.google.protobuf.Duration optimum )
+    {
+        // Add the minimum value
+        BigDecimal minDurationAdd = BigDecimal.valueOf( minimum.getNanos(), 9 );
+        BigDecimal minDurationInUserUnits = BigDecimal.valueOf( minimum.getSeconds() )
+                                                      .add( minDurationAdd )
+                                                      .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
+
+        this.append( joiner, minDurationInUserUnits.toPlainString(), false );
+
+        // Add the maximum value
+        BigDecimal maxDurationAdd = BigDecimal.valueOf( maximum.getNanos(), 9 );
+        BigDecimal maxDurationInUserUnits = BigDecimal.valueOf( maximum.getSeconds() )
+                                                      .add( maxDurationAdd )
+                                                      .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
+
+        this.append( joiner, maxDurationInUserUnits.toPlainString(), false );
+
+        // Add the optimum value
+        BigDecimal optDurationAdd = BigDecimal.valueOf( optimum.getNanos(), 9 );
+        BigDecimal optDurationInUserUnits = BigDecimal.valueOf( optimum.getSeconds() )
+                                                      .add( optDurationAdd )
+                                                      .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
+
+        this.append( joiner, optDurationInUserUnits.toPlainString(), false );
     }
 
     /**
@@ -930,6 +1008,15 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
                 // Add the metric component units
                 this.append( joiner, metricComponent.getUnits(), false );
+
+                // Add the minimum value
+                this.append( joiner, String.valueOf( metricComponent.getMinimum() ), false );
+
+                // Add the maximum value
+                this.append( joiner, String.valueOf( metricComponent.getMaximum() ), false );
+
+                // No optimum value
+                CsvStatisticsWriter.addEmptyValues( joiner, 1 );
 
                 // Add the statistic group number
                 this.append( joiner, String.valueOf( innerGroupNumber ), false );
@@ -993,6 +1080,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                             .add( nanoAdd )
                                                             .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
 
+            // Add the metric limits
+            this.addDurationMetricLimits( joiner, metric.getMinimum(), metric.getMaximum(), metric.getOptimum() );
+
             // Add the statistic group number
             this.append( joiner, String.valueOf( this.groupNumber ), false );
 
@@ -1014,6 +1104,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                        .add( nanoDurationAdd )
                                                        .divide( this.nanosPerDuration, RoundingMode.HALF_UP );
 
+            // Add the metric limits
+            this.addDurationMetricLimits( joiner, metric.getMinimum(), metric.getMaximum(), metric.getOptimum() );
+
             // Add the statistic group number
             this.append( joiner, String.valueOf( this.groupNumber ), false );
 
@@ -1027,7 +1120,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     }
 
     /**
-     * Writes a double score.
+     * Writes a box plot.
      * 
      * @param poolDescription the pool description
      * @param boxplot the box plot
@@ -1052,7 +1145,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         for ( Box next : boxplot.getStatisticsList() )
         {
             LinkedValueType valueType = metric.getLinkedValueType();
-            MetricConstants metricName = MetricConstants.valueOf( metric.getName().name() );
             String units = metric.getUnits();
 
             // Add the linked value if one exists
@@ -1062,7 +1154,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                       .toString();
                 double statistic = next.getLinkedValue();
                 this.writeBoxplotElement( poolDescription,
-                                          metricName.toString(),
+                                          metric,
                                           componentName,
                                           units,
                                           this.groupNumber + addToGroupNumber,
@@ -1078,7 +1170,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             for ( int i = 0; i < probabilities.size(); i++ )
             {
                 this.writeBoxplotElement( poolDescription,
-                                          metricName.toString(),
+                                          metric,
                                           "PROBABILITY",
                                           "PROBABILITY",
                                           this.groupNumber + addToGroupNumber + i,
@@ -1092,7 +1184,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             for ( int i = 0; i < probabilities.size(); i++ )
             {
                 this.writeBoxplotElement( poolDescription,
-                                          metricName.toString(),
+                                          metric,
                                           quantileValueTypeString,
                                           units,
                                           this.groupNumber + addToGroupNumber + i,
@@ -1112,7 +1204,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * Writes a box plot statistic.
      * 
      * @param poolDescription the pool descriptions
-     * @param metricName the metric name
+     * @param metric the metric
      * @param metricComponentName the metric component name
      * @param units the metric units
      * @param groupNumber the statistics group number
@@ -1122,7 +1214,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      */
 
     private void writeBoxplotElement( StringJoiner poolDescription,
-                                      String metricName,
+                                      BoxplotMetric metric,
                                       String metricComponentName,
                                       String units,
                                       int groupNumber,
@@ -1139,13 +1231,23 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         joiner.merge( poolDescription );
 
         // Add the metric name, pretty printed
-        this.append( joiner, metricName, false );
+        MetricConstants metricName = MetricConstants.valueOf( metric.getName().name() );
+        this.append( joiner, metricName.toString(), false );
 
         // Add the component name            
         this.append( joiner, metricComponentName, false );
 
         // Add the metric component units
         this.append( joiner, units, false );
+
+        // Add the minimum value
+        this.append( joiner, String.valueOf( metric.getMinimum() ), false );
+
+        // Add the maximum value
+        this.append( joiner, String.valueOf( metric.getMaximum() ), false );
+
+        // Add the optimum value
+        this.append( joiner, String.valueOf( metric.getOptimum() ), false );
 
         // Add the statistics group number
         this.append( joiner, String.valueOf( groupNumber ), false );
@@ -1371,7 +1473,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
                                + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
                                + "\"String\",\"String\",\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\","
-                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"Integer\",\"Real\"";
+                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"Real\","
+                               + "\"Integer\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;

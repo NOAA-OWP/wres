@@ -75,7 +75,7 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
     /**
      * @return the scoring rule.
      */
-    
+
     private UnivariateScore getScore()
     {
         return this.score;
@@ -98,6 +98,7 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
         DoubleScoreMetricComponent template = DoubleScoreMetricComponent.newBuilder()
                                                                         .setMinimum( Double.NEGATIVE_INFINITY )
                                                                         .setMaximum( Double.POSITIVE_INFINITY )
+                                                                        .setOptimum( Double.NaN )
                                                                         .build();
 
         this.score = new UnivariateScore( FunctionFactory.mean(), metric, template, true );

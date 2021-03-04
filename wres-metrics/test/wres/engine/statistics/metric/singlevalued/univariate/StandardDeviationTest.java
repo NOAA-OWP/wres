@@ -54,6 +54,7 @@ public final class StandardDeviationTest
         this.template = DoubleScoreMetricComponent.newBuilder()
                                                   .setMinimum( 0 )
                                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                                  .setOptimum( Double.NaN )
                                                   .build();
     }
 

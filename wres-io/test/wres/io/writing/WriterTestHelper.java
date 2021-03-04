@@ -527,7 +527,10 @@ public class WriterTestHelper
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( ComponentName.MAIN )
+                                                                                                                       .setMinimum( 0 )
+                                                                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                                                       .setOptimum( 0.0 ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -536,7 +539,10 @@ public class WriterTestHelper
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( ComponentName.MAIN )
+                                                                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                                                       .setOptimum( 0.0 ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -546,7 +552,10 @@ public class WriterTestHelper
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( ComponentName.MAIN )
+                                                                                                                       .setMinimum( 0 )
+                                                                                                                       .setMaximum( Double.POSITIVE_INFINITY )
+                                                                                                                       .setOptimum( 0.0 ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
