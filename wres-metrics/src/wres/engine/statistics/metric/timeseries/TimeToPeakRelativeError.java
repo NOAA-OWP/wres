@@ -51,9 +51,9 @@ public class TimeToPeakRelativeError extends TimingError
                                                                             .setMinimum( com.google.protobuf.Duration.newBuilder()
                                                                                                                      .setSeconds( Long.MIN_VALUE ) )
                                                                             .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                     .setSeconds( Long.MIN_VALUE )
+                                                                                                                     .setSeconds( Long.MAX_VALUE )
                                                                                                                      .setNanos( 999_999_999 ) )
-                                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                            .setOptimum( com.google.protobuf.Duration.newBuilder()
                                                                                                                      .setSeconds( 0 ) )
                                                                             .build();
 

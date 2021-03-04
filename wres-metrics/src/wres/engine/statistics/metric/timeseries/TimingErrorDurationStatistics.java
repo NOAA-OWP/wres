@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric.timeseries;
 
 import java.time.Duration;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -158,7 +158,7 @@ public class TimingErrorDurationStatistics
         }
 
         this.statistics = new TreeMap<>();
-        this.components = new HashMap<>();
+        this.components = new EnumMap<>( MetricConstants.class );
 
         // Set and validate the copy
         for ( MetricConstants next : input )
@@ -169,13 +169,56 @@ public class TimingErrorDurationStatistics
             }
             this.statistics.put( next, FunctionFactory.ofStatistic( next ) );
 
-            DurationScoreMetricComponent component = DurationScoreMetricComponent.newBuilder()
-                                                                                 .setName( ComponentName.valueOf( next.name() ) )
-                                                                                 .build();
+            DurationScoreMetricComponent component = this.getMetricDescription( next );
             this.components.put( next, component );
         }
 
         this.identifier = identifier;
+    }
+
+    /**
+     * Returns a metric description for the identifier.
+     * 
+     * @param identifier the metric identifier
+     * @return a metric description
+     * @throws IllegalArgumentException if the identifier is not recognized
+     */
+
+    private DurationScoreMetricComponent getMetricDescription( MetricConstants identifier )
+    {
+        ComponentName componentName = ComponentName.valueOf( identifier.name() );
+        DurationScoreMetricComponent.Builder builder = DurationScoreMetricComponent.newBuilder()
+                                                                                   .setName( componentName );
+
+        switch ( identifier )
+        {
+            case MEAN:
+            case MEDIAN:
+            case MINIMUM:
+            case MAXIMUM:
+                builder.setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                .setSeconds( Long.MIN_VALUE ) )
+                       .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                .setSeconds( Long.MAX_VALUE )
+                                                                .setNanos( 999_999_999 ) )
+                       .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                .setSeconds( 0 ) );
+                break;
+            case MEAN_ABSOLUTE:
+            case STANDARD_DEVIATION:
+                builder.setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                .setSeconds( 0 ) )
+                       .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                .setSeconds( Long.MAX_VALUE )
+                                                                .setNanos( 999_999_999 ) )
+                       .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                .setSeconds( 0 ) );
+                break;
+            default:
+                throw new IllegalArgumentException( "Unrecognized duration score metric '" + identifier + "'." );
+        }
+
+        return builder.build();
     }
 
 }
