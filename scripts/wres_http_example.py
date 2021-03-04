@@ -35,7 +35,7 @@ evaluation = '''
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="FAKE1" />
+        <feature left="FAKE1" right="FAKE1" />
     </pair>
 
     <metrics>
