@@ -5,7 +5,11 @@ RUN dnf install -y \
     unzip-6.0-43.el8 \
     which-2.21-12.el8 \
     # The following aren't direct dependencies of WRES, are updates post-8.3.2011
+    bind-export-libs-32:9.11.20-5.el8_3.1 \
     curl-7.61.1-14.el8_3.1 \
+    dracut-049-95.git20200804.el8_3.4 \
+    dracut-network-049-95.git20200804.el8_3.4 \
+    dracut-squash-049-95.git20200804.el8_3.4 \
     gnutls-3.6.14-7.el8_3 \
     iptables-libs-1.8.4-15.el8_3.3 \
     kexec-tools-2.0.20-34.el8_3.1 \
@@ -15,8 +19,8 @@ RUN dnf install -y \
     systemd-libs-239-41.el8_3.1 \
     systemd-pam-239-41.el8_3.1 \
     systemd-udev-239-41.el8_3.1 \
-    tzdata-2020f-1.el8 \
-    tzdata-java-2020f-1.el8 \
+    tzdata-2021a-1.el8 \
+    tzdata-java-2021a-1.el8 \
     && dnf clean all
 
 # See comments in main/worker/root wres Dockerfile
