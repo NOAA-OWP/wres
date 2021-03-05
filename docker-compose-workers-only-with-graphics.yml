@@ -1,4 +1,4 @@
-version: '2.2'
+version: '2.3'
 networks:
     wres_net:
         driver: bridge
@@ -10,7 +10,7 @@ networks:
                   gateway: 172.19.254.193
 services:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210304-5b7ed93"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210305-560c599"
         restart: always
         depends_on:
          - "eventsbroker"
@@ -43,7 +43,7 @@ services:
     eventsbroker:
         expose:
          - 5673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210301-20deddb"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210305-6b9d821"
         restart: always
         volumes:
          # For qpid work files.
@@ -63,7 +63,7 @@ services:
     graphics:
         depends_on:
         - eventsbroker
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210304-9da3cc1"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210305-6b9d821"
         restart: always
         # For graphics outputs
         volumes:
