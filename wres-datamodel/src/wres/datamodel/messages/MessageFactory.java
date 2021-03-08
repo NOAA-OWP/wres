@@ -58,6 +58,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.Csv2Format;
 import wres.statistics.generated.Outputs.CsvFormat;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.NumericFormat;
@@ -714,6 +715,11 @@ public class MessageFactory
         if ( outputs.hasCsv() )
         {
             formats.add( Format.CSV );
+        }
+
+        if ( outputs.hasCsv2() )
+        {
+            formats.add( Format.CSV2 );
         }
 
         if ( outputs.hasNetcdf() )
@@ -1454,6 +1460,10 @@ public class MessageFactory
         else if ( destinationType == DestinationType.NETCDF || destinationType == DestinationType.NETCDF_2 )
         {
             builder.setNetcdf( NetcdfFormat.newBuilder() );
+        }
+        else if ( destinationType == DestinationType.CSV2 )
+        {
+            builder.setCsv2( Csv2Format.newBuilder() );
         }
         else if ( destinationType == DestinationType.PAIRS )
         {

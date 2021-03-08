@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -192,7 +191,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           Path path,
                                           boolean gzip )
     {
-        return CsvStatisticsWriter.of( evaluation, path, gzip, ChronoUnit.SECONDS, null );
+        return CsvStatisticsWriter.of( evaluation, path, gzip, ChronoUnit.SECONDS, String::valueOf );
     }
 
     /**
@@ -213,7 +212,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           Path path,
                                           boolean gzip,
                                           ChronoUnit durationUnits,
-                                          Format decimalFormatter )
+                                          Function<Double,String> decimalFormatter )
     {
         return new CsvStatisticsWriter( evaluation, path, gzip, durationUnits, decimalFormatter );
     }
@@ -1322,26 +1321,19 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                  Path path,
                                  boolean gzip,
                                  ChronoUnit durationUnits,
-                                 Format decimalFormatter )
+                                 Function<Double,String> decimalFormatter )
     {
         LOGGER.debug( "Creating a CSV format writer, which will write statistics to {}.", path );
 
         Objects.requireNonNull( path );
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( durationUnits );
+        Objects.requireNonNull( decimalFormatter );
 
         this.path = path;
         this.writeLock = new ReentrantLock();
         this.durationUnits = durationUnits;
-
-        if ( Objects.nonNull( decimalFormatter ) )
-        {
-            this.decimalFormatter = decimalFormatter::format;
-        }
-        else
-        {
-            this.decimalFormatter = String::valueOf;
-        }
+        this.decimalFormatter = decimalFormatter;
 
         Duration duration = durationUnits.getDuration();
         BigDecimal nanoAdd = BigDecimal.valueOf( duration.getNano(), 9 );

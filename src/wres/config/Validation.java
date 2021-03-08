@@ -399,6 +399,34 @@ public class Validation
             {
                 destinationsByType.put( nextType, 1 );
             }
+
+            // Warn about deprecated types
+            if ( nextType == DestinationType.CSV || nextType == DestinationType.NUMERIC )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The declaration requests {} outputs. This output format has been marked deprecated, "
+                             + "for removal. We recommend that you choose {} instead. Format {} will be removed in a "
+                             + "future version of the software.",
+                             projectConfigPlus.getOrigin(),
+                             outputs.sourceLocation().getLineNumber(),
+                             outputs.sourceLocation().getColumnNumber(),
+                             nextType,
+                             DestinationType.CSV2,
+                             nextType );
+            }
+
+            // Warn about incubating types
+            if ( nextType == DestinationType.CSV2 )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The declaration requests {} outputs. This output format has been marked incubating. "
+                             + "Incubating features are under active development. As such, they are more likely to "
+                             + "change in the near future and some of these changes may be breaking changes.",
+                             projectConfigPlus.getOrigin(),
+                             outputs.sourceLocation().getLineNumber(),
+                             outputs.sourceLocation().getColumnNumber(),
+                             nextType );
+            }
         }
 
         if ( !isValid )

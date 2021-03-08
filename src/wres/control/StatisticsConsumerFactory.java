@@ -26,6 +26,7 @@ import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDiagramWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedDurationDiagramWriter;
 import wres.io.writing.commaseparated.statistics.CommaSeparatedScoreWriter;
+import wres.io.writing.commaseparated.statistics.CsvStatisticsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.protobuf.ProtobufWriter;
 import wres.statistics.generated.Consumer;
@@ -77,12 +78,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
     private final List<Closeable> resources;
 
-    /**
-     * Decimal formatter.
-     */
-
-    private final java.text.Format decimalFormatter;
-
     @Override
     public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path )
     {
@@ -107,6 +102,35 @@ class StatisticsConsumerFactory implements ConsumerFactory
                 builder.addDoubleScoreConsumer( DestinationType.NETCDF,
                                                 writer );
             }
+        }
+
+        // CSV2
+        if ( formats.contains( Format.CSV2 ) )
+        {
+            String durationUnitsString = this.projectConfig.getOutputs()
+                                                           .getDurationFormat()
+                                                           .value()
+                                                           .toUpperCase();
+
+            ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
+
+            Path fullPath = path.resolve( CsvStatisticsWriter.DEFAULT_FILE_NAME );
+
+            Function<Double, String> formatter = this.getDecimalFormatter( this.projectConfig,
+                                                                           Set.of( DestinationType.CSV2 ) );
+            CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation,
+                                                                 fullPath,
+                                                                 true,
+                                                                 durationUnits,
+                                                                 formatter );
+
+            builder.addStatisticsConsumer( DestinationType.CSV2,
+                                           statistics -> {
+                                               Path aPath = writer.apply( statistics );
+                                               return Set.of( aPath );
+                                           } );
+
+            this.resources.add( writer );
         }
 
         // Protobuf
@@ -153,14 +177,11 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                                            .toUpperCase();
 
             // Formatted doubles to write
-            Function<DoubleScoreComponentOuter, String> doubleMapper = next -> {
-                if ( Objects.nonNull( this.decimalFormatter ) )
-                {
-                    return this.decimalFormatter.format( next.getData().getValue() );
-                }
-
-                return Double.toString( next.getData().getValue() );
-            };
+            Function<Double, String> formatter =
+                    this.getDecimalFormatter( this.projectConfig,
+                                              Set.of( DestinationType.CSV, DestinationType.NUMERIC ) );
+            Function<DoubleScoreComponentOuter, String> doubleMapper =
+                    format -> formatter.apply( format.getData().getValue() );
 
             ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
 
@@ -224,6 +245,25 @@ class StatisticsConsumerFactory implements ConsumerFactory
         return this.consumerDescription;
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        LOGGER.debug( "Closing the consumer factory." );
+
+        // Best faith effort to close each one, logging errors
+        for ( Closeable closeMe : this.resources )
+        {
+            try
+            {
+                closeMe.close();
+            }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "Failed to close a format writer.", e );
+            }
+        }
+    }
+
     /**
      * Returns <code>true</code> if graphics are required and they will be delivered by this consumer factory, 
      * otherwise <code>false</code>.
@@ -276,48 +316,36 @@ class StatisticsConsumerFactory implements ConsumerFactory
         // Do not add the netcdf writers to the list of resources, only the resources created here. Better to destroy
         // resources where they are created.
         this.netcdfWriters = netcdfWriters;
-        
-        this.decimalFormatter = this.getDecimalFormatter( this.projectConfig );
     }
-
 
     /**
      * Returns a formatter for decimal values as strings, null if none is defined.
      * 
      * @param projectConfig the project declaration
-     * @return a formatter or null
+     * @param destinationTypes the destination types
+     * @return a formatter
      */
 
-    private java.text.Format getDecimalFormatter( ProjectConfig projectConfig )
+    private Function<Double, String> getDecimalFormatter( ProjectConfig projectConfig,
+                                                          Set<DestinationType> destinationTypes )
     {
-        for ( DestinationConfig next : projectConfig.getOutputs().getDestination() )
-        {
-            if ( next.getType() == DestinationType.CSV || next.getType() == DestinationType.NUMERIC )
-            {
-                return ConfigHelper.getDecimalFormatter( next );
-            }
-        }
+        // Find the relevant config
+        DestinationConfig config = projectConfig.getOutputs()
+                                                .getDestination()
+                                                .stream()
+                                                .filter( next -> destinationTypes.contains( next.getType() ) )
+                                                .findAny()
+                                                .orElse( null );
 
-        return null;
+        java.text.Format formatter = ConfigHelper.getDecimalFormatter( config );
+
+        return doubleValue -> {
+            if ( Objects.nonNull( formatter ) )
+            {
+                return formatter.format( doubleValue );
+            }
+
+            return Double.toString( doubleValue );
+        };
     }
-
-    @Override
-    public void close() throws IOException
-    {
-        LOGGER.debug( "Closing the consumer factory." );
-
-        // Best faith effort to close each one, logging errors
-        for ( Closeable closeMe : this.resources )
-        {
-            try
-            {
-                closeMe.close();
-            }
-            catch ( IOException e )
-            {
-                LOGGER.warn( "Failed to close a format writer.", e );
-            }
-        }
-    }
-
 }

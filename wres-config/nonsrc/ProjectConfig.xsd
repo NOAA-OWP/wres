@@ -647,7 +647,8 @@
 
     <xs:simpleType name="destinationType">
         <xs:restriction base="xs:string">
-	    <xs:enumeration value="csv" />
+            <xs:enumeration value="csv" />
+            <xs:enumeration value="csv2" />
             <xs:enumeration value="png" />
             <xs:enumeration value="svg" />
             <xs:enumeration value="netcdf" />
