@@ -14,6 +14,13 @@
         </jxb:globalBindings>
     </jxb:bindings>
 
+    <!--Do not add an underscore to the v2 format types. -->
+    <jxb:bindings schemaLocation="ProjectConfig.xsd" node="/xs:schema">
+        <jxb:bindings node="//xs:simpleType[@name='destinationType']/xs:restriction/xs:enumeration[@value='csv2']">
+            <jxb:typesafeEnumMember name="CSV2"/>
+        </jxb:bindings>
+    </jxb:bindings>
+
     <!--The following binding injects a delegated implementation of java.lang.Comparable by
         wres.config.generated.ProjectConfig. Implementations of equals and hashCode were 
         achieved much more cleanly using plug-ins for JAXB2 Basics. Unfortunately, this 

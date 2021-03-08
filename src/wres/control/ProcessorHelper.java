@@ -129,10 +129,16 @@ class ProcessorHelper
 
         // Obtain any formats delivered by out-of-process subscribers.
         Set<Format> externalFormats = ProcessorHelper.getFormatsDeliveredByExternalSubscribers();
+
+        LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
+
         // Formats delivered by within-process subscribers, in a mutable list
         Set<Format> internalFormats = MessageFactory.getDeclaredFormats( evaluationDescription.getOutputs() );
+
         internalFormats = new HashSet<>( internalFormats );
         internalFormats.removeAll( externalFormats );
+
+        LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
 
         // Create a subscriber for the format writers that are within-process
         String consumerId = Evaluation.getUniqueId();
@@ -1023,7 +1029,7 @@ class ProcessorHelper
 
         return pathString;
     }
-
+    
     private ProcessorHelper()
     {
         // Helper class with static methods therefore no construction allowed.

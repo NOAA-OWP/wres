@@ -130,4 +130,14 @@ message Outputs
     ProtobufFormat protobuf = 6;
     // Protocol Buffers format.
 
+    message Csv2Format
+    {
+        // Comma Separated Values (CSV) Version 2.
+    
+        NumericFormat options = 1;
+        // General format options.
+    }
+
+    Csv2Format csv2 = 7;
+    // Comma Separated Values.
 }
