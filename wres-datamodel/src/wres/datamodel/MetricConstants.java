@@ -294,13 +294,15 @@ public enum MetricConstants
      * Minimum statistic.
      */
 
-    MINIMUM( MetricGroup.UNIVARIATE_STATISTIC ),
+    MINIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
+            MetricGroup.LRB ),
 
     /**
      * Maximum statistic.
      */
 
-    MAXIMUM( MetricGroup.UNIVARIATE_STATISTIC ),
+    MAXIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
+            MetricGroup.LRB ),
 
     /**
      * Mean absolute statistic.

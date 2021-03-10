@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.control.Control;
+
 public class Scenario400
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario400.class );
@@ -45,6 +46,9 @@ public class Scenario400
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_INDEX_OF_AGREEMENT.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_KLING_GUPTA_EFFICIENCY.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_KLING_GUPTA_EFFICIENCY.png" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MAXIMUM.csv" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MAXIMUM_LEFT.png" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MAXIMUM_RIGHT.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEAN_ABSOLUTE_ERROR.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEAN_ABSOLUTE_ERROR.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEAN.csv" ),
@@ -60,6 +64,9 @@ public class Scenario400
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEAN_SQUARE_ERROR_SKILL_SCORE.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEDIAN_ERROR.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEDIAN_ERROR.png" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MINIMUM.csv" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MINIMUM_LEFT.png" ),
+                    Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MINIMUM_RIGHT.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_PEARSON_CORRELATION_COEFFICIENT.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_PEIRCE_SKILL_SCORE.csv" ),
@@ -92,9 +99,9 @@ public class Scenario400
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_VOLUMETRIC_EFFICIENCY.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_VOLUMETRIC_EFFICIENCY.png" ),
                     Path.of( "pairs.csv" ) );
-    
+
     private ScenarioInformation scenarioInfo;
-    
+
     /**
      * Watch for any failed assertions and log them.
      */
@@ -107,7 +114,7 @@ public class Scenario400
         {
             LOGGER.error( description.toString(), e );
         }
-    };  
+    };
 
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
@@ -116,9 +123,9 @@ public class Scenario400
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
         this.scenarioInfo = new ScenarioInformation( this.getClass()
-                                              .getSimpleName()
-                                              .toLowerCase(),
-                                              ScenarioHelper.getBaseDirectory() );
+                                                         .getSimpleName()
+                                                         .toLowerCase(),
+                                                     ScenarioHelper.getBaseDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
     }
 
@@ -126,7 +133,7 @@ public class Scenario400
     public void testScenario()
     {
         Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
+
         // Collect the file names actually written and that exist
         Set<Path> pathsWritten = control.get();
         Set<Path> actualFileNamesThatExist = pathsWritten.stream()
@@ -141,12 +148,13 @@ public class Scenario400
         assertEquals( "The actual set of file names does not match the expected set of file names.",
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
-        
+
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
-        
+
         ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
         LOGGER.info( "########################################################## COMPLETED "
-                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
+                     + this.getClass().getSimpleName().toLowerCase()
+                     + NEWLINE );
     }
 }
 

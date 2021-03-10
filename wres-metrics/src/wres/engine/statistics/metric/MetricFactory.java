@@ -64,7 +64,9 @@ import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareErrorNormalized;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
+import wres.engine.statistics.metric.singlevalued.univariate.Maximum;
 import wres.engine.statistics.metric.singlevalued.univariate.Mean;
+import wres.engine.statistics.metric.singlevalued.univariate.Minimum;
 import wres.engine.statistics.metric.singlevalued.univariate.StandardDeviation;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
@@ -105,7 +107,7 @@ public final class MetricFactory
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
-                ThresholdsGenerator.getThresholdsFromConfig(config),
+                                                                    ThresholdsGenerator.getThresholdsFromConfig( config ),
                                                                     ForkJoinPool.commonPool(),
                                                                     ForkJoinPool.commonPool(),
                                                                     mergeSet );
@@ -132,7 +134,7 @@ public final class MetricFactory
                     throws MetricParameterException
     {
         return MetricFactory.ofMetricProcessorForEnsemblePairs( config,
-                                                                ThresholdsGenerator.getThresholdsFromConfig(config),
+                                                                ThresholdsGenerator.getThresholdsFromConfig( config ),
                                                                 ForkJoinPool.commonPool(),
                                                                 ForkJoinPool.commonPool(),
                                                                 mergeSet );
@@ -221,7 +223,7 @@ public final class MetricFactory
                     throws MetricParameterException
     {
         Set<StatisticType> mergeSet = MetricConfigHelper.getCacheListFromProjectConfig( config );
-        
+
         return MetricFactory.ofMetricProcessorForSingleValuedPairs( config,
                                                                     thresholds,
                                                                     thresholdExecutor,
@@ -339,7 +341,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -393,7 +396,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -412,7 +416,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
             ofDiscreteProbabilityMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return MetricFactory.ofDiscreteProbabilityMultiVectorCollection( ForkJoinPool.commonPool(), metric );
@@ -430,7 +435,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofEnsembleScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -504,7 +510,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollection( ExecutorService executor,
                                            MetricConstants... metric )
                     throws MetricParameterException
@@ -619,7 +626,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScoreCollection( ExecutorService executor,
                                           MetricConstants... metric )
                     throws MetricParameterException
@@ -646,7 +654,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
             ofDiscreteProbabilityMultiVectorCollection( ExecutorService executor,
                                                         MetricConstants... metric )
                     throws MetricParameterException
@@ -672,7 +681,8 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    public static
+            MetricCollection<SampleData<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofEnsembleScoreCollection( ExecutorService executor,
                                        MetricConstants... metric )
                     throws MetricParameterException
@@ -807,13 +817,17 @@ public final class MetricFactory
             case ROOT_MEAN_SQUARE_ERROR:
                 return RootMeanSquareError.of();
             case ROOT_MEAN_SQUARE_ERROR_NORMALIZED:
-                return RootMeanSquareErrorNormalized.of();                
+                return RootMeanSquareErrorNormalized.of();
             case SUM_OF_SQUARE_ERROR:
                 return SumOfSquareError.of();
             case MEAN:
                 return Mean.of();
             case STANDARD_DEVIATION:
                 return StandardDeviation.of();
+            case MINIMUM:
+                return Minimum.of();
+            case MAXIMUM:
+                return Maximum.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -845,7 +859,7 @@ public final class MetricFactory
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
                 return MeanSquareErrorSkillScore.of();
             case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED:
-                return MeanSquareErrorSkillScoreNormalized.of();   
+                return MeanSquareErrorSkillScoreNormalized.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
