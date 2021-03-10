@@ -9,6 +9,8 @@ import wres.datamodel.VectorOfDoubles;
  * Optionally, it may contain a baseline dataset to be used in the same context (e.g. for skill scores) and a 
  * climatological dataset, which is used to derive quantiles from climatological probabilities.</p>
  * 
+ * <p>TODO: replace the nomenclature of "sample data" with "pool". See #89095.
+ * 
  * <p><b>Implementation Requirements:</b></p>
  * 
  * <p>A dataset may contain values that correspond to a missing value identifier.</p>

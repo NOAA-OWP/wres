@@ -86,8 +86,10 @@ class UnivariateScore implements Function<SampleData<Pair<Double, Double>>, Doub
             VectorOfDoubles rightVector = VectorOfDoubles.of( rightDoubles );
 
 
-            left = this.getFunction().applyAsDouble( leftVector );
-            right = this.getFunction().applyAsDouble( rightVector );
+            left = this.getFunction()
+                       .applyAsDouble( leftVector );
+            right = this.getFunction()
+                        .applyAsDouble( rightVector );
         }
 
         // Empty string for default units
@@ -133,7 +135,8 @@ class UnivariateScore implements Function<SampleData<Pair<Double, Double>>, Doub
                 }
 
                 VectorOfDoubles baselineVector = VectorOfDoubles.of( baselineDoubles );
-                baseline = this.getFunction().applyAsDouble( baselineVector );
+                baseline = this.getFunction()
+                               .applyAsDouble( baselineVector );
             }
 
             // Add the metric component with the actual units of the pairs

@@ -1,10 +1,12 @@
 package wres.engine.statistics.metric.singlevalued.univariate;
 
 import java.util.Objects;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricGroup;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -50,7 +52,8 @@ public class StandardDeviation extends DecomposableScore<SampleData<Pair<Double,
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        DoubleScoreStatistic score = this.getScore().apply( pairs );
+        DoubleScoreStatistic score = this.getScore()
+                                         .apply( pairs );
 
         return DoubleScoreStatisticOuter.of( score, pairs.getMetadata() );
     }
@@ -76,7 +79,7 @@ public class StandardDeviation extends DecomposableScore<SampleData<Pair<Double,
     /**
      * @return the scoring rule.
      */
-    
+
     private UnivariateScore getScore()
     {
         return this.score;
@@ -102,7 +105,9 @@ public class StandardDeviation extends DecomposableScore<SampleData<Pair<Double,
                                                                         .setOptimum( Double.NaN )
                                                                         .build();
 
-        this.score = new UnivariateScore( FunctionFactory.standardDeviation(), metric, template, true );
+        ToDoubleFunction<VectorOfDoubles> standardDeviation = FunctionFactory.standardDeviation();
+
+        this.score = new UnivariateScore( standardDeviation, metric, template, true );
     }
 
 }

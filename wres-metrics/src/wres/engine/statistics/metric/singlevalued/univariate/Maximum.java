@@ -19,11 +19,12 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 
 /**
- * <p>Computes the mean value for each side of a pairing. The mean is computed with the {@link FunctionFactory#mean()}.
+ * <p>Computes the maximum value for each side of a pairing. The maximum is computed with the 
+ * {@link FunctionFactory#maximum()}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
+public class Maximum extends DecomposableScore<SampleData<Pair<Double, Double>>>
 {
 
     /**
@@ -38,9 +39,9 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
      * @return an instance
      */
 
-    public static Mean of()
+    public static Maximum of()
     {
-        return new Mean();
+        return new Maximum();
     }
 
     @Override
@@ -60,7 +61,7 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
     @Override
     public MetricConstants getMetricName()
     {
-        return MetricConstants.MEAN;
+        return MetricConstants.MAXIMUM;
     }
 
     @Override
@@ -88,13 +89,13 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
      * Hidden constructor.
      */
 
-    private Mean()
+    private Maximum()
     {
         super();
 
         // Metric
         DoubleScoreMetric metric = DoubleScoreMetric.newBuilder()
-                                                    .setName( MetricName.MEAN )
+                                                    .setName( MetricName.MAXIMUM )
                                                     .build();
 
         // Template for the l/r/b components of the score
@@ -104,8 +105,8 @@ public class Mean extends DecomposableScore<SampleData<Pair<Double, Double>>>
                                                                         .setOptimum( Double.NaN )
                                                                         .build();
 
-        ToDoubleFunction<VectorOfDoubles> mean = FunctionFactory.mean();
-        this.score = new UnivariateScore( mean, metric, template, true );
+        ToDoubleFunction<VectorOfDoubles> maximum = FunctionFactory.maximum();
+        this.score = new UnivariateScore( maximum, metric, template, true );
     }
 
 }

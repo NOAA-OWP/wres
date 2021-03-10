@@ -128,7 +128,11 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
     {
         super( score, DoubleScoreStatisticOuter.createInternalMapping( score, metadata ), metadata );
 
-        this.metricName = MetricConstants.valueOf( score.getMetric().getName().name() );
+        String name = score.getMetric()
+                           .getName()
+                           .name();
+
+        this.metricName = MetricConstants.valueOf( name );
     }
 
     /**
@@ -148,7 +152,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         for ( DoubleScoreStatisticComponent next : components )
         {
             MetricConstants name = MetricConstants.valueOf( next.getMetric().getName().name() );
-            
+
             DoubleScoreComponentOuter nextOuter = DoubleScoreComponentOuter.of( next, metadata );
 
             returnMe.put( name, nextOuter );
