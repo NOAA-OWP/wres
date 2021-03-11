@@ -268,7 +268,8 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
             try
             {
                 // Propagate
-                Set<Path> paths = this.innerConsumer.apply( this.cache.values() );
+                Collection<T> statistics = Collections.unmodifiableCollection( this.cache.values() );
+                Set<Path> paths = this.innerConsumer.apply( statistics );
 
                 // Clear the cache
                 this.cache.clear();

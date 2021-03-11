@@ -229,6 +229,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         Objects.requireNonNull( statistics );
 
+        LOGGER.debug( "Writer {} received a packet of statistics, which will be written to {}.", this, this.getPath() );
+        
         // Lock here so that all statistics for one pool appear in the same place within the file. The pool numbering 
         // depends on this. If moving down the call chain to an individual write, then pool numbers would need to 
         // appear in the statistics themselves.

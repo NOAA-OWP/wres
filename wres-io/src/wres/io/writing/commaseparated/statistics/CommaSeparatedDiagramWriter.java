@@ -16,9 +16,13 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
@@ -44,6 +48,8 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         implements Function<List<DiagramStatisticOuter>,Set<Path>>
 {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedDiagramWriter.class );
 
     /**
      * Returns an instance of a writer.
@@ -81,8 +87,16 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
-        List<DestinationConfig> numericalDestinations =
-                ProjectConfigs.getNumericalDestinations( super.getProjectConfig() );
+        // #89191
+        List<DestinationConfig> numericalDestinations = ProjectConfigs.getDestinationsOfType( super.getProjectConfig(),
+                                                                                              DestinationType.NUMERIC,
+                                                                                              DestinationType.CSV );
+        
+        LOGGER.debug( "Writer {} received {} diagram statistics to write to the destination types {}.",
+                      this,
+                      output.size(),
+                      numericalDestinations );
+        
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 

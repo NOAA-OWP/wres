@@ -19,8 +19,13 @@ import java.util.StringJoiner;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigs;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -38,8 +43,10 @@ import wres.io.writing.commaseparated.CommaSeparatedUtilities;
  */
 
 public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatisticsWriter
-        implements Function<List<DurationDiagramStatisticOuter>,Set<Path>>
+        implements Function<List<DurationDiagramStatisticOuter>, Set<Path>>
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedDurationDiagramWriter.class );
 
     /**
      * Returns an instance of a writer.
@@ -73,7 +80,20 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
         Set<Path> paths = new HashSet<>();
-        
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            List<DestinationConfig> numericalDestinations =
+                    ProjectConfigs.getDestinationsOfType( super.getProjectConfig(),
+                                                          DestinationType.NUMERIC,
+                                                          DestinationType.CSV );
+
+            LOGGER.debug( "Writer {} received {} duration diagram statistics to write to the destination types {}.",
+                          this,
+                          output.size(),
+                          numericalDestinations );
+        }
+
         // Write per time-window
         try
         {
