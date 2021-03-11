@@ -258,19 +258,6 @@ public class ProjectConfigs
     }
 
     /**
-     * Get all the numerical destinations from a configuration.
-     *
-     * @param config the config to search through
-     * @return a list of numerical destinations
-     * @throws NullPointerException when config is null
-     */
-
-    public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
-    {
-        return ProjectConfigs.getDestinationsOfType( config, DestinationType.NUMERIC );
-    }
-
-    /**
      * Returns the first instance of the named metric configuration or null if no such configuration exists.
      * 
      * @param projectConfig the project configuration

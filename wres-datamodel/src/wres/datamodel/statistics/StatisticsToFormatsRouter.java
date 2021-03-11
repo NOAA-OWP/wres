@@ -621,6 +621,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         Set<Path> paths = new HashSet<>();
 
+        LOGGER.debug( "Routing {} diagram statistics to {} format writers with destination types {}.",
+                      outputs.size(),
+                      this.diagramConsumers.size(),
+                      this.diagramConsumers.keySet() );
+
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DiagramStatisticOuter>, Set<Path>>> next : this.diagramConsumers.entrySet() )
         {
@@ -652,6 +657,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         Set<Path> paths = new HashSet<>();
+
+        LOGGER.debug( "Routing {} box plot statistics (per pair type) to {} format writers with destination types {}.",
+                      outputs.size(),
+                      this.boxplotConsumersPerPair.size(),
+                      this.boxplotConsumersPerPair.keySet() );
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxplotConsumersPerPair.entrySet() )
@@ -685,6 +695,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         Set<Path> paths = new HashSet<>();
 
+        LOGGER.debug( "Routing {} box plot statistics (per pool type) to {} format writers with destination types {}.",
+                      outputs.size(),
+                      this.boxplotConsumersPerPool.size(),
+                      this.boxplotConsumersPerPool.keySet() );
+
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<BoxplotStatisticOuter>, Set<Path>>> next : this.boxplotConsumersPerPool.entrySet() )
         {
@@ -716,6 +731,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
         Set<Path> paths = new HashSet<>();
+
+        LOGGER.debug( "Routing {} double score statistics to {} format writers with destination types {}.",
+                      outputs.size(),
+                      this.doubleScoreConsumers.size(),
+                      this.doubleScoreConsumers.keySet() );
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> next : this.doubleScoreConsumers.entrySet() )
@@ -749,6 +769,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         Set<Path> paths = new HashSet<>();
 
+        LOGGER.debug( "Routing {} duration score statistics to {} format writers with destination types {}.",
+                      outputs.size(),
+                      this.durationScoreConsumers.size(),
+                      this.durationScoreConsumers.keySet() );
+
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DurationScoreStatisticOuter>, Set<Path>>> next : this.durationScoreConsumers.entrySet() )
         {
@@ -781,6 +806,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         Set<Path> paths = new HashSet<>();
 
+        LOGGER.debug( "Routing {} duration diagram statistics to {} format writers with destination types {}.",
+                      outputs.size(),
+                      this.durationDiagramConsumers.size(),
+                      this.durationDiagramConsumers.keySet() );
+
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> next : this.durationDiagramConsumers.entrySet() )
         {
@@ -812,6 +842,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         Objects.requireNonNull( statistics, NULL_OUTPUT_STRING );
 
         Set<Path> paths = new HashSet<>();
+
+        LOGGER.debug( "Routing {} mixed packets of statistics to {} format writers with destination types {}.",
+                      statistics.size(),
+                      this.allStatisticsConsumers.size(),
+                      this.allStatisticsConsumers.keySet() );
 
         // Iterate through the consumers
         for ( Entry<DestinationType, Function<Statistics, Set<Path>>> next : this.allStatisticsConsumers.entrySet() )

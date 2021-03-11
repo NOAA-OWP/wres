@@ -16,9 +16,13 @@ import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
@@ -45,6 +49,8 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         extends CommaSeparatedStatisticsWriter
         implements Function<List<T>, Set<Path>>
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedScoreWriter.class );
 
     /**
      * Mapper that provides a string representation of the score.
@@ -91,8 +97,15 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
-        List<DestinationConfig> numericalDestinations =
-                ProjectConfigs.getNumericalDestinations( this.getProjectConfig() );
+        // #89191
+        List<DestinationConfig> numericalDestinations = ProjectConfigs.getDestinationsOfType( super.getProjectConfig(),
+                                                                                              DestinationType.NUMERIC,
+                                                                                              DestinationType.CSV );
+
+        LOGGER.debug( "Writer {} received {} score statistics to write to the destination types {}.",
+                      this,
+                      output.size(),
+                      numericalDestinations );
 
         Set<Path> paths = new HashSet<>();
 
