@@ -43,11 +43,15 @@ services:
     eventsbroker:
         expose:
          - 5673
+        ports:
+         - 15673:15673
         image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210305-6b9d821"
         restart: always
         volumes:
-         # For qpid work files.
+         # For qpid work files
          - /mnt/wres_share/eventsbroker:/container_home
+         # For certificates and keys that correspond to them
+         - /mnt/wres_keys:/wres_secrets:ro
         environment:
          # The broker uses heap memory to run and direct memory for messages
          - QPID_WORK=/container_home/${HOST_NAME}

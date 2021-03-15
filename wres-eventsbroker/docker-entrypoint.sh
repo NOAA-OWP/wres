@@ -9,7 +9,7 @@ start() {
     # Run qpid in background and await it so that this script traps signals properly
     # https://github.com/moby/moby/issues/33319#issuecomment-457914349
     echo "Starting the wres-eventsbroker..."    
-    qpid-server --initial-config-path ${QPID_HOME}/etc/initial-config.json -prop qpid.amqp_port=5673 -prop qpid.http_port=15673 &
+    qpid-server --initial-config-path ${QPID_HOME}/etc/initial-config.json -prop qpid.amqp_port=${QPID_AMQP_PORT} -prop qpid.http_port=${QPID_HTTP_PORT} , -prop wres.secrets_dir=/wres_secrets &
     wait $!
 }
 

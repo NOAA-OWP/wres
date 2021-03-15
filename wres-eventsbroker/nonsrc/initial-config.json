@@ -1,49 +1,63 @@
 {
-	"id": "3cd4a2ff-66c7-4426-8a9b-93350d930418",
 	"name": "wres-eventsbroker",
 	"modelVersion": "8.0",
 	"statisticsReportingPeriod": "60",
 	"context": {
+		"qpid.security.tls.protocolAllowList": "[\"TLSv1.3\",\"TLSv1.2\"]",
 		"qpid.broker.statisticsReportPattern": "${broker.name}: usedDirectMemorySize=${usedDirectMemorySize:byteunit}, usedHeapMemorySize=${usedHeapMemorySize:byteunit}"
 	},
 	"authenticationproviders": [
 		{
-			"id": "449d74b7-2180-405e-beb3-e56b33fc3583",
 			"name": "externalAuthProvider",
+			"type": "External",
+			"Use the full DN as the Username": "false"
+		},
+		{
+			"name": "anonymousAuthProvider",
 			"type": "Anonymous",
 			"Use the full DN as the Username": "false"
 		}
 	],
+	"keystores": [
+		{
+			"name": "wres-keystore",
+			"type": "NonJavaKeyStore",
+			"privateKeyUrl": "${wres.secrets_dir}${file.separator}wres-eventsbroker_server_private_rsa_key.pem",
+			"certificateUrl": "${wres.secrets_dir}${file.separator}wres-eventsbroker_server_x509_cert.pem"
+		}
+	],
+	"truststores": [
+		{
+			"name": "wres-truststore",
+			"type": "NonJavaTrustStore",
+			"certificatesUrl": "${wres.secrets_dir}${file.separator}wres_ca_x509_cert.pem"
+		}
+	],
 	"brokerloggers": [
 		{
-			"id": "837e2c7c-ed75-45d1-b942-f62ecca49ec5",
 			"name": "logfile",
 			"type": "File",
 			"fileName": "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
 			"brokerloginclusionrules": [
 				{
-					"id": "c8d4883e-5ad8-4482-a4cc-1da435a794e5",
 					"name": "Operational",
 					"type": "NameAndLevel",
 					"level": "INFO",
 					"loggerName": "qpid.message.*"
 				},
 				{
-					"id": "3a59bbdd-38d2-4011-8e9e-4fd977319f03",
 					"name": "Qpid",
 					"type": "NameAndLevel",
 					"level": "INFO",
 					"loggerName": "org.apache.qpid.*"
 				},
 				{
-					"id": "4d9f0d5d-5c9b-4d36-90d1-49fe8461e8ec",
 					"name": "Root",
 					"type": "NameAndLevel",
 					"level": "WARN",
 					"loggerName": "ROOT"
 				},
 				{
-					"id": "cb379d3f-b0ee-4da0-a09c-ec178b900d6d",
 					"name": "Statistics",
 					"type": "NameAndLevel",
 					"level": "INFO",
@@ -52,33 +66,28 @@
 			]
 		},
 		{
-			"id": "ed0616ee-f506-40a1-867f-8d5899524d15",
 			"name": "memory",
 			"type": "Memory",
 			"brokerloginclusionrules": [
 				{
-					"id": "4b88c169-62be-4fc6-8368-d1bd2d6d6252",
 					"name": "Operational",
 					"type": "NameAndLevel",
 					"level": "INFO",
 					"loggerName": "qpid.message.*"
 				},
 				{
-					"id": "4243ac0a-6b7c-4e13-bb27-e0bd60d2b582",
 					"name": "Qpid",
 					"type": "NameAndLevel",
 					"level": "INFO",
 					"loggerName": "org.apache.qpid.*"
 				},
 				{
-					"id": "5e043b55-7767-4eb3-a0e3-87d9ad14728b",
 					"name": "Root",
 					"type": "NameAndLevel",
 					"level": "WARN",
 					"loggerName": "ROOT"
 				},
 				{
-					"id": "7e6d0a08-9aa1-414f-9da1-87bbbfddcae2",
 					"name": "Statistics",
 					"type": "NameAndLevel",
 					"level": "INFO",
@@ -89,15 +98,13 @@
 	],
 	"plugins": [
 		{
-			"id": "9e4d9154-78fc-4f58-a70d-0ea644274779",
 			"type": "MANAGEMENT-HTTP",
 			"name": "httpManagement"
 		}
 	],
 	"ports": [
 		{
-			"id": "62654934-d3d7-40ee-bb12-804d8036b9d6",
-			"name": "AMQP",
+			"name": "wres-AMQP",
 			"port": "${qpid.amqp_port}",
 			"bindingAddress": "0.0.0.0",
 			"transports": [
@@ -106,46 +113,45 @@
 			"protocols": [
 				"AMQP_0_9_1"
 			],
-			"authenticationProvider": "externalAuthProvider",
+			"authenticationProvider": "anonymousAuthProvider",
 			"needClientAuth": "false",
 			"maxOpenConnections": "-1",
 			"threadPoolSize": "4",
 			"virtualhostaliases": [
 				{
-					"id": "78997df7-a784-4d65-a6b0-4d6a7977ab70",
 					"name": "defaultAlias",
 					"type": "defaultAlias"
 				},
 				{
-					"id": "7ce4d9e1-eadf-4730-8e27-7dbb8acf4d7f",
 					"name": "hostnameAlias",
 					"type": "hostnameAlias"
 				},
 				{
-					"id": "128026a1-cee4-477e-b172-aa24ffc18206",
 					"name": "nameAlias",
 					"type": "nameAlias"
 				}
 			]
 		},
 		{
-			"id": "31104da6-4800-4e7a-974f-787bea3ccaec",
-			"name": "HTTP",
+			"name": "wres-HTTP",
 			"port": "${qpid.http_port}",
 			"bindingAddress": "0.0.0.0",
 			"transports": [
-				"TCP"
+				"SSL"
 			],
 			"protocols": [
 				"HTTP"
 			],
+			"keyStore": "wres-keystore",
+			"trustStores": [
+				"wres-truststore"
+			],
 			"authenticationProvider": "externalAuthProvider",
-			"needClientAuth": "false"
+			"needClientAuth": "true"
 		}
 	],
 	"virtualhostnodes": [
 		{
-			"id": "de49ba4b-fe15-4c1e-8734-9a5c2bf12e0b",
 			"name": "wres-statistics",
 			"type": "JSON",
 			"context": {

@@ -30,6 +30,8 @@ FROM openjdk:11-jre-slim
 ENV QPID_HOME=/usr/local
 ENV QPID_WORK=/container_home
 ENV QPID_RUN_LOG=2
+ENV QPID_HTTP_PORT=15673
+ENV QPID_AMQP_PORT=5673
 
 # Create user and group
 RUN groupadd --system --gid 1370800073 wres && \
@@ -56,4 +58,4 @@ VOLUME /wres_secrets
 USER wres_eventsbroker
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
 
-EXPOSE 5673 15673
+EXPOSE ${QPID_AMQP_PORT} ${QPID_HTTP_PORT}
