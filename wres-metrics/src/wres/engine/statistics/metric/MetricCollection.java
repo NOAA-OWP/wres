@@ -265,17 +265,17 @@ public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U
                                                   + "set." );
         }
 
-        // If all of the stored metrics are contained in the ignored metrics, throw an 
-        // exception: cannot ignore all metrics
+        // If all of the stored metrics are contained in the ignored metrics so warn and return an empty list
+        // See #88569
         if ( ignoreTheseMetrics.containsAll( this.getMetrics() ) )
         {
-            throw new MetricCalculationException( "Cannot ignore all metrics in the store: specify some metrics "
-                                                  + "to process. The store contains "
-                                                  + this.getMetrics()
-                                                  + " and the "
-                                                  + "ignored metrics are "
-                                                  + ignoreTheseMetrics
-                                                  + "." );
+            LOGGER.debug( "When computing metrics for pool {}, discovered a collection of metrics in which all metrics "
+                          + "were ignored. The collection contained {} and the metrics ignored were {}.",
+                          input.getMetadata(),
+                          this.getMetrics(),
+                          ignoreTheseMetrics );
+
+            return List.of();
         }
 
         //Compute only the required metrics

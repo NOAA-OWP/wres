@@ -355,7 +355,7 @@ public class MetricCollectionTest
     }
 
     /**
-     * Expects a {@link MetricCalculationException} when calling 
+     * Expects an empty response when calling
      * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData, Set)} with a set of metrics to ignore that 
      * includes all metrics in the collection.
      * 
@@ -368,22 +368,15 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
+        MetricCollectionBuilder<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> n =
                 MetricCollectionBuilder.of();
 
-        final SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
+        SampleData<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
-                n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
+        MetricCollection<SampleData<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+                n.addMetric( MeanError.of() ).setExecutorService( this.metricPool ).build();
 
-        //Null input
-        MetricCalculationException expected =
-                assertThrows( MetricCalculationException.class,
-                              () -> collection.apply( input, Collections.singleton( MetricConstants.MEAN_ERROR ) ) );
-
-        assertEquals( "Cannot ignore all metrics in the store: specify some metrics to process. The store contains "
-                      + "[MEAN ERROR] and the ignored metrics are [MEAN ERROR].",
-                      expected.getMessage() );
+        assertEquals( collection.apply( input, Collections.singleton( MetricConstants.MEAN_ERROR ) ), List.of() );
     }
 
     /**
