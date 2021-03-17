@@ -91,6 +91,9 @@ then
     graphics_version=$7
 fi
 
+echo ""
+echo "VERSIONS USED BASED ON DEFAULTS WITH ARGUMENT OVERRIDES:"
+echo ""
 echo "Core WRES binary zip version is $wres_core_version"
 echo "WRES Worker shim binary zip version is $wres_worker_shim_version"
 echo "WRES Tasker binary zip version is $wres_tasker_version"
@@ -105,6 +108,8 @@ echo "WRES graphics client docker image version is $graphics_version"
 #=============================================================
 # Identify zip files and Jenkins URLs; wait for zips
 #=============================================================
+echo ""
+echo "Identifying .zip files required..."
 
 wres_core_file=wres-${wres_core_version}.zip
 worker_shim_file=wres-worker-${wres_worker_shim_version}.zip
@@ -154,6 +159,8 @@ fi
 #=============================================================
 # Build the images
 #=============================================================
+echo ""
+echo "Building images..."
 
 # Build and tag the worker image which is composed of WRES core and worker shim.
 # Tag will be based on the later image version which is WRES core at git root.
@@ -186,7 +193,7 @@ popd
 echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
 
 # Build and tag the eventsbroker image
-echo "Building broker image..."
+echo "Building events broker image..."
 pushd wres-eventsbroker
 eventsbroker_image_id=$( docker build --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker:$eventsbroker_version . )
 popd
@@ -214,8 +221,9 @@ docker image ls | head -n 21
 
 if [[ ! -z "$DOCKER_REGISTRY" ]]
 then
-    echo "Attempting more tags and docker push to https://$DOCKER_REGISTRY"
-    echo "Now running docker login https://$DOCKER_REGISTRY..."
+    echo ""
+    echo "Attempting tagging and pushing images to the registry, https://$DOCKER_REGISTRY ..."
+    echo "Running docker login https://$DOCKER_REGISTRY..."
     docker login https://$DOCKER_REGISTRY
     login_success=$?
 
@@ -231,7 +239,7 @@ then
     then
         echo "Refusing to tag and push primary docker image version ${overall_version} because its Dockerfile has not been committed to the repository yet."
     else
-        echo "Tagging wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version"
+        echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
         docker tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
 	docker push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
     fi
@@ -242,7 +250,7 @@ then
     then
         echo "Refusing to tag and push tasker docker image version ${tasker_version} because its Dockerfile has not been committed to the repository yet."
     else
-        echo "Tagging wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version"
+        echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
 	docker tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
         docker push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
     fi
@@ -253,7 +261,7 @@ then
     then
         echo "Refusing to tag and push broker docker image version ${broker_version} because its Dockerfile has not been committed to the repository yet."
     else
-        echo "Tagging wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version"
+        echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
         docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
         docker push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
     fi
@@ -264,7 +272,7 @@ then
     then
         echo "Refusing to tag and push redis docker image version ${redis_version} because its Dockerfile has not been committed to the repository yet."
     else
-        echo "Tagging wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version"
+        echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
         docker tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
         docker push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
     fi
@@ -273,9 +281,9 @@ then
 
     if [[ "$eventsbroker_image_dev_status" != "" ]]
     then
-        echo "Refusing to tag and push broker docker image version ${eventsbroker_version} because its Dockerfile has not been committed to the repository yet."
+        echo "Refusing to tag and push eventsbroker docker image version ${eventsbroker_version} because its Dockerfile has not been committed to the repository yet."
     else
-        echo "Tagging wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version"
+        echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
         docker tag wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
         docker push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
     fi
@@ -284,26 +292,39 @@ then
 
     if [[ "$graphics_image_dev_status" != "" ]]
     then
-        echo "Refusing to tag and push broker docker image version ${graphics_version} because its Dockerfile has not been committed to the repository yet."
+        echo "Refusing to tag and push graphics docker image version ${graphics_version} because its Dockerfile has not been committed to the repository yet."
     else
-        echo "Tagging wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version"
+        echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
         docker tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
         docker push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
     fi
     
     
 else
+    echo ""
     echo "No variable 'DOCKER_REGISTRY' found, not attempting to docker push."
     echo "If you want to automatically push, set DOCKER_REGISTRY to the FQDN of"
     echo "an accessible docker registry and this script will attempt to tag and"
     echo "push to that registry."
+    echo ""
 fi
 
 #=============================================================
 # Create .yml files
 #=============================================================
 
-read -n1 -r -p "Updating the two yml files, docker-compose-all-roles-with-graphics.yml and docker-compose-workers-only-with-graphics.yml.  These files are kept in the repository and will be created based on template files with image tags replaced.  Continue?  Press ctrl-c to abort this step."
+echo ""
+echo "About to update the .yml files with the new versions based on a template."
+echo "If you are only updating some of the images/versions, it is recommended"
+echo "you skip this step and do that by manually editing the .ymls."
+echo ""
+echo "Do you wish to continue with this last step?"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) echo "Proceeding..."; break;;
+        No ) exit;;
+    esac
+done
 
 cp docker-compose-all-roles-with-graphics.template.yml docker-compose-all-roles-with-graphics.yml 
 sed -i "s/TASKER_IMAGE/${tasker_version}/" docker-compose-all-roles-with-graphics.yml
@@ -324,7 +345,7 @@ sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" docker-compose-workers-only-with-
 sed -i "s/OVERALL_IMAGE/${overall_version}/" docker-compose-workers-only-with-graphics.yml
 
 echo ""
-echo "The two .yml files have been updated.  Please push them to the repository if appropriate."
+echo "The two .yml files have been updated.  Please push them to the repository, if appropriate, or use 'git checkout' to undo the changes."
 
 
 
