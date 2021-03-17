@@ -29,10 +29,10 @@
                 <jaxb:class name="UrlParameter" />
             </xs:appinfo>
         </xs:annotation>
-        <xs:sequence>
+        <xs:all>
             <xs:element name="name" type="xs:string" />
             <xs:element name="value" type="xs:string" />
-        </xs:sequence>
+        </xs:all>
     </xs:complexType>
 
     <xs:simpleType name="datasourceType">
@@ -197,19 +197,19 @@
             <xs:documentation>
             </xs:documentation>
         </xs:annotation>
-        <xs:sequence>
+        <xs:all>
             <xs:element name="coordinate" type="coordinateSelection" minOccurs="0" />
             <xs:element name="polygon" type="PolygonSelection" minOccurs="0"/>
             <xs:element name="circle" type="CircleSelection" minOccurs="0" />
-        </xs:sequence>
+        </xs:all>
     </xs:complexType>
 
     <xs:complexType name="coordinateSelection">
-        <xs:sequence>
+        <xs:all>
             <xs:element name="longitude" type="xs:float" />
             <xs:element name="latitude" type="xs:float" />
             <xs:element name="range" type="xs:float" />
-        </xs:sequence>
+        </xs:all>
     </xs:complexType>
 
     <xs:complexType name="CircleSelection">
@@ -218,11 +218,11 @@
                 <jaxb:class name="Circle" />
             </xs:appinfo>
         </xs:annotation>
-        <xs:sequence>
+        <xs:all>
             <xs:element name="latitude" type="xs:float" />
             <xs:element name="longitude" type="xs:float" />
             <xs:element name="diameter" type="xs:float" />
-        </xs:sequence>
+        </xs:all>
         <xs:attribute name="srid" type="xs:integer" default="4326" />
     </xs:complexType>
 
@@ -382,10 +382,10 @@
                             in adjusted by -2 hours.
                         </xs:documentation>
                     </xs:annotation>
-                    <xs:sequence>
+                    <xs:all>
                         <xs:element name="width" type="duration" />
                         <xs:element name="unit" type="durationUnit" />
-                    </xs:sequence>
+                    </xs:all>
                 </xs:complexType>
             </xs:element>
             <xs:element name="existingTimeScale" type="timeScale" minOccurs="0" maxOccurs="1"/>
@@ -620,9 +620,9 @@
 
         <xs:complexContent>
             <xs:extension base="abstractMetric">
-                <xs:sequence>
+                <xs:all>
                     <xs:element name="name" type="metricConfigName" />
-                </xs:sequence>
+                </xs:all>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -639,10 +639,10 @@
 
         <xs:complexContent>
             <xs:extension base="abstractMetric">
-                <xs:sequence>
+                <xs:all>
                     <xs:element name="name" type="timeSeriesMetricConfigName" />
                     <xs:element name="summaryStatistics" type="summaryStatistics" minOccurs="0" maxOccurs="1"/>
-                </xs:sequence>
+                </xs:all>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
@@ -709,11 +709,11 @@
 
     <!-- Element to store options related to generating Netcdf output -->
     <xs:complexType name="netcdfType">
-        <xs:sequence>
+        <xs:all>
             <!-- Specifies the path to a template. Eventually, we'll want to
             create one from the input files if one isn't supplied -->
             <xs:element type="xs:string" name="templatePath" minOccurs="0"  />
-        </xs:sequence>
+        </xs:all>
         <!-- Dictates the name of the variable to use for vector coordinates -->
         <xs:attribute type="xs:string" name="vectorVariable" default="lid" />
 
@@ -738,13 +738,13 @@ Details a type of output generated to contain or display evaluated statistics
             </xs:documentation>
         </xs:annotation>
 
-        <xs:sequence>
+        <xs:all>
             <!-- Specifies the type of output required. -->
             <xs:element name="outputType" type="outputTypeSelection" minOccurs="0" maxOccurs="1"/>           
             <!-- If output type is graphical (a chart)... -->
             <xs:element name="graphical" type="graphicalType" minOccurs="0" maxOccurs="1" />
             <xs:element name="netcdf" type="netcdfType" minOccurs="0" />
-        </xs:sequence>
+        </xs:all>
 
         <xs:attribute name="type" type="destinationType" default="numeric" />
         <xs:attribute name="decimalFormat" type="xs:string" />
@@ -865,10 +865,10 @@ time scale within a single class, rather than two classes.
             </xs:documentation>
         </xs:annotation>
 
-        <xs:sequence>
+        <xs:all>
             <xs:element name="type" type="xs:string" />
             <xs:element name="value" type="xs:string" />
-        </xs:sequence>
+        </xs:all>
     </xs:complexType>
 
     <xs:complexType name="featureService">
@@ -917,12 +917,12 @@ time scale within a single class, rather than two classes.
             <!-- Intended for seasonal verification, GMT, valid time: -->
             <xs:element name="season" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
-                    <xs:sequence>
+                    <xs:all>
                         <xs:element name="earliestMonth" type="xs:short" />
                         <xs:element name="earliestDay" type="xs:short" />
                         <xs:element name="latestMonth" type="xs:short" />
                         <xs:element name="latestDay" type="xs:short" />
-                    </xs:sequence>
+                    </xs:all>
                 </xs:complexType>
             </xs:element>
             <!-- values min and max should be in the unit above -->
@@ -933,7 +933,6 @@ time scale within a single class, rather than two classes.
             <xs:element name="issuedDatesPoolingWindow" type="poolingWindow" minOccurs="0"/>
             <xs:element name="leadTimesPoolingWindow" type="poolingWindow" minOccurs="0"/>
             <xs:element name="crossPair" type="crossPair" minOccurs="0" />
-
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
@@ -991,7 +990,6 @@ time scale within a single class, rather than two classes.
             </xs:annotation>
 
             <xs:sequence>
-
                 <xs:element name="inputs">
                     <xs:annotation>
                         <xs:documentation>Specifies the data to evaluate. The "left" data
@@ -1006,11 +1004,11 @@ time scale within a single class, rather than two classes.
                         </xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
-                        <xs:sequence>
+                        <xs:all>
                             <xs:element name="left" type="datasource" />
                             <xs:element name="right" type="datasource" />
                             <xs:element name="baseline" type="datasourceBaseline" minOccurs="0" maxOccurs="1" />
-                        </xs:sequence>
+                        </xs:all>
                     </xs:complexType>
                 </xs:element>
 
