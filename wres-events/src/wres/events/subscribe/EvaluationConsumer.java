@@ -18,6 +18,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 import wres.events.EvaluationEventException;
 import wres.events.TimedCountDownLatch;
@@ -129,7 +131,14 @@ class EvaluationConsumer
      * A map of group consumers by group identifier.
      */
 
+    @GuardedBy( "groupConsumersLock" )
     private final Map<String, OneGroupConsumer<Statistics>> groupConsumers;
+
+    /**
+     * A mutex lock for removing spent group consumers from the {@link #groupConsumers}.
+     */
+
+    private final ReentrantLock groupConsumersLock;
 
     /**
      * Is <code>true</code> when the consumers are ready to consume. Until then, cache the statistics.
@@ -232,6 +241,7 @@ class EvaluationConsumer
         this.pathsWritten = new HashSet<>();
         this.consumersReady = new TimedCountDownLatch( 1 );
         this.subscriberStatus = subscriberStatus;
+        this.groupConsumersLock = new ReentrantLock();
 
         LOGGER.info( "Consumer {} opened evaluation {}, which is ready to consume messages.",
                      this.getClientId(),
@@ -1106,6 +1116,26 @@ class EvaluationConsumer
                           this.consumerDescription.getConsumerId(),
                           groupCon.getGroupId(),
                           this.getEvaluationId() );
+
+            // Remove the spent group consumer 
+            this.groupConsumersLock.lock();
+
+            try
+            {
+                String groupId = groupCon.getGroupId();
+                OneGroupConsumer<Statistics> removed = this.groupConsumers.remove( groupId );
+
+                LOGGER.debug( "Upon completing message group {} in evaluation {}, retired the group consumer {}. "
+                              + "There are {} message groups remaining.",
+                              groupId,
+                              this.getEvaluationId(),
+                              removed,
+                              this.groupConsumers.size() );
+            }
+            finally
+            {
+                this.groupConsumersLock.unlock();
+            }
         }
     }
 

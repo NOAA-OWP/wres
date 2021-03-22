@@ -49,7 +49,7 @@ class OneGroupConsumer<T> implements BiConsumer<String, T>, Supplier<Set<Path>>
             "Attempted to reuse a one-use consumer, which is not allowed.";
 
     /**
-     * Inner consumer to consume the messages upon flushing the cache.
+     * Inner consumer to consume the messages from the cache.
      */
 
     private final Function<Collection<T>, Set<Path>> innerConsumer;
