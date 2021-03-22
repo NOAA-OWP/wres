@@ -602,30 +602,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( location );
 
-        Geometry leftGeom = location.getLeft();
-        FeatureKey left = new FeatureKey( leftGeom.getName(),
-                                          leftGeom.getDescription(),
-                                          leftGeom.getSrid(),
-                                          leftGeom.getWkt() );
-
-        Geometry rightGeom = location.getRight();
-        FeatureKey right = new FeatureKey( rightGeom.getName(),
-                                           rightGeom.getDescription(),
-                                           rightGeom.getSrid(),
-                                           rightGeom.getWkt() );
-
-        FeatureKey baseline = null;
-
-        if ( location.hasBaseline() )
-        {
-            Geometry baselineGeom = location.getBaseline();
-            baseline = new FeatureKey( baselineGeom.getName(),
-                                       baselineGeom.getDescription(),
-                                       baselineGeom.getSrid(),
-                                       baselineGeom.getWkt() );
-        }
-
-        return new FeatureTuple( left, right, baseline );
+        return new FeatureTuple( location );
     }
 
     /**

@@ -7,45 +7,67 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.messages.MessageFactory;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 
 /**
  * Vector features correlated either as declared or by a service call. Contains
  * at least a left and right, optionally a baseline. Optionally (eventually) a
- * climatology.
- * 
- * TODO: This class should compose a canonical {@link GeometryTuple} as it is 1:1 with the canonical 
- * representation. See #73842-38 - #73842-40.
+ * climatology. This class wraps a canonical {@link GeometryTuple}.
  */
 
 public class FeatureTuple implements Comparable<FeatureTuple>
 {
-    private final FeatureKey left;
-    private final FeatureKey right;
-    private final FeatureKey baseline;
+    private final GeometryTuple geometryTuple;
 
     public FeatureTuple( FeatureKey left, FeatureKey right, FeatureKey baseline )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( right );
-        this.left = left;
-        this.right = right;
-        this.baseline = baseline;
+
+        Geometry leftGeom = MessageFactory.parse( left );
+        Geometry rightGeom = MessageFactory.parse( right );
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
+                                                     .setLeft( leftGeom )
+                                                     .setRight( rightGeom );
+
+        if ( Objects.nonNull( baseline ) )
+        {
+            Geometry baselineGeom = MessageFactory.parse( baseline );
+            builder.setBaseline( baselineGeom );
+        }
+
+        this.geometryTuple = builder.build();
+    }
+
+    public FeatureTuple( GeometryTuple geometryTuple )
+    {
+        Objects.requireNonNull( geometryTuple );
+
+        this.geometryTuple = geometryTuple;
     }
 
     public FeatureKey getLeft()
     {
-        return this.left;
+        return FeatureKey.of( this.geometryTuple.getLeft() );
     }
 
     public FeatureKey getRight()
     {
-        return this.right;
+        return FeatureKey.of( this.geometryTuple.getRight() );
     }
 
     public FeatureKey getBaseline()
     {
-        return this.baseline;
+        FeatureKey returnMe = null;
+
+        if ( this.geometryTuple.hasBaseline() )
+        {
+            returnMe = FeatureKey.of( this.geometryTuple.getBaseline() );
+        }
+
+        return returnMe;
     }
 
     @Override
@@ -59,16 +81,14 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         {
             return false;
         }
-        FeatureTuple that = ( FeatureTuple ) o;
-        return left.equals( that.left ) &&
-               right.equals( that.right ) &&
-               Objects.equals( baseline, that.baseline );
+        FeatureTuple that = (FeatureTuple) o;
+        return this.geometryTuple.equals( that.geometryTuple );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( left, right, baseline );
+        return this.geometryTuple.hashCode();
     }
 
 
@@ -91,7 +111,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         int rightComparison = this.getRight()
                                   .compareTo( o.getRight() );
 
-        if ( rightComparison != 0)
+        if ( rightComparison != 0 )
         {
             return rightComparison;
         }
@@ -108,37 +128,39 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         }
 
         throw new IllegalStateException( "Could not find the difference between FeatureTuple "
-                                         + this + " and FeatureTuple " + o );
+                                         + this
+                                         + " and FeatureTuple "
+                                         + o );
     }
 
     @Override
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "left", left )
-                .append( "right", right )
-                .append( "baseline", baseline )
-                .toString();
+                                                                            .append( "left", this.getLeft() )
+                                                                            .append( "right", this.getRight() )
+                                                                            .append( "baseline", this.getBaseline() )
+                                                                            .toString();
     }
 
     /**
      * @return a short string representation of the feature tuple, comprising the names only.
      */
-    
+
     public String toStringShort()
     {
         StringJoiner joiner = new StringJoiner( "-" );
-        
+
         joiner.add( this.getLeftName() ).add( this.getRightName() );
-        
-        if( Objects.nonNull( this.getBaseline() ) )
+
+        if ( Objects.nonNull( this.getBaseline() ) )
         {
             joiner.add( this.getBaselineName() );
         }
-        
+
         return joiner.toString();
     }
-    
+
     /**
      * Get the name of the left feature.
      *

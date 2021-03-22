@@ -1,6 +1,5 @@
 package wres.io.reading.nwm;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;

@@ -11,28 +11,41 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
- * Represents a geographic feature. Db contents matches what is here.
- * 
- * TODO: This class should probably compose a canonical {@link Geometry} as it is 1:1 with the canonical representation.
- * See #73842-38 - #73842-40.
+ * Represents a geographic feature. Db contents matches what is here. Composes a canonical {@link Geometry}.
  */
 
 public class FeatureKey implements Comparable<FeatureKey>
 {
-    private final String name;
-    private final String description;
-    private final Integer srid;
-    private final String wkt;
+    private final Geometry geometry;
 
     public FeatureKey( String name,
                        String description,
                        Integer srid,
                        String wkt )
     {
-        this.name = name;
-        this.description = description;
-        this.srid = srid;
-        this.wkt = wkt;
+        Geometry.Builder builder = Geometry.newBuilder();
+
+        if ( Objects.nonNull( name ) )
+        {
+            builder.setName( name );
+        }
+
+        if ( Objects.nonNull( description ) )
+        {
+            builder.setDescription( description );
+        }
+
+        if ( Objects.nonNull( srid ) )
+        {
+            builder.setSrid( srid );
+        }
+
+        if ( Objects.nonNull( wkt ) )
+        {
+            builder.setWkt( wkt );
+        }
+
+        this.geometry = builder.build();
     }
 
     /**
@@ -46,24 +59,37 @@ public class FeatureKey implements Comparable<FeatureKey>
         return new FeatureKey( name, null, null, null );
     }
 
+    /**
+     * Returns an instance from a {@link Geometry}.
+     * 
+     * @param geometry the geometry
+     * @return an instance from a geometry
+     * @throws NullPointerException if the geometry is null
+     */
+
+    public static FeatureKey of( Geometry geometry )
+    {
+        return new FeatureKey( geometry );
+    }
+
     public String getName()
     {
-        return this.name;
+        return this.geometry.getName();
     }
 
     public String getDescription()
     {
-        return this.description;
+        return this.geometry.getDescription();
     }
 
     public Integer getSrid()
     {
-        return this.srid;
+        return this.geometry.getSrid();
     }
 
     public String getWkt()
     {
-        return this.wkt;
+        return this.geometry.getWkt();
     }
 
     @Override
@@ -77,19 +103,16 @@ public class FeatureKey implements Comparable<FeatureKey>
         {
             return false;
         }
-        FeatureKey that = (FeatureKey) o;
-        return name.equals( that.name ) &&
-               Objects.equals( description, that.description )
-               &&
-               Objects.equals( srid, that.srid )
-               &&
-               Objects.equals( wkt, that.wkt );
+
+        Geometry in = ( (FeatureKey) o ).geometry;
+
+        return this.geometry.equals( in );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( name, description, srid, wkt );
+        return this.geometry.hashCode();
     }
 
     @Override
@@ -181,10 +204,11 @@ public class FeatureKey implements Comparable<FeatureKey>
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "name", name )
-                                                                            .append( "description", description )
-                                                                            .append( "srid", srid )
-                                                                            .append( "wkt", wkt )
+                                                                            .append( "name", this.getName() )
+                                                                            .append( "description",
+                                                                                     this.getDescription() )
+                                                                            .append( "srid", this.getSrid() )
+                                                                            .append( "wkt", this.getWkt() )
                                                                             .toString();
     }
 
@@ -345,5 +369,18 @@ public class FeatureKey implements Comparable<FeatureKey>
         }
 
         return new GeoPoint( x, y );
+    }
+
+    /**
+     * Hidden constructor.
+     * @param geometry a geometry
+     * @throws NullPointerException if the geometry is null
+     */
+
+    private FeatureKey( Geometry geometry )
+    {
+        Objects.requireNonNull( geometry );
+
+        this.geometry = geometry;
     }
 }
