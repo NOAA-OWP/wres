@@ -305,10 +305,27 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                              + ")" );
             }
         }
-        Evaluation evaluation = meta.getEvaluation();
 
         // Addition to the primary scenario based on metric context. See #81790
-        String primaryScenario = "";
+        String primaryScenario = this.getScenarioName( meta, metric, component );
+
+        addArgument( "primaryScenario", primaryScenario );
+    }
+    
+    /**
+     * Uncovers the scenario name for the plot.
+     * 
+     * @param metadata the sample metadata
+     * @param metric the metric name
+     * @param component the metric component name
+     * @return the scenario name
+     */
+
+    private String getScenarioName( SampleMetadata metadata, MetricConstants metric, MetricConstants component )
+    {
+        String scenarioName = "";
+
+        Evaluation evaluation = metadata.getEvaluation();
 
         if ( Objects.nonNull( metric ) )
         {
@@ -320,12 +337,16 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
                 addArgument( VARIABLE_NAME, evaluation.getLeftVariableName() );
 
                 String name = "";
-                if ( !evaluation.getRightDataName().isBlank() )
+                if ( metadata.getPool().getIsBaselinePool() )
+                {
+                    name = " " + evaluation.getBaselineDataName();
+                }
+                else if ( !evaluation.getRightDataName().isBlank() )
                 {
                     name = " " + evaluation.getRightDataName();
                 }
 
-                primaryScenario = name + " predictions of ";
+                scenarioName = name + " predictions of ";
             }
             else if ( Objects.nonNull( component ) )
             {
@@ -345,11 +366,11 @@ class WRESArgumentProcessor extends DefaultArgumentsProcessor
                         break;
                 }
                 // Add a space to the name
-                primaryScenario = " ";
+                scenarioName = " ";
             }
         }
 
-        addArgument( "primaryScenario", primaryScenario );
+        return scenarioName;
     }
 
     private void recordWindowingArguments( final TimeWindowOuter timeWindow )
