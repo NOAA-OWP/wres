@@ -46,7 +46,7 @@ public class Variables
         script.addTab().addLine( "TS.source_id = PS.source_id" );
         script.addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectID );
-        script.addTab().addLine( "AND PS.member = ( ? )::operating_member" );
+        script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( projectMember );
 
         return script.interpret( resultSet -> resultSet.getString("variable_name") );
@@ -74,7 +74,7 @@ public class Variables
         script.addTab().addLine( "PS.source_id = TS.source_id" );
         script.addLine( "WHERE PS.project_id = ?" );
         script.addArgument( projectID );
-        script.addTab().addLine( "AND PS.member = ( ? )::operating_member" );
+        script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( projectMember );
         script.addTab().addLine( "AND TS.variable_name = ?" );
         script.addArgument( variableName );

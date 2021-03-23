@@ -5,10 +5,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -22,13 +20,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.ExecutionResult;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
@@ -46,7 +45,7 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  * @author jesse
  */
-public class Control implements ToIntFunction<String[]>,
+public class Control implements Function<String[], ExecutionResult>,
                                 Consumer<ProjectConfigPlus>,
                                 Supplier<Set<Path>>,
                                 Closeable
@@ -96,14 +95,16 @@ public class Control implements ToIntFunction<String[]>,
      */
 
     @Override
-    public int applyAsInt(final String[] args)
+    public ExecutionResult apply(final String[] args)
     {
         if ( args.length != 1 )
         {
-            LOGGER.error( "Please correct project configuration file name and "
-                          + "pass it like this: "
-                          + "bin/wres.bat execute c:/path/to/config1.xml " );
-            return 1; // Or return 400 - Bad Request (see #41467)
+            String message = "Please correct project configuration file name and "
+                             + "pass it like this: "
+                             + "bin/wres.bat execute c:/path/to/config1.xml ";
+            LOGGER.error( message );
+            UserInputException e = new UserInputException( message );
+            return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
         }
 
         String evaluationConfigArgument = args[0].trim();
@@ -122,9 +123,10 @@ public class Control implements ToIntFunction<String[]>,
             }
             catch ( IOException ioe )
             {
-                LOGGER.error( "Failed to unmarshal project configuration from command line argument.",
-                              ioe );
-                return 1;
+                String message = "Failed to unmarshal project configuration from command line argument.";
+                LOGGER.error( message, ioe );
+                UserInputException e = new UserInputException( message, ioe );
+                return ExecutionResult.failure( e );
             }
         }
         else
@@ -138,9 +140,11 @@ public class Control implements ToIntFunction<String[]>,
             }
             catch ( IOException ioe )
             {
-                LOGGER.error( "Failed to unmarshal project configuration from {}.",
-                              configPath, ioe );
-                return 1; // Or return 400 - Bad Request (see #41467)
+                String message = "Failed to unmarshal project configuration from "
+                                 + configPath.toString();
+                LOGGER.error( message, ioe );
+                UserInputException e = new UserInputException( message, ioe );
+                return ExecutionResult.failure( e );
             }
         }
 
@@ -164,14 +168,26 @@ public class Control implements ToIntFunction<String[]>,
         }
         else
         {
-            LOGGER.error( "Validation failed for project configuration from {}.",
-                          projectConfigPlus );
-            return 1; // Or return 400 - Bad Request (see #41467)
+            String message = "Validation failed for project configuration from "
+                             + projectConfigPlus;
+            LOGGER.error( message );
+            UserInputException e = new UserInputException( message );
+            return ExecutionResult.failure( e );
         }
 
-        this.accept( projectConfigPlus );
+        try
+        {
+            this.accept( projectConfigPlus );
+        }
+        catch ( UserInputException | InternalWresException e )
+        {
+            return ExecutionResult.failure( projectConfigPlus.getProjectConfig()
+                                                             .getName(),
+                                            e );
+        }
 
-        return 0;
+        return ExecutionResult.success( projectConfigPlus.getProjectConfig()
+                                                         .getName() );
     }
 
 
@@ -312,13 +328,11 @@ public class Control implements ToIntFunction<String[]>,
         catch ( WresProcessingException | IOException | SQLException internalException )
         {
             String message = "Could not complete project execution";
-            Control.addException( internalException );
             throw new InternalWresException( message, internalException );
         }
         catch ( ProjectConfigException userException )
         {
             String message = "Please correct the project configuration.";
-            Control.addException( userException );
             throw new UserInputException( message, userException );
         }
         // Shutdown
@@ -344,24 +358,26 @@ public class Control implements ToIntFunction<String[]>,
      * Kill off the executors passed in even if there are remaining tasks.
      *
      * @param executor the executor to shutdown
+     * @throws InternalWresException When shutdown does not happen within PT5S.
      */
     private static void shutDownGracefully(final ExecutorService executor)
     {
-        if(Objects.isNull(executor))
-        {
-            return;
-        }
-
+        Objects.requireNonNull( executor );
         executor.shutdown();
 
         try
         {
-            executor.awaitTermination( 5, TimeUnit.SECONDS );
+            boolean died = executor.awaitTermination( 5, TimeUnit.SECONDS );
+
+            if ( !died )
+            {
+                throw new InternalWresException( "Failed to shut down "
+                                                 + executor );
+            }
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while shutting down {}", executor, ie );
-            Control.addException( ie );
             Thread.currentThread().interrupt();
         }
     }
@@ -371,35 +387,6 @@ public class Control implements ToIntFunction<String[]>,
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
-
-    private static final Object EXCEPTION_LOCK = new Object();
-    private static List<Exception> encounteredExceptions;
-
-    private static void addException(Exception recentException)
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            if (Control.encounteredExceptions == null)
-            {
-                Control.encounteredExceptions = new ArrayList<>(  );
-            }
-
-            Control.encounteredExceptions.add(recentException);
-        }
-    }
-
-    public static List<Exception> getMostRecentException()
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            if (Control.encounteredExceptions == null)
-            {
-                Control.encounteredExceptions = new ArrayList<>(  );
-            }
-
-            return Collections.unmodifiableList(Control.encounteredExceptions);
-        }
-    }
 
     private static class QueueMonitor implements Runnable
     {

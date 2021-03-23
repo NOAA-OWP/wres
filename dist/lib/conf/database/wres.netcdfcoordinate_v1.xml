@@ -30,7 +30,7 @@
         </addColumn>
         <comment>wres.NetcdfCoordinate - the y column has been added.</comment>
     </changeSet>
-    <changeSet id="NetcdfCoordinate v1.0" author="Christopher Tubbs">
+    <changeSet id="NetcdfCoordinate v1.1" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
@@ -52,22 +52,75 @@
             <column name="y" type="double precision" remarks="The Y value in the original projection" >
                 <constraints nullable="false" />
             </column>
-            <column name="geographic_coordinate" type="POINT" remarks="The geographic latitude and longitude point">
+        </createTable>
+        <comment>
+            The wres.NetcdfCoordinate table (without geometry) has been added to the database.
+        </comment>
+    </changeSet>
+
+    <changeSet id="Add geometry to wres.NetcdfCoordinate - POINT)"
+               author="Jesse Bickel"
+               dbms="postgresql,mariadb,mysql,mssql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
+            <not>
+                <columnExists columnName="geographic_coordinate"
+                              tableName="NetcdfCoordinate"
+                              schemaName="wres" />
+            </not>
+        </preConditions>
+        <addColumn tableName="NetcdfCoordinate"
+                   schemaName="wres">
+            <column name="geographic_coordinate"
+                    type="POINT"
+                    remarks="The geographic latitude and longitude point">
                 <constraints nullable="false" />
             </column>
-        </createTable>
-        <sql>
-            ALTER TABLE wres.NetcdfCoordinate OWNER TO wres;
-        </sql>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="Add geometry to wres.NetcdfCoordinate - GEOMETRY( POINT )"
+               author="Jesse Bickel"
+               dbms="h2">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
+            <not>
+                <columnExists columnName="geographic_coordinate"
+                              tableName="NetcdfCoordinate"
+                              schemaName="wres" />
+            </not>
+        </preConditions>
+        <addColumn tableName="NetcdfCoordinate"
+                   schemaName="wres">
+            <column name="geographic_coordinate"
+                    type="GEOMETRY( POINT )"
+                    remarks="The geographic latitude and longitude point">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="Add index on NetcdfCoordinate.geographic_coordinate - gist"
+               author="Jesse Bickel"
+               dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
+            <columnExists columnName="geographic_coordinate"
+                          tableName="NetcdfCoordinate"
+                          schemaName="wres" />
+            <not>
+                <indexExists indexName="Netcdfcoordinate_coordinate_idx"
+                             columnNames="geographic_coordinate"
+                             tableName="NetcdfCoordinate"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
         <comment>Manually creating the coordinate index in order to specify a GIS index</comment>
         <sql>
-            CREATE INDEX IF NOT EXISTS Netcdfcoordinate_coordinate_idx
-                ON wres.NetcdfCoordinate
-                USING gist
-                (geographic_coordinate);
+        CREATE INDEX IF NOT EXISTS Netcdfcoordinate_coordinate_idx
+        ON wres.NetcdfCoordinate
+        USING gist
+        (geographic_coordinate);
         </sql>
-        <comment>
-            The wres.NetcdfCoordinate table has been added to the database.
-        </comment>
     </changeSet>
 </databaseChangeLog>

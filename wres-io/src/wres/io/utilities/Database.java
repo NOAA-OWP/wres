@@ -1,17 +1,26 @@
 package wres.io.utilities;
 
 import java.io.IOException;
-import java.io.PushbackReader;
-import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -21,18 +30,19 @@ import java.util.concurrent.TimeUnit;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.time.ZoneOffset.UTC;
+
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
-import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
-import wres.util.Strings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
@@ -78,6 +88,12 @@ public class Database {
 	 */
     private final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
 			new LinkedBlockingQueue<>();
+
+    /**
+     * Mapping between the number of a forecast value partition and its name
+     */
+    private final Map<Integer, String> timeSeriesValuePartitionNames =
+            new ConcurrentHashMap<>( 163 );
 
     public Database( SystemSettings systemSettings )
     {
@@ -373,28 +389,161 @@ public class Database {
         }
     }
 
+
     /**
-     * Sends a copy statement to the indicated table within the database
-     * @param table_definition The definition of a table and its columns (i.e.
-     *                         "table_1 (column_1, column_2, column_3)"
-     * @param values The series of values to copy, delimited by the passed in
-     *               delimiter, with each prospective row separated by new lines.
-     *               (i.e. "val1|val2|val2")
-     * @param delimiter The delimiter separating values per line. (i.e. "|").
-     *                  Despite being common, commas should be avoided.
-     * @throws CopyException Thrown if an error was encountered when trying to
+     * Inserts data into the database (or copies in the case of postgres).
+     * @param tableName The table name for the copy or insert statement.
+     * @param columnNames The column names in the order the values appear.
+     * @param values The values in the order the columnNames appear.
+     * @param charColumns True and false in the order of column names/values.
+     *                    When true, this is a column needs quoting on insert.
+     */
+
+    public void copy( String tableName,
+                      List<String> columnNames,
+                      List<String[]> values,
+                      boolean[] charColumns )
+    {
+        // Check the rows in advance of calling either internal method.
+        for ( String[] row : values )
+        {
+            if ( row.length != columnNames.size() )
+            {
+                throw new IllegalArgumentException( "Every row length (found "
+                                                    + row.length
+                                                    + ") needs to match column count "
+                                                    + columnNames.size()
+                                                    + " or it won't work. "
+                                                    + "Column names: "
+                                                    + columnNames
+                                                    + "Values: "
+                                                    + Arrays.toString( row ) );
+            }
+
+            if ( row.length != charColumns.length )
+            {
+                throw new IllegalArgumentException( "Every row length (found "
+                                                    + row.length
+                                                    + ") needs to match char column count "
+                                                    + charColumns.length
+                                                    + " or it won't work. "
+                                                    + "Char columns: "
+                                                    + Arrays.toString( charColumns )
+                                                    + "Values: "
+                                                    + Arrays.toString( row ) );
+            }
+        }
+
+        if ( this.getSystemSettings()
+                 .getDatabaseType()
+                 .equalsIgnoreCase( "postgresql" ) )
+        {
+            this.pgCopy( tableName,
+                         columnNames,
+                         values );
+        }
+        else
+        {
+            this.insert( tableName,
+                         columnNames,
+                         values,
+                         charColumns );
+        }
+    }
+
+    private void insert( String tableName,
+                         List<String> columnNames,
+                         List<String[]> values,
+                         boolean[] charColumns )
+    {
+        StringJoiner columns = new StringJoiner( ",", " ( ", " ) " );
+
+        for ( String column : columnNames )
+        {
+            columns.add( column );
+        }
+
+        String insertHeader = "INSERT INTO " + tableName + columns.toString()
+                              + "VALUES\n";
+        StringJoiner insertsJoiner = new StringJoiner( ",\n", insertHeader, ";\n" );
+
+        for ( String[] row : values )
+        {
+            StringJoiner insertForRowJoiner = new StringJoiner( ",", "( ", " )" );
+
+            for ( int i = 0; i < row.length; i++ )
+            {
+                // When it's labeled as a charColumn, add quotes to insert.
+                if ( charColumns[i] )
+                {
+                    insertForRowJoiner.add( "'" + row[i] + "'" );
+                }
+                else
+                {
+                    // It's numeric, no need for quotes.
+                    insertForRowJoiner.add( row[i] );
+                }
+            }
+
+            String insertForRow = insertForRowJoiner.toString();
+            insertsJoiner.add( insertForRow );
+        }
+
+        String insertsQuery = insertsJoiner.toString();
+        Query query = new Query( this.getSystemSettings(), insertsQuery );
+        int rowsModified = -1;
+
+        try ( Connection connection = this.getConnection() )
+        {
+            rowsModified = query.execute( connection );
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to insert data into "
+                                       + tableName, se );
+        }
+
+        if ( rowsModified != values.size() )
+        {
+            LOGGER.warn( "Expected to insert {} rows but {} were inserted.",
+                         values.size(), rowsModified );
+        }
+    }
+
+    /**
+     * Sends a copy statement to the indicated table within a postgres db.
+     * @param tableName The table name.
+     * @param columnNames The columns consistent with the order of values.
+     * @param values The values to copy, outer array is a tuple/row,
+     *               inner array is each value in the row (one for each col).
+     * @throws IngestException Thrown if an error was encountered when trying to
      * copy data to the database.
      */
-    public void copy( final String table_definition,
-                      final String values,
-                      String delimiter )
-            throws CopyException
-	{
-	    // TODO: This is Postgres specific; this needs to either come from a different source or switch
-        //  to an insert statement if the database is non-postgresql (i.e. H2)
 
-        try ( Connection connection = this.getConnection();
-              PushbackReader reader = new PushbackReader(new StringReader(""), values.length() + 1000) )
+    private void pgCopy( String tableName,
+                         List<String> columnNames,
+                         List<String[]> values )
+	{
+        StringJoiner columns = new StringJoiner( ",", " ( ", " )" );
+
+        for ( String column : columnNames )
+        {
+            columns.add( column );
+        }
+
+        String table_definition = tableName + columns.toString();
+        String delimiter = "|";
+
+        // The format of the copy statement needs to be of the format
+        // "COPY wres.TimeSeriesValue_xxxx FROM STDIN WITH DELIMITER '|'"
+        String copy_definition = "COPY "
+                                 + table_definition
+                                 + " FROM STDIN WITH DELIMITER '"
+                                 + delimiter + "'";
+
+        final byte[] NULL = "\\N".getBytes( StandardCharsets.UTF_8 );
+
+        try ( Connection connection = this.getConnection() )
 		{
             PGConnection pgConnection = connection.unwrap( PGConnection.class );
 
@@ -402,44 +551,54 @@ public class Database {
             // handle the copy operation from the postgresql driver
             CopyManager manager = pgConnection.getCopyAPI();
 
-			// The format of the copy statement needs to be of the format
-            // "COPY wres.TimeSeriesValue_xxxx FROM STDIN WITH DELIMITER '|'"
-			String copy_definition = "COPY " + table_definition + " FROM STDIN WITH DELIMITER ";
-
-			// Make sure that the delimiter starts with a single quote
-			if (!delimiter.startsWith("'"))
-			{
-				delimiter = "'" + delimiter;
-			}
-
-			// Make sure the delimiter ends with a single quote
-			if (!delimiter.endsWith("'"))
-			{
-				delimiter += "'";
-			}
-
-			// Add the delimiter to finish the definition
-			copy_definition += delimiter;
-
-			// Create the reader that we'll feed the data through; make sure there is plenty of space to help
-            // ensure that all of the data makes it through
-
-			reader.unread(values.toCharArray());
-
 			// Use the manager to stream the data through to the database
-			manager.copyIn(copy_definition, reader);
-		}
-        catch ( SQLException | IOException e )
+            CopyIn copyIn = manager.copyIn( copy_definition );
+            byte[] valueDelimiterBytes = delimiter.getBytes( StandardCharsets.UTF_8 );
+            byte[] valueRowDelimiterBytes = "\n".getBytes( StandardCharsets.UTF_8 );
+
+            for( String[] row : values )
+            {
+                for ( int i = 0; i < row.length; i++ )
+                {
+                    if ( Objects.nonNull( row[i] ) )
+                    {
+                        byte[] bytes = row[i].getBytes( StandardCharsets.UTF_8 );
+                        copyIn.writeToCopy( bytes, 0, bytes.length );
+
+                    }
+                    else
+                    {
+                        copyIn.writeToCopy( NULL, 0, NULL.length );
+                    }
+
+                    if ( i < row.length - 1 )
+                    {
+                        copyIn.writeToCopy( valueDelimiterBytes,
+                                            0,
+                                            valueDelimiterBytes.length );
+                    }
+                }
+
+                copyIn.writeToCopy( valueRowDelimiterBytes,
+                                    0,
+                                    valueDelimiterBytes.length );
+            }
+
+            copyIn.endCopy();
+        }
+        catch ( SQLException e )
 		{
 		    // If we are in a non-production environment, it would help to see the format of the data
             // that couldn't be added
 		    if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Data could not be copied to the database:{}{}",
-                              Strings.truncate( values ), NEWLINE );
+                LOGGER.debug( "Data could not be copied to the database:{}{}...",
+                              copy_definition, values.toString()
+                                                     .substring( 0, 5000 ) );
             }
-			throw new CopyException( "Data could not be copied to the database.",
-                                     e );
+
+            throw new IngestException( "Data could not be copied to the database.",
+                                       e );
 		}
 	}
 
@@ -455,11 +614,11 @@ public class Database {
     public void refreshStatistics(boolean vacuum)
             throws SQLException
 	{
-        List<String> sql = new ArrayList<>();
+        String sql;
 
         final String optionalVacuum;
 
-        if (vacuum)
+        if ( vacuum && this.supportsVacuumAnalyze() )
         {
             optionalVacuum = "VACUUM ";
         }
@@ -468,70 +627,93 @@ public class Database {
             optionalVacuum = "";
         }
 
-		LOGGER.info("Analyzing data for efficient execution...");
-
-
-        String script =
-                "SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze"
-                + NEWLINE +
-                "FROM pg_catalog.pg_class c" + NEWLINE +
-                "INNER JOIN pg_catalog.pg_namespace n" + NEWLINE +
-                "     ON N.oid = C.relnamespace" + NEWLINE +
-                "WHERE relchecks > 0" + NEWLINE +
-                "     AND (nspname = 'wres' OR nspname = 'partitions')"
-                + NEWLINE +
-                "     AND relkind = 'r';";
-
-        this.consume(
-                new Query( this.systemSettings, script),
-                provider -> sql.add(optionalVacuum + provider.getString( "alyze" )),
-                false
-        );
-
-        // TODO: We should probably just analyze/optional vacuum everything in the WRES schema rather than picking and choosing
-        sql.add(optionalVacuum + "ANALYZE wres.TimeSeries;");
-        sql.add(optionalVacuum + "ANALYZE wres.ProjectSource;");
-        sql.add(optionalVacuum + "ANALYZE wres.Source;");
-        sql.add(optionalVacuum + "ANALYZE wres.Ensemble;");
-
-        List<Future<?>> queries = new ArrayList<>();
-
-        for (String statement : sql)
+        if ( this.supportsAnalyze() )
         {
-            Query query = new Query( this.systemSettings, statement );
-            queries.add( this.issue( query, false ) );
-        }
+            sql = optionalVacuum + "ANALYZE;";
+            LOGGER.info( "Analyzing data for efficient execution..." );
 
-        boolean analyzeFailed = true;
+            Query query = new Query( this.systemSettings, sql );
 
-        for (Future<?> query : queries)
-        {
             try
             {
-                query.get();
-                analyzeFailed = false;
+                query.execute( this.getConnection() );
             }
-            catch ( ExecutionException e )
+            catch ( SQLException se )
             {
-                LOGGER.warn( "A data optimization statement could not be completed.",
-                             e);
+                throw new SQLException( "Data in the database could not be "
+                                        + "analyzed for efficient execution.",
+                                        se );
             }
-            catch (InterruptedException e)
-			{
-				LOGGER.warn( "Interrupted while running a data optimization statement.",
-                             e );
-				Thread.currentThread().interrupt();
-			}
-        }
 
-        if (analyzeFailed)
+            LOGGER.info( "Database statistical analysis is now complete." );
+        }
+        else
         {
-            throw new SQLException( "Data in the database could not be "
-                                    + "analyzed for efficient execution." );
+            LOGGER.info( "WRES skipping analysis for efficient execution for db {}",
+                         this.getType() );
+        }
+    }
+
+
+    /**
+     * Returns the name of the partition of where values for this timeseries
+     * should be saved based on lead time.
+     * Must be kept in sync with liquibase scripts.
+     * @param lead The lead time of this time series where values of interest
+     *             should be saved
+     * @return The name of the partition where values for the indicated lead time
+     * should be saved.
+     */
+
+    public String getTimeSeriesValuePartition( int lead )
+    {
+        // The number of unique lead durations contained within a partition
+        // within a postgres database for values linked to a time series.
+        final short timeSeriesValuePartitionSpan = 1200;
+        int partitionNumber = lead / timeSeriesValuePartitionSpan;
+
+        String name = timeSeriesValuePartitionNames.get( partitionNumber );
+
+        if ( name == null )
+        {
+            if ( !this.getSystemSettings()
+                      .getDatabaseType()
+                      .equalsIgnoreCase( "postgresql" ) )
+            {
+                // WRES only supports partitions on postgresql. In other cases,
+                // simply use the plain wres.TimeSeriesValue table.
+                return "wres.TimeSeriesValue";
+            }
+
+            String partitionNumberWord;
+
+            // Sometimes the lead times are negative, but the dash is not a
+            // valid character in a name in sql, so we replace with a word.
+            if ( partitionNumber < -10 )
+            {
+                partitionNumberWord = "Below_Negative_10";
+            }
+            else if ( partitionNumber > 150 )
+            {
+                partitionNumberWord = "Above_150";
+            }
+            else if ( partitionNumber < 0 )
+            {
+                partitionNumberWord = "Negative_"
+                                      + Math.abs( partitionNumber );
+            }
+            else
+            {
+                partitionNumberWord = Integer.toString( partitionNumber );
+            }
+
+            name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
+
+            this.timeSeriesValuePartitionNames.putIfAbsent( partitionNumber, name);
         }
 
-        LOGGER.info("Database statistical analysis is now complete.");
-	}
+        return name;
+    }
 
     /**
      * Get all partition table names.
@@ -539,7 +721,7 @@ public class Database {
      * presence/absence of partition tables.
      * @return The names of all partition tables
      */
-    public static Set<String> getPartitionTables()
+    public Set<String> getPartitionTables()
     {
         Set<String> partitionTables = new HashSet<>( 163 );
 
@@ -548,7 +730,7 @@ public class Database {
         // at least once without worrying about the exact edges.
         for ( int i = -15000; i < 183000; i += 600 )
         {
-            String partitionName = TimeSeries.getTimeSeriesValuePartition( i );
+            String partitionName = this.getTimeSeriesValuePartition( i );
             partitionTables.add( partitionName );
         }
 
@@ -796,32 +978,54 @@ public class Database {
      */
     public void clean() throws SQLException
     {
-		StringBuilder builder = new StringBuilder();
+        StringJoiner builder;
+        Set<String> partitions = this.getPartitionTables();
 
-        Set<String> partitions = Database.getPartitionTables();
+        if ( this.getType()
+                 .equals( "h2" ) )
+        {
+             builder = new StringJoiner( NEWLINE,
+                                         "SET REFERENTIAL_INTEGRITY FALSE;" + NEWLINE,
+                                         NEWLINE + "SET REFERENTIAL_INTEGRITY TRUE;" );
+        }
+        else
+        {
+            builder = new StringJoiner( NEWLINE );
+        }
 
 		for (String partition : partitions)
         {
-            builder.append( "TRUNCATE TABLE " )
-				   .append( partition)
-				   .append( ";" )
-				   .append( NEWLINE );
+            builder.add( "TRUNCATE TABLE " + partition + ";" );
         }
 
-		builder.append("TRUNCATE wres.TimeSeriesValue CASCADE;").append(NEWLINE);
-		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append("TRUNCATE wres.TimeSeries RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append("TRUNCATE wres.Ensemble RESTART IDENTITY CASCADE;");
-		builder.append("INSERT INTO wres.Ensemble(ensemble_name) VALUES ('default');");
-		builder.append("TRUNCATE wres.Project RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append("TRUNCATE wres.ProjectSource RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append( "TRUNCATE wres.Feature RESTART IDENTITY CASCADE;" ).append( NEWLINE );
-        builder.append( "TRUNCATE wres.NetcdfCoordinate CASCADE;" ).append( NEWLINE );
-        builder.append( "TRUNCATE wres.GridProjection RESTART IDENTITY CASCADE;" ).append( NEWLINE );
+        List<String> tables = List.of( "wres.Source",
+                                       "wres.TimeSeries",
+                                       "wres.Ensemble",
+                                       "wres.Project",
+                                       "wres.ProjectSource",
+                                       "wres.Feature",
+                                       "wres.NetcdfCoordinate",
+                                       "wres.GridProjection" );
+
+        for ( String table : tables )
+        {
+            if ( this.supportsTruncateCascade() )
+            {
+                builder.add( "TRUNCATE TABLE " + table + " CASCADE;" );
+            }
+            else
+            {
+                builder.add( "TRUNCATE TABLE " + table + ";" );
+            }
+        }
+
+        builder.add( "INSERT INTO wres.Ensemble ( ensemble_name ) VALUES ('default');" );
+
+        Query query = new Query( this.systemSettings, builder.toString() );
 
 		try
         {
-            this.execute( new Query( this.systemSettings, builder.toString() ), false );
+            this.execute( query, false );
 		}
 		catch (final SQLException e)
         {
@@ -866,5 +1070,161 @@ public class Database {
     SystemSettings getSystemSettings()
     {
         return this.systemSettings;
+    }
+
+
+    /**
+     * Logs information about the execution of the WRES into the database for
+     * aid in remote debugging.
+     * Moved from {@link wres.io.Operations} 2021-03-15, see history there.
+     * @param arguments The arguments used to run the WRES
+     * @param start The instant at which the WRES began execution
+     * @param end The instant at which the WRES finished execution (excluding this)
+     * @param failed Whether or not the execution failed
+     * @param error Any error that caused the WRES to crash
+     * @param version The top-level version of WRES (module versions vary)
+     */
+    public void logExecution( String[] arguments,
+                              String projectName,
+                              Instant start,
+                              Instant end,
+                              boolean failed,
+                              String error,
+                              String version )
+    {
+        Objects.requireNonNull( arguments );
+        Objects.requireNonNull( version );
+
+        try
+        {
+            LocalDateTime startedAtZulu = LocalDateTime.ofInstant( start, UTC );
+            LocalDateTime endedAtZulu = LocalDateTime.ofInstant( end, UTC );
+
+            // For any arguments that happen to be regular files, read the
+            // contents of the first file into the "project" field. Maybe there
+            // is an improvement that can be made, but this should cover the
+            // common case of a single file in the args.
+            String project = "";
+
+            List<String> commandsAcceptingFiles = Arrays.asList( "execute",
+                                                                 "ingest" );
+
+            // The two operations that might perform a project related operation are 'execute' and 'ingest';
+            // these are the only cases where we might be interested in a project configuration
+            if ( commandsAcceptingFiles.contains( arguments[0].toLowerCase() ) )
+            {
+
+                // Go ahead and assign the second argument as the project;
+                // if this instance is in server mode,
+                // this will be the raw project text and a file path will not be involved
+                project = arguments[1];
+
+                // Look through the arguments to find the path to a file;
+                // this is more than likely our project configuration
+                for ( String arg : arguments )
+                {
+                    Path path = Paths.get( arg );
+
+                    if ( path.toFile().isFile() )
+                    {
+                        project = String.join( System.lineSeparator(),
+                                               Files.readAllLines( path ) );
+                        break;
+                    }
+                }
+            }
+
+            DataScripter script = new DataScripter( this );
+
+            script.addLine("INSERT INTO wres.ExecutionLog (");
+            script.addTab().addLine("arguments,");
+            script.addTab().addLine("system_version,");
+            script.addTab().addLine("project,");
+            script.addTab().addLine( "project_name," );
+            script.addTab().addLine("username,");
+            script.addTab().addLine("address,");
+            script.addTab().addLine("start_time,");
+            script.addTab().addLine("end_time,");
+            script.addTab().addLine("failed,");
+            script.addTab().addLine("error");
+            script.addLine(")");
+            script.addLine("VALUES (");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+
+            if ( this.getType()
+                     .equals( "postgresql" ) )
+            {
+                script.addTab().addLine( "inet_client_addr()," );
+            }
+            else if ( this.supportsUserFunction() )
+            {
+                script.addTab().addLine( "user()," );
+            }
+            else
+            {
+                script.addTab().addLine( "NULL," );
+            }
+
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?");
+            script.addLine(");");
+
+            script.execute(
+                    String.join(" ", arguments),
+                    version,
+                    project,
+                    projectName,
+                    System.getProperty( "user.name" ),
+                    // Let server find and report network address
+                    startedAtZulu,
+                    endedAtZulu,
+                    failed,
+                    error
+            );
+        }
+        catch ( SQLException | IOException e )
+        {
+            LOGGER.warn( "Execution metadata could not be logged to the database.",
+                         e );
+        }
+    }
+
+    private String getType()
+    {
+        return this.getSystemSettings()
+                   .getDatabaseType()
+                   .toLowerCase();
+    }
+
+    private boolean supportsVacuumAnalyze()
+    {
+        return this.getType()
+                   .equals( "postgresql" );
+    }
+
+    private boolean supportsAnalyze()
+    {
+        List<String> dbsWithAnalyze = List.of( "h2", "postgresql" );
+        String type = this.getType();
+        return dbsWithAnalyze.contains( type );
+    }
+
+    private boolean supportsUserFunction()
+    {
+        List<String> dbsWithUserFunction = List.of( "h2", "mariadb" );
+        String type = this.getType();
+        return dbsWithUserFunction.contains( type );
+    }
+
+    private boolean supportsTruncateCascade()
+    {
+        return this.getType()
+                   .equals( "postgresql" );
     }
 }

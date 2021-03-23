@@ -487,11 +487,6 @@ public class Query
             throw new IllegalStateException( "It does not make sense to 'execute' with a cursor. Use 'call' instead." );
         }
 
-        if ( this.hasMultipleStatements )
-        {
-            throw new UnsupportedOperationException( "Only 'call' method is supported for multi-statement queries. (Feel free to add 'execute' support if needed." );
-        }
-
         // Avoid recording the initial state of connection: reduces round trips.
         final boolean disableAutoCommit = this.forceTransaction;
         final boolean useSerializable = this.forceTransaction;
@@ -654,39 +649,21 @@ public class Query
 
             modifiedRows = preparedStatement.getUpdateCount();
 
-            // When rows have been modified, attempt to get the first
-            // auto-generated int key from the first row inserted.
+            // When rows have been modified, get the auto-generated keys.
             if ( modifiedRows > 0 )
             {
                 this.insertedIds = new ArrayList<>();
 
                 try ( ResultSet keySet = preparedStatement.getGeneratedKeys() )
                 {
-                    ResultSetMetaData metaData = keySet.getMetaData();
-                    int columnType = metaData.getColumnType( 1 );
-                    LOGGER.debug( "Column type of keys returned: {}",
-                                  columnType );
-
-                    if ( columnType == Types.BIGINT
-                         || columnType == Types.INTEGER
-                         || columnType == Types.SMALLINT
-                         || columnType == Types.TINYINT )
+                    while ( keySet.next() )
                     {
-                        while ( keySet.next() )
-                        {
-                            // All ints from tiny to big can fit in a long
-                            this.insertedIds.add( keySet.getLong( 1 ) );
-                        }
-
-                        if ( this.insertedIds.size() > 0 )
-                        {
-                            LOGGER.debug( "Found an inserted id for Query {}.",
-                                          this );
-                        }
+                        this.insertedIds.add( keySet.getLong( 1 ) );
                     }
-                    else
+
+                    if ( this.insertedIds.size() > 0 )
                     {
-                        LOGGER.debug( "No integer values returned for {}",
+                        LOGGER.debug( "Found an inserted id for Query {}.",
                                       this );
                     }
                 }

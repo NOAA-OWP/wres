@@ -6,11 +6,15 @@ package wres.control;
  */
 public class InternalWresException extends RuntimeException
 {
-
     private static final long serialVersionUID = -4512919205972024314L;
 
     public InternalWresException( String message, Throwable cause )
     {
         super( message, cause );
+    }
+
+    public InternalWresException( String message )
+    {
+        super( message );
     }
 }

@@ -108,12 +108,12 @@ public class DataSourcesTest
         final String time = "2017-06-16 11:13:00";
 
         DataSources dataSourcesCache = new DataSources( this.wresDatabase );
-        Integer result = dataSourcesCache.getSourceID( path, time, null, "deadbeef" );
+        Long result = dataSourcesCache.getSourceID( path, time, null, "deadbeef" );
 
         assertTrue("The id should be an integer greater than zero.",
                    result > 0);
 
-        Integer result2 = dataSourcesCache.getSourceID(path, time, null, "deadbeef");
+        Long result2 = dataSourcesCache.getSourceID(path, time, null, "deadbeef");
 
         assertEquals("Getting an id with the same path and time should yield the same result.",
                      result2, result);
@@ -151,12 +151,12 @@ public class DataSourcesTest
 
         final URI path = new URI( "/this/is/just/a/test" );
         final String time = "2017-06-20 16:55:00";
-        Integer firstId = sc.getID(path, time, null, "deadbeef");
+        Long firstId = sc.getID(path, time, null, "deadbeef");
 
         // Initialize a second cache, it should find the same data already present
         DataSources scTwo = new DataSources( this.wresDatabase );
 
-        Integer secondId = scTwo.getID(path, time, null, "deadbeef");
+        Long secondId = scTwo.getID(path, time, null, "deadbeef");
 
         assertEquals("Second cache should find id in database from first cache",
                     firstId, secondId);
@@ -175,11 +175,11 @@ public class DataSourcesTest
 
         // Add the source table
         this.testDatabase.createSourceTable( this.liquibaseDatabase );
-        SourceDetails firstDetails = dataSourcesCache.getById( 1 );
+        SourceDetails firstDetails = dataSourcesCache.getById( 1L );
 
         Assert.assertNotEquals( firstDetails, null );
 
-        Assert.assertEquals(firstDetails.getId(), (Integer)1);
+        Assert.assertEquals( firstDetails.getId(), (Long) 1L );
         Assert.assertFalse(firstDetails.getIsPointData());
         Assert.assertFalse(firstDetails.performedInsert());
         Assert.assertEquals( firstDetails.getHash(), "1234" );
@@ -224,11 +224,11 @@ public class DataSourcesTest
 
         Assert.assertEquals(firstDetails, secondDetails);
 
-        SourceDetails thirdDetails = dataSourcesCache.getById( 3 );
+        SourceDetails thirdDetails = dataSourcesCache.getById( 3L );
 
         Assert.assertNotEquals( thirdDetails, null );
 
-        Assert.assertEquals(thirdDetails.getId(), (Integer)3);
+        Assert.assertEquals(thirdDetails.getId(), (Long) 3L);
         Assert.assertFalse(thirdDetails.getIsPointData());
         Assert.assertFalse(thirdDetails.performedInsert());
         Assert.assertEquals( thirdDetails.getHash(), "123456" );

@@ -342,6 +342,9 @@ project(':wres-io')
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.19'
 
+        // Use H2 for truly embedded SQL db
+        implementation 'com.h2database:h2:1.4.200'
+
         // connection pooling:
         compile 'com.zaxxer:HikariCP:4.0.3'
 

@@ -6,39 +6,45 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <include file="wres.measurementunit_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.source_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.project_v1.xml" relativeToChangelogFile="true" />
-    <include file="operating_member_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.projectsource_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.ensemble_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.Source_v6.xml" relativeToChangelogFile="true" />
+    <include file="wres.Source_v7.xml" relativeToChangelogFile="true" />
+
+    <!-- If the SourceCompleted table exists from an old v1 script, the v4
+         will update it to make it look more like the from-scratch v5. -->
+    <include file="wres.SourceCompleted_v4.xml" relativeToChangelogFile="true" />
+    <include file="wres.SourceCompleted_v5.xml" relativeToChangelogFile="true" />
+
+    <!-- The following v3 alters the SourceCompleted table. Above v5 is a new
+         version of the whole table with BIGINT for from-scratch migrations. So
+         there were no changes needed in the below v3, it is compatible with the
+         old v1 and the new v5 versions. This why it appears out of order. -->
+    <include file="wres.SourceCompleted_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.Project_v4.xml" relativeToChangelogFile="true" />
+    <include file="wres.Project_v5.xml" relativeToChangelogFile="true" />
+    <include file="wres.ProjectSource_v5.xml" relativeToChangelogFile="true" />
+    <include file="wres.ProjectSource_v6.xml" relativeToChangelogFile="true" />
+    <include file="operating_member_v2.xml" relativeToChangelogFile="true" />
+    <include file="wres.Ensemble_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.Ensemble_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v4.xml" relativeToChangelogFile="true" />
     <include file="wres.unitconversion_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.timeseriesvalue_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.TimeSeriesValue_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.gridprojection_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.conversions_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.conversions_v1.xml" relativeToChangelogFile="true" />
     <include file="Obsolete_tables_v1.xml" relativeToChangelogFile="true" />
     <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_kcfs.xml" relativeToChangelogFile="true" />
-    <include file="wres.source_v2.xml" relativeToChangelogFile="true" />
     <include file="add_identity_conversions.xml" relativeToChangelogFile="true" />
     <include file="fix_null_conversions.xml" relativeToChangelogFile="true" />
     <include file="set_default_unitconversion_values.xml" relativeToChangelogFile="true" />
     <include file="wres.netcdfcoordinate_add_grid_projection.xml" relativeToChangelogFile="true" />
     <include file="wres.executionlog_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.Source_v3.xml" relativeToChangelogFile="true" />
-    <include file="wres.projectsource_v2.xml" relativeToChangelogFile="true" />
-    <include file="wres.Source_v4.xml" relativeToChangelogFile="true" />
-    <include file="wres.SourceCompleted_v1.xml" relativeToChangelogFile="true" />
-    <include file="wres.SourceCompleted_v2.xml" relativeToChangelogFile="true" />
-    <include file="wres.SourceCompleted_v3.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_generated_partitions_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeriesValue_generated_partitions_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.VariableFeature_v2.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_in_per_hour.xml" relativeToChangelogFile="true" />
     <include file="add_daily_flow_measurementunits.xml" relativeToChangelogFile="true" />
-    <include file="wres.project_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.Observation_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.IndexQueue_v2.xml" relativeToChangelogFile="true" />
@@ -48,6 +54,11 @@
     <include file="wres.TimeSeries_v6.xml" relativeToChangelogFile="true" />
     <include file="wres.Variable_v5.xml" relativeToChangelogFile="true" />
     <include file="wres.Feature_v3.xml" relativeToChangelogFile="true" />
+
+    <!-- 8 comes before 7 here because we want to upgrade the type of source_id
+         to BIGINT prior to adding foreign key reference to wres.Source. 8 was
+         created after the 7 file but must run before the 7 file. Shrug. -->
+    <include file="wres.TimeSeries_v8.xml" relativeToChangelogFile="true" />
     <include file="wres.TimeSeries_v7.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_degc.xml" relativeToChangelogFile="true" />
     <include file="add_distance_conversions.xml" relativeToChangelogFile="true" />

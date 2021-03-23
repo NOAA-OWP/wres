@@ -53,7 +53,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
         {
             if (!data.isNull( "unit_name" ))
             {
-                this.getKeyIndex().put( data.getString( "unit_name" ), data.getInt( "measurementunit_id" ) );
+                this.getKeyIndex().put( data.getString( "unit_name" ), data.getLong( "measurementunit_id" ) );
             }
         }
     }
@@ -65,8 +65,10 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 	 * @return The ID of the unit of measurement
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database 
 	 */
-	public Integer getMeasurementUnitID(String unit) throws SQLException {
-        Integer id = null;
+	public Long getMeasurementUnitID( String unit ) throws SQLException
+    {
+        Long id = null;
+
         if (unit != null && !unit.trim().isEmpty())
         {
             id = this.getID(unit.toLowerCase());

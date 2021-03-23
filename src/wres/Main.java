@@ -1,29 +1,33 @@
 package wres;
 
-import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import wres.io.Operations;
+import wres.control.InternalWresException;
+import wres.control.UserInputException;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 import wres.util.Collections;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
  * Provides the entry point for prototyping development
  */
 public class Main {
+    static
+    {
+        ProcessHandle processHandle = ProcessHandle.current();
+        long pid = processHandle.pid();
+        MDC.put("pid", Long.toString( pid ) );
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
@@ -35,10 +39,6 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		String processName = ManagementFactory.getRuntimeMXBean().getName();
-		String processId = Strings.extractWord(processName, "\\d+(?=@)");
-
-		MDC.put("pid", processId);
 
         if (LOGGER.isInfoEnabled())
         {
@@ -60,9 +60,6 @@ public class Main {
         }
 
         final String finalOperation = operation;
-
-        final AtomicInteger exitCode = new AtomicInteger( MainFunctions.FAILURE );
-
         Instant beganExecution = Instant.now();
 
         SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
@@ -76,9 +73,18 @@ public class Main {
         }));
 
         String[] cutArgs = Collections.removeIndexFromArray(args, 0);
-        String process = "Process: ";
-        process += processId;
-        LOGGER.info(process);
+        String pid = MDC.get( "pid" );
+
+        if ( Objects.nonNull( pid ) )
+        {
+            String process = "Process: ";
+            process += MDC.get( "pid" );
+            LOGGER.info( process );
+        }
+        else
+        {
+            LOGGER.warn( "Failed to find the process id" );
+        }
 
         MainFunctions.SharedResources sharedResources =
                 new MainFunctions.SharedResources( systemSettings,
@@ -86,45 +92,40 @@ public class Main {
                                                    executor,
                                                    cutArgs );
 
+        ExecutionResult result = null;
+
         try
         {
-            exitCode.set( MainFunctions.call( operation, sharedResources ) );
+            result = MainFunctions.call( operation, sharedResources );
+            Instant endedExecution = Instant.now();
+            String exception = null;
 
-            if (exitCode.get() != MainFunctions.SUCCESS)
+            if ( Objects.nonNull( result.getException() ) )
             {
-                throw new Exception( "An operation failed. Please consult the "
-                                     + "logs for more details." );
+                exception = ExceptionUtils.getStackTrace( result.getException() );
             }
 
-            Instant endedExecution = Instant.now();
-            Duration duration = Duration.between( beganExecution, endedExecution );
+            sharedResources.getDatabase()
+                           .logExecution(
+                                     args,
+                                     result.getName(),
+                                     beganExecution,
+                                     endedExecution,
+                                     result.failed(),
+                                     exception,
+                                     Main.getVersion() );
 
-            Operations.logExecution( sharedResources.getDatabase(),
-                                     args,
-                                     beganExecution,
-                                     duration,
-                                     exitCode.get() == MainFunctions.FAILURE,
-                                     Main.combineExceptions(),
-                                     Main.getVersion() );
-        }
-        catch ( Exception e )
-        {
-            Instant endedExecution = Instant.now();
-            Duration duration = Duration.between( beganExecution, endedExecution );
-            String message = "Operation '" + operation + "' completed unsuccessfully";
-            LOGGER.error( message, e );
-            Operations.logExecution( sharedResources.getDatabase(),
-                                     args,
-                                     beganExecution,
-                                     duration,
-                                     exitCode.get() == MainFunctions.FAILURE,
-                                     Main.combineExceptions( ),
-                                     Main.getVersion() );
+            if ( result.failed() )
+            {
+                String message = "Operation '" + operation
+                                 + "' completed unsuccessfully";
+                LOGGER.error( message, result.getException() );
+            }
         }
         finally
         {
             // #81660
-            if ( exitCode.get() == MainFunctions.SUCCESS )
+            if ( Objects.nonNull( result ) && result.succeeded() )
             {
                 MainFunctions.shutdown( database, executor );
             }
@@ -136,7 +137,21 @@ public class Main {
 
         Main.printLogFileInformation();
 
-        System.exit( exitCode.get() );
+        if ( result.failed() )
+        {
+            if ( result.getException() instanceof UserInputException )
+            {
+                System.exit( 4 );
+            }
+            else if ( result.getException() instanceof InternalWresException )
+            {
+                System.exit( 5 );
+            }
+            else
+            {
+                System.exit( 1 );
+            }
+        }
 	}
 
     public static String getVersion()
@@ -152,33 +167,6 @@ public class Main {
     private static String getVerboseRuntimeDescription()
     {
         return version.getVerboseRuntimeDescription();
-    }
-
-    /**
-     * Combines errors occurred throughout all highlevel processing
-     * @return
-     */
-    private static String combineExceptions()
-    {
-        List<Exception> encounteredExceptions = MainFunctions.getEncounteredExceptions();
-        List<String> messages = new ArrayList<>();
-        String message = "";
-
-        String separator = System.lineSeparator() +
-                           "------------------------------------------------------------------------" +
-                           System.lineSeparator();
-
-        if (!encounteredExceptions.isEmpty())
-        {
-            for ( Exception exception : encounteredExceptions )
-            {
-                messages.add( Strings.getStackTrace( exception ) );
-            }
-
-            message = String.join( separator, messages );
-        }
-
-        return message;
     }
 
 

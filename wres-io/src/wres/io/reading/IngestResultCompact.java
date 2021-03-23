@@ -18,7 +18,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 class IngestResultCompact implements IngestResult
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestResultCompact.class );
-    private final int surrogateKey;
+    private final long surrogateKey;
     private final short leftCount;
     private final short rightCount;
     private final short baselineCount;
@@ -26,7 +26,7 @@ class IngestResultCompact implements IngestResult
 
     IngestResultCompact( LeftOrRightOrBaseline leftOrRightOrBaseline,
                          DataSource dataSource,
-                         int surrogateKey,
+                         long surrogateKey,
                          boolean foundAlready )
     {
         Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
@@ -128,7 +128,7 @@ class IngestResultCompact implements IngestResult
     }
 
     @Override
-    public int getSurrogateKey()
+    public long getSurrogateKey()
     {
         return this.surrogateKey;
     }

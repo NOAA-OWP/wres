@@ -17,7 +17,6 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.control.Control;
 public class Scenario702
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Scenario702.class );
@@ -78,10 +77,7 @@ public class Scenario702
     @Test
     public void testScenario()
     {
-        Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
-        // Collect the file names actually written and that exist
-        Set<Path> pathsWritten = control.get();
+        Set<Path> pathsWritten = ScenarioHelper.executeScenario( scenarioInfo );
         Set<Path> actualFileNamesThatExist = pathsWritten.stream()
                                                          .filter( Files::exists )
                                                          .map( Path::getFileName )

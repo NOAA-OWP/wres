@@ -206,7 +206,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public Iterable<String> getColumnNames()
+    public List<String> getColumnNames()
     {
         return this.columnNames;
     }

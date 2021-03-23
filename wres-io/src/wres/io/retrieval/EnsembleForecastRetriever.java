@@ -65,13 +65,13 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * A set of <code>ensemble_id</code> to include in the selection.
      */
 
-    private final Set<Integer> ensembleIdsToInclude;
+    private final Set<Long> ensembleIdsToInclude;
 
     /**
      * A set of <code>ensemble_id</code> to exclude from the selection.
      */
 
-    private final Set<Integer> ensembleIdsToExclude;
+    private final Set<Long> ensembleIdsToExclude;
 
     /**
      * Builder.
@@ -83,13 +83,13 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
          * A set of <code>ensemble_id</code> to include in the selection.
          */
 
-        private Set<Integer> ensembleIdsToInclude;
+        private Set<Long> ensembleIdsToInclude;
 
         /**
          * A set of <code>ensemble_id</code> to exclude from the selection.
          */
 
-        private Set<Integer> ensembleIdsToExclude;
+        private Set<Long> ensembleIdsToExclude;
 
         /**
          * Adds a set of <code>ensemble_id</code> to include in the selection.
@@ -98,7 +98,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
          * @return the builder
          */
 
-        Builder setEnsembleIdsToInclude( Set<Integer> ensembleIdsToInclude )
+        Builder setEnsembleIdsToInclude( Set<Long> ensembleIdsToInclude )
         {
             this.ensembleIdsToInclude = ensembleIdsToInclude;
 
@@ -112,7 +112,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
          * @return the builder
          */
 
-        Builder setEnsembleIdsToExclude( Set<Integer> ensembleIdsToExclude )
+        Builder setEnsembleIdsToExclude( Set<Long> ensembleIdsToExclude )
         {
             this.ensembleIdsToExclude = ensembleIdsToExclude;
 
@@ -295,7 +295,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         return provider -> {
 
             // Existing units
-            int measurementUnitId = provider.getInt( "measurementunit_id" );
+            long measurementUnitId = provider.getLong( "measurementunit_id" );
 
             // Units mapper
             DoubleUnaryOperator mapper = this.getMeasurementUnitMapper().getUnitMapper( measurementUnitId );

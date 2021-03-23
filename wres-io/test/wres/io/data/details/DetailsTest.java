@@ -89,7 +89,7 @@ public class DetailsTest
                                        this.wresDatabase,
                                        this.mockExecutor,
                                        new ProjectConfig( null, null, null, null, null, null ),
-                                                     321 );
+                                                     "321" );
         project.save();
         assertTrue( "Expected project details to have performed insert.",
                     project.performedInsert() );

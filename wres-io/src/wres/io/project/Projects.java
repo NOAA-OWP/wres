@@ -2,6 +2,7 @@ package wres.io.project;
 
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +32,6 @@ import wres.system.SystemSettings;
  */
 public class Projects
 {
-    private static final String NEWLINE = System.lineSeparator();
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
 
     private static Pair<Project,Boolean> getProject( SystemSettings systemSettings,
@@ -56,14 +56,11 @@ public class Projects
                 baselineHashes
         );
 
-        // TODO, use the digest/hash rather than a hashcode of the digest.
-        Integer inputCode = identity.hashCode();
-
         Project details = new Project( systemSettings,
                                        database,
                                        executor,
                                        projectConfig,
-                                       inputCode );
+                                       identity );
         details.save();
         boolean thisCallCausedInsert = details.performedInsert();
         LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
@@ -92,9 +89,9 @@ public class Projects
                                                 List<IngestResult> ingestResults )
             throws SQLException
     {
-        int[] leftIds = Projects.getLeftIds( ingestResults );
-        int[] rightIds = Projects.getRightIds( ingestResults );
-        int[] baselineIds = Projects.getBaselineIds( ingestResults );
+        long[] leftIds = Projects.getLeftIds( ingestResults );
+        long[] rightIds = Projects.getRightIds( ingestResults );
+        long[] baselineIds = Projects.getBaselineIds( ingestResults );
         int countOfIngestResults = ingestResults.size();
 
         // Check assumption that at least one left and one right source have
@@ -128,9 +125,9 @@ public class Projects
                                                         Database database,
                                                         Executor executor,
                                                         ProjectConfig projectConfig,
-                                                        int[] leftIds,
-                                                        int[] rightIds,
-                                                        int[] baselineIds,
+                                                        long[] leftIds,
+                                                        long[] rightIds,
+                                                        long[] baselineIds,
                                                         int countOfIngestResults )
             throws SQLException
     {
@@ -139,29 +136,29 @@ public class Projects
         // can't as easily drop to primitive arrays because we would want to
         // know how to size them up front. The countOfIngestResults is a
         // maximum, though.
-        Set<Integer> uniqueSourcesUsed = new HashSet<>( countOfIngestResults );
+        Set<Long> uniqueSourcesUsed = new HashSet<>( countOfIngestResults );
 
-        for ( int leftId : leftIds )
+        for ( long leftId : leftIds )
         {
             uniqueSourcesUsed.add( leftId );
         }
 
-        for ( int rightId : rightIds )
+        for ( long rightId : rightIds )
         {
             uniqueSourcesUsed.add( rightId );
         }
 
-        for ( int baselineId : baselineIds )
+        for ( long baselineId : baselineIds )
         {
             uniqueSourcesUsed.add( baselineId );
         }
 
         int countOfUniqueHashes = uniqueSourcesUsed.size();
         final int MAX_PARAMETER_COUNT = 999;
-        Map<Integer,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
-        Set<Integer> batchOfIds = new HashSet<>( MAX_PARAMETER_COUNT );
+        Map<Long,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
+        Set<Long> batchOfIds = new HashSet<>( MAX_PARAMETER_COUNT );
 
-        for ( Integer rawId : uniqueSourcesUsed )
+        for ( Long rawId : uniqueSourcesUsed )
         {
             // If appending this id is <= max, add it.
             if ( batchOfIds.size() + 1 > MAX_PARAMETER_COUNT )
@@ -185,7 +182,7 @@ public class Projects
 
         for ( int i = 0; i < leftIds.length; i++ )
         {
-            int id = leftIds[i];
+            long id = leftIds[i];
             String hash = idsToHashes.get( id );
 
             if ( Objects.nonNull( hash ) )
@@ -201,7 +198,7 @@ public class Projects
 
         for ( int i = 0; i < rightIds.length; i++ )
         {
-            int id = rightIds[i];
+            long id = rightIds[i];
             String hash = idsToHashes.get( id );
 
             if ( Objects.nonNull( hash ) )
@@ -217,7 +214,7 @@ public class Projects
 
         for ( int i = 0; i < baselineHashes.length; i++ )
         {
-            int id = baselineIds[i];
+            long id = baselineIds[i];
             String hash = idsToHashes.get( id );
 
             if ( Objects.nonNull( hash ) )
@@ -240,44 +237,54 @@ public class Projects
                                      rightHashes,
                                      baselineHashes );
         Project details = detailsResult.getLeft();
-        int detailsId = details.getId();
+        long detailsId = details.getId();
 
         if ( detailsResult.getRight() )
         {
+            String projectId = Long.toString( detailsId );
             LOGGER.debug( "Found that this Thread is responsible for "
                           + "wres.ProjectSource rows for project {}",
                           detailsId );
 
             // If we just created the Project, we are responsible for relating
             // project to source. Otherwise we trust it is present.
-            String copyHeader = "wres.ProjectSource (project_id, source_id, member)";
-            String delimiter = "|";
-            StringJoiner copyStatement = new StringJoiner( NEWLINE );
+            String tableName = "wres.ProjectSource";
+            List<String> columnNames = List.of( "project_id", "source_id", "member" );
 
-            for ( int sourceID : leftIds )
+            List<String[]> values = new ArrayList<>( leftIds.length
+                                                     + rightIds.length
+                                                     + baselineIds.length );
+
+            for ( long sourceID : leftIds )
             {
-                copyStatement.add( details.getId() + delimiter
-                                   + sourceID + delimiter
-                                   + "left" );
+                String[] row = new String[3];
+                row[0] = projectId;
+                row[1] = Long.toString( sourceID );
+                row[2] = "left";
+                values.add( row );
             }
 
-            for ( int sourceID : rightIds )
+            for ( long sourceID : rightIds )
             {
-                copyStatement.add( details.getId() + delimiter
-                                   + sourceID + delimiter
-                                   + "right" );
+                String[] row = new String[3];
+                row[0] = projectId;
+                row[1] = Long.toString( sourceID );
+                row[2] = "right";
+                values.add( row );
             }
 
-            for ( int sourceID : baselineIds )
+            for ( long sourceID : baselineIds )
             {
-                copyStatement.add( details.getId() + delimiter
-                                   + sourceID + delimiter
-                                   + "baseline" );
+                String[] row = new String[3];
+                row[0] = projectId;
+                row[1] = Long.toString( sourceID );
+                row[2] = "baseline";
+                values.add( row );
             }
 
-            String allCopyValues = copyStatement.toString();
-            LOGGER.trace( "Full copy statement: {}", allCopyValues );
-            database.copy( copyHeader, allCopyValues, delimiter );
+            // The first two columns are numbers, last one is char.
+            boolean[] charColumns = { false, false, true };
+            database.copy( tableName, columnNames, values, charColumns );
         }
         else
         {
@@ -285,7 +292,7 @@ public class Projects
                           + "wres.ProjectSource rows for project {}",
                           detailsId );
             DataScripter scripter = new DataScripter( database );
-            scripter.addLine( "SELECT COUNT( source_id )" );
+            scripter.addLine( "SELECT COUNT( source_id ) AS count" );
             scripter.addLine( "FROM wres.ProjectSource" );
             scripter.addLine( "WHERE project_id = ?" );
             scripter.addArgument( detailsId );
@@ -357,8 +364,8 @@ public class Projects
      */
 
     private static void selectIdsAndHashes( Database database,
-                                            Set<Integer> ids,
-                                            Map<Integer,String> idsToHashes )
+                                            Set<Long> ids,
+                                            Map<Long,String> idsToHashes )
             throws SQLException
     {
         String queryStart = "SELECT source_id, hash "
@@ -374,7 +381,7 @@ public class Projects
         String query = queryStart + idJoiner.toString();
         DataScripter script = new DataScripter( database, query );
 
-        for ( Integer id : ids )
+        for ( Long id : ids )
         {
             script.addArgument( id );
         }
@@ -383,7 +390,7 @@ public class Projects
         {
             while ( dataProvider.next() )
             {
-                Integer id = dataProvider.getInt( "source_id" );
+                Long id = dataProvider.getLong( "source_id" );
                 String hash = dataProvider.getString( "hash" );
 
                 if ( Objects.nonNull( id )
@@ -413,7 +420,7 @@ public class Projects
      * @return The ids for the left dataset
      */
 
-    private static int[] getLeftIds( List<IngestResult> ingestResults )
+    private static long[] getLeftIds( List<IngestResult> ingestResults )
     {
         // How big to make the array? We don't want to guess because then we
         // would need to resize, which requires more heap again. Better to get
@@ -425,7 +432,7 @@ public class Projects
             sizeNeeded += ingestResult.getLeftCount();
         }
 
-        int[] leftIds = new int[sizeNeeded];
+        long[] leftIds = new long[sizeNeeded];
         int i = 0;
 
         for ( IngestResult ingestResult : ingestResults )
@@ -450,7 +457,7 @@ public class Projects
      * @return The ids for the right dataset
      */
 
-    private static int[] getRightIds( List<IngestResult> ingestResults )
+    private static long[] getRightIds( List<IngestResult> ingestResults )
     {
         // How big to make the array? We don't want to guess because then we
         // would need to resize, which requires more heap again. Better to get
@@ -462,7 +469,7 @@ public class Projects
             sizeNeeded += ingestResult.getRightCount();
         }
 
-        int[] rightIds = new int[sizeNeeded];
+        long[] rightIds = new long[sizeNeeded];
         int i = 0;
 
         for ( IngestResult ingestResult : ingestResults )
@@ -487,7 +494,7 @@ public class Projects
      * @return The ids for the baseline dataset
      */
 
-    private static int[] getBaselineIds( List<IngestResult> ingestResults )
+    private static long[] getBaselineIds( List<IngestResult> ingestResults )
     {
         // How big to make the array? We don't want to guess because then we
         // would need to resize, which requires more heap again. Better to get
@@ -499,7 +506,7 @@ public class Projects
             sizeNeeded += ingestResult.getBaselineCount();
         }
 
-        int[] baselineIds = new int[sizeNeeded];
+        long[] baselineIds = new long[sizeNeeded];
         int i = 0;
 
         for ( IngestResult ingestResult : ingestResults )

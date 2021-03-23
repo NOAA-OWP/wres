@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Source - Drop pre-WRES-5.6 version of wres.Source if it exists."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Source" schemaName="wres" />
+            <!-- The following two indices are from the old version, not in the
+                 newer version. Presence helps indicate to drop the old. -->
+            <indexExists indexName="source_output_time_idx"
+                         tableName="Source" schemaName="wres" />
+            <indexExists indexName="source_path_idx"
+                         tableName="Source" schemaName="wres" />
+        </preConditions>
+        <delete tableName="Source" schemaName="wres" />
+        <dropTable tableName="Source" schemaName="wres"
+                   cascadeConstraints="true" />
+    </changeSet>
+</databaseChangeLog>

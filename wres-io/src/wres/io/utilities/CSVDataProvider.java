@@ -16,6 +16,8 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -286,13 +288,13 @@ class CSVDataProvider implements DataProvider
     }
 
     @Override
-    public Iterable<String> getColumnNames()
+    public List<String> getColumnNames()
     {
         if (this.isClosed())
         {
             throw new IllegalStateException( "The dataset is not accessible.");
         }
-        return columnNames.keySet();
+        return new ArrayList<>( columnNames.keySet() );
     }
 
     @Override

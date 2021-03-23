@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="UnitConversion1.0" author="Christopher Tubbs">
+    <changeSet id="UnitConversion1.1" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="UnitConversion" schemaName="wres" />
@@ -31,9 +31,6 @@
                 <constraints nullable="false" />
             </column>
         </createTable>
-        <sql>
-            ALTER TABLE wres.UnitConversion OWNER TO wres;
-        </sql>
         <createIndex tableName="UnitConversion" schemaName="wres" indexName="unitconversion_measurement_uix" unique="true">
             <column name="from_unit" type="smallint" />
             <column name="to_unit" type="smallint" />

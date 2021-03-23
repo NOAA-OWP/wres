@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Source - Create source table for most dbs."
+               author="Christopher Tubbs, Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="Source" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="Source" schemaName="wres"
+                     remarks="For vector data, each row represents a collection of timeseries traces.">
+            <column name="source_id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" />
+            </column>
+            <column name="hash" type="varchar"
+                    remarks="A unique identifier for the timeseries (for vector data) or file (for raster data).">
+                <constraints unique="true" nullable="false" />
+            </column>
+            <column name="output_time" type="datetime"
+                    remarks="The datetime of insert (for vector data) or t0 (for raster data)." />
+            <column name="lead" type="integer"
+                    remarks="When present (for raster data), represents the relative amount of time between the output time and the values held within the source data." />
+            <column name="is_point_data" type="boolean" defaultValue="true"
+                    remarks="True for vector data, false for raster data." />
+            <column name="path" type="varchar"
+                    remarks="Textual description of the original location of the data." />
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

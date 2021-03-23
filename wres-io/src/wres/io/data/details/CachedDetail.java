@@ -22,7 +22,7 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	/**
 	 * @return The primary ID of the detail definition
 	 */
-	public abstract Integer getId();
+	public abstract Long getId();
 	
 	/**
 	 * @return The name of the column that stores the ID in the database
@@ -33,7 +33,7 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	 * Sets the ID of the detail as defined in the database
 	 * @param id The ID for the detail in the database
 	 */
-	protected abstract void setID( Integer id );
+	protected abstract void setID( long id );
 
     /**
 	 * @param database The database to use.
@@ -54,7 +54,7 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	{
 		if (databaseResults.hasColumn( this.getIDName() ))
 		{
-			this.setID( databaseResults.getValue( this.getIDName() ));
+			this.setID( databaseResults.getLong( this.getIDName() ));
 		}
 		else
         {

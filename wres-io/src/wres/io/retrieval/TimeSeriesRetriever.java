@@ -1411,7 +1411,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the db row id for the feature.
      */
 
-    protected int getFeatureId()
+    protected long getFeatureId()
     {
         try
         {

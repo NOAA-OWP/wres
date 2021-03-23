@@ -1,28 +1,19 @@
 package wres;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ucar.nc2.NetcdfFile;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
@@ -32,15 +23,16 @@ import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
+import wres.control.InternalWresException;
+import wres.control.UserInputException;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.reading.PreIngestException;
 import wres.io.utilities.Database;
-import wres.system.DatabaseConnectionSupplier;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
-import wres.util.Strings;
 
 /**
  * @author ctubbs
@@ -48,14 +40,12 @@ import wres.util.Strings;
  */
 final class MainFunctions
 {
-	static final Integer FAILURE = -1;
-	static final Integer SUCCESS = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
     private MainFunctions(){}
 
 	// Mapping of String names to corresponding methods
-    private static final Map<String, Function<SharedResources, Integer>> FUNCTIONS = createMap();
+    private static final Map<String, Function<SharedResources, ExecutionResult>> FUNCTIONS = createMap();
 
     static void shutdown( Database database, Executor executor )
 	{
@@ -93,27 +83,29 @@ final class MainFunctions
 	 * Executes the operation with the given list of arguments
 	 *
 	 * @param operation The name of the desired method to call
-	 * @param args      The desired arguments to use when calling the method
+	 * @param sharedResources The resources required, including args.
 	 */
-    static Integer call (String operation, final SharedResources sharedResources )
+    static ExecutionResult call (String operation, final SharedResources sharedResources )
     {
-	    Integer result = FAILURE;
 		operation = operation.toLowerCase();
 
 		if (MainFunctions.hasOperation(operation))
 		{
-            result = FUNCTIONS.get(operation).apply( sharedResources );
+            return FUNCTIONS.get(operation).apply( sharedResources );
         }
-
-		return result;
+		else
+        {
+            return ExecutionResult.failure( new UnsupportedOperationException( "Cannot find operation "
+                                                                               + operation ) );
+        }
 	}
 
 	/**
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
-    private static Map<String, Function<SharedResources, Integer>> createMap ()
+    private static Map<String, Function<SharedResources, ExecutionResult>> createMap ()
     {
-        final Map<String, Function<SharedResources, Integer>> functions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        final Map<String, Function<SharedResources, ExecutionResult>> functions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 		functions.put("connecttodb", MainFunctions::connectToDB);
 		functions.put("commands", MainFunctions::printCommands);
@@ -126,18 +118,17 @@ final class MainFunctions
 		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
 		functions.put("validate", MainFunctions::validate);
 		functions.put("validategrid", MainFunctions::validateNetcdfGrid);
-		functions.put("readheader", MainFunctions::readHeader);
 
 		return functions;
 	}
 
-    private static int execute( SharedResources sharedResources )
+    private static ExecutionResult execute( SharedResources sharedResources )
     {
         try ( Control control = new Control( sharedResources.getSystemSettings(),
                                              sharedResources.getDatabase(),
                                              sharedResources.getExecutor() ); )
         {
-            return control.applyAsInt( sharedResources.getArguments() );
+            return control.apply( sharedResources.getArguments() );
         }
     }
 
@@ -146,14 +137,15 @@ final class MainFunctions
 	 *
 	 * @return Method that prints all available commands by name
 	 */
-    private static Integer printCommands( final SharedResources sharedResources )
+    private static ExecutionResult printCommands( final SharedResources sharedResources )
 	{
 		LOGGER.info("Available commands are:");
         for (final String command : FUNCTIONS.keySet())
         {
             LOGGER.info("\t{}", command);
         }
-        return SUCCESS;
+
+        return ExecutionResult.success();
 	}
 
 	/**
@@ -161,17 +153,19 @@ final class MainFunctions
 	 *
 	 * @return method that will attempt to connect to the database to prove that a connection is possible. The version of the connected database will be printed.
 	 */
-    private static Integer connectToDB(final SharedResources sharedResources ){
-
+    private static ExecutionResult connectToDB( SharedResources sharedResources )
+    {
         try
         {
             Operations.testConnection( sharedResources.getDatabase() );
-            return SUCCESS;
+            return ExecutionResult.success();
         }
         catch ( SQLException se )
         {
-            LOGGER.warn( "Could not connect to database.", se );
-            return FAILURE;
+            String message = "Could not connect to database.";
+            LOGGER.warn( message, se );
+            InternalWresException e = new InternalWresException( message );
+            return ExecutionResult.failure( e );
         }
 	}
 
@@ -181,35 +175,33 @@ final class MainFunctions
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
 	 * database for a cold start.
 	 */
-    private static Integer cleanDatabase( final SharedResources sharedResources )
+    private static ExecutionResult cleanDatabase( SharedResources sharedResources )
 	{
-        Integer result;
         DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
 
         try
         {
             lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             Operations.cleanDatabase( sharedResources.getDatabase() );
-            result = SUCCESS;
             lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
-        catch ( SQLException e )
+        catch ( SQLException se )
         {
-            LOGGER.error( "While cleaning the database", e );
-            MainFunctions.addException( e );
-            result = FAILURE;
+            String message = "Failed to clean the database.";
+            LOGGER.error( message, se );
+            InternalWresException e = new InternalWresException( message, se );
+            return ExecutionResult.failure( null, e );
         }
         finally
         {
             lockManager.shutdown();
         }
 
-        return result;
+        return ExecutionResult.success();
 	}
 
-    private static Integer validateNetcdfGrid( SharedResources sharedResources )
+    private static ExecutionResult validateNetcdfGrid( SharedResources sharedResources )
     {
-        Integer result = FAILURE;
         String[] args = sharedResources.getArguments();
 
         String path = args[0];
@@ -221,7 +213,10 @@ final class MainFunctions
 
             if ( variable == null )
             {
-                LOGGER.error( "The given variable is not a valid projected grid variable." );
+                String message = "The given variable is not a valid projected grid variable.";
+                UserInputException e = new UserInputException( message );
+                LOGGER.error( message );
+                return ExecutionResult.failure( e );
             }
             else
             {
@@ -229,72 +224,82 @@ final class MainFunctions
 
                 if ( coordSystem != null )
                 {
-                    result = SUCCESS;
+                    return ExecutionResult.success();
                 }
+
+                String message = "The given coordinate system is not valid.";
+                return ExecutionResult.failure( new UserInputException( message ) );
             }
         }
         catch ( IOException e )
         {
-            LOGGER.error( "The file at {} is not a valid Netcdf Grid Dataset.", path );
-            MainFunctions.addException( e );
+            String message = "The file at '" + path
+                             + "' is not a valid Netcdf Grid Dataset.";
+            UserInputException uie = new UserInputException( message, e );
+            LOGGER.error( message );
+            return ExecutionResult.failure( uie );
         }
-
-        return result;
     }
 
-    private static Integer refreshDatabase( final SharedResources sharedResources )
+    private static ExecutionResult refreshDatabase( final SharedResources sharedResources )
 	{
-        Integer result = FAILURE;
         DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
 
         try
         {
             lockManager.lockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             Operations.refreshDatabase( sharedResources.getDatabase() );
-            result = SUCCESS;
             lockManager.unlockExclusive( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            return ExecutionResult.success();
         }
-        catch (final Exception e)
+        catch ( SQLException | RuntimeException e )
         {
-            MainFunctions.addException( e );
-            LOGGER.error(Strings.getStackTrace(e));
+            LOGGER.error( "refreshDatabase failed.", e );
+            return ExecutionResult.failure( e );
         }
         finally
         {
             lockManager.shutdown();
         }
-
-        return result;
 	}
 
-    private static Integer ingest( SharedResources sharedResources )
+    private static ExecutionResult ingest( SharedResources sharedResources )
     {
-        int result = FAILURE;
         String[] args = sharedResources.getArguments();
 
         if ( args.length > 0 )
         {
             String projectPath = args[0];
-
             ProjectConfig projectConfig;
+
+            try
+            {
+                projectConfig = ConfigHelper.read( projectPath );
+            }
+            catch ( IOException ioe )
+            {
+                Exception e = new PreIngestException( "Could not read declaration from "
+                                                      + projectPath, ioe );
+                return ExecutionResult.failure( e );
+            }
+
             DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
 
             try
             {
                 lockManager.lockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-                projectConfig = ConfigHelper.read(projectPath);
                 Operations.ingest( sharedResources.getSystemSettings(),
                                    sharedResources.getDatabase(),
                                    sharedResources.getExecutor(),
                                    projectConfig,
                                    lockManager );
-                result = SUCCESS;
                 lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+                return ExecutionResult.success( projectConfig.getName() );
             }
-            catch ( IOException | SQLException e )
+            catch ( RuntimeException | SQLException e )
             {
-                MainFunctions.addException( e );
-                LOGGER.error(Strings.getStackTrace(e));
+                LOGGER.error( "Failed to ingest from {}", projectPath, e );
+                return ExecutionResult.failure( projectConfig.getName(), e );
             }
             finally
             {
@@ -303,16 +308,17 @@ final class MainFunctions
         }
         else
         {
-            LOGGER.error("There are not enough arguments to run 'ingest'");
-            LOGGER.error("usage: ingest <path to configuration>");
+            String message = "There are not enough arguments to run 'ingest'"
+                             + System.lineSeparator()
+                             + "usage: ingest <path to configuration>";
+            IllegalArgumentException e = new IllegalArgumentException( message );
+            LOGGER.error( message );
+            return ExecutionResult.failure( e );
         }
-
-        return result;
     }
 
-    private static Integer validate( SharedResources sharedResources )
+    private static ExecutionResult validate( SharedResources sharedResources )
     {
-        int result = FAILURE;
         String[] args = sharedResources.getArguments();
 
         if (args.length > 0)
@@ -329,10 +335,10 @@ final class MainFunctions
             }
             catch ( IOException ioe )
             {
-                LOGGER.error("Failed to unmarshal the project configuration at '" + fullPath + "'");
-                LOGGER.error(Strings.getStackTrace( ioe ));
-                MainFunctions.addException( ioe );
-                return result; // Or return 400 - Bad Request (see #41467)
+                String message = "Failed to unmarshal the project configuration at '" + fullPath + "'";
+                UserInputException e = new UserInputException( message, ioe );
+                LOGGER.error( "validate failed.", e );
+                return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
             }
 
             SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
@@ -344,29 +350,32 @@ final class MainFunctions
             if ( validated )
             {
                 LOGGER.info("'" + fullPath + "' is a valid project config.");
-                result = SUCCESS;
+                return ExecutionResult.success();
             }
             else
             {
                 // Even though the application performed its job, we still want
                 // to return a failure so that the return code may be used to
                 // determine the validity
-                LOGGER.info("'" + fullPath + "' is not a valid config.");
+                String message = "'" + fullPath + "' is not a valid config.";
+                LOGGER.info( message );
+                UserInputException e = new UserInputException( message );
+                return ExecutionResult.failure( e );
             }
-
         }
         else
         {
-            LOGGER.error( "A project path was not passed in" );
-            LOGGER.error("usage: validate <path to project>");
+            String message = "A project path was not passed in"
+                             + System.lineSeparator()
+                             + "usage: validate <path to project>";
+            LOGGER.error( message );
+            UserInputException e = new UserInputException( message );
+            return ExecutionResult.failure( e );
         }
-
-        return result;
     }
 
-    private static Integer createNetCDFTemplate( SharedResources sharedResources )
+    private static ExecutionResult createNetCDFTemplate( SharedResources sharedResources )
     {
-        int result = FAILURE;
         String[] args = sharedResources.getArguments();
 
         if (args.length > 1)
@@ -378,132 +387,43 @@ final class MainFunctions
 
                 if (!Files.exists( Paths.get( fromFileName ) ))
                 {
-                    throw new IllegalArgumentException( "The source file '" +
+                    Exception e = new IllegalArgumentException( "The source file '" +
                                                         fromFileName +
                                                         "' does not exist. A "
                                                         + "template file must "
                                                         + "have a valid source "
                                                         + "file." );
+                    return ExecutionResult.failure( e );
                 }
 
                 if (!toFileName.toLowerCase().endsWith( "nc" ))
                 {
-                    throw new IllegalArgumentException( "The name for the "
+                    Exception e = new IllegalArgumentException( "The name for the "
                                                         + "template is invalid; "
                                                         + "it must end with "
                                                         + "'*.nc' to indicate "
                                                         + "that it is a NetCDF "
                                                         + "file." );
+                    return ExecutionResult.failure( e );
                 }
 
                 Operations.createNetCDFOutputTemplate( fromFileName, toFileName );
-                result = SUCCESS;
+                return ExecutionResult.success();
             }
             catch (IOException | RuntimeException error)
             {
-                MainFunctions.addException( error );
-                LOGGER.error(Strings.getStackTrace( error ));
+                LOGGER.error( "createNetCDFTemplate failed.", error );
+                return ExecutionResult.failure( error );
             }
         }
         else
         {
-            LOGGER.error("There are not enough arguments to create a template.");
-            LOGGER.error("usage: createnetcdftemplate <path to original file> <path to template>");
-        }
-
-        return result;
-    }
-
-    private static Integer readHeader( SharedResources sharedResources )
-    {
-        Integer result = FAILURE;
-        final String url = "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080/nwm/nwm.20180515/analysis_assim/nwm.t00z.analysis_assim.channel_rt.tm00.conus.nc";
-
-        // TODO: Finish experiment; current work must be halted
-
-        /*
-         * The idea here is that we want to see if we can pull the top x
-         * bytes from the remote file. From there, we can pull and work with
-         * just the header of a netcdf file.  If the data within the file
-         * meets expectations, we may continue to work with it. If not,
-         * we can avoid further work. If we can't avoid it, we are forced
-         * to download a full file before we can determine whether or not
-         * it can/should be used.
-         */
-
-        // Create a connection and open a stream to the resource
-        URL sourcePath = null;
-        try
-        {
-            sourcePath = new URL( url);
-        }
-        catch ( MalformedURLException e )
-        {
-            LOGGER.error("The url pointing towards the file was incorrect.", e);
-            return FAILURE;
-        }
-
-        try(InputStream stream = sourcePath.openStream())
-        {
-            // The idea of 200 bytes for the header was pushed.
-            // Working with 300 for initial tests just to be safe
-            byte[] buffer = new byte[300];
-
-            // Fill the buffer and attempt to load it into a Netcdf object
-            // This is supposed to work in Thredds; it's called
-            // "Range Subsetting"
-            int bytesRead = stream.read( buffer );
-            try (NetcdfFile data = NetcdfFile.openInMemory( "file", buffer ))
-            {
-                LOGGER.info( "Loaded data..." );
-            }
-
-            // If/when we can load the header, we want to be able to
-            // evaluate the contents of it without actually hitting the
-            // data. This might mean that attributes storing single
-            // value data also contained within variables might
-            // see use again. While "time" and "reference_time" are
-            // the canonical sources of time and issue time data,
-            // We most likely won't be able to hit that data
-            // with the header alone (or at least reliably).
-            result = SUCCESS;
-        }
-        catch ( IOException e )
-        {
-            LOGGER.error("Remote Netcdf reading failed.", e);
-        }
-
-        return result;
-    }
-
-    private static final Object EXCEPTION_LOCK = new Object();
-    private static List<Exception> encounteredExceptions;
-
-    private static void addException(Exception recentException)
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            if (MainFunctions.encounteredExceptions == null)
-            {
-                MainFunctions.encounteredExceptions = new ArrayList<>(  );
-            }
-
-            MainFunctions.encounteredExceptions.add(recentException);
-        }
-    }
-
-    static List<Exception> getEncounteredExceptions()
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            if (MainFunctions.encounteredExceptions == null)
-            {
-                MainFunctions.encounteredExceptions = new ArrayList<>(  );
-            }
-
-            MainFunctions.encounteredExceptions.addAll( Control.getMostRecentException() );
-
-            return Collections.unmodifiableList(MainFunctions.encounteredExceptions);
+            String message = "There are not enough arguments to create a template."
+                             + System.lineSeparator()
+                             + "usage: createnetcdftemplate <path to original file> <path to template>";
+            LOGGER.error( message );
+            UserInputException e = new UserInputException( message );
+            return ExecutionResult.failure( e );
         }
     }
 

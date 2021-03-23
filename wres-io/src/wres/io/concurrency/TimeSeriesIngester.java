@@ -1,6 +1,5 @@
 package wres.io.concurrency;
 
-import java.io.IOException;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -279,7 +278,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                    Database database,
                                    Ensembles ensemblesCache,
                                    TimeSeries<?> timeSeries,
-                                   int sourceId )
+                                   long sourceId )
     {
         SortedSet<? extends Event<?>> events = timeSeries.getEvents();
 
@@ -303,9 +302,9 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                 String ensembleName = trace.getKey()
                                            .toString();
 
-                int ensembleId = this.insertOrGetEnsembleId( ensemblesCache,
-                                                             ensembleName );
-                int timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
+                long ensembleId = this.insertOrGetEnsembleId( ensemblesCache,
+                                                              ensembleName );
+                long timeSeriesId = this.insertTimeSeriesRowForEnsembleTrace(
                         database,
                         (TimeSeries<Ensemble>) timeSeries,
                         ensembleId,
@@ -319,10 +318,10 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         }
         else if ( event.getValue() instanceof Double )
         {
-            int timeSeriesId = this.insertTimeSeriesRow( database,
-                                                         ensemblesCache,
-                                                         (TimeSeries<Double>) timeSeries,
-                                                         sourceId );
+            long timeSeriesId = this.insertTimeSeriesRow( database,
+                                                          ensemblesCache,
+                                                          (TimeSeries<Double>) timeSeries,
+                                                          sourceId );
             this.insertTimeSeriesValuesRows( systemSettings,
                                              database,
                                              timeSeriesId,
@@ -341,17 +340,15 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
      * @return Raw surrogate key from db
      * @throws IngestException When any query involved fails.
      */
-    private int insertOrGetEnsembleId( Ensembles ensemblesCache,
-                                       String ensembleName )
+    private long insertOrGetEnsembleId( Ensembles ensemblesCache,
+                                        String ensembleName )
             throws IngestException
     {
-        int id;
+        long id;
 
         try
         {
-            id = ensemblesCache.getEnsembleID( ensembleName,
-                                               null,
-                                               null );
+            id = ensemblesCache.getEnsembleID( ensembleName );
         }
         catch ( SQLException se )
         {
@@ -365,7 +362,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private void insertEnsembleTrace( SystemSettings systemSettings,
                                       Database database,
                                       TimeSeries<Ensemble> originalTimeSeries,
-                                      int timeSeriesIdForTrace,
+                                      long timeSeriesIdForTrace,
                                       SortedSet<Event<Double>> ensembleTrace )
             throws IngestException
     {
@@ -383,7 +380,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
     private void insertTimeSeriesValuesRows( SystemSettings systemSettings,
                                              Database database,
-                                             int timeSeriesId,
+                                             long timeSeriesId,
                                              TimeSeries<Double> timeSeries )
             throws IngestException
     {
@@ -401,7 +398,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
 
     private void insertTimeSeriesValuesRow( SystemSettings systemSettings,
                                             Database database,
-                                            int timeSeriesId,
+                                            long timeSeriesId,
                                             Instant referenceDatetime,
                                             Event<Double> valueAndValidDateTime )
             throws IngestException
@@ -426,13 +423,12 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         this.latches.add( latchPair );
     }
 
-    private int insertTimeSeriesRow( Database database,
-                                     Ensembles ensemblesCache,
-                                     TimeSeries<Double> timeSeries,
-                                     int sourceId )
+    private long insertTimeSeriesRow( Database database,
+                                      Ensembles ensemblesCache,
+                                      TimeSeries<Double> timeSeries,
+                                      long sourceId )
             throws IngestException
     {
-
         wres.io.data.details.TimeSeries databaseTimeSeries;
         String measurementUnit = timeSeries.getMetadata()
                                            .getUnit();
@@ -462,15 +458,13 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
         }
     }
 
-    private int insertTimeSeriesRowForEnsembleTrace( Database database,
-                                                     TimeSeries<Ensemble> timeSeries,
-                                                     int ensembleId,
-                                                     int sourceId )
+    private long insertTimeSeriesRowForEnsembleTrace( Database database,
+                                                      TimeSeries<Ensemble> timeSeries,
+                                                      long ensembleId,
+                                                      long sourceId )
             throws IngestException
     {
-
         wres.io.data.details.TimeSeries databaseTimeSeries;
-
         String measurementUnit = timeSeries.getMetadata()
                                            .getUnit();
         String variableName = timeSeries.getMetadata()
@@ -504,9 +498,9 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace(
             Database database,
             TimeSeries<Ensemble> ensembleTimeSeries,
-            int ensembleId,
+            long ensembleId,
             String measurementUnit,
-            int sourceId,
+            long sourceId,
             String variableName,
             FeatureKey feature )
             throws SQLException
@@ -528,7 +522,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
                                                              Ensembles ensemblesCache,
                                                              TimeSeries<Double> timeSeries,
                                                              String measurementUnit,
-                                                             int sourceId,
+                                                             long sourceId,
                                                              String variableName,
                                                              FeatureKey feature )
             throws SQLException
@@ -569,14 +563,14 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
     }
 
 
-    private int getMeasurementUnitId( String measurementUnit ) throws SQLException
+    private long getMeasurementUnitId( String measurementUnit ) throws SQLException
     {
         MeasurementUnits measurementUnitsCache = this.getMeasurementUnitsCache();
         return measurementUnitsCache.getMeasurementUnitID( measurementUnit );
     }
 
 
-    private int getFeatureId( FeatureKey featureKey ) throws SQLException
+    private long getFeatureId( FeatureKey featureKey ) throws SQLException
     {
         Features featuresCache = this.getFeaturesCache();
         return featuresCache.getFeatureID( featureKey );
@@ -634,7 +628,7 @@ public class TimeSeriesIngester implements Callable<List<IngestResult>>
      * @return a SourceCompleter
      */
 
-    SourceCompleter createSourceCompleter( int sourceId,
+    SourceCompleter createSourceCompleter( long sourceId,
                                            DatabaseLockManager lockManager )
     {
         return new SourceCompleter( this.getDatabase(), sourceId, lockManager );

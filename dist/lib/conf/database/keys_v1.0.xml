@@ -2,22 +2,56 @@
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Add TimeSeriesValue FK - Time Series" author="Christopher Tubbs">
+    <!-- Only a handful of db systems can do deferrable, 2 versions. -->
+    <changeSet id="Add TimeSeriesValue FK v2 - Time Series (deferred)"
+               author="Christopher Tubbs, Jesse Bickel"
+               dbms="oracle,postgresql,sqlite">
         <preConditions onFail="MARK_RAN">
             <not>
-                <foreignKeyConstraintExists schemaName="wres" foreignKeyName="timeseriesvalue_timeseries_fk" />
+                <foreignKeyConstraintExists foreignKeyName="timeseriesvalue_timeseries_fk"
+                                            foreignKeyTableName="TimeSeriesValue"
+                                            schemaName="wres" />
             </not>
         </preConditions>
-        <addForeignKeyConstraint baseTableSchemaName="wres" baseTableName="TimeSeriesValue"
-                                 baseColumnNames="timeseries_id" constraintName="timeseriesvalue_timeseries_fk"
-                                 referencedTableSchemaName="wres" referencedTableName="TimeSeries"
-                                 referencedColumnNames="timeseries_id" initiallyDeferred="true"
-                                 deferrable="true" onDelete="CASCADE" />
+        <addForeignKeyConstraint constraintName="timeseriesvalue_timeseries_fk"
+                                 baseColumnNames="timeseries_id"
+                                 baseTableName="TimeSeriesValue"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="timeseries_id"
+                                 referencedTableName="TimeSeries"
+                                 referencedTableSchemaName="wres"
+                                 initiallyDeferred="true"
+                                 deferrable="true"
+                                 onDelete="CASCADE" />
         <comment>Linked wres.TimeSeriesValue to wres.TimeSeries</comment>
     </changeSet>
+
+    <!-- In the db where initiallyDeferred is not supported use this one.
+         In the odd/rare case of sybase (doesn't support onDelete=CASCADE),
+         live without the FK constraint. -->
+    <changeSet id="Add TimeSeriesValue FK v2 - Time Series (deferred)"
+               author="Christopher Tubbs, Jesse Bickel"
+               dbms="!oracle,!postgresql,!sqlite,!sybase">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="timeseriesvalue_timeseries_fk"
+                                            foreignKeyTableName="TimeSeriesValue"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="timeseriesvalue_timeseries_fk"
+                                 baseColumnNames="timeseries_id"
+                                 baseTableName="TimeSeriesValue"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="timeseries_id"
+                                 referencedTableName="TimeSeries"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+        <comment>Linked wres.TimeSeriesValue to wres.TimeSeries</comment>
+    </changeSet>
+
     <changeSet id="Add TimeSeriesValue Index - Time Series" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
             <not>

@@ -15,7 +15,7 @@ import wres.io.utilities.Database;
 public class SourceCompletedDetails
 {
     private final Database database;
-    private final int sourceId;
+    private final long sourceId;
     private boolean definitiveCompletedAnswerFound= false;
     private boolean wasCompleted = false;
 
@@ -39,7 +39,7 @@ public class SourceCompletedDetails
      * @param sourceId the raw source_id from the database instance
      */
     public SourceCompletedDetails( Database database,
-                                   int sourceId )
+                                   long sourceId )
     {
         this.database = database;
         this.sourceId = sourceId;

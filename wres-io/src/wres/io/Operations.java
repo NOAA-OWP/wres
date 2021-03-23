@@ -1,19 +1,12 @@
 package wres.io;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -27,8 +20,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.LoggerFactory;
 
-import static java.time.ZoneOffset.UTC;
-
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
@@ -38,7 +29,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.TimeSeries;
 import wres.io.project.Projects;
 import wres.io.reading.PreIngestException;
 import wres.io.removal.IncompleteIngest;
@@ -330,7 +320,6 @@ public final class Operations {
      * @param projectConfig the projectConfig for the evaluation
      * @param lockManager The lock manager to use.
      * @return the {@link Project} (state about this evaluation)
-     * @throws IOException when anything goes wrong
      * @throws IllegalStateException when another process already holds lock.
      */
 
@@ -339,7 +328,6 @@ public final class Operations {
                                   Executor executor,
                                   ProjectConfig projectConfig,
                                   DatabaseLockManager lockManager )
-            throws IOException
     {
         return Operations.doIngestWork( systemSettings, database, executor, projectConfig, lockManager );
     }
@@ -621,9 +609,9 @@ public final class Operations {
         try
         {
             final DataScripter script = new DataScripter( database,
-                                                          "SELECT version() as version_detail" );
-            final String version = script.retrieve( "version_detail" );
-            LOGGER.info(version);
+                                                          "SELECT 1 as test" );
+            final Object result = script.retrieve( "test" );
+            LOGGER.info( "Result={}", result );
             LOGGER.info("Successfully connected to the database");
         }
         catch (final SQLException e)
@@ -644,35 +632,6 @@ public final class Operations {
     {
         database.clean();
         database.refreshStatistics( true );
-
-        // Nuke the application cache: see #61206
-        Operations.invalidateCache();
-    }
-    
-    /**
-     * <p>Invalidates the application cache of database partition names and
-     * all singleton instances of {@link wres.io.data.caching}. See #61206.
-     * 
-     * <p>The scope of this method could be relaxed if a need arises for 
-     * external control over cache invalidation.
-     * 
-     * TODO: avoid the need for explicit cache validation in the long-term,
-     * since it is inherently brittle. Instead, consider re-scoping most
-     * of the application cache to a single evaluation, which should
-     * become eligible for GC on completion. The aim should be to improve
-     * the sharing of information *within* an evaluation, not between them,
-     * because the dependencies within an evaluation far exceed those
-     * between evaluations, and caching with minimum scope is preferred.
-     * See #61388, which will define an evaluation more concretely.
-     */
-    private static void invalidateCache()
-    {
-        LOGGER.debug( "Invalidating the application cache." );
-        
-        // Invalidate cached partition names
-        TimeSeries.invalidateGlobalCache();
-        
-        LOGGER.debug( "Finished invalidating the application cache." );
     }
 
     /**
@@ -685,110 +644,6 @@ public final class Operations {
     {
         IncompleteIngest.removeOrphanedData( database );
         database.refreshStatistics(true);
-    }
-
-    /**
-     * Logs information about the execution of the WRES into the database for
-     * aid in remote debugging
-     * @param database The database to use.
-     * @param arguments The arguments used to run the WRES
-     * @param start The instant at which the WRES began execution
-     * @param duration The length of time that the WRES executed in
-     * @param failed Whether or not the execution failed
-     * @param error Any error that caused the WRES to crash
-     * @param version The top-level version of WRES (module versions vary)
-     */
-    public static void logExecution( Database database,
-                                     String[] arguments,
-                                     Instant start,
-                                     Duration duration,
-                                     boolean failed,
-                                     String error,
-                                     String version )
-    {
-        Objects.requireNonNull( arguments );
-        Objects.requireNonNull( version );
-
-        try
-        {
-            LocalDateTime startedAtZulu = LocalDateTime.ofInstant( start, UTC );
-            String runTime = duration.toMillis() + " MILLISECONDS";
-
-            // For any arguments that happen to be regular files, read the
-            // contents of the first file into the "project" field. Maybe there
-            // is an improvement that can be made, but this should cover the
-            // common case of a single file in the args.
-            String project = "";
-
-            List<String> commandsAcceptingFiles = Arrays.asList( "execute",
-                                                                 "ingest" );
-
-            // The two operations that might perform a project related operation are 'execute' and 'ingest';
-            // these are the only cases where we might be interested in a project configuration
-            if ( commandsAcceptingFiles.contains( arguments[0].toLowerCase() ) )
-            {
-
-                // Go ahead and assign the second argument as the project;
-                // if this instance is in server mode,
-                // this will be the raw project text and a file path will not be involved
-                project = arguments[1];
-
-                // Look through the arguments to find the path to a file;
-                // this is more than likely our project configuration
-                for ( String arg : arguments )
-                {
-                    Path path = Paths.get( arg );
-
-                    if ( path.toFile().isFile() )
-                    {
-                        project = String.join( System.lineSeparator(), Files.readAllLines( path ) );
-                        break;
-                    }
-                }
-            }
-
-            DataScripter script = new DataScripter( database );
-
-            script.addLine("INSERT INTO wres.ExecutionLog (");
-            script.addTab().addLine("arguments,");
-            script.addTab().addLine("system_version,");
-            script.addTab().addLine("project,");
-            script.addTab().addLine("username,");
-            script.addTab().addLine("address,");
-            script.addTab().addLine("start_time,");
-            script.addTab().addLine("run_time,");
-            script.addTab().addLine("failed,");
-            script.addTab().addLine("error");
-            script.addLine(")");
-            script.addLine("VALUES (");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("inet_client_addr(),");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("CAST(? AS INTERVAL),");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?");
-            script.addLine(");");
-
-            script.execute(
-                    String.join(" ", arguments),
-                    version,
-                    project,
-                    System.getProperty( "user.name" ),
-                    // Let server find and report network address
-                    startedAtZulu,
-                    runTime,
-                    failed,
-                    error
-            );
-        }
-        catch ( SQLException | IOException e )
-        {
-            LOGGER.warn( "Execution metadata could not be logged to the database.",
-                         e );
-        }
     }
 
     /**

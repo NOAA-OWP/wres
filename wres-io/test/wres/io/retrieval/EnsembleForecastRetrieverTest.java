@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import static wres.io.retrieval.RetrieverTestConstants.*;
+
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -72,28 +74,22 @@ public class EnsembleForecastRetrieverTest
     private Connection rawConnection;
 
     /**
-     * A project_id for testing;
-     */
-
-    private static final Integer PROJECT_ID = 1;
-
-    /**
      * Identifier of the first ensemble member.
      */
 
-    private Integer firstMemberId;
+    private Long firstMemberId;
 
     /**
      * Identifier of the second ensemble member.
      */
 
-    private Integer secondMemberId;
+    private Long secondMemberId;
 
     /**
      * Identifier of the third ensemble member.
      */
 
-    private Integer thirdMemberId;
+    private Long thirdMemberId;
 
     /**
      * A {@link LeftOrRightOrBaseline} for testing.
@@ -390,7 +386,7 @@ public class EnsembleForecastRetrieverTest
 
         assertTrue( sourceDetails.performedInsert() );
 
-        Integer sourceId = sourceDetails.getId();
+        Long sourceId = sourceDetails.getId();
 
         assertNotNull( sourceId );
 
@@ -399,12 +395,18 @@ public class EnsembleForecastRetrieverTest
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
                              this.mockExecutor,
-                             new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
+                             new ProjectConfig( null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                "test_project" ),
+                             PROJECT_HASH );
         project.save();
 
         assertTrue( project.performedInsert() );
 
-        assertEquals( PROJECT_ID, project.getId() );
+        assertEquals( PROJECT_HASH, project.getHash() );
 
         // Add a project source
         // There is no wres abstraction to help with this
@@ -413,7 +415,7 @@ public class EnsembleForecastRetrieverTest
 
         //Format 
         projectSourceInsert = MessageFormat.format( projectSourceInsert,
-                                                    PROJECT_ID,
+                                                    project.getId(),
                                                     sourceId,
                                                     LRB.value() );
 
@@ -434,7 +436,7 @@ public class EnsembleForecastRetrieverTest
 
         measurement.setUnit( UNITS );
         measurement.save( this.wresDatabase );
-        Integer measurementUnitId = measurement.getId();
+        Long measurementUnitId = measurement.getId();
 
         assertNotNull( measurementUnitId );
 
@@ -486,7 +488,7 @@ public class EnsembleForecastRetrieverTest
                                                      VARIABLE_NAME,
                                                      feature.getId() );
         firstTraceRow.setTimeScale( timeScale );
-        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
+        long firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
         // Successfully added row
         assertTrue( firstTraceRowId > 0 );
@@ -500,7 +502,7 @@ public class EnsembleForecastRetrieverTest
                                                      VARIABLE_NAME,
                                                      feature.getId() );
         secondTraceRow.setTimeScale( timeScale );
-        int secondTraceRowId = secondTraceRow.getTimeSeriesID();
+        long secondTraceRowId = secondTraceRow.getTimeSeriesID();
 
         assertTrue( secondTraceRowId > 0 );
 
@@ -514,7 +516,7 @@ public class EnsembleForecastRetrieverTest
                                                      VARIABLE_NAME,
                                                      feature.getId() );
         thirdTraceRow.setTimeScale( timeScale );
-        int thirdTraceRowId = thirdTraceRow.getTimeSeriesID();
+        long thirdTraceRowId = thirdTraceRow.getTimeSeriesID();
 
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );
@@ -528,13 +530,13 @@ public class EnsembleForecastRetrieverTest
 
         // Insert the ensemble members into the db
         double forecastValue = valueStart;
-        Map<Integer, Instant> series = new TreeMap<>();
+        Map<Long, Instant> series = new TreeMap<>();
         series.put( firstTraceRowId, referenceTime );
         series.put( secondTraceRowId, referenceTime );
         series.put( thirdTraceRowId, referenceTime );
 
         // Iterate and add the series values
-        for ( Map.Entry<Integer, Instant> nextSeries : series.entrySet() )
+        for ( Map.Entry<Long, Instant> nextSeries : series.entrySet() )
         {
             Instant validTime = nextSeries.getValue();
 

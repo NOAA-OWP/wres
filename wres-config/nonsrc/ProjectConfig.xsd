@@ -156,11 +156,12 @@
     <xs:complexType name="ensembleCondition">
         <xs:annotation>
             <xs:documentation>The ensemble element can be used to restrict
-                reading based upon ensemble information contained in the data. This
-                currently is only compatible with a PI-XML source. For example, you
-                can restrict reading to a single ensembleId, specified by the name
-                attribute; single member index, specified by the member_id
-                attribute; or a qualifier code based on the qualifier attribute. If
+                evaluation based upon ensemble trace names in the dataset. This
+                currently is only compatible with PI-XML and NWM sources. For
+                example, you can restrict evaluation to a single trace with the
+                name attribute: the contents of either ensembleMemberId or
+                ensembleMemberIndex for PI-XML, the zero-based integer index of
+                the ensemble trace for NWM (and sources with no trace names). If
                 the exclude flag is set to true, then the settings actually specify
                 time series to exclude; otherwise it specifies times series to
                 include.
@@ -168,8 +169,13 @@
         </xs:annotation>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="name" type="xs:string" />
+
+        <!-- member_id is deprecated, ignored by WRES! Do not use! -->
         <xs:attribute name="member_id" type="xs:string" />
+
+        <!-- qualifier is deprecated, ignored by WRES! Do not use! -->
         <xs:attribute name="qualifier" type="xs:string" />
+
         <xs:attribute name="exclude" type="xs:boolean" default="false" />
     </xs:complexType>
 

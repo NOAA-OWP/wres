@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -34,10 +35,20 @@ final class DatabaseSettings
 	private static final Map<String, String> DRIVER_MAPPING =
 			createDriverMapping();
 
-	private static final Map<String, Map<String, String>> DRIVER_PROPERTIES =
-            createDriverProperties();
+    /** From databaseType to the properties for its DataSource */
+    private final Map<String, Properties> dataSourceProperties;
 
-	private String url = "localhost";
+    /**
+     * When the jdbcUrl is specified, it takes precedence over the fields used
+     * to programmatically generate a jdbcUrl. The alternative to specifying a
+     * jdbcUrl is to specify a type, host, port, and database name.
+     * If username and password are specified or password is found in
+     * pgpass file they will be added to the properties sent to the DataSource.
+     * Furthermore, the jdbcUrl will override the specified database type.
+     */
+
+    private String jdbcUrl = null;
+    private String host = "localhost";
 	private String username = "wres";
 	private String password;
 	private String port = "5432";
@@ -47,8 +58,6 @@ final class DatabaseSettings
 	private int maxPoolSize = 10;
 	private int maxIdleTime = 30;
 	private boolean attemptToMigrate = true;
-
-	private Properties connectionProperties;
 
 	private boolean useSSL = false;
 	private boolean validateSSL = true;
@@ -63,32 +72,96 @@ final class DatabaseSettings
 	private static Map<String, String> createDriverMapping()
 	{
 		TreeMap<String, String> mapping = new TreeMap<>();
-		mapping.put( "mysql", "com.mysql.jdbc.Driver" );
-		mapping.put( "postgresql", "org.postgresql.Driver" );
-		mapping.put("h2", "org.h2.Driver");
+        mapping.put( "mariadb", "org.mariadb.jdbc.MariaDbDataSource" );
+        mapping.put( "mysql", "org.mariadb.jdbc.MariaDbDataSource" );
+        mapping.put( "postgresql", "org.postgresql.ds.PGSimpleDataSource" );
+        mapping.put( "h2", "org.h2.jdbcx.JdbcDataSource");
 		return mapping;
 	}
 
-	private static Map<String, Map<String, String>> createDriverProperties()
+
+    /** To be called after setting member variables based on wres config */
+    private Map<String, Properties> createDatasourceProperties()
     {
-        Map<String, Map<String, String>> mapping = new TreeMap<>();
+        Map<String, Properties> mapping = new TreeMap<>();
+        Map<String,String> commonProperties = new TreeMap<>();
 
-        Map<String, String> postgresqlProperties = new TreeMap<>();
-        postgresqlProperties.put( "ssl", "ssl" );
-        postgresqlProperties.put("validate", "sslfactory");
-        postgresqlProperties.put("nonValidateAnswer", "org.postgresql.ssl.NonValidatingFactory");
-        // If postgresql had a custom "yes" property for validating ssl, that would go here
-        postgresqlProperties.put( "validateAnswer", "wres.system.PgSSLSocketFactory" );
-        mapping.put("postgresql", postgresqlProperties);
+        if ( Objects.nonNull( this.getUsername() ) )
+        {
+            commonProperties.put( "user", this.getUsername() );
+        }
 
-        Map<String, String> mysqlProperties = new TreeMap<>();
-        mysqlProperties.put("ssl", "useSSL");
-        mysqlProperties.put("validate", "verifyServerCertificate");
-        mysqlProperties.put("nonValidateAnswer", "false");
+        if ( Objects.nonNull( this.password ) )
+        {
+            commonProperties.put( "password", this.password );
+        }
+
+        Properties postgresqlProperties = new Properties();
+        postgresqlProperties.put( "ssl", Boolean.toString( this.shouldUseSSL() ) );
+
+        if ( Objects.nonNull( this.getDatabaseName() ) )
+        {
+            postgresqlProperties.put( "databaseName", this.getDatabaseName() );
+        }
+
+        if ( Objects.nonNull( this.getPort() ) )
+        {
+            postgresqlProperties.put( "portNumber", this.getPort() );
+        }
+
+        if ( this.shouldValidateSSL() )
+        {
+            postgresqlProperties.put( "sslfactory", "wres.system.PgSSLSocketFactory" );
+
+            if ( Objects.nonNull( this.getCertificateFileToTrust() ) )
+            {
+                postgresqlProperties.put( "sslfactoryarg",
+                                          this.getCertificateFileToTrust() );
+            }
+        }
+        else
+        {
+            postgresqlProperties.put("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
+        }
+
+        postgresqlProperties.putAll( commonProperties );
+        mapping.put("postgresql", postgresqlProperties );
+
+        Properties mysqlProperties = new Properties();
+        mysqlProperties.put( "useSSL", Boolean.toString( this.shouldUseSSL() ) );
+
+        if ( this.shouldValidateSSL() )
+        {
+            mysqlProperties.put( "verifyServerCertificate", "true" );
+
+            if ( Objects.nonNull( this.getCertificateFileToTrust() ) )
+            {
+                mysqlProperties.put( "serverSslCert",
+                                     this.getCertificateFileToTrust() );
+            }
+        }
+        else
+        {
+            mysqlProperties.put( "trustServerCertificate", "true" );
+        }
+
+        mysqlProperties.putAll( commonProperties );
         // If mysql had a custom "yes" property for validating ssl, that would go here
 
         mapping.put("mysql", mysqlProperties);
 
+        // MariaDB and MySQL share a lineage and use the same jdbc driver.
+        mapping.put( "mariadb", mysqlProperties );
+
+        Properties h2Properties = new Properties();
+        h2Properties.putAll( commonProperties );
+
+        if ( Objects.nonNull( this.getJdbcUrl() ) )
+        {
+            h2Properties.put( "url", this.getJdbcUrl() );
+        }
+
+        mapping.put( "h2", h2Properties );
         return mapping;
     }
 
@@ -133,9 +206,19 @@ final class DatabaseSettings
 			LOGGER.debug( "Db settings after applying system property overrides: {}",
                           this );
 
+            this.overrideDatabaseTypeWithJdbcUrl();
+
+            LOGGER.debug( "Db settings after applying jdbc url override: {}",
+                          this );
+
+            this.dataSourceProperties = this.createDatasourceProperties();
+
+            LOGGER.debug( "Db settings after creating DataSource properties: {}",
+                          this );
+
             testConnection();
 
-			// TODO: move liquibase migration out of static initialization.
+            // TODO: move liquibase migration out of initialization.
 
             // Stop-gap measure between always-migrate and never-migrate.
             boolean migrate = this.attemptToMigrate;
@@ -207,7 +290,8 @@ final class DatabaseSettings
 
 	private void cleanPriorRuns() throws SQLException
 	{
-	    if (this.databaseType == "postgresql")
+        if ( this.getDatabaseType()
+                 .equalsIgnoreCase( "postgresql" ) )
         {
             final String NEWLINE = System.lineSeparator();
 
@@ -253,35 +337,42 @@ final class DatabaseSettings
 	DatabaseSettings()
 	{
 		this.applySystemPropertyOverrides();
+        this.overrideDatabaseTypeWithJdbcUrl();
+        this.dataSourceProperties = this.createDatasourceProperties();
 	}
 
-	private boolean urlIsValid()
+    private boolean hostIsValid()
 	{
-		if (this.url.equalsIgnoreCase( "localhost" ))
+        if ( this.getHost()
+                 .equalsIgnoreCase( "localhost" ) )
 		{
 			return true;
 		}
 
         try (Socket socket = new Socket())
         {
-            socket.connect( new InetSocketAddress( this.url, Integer.parseInt(this.port) ), 2000 );
+            socket.connect( new InetSocketAddress( this.getHost(),
+                                                   Integer.parseInt( this.getPort() ) ),
+                            2000 );
             return true;
         }
         catch (IOException ioe)
         {
-            LOGGER.warn( "The intended URL ({}) is not accessible due to",
-                         this.url, ioe );
+            LOGGER.warn( "The intended host:port combination ({}:{}) is not accessible due to",
+                         this.host, this.port, ioe );
             return false;
         }
 	}
 
 	private void testConnection() throws SQLException, IOException
 	{
-        boolean validURL = this.urlIsValid();
+        boolean validURL = this.hostIsValid();
 
         if (!validURL)
 		{
-			throw new IOException( "The given database URL ('" + this.url + "') is not accessible." );
+            throw new IOException( "The given database host:port combination ('"
+                                   + this.getHost() + ":" + this.getPort()
+                                   + "') is not accessible." );
 		}
 
         try
@@ -315,77 +406,9 @@ final class DatabaseSettings
         }
     }
 
-    private synchronized Properties getConnectionProperties()
+    private Properties getConnectionProperties()
     {
-        if (this.connectionProperties == null)
-        {
-            connectionProperties = new Properties();
-
-            Map<String, String> driverProperties = DatabaseSettings.DRIVER_PROPERTIES.get( this.getDatabaseType() );
-
-            if ( driverProperties == null )
-            {
-                LOGGER.debug( "No custom properties will be applied to database connections." );
-                return connectionProperties;
-            }
-
-            if ( this.shouldUseSSL() )
-            {
-                if ( driverProperties.containsKey( "ssl" ) )
-                {
-                    String sslName = driverProperties.get( "ssl" );
-                    connectionProperties.setProperty( sslName, String.valueOf( this.useSSL ) );
-
-                    String validateName = driverProperties.getOrDefault( "validate", "" );
-
-                    if ( this.shouldValidateSSL() )
-                    {
-                        if ( !validateName.isEmpty() && driverProperties.containsKey( "validateAnswer" ) )
-                        {
-                            connectionProperties.setProperty( validateName, driverProperties.get( "validateAnswer" ) );
-
-                            // Hate to do this, but an additional property is
-                            // needed for postgres. If mariadb or h2 need the
-                            // same, then we can genericize at that moment.
-                            // It looks like mariadb allows something like this
-                            // with the serverSslCert property.
-                            if ( this.getDatabaseType().equals( "postgresql" ) )
-                            {
-                                connectionProperties.setProperty( "sslfactoryarg",
-                                                                  this.certificateFileToTrust );
-                            }
-                        }
-                        else
-                        {
-                            LOGGER.debug( "The system was set to validate SSL, but {} either doesn't "
-                                          + "support validation toggling or there isn't a non-default "
-                                          + "property for its activation.", this.getDatabaseType() );
-                        }
-                    }
-                    else
-                    {
-                        if ( !validateName.isEmpty() && driverProperties.containsKey( "nonValidateAnswer" ) )
-                        {
-                            connectionProperties.setProperty( validateName, driverProperties.get( "nonValidateAnswer" ) );
-                        }
-                        else
-                        {
-                            LOGGER.debug( "The system was set to ignore SSL validation, but {} either doesn't "
-                                          + "support validation toggling or there isn't a non-default "
-                                          + "property for its activation.", this.getDatabaseType() );
-                        }
-                    }
-                }
-                else
-                {
-                    LOGGER.debug( "The system was set to utilize SSL for its database connection, "
-                                  + "but {} either doesn't support it or there isn't a non-default "
-                                  + "property for its activation.", this.getDatabaseType() );
-                }
-            }
-        }
-
-        return this.connectionProperties;
+        return this.dataSourceProperties.get( this.getDatabaseType() );
     }
 
     Connection getRawConnection(String connectionString) throws SQLException
@@ -405,20 +428,8 @@ final class DatabaseSettings
 									+ "could not be found.", e );
 		}
 
-		// Copy existing properties, don't modify them.
-		Properties connectionProperties = new Properties( this.getConnectionProperties() );
-
-        if ( this.getUsername() != null )
-        {
-            connectionProperties.setProperty( "user", this.getUsername() );
-        }
-
-        if ( this.password != null )
-        {
-            connectionProperties.setProperty( "password", this.password );
-        }
-
-        return DriverManager.getConnection( connectionString, connectionProperties );
+        return DriverManager.getConnection( connectionString,
+                                            this.getConnectionProperties() );
 	}
 
     HikariDataSource createDatasource()
@@ -429,13 +440,7 @@ final class DatabaseSettings
         String type = this.getDatabaseType();
         String className = DRIVER_MAPPING.get( type );
         String name = this.getDatabaseName();
-        String url = this.getConnectionString( name );
-        poolConfig.setDriverClassName( className );
-        poolConfig.setJdbcUrl( url );
-        String user = this.getUsername();
-        poolConfig.setUsername( user );
-        String pass = this.password;
-        poolConfig.setPassword( pass );
+        poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
         poolConfig.setConnectionTimeout( 0 );
@@ -450,32 +455,46 @@ final class DatabaseSettings
         String type = this.getDatabaseType();
         String className = DRIVER_MAPPING.get( type );
         String name = this.getDatabaseName();
-        String url = this.getConnectionString( name );
-        poolConfig.setDriverClassName( className );
-        poolConfig.setJdbcUrl( url );
-        String user = this.getUsername();
-        poolConfig.setUsername( user );
-        String pass = this.password;
-        poolConfig.setPassword( pass );
+        poolConfig.setDataSourceClassName( className );
         int maxSize = 5;
         poolConfig.setMaximumPoolSize( maxSize );
         poolConfig.setConnectionTimeout( 0 );
         return new HikariDataSource( poolConfig );
 	}
 
-    private String getUrl()
+    private String getHost()
     {
-        return this.url;
+        return this.host;
     }
 
 	/**
-	 * Sets the URL of the database to connect to
-	 * @param url The address of the database to connect to
+     * Sets the host name of the database to connect to
+     * @param host The host name of the database to connect to
 	 */
-    private void setUrl (String url)
+    private void setHost( String host )
 	{
-		this.url = url;
-	}
+        this.host = host;
+    }
+
+
+    /**
+     * Get the jdbc url that was set. Takes precedence over type:host:port
+     * @return
+     */
+    private String getJdbcUrl()
+    {
+        return this.jdbcUrl;
+    }
+
+
+    /**
+     * Sets the jdbc url of the database DataSource. Takes precedence over .
+     */
+
+    private void setJdbcUrl( String jdbcUrl )
+    {
+        this.jdbcUrl = jdbcUrl;
+    }
 
 	/**
 	 * Sets the username used to connect to the database
@@ -576,11 +595,19 @@ final class DatabaseSettings
 	 * Creates the connection string used to access the database
 	 * @return The connection string used to connect to the database of interest
 	 */
+
     private String getConnectionString (String databaseName)
     {
-        if ( this.getDatabaseType().equalsIgnoreCase( "h2" ) )
+        if ( Objects.nonNull( this.getJdbcUrl() )
+             && !this.getJdbcUrl().isBlank() )
         {
-            return "jdbc:h2:mem:" + this.getDatabaseName() + ";MODE=PostgreSQL;TRACE_LEVEL_FILE=4";
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Using the jdbc url specified verbatim: '{}'",
+                              this.getJdbcUrl() );
+            }
+
+            return this.getJdbcUrl();
         }
 
         if (!Strings.hasValue( databaseName ))
@@ -597,7 +624,7 @@ final class DatabaseSettings
             connectionString.append(":ssl");
         }
         connectionString.append( "://" );
-        connectionString.append( this.getUrl() );
+        connectionString.append( this.getHost() );
 
         if ( this.getPort() != null )
         {
@@ -646,7 +673,14 @@ final class DatabaseSettings
                             setPassword( value );
                             break;
                         case "url":
-                            setUrl( value );
+                            LOGGER.warn( "Deprecated 'url' tag found, use 'host' for a hostname or 'jdbcUrl' for a jdbc url instead." );
+                            setHost( value );
+                            break;
+                        case "host":
+                            setHost( value );
+                            break;
+                        case "jdbcUrl":
+                            setJdbcUrl( value );
                             break;
                         case "username":
                             setUsername( value );
@@ -685,7 +719,51 @@ final class DatabaseSettings
             throw new XMLStreamException( "Invalid settings were found within the system configuration.", e );
         }
 	}
-	
+
+
+    /**
+     * If needed, override the database type with the jdbc url. To be called
+     * after applying System Property overrides. If either the original config
+     * or the System Properties has set the jdbc url with a string starting with
+     * "jdbc:" and having more than five characters, the jdbc url takes
+     * precedence and overrides any specified type.
+     */
+
+    private void overrideDatabaseTypeWithJdbcUrl()
+    {
+
+        // The jdbcUrl overrides the database type when present and starts with
+        // "jdbc:"
+        String jdbc = this.getJdbcUrl();
+
+        if ( Objects.nonNull( jdbc )
+             && !jdbc.isBlank()
+             && jdbc.startsWith( "jdbc:" )
+             && jdbc.length() > 5 )
+        {
+            String jdbcSubstring = jdbc.substring( 5 );
+            int secondColonIndex = jdbcSubstring.indexOf( ":" );
+
+            if ( secondColonIndex < 0 )
+            {
+                LOGGER.warn( "Unable to extract database type from jdbc url {}",
+                             jdbc );
+            }
+            else
+            {
+                String type = jdbcSubstring.substring( 0, secondColonIndex );
+                LOGGER.debug( "Extracted database type {} from jdbc url {}",
+                              type, jdbc );
+                setDatabaseType( type );
+            }
+        }
+        else
+        {
+            LOGGER.debug( "No way to override database type with jdbc url {}",
+                          jdbc );
+        }
+    }
+
 	public String getDatabaseType()
 	{
 		return this.databaseType;
@@ -705,7 +783,8 @@ final class DatabaseSettings
     public String toString()
     {
         return new ToStringBuilder( this )
-                .append( "url", url )
+                .append( "jdbcUrl", jdbcUrl )
+                .append( "host", host )
                 .append( "username", username )
                 // Purposely do not print the password.
                 .append( "port", port )
@@ -714,7 +793,7 @@ final class DatabaseSettings
                 .append( "certificateFileToTrust", certificateFileToTrust )
                 .append( "maxPoolSize", maxPoolSize )
                 .append( "maxIdleTime", maxIdleTime )
-                .append( "connectionProperties", connectionProperties )
+                .append( "dataSourceProperties", this.dataSourceProperties )
                 .append( "useSSL", useSSL )
                 .append( "validateSSL", validateSSL )
                 .append( "queryTimeout", queryTimeout )
@@ -740,8 +819,22 @@ final class DatabaseSettings
 		String urlOverride = System.getProperty( "wres.url" );
 		if ( urlOverride != null )
 		{
-			this.url = urlOverride;
-		}
+            LOGGER.warn( "Deprecated wres.url property found. Use wres.databaseHost for a hostname or wres.databaseJdbcUrl for a jdbc url." );
+            this.setHost( urlOverride );
+        }
+
+        String hostOverride = System.getProperty( "wres.databaseHost" );
+
+        if ( Objects.nonNull( hostOverride ) )
+        {
+            this.setHost( hostOverride );
+        }
+
+        String jdbcUrlOverride = System.getProperty( "wres.databaseJdbcUrl" );
+        if ( Objects.nonNull( jdbcUrlOverride ) )
+        {
+            this.setJdbcUrl( jdbcUrlOverride );
+        }
 
 		String useSSLOverride = System.getProperty( "wres.useSSL" );
 		if (useSSLOverride != null)
@@ -789,10 +882,10 @@ final class DatabaseSettings
 
             try
             {
-                pgPass = PgPassReader.getPassphrase( this.url,
+                pgPass = PgPassReader.getPassphrase( this.getHost(),
                                                      5432,
-                                                     this.databaseName,
-                                                     this.username );
+                                                     this.getDatabaseName(),
+                                                     this.getUsername() );
             }
             catch ( IOException ioe )
             {
@@ -803,10 +896,10 @@ final class DatabaseSettings
             {
                 this.password = pgPass;
             }
-            else
+            else if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( "Could not find password for {}:{}:{}:{} in pgpass file.",
-                             this.url, 5432, this.databaseName, this.username );
+                             this.getHost(), 5432, this.getDatabaseName(), this.getUsername() );
             }
         }
 	}

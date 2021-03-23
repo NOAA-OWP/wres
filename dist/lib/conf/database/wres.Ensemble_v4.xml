@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Ensemble v2 - Create trace name table for most dbs."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="Ensemble" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="Ensemble" schemaName="wres"
+                     remarks="Each row has a name that can distinguish (when needed) a timeseries trace from other timeseries traces belonging to the same overall timeseries. The most common case is the degenerate case: a single (default) trace name per timeseries).">
+            <column name="ensemble_id" type="integer" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="ensemble_pk" />
+            </column>
+            <column name="ensemble_name" type="varchar"
+                    remarks="A name to distinguish one timeseries trace (ensemble trace) from another when needed.">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="wres.Ensemble v2 - Remove data to guarantee unique name."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Ensemble" schemaName="wres" />
+            <tableExists tableName="TimeSeries" schemaName="wres" />
+            <not>
+                <indexExists indexName="ensemble_ensemble_name_unique_index"
+                             columnNames="ensemble_name"
+                             tableName="Ensemble"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <delete tableName="Ensemble" schemaName="wres" />
+
+        <!-- No foreign key relating Ensemble to TimeSeries, thus: -->
+        <delete tableName="TimeSeries" schemaName="wres" />
+
+        <!-- The application is responsible for the "default" value. -->
+    </changeSet>
+    <changeSet id="wres.Ensemble v2 - Add unique constraint on trace name."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Ensemble" schemaName="wres" />
+            <not>
+                <indexExists indexName="ensemble_ensemble_name_unique_index"
+                             columnNames="ensemble_name"
+                             tableName="Ensemble"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <addUniqueConstraint constraintName="ensemble_ensemble_name_unique_index"
+                             columnNames="ensemble_name"
+                             tableName="Ensemble"
+                             schemaName="wres" />
+    </changeSet>
+</databaseChangeLog>

@@ -17,7 +17,7 @@ import wres.io.utilities.ScriptBuilder;
 
 /**
  * A collection of functions for mapping between measurement units, as recognized by the WRES database. Construct 
- * with a desired measurement unit then call {@link #getUnitMapper(Integer)} with the existing unit, identified with 
+ * with a desired measurement unit then call {@link #getUnitMapper(Long)} with the existing unit, identified with
  * its <code>measurementunit_id</code>, which is known at conversion time. In other words, this class contains a cache 
  * of all possible unit conversions for the desired unit supplied on construction. Create one instance of this class
  * per evaluation and inject wherever a unit conversion is needed.
@@ -39,14 +39,14 @@ public class UnitMapper
      * supplied on construction.
      */
 
-    private final Map<Integer, DoubleUnaryOperator> conversions = new HashMap<>();
+    private final Map<Long, DoubleUnaryOperator> conversions = new HashMap<>();
 
     /**
      * A mapping between the names of existing measurement units and their corresponding 
      * <code>measurementunit_id</code>
      */
 
-    private final Map<String, Integer> namesToIdentifiers = new HashMap<>();
+    private final Map<String, Long> namesToIdentifiers = new HashMap<>();
 
     /**
      * Desired measurement units.
@@ -58,7 +58,7 @@ public class UnitMapper
      * The <code>measurementunit_id</code> for the {@link #desiredMeasurementUnit},
      */
 
-    private final Integer desiredMeasurementUnitId;
+    private final Long desiredMeasurementUnitId;
 
     /**
      * Returns an instance.
@@ -106,7 +106,7 @@ public class UnitMapper
                                                      + "'." );
         }
 
-        Integer identifier = this.namesToIdentifiers.get( upperCaseUnits );
+        Long identifier = this.namesToIdentifiers.get( upperCaseUnits );
         return this.conversions.get( identifier );
     }
 
@@ -129,7 +129,7 @@ public class UnitMapper
      * @throws NoSuchUnitConversionException if there is no conversion for the supplied <code>measurementunit_id</code>
      */
 
-    DoubleUnaryOperator getUnitMapper( Integer measurementUnitId )
+    DoubleUnaryOperator getUnitMapper( Long measurementUnitId )
     {
         Objects.requireNonNull( measurementUnitId, "Specify a non-null measurement unit for conversion." );
 
@@ -216,11 +216,11 @@ public class UnitMapper
         // Retrieve the conversions
         try ( DataProvider provider = dataScripter.buffer() )
         {
-            Integer desiredUnitId = null;
+            Long desiredUnitId = null;
             while ( provider.next() )
             {
-                Integer fromUnitId = provider.getInt( "from_unit" );
-                desiredUnitId = provider.getInt( "to_unit" );
+                Long fromUnitId = provider.getLong( "from_unit" );
+                desiredUnitId = provider.getLong( "to_unit" );
                 String fromUnitName = provider.getString( "from_unit_name" );
                 double initialOffset = provider.getDouble( "initial_offset" );
                 double finalOffset = provider.getDouble( "final_offset" );

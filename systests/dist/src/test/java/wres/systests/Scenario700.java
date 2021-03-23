@@ -78,10 +78,7 @@ public class Scenario700
     @Test
     public void testScenario()
     {
-        Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
-        // Collect the file names actually written and that exist
-        Set<Path> pathsWritten = control.get();
+        Set<Path> pathsWritten = ScenarioHelper.executeScenario( scenarioInfo );
         Set<Path> actualFileNamesThatExist = pathsWritten.stream()
                                                          .filter( Files::exists )
                                                          .map( Path::getFileName )

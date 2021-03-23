@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Project Drop pre-WRES-5.6 project dataset table if it exists."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Project" schemaName="wres" />
+
+            <!-- The old has the column "input_code" where new has "hash." -->
+            <columnExists columnName="input_code" tableName="Project" schemaName="wres" />
+        </preConditions>
+        <dropTable tableName="Project" schemaName="wres"
+                   cascadeConstraints="true" />
+    </changeSet>
+</databaseChangeLog>

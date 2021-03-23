@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import static wres.io.retrieval.RetrieverTestConstants.*;
+
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -34,13 +36,9 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
-import wres.config.generated.Polygon;
-import wres.config.generated.UnnamedFeature;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.FeatureTuple;
 import wres.io.concurrency.Executor;
-import wres.config.generated.CoordinateSelection;
-import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeries;
@@ -72,12 +70,6 @@ public class SingleValuedGriddedRetrieverTest
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
-
-    /**
-     * A project_id for testing;
-     */
-
-    private static final Integer PROJECT_ID = 1;
 
     /**
      * A feature for testing.
@@ -166,7 +158,7 @@ public class SingleValuedGriddedRetrieverTest
                 new SingleValuedGriddedRetriever.Builder().setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
                                                           .setFeatures( List.of( featureTuple ) )
                                                           .setIsForecast( true )
-                                                          .setProjectId( SingleValuedGriddedRetrieverTest.PROJECT_ID )
+                                                          .setProjectId( PROJECT_ID )
                                                           .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
                                                           .setUnitMapper( mapper )
                                                           .setTimeWindow( timeWindow )
@@ -257,19 +249,19 @@ public class SingleValuedGriddedRetrieverTest
                              this.wresDatabase,
                              this.mockExecutor,
                              new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
-                             SingleValuedGriddedRetrieverTest.PROJECT_ID );
+                             PROJECT_HASH );
         project.save();
 
         assertTrue( project.performedInsert() );
 
-        assertEquals( SingleValuedGriddedRetrieverTest.PROJECT_ID, project.getId() );
+        assertEquals( PROJECT_HASH, project.getHash() );
 
         // Add a source for each of five forecast lead durations and output times
         // Also, add a project source for each one
         Instant sequenceOrigin = Instant.parse( "2017-06-16T11:13:00Z" );
         String projectSourceInsert =
                 "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ("
-                                     + SingleValuedGriddedRetrieverTest.PROJECT_ID
+                                     + project.getId()
                                      + ",{0},''"
                                      + SingleValuedGriddedRetrieverTest.LRB.value()
                                      + "'')";
@@ -290,7 +282,7 @@ public class SingleValuedGriddedRetrieverTest
 
             assertTrue( sourceDetails.performedInsert() );
 
-            Integer sourceId = sourceDetails.getId();
+            Long sourceId = sourceDetails.getId();
 
             assertNotNull( sourceId );
 

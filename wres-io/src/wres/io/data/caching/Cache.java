@@ -17,14 +17,14 @@ import wres.util.LRUMap;
  */
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
-	Map<U, Integer> keyIndex;
-	private ConcurrentMap<Integer, T> details;
+	Map<U, Long> keyIndex;
+	private ConcurrentMap<Long, T> details;
 
 	protected abstract Database getDatabase();
 	protected abstract Object getDetailLock();
 	protected abstract Object getKeyLock();
 
-	Map<U, Integer> getKeyIndex()
+	Map<U, Long> getKeyIndex()
     {
     	synchronized ( this.getKeyLock() )
 		{
@@ -42,7 +42,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 		}
     }
 
-	final ConcurrentMap<Integer, T> getDetails()
+	final ConcurrentMap<Long, T> getDetails()
 	{
 	    synchronized ( this.getDetailLock() )
         {
@@ -86,7 +86,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 */
 	protected abstract int getMaxDetails();
 
-	T get (int id)
+	T get ( long id )
 	{
 		return this.getDetails().get(id);
 	}
@@ -98,7 +98,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * @return The ID for the details in the database
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	Integer getID( T detail ) throws SQLException
+	Long getID( T detail ) throws SQLException
 	{
         U key = detail.getKey();
 
@@ -135,9 +135,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * @return The ID of a specific set of details
 	 * @throws SQLException Thrown if the ID could not be retrieved
 	 */
-	Integer getID( U key ) throws SQLException
+	Long getID( U key ) throws SQLException
     {
-		Integer id = null;
+		Long id = null;
 		
 		synchronized (this.getKeyLock())
 		{

@@ -856,7 +856,7 @@ public class SystemSettings extends XMLReader
      * Return the database type.
      */
 
-    String getDatabaseType()
+    public String getDatabaseType()
     {
         return this.databaseConfiguration.getDatabaseType();
     }

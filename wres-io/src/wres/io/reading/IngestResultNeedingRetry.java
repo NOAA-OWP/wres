@@ -20,11 +20,11 @@ class IngestResultNeedingRetry implements IngestResult
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestResultNeedingRetry.class );
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final DataSource dataSource;
-    private final int surrogateKey;
+    private final long surrogateKey;
 
     IngestResultNeedingRetry( LeftOrRightOrBaseline leftOrRightOrBaseline,
                               DataSource dataSource,
-                              int surrogateKey )
+                              long surrogateKey )
     {
         Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
@@ -60,7 +60,7 @@ class IngestResultNeedingRetry implements IngestResult
     }
 
     @Override
-    public int getSurrogateKey()
+    public long getSurrogateKey()
     {
         return this.surrogateKey;
     }

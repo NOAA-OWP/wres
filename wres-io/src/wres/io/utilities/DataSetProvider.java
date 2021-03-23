@@ -241,13 +241,13 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public Iterable<String> getColumnNames()
+    public List<String> getColumnNames()
     {
         if (this.isClosed())
         {
             throw new IllegalStateException( "The dataset is not accessible.");
         }
-        return columnNames.keySet();
+        return new ArrayList<>( columnNames.keySet() );
     }
 
     @Override

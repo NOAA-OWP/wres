@@ -78,10 +78,7 @@ public class Scenario600
     @Test
     public void testScenario()
     {
-        Control control = ScenarioHelper.assertExecuteScenario( scenarioInfo );
-        
-        // Collect the file names actually written and that exist
-        Set<Path> pathsWritten = control.get();
+        Set<Path> pathsWritten = ScenarioHelper.executeScenario( scenarioInfo );
         Set<Path> actualFileNamesThatExist = pathsWritten.stream()
                                                          .filter( Files::exists )
                                                          .map( Path::getFileName )
@@ -97,7 +94,7 @@ public class Scenario600
         
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
         
-        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, control );
+        ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, pathsWritten );
         LOGGER.info( "########################################################## COMPLETED "
                 + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
     }

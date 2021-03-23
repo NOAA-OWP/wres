@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeries - Upgrade existing source_id to BIGINT."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeries" schemaName="wres" />
+            <columnExists columnName="source_id" tableName="TimeSeries"
+                          schemaName="wres" />
+        </preConditions>
+        <modifyDataType columnName="source_id" newDataType="BIGINT"
+                        tableName="TimeSeries" schemaName="wres" />
+    </changeSet>
+</databaseChangeLog>

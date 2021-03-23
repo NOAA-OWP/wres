@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.SourceCompleted v2 - Create SourceCompleted for any dbms."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="SourceCompleted" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="SourceCompleted" schemaName="wres"
+                     remarks="Rows indicate a source/timeseries with all associated timeseries traces fully ingested.">
+            <column name="source_id" type="BIGINT"
+                    remarks="Presence indicates this source_id's traces were fully ingested."/>
+        </createTable>
+    </changeSet>
+
+    <!-- The separate changeset of the foreign key constraint can be used either
+         immediately after creation of the table above or when the tables exist
+         already but the foreign key from older versions has been removed. -->
+    <changeSet id="wres.SourceCompleted v2 - Add fk on wres.Source id"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="source_id" tableName="SourceCompleted"
+                          schemaName="wres" />
+            <columnExists columnName="source_id" tableName="Source"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="sourcecompleted_source_fk"
+                                            foreignKeyTableName="SourceCompleted"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="sourcecompleted_source_fk"
+                                 baseColumnNames="source_id"
+                                 baseTableName="SourceCompleted"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="source_id"
+                                 referencedTableName="Source"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+</databaseChangeLog>

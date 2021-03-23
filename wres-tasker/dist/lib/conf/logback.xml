@@ -8,9 +8,7 @@
     </appender>
 
     <!-- Keep eclipse/jetty libraries at info regardless of wres level -->
-    <logger name="org.eclipse">
-        <level value="info" />
-    </logger>
+    <logger name="org.eclipse" level="info" />
 
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
     <root level="${wres.logLevel:-info}">

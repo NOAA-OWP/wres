@@ -103,7 +103,7 @@ public class DataCardSourceTest
         Mockito.when( mockDataSources.hasID( any() ) )
                .thenReturn( true );
         Mockito.when( mockDataSources.getID( any() ) )
-               .thenReturn( 0 );
+               .thenReturn( 0L );
         fakeLockManager = new DatabaseLockManagerNoop();
     }
 

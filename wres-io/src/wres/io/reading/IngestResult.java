@@ -23,7 +23,7 @@ public interface IngestResult
     /**
      * @return The surrogate key (the auto-incremented integer) for the source.
      */
-    int getSurrogateKey();
+    long getSurrogateKey();
 
     /**
      * @return The DataSource to use when retrying ingest.
@@ -71,7 +71,7 @@ public interface IngestResult
 
     private static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
                                     DataSource dataSource,
-                                    int surrogateKey,
+                                    long surrogateKey,
                                     boolean foundAlready,
                                     boolean requiresRetry )
     {
@@ -108,7 +108,7 @@ public interface IngestResult
      */
     private static IngestResult from( ProjectConfig projectConfig,
                                       DataSource dataSource,
-                                      int surrogateKey,
+                                      long surrogateKey,
                                       boolean foundAlready,
                                       boolean requiresRetry )
     {
@@ -137,7 +137,7 @@ public interface IngestResult
 
     static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
                                                   DataSource dataSource,
-                                                  int surrogateKey,
+                                                  long surrogateKey,
                                                   boolean foundAlready,
                                                   boolean requiresRetry )
     {
@@ -161,7 +161,7 @@ public interface IngestResult
 
     static CompletableFuture<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
                                                                                DataSource dataSource,
-                                                                               int surrogateKey,
+                                                                               long surrogateKey,
                                                                                boolean requiresRetry )
     {
         return IngestResult.fakeFuturefrom( projectConfig,
@@ -178,7 +178,7 @@ public interface IngestResult
 
     private static CompletableFuture<List<IngestResult>> fakeFuturefrom( ProjectConfig projectConfig,
                                                                          DataSource dataSource,
-                                                                         int surrogateKey,
+                                                                         long surrogateKey,
                                                                          boolean requiresRetry )
     {
         IngestResult results = IngestResult.from( projectConfig,

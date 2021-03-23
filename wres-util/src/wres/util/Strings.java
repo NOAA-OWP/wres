@@ -131,23 +131,6 @@ public final class Strings
         return string.replaceAll(pattern, "");
     }
 
-    public static boolean isNaturalNumber(final CharSequence candidate)
-    {
-        for (int i = 0; i < candidate.length(); ++i)
-        {
-            if (i == 0 && candidate.charAt( i ) == '-')
-            {
-                continue;
-            }
-            if (!Character.isDigit( candidate.charAt( i ) ))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /**
      * Generates a stack trace from the current thread
      * <br><br>

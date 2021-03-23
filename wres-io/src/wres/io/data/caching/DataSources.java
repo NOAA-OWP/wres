@@ -85,7 +85,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	public Integer getSourceID( URI path, String outputTime, Integer lead, String hash )
+	public Long getSourceID( URI path, String outputTime, Integer lead, String hash )
             throws SQLException
     {
 		return this.getID(path, outputTime, lead, hash);
@@ -94,16 +94,16 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	public SourceDetails get( URI path, String outputTime, Integer lead, String hash )
             throws SQLException
     {
-        int id = this.getID( path, outputTime, lead, hash );
+        long id = this.getID( path, outputTime, lead, hash );
         return this.get( id );
     }
 
-    public SourceDetails getById(Integer id)
+    public SourceDetails getById( Long id )
     {
         return this.get( id );
     }
 
-    public SourceDetails getFromCacheOrDatabaseByIdThenCache( Integer id )
+    public SourceDetails getFromCacheOrDatabaseByIdThenCache( Long id )
             throws SQLException
     {
         SourceDetails foundInCache = this.get( id );
@@ -158,7 +158,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return this.getExistingSource( hash ) != null;
     }
 
-    public String getHash(int sourceId)
+    public String getHash( long sourceId )
     {
         String hash = null;
 
@@ -219,12 +219,12 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return sourceDetails;
     }
 
-    public Integer getActiveSourceID(String hash)
+    public long getActiveSourceID( String hash )
             throws SQLException
     {
         Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getActiveSourceID");
 
-        Integer id = null;
+        Long id = null;
 
         SourceKey key = new SourceKey( null, null, null, hash );
 
@@ -251,7 +251,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
                     this.addElement( details );
 
-                    id = data.getInt( "source_id" );
+                    id = data.getLong( "source_id" );
                 }
             }
         }
@@ -273,13 +273,13 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	Integer getID( URI path, String outputTime, Integer lead, String hash ) throws SQLException
+	Long getID( URI path, String outputTime, Integer lead, String hash ) throws SQLException
     {
 		return this.getID(SourceDetails.createKey(path, outputTime, lead, hash));
 	}
 	
 	@Override
-    public Integer getID(SourceKey key) throws SQLException
+    public Long getID(SourceKey key) throws SQLException
     {
 	    if (!this.hasID(key))
 	    {
