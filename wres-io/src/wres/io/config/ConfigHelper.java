@@ -117,7 +117,6 @@ public class ConfigHelper
      * TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
      * baseline separately, treat each as a dataset. Link dataset to project.
      *
-     * TODO: store less collision-prone value, e.g. 128bit hash instead of int.
      * @param leftHashesIngested A collection of the hashes for the left sided
      *                           source data
      * @param rightHashesIngested A collection of the hashes for the right sided

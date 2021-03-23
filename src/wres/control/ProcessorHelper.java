@@ -413,7 +413,7 @@ class ProcessorHelper
             }
 
             // The project code - ideally project hash
-            String projectIdentifier = String.valueOf( project.getInputCode() );
+            String projectIdentifier = project.getHash();
 
             ResolvedProject resolvedProject = ResolvedProject.of(
                                                                   projectConfigPlus,

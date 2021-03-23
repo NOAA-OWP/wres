@@ -34,7 +34,7 @@ public class IncompleteIngest
 
     public static boolean removeSourceDataSafely( Database database,
                                                   DataSources dataSourcesCache,
-                                                  int surrogateKey,
+                                                  long surrogateKey,
                                                   DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( lockManager );
@@ -91,7 +91,7 @@ public class IncompleteIngest
             return false;
         }
 
-        int sourceId = source.getId();
+        long sourceId = source.getId();
 
         // Simple, but slow when the partitions are not by timeseries_id:
         DataScripter timeSeriesValueScript = new DataScripter( database );
@@ -143,7 +143,6 @@ public class IncompleteIngest
 
         // Invalidate caches affected by deletes above
         dataSourcesCache.invalidate();
-        TimeSeries.invalidateGlobalCache();
 
         return true;
     }
@@ -161,7 +160,7 @@ public class IncompleteIngest
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( source.getId() );
-        Integer sourceId = source.getId();
+        Long sourceId = source.getId();
 
         // Check twice to be more confident that no other process is currently
         // ingesting this source when the first check returns false.
@@ -265,7 +264,7 @@ public class IncompleteIngest
                                   + "will now be removed to ensure that all data operated "
                                   + "upon is valid.");
 
-            Set<String> partitionTables = Database.getPartitionTables();
+            Set<String> partitionTables = database.getPartitionTables();
 
             // We aren't actually going to collect the results so raw types are fine.
             FutureQueue removalQueue = new FutureQueue(  );

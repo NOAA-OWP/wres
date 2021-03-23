@@ -74,11 +74,11 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
     /** Producer that this manager can get new connections from. */
     private final Supplier<Connection> connectionProducer;
-    /** Semantic exclusive source locks held by this manager */
+    /** Internal coarse (int) exclusive source locks held by this manager */
     private final ConcurrentSkipListSet<Integer> sourceLockNames;
-    /** Semantic shared locks held by this manager */
+    /** Internal coarse (int) shared locks held by this manager */
     private final ConcurrentSkipListSet<Integer> sharedLockNames;
-    /** Semantic exclusive locks held by this manager */
+    /** Internal coarse (int) exclusive locks held by this manager */
     private final ConcurrentSkipListSet<Integer> exclusiveLockNames;
 
     /** First connection to use for any given semantic lock (left) */
@@ -148,17 +148,17 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
         {
             for ( Integer lockName : this.sourceLockNames )
             {
-                this.unlockSource( lockName );
+                this.pgUnlockSource( lockName );
             }
 
             for ( Integer lockName : this.sharedLockNames )
             {
-                this.unlockShared( lockName );
+                this.pgUnlockShared( lockName );
             }
 
             for ( Integer lockName : this.exclusiveLockNames )
             {
-                this.unlockExclusive( lockName );
+                this.pgUnlockExclusive( lockName );
             }
         }
         catch ( SQLException | DatabaseLockFailed e )
@@ -220,6 +220,55 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
         LOGGER.debug( "Successfully shut down lock manager {}", this );
     }
 
+    @Override
+    public void lockSource( Long lockName ) throws SQLException
+    {
+        Integer pgLockName = getIntegerLockNameFromLong( lockName );
+        this.pgLockSource( pgLockName );
+    }
+
+    @Override
+    public void unlockSource( Long lockName ) throws SQLException
+    {
+        Integer pgLockName = getIntegerLockNameFromLong( lockName );
+        this.pgUnlockSource( pgLockName );
+    }
+
+    @Override
+    public void lockExclusive( Long lockName ) throws SQLException
+    {
+        Integer pgLockName = getIntegerLockNameFromLong( lockName );
+        this.pgLockExclusive( pgLockName );
+    }
+
+    @Override
+    public void unlockExclusive( Long lockName ) throws SQLException
+    {
+        Integer pgLockName = getIntegerLockNameFromLong( lockName );
+        this.pgUnlockExclusive( pgLockName );
+    }
+
+    @Override
+    public void lockShared( Long lockName ) throws SQLException
+    {
+        Integer pgLockName = getIntegerLockNameFromLong( lockName );
+        this.pgLockShared( pgLockName );
+    }
+
+    @Override
+    public void unlockShared( Long lockName ) throws SQLException
+    {
+        Integer pgLockName = getIntegerLockNameFromLong( lockName );
+        this.pgUnlockShared( pgLockName );
+    }
+
+    @Override
+    public boolean isSourceLocked( Long lockName ) throws SQLException
+    {
+        Integer pgLockName = getIntegerLockNameFromLong( lockName );
+        return this.isPgSourceLocked( pgLockName );
+    }
+
     /**
      * Lock the back-end database using lockName which is a source id
      * @param lockName the lock name to use, must be non-zero and positive, less
@@ -231,7 +280,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    public void lockSource( Integer lockName ) throws SQLException
+    private void pgLockSource( Integer lockName ) throws SQLException
     {
         LOGGER.trace( "Began DatabaseLockManager.lockSource( {} ) {}", lockName, this );
 
@@ -340,7 +389,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * @throws IllegalStateException when unlock was called twice simultaneously
      * @throws SQLException when database communication fails on both attempts.
      */
-    public void unlockSource( Integer lockName ) throws SQLException
+    private void pgUnlockSource( Integer lockName ) throws SQLException
     {
         LOGGER.trace( "Began DatabaseLockManager.unlockSource( {} ) {}", lockName, this );
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
@@ -459,7 +508,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    public void lockExclusive( Integer lockName ) throws SQLException
+    private void pgLockExclusive( Integer lockName ) throws SQLException
     {
         LOGGER.trace( "Began DatabaseLockManager.lockExclusive( {} ) {}", lockName, this );
 
@@ -539,7 +588,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    public void unlockExclusive( Integer lockName ) throws SQLException
+    private void pgUnlockExclusive( Integer lockName ) throws SQLException
     {
         LOGGER.trace( "Began DatabaseLockManager.unlockExclusive( {} ) {}", lockName, this );
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
@@ -617,7 +666,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    public void lockShared( Integer lockName ) throws SQLException
+    private void pgLockShared( Integer lockName ) throws SQLException
     {
         LOGGER.trace( "Began DatabaseLockManager.lockShared( {} ) {}", lockName, this );
 
@@ -692,7 +741,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    public void unlockShared( Integer lockName ) throws SQLException
+    private void pgUnlockShared( Integer lockName ) throws SQLException
     {
         LOGGER.trace( "Began DatabaseLockManager.unlockShared( {} ) {}", lockName, this );
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
@@ -748,7 +797,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
 
 
-    public boolean isSourceLocked( Integer lockName ) throws SQLException
+    private boolean isPgSourceLocked( Integer lockName ) throws SQLException
     {
         boolean oneLocked;
         boolean twoLocked;
@@ -1249,5 +1298,10 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
         // If we were able to successfully lock, the lock was NOT held.
         return !successfullyLocked;
+    }
+
+    static Integer getIntegerLockNameFromLong( Long id )
+    {
+        return id.intValue() & Integer.MAX_VALUE;
     }
 }

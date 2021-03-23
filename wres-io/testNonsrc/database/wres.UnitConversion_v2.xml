@@ -5,49 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="wres.UnitConversion - Create unit conversion table for any dbms" author="Christopher Tubbs">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <tableExists tableName="UnitConversion" schemaName="wres" />
-            </not>
-        </preConditions>
-        <createTable tableName="UnitConversion" schemaName="wres">
-            <column name="from_unit" type="smallint" remarks="The ID of the unit to convert from" >
-                <constraints nullable="false"/>
-            </column>
-            <column name="to_unit" type="smallint" remarks="The ID of the unit to convert to">
-                <constraints nullable="false"/>
-            </column>
-            <column name="factor" type="DOUBLE PRECISION" defaultValue="1"
-                    remarks="The multiplicative factor to modify the initial value by" >
-                <constraints nullable="false" />
-            </column>
-            <column name="initial_offset" type="DOUBLE PRECISION" defaultValue="0"
-                    remarks="A value to add to the initial value prior to multiplying by the factor">
-                <constraints nullable="false" />
-            </column>
-            <column name="final_offset" type="DOUBLE PRECISION" defaultValue="0"
-                    remarks="A final value to add after multiplying by the factor">
-                <constraints nullable="false" />
-            </column>
-        </createTable>
-        <createIndex tableName="UnitConversion" schemaName="wres" indexName="unitconversion_measurement_uix" unique="true">
-            <column name="from_unit" type="smallint" />
-            <column name="to_unit" type="smallint" />
-        </createIndex>
-        <comment>Adding identity conversions</comment>
-        <sql>
-            INSERT INTO wres.UnitConversion(from_unit, to_unit)
-            SELECT measurementunit_id, measurementunit_id
-            FROM wres.MeasurementUnit M
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM wres.UnitConversion UC
-                WHERE UC.from_unit = M.measurementunit_id
-                    AND UC.to_unit = M.measurementunit_id
-            );
-        </sql>
-    </changeSet>
     <changeSet id="Volumn and Flow UnitConversion v1.0" author="James Brown">
         <sql>
             INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)

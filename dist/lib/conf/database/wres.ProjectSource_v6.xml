@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.ProjectSource v2 - Create ProjectSource for most dbs."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ProjectSource" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="ProjectSource" schemaName="wres"
+                     remarks="Each row indicates an instance of a source/timeseries to be included in the project dataset for the given member.">
+            <column name="project_id" type="bigint"
+                    remarks="The project dataset id.">
+                <constraints nullable="false" />
+            </column>
+            <column name="source_id" type="bigint"
+                    remarks="The source data for this member for this project, one row per instance included.">
+                <constraints nullable="false" />
+            </column>
+            <column name="member" type="varchar"
+                    remarks="The member name: left or right or baseline.">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- The separate changesets for foreign key constraints and indices
+         can be used either immediately after creation of the table above or
+         when the tables exist but the constraints from older versions have
+         been removed. In this case, ProjectSource should be freshly created,
+         but it is probably more durable or future-proof to keep each change
+         in a separate changeset. -->
+    <changeSet id="wres.ProjectSource v2 - Add fk on wres.Source id"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="source_id" tableName="ProjectSource"
+                          schemaName="wres" />
+            <columnExists columnName="source_id" tableName="Source"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="projectsource_source_fk"
+                                            foreignKeyTableName="ProjectSource"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="projectsource_source_fk"
+                                 baseColumnNames="source_id"
+                                 baseTableName="ProjectSource"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="source_id"
+                                 referencedTableName="Source"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+
+    <changeSet id="wres.ProjectSource v2 - Add fk on wres.Project id"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <columnExists columnName="project_id" tableName="ProjectSource"
+                          schemaName="wres" />
+            <columnExists columnName="project_id" tableName="Project"
+                          schemaName="wres" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="projectsource_project_fk"
+                                            foreignKeyTableName="ProjectSource"
+                                            schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="projectsource_project_fk"
+                                 baseColumnNames="project_id"
+                                 baseTableName="ProjectSource"
+                                 baseTableSchemaName="wres"
+                                 referencedColumnNames="project_id"
+                                 referencedTableName="Project"
+                                 referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" />
+    </changeSet>
+
+    <changeSet id="wres.ProjectSource v2 - Add project_id/member index"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ProjectSource" schemaName="wres" />
+            <not>
+                <indexExists indexName="projectsource_project_index"
+                             columnNames="project_id,member"
+                             tableName="ProjectSource" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createIndex  indexName="projectsource_project_index"
+                      tableName="ProjectSource" schemaName="wres">
+            <column name="project_id" />
+            <column name="member" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="wres.ProjectSource v2 - Add source_id index"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ProjectSource" schemaName="wres" />
+            <not>
+                <indexExists indexName="projectsource_source_index"
+                             columnNames="source_id"
+                             tableName="ProjectSource" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createIndex  indexName="projectsource_source_index"
+                      tableName="ProjectSource" schemaName="wres">
+            <column name="source_id" />
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

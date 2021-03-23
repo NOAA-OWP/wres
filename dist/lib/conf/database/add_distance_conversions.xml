@@ -128,7 +128,8 @@
         </sql>
         <comment>The conversion from M to MM has been added.</comment>
     </changeSet>
-    <changeSet id="Correct CM to MM" author="Christopher Tubbs">
+    <changeSet id="Correct CM to MM" author="Christopher Tubbs"
+               dbms="!h2">
         <sql>
             UPDATE wres.UnitConversion UC
                 SET factor = 10.0

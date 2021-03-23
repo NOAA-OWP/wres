@@ -80,7 +80,7 @@ public class UnitMapperTest
         String units = "CFS";
         measurement.setUnit( units );
         measurement.save( this.wresDatabase );
-        Integer measurementUnitId = measurement.getId();
+        Long measurementUnitId = measurement.getId();
 
         DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
 
@@ -107,7 +107,7 @@ public class UnitMapperTest
         String units = "CMS";
         measurement.setUnit( units );
         measurement.save( this.wresDatabase );
-        Integer measurementUnitId = measurement.getId();
+        Long measurementUnitId = measurement.getId();
 
         DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
         assertEquals( 1.0, converter.applyAsDouble( 1.0 ), 0.00001 );

@@ -10,8 +10,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.data.details.TimeSeries;
-import wres.io.utilities.CopyException;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
@@ -23,13 +21,6 @@ import wres.system.SystemSettings;
 public final class IngestedValues
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestedValues.class );
-
-    private static final IngestedValues ourInstance = new IngestedValues();
-
-    public static IngestedValues getInstance()
-    {
-        return ourInstance;
-    }
 
     private IngestedValues()
     {
@@ -46,18 +37,6 @@ public final class IngestedValues
 
     private static final String[] TIMESERIES_COLUMN_NAMES = {"timeseries_id", "lead", "series_value"};
 
-    private static final Object OBSERVATIONS_LOCK = new Object();
-
-    private static final String[] OBSERVATIONS_COLUMN_NAMES = {
-            "variablefeature_id",
-            "observation_time",
-            "observed_value",
-            "measurementunit_id",
-            "source_id",
-            "scale_period",
-            "scale_function"
-    };
-
     /**
      * Stores a time series value so that it may be copied to the database,
      * potentially later, but potentially in this Thread, especially if some
@@ -73,12 +52,12 @@ public final class IngestedValues
      */
     public static Pair<CountDownLatch,CountDownLatch> addTimeSeriesValue( SystemSettings systemSettings,
                                                                           Database database,
-                                                                          int timeSeriesID,
+                                                                          long timeSeriesID,
                                                                           int lead,
                                                                           Double value )
             throws IngestException
     {
-        String partitionName = TimeSeries.getTimeSeriesValuePartition( lead );
+        String partitionName = database.getTimeSeriesValuePartition( lead );
 
         DataBuilder freshDataBuilder = DataBuilder.with( IngestedValues.TIMESERIES_COLUMN_NAMES );
 
@@ -204,7 +183,7 @@ public final class IngestedValues
                 removedDataBuilder.build()
                                   .copy( database, partitionName );
             }
-            catch( CopyException ce )
+            catch( IngestException ce )
             {
                 throw new IngestException( "Ingest of values to "
                                            + partitionName + " failed.", ce );
@@ -298,7 +277,7 @@ public final class IngestedValues
             removedDataBuilder.build()
                               .copy( database, partitionName );
         }
-        catch( CopyException ce )
+        catch( IngestException ce )
         {
             throw new IngestException( "Ingest of values to "
                                        + partitionName + " failed.", ce );

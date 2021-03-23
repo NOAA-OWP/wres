@@ -20,7 +20,7 @@ public interface DatabaseLockManager
      * a shared lock on this, except those mentioned above, which should get it
      * exclusively.
      */
-    Integer SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME = 1;
+    Long SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME = 1L;
 
     /**
      * Shutdown the lock manager.
@@ -41,7 +41,7 @@ public interface DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    void lockSource( Integer lockName ) throws SQLException;
+    void lockSource( Long lockName ) throws SQLException;
 
 
     /**
@@ -57,7 +57,7 @@ public interface DatabaseLockManager
      * @throws SQLException when database communication fails on both attempts.
      */
 
-    void unlockSource( Integer lockName ) throws SQLException;
+    void unlockSource( Long lockName ) throws SQLException;
 
 
     /**
@@ -71,7 +71,7 @@ public interface DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    void lockExclusive( Integer lockName ) throws SQLException;
+    void lockExclusive( Long lockName ) throws SQLException;
 
 
     /**
@@ -86,7 +86,7 @@ public interface DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    void unlockExclusive( Integer lockName ) throws SQLException;
+    void unlockExclusive( Long lockName ) throws SQLException;
 
 
     /**
@@ -100,7 +100,7 @@ public interface DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    void lockShared( Integer lockName ) throws SQLException;
+    void lockShared( Long lockName ) throws SQLException;
 
 
     /**
@@ -115,10 +115,10 @@ public interface DatabaseLockManager
      * @throws SQLException when database communication fails
      */
 
-    void unlockShared( Integer lockName ) throws SQLException;
+    void unlockShared( Long lockName ) throws SQLException;
 
 
-    boolean isSourceLocked( Integer lockName ) throws SQLException;
+    boolean isSourceLocked( Long lockName ) throws SQLException;
 
 
     static DatabaseLockManager from( SystemSettings settings )

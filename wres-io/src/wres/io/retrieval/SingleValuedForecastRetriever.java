@@ -305,7 +305,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
             }
             
             // Existing units
-            int measurementUnitId = provider.getInt( "measurementunit_id" );
+            long measurementUnitId = provider.getLong( "measurementunit_id" );
             
             // Units mapper
             DoubleUnaryOperator mapper = this.getMeasurementUnitMapper().getUnitMapper( measurementUnitId );

@@ -58,7 +58,7 @@ import wres.util.NetCDF;
 public class SourceLoader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceLoader.class);
-    private static final int KEY_NOT_FOUND = Integer.MIN_VALUE;
+    private static final long KEY_NOT_FOUND = Long.MIN_VALUE;
 
     private final SystemSettings systemSettings;
     private final ExecutorService executor;
@@ -554,7 +554,7 @@ public class SourceLoader
             // When the ingest requires retry and also is not in progress,
             // attempt cleanup: some process trying to ingest the source
             // died during ingest and data needs to be cleaned out.
-            int surrogateKey = checkIngest.getSurrogateKey();
+            long surrogateKey = checkIngest.getSurrogateKey();
             String hash = checkIngest.getHash();
             LOGGER.info(
                     "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
@@ -705,8 +705,8 @@ public class SourceLoader
         }
 
         // Get the surrogate key if it exists
-        int surrogateKey = KEY_NOT_FOUND;
-        Integer dataSourceKey = null;
+        long surrogateKey = KEY_NOT_FOUND;
+        Long dataSourceKey = null;
         DataSources dataSourcesCache = this.getDataSourcesCache();
 
         if ( Objects.nonNull( hash ) )
@@ -752,7 +752,7 @@ public class SourceLoader
     {
         DataSources dataSourcesCache = this.getDataSourcesCache();
         SourceDetails sourceDetails = dataSourcesCache.getExistingSource( hash );
-        Integer sourceId = sourceDetails.getId();
+        Long sourceId = sourceDetails.getId();
         return lockManager.isSourceLocked( sourceId );
     }
 
@@ -814,7 +814,7 @@ public class SourceLoader
         LOGGER.info( "Attempting retry of {}.", ingestResult );
         // Admittedly not optimal to alternate between hash and key, but other
         // places are using querySourceStatus with the hash.
-        int surrogateKey = ingestResult.getSurrogateKey();
+        long surrogateKey = ingestResult.getSurrogateKey();
         DataSources dataSourcesCache = this.getDataSourcesCache();
         String hash = SourceLoader.getHashFromSurrogateKey( dataSourcesCache, surrogateKey );
         SourceStatus sourceStatus = querySourceStatus( hash,
@@ -878,11 +878,11 @@ public class SourceLoader
     {
         private final String hash;
         private final SourceStatus sourceStatus;
-        private final int surrogateKey;
+        private final long surrogateKey;
 
         FileEvaluation( String hash,
                         SourceStatus sourceStatus,
-                        int surrogateKey )
+                        long surrogateKey )
         {
             this.hash = hash;
             this.sourceStatus = sourceStatus;
@@ -920,7 +920,7 @@ public class SourceLoader
             return this.sourceStatus;
         }
 
-        int getSurrogateKey()
+        long getSurrogateKey()
         {
             return this.surrogateKey;
         }
@@ -1286,7 +1286,7 @@ public class SourceLoader
      */
 
     private static String getHashFromSurrogateKey( DataSources dataSourcesCache,
-                                                   int surrogateKey )
+                                                   long surrogateKey )
     {
         SourceDetails details;
 

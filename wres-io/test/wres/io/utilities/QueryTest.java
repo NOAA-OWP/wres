@@ -143,7 +143,7 @@ public class QueryTest
         // Add the project table
         QueryTest.testDatabase.createProjectTable( this.liquibaseDatabase );
 
-        String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (0, 'zero');";
+        String script = "INSERT INTO wres.Project ( hash, project_name ) VALUES ( 'abcd123', 'zero' );";
 
         Query testQuery = new Query( this.systemSettings, script );
 
@@ -158,7 +158,7 @@ public class QueryTest
 
             // To check to see if we've added anything
             testQuery = new Query( this.systemSettings,
-                                   "SELECT input_code, project_name FROM wres.Project;" );
+                                   "SELECT hash, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -170,7 +170,7 @@ public class QueryTest
                 projects.next();
 
                 // The values we sent into the insert should show up in the results
-                Assert.assertEquals( 0, projects.getInt( "input_code" ) );
+                Assert.assertEquals( "abcd123", projects.getString( "hash" ) );
                 Assert.assertEquals( "zero", projects.getString("project_name") );
 
                 // If there is anything left, it means that too much data got added
@@ -202,17 +202,17 @@ public class QueryTest
         // Add the project table
         QueryTest.testDatabase.createProjectTable( this.liquibaseDatabase );
 
-        String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
+        String script = "INSERT INTO wres.Project ( hash, project_name ) VALUES ( ?, ? );";
 
         // Since we're going to run this as batch, we need a ton of parameters to pass in
         List<Object[]> arguments = new ArrayList<>(  );
 
-        arguments.add(new Object[]{0, "zero"});
-        arguments.add(new Object[]{1, "one"});
-        arguments.add(new Object[]{2, "two"});
-        arguments.add(new Object[]{3, "three"});
-        arguments.add(new Object[]{4, "four"});
-        arguments.add(new Object[]{5, null});
+        arguments.add(new Object[]{"0", "zero"});
+        arguments.add(new Object[]{"1", "one"});
+        arguments.add(new Object[]{"2", "two"});
+        arguments.add(new Object[]{"3", "three"});
+        arguments.add(new Object[]{"4", "four"});
+        arguments.add(new Object[]{"5", null});
 
         Query testQuery = new Query( this.systemSettings, script )
                 .setBatchParameters( arguments );
@@ -228,7 +228,7 @@ public class QueryTest
 
             // To check to see if we've added anything,
             testQuery = new Query( this.systemSettings,
-                                   "SELECT input_code, project_name FROM wres.Project;" );
+                                   "SELECT hash, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -241,7 +241,7 @@ public class QueryTest
                 for (Object[] argument : arguments)
                 {
                     projects.next();
-                    Assert.assertEquals( argument[0], projects.getInt( "input_code" ) );
+                    Assert.assertEquals( argument[0], projects.getString( "hash" ) );
                     Assert.assertEquals( argument[1], projects.getString( "project_name" ) );
                 }
 
@@ -273,10 +273,10 @@ public class QueryTest
         // Add the project table
         QueryTest.testDatabase.createProjectTable( this.liquibaseDatabase );
 
-        String script = "INSERT INTO wres.Project(input_code, project_name) VALUES (?, ?);";
+        String script = "INSERT INTO wres.Project ( hash, project_name ) VALUES ( ?, ? );";
 
         Query testQuery = new Query( this.systemSettings, script )
-                .setParameters( 0, "zero" );
+                .setParameters( "0", "zero" );
 
         try ( Connection connection = QueryTest.dataSource.getConnection() )
         {
@@ -290,7 +290,7 @@ public class QueryTest
             // To check to see if we've added anything, we can go ahead and do that by removing everything.
             // This will remove everything and select it all at the same time
             testQuery = new Query( this.systemSettings,
-                                   "SELECT input_code, project_name FROM wres.Project;" );
+                                   "SELECT hash, project_name FROM wres.Project;" );
 
             try (ResultSet projects = testQuery.call( connection ))
             {
@@ -303,7 +303,7 @@ public class QueryTest
                 while (projects.next())
                 {
                     entryCount++;
-                    Assert.assertEquals( 0, projects.getInt("input_code") );
+                    Assert.assertEquals( "0", projects.getString( "hash" ) );
                     Assert.assertEquals( "zero", projects.getString( "project_name" ) );
                 }
 

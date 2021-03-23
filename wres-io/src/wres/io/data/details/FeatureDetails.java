@@ -19,9 +19,9 @@ import wres.io.utilities.Database;
 public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
-    private static final int PLACEHOLDER_ID = Integer.MIN_VALUE;
+    private static final long PLACEHOLDER_ID = Long.MIN_VALUE;
 
-    private int id = PLACEHOLDER_ID;
+    private long id = PLACEHOLDER_ID;
 	private FeatureKey key = null;
 
 	public FeatureDetails()
@@ -51,7 +51,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
 
         if (row.hasColumn(this.getIDName() ))
         {
-            this.setID( row.getValue(this.getIDName() ) );
+            this.setID( row.getLong( this.getIDName() ) );
         }
     }
 
@@ -69,7 +69,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
             return this.getKey().compareTo( other.getKey() );
         }
 
-        int idComparison = Integer.compare( this.id, other.id );
+        int idComparison = Long.compare( this.id, other.id );
 
         if ( idComparison != 0 )
         {
@@ -86,7 +86,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
 	}
 
 	@Override
-	public Integer getId()
+	public Long getId()
 	{
 		return this.id;
 	}
@@ -98,7 +98,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
 	}
 
 	@Override
-	public void setID(Integer id)
+	public void setID( long id )
 	{
 		this.id = id;
 	}

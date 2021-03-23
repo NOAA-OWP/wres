@@ -94,7 +94,7 @@ public class Project
     /**
      * The overall hash for the data sources used in the project
      */
-    private final int inputCode;
+    private final String hash;
 
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
@@ -104,18 +104,18 @@ public class Project
                     Database database,
                     Executor executor,
                     ProjectConfig projectConfig,
-                    Integer inputCode )
+                    String hash )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
         Objects.requireNonNull( executor );
         Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( inputCode );
+        Objects.requireNonNull( hash );
         this.systemSettings = systemSettings;
         this.database = database;
         this.executor = executor;
         this.projectConfig = projectConfig;
-        this.inputCode = inputCode;
+        this.hash = hash;
         this.variablesCache = new Variables( database );
         this.featuresCache = new Features( database );
         this.ensemblesCache = new Ensembles( database );
@@ -306,7 +306,7 @@ public class Project
      * @throws IllegalArgumentException if the dataType declaration is invalid
      */
 
-    public Set<Integer> getEnsembleMembersToFilter( LeftOrRightOrBaseline dataType, boolean include )
+    public Set<Long> getEnsembleMembersToFilter( LeftOrRightOrBaseline dataType, boolean include )
             throws SQLException
     {
         Objects.requireNonNull( dataType );
@@ -328,7 +328,7 @@ public class Project
 
         }
 
-        Set<Integer> returnMe = new TreeSet<>();
+        Set<Long> returnMe = new TreeSet<>();
 
         if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
         {
@@ -538,7 +538,7 @@ public class Project
             script.addTab().addLine( "ON PS.source_id = S.source_id" );
             script.addLine( "WHERE PS.project_id = ?" );
             script.addArgument( this.getId() );
-            script.addTab().addLine( "AND PS.member = ( ? )::operating_member" );
+            script.addTab().addLine( "AND PS.member = ?" );
             script.addArgument( this.getInputName( dataSourceConfig ) );
             script.addTab().addLine( "AND S.is_point_data = FALSE" );
             script.setMaxRows( 1 );
@@ -602,12 +602,12 @@ public class Project
     }
 
     /**
-     * Returns unique identifier for this project's config+data
+     * Returns unique identifier for this project's dataset
      * @return The unique ID
      */
-    public Integer getInputCode()
+    public String getHash()
     {
-        return this.inputCode;
+        return this.hash;
     }
 
     /**
@@ -634,19 +634,19 @@ public class Project
 
         script.setHighPriority( true );
 
-        script.addLine( "INSERT INTO wres.Project (project_name, input_code)" );
+        script.addLine( "INSERT INTO wres.Project ( hash, project_name )" );
         script.addTab().addLine( "SELECT ?, ?" );
 
+        script.addArgument( this.getHash() );
         script.addArgument( this.getProjectName() );
-        script.addArgument( this.getInputCode() );
 
         script.addTab().addLine( "WHERE NOT EXISTS" );
         script.addTab().addLine( "(" );
         script.addTab( 2 ).addLine( SELECT_1 );
         script.addTab( 2 ).addLine( "FROM wres.Project P" );
-        script.addTab( 2 ).addLine( "WHERE P.input_code = ?" );
+        script.addTab( 2 ).addLine( "WHERE P.hash = ?" );
 
-        script.addArgument( this.getInputCode() );
+        script.addArgument( this.getHash() );
 
         script.addTab().addLine( ")" );
         return script;
@@ -671,8 +671,8 @@ public class Project
             scriptWithId.setUseTransaction( false );
             scriptWithId.addLine( "SELECT project_id" );
             scriptWithId.addLine( "FROM wres.Project P" );
-            scriptWithId.addLine( "WHERE P.input_code = ?;" );
-            scriptWithId.addArgument( this.getInputCode() );
+            scriptWithId.addLine( "WHERE P.hash = ?;" );
+            scriptWithId.addArgument( this.getHash() );
 
             try ( DataProvider data = scriptWithId.getData() )
             {
@@ -694,7 +694,7 @@ public class Project
         return "Project { Name: " + this.getProjectName()
                +
                ", Code: "
-               + this.getInputCode()
+               + this.getHash()
                + " }";
     }
 
@@ -715,7 +715,7 @@ public class Project
 
     public int compareTo( Project other )
     {
-        return this.getInputCode().compareTo( other.getInputCode() );
+        return this.getHash().compareTo( other.getHash() );
     }
 
     @Override
@@ -727,7 +727,7 @@ public class Project
     @Override
     public int hashCode()
     {
-        return this.getInputCode();
+        return Objects.hash( this.getHash() );
     }
 }
 

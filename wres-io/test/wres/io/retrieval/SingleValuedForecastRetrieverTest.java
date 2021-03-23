@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import static wres.io.retrieval.RetrieverTestConstants.*;
+
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -72,12 +74,6 @@ public class SingleValuedForecastRetrieverTest
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
-
-    /**
-     * A project_id for testing;
-     */
-
-    private static final Integer PROJECT_ID = 1;
 
     /**
      * A {@link LeftOrRightOrBaseline} for testing.
@@ -382,7 +378,7 @@ public class SingleValuedForecastRetrieverTest
 
         assertTrue( sourceDetails.performedInsert() );
 
-        Integer sourceId = sourceDetails.getId();
+        Long sourceId = sourceDetails.getId();
 
         assertNotNull( sourceId );
 
@@ -391,12 +387,18 @@ public class SingleValuedForecastRetrieverTest
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
                              this.mockExecutor,
-                             new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
+                             new ProjectConfig( null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                "test_project" ),
+                             PROJECT_HASH );
         project.save();
 
         assertTrue( project.performedInsert() );
 
-        assertEquals( PROJECT_ID, project.getId() );
+        assertEquals( PROJECT_HASH, project.getHash() );
 
         // Add a project source
         // There is no wres abstraction to help with this
@@ -405,7 +407,7 @@ public class SingleValuedForecastRetrieverTest
 
         //Format 
         projectSourceInsert = MessageFormat.format( projectSourceInsert,
-                                                    PROJECT_ID,
+                                                    project.getId(),
                                                     sourceId,
                                                     LRB.value() );
 
@@ -426,15 +428,14 @@ public class SingleValuedForecastRetrieverTest
 
         measurement.setUnit( UNITS );
         measurement.save( this.wresDatabase );
-        Integer measurementUnitId = measurement.getId();
+        Long measurementUnitId = measurement.getId();
 
         assertNotNull( measurementUnitId );
 
         EnsembleDetails ensemble = new EnsembleDetails();
-        ensemble.setEnsembleName( "ENS" );
-        ensemble.setEnsembleMemberIndex( 123 );
+        ensemble.setEnsembleName( "ENS123" );
         ensemble.save( this.wresDatabase );
-        Integer ensembleId = ensemble.getId();
+        Long ensembleId = ensemble.getId();
 
         assertNotNull( ensembleId );
 
@@ -458,7 +459,7 @@ public class SingleValuedForecastRetrieverTest
                                                      VARIABLE_NAME,
                                                      feature.getId() );
         firstTraceRow.setTimeScale( timeScale );
-        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
+        long firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
         // Add the second series
         wres.io.data.details.TimeSeries secondTraceRow =
@@ -470,7 +471,7 @@ public class SingleValuedForecastRetrieverTest
                                                      VARIABLE_NAME,
                                                      feature.getId() );
         secondTraceRow.setTimeScale( timeScale );
-        int secondTraceRowId = secondTraceRow.getTimeSeriesID();
+        long secondTraceRowId = secondTraceRow.getTimeSeriesID();
 
         // Add the time-series values to wres.TimeSeriesValue       
         Duration seriesIncrement = Duration.ofHours( 1 );
@@ -484,12 +485,12 @@ public class SingleValuedForecastRetrieverTest
 
         // Insert the time-series values into the db
         double forecastValue = valueStart;
-        Map<Integer, Instant> series = new TreeMap<>();
+        Map<Long, Instant> series = new TreeMap<>();
         series.put( firstTraceRowId, firstReference );
         series.put( secondTraceRowId, secondReference );
 
         // Iterate and add the series values
-        for ( Map.Entry<Integer, Instant> nextSeries : series.entrySet() )
+        for ( Map.Entry<Long, Instant> nextSeries : series.entrySet() )
         {
             Instant validTime = nextSeries.getValue();
 

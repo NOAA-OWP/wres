@@ -69,17 +69,17 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
 	 * @return The ID for the specified feature
 	 * @throws SQLException Thrown if the ID could not be retrieved from the Database
 	 */
-    public Integer getFeatureID( FeatureDetails detail )
+    public Long getFeatureID( FeatureDetails detail )
             throws SQLException
 	{
 	    LOGGER.trace("getFeatureID - args {}", detail);
 		return this.getID(detail);
 	}
 
-	public Integer getFeatureID( FeatureKey key ) throws SQLException
+	public Long getFeatureID( FeatureKey key ) throws SQLException
     {
         LOGGER.trace( "getFeatureID with FeatureKey arg {}", key );
-        Integer result;
+        Long result;
 
         synchronized ( this.keyLock )
         {
@@ -89,7 +89,7 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
                               key );
                 FeatureDetails featureDetails = new FeatureDetails( key );
                 this.addElement( featureDetails );
-                Integer fakeResultForLRUPurposes = this.getID( key );
+                Long fakeResultForLRUPurposes = this.getID( key );
                 result = featureDetails.getId();
             }
             else
@@ -117,7 +117,7 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
             throws SQLException
     {
         LOGGER.trace( "getFeatureKey called with {}", featureId );
-        for ( Map.Entry<FeatureKey,Integer> cacheEntry :
+        for ( Map.Entry<FeatureKey,Long> cacheEntry :
                 this
                         .getKeyIndex()
                         .entrySet() )
@@ -401,7 +401,7 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
     }
 
     @Override
-    Integer getID( FeatureKey key )
+    Long getID( FeatureKey key )
     {
         LOGGER.trace( "getID( FeatureKey={} )", key );
         synchronized ( this.getKeyLock() )
@@ -409,10 +409,10 @@ public class Features extends Cache<FeatureDetails, FeatureKey>
             LOGGER.trace( "getID( FeatureKey={} ) key.hasPrimaryKey() was false, matching on partial key...",
                           key );
             // Otherwise, scan the keys for a match on a partial key
-            Integer id = null;
+            Long id = null;
             boolean foundIt = false;
 
-            for ( Map.Entry<FeatureKey, Integer> keyId : this.getKeyIndex().entrySet() )
+            for ( Map.Entry<FeatureKey, Long> keyId : this.getKeyIndex().entrySet() )
             {
                 if ( keyId.getKey().equals( key ) )
                 {

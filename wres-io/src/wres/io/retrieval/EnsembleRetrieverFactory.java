@@ -166,9 +166,9 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         try
         {
             // Obtain any ensemble member constraints
-            Set<Integer> ensembleIdsToInclude =
+            Set<Long> ensembleIdsToInclude =
                     this.project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, true );
-            Set<Integer> ensembleIdsToExclude =
+            Set<Long> ensembleIdsToExclude =
                     this.project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.RIGHT, false );
 
             return this.getRightRetrieverBuilder( this.rightConfig.getType() )
@@ -221,9 +221,9 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
             try
             {
                 // Obtain any ensemble member constraints
-                Set<Integer> ensembleIdsToInclude =
+                Set<Long> ensembleIdsToInclude =
                         this.project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, true );
-                Set<Integer> ensembleIdsToExclude =
+                Set<Long> ensembleIdsToExclude =
                         this.project.getEnsembleMembersToFilter( LeftOrRightOrBaseline.BASELINE, false );
 
                 baseline = this.getRightRetrieverBuilder( this.baselineConfig.getType() )

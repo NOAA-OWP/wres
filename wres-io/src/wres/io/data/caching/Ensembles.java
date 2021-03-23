@@ -1,11 +1,11 @@
 package wres.io.data.caching;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.function.BiPredicate;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.TreeMultiset;
 import org.slf4j.Logger;
@@ -13,18 +13,15 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.EnsembleCondition;
 import wres.io.data.details.EnsembleDetails;
-import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.util.NetCDF;
-import wres.util.Strings;
 
 /**
  * Cached details about Ensembles from the database
  * @author Christopher Tubbs
  */
-public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
+public class Ensembles extends Cache<EnsembleDetails, String> {
 
     private static final int MAX_DETAILS = 500;
 
@@ -81,27 +78,11 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         while (data.next()) {
             detail = new EnsembleDetails();
             detail.setEnsembleName(data.getString("ensemble_name"));
-            detail.setEnsembleMemberIndex( data.getInt( "ensemblemember_id"));
-            detail.setQualifierID(data.getString("qualifier_id"));
             detail.setID(data.getInt("ensemble_id"));
             this.add( detail );
         }
     }
 
-	/**
-	 * Returns the ensemble ID.
-	 * @param ensemble an ensemble
-	 * @return an ensemble identifier
-	 * @throws SQLException if the ID could not be retrieved from the database
-	 */
-	
-	public Integer getEnsembleID( NetCDF.Ensemble ensemble )
-            throws SQLException
-    {
-		return this.getEnsembleID( ensemble.getName(),
-                                   ensemble.getMember(),
-                                   ensemble.getQualifier() );
-	}
 
     /**
      * Creates a list containing all ensemble IDs that are specified in the condition
@@ -112,69 +93,40 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
      * @param ensemble An ensemble condition from the project configuration
      * @return All ensemble Ids that match the ensemble conditions
      */
-	public List<Integer> getEnsembleIDs( EnsembleCondition ensemble )
+	public List<Long> getEnsembleIDs( EnsembleCondition ensemble )
 	{
-	    List<Integer> ids = new ArrayList<>();
-
-        BiPredicate<EnsembleCondition, EnsembleKey> namesAreEquivalent = (condition, key) -> {
-            boolean compareNames = condition.getName() != null;
-
-            return !compareNames || condition.getName().equals( key.getEnsembleName() );
-        };
-
-        BiPredicate<EnsembleCondition, EnsembleKey> membersAreEquivalent = (condition, key) -> {
-            boolean compareMembers = condition.getMemberId() != null;
-            return !compareMembers || Integer.parseInt(condition.getMemberId()) == key.getMemberIndex();
-        };
-
-        BiPredicate<EnsembleCondition, EnsembleKey> qualifiersAreEquivalent = (condition, key) -> {
-            boolean compareQualifiers = condition.getQualifier() != null;
-            return !compareQualifiers || condition.getQualifier().equals( key.getQualifierID() );
-        };
-
-	    for (Entry<EnsembleKey, Integer> key : this.getKeyIndex().entrySet())
-        {
-            EnsembleKey ensembleKey = key.getKey();
-
-            if (namesAreEquivalent.and( membersAreEquivalent ).and( qualifiersAreEquivalent ).test( ensemble, ensembleKey ))
-            {
-                ids.add(key.getValue());
-            }
-        }
-		return ids;
+	    return this.getKeyIndex()
+                   .entrySet()
+                   .stream()
+                   .filter( kv -> kv.getKey()
+                                    .equals( ensemble.getName() ) )
+                   .map( Entry::getValue )
+                   .collect( Collectors.toList() );
 	}
 
 	/**
-	 * Returns the ID of an Ensemble from the global cache based on the combination of its name, member ID, and qualifier
-	 * @param name The name of the Ensemble to retrieve
-	 * @param memberIndex The Member Index of the Ensemble to retrieve
-	 * @param qualifierID The qualifier of the Ensemble to retrieve
-	 * @return The ID of the Ensemble
+	 * Returns the ID of an Ensemble trace from the global cache based on its name
+	 * @param name The name of the Ensemble trace to retrieve
+	 * @return The surrogate key, database ID of the Ensemble
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	public Integer getEnsembleID(String name, Integer memberIndex, String qualifierID) throws SQLException
+	public Long getEnsembleID( String name ) throws SQLException
     {
-        // If there is no name, but there are either a member ID or a qualifier...
-	    if (name == null && ( memberIndex != null || Strings.hasValue( qualifierID )))
-        {
-            // just set the name as blank
-            name = "";
-        }
         // If there are no identifiers...
-        else if (name == null)
+        if ( Objects.isNull( name ) )
         {
             // return the default ID
             return this.getDefaultEnsembleID();
         }
 
-		return this.getID( new EnsembleDetails( name, memberIndex, qualifierID ) );
+		return this.getID( new EnsembleDetails( name ) );
 	}
 
-	public Integer getDefaultEnsembleID() throws SQLException
+	public Long getDefaultEnsembleID() throws SQLException
     {
-        return this.getEnsembleID( "default", null, null );
+        return this.getEnsembleID( "default" );
     }
-	
+
 	@Override
 	protected int getMaxDetails() {
 		return Ensembles.MAX_DETAILS;
@@ -193,14 +145,15 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             DataScripter script = new DataScripter( database );
             script.setHighPriority( true );
 
-            script.addLine("SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id");
-            script.addLine("FROM wres.Ensemble");
-            script.addLine("LIMIT ", MAX_DETAILS, ";");
+            script.addLine( "SELECT ensemble_id, ensemble_name" );
+            script.addLine( "FROM wres.Ensemble" );
+            script.setMaxRows( MAX_DETAILS );
 
             try (DataProvider data = script.getData())
             {
                 this.populate( data );
             }
+
             LOGGER.debug( "Finished populating the Ensembles details." );
         }
         catch (SQLException error)

@@ -82,6 +82,13 @@ public class EnsembleRetrieverFactoryTest
 
     private static final Integer PROJECT_ID = 1;
 
+
+    /**
+     * A project natural id (hash) for testing;
+     */
+
+    private static final String PROJECT_HASH = "deadbeef";
+
     /**
      * The measurement units for testing.
      */
@@ -470,7 +477,7 @@ public class EnsembleRetrieverFactoryTest
 
         assertTrue( sourceDetails.performedInsert() );
 
-        Integer sourceId = sourceDetails.getId();
+        Long sourceId = sourceDetails.getId();
 
         assertNotNull( sourceId );
 
@@ -479,7 +486,13 @@ public class EnsembleRetrieverFactoryTest
                 new Project( this.mockSystemSettings,
                              this.wresDatabase,
                              this.mockExecutor,
-                             new ProjectConfig( null, null, null, null, null, "test_project" ), PROJECT_ID );
+                             new ProjectConfig( null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                "test_project" ),
+                             PROJECT_HASH );
         project.save();
 
         assertTrue( project.performedInsert() );
@@ -492,7 +505,7 @@ public class EnsembleRetrieverFactoryTest
 
         // Project source for RIGHT
         projectSourceInsert = MessageFormat.format( projectSourceInsert,
-                                                    PROJECT_ID,
+                                                    project.getId(),
                                                     sourceId,
                                                     LeftOrRightOrBaseline.RIGHT.value() );
 
@@ -527,7 +540,7 @@ public class EnsembleRetrieverFactoryTest
 
         measurement.setUnit( CFS );
         measurement.save( this.wresDatabase );
-        Integer measurementUnitId = measurement.getId();
+        Long measurementUnitId = measurement.getId();
 
         assertNotNull( measurementUnitId );
 
@@ -536,15 +549,15 @@ public class EnsembleRetrieverFactoryTest
         String ensembleName = "ENS123";
         members.setEnsembleName( ensembleName );
         members.save( this.wresDatabase );
-        Integer firstMemberId = members.getId();
+        Long firstMemberId = members.getId();
 
         assertNotNull( firstMemberId );
 
         // Add second member
-        String secondMemberName = "ENSE567";
+        String secondMemberName = "ENS567";
         members.setEnsembleName( secondMemberName );
         members.save( this.wresDatabase );
-        Integer secondMemberId = members.getId();
+        Long secondMemberId = members.getId();
 
         assertNotNull( secondMemberId );
 
@@ -552,7 +565,7 @@ public class EnsembleRetrieverFactoryTest
         String thirdMemberName = "ENS456";
         members.setEnsembleName( thirdMemberName );
         members.save( this.wresDatabase );
-        Integer thirdMemberId = members.getId();
+        Long thirdMemberId = members.getId();
 
         assertNotNull( thirdMemberId );
 
@@ -575,7 +588,7 @@ public class EnsembleRetrieverFactoryTest
                                                      STREAMFLOW,
                                                      feature.getId() );
         firstTraceRow.setTimeScale( timeScale );
-        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
+        long firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
         // Successfully added row
         assertTrue( firstTraceRowId > 0 );
@@ -589,7 +602,7 @@ public class EnsembleRetrieverFactoryTest
                                                      STREAMFLOW,
                                                      feature.getId() );
         secondTraceRow.setTimeScale( timeScale );
-        int secondTraceRowId = secondTraceRow.getTimeSeriesID();
+        long secondTraceRowId = secondTraceRow.getTimeSeriesID();
 
         assertTrue( secondTraceRowId > 0 );
 
@@ -603,7 +616,7 @@ public class EnsembleRetrieverFactoryTest
                                                      STREAMFLOW,
                                                      feature.getId() );
         thirdTraceRow.setTimeScale( timeScale );
-        int thirdTraceRowId = thirdTraceRow.getTimeSeriesID();
+        long thirdTraceRowId = thirdTraceRow.getTimeSeriesID();
 
 
         // Add the time-series values to wres.TimeSeriesValue       
@@ -618,13 +631,13 @@ public class EnsembleRetrieverFactoryTest
 
         // Insert the ensemble members into the db
         double forecastValue = valueStart;
-        Map<Integer, Instant> series = new TreeMap<>();
+        Map<Long, Instant> series = new TreeMap<>();
         series.put( firstTraceRowId, referenceTime );
         series.put( secondTraceRowId, referenceTime );
         series.put( thirdTraceRowId, referenceTime );
 
         // Iterate and add the series values
-        for ( Map.Entry<Integer, Instant> nextSeries : series.entrySet() )
+        for ( Map.Entry<Long, Instant> nextSeries : series.entrySet() )
         {
             Instant validTime = nextSeries.getValue();
 
@@ -673,7 +686,7 @@ public class EnsembleRetrieverFactoryTest
 
         assertTrue( sourceDetails.performedInsert() );
 
-        Integer sourceId = sourceDetails.getId();
+        Long sourceId = sourceDetails.getId();
 
         assertNotNull( sourceId );
 
@@ -698,21 +711,20 @@ public class EnsembleRetrieverFactoryTest
 
         measurement.setUnit( CFS );
         measurement.save( this.wresDatabase );
-        Integer measurementUnitId = measurement.getId();
+        Long measurementUnitId = measurement.getId();
 
         assertNotNull( measurementUnitId );
 
         EnsembleDetails ensemble = new EnsembleDetails();
-        ensemble.setEnsembleName( "ENS" );
-        ensemble.setEnsembleMemberIndex( 123 );
+        ensemble.setEnsembleName( "ENS123" );
         ensemble.save( this.wresDatabase );
-        Integer ensembleId = ensemble.getId();
+        Long ensembleId = ensemble.getId();
 
         assertNotNull( ensembleId );
 
         FeatureDetails details = new FeatureDetails( FAKE_FEATURE );
         details.save( this.wresDatabase );
-        int featureId = details.getId();
+        long featureId = details.getId();
         Instant latestObsDatetime = Instant.parse( "2023-04-01T10:00:00Z" );
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.UNKNOWN );
 
@@ -725,7 +737,7 @@ public class EnsembleRetrieverFactoryTest
                                                      STREAMFLOW,
                                                      featureId );
         firstTraceRow.setTimeScale( timeScale );
-        int firstTraceRowId = firstTraceRow.getTimeSeriesID();
+        long firstTraceRowId = firstTraceRow.getTimeSeriesID();
 
 
         // Add some observations

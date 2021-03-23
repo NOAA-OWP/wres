@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Project v2.0 - Create project dataset table for most dbs."
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="Project" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="Project" schemaName="wres"
+                     remarks="Each row represents a full project dataset. Each WRES execution uses exactly one. One dataset may be used by many executions.">
+            <column name="project_id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" />
+            </column>
+
+            <!-- The reason to use a new column name (hash) is to detect when it
+                 is appropriate to drop the old table in the previous changeset.
+                 When the old column name is present, drop the table. There is
+                 no way to migrate the data from the integer to the hash. -->
+            <column name="hash" type="varchar"
+                    remarks="A unique data-based identifier for all data in this dataset.">
+                <constraints unique="true" nullable="false" />
+            </column>
+            <column name="project_name" type="varchar"
+                    remarks="A caller-supplied project name from the execution that first uses (creates) this dataset." />
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

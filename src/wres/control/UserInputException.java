@@ -5,11 +5,15 @@ package wres.control;
  */
 public class UserInputException extends RuntimeException
 {
-
     private static final long serialVersionUID = -5808905633241832903L;
 
-    UserInputException( String message, Throwable cause )
+    public UserInputException( String message, Throwable cause )
     {
         super( message, cause );
+    }
+
+    public UserInputException( String message )
+    {
+        super( message );
     }
 }

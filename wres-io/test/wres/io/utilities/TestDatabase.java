@@ -80,7 +80,7 @@ public class TestDatabase
     {
         try
         {
-            Class.forName( "org.h2.Driver" );
+            Class.forName( "org.h2.jdbcx.JdbcDataSource" );
         }
         catch ( ClassNotFoundException cnfe )
         {
@@ -147,7 +147,7 @@ public class TestDatabase
     public void createProjectTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.Project_v3.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.Project_v5.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
@@ -184,7 +184,7 @@ public class TestDatabase
     public void createSourceTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.Source_v5.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.Source_v7.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
@@ -221,7 +221,7 @@ public class TestDatabase
     public void createProjectSourceTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.ProjectSource_v4.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.ProjectSource_v6.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
@@ -296,10 +296,14 @@ public class TestDatabase
     public void createMeasurementUnitTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.MeasurementUnit_v2.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.MeasurementUnit_v3.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
+        Liquibase liquibase2 = new Liquibase( "database/wres.MeasurementUnit_data_v1.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase2.update( new Contexts() );
     }
 
 
@@ -334,10 +338,14 @@ public class TestDatabase
     public void createUnitConversionTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.UnitConversion_v2.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.unitconversion_v1.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );
+        Liquibase liquibase2 = new Liquibase( "database/wres.UnitConversion_v2.xml",
+                                             new ClassLoaderResourceAccessor(),
+                                             liquibaseDatabase );
+        liquibase2.update( new Contexts() );
     }
 
 
@@ -372,7 +380,7 @@ public class TestDatabase
     public void createEnsembleTable( Database liquibaseDatabase )
             throws LiquibaseException
     {
-        Liquibase liquibase = new Liquibase( "database/wres.Ensemble_v2.xml",
+        Liquibase liquibase = new Liquibase( "database/wres.Ensemble_v4.xml",
                                              new ClassLoaderResourceAccessor(),
                                              liquibaseDatabase );
         liquibase.update( new Contexts() );

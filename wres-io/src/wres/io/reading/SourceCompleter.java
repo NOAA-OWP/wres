@@ -1,6 +1,5 @@
 package wres.io.reading;
 
-
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Objects;
@@ -24,7 +23,7 @@ public class SourceCompleter
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceCompleter.class );
     private static final Duration PATIENCE_LEVEL = Duration.ofMinutes( 30 );
     private final Database database;
-    private final int sourceId;
+    private final long sourceId;
     private final DatabaseLockManager lockManager;
 
     /**
@@ -34,7 +33,7 @@ public class SourceCompleter
      */
 
     public SourceCompleter( Database database,
-                            int sourceId,
+                            long sourceId,
                             DatabaseLockManager lockManager )
     {
         Objects.requireNonNull( database );

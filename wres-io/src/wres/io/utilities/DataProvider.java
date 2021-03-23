@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.StringJoiner;
 import java.sql.ResultSet;
 
 import javax.json.Json;
@@ -85,10 +84,10 @@ public interface DataProvider extends AutoCloseable
     int getColumnIndex(final String columnName);
 
     /**
-     * @return A series of column names to iterate through
+     * @return A list of column names
      * @throws IllegalStateException Thrown if the data has been closed down
      */
-    Iterable<String> getColumnNames();
+    List<String> getColumnNames();
 
     /**
      * @return The row that the data provider is currently on
@@ -532,9 +531,9 @@ public interface DataProvider extends AutoCloseable
      * TODO: implementations may not have/use a database, may want to not
      *       require the database as a param but as a member of implementations.
      * @param table Fully qualified table name to copy data into
-     * @throws CopyException When the copy fails.
+     * @throws wres.io.reading.IngestException When the copy fails.
      */
-    default void copy( Database database, final String table ) throws CopyException
+    default void copy( Database database, final String table )
     {
         this.copy( database, table, false );
     }
@@ -548,42 +547,40 @@ public interface DataProvider extends AutoCloseable
      *       require the database as a param but as a member of implementations.
      * @param table Fully qualified table name to copy data into
      * @param showProgress Whether or not to show progress during the copy operation
-     * @throws CopyException When the copy fails.
+     * @throws wres.io.reading.IngestException When the copy fails.
      */
     default void copy( Database database, final String table, final boolean showProgress )
-            throws CopyException
     {
-        final String delimiter = "|";
-        final String NULL = "\\N";
-        StringJoiner lineJoiner = new StringJoiner( System.lineSeparator() );
-        StringJoiner valueJoiner;
-        StringJoiner definitionJoiner = new StringJoiner( ",", table + "(", ")" );
-        this.getColumnNames().forEach( definitionJoiner::add );
+        List<String> columnNames = this.getColumnNames();
+        List<String[]> values = new ArrayList<>();
+        boolean[] charColumns = new boolean[columnNames.size()];
+
+        for ( int i = 0; i < charColumns.length; i++ )
+        {
+            // TODO: Find the type of the data accurately instead of all false.
+            charColumns[i] = false;
+        }
 
         while (this.next())
         {
-            valueJoiner = new StringJoiner( delimiter);
-            for (String columnName : this.getColumnNames())
+            String[] row = new String[columnNames.size()];
+
+            for ( int col = 0; col < columnNames.size(); col++ )
             {
-                String representation = this.toString( columnName );
-
-                if (representation == null)
-                {
-                    representation = NULL;
-                }
-
-                valueJoiner.add( representation );
+                String representation = this.toString( columnNames.get( col ) );
+                row[col] = representation;
             }
 
-            lineJoiner.add( valueJoiner.toString() );
+            values.add( row );
         }
 
         // Until we can figure out how to get exceptions to propagate from
         // submitting to the Database executor, run synchronously in caller's
         // Thread.
-        database.copy( definitionJoiner.toString(),
-                       lineJoiner.toString(),
-                       delimiter );
+        database.copy( table,
+                       columnNames,
+                       values,
+                       charColumns );
     }
 
     /**

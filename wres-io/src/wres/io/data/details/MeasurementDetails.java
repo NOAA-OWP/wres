@@ -1,11 +1,12 @@
 package wres.io.data.details;
 
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 /**
  * Details defining a unit of measurement within the database (i.e. CFS (cubic feet per second),
@@ -21,7 +22,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	private static final Object MEASUREMENTUNIT_SAVE_LOCK = new Object();
 
 	private String unit = null;
-	private Integer measurementUnitID = null;
+	private Long measurementUnitID = null;
 
 	/**
 	 * Sets the name of the unit of measurement
@@ -29,7 +30,8 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	 */
 	public void setUnit(String unit)
 	{
-		if ( Strings.hasValue(unit) && (this.unit == null || !this.unit.equalsIgnoreCase( unit)))
+		if ( Objects.nonNull( unit ) && !unit.isBlank()
+			 && ( this.unit == null || !this.unit.equalsIgnoreCase( unit) ) )
 		{
 			this.unit = unit.toLowerCase();
 			this.measurementUnitID = null;
@@ -47,7 +49,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	}
 
 	@Override
-	public Integer getId() {
+	public Long getId() {
 		return this.measurementUnitID;
 	}
 
@@ -57,7 +59,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	}
 
 	@Override
-	public void setID(Integer id) {
+	public void setID( long id ) {
 		this.measurementUnitID = id;
 	}
 

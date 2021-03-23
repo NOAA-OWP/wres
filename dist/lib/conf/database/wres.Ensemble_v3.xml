@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Ensemble v2 - Drop columns from existing v1.1 table"
+               author="Jesse Bickel">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Ensemble" schemaName="wres" />
+            <columnExists columnName="qualifier_id" tableName="Ensemble" schemaName="wres" />
+            <columnExists columnName="ensemblemember_id" tableName="Ensemble" schemaName="wres" />
+        </preConditions>
+        <dropColumn columnName="qualifier_id" tableName="Ensemble" schemaName="wres" />
+        <dropColumn columnName="ensemblemember_id" tableName="Ensemble" schemaName="wres" />
+    </changeSet>
+
+</databaseChangeLog>

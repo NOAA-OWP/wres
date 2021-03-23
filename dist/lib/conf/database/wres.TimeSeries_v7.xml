@@ -165,7 +165,8 @@
                                  onDelete="CASCADE" />
     </changeSet>
 
-    <changeSet id="Add source_id foreign key constraint to wres.TimeSeries (deferred)."
+    <!-- Changed in WRES 5.8 because of drop/create of wres.Source w/cascade -->
+    <changeSet id="Add source_id foreign key constraint to wres.TimeSeries (deferred) 2."
                author="Jesse Bickel"
                dbms="oracle,postgresql,sqlite">
         <preConditions onFail="MARK_RAN">
@@ -177,6 +178,7 @@
                           schemaName="wres" />
             <not>
                 <foreignKeyConstraintExists foreignKeyName="timeseries_source_fk"
+                                            foreignKeyTableName="TimeSeries"
                                             schemaName="wres" />
             </not>
         </preConditions>
@@ -191,7 +193,9 @@
                                  initiallyDeferred="true"
                                  onDelete="CASCADE" />
     </changeSet>
-    <changeSet id="Add source_id foreign key constraint to wres.TimeSeries (non-deferred)."
+
+    <!-- Changed in WRES 5.8 because of drop/create of wres.Source w/cascade -->
+    <changeSet id="Add source_id foreign key constraint to wres.TimeSeries (non-deferred) 2."
                author="Jesse Bickel"
                dbms="!oracle,!postgresql,!sqlite,!sybase">
         <preConditions onFail="MARK_RAN">
@@ -203,6 +207,7 @@
                           schemaName="wres" />
             <not>
                 <foreignKeyConstraintExists foreignKeyName="timeseries_source_fk"
+                                            foreignKeyTableName="TimeSeries"
                                             schemaName="wres" />
             </not>
         </preConditions>
@@ -216,14 +221,16 @@
                                  onDelete="CASCADE" />
     </changeSet>
 
-    <changeSet id="Add source_id index to wres.TimeSeries v2."
+    <!-- Renamed in WRES 5.8 because of drop/create of wres.Source w/cascade -->
+    <changeSet id="Add source_id index to wres.TimeSeries v2 (again)."
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
             <columnExists columnName="source_id"
                           tableName="TimeSeries"
                           schemaName="wres" />
             <not>
-                <indexExists tableName="TimeSeries"
+                <indexExists columnNames="source_id"
+                             tableName="TimeSeries"
                              indexName="timeseries_source_index"
                              schemaName="wres" />
             </not>

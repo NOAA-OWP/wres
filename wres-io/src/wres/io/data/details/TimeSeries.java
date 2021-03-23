@@ -25,35 +25,23 @@ public class TimeSeries
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeries.class );
 
-    /**
-     * The number of unique lead times contained within a partition within
-     * the database for values linked to a forecasted time series
-     */
-    private static final short TIMESERIESVALUE_PARTITION_SPAN = 1200;
-
-    /**
-     * Mapping between the number of a forecast value partition and its name
-     */
-    private static final Map<Integer, String> TIMESERIESVALUE_PARTITION_NAMES =
-            new ConcurrentHashMap<>();
-
     private final Database database;
 
     /**
      * The ID of the ensemble for the time series. A time series without
      * an ensemble should be indicated as the "default" time series.
      */
-	private final int ensembleID;
+	private final long ensembleID;
 
     /**
      * The unit of measurement that values for the time series were taken in
      */
-	private final int measurementUnitID;
+	private final long measurementUnitID;
 
     /**
      * The ID of the time series in the database
      */
-    private Integer timeSeriesID = null;
+    private Long timeSeriesID = null;
 
     /**
      * The time scale associated with the data
@@ -64,12 +52,12 @@ public class TimeSeries
     /**
      * The ID of the initial source of the data for the time series
      */
-    private final int sourceID;
+    private final long sourceID;
 
     /**
      * The db ID of the feature associated with the time series.
      */
-    private final int featureID;
+    private final long featureID;
 
     /**
      * The variable name associated with the time series. For USGS data, this is
@@ -80,12 +68,12 @@ public class TimeSeries
     private final Instant initializationDate;
 
     public TimeSeries( Database database,
-                       int ensembleID,
-                       int measurementUnitID,
+                       long ensembleID,
+                       long measurementUnitID,
                        Instant initializationDate,
-                       int sourceID,
+                       long sourceID,
                        String variableName,
-                       int featureID )
+                       long featureID )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( initializationDate );
@@ -126,7 +114,7 @@ public class TimeSeries
                                        TimeScaleFunction.valueOf( function ) );
     }
 
-    public int getEnsembleId()
+    public long getEnsembleId()
     {
         return this.ensembleID;
     }
@@ -136,7 +124,7 @@ public class TimeSeries
      * Time Series. If the ID is not present, it is retrieved from the database
 	 * @throws SQLException Thrown if the value could not be retrieved from the database
 	 */
-	public int getTimeSeriesID() throws SQLException
+	public long getTimeSeriesID() throws SQLException
 	{
 		if (timeSeriesID == null)
 		{
@@ -144,19 +132,7 @@ public class TimeSeries
 		}
 		return timeSeriesID;
 	}
-	
-	/**
-	 * Invalidate the cache of partition names. See #61206.
-	 */
-	
-	public static void invalidateGlobalCache()
-	{
-	    synchronized ( TIMESERIESVALUE_PARTITION_NAMES )
-	    {
-	        TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.clear();
-	    }
-	}
-	
+
 	/**
 	 * Creates a new entry in the database representing this time series
 	 * @throws SQLException Thrown if successful communication with the database
@@ -199,9 +175,8 @@ public class TimeSeries
         script.addArgument( this.featureID );
 
         int rowsModified = script.execute();
-        int insertedId = script.getInsertedIds()
-                               .get( 0 )
-                               .intValue();
+        long insertedId = script.getInsertedIds()
+                                .get( 0 );
 
         if ( rowsModified != 1 )
         {
@@ -220,51 +195,4 @@ public class TimeSeries
         this.timeSeriesID = insertedId;
     }
 
-    /**
-     * Either creates or returns the name of the partition of where values
-     * for this timeseries should be saved based on lead time
-     * Must be kept in sync with liquibase scripts.
-     * TODO: Move to a more appropriate location
-     * @param lead The lead time of this time series where values of interest
-     *             should be saved
-     * @return The name of the partition where values for the indicated lead time
-     * should be saved.
-     */
-    public static String getTimeSeriesValuePartition( int lead )
-    {
-        int partitionNumber = lead / TimeSeries.TIMESERIESVALUE_PARTITION_SPAN;
-
-        String name = TIMESERIESVALUE_PARTITION_NAMES.get( partitionNumber );
-
-        if ( name == null )
-        {
-            String partitionNumberWord;
-
-            // Sometimes the lead times are negative, but the dash is not a
-            // valid character in a name in sql, so we replace with a word.
-            if ( partitionNumber < -10 )
-            {
-                partitionNumberWord = "Below_Negative_10";
-            }
-            else if ( partitionNumber > 150 )
-            {
-                partitionNumberWord = "Above_150";
-            }
-            else if ( partitionNumber < 0 )
-            {
-                partitionNumberWord = "Negative_"
-                                      + Math.abs( partitionNumber );
-            }
-            else
-            {
-                partitionNumberWord = Integer.toString( partitionNumber );
-            }
-
-            name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
-
-            TimeSeries.TIMESERIESVALUE_PARTITION_NAMES.putIfAbsent( partitionNumber, name);
-        }
-
-        return name;
-    }
 }

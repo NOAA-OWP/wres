@@ -25,43 +25,43 @@ public class DatabaseLockManagerNoop implements DatabaseLockManager
     }
 
     @Override
-    public void lockSource( Integer lockName ) throws SQLException
+    public void lockSource( Long lockName ) throws SQLException
     {
         // No-op
     }
 
     @Override
-    public void unlockSource( Integer lockName ) throws SQLException
+    public void unlockSource( Long lockName ) throws SQLException
     {
         // No-op
     }
 
     @Override
-    public void lockExclusive( Integer lockName ) throws SQLException
+    public void lockExclusive( Long lockName ) throws SQLException
     {
         // No-op
     }
 
     @Override
-    public void unlockExclusive( Integer lockName ) throws SQLException
+    public void unlockExclusive( Long lockName ) throws SQLException
     {
         // No-op
     }
 
     @Override
-    public void lockShared( Integer lockName ) throws SQLException
+    public void lockShared( Long lockName ) throws SQLException
     {
         // No-op
     }
 
     @Override
-    public void unlockShared( Integer lockName ) throws SQLException
+    public void unlockShared( Long lockName ) throws SQLException
     {
         // No-op
     }
 
     @Override
-    public boolean isSourceLocked( Integer lockName ) throws SQLException
+    public boolean isSourceLocked( Long lockName ) throws SQLException
     {
         return false;
     }

@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wresconfig>
     <database>
-        <url>localhost</url>
+        <!-- When a jdbcUrl is specified, it overrides host, type, name, port.
+             Use either jdbcUrl or host. If you're using url, change to host
+             instead. To try h2 in-memory db, uncomment the following line. -->
+        <!--  <jdbcUrl>jdbc:h2:mem:test;MODE=PostgreSQL;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\;</jdbcUrl> -->
+        <host>localhost</host>
         <username>wres_user</username>
         <name>wres</name>
         <port>5432</port>

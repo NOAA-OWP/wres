@@ -27,7 +27,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	private URI sourcePath = null;
 	private String outputTime = null;
 	private Integer lead = null;
-	private Integer sourceID = null;
+	private Long sourceID = null;
 	private String hash = null;
 	private SourceKey key = null;
 	private boolean isPointData = true;
@@ -39,7 +39,6 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	public SourceDetails() {
 		this.setSourcePath(null);
 		this.setOutputTime(null);
-		this.setID(null);
 		this.setHash( null );
 	}
 
@@ -53,7 +52,6 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 		this.setOutputTime(key.getSourceTime());
 		this.setLead(key.getLead());
 		this.setHash( key.getHash() );
-		this.setID(null);
 	}
 
 	public SourceDetails(final DataProvider data)
@@ -63,9 +61,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         this.setLead( data.getInt( "lead" ));
         this.setHash( data.getString("hash") );
         this.setIsPointData( data.getBoolean( "is_point_data" ) );
-        this.setID( data.getInt( this.getIDName() ) );
+        this.setID( data.getLong( this.getIDName() ) );
     }
-	
+
 	/**
 	 * Sets the path to the source file
 	 * @param path The path to the source file on the file system
@@ -116,12 +114,12 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	@Override
 	public int compareTo(SourceDetails other)
 	{
-		Integer id = this.sourceID;
-		
+		Long id = this.sourceID;
+
 		if (id == null) {
-			id = -1;
+			id = -1l;
 		}
-		
+
 		return id.compareTo(other.getId());
 	}
 
@@ -138,7 +136,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-	public Integer getId() {
+	public Long getId() {
 		return this.sourceID;
 	}
 
@@ -148,8 +146,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-	public void setID(Integer id) {
-		this.sourceID = id;		
+	public void setID( long id ) {
+		this.sourceID = id;
 	}
 
 	@Override
@@ -201,8 +199,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         if ( this.performedInsert )
         {
             this.sourceID = script.getInsertedIds()
-                                  .get( 0 )
-                                  .intValue();
+                                  .get( 0 );
         }
         else
         {
@@ -216,7 +213,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.sourceID = data.getInt( this.getIDName() );
+                this.sourceID = data.getLong( this.getIDName() );
             }
         }
 

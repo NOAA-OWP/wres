@@ -25,6 +25,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.ExecutionResult;
 import wres.control.Control;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
@@ -82,20 +83,29 @@ public class ScenarioHelper
      * It should be a direct pass through and the method called should confirm that execution was successful.
      * @param scenarioInfo The {@link ScenarioInformation} information.
      */
-    protected static Control assertExecuteScenario( ScenarioInformation scenarioInfo )
+    protected static Set<Path> executeScenario( ScenarioInformation scenarioInfo )
     {
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName());
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
         String args[] = { config.toString() };
-        Control wresEvaluation = new Control( SYSTEM_SETTINGS,
-                                              DATABASE,
-                                              EXECUTOR );
-        int exitCode = wresEvaluation.applyAsInt( args );
-        assertEquals( "Execution of WRES failed with exit code " + exitCode
-                      + "; see log for more information!",
-                      0,
-                      exitCode );
-        return wresEvaluation;
+        Set<Path> paths = Collections.emptySet();
+
+        try ( Control wresEvaluation = new Control( SYSTEM_SETTINGS,
+                                                    DATABASE,
+                                                    EXECUTOR ) )
+        {
+            ExecutionResult result = wresEvaluation.apply( args );
+
+            if ( result.failed() )
+            {
+                throw new RuntimeException( "Execution resulted in exception.",
+                                            result.getException() );
+            }
+
+            paths = wresEvaluation.get();
+        }
+
+        return paths;
     }
     
 
@@ -104,11 +114,9 @@ public class ScenarioHelper
      * with {@link #assertOutputsMatchBenchmarks(ScenarioInformation, Control)}.
      * @param@ completedEvaluation The {@link Control} that executed the evaluation.
      */
-    private static void assertWRESOutputValid( ScenarioInformation scenarioInfo, Control completedEvaluation )
+    private static void assertWRESOutputValid( ScenarioInformation scenarioInfo,
+                                               Set<Path> initialOutputSet )
     {
-        //Obtain the complete list of outputs generated.
-        Set<Path> initialOutputSet = completedEvaluation.get();
-
         //Confirm all outputs were written to the same directory.
         if ( !initialOutputSet.isEmpty() )
         {
@@ -133,15 +141,12 @@ public class ScenarioHelper
     }
 
     protected static void assertOutputsMatchBenchmarks( ScenarioInformation scenarioInfo,
-                                              Control completedEvaluation )
+                                                        Set<Path> initialOutputSet )
     {
         LOGGER.info( "Asserting that outputs match benchmarks..." + scenarioInfo.getName() );
         
         //Assert the output as being valid and then get the output from the provided Control if so.
-        assertWRESOutputValid( scenarioInfo, completedEvaluation );
-
-        //Get the output file paths from the evaluation run.
-        Set<Path> initialOutputSet = completedEvaluation.get();
+        assertWRESOutputValid( scenarioInfo, initialOutputSet );
 
         //Create the directory listing... Temporarily removed for due to sorting issues.
         //Path dirListingPath;
