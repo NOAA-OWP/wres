@@ -101,18 +101,18 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SampleData<Pair
         // Some data, proceed
         if ( !s.getRawData().isEmpty() )
         {
-            double numerator = sse.apply( s )
-                                  .getComponent( MetricConstants.MAIN )
-                                  .getData()
-                                  .getValue();
+            double numerator = this.sse.apply( s )
+                                       .getComponent( MetricConstants.MAIN )
+                                       .getData()
+                                       .getValue();
 
             double denominator = 0.0;
             if ( s.hasBaseline() )
             {
-                denominator = sse.apply( s.getBaselineData() )
-                                 .getComponent( MetricConstants.MAIN )
-                                 .getData()
-                                 .getValue();
+                denominator = this.sse.apply( s.getBaselineData() )
+                                      .getComponent( MetricConstants.MAIN )
+                                      .getData()
+                                      .getValue();
             }
             else
             {
