@@ -97,7 +97,16 @@ final class DatabaseSettings
         }
 
         Properties postgresqlProperties = new Properties();
+        Properties mariadbProperties = new Properties();
+
         postgresqlProperties.put( "ssl", Boolean.toString( this.shouldUseSSL() ) );
+        mariadbProperties.put( "useSSL", Boolean.toString( this.shouldUseSSL() ) );
+
+        if ( Objects.nonNull( this.getHost() ) )
+        {
+            postgresqlProperties.put( "serverName", this.getHost() );
+            mariadbProperties.put( "host", this.getHost() );
+        }
 
         if ( Objects.nonNull( this.getDatabaseName() ) )
         {
@@ -107,51 +116,36 @@ final class DatabaseSettings
         if ( Objects.nonNull( this.getPort() ) )
         {
             postgresqlProperties.put( "portNumber", this.getPort() );
+            mariadbProperties.put( "port", this.getPort() );
         }
 
         if ( this.shouldValidateSSL() )
         {
             postgresqlProperties.put( "sslfactory", "wres.system.PgSSLSocketFactory" );
+            mariadbProperties.put( "verifyServerCertificate", "true" );
 
             if ( Objects.nonNull( this.getCertificateFileToTrust() ) )
             {
                 postgresqlProperties.put( "sslfactoryarg",
                                           this.getCertificateFileToTrust() );
-            }
-        }
-        else
-        {
-            postgresqlProperties.put("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
-        }
-
-        postgresqlProperties.putAll( commonProperties );
-        mapping.put("postgresql", postgresqlProperties );
-
-        Properties mysqlProperties = new Properties();
-        mysqlProperties.put( "useSSL", Boolean.toString( this.shouldUseSSL() ) );
-
-        if ( this.shouldValidateSSL() )
-        {
-            mysqlProperties.put( "verifyServerCertificate", "true" );
-
-            if ( Objects.nonNull( this.getCertificateFileToTrust() ) )
-            {
-                mysqlProperties.put( "serverSslCert",
+                mariadbProperties.put( "serverSslCert",
                                      this.getCertificateFileToTrust() );
             }
         }
         else
         {
-            mysqlProperties.put( "trustServerCertificate", "true" );
+            postgresqlProperties.put("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
+            mariadbProperties.put( "trustServerCertificate", "true" );
         }
 
-        mysqlProperties.putAll( commonProperties );
-        // If mysql had a custom "yes" property for validating ssl, that would go here
+        postgresqlProperties.putAll( commonProperties );
+        mapping.put("postgresql", postgresqlProperties );
 
-        mapping.put("mysql", mysqlProperties);
+        mariadbProperties.putAll( commonProperties );
+        mapping.put( "mariadb", mariadbProperties );
 
         // MariaDB and MySQL share a lineage and use the same jdbc driver.
-        mapping.put( "mariadb", mysqlProperties );
+        mapping.put( "mysql", mariadbProperties );
 
         Properties h2Properties = new Properties();
         h2Properties.putAll( commonProperties );
@@ -439,7 +433,6 @@ final class DatabaseSettings
         poolConfig.setDataSourceProperties( properties );
         String type = this.getDatabaseType();
         String className = DRIVER_MAPPING.get( type );
-        String name = this.getDatabaseName();
         poolConfig.setDataSourceClassName( className );
         int maxSize = this.maxPoolSize;
         poolConfig.setMaximumPoolSize( maxSize );
@@ -454,7 +447,6 @@ final class DatabaseSettings
         poolConfig.setDataSourceProperties( properties );
         String type = this.getDatabaseType();
         String className = DRIVER_MAPPING.get( type );
-        String name = this.getDatabaseName();
         poolConfig.setDataSourceClassName( className );
         int maxSize = 5;
         poolConfig.setMaximumPoolSize( maxSize );
@@ -793,7 +785,8 @@ final class DatabaseSettings
                 .append( "certificateFileToTrust", certificateFileToTrust )
                 .append( "maxPoolSize", maxPoolSize )
                 .append( "maxIdleTime", maxIdleTime )
-                .append( "dataSourceProperties", this.dataSourceProperties )
+                // Purposely do not print passphrases.
+                //.append( "dataSourceProperties", this.dataSourceProperties )
                 .append( "useSSL", useSSL )
                 .append( "validateSSL", validateSSL )
                 .append( "queryTimeout", queryTimeout )
