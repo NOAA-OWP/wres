@@ -219,7 +219,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return sourceDetails;
     }
 
-    public long getActiveSourceID( String hash )
+    public Long getActiveSourceID( String hash )
             throws SQLException
     {
         Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getActiveSourceID");
