@@ -247,6 +247,9 @@ project(':wres-system')
         compile 'org.postgresql:postgresql:42.2.19'
         compile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.1'
 
+        // Use instead of the bridge between JUL and SLF4J. #60801-283
+        runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.0.0'
+
         // connection pooling:
         compile 'com.zaxxer:HikariCP:4.0.3'
 
