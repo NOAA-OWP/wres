@@ -294,6 +294,8 @@ public class EvaluationSubscriber implements Closeable
     @Override
     public void close() throws IOException
     {
+        LOGGER.debug( "Closing subscriber {}.", this.getClientId() );
+
         // Log an error if there are open evaluations
         if ( this.hasOpenEvaluations() )
         {
@@ -354,7 +356,7 @@ public class EvaluationSubscriber implements Closeable
         LOGGER.debug( "Closed subscriber {}.", this.getClientId() );
 
         // This subscriber is not responsible for closing the broker.
-        
+
         // This subscriber is not responsible for closing the executor service.
     }
 
