@@ -50,13 +50,9 @@ echo "$project_config"
 
 # The quotes above around $project_config are important to preserve line breaks.
 
-# There is a -dev environment (development), -ti environment (staging), and a
-# -prod environment (production).  Set the suffix appropriately for the version
-# of the COWRES to be used.  Note that this may also have implications for the
-# name of the CA .pem file to use; see below.
-env_suffix=-prod
+host=localhost
 
-echo "We are using the $env_suffix environment in this example."
+echo "We are using the $host environment in this example."
 
 
 # The WRES HTTP API uses secured HTTP, aka HTTPS, which is a form of TLS aka
@@ -81,7 +77,6 @@ else
 fi
 
 
-
 # Second, POST the evaluation project configuration to the WRES.
 # "POST" is a standard HTTP verb, see more about the various HTTP verbs here:
 # https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html or
@@ -93,7 +88,7 @@ fi
 # We furthermore want to save the server's response to the POST, because it
 # contains the name of the created resource in its response. We use post_result.
 # The tr -d is to remove carriage return characters from the response.
-post_result=$( curl -i --cacert $wres_ca_file --data "projectConfig=${project_config}" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
+post_result=$( curl -i --cacert $wres_ca_file --data "projectConfig=${project_config}" https://${host}/job | tr -d '\r' )
 
 echo "The response from the server was:"
 echo "$post_result"
