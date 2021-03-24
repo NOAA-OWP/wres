@@ -101,9 +101,9 @@ evaluation <- '<?xml version="1.0" encoding="UTF-8"?>
 print( "Here is the WRES evaluation project configuration:" )
 cat( evaluation )
 
-env_suffix <- "-prod"
+host <- "localhost"
 
-print( paste( "We are using the", env_suffix, "environment in this example." ) )
+print( paste( "We are using the", host, "environment in this example." ) )
 
 # Set general http library option of verbose mode, will display HTTP headers.
 crul::set_opts( verbose = TRUE )
@@ -135,10 +135,7 @@ if ( file.exists( wres_ca_file ) )
 # when using the crul http library.
 crul::set_opts( capath = "cacerts/" )
 
-wres_url <- paste( "https://***REMOVED***wres",
-                   env_suffix,
-                   ".***REMOVED***.***REMOVED***",
-                   sep = "" )
+wres_url <- paste( "https://", host, sep = "" )
 
 # Create a client that prefers "text/plain" but allows other response types.
 wres_client <- crul::HttpClient$new( url = wres_url,
@@ -157,8 +154,7 @@ wres_client <- crul::HttpClient$new( url = wres_url,
 # We furthermore want to save the server's response to the POST, because it
 # contains the name of the created resource in its response. We use post_response.
 post_response <- wres_client$post( path = "job",
-                                   query = list( userName = user_name,
-                                                 projectConfig = evaluation ),
+                                   query = list( projectConfig = evaluation ),
                                    encode = "form" )
 
 print( "The response from the server was:" )

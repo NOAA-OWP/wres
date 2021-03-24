@@ -54,9 +54,9 @@ evaluation = '''
 print( "Here is the WRES evaluation project configuration:" )
 print( evaluation )
 
-env_suffix = "-prod"
+host = "localhost"
 
-print( "We are using the " + env_suffix + " environment in this example." )
+print( "We are using the " + host + " environment in this example." )
 
 # The WRES HTTP API uses secured HTTP, aka HTTPS, which is a form of TLS aka
 # Transport Layer Security, which relies on X.509 certificates for
@@ -77,6 +77,7 @@ else:
     print( "Did not find the WRES CA file at" + wres_ca_file )
     exit( 1 )
 
+
 # Second, POST the evaluation project configuration to the WRES.
 # "POST" is a standard HTTP verb, see more about the various HTTP verbs here:
 # https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html or
@@ -88,7 +89,7 @@ else:
 # We furthermore want to save the server's response to the POST, because it
 # contains the name of the created resource in its response. We use post_result.
 
-post_result = requests.post( url="https://***REMOVED***wres"+env_suffix+".***REMOVED***.***REMOVED***/job",
+post_result = requests.post( url="https://"+host+"/job",
                              verify = wres_ca_file,
                              data = { 'projectConfig': evaluation } )
 
