@@ -10,7 +10,7 @@ networks:
                   gateway: 172.19.254.193
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210305-560c599"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20210323-82b660c"
         restart: always
         volumes:
          # For the job data
@@ -27,7 +27,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210305-560c599"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20210323-82b660c"
         restart: always
         depends_on:
             broker:
@@ -54,7 +54,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210305-6b9d821"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20210323-82b660c"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -71,7 +71,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210317-c4cf9f7"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20210324-5a5dd08"
         restart: always
         depends_on:
          - "broker"
@@ -107,7 +107,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210317-c4cf9f7"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20210323-82b660c"
         restart: always
         volumes:
          # For qpid work files
@@ -129,7 +129,7 @@ services:
     graphics:
         depends_on:
         - eventsbroker
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210317-c4cf9f7"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20210323-82b660c"
         restart: always
         # For graphics outputs
         volumes:
