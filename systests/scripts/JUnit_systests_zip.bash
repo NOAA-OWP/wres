@@ -262,6 +262,12 @@ if [ $LOGFILESIZE -lt 9999 ]
 then
 	#/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
+	echo '{"issue": {"notes": "' > redmineFile.txt
+	echo "$MAIL_SUBJECT" >> redmineFile.txt
+#	cat summary.txt  >> redmineFile.txt
+	echo '"}}' >> redmineFile.txt
+	#/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -d '{"issue": {"notes": "$SUMMARY"}}'
+	/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -T redmineFile.txt
 else
 	echo "$LOGFILE block size $LOGFILESIZE is too large to attach in email" > tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	echo ".................." >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -271,6 +277,7 @@ else
 fi
 ls -l passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 rm -v passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+rm -v redmineFile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 
 # remove JUnit test lock file
 rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
