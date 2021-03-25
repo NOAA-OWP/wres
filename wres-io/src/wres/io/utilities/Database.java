@@ -634,9 +634,9 @@ public class Database {
 
             Query query = new Query( this.systemSettings, sql );
 
-            try
+            try ( Connection connection = this.getConnection() )
             {
-                query.execute( this.getConnection() );
+                query.execute( connection );
             }
             catch ( SQLException se )
             {
