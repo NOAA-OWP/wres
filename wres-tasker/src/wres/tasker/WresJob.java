@@ -482,9 +482,14 @@ public class WresJob
                 }
             }
         }
+
+        if ( Objects.nonNull( REDISSON_CLIENT ) )
+        {
+            REDISSON_CLIENT.shutdown();
+        }
     }
 
-    private static final class ConnectivityException extends RuntimeException
+    static final class ConnectivityException extends RuntimeException
     {
         private ConnectivityException( String serviceName,
                                        String host,
