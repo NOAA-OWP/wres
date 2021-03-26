@@ -270,14 +270,20 @@ then
 	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 #	cat redmineFile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-	cp -v redmindTemplateFile.xml redmindTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
-	sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmindTempFile.xml
-	SUMMARY=`cat summary.txt`
-	sed -i s/"TheSummaryTextFile"/"$SUMMARY"/g redmindTempFile.xml
-	cat redmindTempFile.xml  2>&1 | /usr/bin/tee --append $LOGFILE 
+	if [ -f $WRES_DIRJ/systests/redmineTemplateFile.xml ]
+	then
+		cp -v $WRES_DIRJ/systests/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
+		SUMMARY=`cat summary.txt`
+		sed -i s/"TheSummaryTextFile"/"$SUMMARY"/g redmineTempFile.xml
+		cat redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
+		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+	else
+		ls -l $WRES_DIRJ/systests/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+	fi
 	#/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -d '{"issue": {"notes": "$SUMMARY"}}'
 #	/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -T redmineFile.txt
-	/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmindTempFile.xml 
 else
 	echo "$LOGFILE block size $LOGFILESIZE is too large to attach in email" > tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	echo ".................." >> tempfile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -288,7 +294,6 @@ fi
 ls -l passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 rm -v passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 #rm -v redmineFile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-rm -v redmindTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
 
 # remove JUnit test lock file
 rm -v $TESTINGJ 2>&1 | /usr/bin/tee --append $LOGFILE 
