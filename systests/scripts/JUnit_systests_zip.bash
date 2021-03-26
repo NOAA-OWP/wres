@@ -270,9 +270,9 @@ then
 	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 #	cat redmineFile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
-	if [ -f $WRES_DIRJ/systests/redmineTemplateFile.xml ]
+	if [ -f $WRES_DIRJ/install_scripts/redmineTemplateFile.xml ]
 	then
-		cp -v $WRES_DIRJ/systests/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
 		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
 		SUMMARY=`cat summary.txt`
 		sed -i s/"TheSummaryTextFile"/"$SUMMARY"/g redmineTempFile.xml
@@ -280,7 +280,7 @@ then
 		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
 		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
 	else
-		ls -l $WRES_DIRJ/systests/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
+		ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
 	fi
 	#/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -d '{"issue": {"notes": "$SUMMARY"}}'
 #	/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: application/json' -T redmineFile.txt
