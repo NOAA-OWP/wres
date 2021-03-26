@@ -159,7 +159,7 @@ public class TimeSeries<T>
     @Override
     public int hashCode()
     {
-        return Objects.hash( metadata, events );
+        return Objects.hash( this.metadata, this.events );
     }
 
     @Override
