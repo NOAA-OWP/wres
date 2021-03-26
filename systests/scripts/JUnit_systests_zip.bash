@@ -262,10 +262,10 @@ if [ $LOGFILESIZE -lt 9999 ]
 then
 	#/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
 #	/usr/bin/mailx -F -S smtp=nwcss-mail01.owp.nws.***REMOVED*** -s "$MAIL_SUBJECT" -a $LOGFILE -a $LOGFILE_GRAPHICS $WRES_GROUP < summary.txt  2>&1 | /usr/bin/tee --append $LOGFILE
-	echo '{"issue": {"notes": "' > redmineFile.txt
-	echo "$MAIL_SUBJECT" >> redmineFile.txt
+	echo '{"issue": {"notes": ' > redmineFile.txt
+	echo "\"$MAIL_SUBJECT\"" >> redmineFile.txt
 #	cat summary.txt  >> redmineFile.txt
-	echo '"}}' >> redmineFile.txt
+	echo '}}' >> redmineFile.txt
 	echo "cat summary.txt redmineFile.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat redmineFile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
