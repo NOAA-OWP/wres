@@ -2,8 +2,8 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import com.google.protobuf.Timestamp;
@@ -101,7 +101,7 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
     {
         return new Builder( timeWindow ).build();
     }
-    
+
     /**
      * Constructs a {@link TimeWindowOuter} where the earliest lead durations is {@link TimeWindowOuter#DURATION_MIN}, the 
      * latest lead duration is {@link TimeWindowOuter#DURATION_MAX}, the earliest reference time is {@link Instant#MIN}, the 
@@ -273,7 +273,7 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
      * @throws NullPointerException if any input is null
      */
 
-    public static TimeWindowOuter unionOf( List<TimeWindowOuter> input )
+    public static TimeWindowOuter unionOf( Set<TimeWindowOuter> input )
     {
         Objects.requireNonNull( input, "Cannot determine the union of time windows for a null input." );
 
@@ -289,36 +289,36 @@ public final class TimeWindowOuter implements Comparable<TimeWindowOuter>
         }
 
         // Check and set time parameters
-        Instant earliestR = input.get( 0 ).getEarliestReferenceTime();
-        Instant latestR = input.get( 0 ).getLatestReferenceTime();
-        Instant earliestV = input.get( 0 ).getEarliestValidTime();
-        Instant latestV = input.get( 0 ).getLatestValidTime();
-        Duration earliestL = input.get( 0 ).getEarliestLeadDuration();
-        Duration latestL = input.get( 0 ).getLatestLeadDuration();
+        Instant earliestR = null;
+        Instant latestR = null;
+        Instant earliestV = null;
+        Instant latestV = null;
+        Duration earliestL = null;
+        Duration latestL = null;
 
         for ( TimeWindowOuter next : input )
         {
-            if ( earliestR.isAfter( next.getEarliestReferenceTime() ) )
+            if ( Objects.isNull( earliestR ) || earliestR.isAfter( next.getEarliestReferenceTime() ) )
             {
                 earliestR = next.getEarliestReferenceTime();
             }
-            if ( latestR.isBefore( next.getLatestReferenceTime() ) )
+            if ( Objects.isNull( latestR ) || latestR.isBefore( next.getLatestReferenceTime() ) )
             {
                 latestR = next.getLatestReferenceTime();
             }
-            if ( earliestL.compareTo( next.getEarliestLeadDuration() ) > 0 )
+            if ( Objects.isNull( earliestL ) || earliestL.compareTo( next.getEarliestLeadDuration() ) > 0 )
             {
                 earliestL = next.getEarliestLeadDuration();
             }
-            if ( latestL.compareTo( next.getLatestLeadDuration() ) < 0 )
+            if ( Objects.isNull( latestL ) || latestL.compareTo( next.getLatestLeadDuration() ) < 0 )
             {
                 latestL = next.getLatestLeadDuration();
             }
-            if ( earliestV.isAfter( next.getEarliestValidTime() ) )
+            if ( Objects.isNull( earliestV ) || earliestV.isAfter( next.getEarliestValidTime() ) )
             {
                 earliestV = next.getEarliestValidTime();
             }
-            if ( latestV.isBefore( next.getLatestValidTime() ) )
+            if ( Objects.isNull( latestV ) || latestV.isBefore( next.getLatestValidTime() ) )
             {
                 latestV = next.getLatestValidTime();
             }

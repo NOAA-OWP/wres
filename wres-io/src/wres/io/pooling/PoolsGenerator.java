@@ -4,9 +4,13 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
@@ -18,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
+import wres.config.generated.DatasourceType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -451,6 +457,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
 
     private List<Supplier<PoolOfPairs<L, R>>> createPools()
     {
+        LOGGER.debug( "Creating pool suppliers for '{}'.", this.getBasicMetadata() );
+
         ProjectConfig projectConfig = this.getProject().getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
@@ -468,19 +476,27 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         // Obtain and set the desired time scale. 
         TimeScaleOuter desiredTimeScale = this.setAndGetDesiredTimeScale( pairConfig, builder );
 
+        // Time windows
+        Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
+
+        // Get a left-ish retriever for every pool in order to promote re-use across pools via caching. May consider
+        // doing this for other sides of data in future, but left-ish data is the priority because this is very 
+        // often re-used
+        Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> leftRetrievers = this.getLeftRetrievers( timeWindows,
+                                                                                                       inputsConfig.getLeft()
+                                                                                                                   .getType() );
+
         // Create the time windows, iterate over them and create the retrievers 
         try
         {
-            // Time windows
-            Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
-
             // Climatological data required?
             Supplier<Stream<TimeSeries<L>>> climatologySupplier = null;
             if ( this.getProject().hasProbabilityThresholds()
                  || ConfigHelper.hasGeneratedBaseline( inputsConfig.getBaseline() ) )
             {
                 // Re-use the climatology across pools with a caching retriever
-                Supplier<Stream<TimeSeries<L>>> leftSupplier = this.getRetrieverFactory().getLeftRetriever();
+                Supplier<Stream<TimeSeries<L>>> leftSupplier = this.getRetrieverFactory()
+                                                                   .getLeftRetriever();
 
                 climatologySupplier = CachingRetriever.of( leftSupplier );
 
@@ -502,8 +518,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
             // Create the retrievers for each time window
             for ( TimeWindowOuter nextWindow : timeWindows )
             {
-                Supplier<Stream<TimeSeries<R>>> rightSupplier =
-                        this.getRetrieverFactory().getRightRetriever( nextWindow );
+                Supplier<Stream<TimeSeries<R>>> rightSupplier = this.getRetrieverFactory()
+                                                                    .getRightRetriever( nextWindow );
 
                 builder.setRight( rightSupplier );
 
@@ -511,15 +527,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                 SampleMetadata poolMeta = SampleMetadata.of( this.getBasicMetadata(), nextWindow );
                 builder.setMetadata( poolMeta );
 
-                // Add left data
-                // TODO: consider acquiring all the left data upfront with a caching retriever,
-                // even when climatology is not required. In that case, prepare something similar to
-                // climatology above, but bounded by any overall time bounds/window in the declaration
+                // Add left data, using the climatology supplier first if one exists
                 Supplier<Stream<TimeSeries<L>>> leftSupplier = climatologySupplier;
 
                 if ( Objects.isNull( leftSupplier ) )
                 {
-                    leftSupplier = this.getRetrieverFactory().getLeftRetriever( nextWindow );
+                    leftSupplier = leftRetrievers.get( nextWindow );
                 }
 
                 builder.setLeft( leftSupplier );
@@ -540,15 +553,14 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                     // Data-source baseline
                     else
                     {
-                        Supplier<Stream<TimeSeries<R>>> baselineSupplier =
-                                this.getRetrieverFactory().getBaselineRetriever( nextWindow );
+                        Supplier<Stream<TimeSeries<R>>> baselineSupplier = this.getRetrieverFactory()
+                                                                               .getBaselineRetriever( nextWindow );
 
                         builder.setBaseline( baselineSupplier );
                     }
                 }
 
                 returnMe.add( builder.build() );
-
             }
 
             LOGGER.debug( "Created {} pool suppliers for '{}'.",
@@ -562,6 +574,63 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
             throw new PoolCreationException( "While attempting to create pools for '" + basicMetadata
                                              + "':",
                                              e );
+        }
+    }
+
+    /**
+     * Builds a left-ish retriever for each {@link TimeWindowOuter} in the input. Uses the minimum number of retrievers 
+     * necessary to avoid retrieving the same data from an underlying source (e.g., database) more than once. In order,
+     * to achieve this, each unique retriever is wrapped inside a {@link CachingRetriever} and re-used as many times 
+     * as there are common time-windows, ignoring any lead duration bounds. The returned map has a comparator that 
+     * ignores the lead duration bounds, which allows for transparent use by the caller against the original time 
+     * windows. De-duplication only happens for datasets that are {@link DatasourceType#OBSERVATIONS} or 
+     * {@link DatasourceType#SIMULATIONS}.
+     * 
+     * @param timeWindows the time windows
+     * @param type the type of data
+     * @return a left-ish retriever for each time-window
+     */
+
+    private Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> getLeftRetrievers( Set<TimeWindowOuter> timeWindows,
+                                                                                     DatasourceType type )
+    {
+        RetrieverFactory<L, R> factory = this.getRetrieverFactory();
+
+        // Observations or simulations? Then de-duplicate if possible.
+        if ( type == DatasourceType.OBSERVATIONS || type == DatasourceType.SIMULATIONS )
+        {
+            // Find the union of the time windows, bearing in mind that lead durations can influence the valid 
+            // datetimes for observation selection
+            TimeWindowOuter unionWindow = TimeWindowOuter.unionOf( timeWindows );
+            Supplier<Stream<TimeSeries<L>>> leftRetriever = factory.getLeftRetriever( unionWindow );
+            Supplier<Stream<TimeSeries<L>>> cachingRetriever = CachingRetriever.of( leftRetriever );
+
+            // Build a retriever for each unique time window (ignoring lead durations via the comparator)
+            Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> returnMe = new TreeMap<>();
+            timeWindows.forEach( nextWindow -> returnMe.put( nextWindow, cachingRetriever ) );
+
+            // Log any de-duplication that was achieved
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "While creating pools for {}, de-duplicated the retrievers of {} data from {} to {} "
+                              + "using the union of time windows across all pools, which is {}.",
+                              this.getBasicMetadata(),
+                              LeftOrRightOrBaseline.LEFT,
+                              timeWindows.size(),
+                              1,
+                              unionWindow );
+            }
+
+            return Collections.unmodifiableMap( returnMe );
+        }
+        // Other datasets: do not attempt to de-duplicate for now
+        else
+        {
+            Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> returnMe = new HashMap<>();
+
+            timeWindows.forEach( next -> returnMe.put( next, factory.getLeftRetriever( next ) ) );
+
+            return Collections.unmodifiableMap( returnMe );
         }
     }
 
@@ -716,7 +785,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      */
 
     private TimeScaleOuter setAndGetDesiredTimeScale( PairConfig pairConfig,
-                                                 PoolOfPairsSupplierBuilder<L, R> builder )
+                                                      PoolOfPairsSupplierBuilder<L, R> builder )
     {
 
         TimeScaleOuter desiredTimeScale = null;
@@ -772,7 +841,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         {
             TimeSeries<L> nextSeries = next;
             TimeScaleOuter nextScale = nextSeries.getMetadata()
-                                            .getTimeScale();
+                                                 .getTimeScale();
 
             // Upscale? A difference in period is the minimum needed
             if ( Objects.nonNull( desiredTimeScale )

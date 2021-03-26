@@ -1,8 +1,9 @@
 package wres.datamodel.sampledata;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -242,7 +243,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     /**
      * Finds the union of the input, based on the {@link TimeWindowOuter}. All components of the input must be equal, 
      * except the {@link SampleMetadata#getTimeWindow()} and {@link SampleMetadata#getThresholds()}, otherwise an 
-     * exception is thrown. See also {@link TimeWindowOuter#unionOf(List)}. No threshold information is represented in the 
+     * exception is thrown. See also {@link TimeWindowOuter#unionOf(Set)}. No threshold information is represented in the 
      * union.
      * 
      * @param input the input metadata
@@ -263,7 +264,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         {
             throw new IllegalArgumentException( "Cannot find the union of empty input." );
         }
-        List<TimeWindowOuter> unionWindow = new ArrayList<>();
+        Set<TimeWindowOuter> unionWindow = new HashSet<>();
 
         // Test entry
         SampleMetadata test = input.get( 0 );

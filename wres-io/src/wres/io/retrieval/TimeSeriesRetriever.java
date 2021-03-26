@@ -21,7 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.FeatureKey;import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.FeatureKey;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
@@ -141,13 +142,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     private final String leadDurationColumn;
 
-    
+
     /**
      * Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
      * substantively differ and the reference time type would necessarily become inline to the time-series, not 
      * declared upfront.  
      */
-    
+
     private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
 
     /**
@@ -228,7 +229,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 // Get the valid time
                 Instant validTime = provider.getInstant( "valid_time" );
 
-                Map<ReferenceTimeType,Instant> referenceTimes = Collections.emptyMap();
+                Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
 
                 // Add the explicit reference time
                 if ( provider.hasColumn( "reference_time" ) && !provider.isNull( "reference_time" ) )
@@ -515,7 +516,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         return Objects.nonNull( this.getTimeWindow() );
     }
-    
+
     /**
      * Returns the {@link ReferenceTimeType} of the retriever instance.
      * 
@@ -526,7 +527,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         return this.referenceTimeType;
     }
-    
+
     /**
      * Adds a clause to a script according to the start of the last available clause. When the last available clause
      * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
@@ -631,9 +632,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      */
 
     private <S> TimeScaleOuter checkAndGetLatestScale( TimeScaleOuter lastScale,
-                                                  Duration period,
-                                                  String functionString,
-                                                  Event<S> event )
+                                                       Duration period,
+                                                       String functionString,
+                                                       Event<S> event )
     {
 
         Duration periodToUse = null;
@@ -1117,7 +1118,16 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         private Integer projectId;
 
+        /**
+         * Variable name.
+         */
+
         private String variableName;
+
+        /**
+         * Feature.
+         */
+
         private FeatureKey feature;
 
         /**
@@ -1159,7 +1169,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         /**
          * The reference time type.
          */
-        
+
         private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
 
         TimeSeriesRetrieverBuilder<S> setDatabase( Database database )
@@ -1187,12 +1197,25 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             return this;
         }
 
+        /**
+         * Sets the variable name.
+         * 
+         * @param variableName the variable name
+         * @return the builder
+         */
 
         TimeSeriesRetrieverBuilder<S> setVariableName( String variableName )
         {
             this.variableName = variableName;
             return this;
         }
+
+        /**
+         * Sets the feature.
+         * 
+         * @param feature the feature
+         * @return the builder
+         */
 
         TimeSeriesRetrieverBuilder<S> setFeature( FeatureKey feature )
         {
@@ -1292,7 +1315,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             this.unitMapper = unitMapper;
             return this;
         }
-        
+
         /**
          * Sets the {@link ReferenceTimeType}.
          * 
@@ -1340,7 +1363,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         // Validate
         String validationStart = "Cannot build a time-series retriever without a ";
-        Objects.requireNonNull( this.database, "database instance."  );
+        Objects.requireNonNull( this.database, "database instance." );
         Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
 
         Objects.requireNonNull( this.getMeasurementUnitMapper(), validationStart + "measurement unit mapper." );

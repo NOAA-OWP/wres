@@ -8,9 +8,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -569,7 +568,7 @@ public final class TimeWindowOuterTest
                                                        SEVENTH_TIME,
                                                        Duration.ofHours( -5 ),
                                                        Duration.ofHours( 25 ) );
-        List<TimeWindowOuter> union = new ArrayList<>();
+        Set<TimeWindowOuter> union = new HashSet<>();
         union.add( first );
         union.add( second );
 
@@ -594,7 +593,7 @@ public final class TimeWindowOuterTest
                                                           Instant.parse( "2019-12-31T11:59:59Z" ),
                                                           Duration.ZERO,
                                                           Duration.ofHours( 21 ) );
-        List<TimeWindowOuter> unionTwo = new ArrayList<>();
+        Set<TimeWindowOuter> unionTwo = new HashSet<>();
         unionTwo.add( third );
         unionTwo.add( fourth );
 
@@ -611,7 +610,7 @@ public final class TimeWindowOuterTest
     {
         IllegalArgumentException thrown =
                 assertThrows( IllegalArgumentException.class,
-                              () -> TimeWindowOuter.unionOf( Collections.emptyList() ) );
+                              () -> TimeWindowOuter.unionOf( Set.of() ) );
 
         assertEquals( "Cannot determine the union of time windows for empty input.", thrown.getMessage() );
     }
@@ -624,9 +623,13 @@ public final class TimeWindowOuterTest
     @Test
     public void testUnionWithThrowsExceptionOnInputWithNull()
     {
+        
+        Set<TimeWindowOuter> nullInput = new HashSet<>();
+        nullInput.add( null );
+        
         IllegalArgumentException thrown =
                 assertThrows( IllegalArgumentException.class,
-                              () -> TimeWindowOuter.unionOf( Collections.singletonList( null ) ) );
+                              () -> TimeWindowOuter.unionOf( nullInput ) );
 
         assertEquals( "Cannot determine the union of time windows for input that contains one or more "
                       + "null time windows.",

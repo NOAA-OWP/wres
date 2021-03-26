@@ -6,11 +6,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -406,7 +404,7 @@ public final class DataFactory
 
         DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder();
         builder.setMetric( collection.iterator().next().getData().getMetric() );
-        List<TimeWindowOuter> combinedWindows = new ArrayList<>();
+        Set<TimeWindowOuter> combinedWindows = new HashSet<>();
         SampleMetadata sourceMeta = null;
 
         for ( DurationDiagramStatisticOuter next : collection )
