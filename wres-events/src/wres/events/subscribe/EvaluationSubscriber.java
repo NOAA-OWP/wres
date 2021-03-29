@@ -101,12 +101,6 @@ public class EvaluationSubscriber implements Closeable
                                                                       + "and groupId {}.";
 
     /**
-     * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
-     */
-
-    private static final boolean DURABLE_SUBSCRIBERS = true;
-
-    /**
      * String representation of the {@link MessageProperty#CONSUMER_ID}.
      */
 
@@ -124,6 +118,12 @@ public class EvaluationSubscriber implements Closeable
      */
 
     private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
+
+    /**
+     * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
+     */
+
+    private final boolean durableSubscribers;
 
     /**
      * Re-usable status message indicating the consumer is alive with the completion status 
@@ -416,7 +416,8 @@ public class EvaluationSubscriber implements Closeable
 
     public String getClientId()
     {
-        return this.getConsumerDescription().getConsumerId();
+        return this.getConsumerDescription()
+                   .getConsumerId();
     }
 
     /**
@@ -440,7 +441,7 @@ public class EvaluationSubscriber implements Closeable
         String errorMessage = "messages within subscriber " + this.getClientId() + ".";
 
         // Remove durable subscriptions if there are no open evaluations
-        if ( !this.hasOpenEvaluations() && EvaluationSubscriber.DURABLE_SUBSCRIBERS )
+        if ( !this.hasOpenEvaluations() && this.areSubscribersDurable() )
         {
             try
             {
@@ -1014,19 +1015,51 @@ public class EvaluationSubscriber implements Closeable
         // Only retry if the subscriber and evaluation are both in non-error states and there are retries remaining
         // for this evaluation
         int retryCount = this.broker.getMaximumMessageRetries();
+
+        // Get and increment the attempts atomically so that any retry-in-progress is transparent to other threads
+        int attemptedRetries = this.getNumberOfRetriesAttempted( evaluationId )
+                                   .getAndIncrement();
+
+        // Check and retry if needed
         if ( !isEvaluationFailed( evaluationId ) && !this.isSubscriberFailed()
-             && this.getNumberOfRetriesAttempted( evaluationId ).get() < retryCount )
+             && attemptedRetries < retryCount )
         {
             LOGGER.debug( "Attempting retry of message {} for evaluation {}.", messageId, evaluationId );
 
             this.attemptRetry( messageId, evaluationId, session, exception );
+
+            // Last one? Then stop and mark failed because recovery won't be triggered again (recovery attempts are 
+            // handled by broker configuration, which is used to set the internal retry count used here).
+            if ( attemptedRetries + 1 == retryCount ) // Zero-based count
+            {
+                LOGGER.error( "Subscriber {} encountered a consumption failure for evaluation {}. Recovery failed "
+                              + "after {} attempts.",
+                              this.getClientId(),
+                              evaluationId,
+                              retryCount );
+
+                // Register the evaluation as failed
+                this.markEvaluationFailed( evaluationId, exception );
+            }
         }
         // Evaluation has failed unrecoverably or all evaluations on this subscriber have failed unrecoverably
-        else
+        else if ( this.isEvaluationFailed( evaluationId ) || this.isSubscriberFailed() && LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Cannot retry message {} of evaluation {}.", messageId, evaluationId );
+            String message = "While attempting to consume a message with identifier " + messageId
+                             + " and correlation identifier "
+                             + ""
+                             + evaluationId
+                             + IN_SUBSCRIBER
+                             + this.getClientId()
+                             + ", encountered an error. No further retries will be attempted "
+                             + "because the evaluation has been marked failed unrecoverably. At the time of "
+                             + "unrecoverable failure, "
+                             + attemptedRetries
+                             + " of "
+                             + retryCount
+                             + " retries had been attempted.";
 
-            this.signalFailureOnAttemptedRetry( messageId, evaluationId, exception );
+            LOGGER.debug( message, exception );
         }
     }
 
@@ -1066,10 +1099,12 @@ public class EvaluationSubscriber implements Closeable
 
     private void attemptRetry( String messageId, String evaluationId, Session session, Exception exception )
     {
+        // Incremented (starting from zero) in advance of this retry
+        int retryCount = this.getNumberOfRetriesAttempted( evaluationId )
+                             .get();
+
         try
         {
-            int retryCount = this.getNumberOfRetriesAttempted( evaluationId ).get() + 1; // Counter starts at zero
-
             // Exponential back-off, which includes a PT2S wait before the first attempt
             Thread.sleep( (long) Math.pow( 2, retryCount ) * 1000 );
 
@@ -1112,51 +1147,6 @@ public class EvaluationSubscriber implements Closeable
             String message = "Interrupted while waiting to recover a session in evaluation " + evaluationId + ".";
 
             LOGGER.error( message, evaluationId );
-        }
-
-        // Stop if the maximum number of retries has been reached
-        if ( this.getNumberOfRetriesAttempted( evaluationId )
-                 .incrementAndGet() == this.broker.getMaximumMessageRetries() )
-        {
-            LOGGER.error( "Subscriber {} encountered a consumption failure for evaluation {}. Recovery failed "
-                          + "after {} attempts.",
-                          this.getClientId(),
-                          evaluationId,
-                          this.broker.getMaximumMessageRetries() );
-
-            // Register the evaluation as failed
-            this.markEvaluationFailed( evaluationId, exception );
-        }
-    }
-
-    /**
-     * Signals that an attempted retry failed either because the subscriber has failed on the evaluation has failed.
-     * 
-     * @param messageId the message identifier
-     * @param correlationId the correlation identifier
-     * @param exception the exception on failure
-     */
-
-    private void signalFailureOnAttemptedRetry( String messageId, String correlationId, Exception exception )
-    {
-        // Warn?
-        if ( LOGGER.isDebugEnabled() )
-        {
-            String message = "While attempting to consume a message with identifier " + messageId
-                             + " and correlation identifier "
-                             + ""
-                             + correlationId
-                             + IN_SUBSCRIBER
-                             + this.getClientId()
-                             + ", encountered an error. No further retries will be attempted "
-                             + "because the evaluation has been marked failed unrecoverably. At the time of "
-                             + "unrecoverable failure, "
-                             + this.getNumberOfRetriesAttempted( correlationId ).get()
-                             + " of "
-                             + this.broker.getMaximumMessageRetries()
-                             + " retries had been attempted.";
-
-            LOGGER.debug( message, exception );
         }
     }
 
@@ -1221,8 +1211,11 @@ public class EvaluationSubscriber implements Closeable
 
     private void markSubscriberFailed( RuntimeException exception )
     {
-        LOGGER.error( "Message subscriber {} has been flagged as failed without the possibility of recovery.",
-                      this.getClientId() );
+        String message = "Message subscriber " + this.getClientId()
+                         + " has been flagged as failed without the possibility "
+                         + "of recovery.";
+
+        LOGGER.error( message, exception );
 
         // Attempt to mark all open evaluations as failed
         this.getEvaluationsLock().lock();
@@ -1489,12 +1482,21 @@ public class EvaluationSubscriber implements Closeable
     private MessageConsumer getMessageConsumer( Session session, Topic topic, String name )
             throws JMSException
     {
-        if ( EvaluationSubscriber.DURABLE_SUBSCRIBERS )
+        if ( this.areSubscribersDurable() )
         {
             return session.createDurableSubscriber( topic, name, null, false );
         }
 
         return session.createConsumer( topic, null );
+    }
+
+    /**
+     * @return true if the subscribers are durable, false if they are transient.
+     */
+
+    private boolean areSubscribersDurable()
+    {
+        return this.durableSubscribers;
     }
 
     /**
@@ -1519,6 +1521,10 @@ public class EvaluationSubscriber implements Closeable
         this.broker = broker;
         this.executorService = executorService;
 
+        // Non-durable subscribers until we can properly recover from broker/client failures to warrant durable ones
+        this.durableSubscribers = false;
+        this.logSubscriberPolicy( this.durableSubscribers );
+
         LOGGER.info( "Building a subscriber {} to listen for evaluation messages...",
                      this.getClientId() );
 
@@ -1527,7 +1533,6 @@ public class EvaluationSubscriber implements Closeable
 
         try
         {
-
             this.evaluationStatusTopic =
                     (Topic) this.broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
             this.evaluationTopic = (Topic) this.broker.getDestination( QueueType.EVALUATION_QUEUE.toString() );
@@ -1619,6 +1624,23 @@ public class EvaluationSubscriber implements Closeable
                      tempDir );
 
         LOGGER.info( "Created subscriber {}", this.getClientId() );
+    }
+
+    /**
+     * Logs the subscriber policy.
+     * 
+     * @param durable is true to use durable subscribers, false for temporary subscribers
+     */
+
+    private void logSubscriberPolicy( boolean durableSubscribers )
+    {
+        if ( durableSubscribers && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Subscriber {} is using durable queues. These queues are not auto-deleted and may be "
+                         + "abandoned under some circumstances, which requires them to be deleted, otherwise they will "
+                         + "continue to receive and enqueue messages.",
+                         this.getClientId() );
+        }
     }
 
     /**
