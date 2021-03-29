@@ -411,9 +411,9 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<SampleDa
         {
             this.member = member;
             this.totalMembers = totalMembers;
-            prob = ( (double) member ) / totalMembers;
-            probSquared = Math.pow( prob, 2 );
-            invProbSquared = Math.pow( 1.0 - prob, 2 );
+            this.prob = ( (double) member ) / totalMembers;
+            this.probSquared = Math.pow( this.prob, 2 );
+            this.invProbSquared = Math.pow( 1.0 - this.prob, 2 );
         }
 
     }
