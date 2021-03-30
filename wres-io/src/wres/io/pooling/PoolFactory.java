@@ -24,12 +24,14 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.SourceTransformationType;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.FeatureTuple;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
@@ -103,13 +105,13 @@ public class PoolFactory
                                                                                     FeatureTuple feature,
                                                                                     UnitMapper unitMapper )
     {
-        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );        
+        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( featuresCache, "Cannot create pools without a feature cache." );
         Objects.requireNonNull( database, "Cannot create pools without a database instance." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a measurement unit mapper." );
         Objects.requireNonNull( unitMapper, "Cannot create pools without a feature description." );
-        
+
         // Validate the project declaration for the required data type
         // TODO: do not rely on the declared type. Detect the type instead
         // See #57301
@@ -168,7 +170,7 @@ public class PoolFactory
                           + "source.",
                           projectId,
                           feature );
-            
+
             baselineMetadata = PoolFactory.createMetadata( evaluation,
                                                            feature,
                                                            desiredTimeScale,
@@ -187,7 +189,11 @@ public class PoolFactory
         }
 
         // Create any required transformers for value constraints
-        DoubleUnaryOperator transformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );
+        // Left transformer is a straightforward value transformer
+        DoubleUnaryOperator leftTransformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );       
+        // Right transformer may consider the encapsulating event
+        UnaryOperator<Event<Double>> rightTransformer =
+                next -> Event.of( next.getTime(), leftTransformer.applyAsDouble( next.getValue() ) );
 
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Double>().setProject( project )
@@ -195,8 +201,8 @@ public class PoolFactory
                                                            .setBasicMetadata( mainMetadata )
                                                            .setBasicMetadataForBaseline( baselineMetadata )
                                                            .setBaselineGenerator( baselineGenerator )
-                                                           .setLeftTransformer( transformer::applyAsDouble )
-                                                           .setRightTransformer( transformer::applyAsDouble )
+                                                           .setLeftTransformer( leftTransformer::applyAsDouble )
+                                                           .setRightTransformer( rightTransformer )
                                                            .setLeftUpscaler( upscaler )
                                                            .setRightUpscaler( upscaler )
                                                            .setPairer( pairer )
@@ -229,7 +235,7 @@ public class PoolFactory
                                                                                   FeatureTuple feature,
                                                                                   UnitMapper unitMapper )
     {
-        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );        
+        Objects.requireNonNull( evaluation, "Cannot create pools from a null evaluation." );
         Objects.requireNonNull( project, "Cannot create pools from a null project." );
         Objects.requireNonNull( featuresCache, "Cannot create pools without a feature cache." );
         Objects.requireNonNull( database, "Cannot create pools without a database instance." );
@@ -303,7 +309,7 @@ public class PoolFactory
 
         // Create any required transformers for value constraints
         DoubleUnaryOperator leftTransformer = PoolFactory.getSingleValuedTransformer( pairConfig.getValues() );
-        UnaryOperator<Ensemble> rightTransformer = PoolFactory.getEnsembleTransformer( leftTransformer );
+        UnaryOperator<Event<Ensemble>> rightTransformer = PoolFactory.getEnsembleTransformer( leftTransformer );
 
         // Build and return the pool suppliers
         return new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
@@ -357,9 +363,9 @@ public class PoolFactory
                                                   FeatureTuple featureTuple,
                                                   TimeScaleOuter desiredTimeScale,
                                                   LeftOrRightOrBaseline leftOrRightOrBaseline )
-    {        
+    {
         Pool pool = MessageFactory.parse( featureTuple,
-                                          TimeWindowOuter.of(),  // Default to start with
+                                          TimeWindowOuter.of(), // Default to start with
                                           desiredTimeScale,
                                           null,
                                           leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE );
@@ -378,7 +384,7 @@ public class PoolFactory
     {
         if ( Objects.isNull( valueConfig ) )
         {
-            return DoubleUnaryOperator.identity();
+            return value -> value;
         }
 
         double assignToLowMiss = MissingValues.DOUBLE;
@@ -435,32 +441,31 @@ public class PoolFactory
     }
 
     /**
-     * Returns a transformer for ensemble data if required.
+     * Returns a transformer for ensemble data if required. The transformer remaps each ensemble member value with the
+     * input transformer.
      * 
-     * @param leftTransformer the left transformer to compose
+     * @param valueTransformer the value transformer to compose
      * @return a transformer or null
      */
 
-    private static UnaryOperator<Ensemble> getEnsembleTransformer( DoubleUnaryOperator leftTransformer )
+    private static UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer )
     {
-        if ( Objects.isNull( leftTransformer ) )
+        if ( Objects.isNull( valueTransformer ) )
         {
             return null;
         }
 
         return toTransform -> {
 
-            double[] transformed = Arrays.stream( toTransform.getMembers() )
-                                         .map( leftTransformer )
+            Ensemble ensemble = toTransform.getValue();
+            double[] members = ensemble.getMembers();
+            double[] transformed = Arrays.stream( members )
+                                         .map( valueTransformer )
                                          .toArray();
 
-            String[] labels = null;
-            if ( toTransform.getLabels().isPresent() )
-            {
-                labels = toTransform.getLabels().get();
-            }
+            Labels labels = ensemble.getLabels();
 
-            return Ensemble.of( transformed, labels );
+            return Event.of( toTransform.getTime(), Ensemble.of( transformed, labels ) );
         };
     }
 

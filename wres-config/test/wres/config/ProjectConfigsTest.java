@@ -1,6 +1,7 @@
 package wres.config;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,9 +9,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -22,9 +21,6 @@ import wres.config.generated.ProjectConfig.Inputs;
 
 public class ProjectConfigsTest
 {
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     /**
      * Tests the {@link ProjectConfigs#compare(wres.config.generated.ProjectConfig, wres.config.generated.ProjectConfig)}.
      */
@@ -144,10 +140,9 @@ public class ProjectConfigsTest
     public void testCompareThrowsNullWhenFirstInputIsNull()
     {
         // Nullity with null input
-        exception.expect( NullPointerException.class );        
-        exception.expectMessage( "The first input is null, which is not allowed." );
-        
-        ProjectConfigs.compare( null, new ProjectConfig( null, null, null, null, null, null ) );        
+        assertThrows( NullPointerException.class,
+                      () -> ProjectConfigs.compare( null,
+                                                    new ProjectConfig( null, null, null, null, null, null ) ) );
     }
     
     /**
@@ -159,10 +154,9 @@ public class ProjectConfigsTest
     public void testCompareThrowsNullWhenSecondInputIsNull()
     {
         // Nullity with null input
-        exception.expect( NullPointerException.class );        
-        exception.expectMessage( "The second input is null, which is not allowed." );
-        
-        ProjectConfigs.compare( new ProjectConfig( null, null, null, null, null, null ), null );        
+        assertThrows( NullPointerException.class,
+                      () -> ProjectConfigs.compare( new ProjectConfig( null, null, null, null, null, null ),
+                                                    null ) );
     }
 
 }

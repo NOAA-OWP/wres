@@ -85,9 +85,20 @@ public class Tasker
     {
         // Test connectivity to services (dependencies) by creating WresJob
         WresJob wresJob = new WresJob();
-        String result = wresJob.getWresJob();
-        LOGGER.info( "{}: I will take wres job requests and queue them.",
-                     result );
+
+        try
+        {
+            String result = wresJob.getWresJob();
+            LOGGER.info( "{}: I will take wres job requests and queue them.",
+                         result );
+        }
+        catch ( WresJob.ConnectivityException ce )
+        {
+            LOGGER.error( "Connectivity failure. Shutting down and exiting.",
+                          ce );
+            WresJob.shutdownNow();
+            System.exit( 2 );
+        }
 
         // Following example:
         // http://nikgrozev.com/2014/10/16/rest-with-embedded-jetty-and-jersey-in-a-single-jar-step-by-step/

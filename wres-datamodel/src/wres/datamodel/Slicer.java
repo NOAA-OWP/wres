@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic.SampleDataBasicBuilder;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -256,8 +257,7 @@ public final class Slicer
      * @return a composed function
      */
 
-    public static UnaryOperator<Pair<Double, Ensemble>>
-            leftAndEachOfRight( DoublePredicate predicate )
+    public static UnaryOperator<Pair<Double, Ensemble>> leftAndEachOfRight( DoublePredicate predicate )
     {
         return pair -> {
             Pair<Double, Ensemble> returnMe = null;
@@ -265,28 +265,47 @@ public final class Slicer
             //Left meets condition
             if ( predicate.test( pair.getLeft() ) )
             {
-                double[] filtered = Arrays.stream( pair.getRight().getMembers() )
-                                          .filter( predicate )
-                                          .toArray();
+                Ensemble ensemble = pair.getRight();
+                double[] members = ensemble.getMembers();
+                Labels labels = ensemble.getLabels();
+                String[] labelValues = labels.getLabels();
+                List<Double> filteredMembers = new ArrayList<>();
+                List<String> filteredLabels = new ArrayList<>();
 
-                //One or more of right meets condition
-                if ( filtered.length > 0 )
+                // Iterate and filter the members and corresponding labels
+                for ( int i = 0; i < members.length; i++ )
                 {
-                    // Labels? 
-                    if ( pair.getRight().getLabels().isPresent() )
+                    if ( predicate.test( members[i] ) )
                     {
-                        returnMe = Pair.of( pair.getLeft(),
-                                            Ensemble.of( filtered, pair.getRight().getLabels().get() ) );
-                    }
-                    else
-                    {
-                        returnMe = Pair.of( pair.getLeft(), Ensemble.of( filtered ) );
+                        filteredMembers.add( members[i] );
+
+                        if ( labels.hasLabels() )
+                        {
+                            filteredLabels.add( labelValues[i] );
+                        }
                     }
                 }
+
+                // Unbox
+                double[] filteredMemberArray = filteredMembers.stream()
+                                                              .mapToDouble( Double::doubleValue )
+                                                              .toArray();
+
+                String[] filteredLabelArray = filteredLabels.toArray( new String[filteredLabels.size()] );
+
+                //One or more of right meets condition
+                if ( filteredMemberArray.length > 0 )
+                {
+                    Labels fLabels = Labels.of( filteredLabelArray );
+                    returnMe = Pair.of( pair.getLeft(), Ensemble.of( filteredMemberArray, fLabels ) );
+                }
             }
+
             return returnMe;
         };
     }
+    
+    
 
     /**
      * Returns the left side of the input as a primitive array of doubles.
@@ -789,24 +808,24 @@ public final class Slicer
      * @param input the input list of statistics
      * @return the statistics grouped by context
      */
-    
+
     public static <T extends Statistic<?>> Map<LeftOrRightOrBaseline, List<T>>
             getStatisticsGroupedByContext( List<T> input )
     {
-    
+
         Function<? super T, ? extends LeftOrRightOrBaseline> classifier = statistic -> {
             if ( statistic.getMetadata().getPool().getIsBaselinePool() )
             {
                 return LeftOrRightOrBaseline.BASELINE;
             }
-    
+
             return LeftOrRightOrBaseline.RIGHT;
         };
-    
+
         Map<LeftOrRightOrBaseline, List<T>> groups =
                 input.stream()
                      .collect( Collectors.groupingBy( classifier ) );
-    
+
         return Collections.unmodifiableMap( groups );
     }
 

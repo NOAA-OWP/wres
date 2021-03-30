@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.time.TimeSeries;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
@@ -306,7 +307,12 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                                     .map( mapper )
                                     .toArray();
 
-            return Ensemble.of( mapped );
+            String[] names = provider.getStringArray( "ensemble_names" );
+
+            // Labels are de-duplicated centrally
+            Labels labels = Labels.of( names );
+
+            return Ensemble.of( mapped, labels );
         };
     }
 
@@ -333,6 +339,10 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab( 2 ).addLine( "TSV.series_value" );
         scripter.addTab( 2 ).addLine( "ORDER BY E.ensemble_name" );
         scripter.addTab().addLine( ") AS ensemble_members," );
+        scripter.addTab().addLine( "ARRAY_AGG(" );
+        scripter.addTab( 2 ).addLine( "E.ensemble_name" );
+        scripter.addTab( 2 ).addLine( "ORDER BY E.ensemble_name" );
+        scripter.addTab().addLine( ") AS ensemble_names," );
         scripter.addTab().addLine( "TS.scale_period," );
         scripter.addTab().addLine( "TS.scale_function," );
         scripter.addTab().addLine( "TS.measurementunit_id" );
