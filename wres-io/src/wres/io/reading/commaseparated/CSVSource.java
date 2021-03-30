@@ -35,6 +35,7 @@ import static wres.datamodel.time.ReferenceTimeType.UNKNOWN;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -562,12 +563,13 @@ public class CSVSource extends BasicSource
         SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );
         String[] traceNames = new String[traceNamesSorted.size()];
         traceNamesSorted.toArray( traceNames );
+        Labels labels = Labels.of( traceNames );
 
         builder.setMetadata( metadata );
 
-        for ( Map.Entry<Instant,double[]> events : reshapedValues.entrySet() )
+        for ( Map.Entry<Instant, double[]> events : reshapedValues.entrySet() )
         {
-            Ensemble ensembleSlice = Ensemble.of( events.getValue(), traceNames );
+            Ensemble ensembleSlice = Ensemble.of( events.getValue(), labels );
             Event<Ensemble> ensembleEvent = Event.of( events.getKey(), ensembleSlice );
             builder.addEvent( ensembleEvent );
         }

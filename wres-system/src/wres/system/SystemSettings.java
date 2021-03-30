@@ -853,7 +853,7 @@ public class SystemSettings extends XMLReader
 
 
     /**
-     * Return the database type.
+     * @return The database type.
      */
 
     public String getDatabaseType()

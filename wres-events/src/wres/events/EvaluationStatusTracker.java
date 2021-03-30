@@ -227,22 +227,31 @@ class EvaluationStatusTracker implements Closeable
 
     private final SubscriberNegotiator subscriberNegotiator;
 
+    /**
+     * Is true to use a durable subscriber, false for a temporary subscriber, which is auto-deleted.
+     */
+
+    private final boolean durableSubscriber;
+
     @Override
     public void close()
     {
-        // Unsubscribe
-        try
+        // Unsubscribe any durable subscriber
+        if ( this.isDurableSubscriber() )
         {
-            this.session.unsubscribe( this.subscriberName );
-        }
-        catch ( JMSException e )
-        {
-            String message = "While attempting to close evaluation status subscriber " + this.getTrackerId()
-                             + " for evaluation "
-                             + this.getEvaluationId()
-                             + ", failed to remove the subscription from the session.";
+            try
+            {
+                this.session.unsubscribe( this.subscriberName );
+            }
+            catch ( JMSException e )
+            {
+                String message = "While attempting to close evaluation status subscriber " + this.getTrackerId()
+                                 + " for evaluation "
+                                 + this.getEvaluationId()
+                                 + ", failed to remove the subscription from the session.";
 
-            LOGGER.error( message, e );
+                LOGGER.error( message, e );
+            }
         }
 
         // No need to close the session, only the connection
@@ -923,6 +932,15 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
+     * @return true if the subscriber created by this tracker is durable, false if it is temporary
+     */
+
+    private boolean isDurableSubscriber()
+    {
+        return this.durableSubscriber;
+    }
+
+    /**
      * Create an instance with an evaluation and an expected list of subscriber identifiers.
      * @param evaluation the evaluation
      * @param broker the broker connection factory
@@ -975,6 +993,10 @@ class EvaluationStatusTracker implements Closeable
                                                               this.formatsRequired,
                                                               this.subscriberApprover );
 
+        // Non-durable subscribers until we can properly recover from broker/client failures to warrant durable ones
+        this.durableSubscriber = false;
+        this.logSubscriberPolicy( this.durableSubscriber );
+
         // Default timeout for consumption from an individual consumer unless progress is reported
         // In practice, this is extremely lenient. TODO: expose this to configuration.
         this.timeoutDuringConsumption = 120;
@@ -1007,7 +1029,12 @@ class EvaluationStatusTracker implements Closeable
                                   + "-"
                                   + this.getTrackerId();
 
-            this.registerListenerForConsumer( this.getMessageConsumer( topic, this.subscriberName, selector ),
+            MessageConsumer consumer = this.getMessageConsumer( topic,
+                                                                this.subscriberName,
+                                                                selector,
+                                                                this.isDurableSubscriber() );
+
+            this.registerListenerForConsumer( consumer,
                                               this.getEvaluationId() );
 
             // Start the connection
@@ -1025,14 +1052,22 @@ class EvaluationStatusTracker implements Closeable
      * @param topic the topic
      * @param name the name of the subscriber
      * @param selector a selector
+     * @param durableSubscriber is true to use a durable subscriber, false for a temporary subscriber
      * @return a consumer
      * @throws JMSException if the consumer could not be created for any reason
      */
 
-    private MessageConsumer getMessageConsumer( Topic topic, String name, String selector )
+    private MessageConsumer getMessageConsumer( Topic topic, String name, String selector, boolean durableSubscriber )
             throws JMSException
     {
-        return this.session.createDurableSubscriber( topic, name, selector, false );
+        if ( durableSubscriber )
+        {
+            return this.session.createDurableSubscriber( topic, name, selector, false );
+        }
+        else
+        {
+            return this.session.createConsumer( topic, selector, false );
+        }
     }
 
     /**
@@ -1240,6 +1275,23 @@ class EvaluationStatusTracker implements Closeable
                 // Register the subscriber as failed
                 this.markSubscriberFailed();
             }
+        }
+    }
+
+    /**
+     * Logs the subscriber policy.
+     * 
+     * @param durable is true to use durable subscribers, false for temporary subscribers
+     */
+
+    private void logSubscriberPolicy( boolean durableSubscribers )
+    {
+        if ( durableSubscribers && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Subscriber {} is using durable queues. These queues are not auto-deleted and may be "
+                         + "abandoned under some circumstances, which requires them to be deleted, otherwise they will "
+                         + "continue to receive and enqueue messages.",
+                         this.getClientId() );
         }
     }
 

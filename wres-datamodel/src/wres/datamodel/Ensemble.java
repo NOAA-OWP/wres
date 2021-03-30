@@ -3,8 +3,10 @@ package wres.datamodel;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringJoiner;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * Stores an array of ensemble member values as double values and, optionally, an array of ensemble member labels.
@@ -13,7 +15,136 @@ import java.util.StringJoiner;
  */
 public class Ensemble implements Comparable<Ensemble>
 {
-    
+
+    /**
+     * Ensemble labels.
+     */
+
+    public static class Labels
+    {
+
+        /**
+         * A cache of ensemble names to re-use, indexed by the concatenation of the names as a unique identifier. Allow 
+         * one hundred; there should not be more than a handful of instances across recent evaluations. 
+         */
+
+        private static final Cache<String, Labels> LABELS_CACHE = Caffeine.newBuilder()
+                                                                          .maximumSize( 100 )
+                                                                          .build();
+
+        /**
+         * Empty labels.
+         */
+
+        private static final Labels EMPTY_LABELS = new Labels( new String[0] );
+
+        /**
+         * The labels, which may be empty.
+         */
+
+        private final String[] labels;
+
+        /**
+         * @param labels the labels
+         * @return an instance for the input labels
+         */
+
+        public static Labels of( String... labels )
+        {
+            return Labels.getFromCache( labels );
+        }
+
+        /**
+         * @return an instance with no labels defined
+         */
+
+        public static Labels of()
+        {
+            return Labels.EMPTY_LABELS;
+        }
+
+        /**
+         * @return a clone of the labels.
+         */
+
+        public String[] getLabels()
+        {
+            return this.labels.clone();
+        }
+
+        /**
+         * @return {@code true} if one or more labels is defined, {@code false} if no labels are defined
+         */
+
+        public boolean hasLabels()
+        {
+            return this.labels.length > 0;
+        }
+
+        @Override
+        public boolean equals( Object other )
+        {
+            if ( other == this )
+            {
+                return true;
+            }
+
+            if ( ! ( other instanceof Labels ) )
+            {
+                return false;
+            }
+
+            Labels otherLabels = (Labels) other;
+
+            return Arrays.equals( this.labels, otherLabels.labels );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Arrays.hashCode( this.labels );
+        }
+
+        /**
+         * @return a set of labels from the cache
+         */
+
+        private static Labels getFromCache( String[] labels )
+        {
+            if ( Objects.isNull( labels ) || labels.length == 0 )
+            {
+                return Labels.EMPTY_LABELS;
+            }
+
+            String id = String.join( ",", labels );
+
+            Labels cached = Labels.LABELS_CACHE.getIfPresent( id );
+
+            if ( Objects.nonNull( cached ) )
+            {
+                return cached;
+            }
+
+            // Add to cache
+            cached = new Labels( labels );
+            Labels.LABELS_CACHE.put( id, cached );
+
+            return cached;
+        }
+
+        /**
+         * Hidden constructor
+         * @param labels the labels
+         */
+
+        private Labels( String[] labels )
+        {
+            Objects.requireNonNull( labels );
+
+            this.labels = labels.clone();
+        }
+    }
+
     /**
      * The ensemble members.
      */
@@ -21,10 +152,10 @@ public class Ensemble implements Comparable<Ensemble>
     private final double[] members;
 
     /**
-     * The labels, which may be null.
+     * The member labels.
      */
 
-    private final String[] labels;
+    private final Labels labels;
 
     /**
      * Returns a {@link Ensemble} from a primitive array of members.
@@ -40,7 +171,7 @@ public class Ensemble implements Comparable<Ensemble>
 
     /**
      * Returns a {@link Ensemble} from a primitive array of members and a corresponding array of member labels. The
-     * members are ordered according to the array-ordering of the labels.
+     * members are ordered according to the order of the labels.
      * 
      * @param members the ensemble members
      * @param labels the labels
@@ -48,7 +179,7 @@ public class Ensemble implements Comparable<Ensemble>
      * @throws IllegalArgumentException if the two inputs have different size
      */
 
-    public static Ensemble of( final double[] members, String[] labels )
+    public static Ensemble of( final double[] members, Labels labels )
     {
         return new Ensemble( members, labels );
     }
@@ -63,7 +194,7 @@ public class Ensemble implements Comparable<Ensemble>
     {
         return members.clone();
     }
-    
+
     /**
      * Returns a member that corresponds to a prescribed label.
      * 
@@ -76,32 +207,27 @@ public class Ensemble implements Comparable<Ensemble>
     public double getMember( String label )
     {
         Objects.requireNonNull( label );
-        
-        for( int i = 0; i < labels.length; i++ )
+
+        for ( int i = 0; i < this.labels.labels.length; i++ )
         {
-            if( label.equals( labels[i] ) )
+            if ( label.equals( this.labels.labels[i] ) )
             {
-                return members[i];
+                return this.members[i];
             }
         }
-        
-        throw new IllegalArgumentException( "Unrecognized label '"+label+"'." );
+
+        throw new IllegalArgumentException( "Unrecognized label '" + label + "'." );
     }
-    
+
     /**
-     * Returns a copy of the optional labels.
+     * Returns the labels.
      * 
      * @return the labels
      */
 
-    public Optional<String[]> getLabels()
+    public Labels getLabels()
     {
-        if( Objects.isNull( labels ) )
-        {
-            return Optional.empty();
-        }
-        
-        return Optional.of( labels.clone() );
+        return this.labels;
     }
 
     /**
@@ -127,23 +253,23 @@ public class Ensemble implements Comparable<Ensemble>
             return returnMe;
         }
 
-        returnMe = Boolean.compare( this.getLabels().isPresent(), other.getLabels().isPresent() );
+        Labels labs = this.getLabels();
+        Labels otherLabs = other.getLabels();
+
+        returnMe = Boolean.compare( labs.hasLabels(), otherLabs.hasLabels() );
 
         if ( returnMe != 0 )
         {
             return returnMe;
         }
 
-        Optional<String[]> labs = this.getLabels();
-        Optional<String[]> otherLabs = other.getLabels();
-        
-        if( labs.isPresent() && otherLabs.isPresent() )
+        if ( labs.hasLabels() )
         {
             Comparator<String[]> compare = Comparator.nullsFirst( Arrays::compare );
 
-            return Objects.compare( labs.get(), otherLabs.get(), compare );
+            return Objects.compare( labs.labels, otherLabs.labels, compare );
         }
-        
+
         return 0;
     }
 
@@ -158,53 +284,30 @@ public class Ensemble implements Comparable<Ensemble>
         Ensemble otherVec = (Ensemble) other;
 
         // Label status?
-        if ( this.getLabels().isPresent() != otherVec.getLabels().isPresent() )
+        if ( !this.getLabels().equals( otherVec.getLabels() ) )
         {
             return false;
         }
 
-        // Labels
-        Optional<String[]> labs = this.getLabels();
-        Optional<String[]> otherLabs = otherVec.getLabels();
-        
-        if ( labs.isPresent() != otherLabs.isPresent() )
-        {
-            return false;
-        }
-        
-        if ( labs.isPresent() && otherLabs.isPresent() )
-        {
-            return Arrays.equals( this.getMembers(), otherVec.getMembers() )
-                   && Arrays.equals( labs.get(), otherLabs.get() );
-        }
-
-        // No labels
         return Arrays.equals( this.getMembers(), otherVec.getMembers() );
     }
 
     @Override
     public int hashCode()
     {
-        // Labels?
-        Optional<String[]> labs = this.getLabels();
-        if ( labs.isPresent() )
-        {
-            return Objects.hash( Arrays.hashCode( this.getMembers() ), Arrays.hashCode( labs.get() ) );
-        }
-
-        return Arrays.hashCode( this.getMembers() );
+        return Objects.hash( this.labels, Arrays.hashCode( this.getMembers() ) );
     }
 
     @Override
     public String toString()
     {
-        if ( this.getLabels().isPresent() )
+        if ( this.getLabels().hasLabels() )
         {
             StringJoiner joiner = new StringJoiner( ",", "[", "]" );
 
-            for ( int i = 0; i < members.length; i++ )
+            for ( int i = 0; i < this.members.length; i++ )
             {
-                joiner.add( "{" + labels[i] + "," + members[i] + "}" );
+                joiner.add( "{" + this.labels.labels[i] + "," + this.members[i] + "}" );
             }
 
             return joiner.toString();
@@ -223,7 +326,7 @@ public class Ensemble implements Comparable<Ensemble>
 
     private Ensemble( final double[] members )
     {
-        this( members.clone(), null );
+        this( members.clone(), Labels.EMPTY_LABELS );
     }
 
     /**
@@ -232,29 +335,26 @@ public class Ensemble implements Comparable<Ensemble>
      * @param members the ensemble members
      * @param labels the ensemble member labels
      * @throws IllegalArgumentException if the labels are non-null and differ in size to the number of members
+     * @throws NullPointerException if the labels are null
      */
 
-    private Ensemble( final double[] members, String[] labels )
+    private Ensemble( final double[] members, Labels labels )
     {
         Objects.requireNonNull( members );
+        Objects.requireNonNull( labels );
 
-        if ( Objects.nonNull( labels ) )
+        if ( labels.hasLabels() )
         {
-            if ( members.length != labels.length )
+            if ( members.length != labels.labels.length )
             {
                 throw new IllegalArgumentException( "Expected the same number of members (" + members.length
                                                     + ") as labels ("
-                                                    + labels.length
+                                                    + labels.labels.length
                                                     + ")." );
             }
-
-            this.labels = labels.clone();
-        }
-        else
-        {
-            this.labels = null;
         }
 
+        this.labels = labels;
         this.members = members.clone();
     }
 

@@ -44,6 +44,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
@@ -68,9 +69,11 @@ import wres.system.SystemSettings;
 
 public class EnsembleRetrieverFactoryTest
 {
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private Features featuresCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -138,7 +141,7 @@ public class EnsembleRetrieverFactoryTest
     @Before
     public void runBeforeEachTest() throws SQLException, LiquibaseException
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "EnsembleRetrieverFactoryTest" );
@@ -212,7 +215,7 @@ public class EnsembleRetrieverFactoryTest
 
         // The time window to select events
         TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( T2023_04_01T02_00_00Z ),
-                                               Instant.parse( T2023_04_01T07_00_00Z ) );
+                                                         Instant.parse( T2023_04_01T07_00_00Z ) );
 
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( timeWindow )
@@ -250,9 +253,9 @@ public class EnsembleRetrieverFactoryTest
 
         // The time window to select events
         TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
-                                               Instant.parse( T2023_04_01T00_00_00Z ),
-                                               Instant.parse( T2023_04_01T01_00_00Z ),
-                                               Instant.parse( T2023_04_01T04_00_00Z ) );
+                                                         Instant.parse( T2023_04_01T00_00_00Z ),
+                                                         Instant.parse( T2023_04_01T01_00_00Z ),
+                                                         Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
         List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getRightRetriever( timeWindow )
@@ -272,11 +275,17 @@ public class EnsembleRetrieverFactoryTest
                                        FAKE_FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+
+        Labels expectedLabels = Labels.of( "ENS123", "ENS456", "ENS567" );
+
         TimeSeries<Ensemble> expectedSeries =
                 builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), Ensemble.of( 37.0, 107.0, 72.0) ) )
-                       .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), Ensemble.of( 44.0, 114.0, 79.0) ) )
-                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), Ensemble.of( 51.0, 121.0, 86.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ),
+                                            Ensemble.of( new double[] { 37.0, 107.0, 72.0 }, expectedLabels ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ),
+                                            Ensemble.of( new double[] { 44.0, 114.0, 79.0 }, expectedLabels ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ),
+                                            Ensemble.of( new double[] { 51.0, 121.0, 86.0 }, expectedLabels ) ) )
                        .build();
 
         // Actual series equals expected series
@@ -289,9 +298,9 @@ public class EnsembleRetrieverFactoryTest
 
         // The time window to select events
         TimeWindowOuter timeWindow = TimeWindowOuter.of( Instant.parse( "2023-03-31T11:00:00Z" ),
-                                               Instant.parse( T2023_04_01T00_00_00Z ),
-                                               Instant.parse( T2023_04_01T01_00_00Z ),
-                                               Instant.parse( T2023_04_01T04_00_00Z ) );
+                                                         Instant.parse( T2023_04_01T00_00_00Z ),
+                                                         Instant.parse( T2023_04_01T01_00_00Z ),
+                                                         Instant.parse( T2023_04_01T04_00_00Z ) );
 
         // Get the actual left series
         List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getBaselineRetriever( timeWindow )
@@ -311,11 +320,17 @@ public class EnsembleRetrieverFactoryTest
                                        FAKE_FEATURE,
                                        "CFS" );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+
+        Labels expectedLabels = Labels.of( "ENS123", "ENS456", "ENS567" );
+
         TimeSeries<Ensemble> expectedSeries =
                 builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ), Ensemble.of( 37.0, 107.0, 72.0  ) ) )
-                       .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ), Ensemble.of( 44.0, 114.0, 79.0 ) ) )
-                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ), Ensemble.of( 51.0, 121.0, 86.0 ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T02_00_00Z ),
+                                            Ensemble.of( new double[] { 37.0, 107.0, 72.0 }, expectedLabels ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T03_00_00Z ),
+                                            Ensemble.of( new double[] { 44.0, 114.0, 79.0 }, expectedLabels ) ) )
+                       .addEvent( Event.of( Instant.parse( T2023_04_01T04_00_00Z ),
+                                            Ensemble.of( new double[] { 51.0, 121.0, 86.0 }, expectedLabels ) ) )
                        .build();
 
         // Actual series equals expected series
@@ -453,7 +468,8 @@ public class EnsembleRetrieverFactoryTest
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.wresDatabase, CFS );
-        this.factoryToTest = EnsembleRetrieverFactory.of( this.wresDatabase, featuresCache, project, featureTuple, unitMapper );
+        this.factoryToTest =
+                EnsembleRetrieverFactory.of( this.wresDatabase, featuresCache, project, featureTuple, unitMapper );
     }
 
     /**

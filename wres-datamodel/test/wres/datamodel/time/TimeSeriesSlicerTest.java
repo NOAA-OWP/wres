@@ -25,6 +25,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.FeatureKey;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.sampledata.pairs.PoolOfPairs.Builder;
@@ -485,7 +486,7 @@ public final class TimeSeriesSlicerTest
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
 
-        String[] labels = new String[] { "a", "b", "c", "d" };
+        Labels labels = Labels.of( new String[] { "a", "b", "c", "d" } );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> ensemble =
                 new TimeSeriesBuilder<Ensemble>()
@@ -587,7 +588,7 @@ public final class TimeSeriesSlicerTest
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
 
-        String[] labels = new String[] { "a", "b", "c", "d" };
+        Labels labels = Labels.of( new String[] { "a", "b", "c", "d" } );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> expected =
                 new TimeSeriesBuilder<Ensemble>()
@@ -606,7 +607,8 @@ public final class TimeSeriesSlicerTest
                                                  .setMetadata( metadata )
                                                  .build();
 
-        SortedSet<String> labelSet = Arrays.stream( labels ).collect( Collectors.toCollection( TreeSet::new ) );
+        SortedSet<String> labelSet = Arrays.stream( labels.getLabels() )
+                                           .collect( Collectors.toCollection( TreeSet::new ) );
 
         TimeSeries<Ensemble> actual =
                 TimeSeriesSlicer.compose( TimeSeriesSlicer.decompose( expected ), labelSet );
@@ -732,6 +734,33 @@ public final class TimeSeriesSlicerTest
 
         assertTrue( fifthDataBase.equals( fifthBenchmarkBase ) );
 
+    }
+
+    @Test
+    public void testFilterTimeSeriesByEvent()
+    {
+        //Build a time-series with three basis times 
+        SortedSet<Event<Double>> first = new TreeSet<>();
+
+        Instant firstBasisTime = T1985_01_01T00_00_00Z;
+        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
+        first.add( Event.of( T1985_01_01T01_00_00Z, 1.0 ) );
+        first.add( Event.of( T1985_01_01T02_00_00Z, 2.0 ) );
+        first.add( Event.of( T1985_01_01T03_00_00Z, 3.0 ) );
+
+        //Add the time-series
+        TimeSeries<Double> series = TimeSeries.of( firstMetadata, first );
+
+        // Filter all values where the valid time is not 1985-01-01T02:00:00Z
+        TimeSeries<Double> actual = TimeSeriesSlicer.filterByEvent( series,
+                                                                    next -> next.getTime()
+                                                                                .equals( T1985_01_01T02_00_00Z ) );
+
+        TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( T1985_01_01T02_00_00Z, 2.0 ) )
+                                                                     .setMetadata( firstMetadata )
+                                                                     .build();
+        
+        assertEquals( expected, actual );
     }
 
     @Test

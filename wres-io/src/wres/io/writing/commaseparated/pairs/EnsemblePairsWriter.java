@@ -57,19 +57,24 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
-        joiner.add( "LEFT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+        String unit = pairs.getMetadata()
+                           .getMeasurementUnit()
+                           .getUnit();
+
+        joiner.add( "LEFT IN " + unit );
 
         if ( !pairs.getRawData().isEmpty() )
         {
             int memberCount = this.getEnsembleMemberCount( pairs );
+
             for ( int i = 1; i <= memberCount; i++ )
             {
-                joiner.add( "RIGHT MEMBER " + i + " IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+                joiner.add( "RIGHT MEMBER " + i + " IN " + unit );
             }
         }
         else
         {
-            joiner.add( "RIGHT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+            joiner.add( "RIGHT IN " + unit );
         }
 
         return joiner;
@@ -121,7 +126,6 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     private static Function<Pair<Double, Ensemble>, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
         return pair -> {
-
             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
             Function<Double, String> handleNaNs = input -> {

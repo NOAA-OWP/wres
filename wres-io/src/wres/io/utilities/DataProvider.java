@@ -438,6 +438,14 @@ public interface DataProvider extends AutoCloseable
     Integer[] getIntegerArray(final String columnName);
 
     /**
+     * @param columnName The name of the column containing the desired <code>String</code> array
+     * @return The <code>String</code> values contained within the desired column
+     * @throws IllegalStateException Thrown if the data has been closed down or the column name doesn't exist
+     * @throws IndexOutOfBoundsException Thrown if the data is empty
+     */
+    String[] getStringArray(final String columnName);    
+    
+    /**
      * @param columnName The name of the column containing a time
      *                   representation
      * @return A time object taken from the object in the given column.
