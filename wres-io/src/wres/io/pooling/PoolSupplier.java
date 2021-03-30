@@ -193,10 +193,10 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private final UnaryOperator<L> leftTransformer;
 
     /**
-     * A function that transforms according to value. Used to apply value constraints to the right-style data.
+     * A function that transforms right-ish data and may consider the encapsulating event.
      */
 
-    private final UnaryOperator<R> rightTransformer;
+    private final UnaryOperator<Event<R>> rightTransformer;
 
     /**
      * An offset to apply to the valid times of the left data.
@@ -468,10 +468,10 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         private UnaryOperator<L> leftTransformer;
 
         /**
-         * A function that transforms according to value. Used to apply value constraints to the right-style data.
+         * A function that transforms right-ish data and may consider the encapsulating event.
          */
 
-        private UnaryOperator<R> rightTransformer;
+        private UnaryOperator<Event<R>> rightTransformer;
 
         /**
          * The frequency at which pairs should be produced.
@@ -646,7 +646,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          * @param rightTransformer the transformer for right-style data
          * @return the builder
          */
-        PoolOfPairsSupplierBuilder<L, R> setRightTransformer( UnaryOperator<R> rightTransformer )
+        PoolOfPairsSupplierBuilder<L, R> setRightTransformer( UnaryOperator<Event<R>> rightTransformer )
         {
             this.rightTransformer = rightTransformer;
 
@@ -849,7 +849,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         // Transform the rescaled values, if required
         TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.leftTransformer );
-        TimeSeries<R> scaledAndTransformedRight = this.transform( scaledRight, this.rightTransformer );
+        TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, this.rightTransformer );
 
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
@@ -1080,6 +1080,35 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         TimeSeries<T> transformed = TimeSeriesSlicer.transform( toTransform, transformer );
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Tranformed the values associated with time-series {}, producing a new time-series {}.",
+                          toTransform.hashCode(),
+                          transformed.hashCode() );
+        }
+
+        return transformed;
+    }
+
+    /**
+     * Applies a transformation to the input series that considers the encapsulating event.
+     * 
+     * @param <T> the event value type
+     * @param toTransform the time-series to transform
+     * @param transformer the transformer
+     * @return the transformed series
+     */
+
+    private <T> TimeSeries<T> transformByEvent( TimeSeries<T> toTransform, UnaryOperator<Event<T>> transformer )
+    {
+        // No transformations?
+        if ( Objects.isNull( transformer ) )
+        {
+            return toTransform;
+        }
+
+        TimeSeries<T> transformed = TimeSeriesSlicer.transformByEvent( toTransform, transformer );
 
         if ( LOGGER.isTraceEnabled() )
         {

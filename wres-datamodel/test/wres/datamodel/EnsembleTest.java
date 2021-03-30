@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
+
+import wres.datamodel.Ensemble.Labels;
 
 
 /**
@@ -19,11 +22,17 @@ final class EnsembleTest
 {
 
     /**
+     * Labels instance for testing.
+     */
+
+    private final Labels labelsTestInstance = Labels.of( new String[] { "A", "B", "C", "D" } );
+
+    /**
      * Instance for testing.
      */
 
-    private final Ensemble testInstance =
-            Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
+    private final Ensemble testInstance = Ensemble.of( new double[] { 1, 2, 3, 4 },
+                                                       this.labelsTestInstance );
 
     @Test
     void testGetMembersReturnsExpectedMembers()
@@ -38,11 +47,11 @@ final class EnsembleTest
     @Test
     void testGetLabelsReturnsExpectedLabels()
     {
-        String[] expected = new String[] { "A", "B", "C", "D" };
+        Labels expected = Labels.of( new String[] { "A", "B", "C", "D" } );
 
-        String[] actual = this.testInstance.getLabels().get();
+        Labels actual = this.testInstance.getLabels();
 
-        assertTrue( Arrays.equals( expected, actual ) );
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -67,7 +76,7 @@ final class EnsembleTest
     {
         Ensemble emptyLabels = Ensemble.of( new double[] { 1, 2, 3, 4 } );
 
-        assertTrue( emptyLabels.getLabels().isEmpty() );
+        assertFalse( emptyLabels.getLabels().hasLabels() );
     }
 
     @Test
@@ -77,12 +86,14 @@ final class EnsembleTest
         assertEquals( this.testInstance, this.testInstance );
 
         // Symmetric
-        Ensemble anotherInstance = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
+        Ensemble anotherInstance =
+                Ensemble.of( new double[] { 1, 2, 3, 4 }, Labels.of( new String[] { "A", "B", "C", "D" } ) );
 
         assertTrue( anotherInstance.equals( this.testInstance ) && this.testInstance.equals( anotherInstance ) );
 
         // Transitive
-        Ensemble oneMoreInstance = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
+        Ensemble oneMoreInstance =
+                Ensemble.of( new double[] { 1, 2, 3, 4 }, Labels.of( new String[] { "A", "B", "C", "D" } ) );
 
         assertTrue( this.testInstance.equals( anotherInstance ) && anotherInstance.equals( oneMoreInstance )
                     && this.testInstance.equals( oneMoreInstance ) );
@@ -102,11 +113,13 @@ final class EnsembleTest
         assertNotEquals( null, testInstance );
 
         // Check unequal cases
-        Ensemble unequalOnMembers = Ensemble.of( new double[] { 1, 2, 3, 5 }, new String[] { "A", "B", "C", "D" } );
+        Ensemble unequalOnMembers =
+                Ensemble.of( new double[] { 1, 2, 3, 5 }, Labels.of( new String[] { "A", "B", "C", "D" } ) );
 
         assertNotEquals( this.testInstance, unequalOnMembers );
 
-        Ensemble unequalOnLabels = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "E" } );
+        Ensemble unequalOnLabels =
+                Ensemble.of( new double[] { 1, 2, 3, 4 }, Labels.of( new String[] { "A", "B", "C", "E" } ) );
 
         assertNotEquals( this.testInstance, unequalOnLabels );
 
@@ -122,7 +135,8 @@ final class EnsembleTest
         assertEquals( this.testInstance.hashCode(), this.testInstance.hashCode() );
 
         // Consistent when invoked multiple times
-        Ensemble anotherInstance = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
+        Ensemble anotherInstance =
+                Ensemble.of( new double[] { 1, 2, 3, 4 }, Labels.of( new String[] { "A", "B", "C", "D" } ) );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -141,10 +155,96 @@ final class EnsembleTest
     }
 
     @Test
+    void testLabelEquals()
+    {
+        // Reflexive 
+        assertEquals( this.labelsTestInstance, this.labelsTestInstance );
+
+        // Symmetric
+        Labels anotherInstance = Labels.of( new String[] { "A", "B", "C", "D" } );
+
+        assertTrue( anotherInstance.equals( this.labelsTestInstance )
+                    && this.labelsTestInstance.equals( anotherInstance ) );
+
+        // Transitive
+        Labels oneMoreInstance = Labels.of( new String[] { "A", "B", "C", "D" } );
+
+        assertTrue( this.labelsTestInstance.equals( anotherInstance ) && anotherInstance.equals( oneMoreInstance )
+                    && this.labelsTestInstance.equals( oneMoreInstance ) );
+
+        // Consistent
+        for ( int i = 0; i < 100; i++ )
+        {
+            assertEquals( this.labelsTestInstance, anotherInstance );
+        }
+
+        // Equals with empty labels
+        Labels noLabels = Labels.of();
+
+        assertEquals( noLabels, noLabels );
+
+        // Nullity
+        assertNotEquals( null, labelsTestInstance );
+
+        // Check unequal cases
+        Labels unequalOnLabels = Labels.of( new String[] { "A", "B", "C", "E" } );
+
+        assertNotEquals( this.labelsTestInstance, unequalOnLabels );
+
+        assertNotEquals( noLabels, unequalOnLabels );
+    }
+
+    @Test
+    void testLabelHashCode()
+    {
+        // Equal objects have the same hashcode
+        assertEquals( this.labelsTestInstance.hashCode(), this.labelsTestInstance.hashCode() );
+
+        // Consistent when invoked multiple times
+        Labels anotherInstance = Labels.of( new String[] { "A", "B", "C", "D" } );
+
+        // Check an instance without labels      
+        assertEquals( Labels.of().hashCode(), Labels.of().hashCode() );
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            assertEquals( this.labelsTestInstance.hashCode(), anotherInstance.hashCode() );
+        }
+    }
+
+    @Test
+    void testLabelsCache()
+    {
+        Labels emptyLabels = Labels.of();
+        Labels anotherEmptyLabels = Labels.of();
+
+        assertTrue( emptyLabels == anotherEmptyLabels );
+
+        Labels someLabels = Labels.of( new String[] { "A", "B", "C" } );
+        Labels someMoreLabels = Labels.of( new String[] { "A", "B", "C" } );
+
+        assertTrue( someLabels == someMoreLabels );
+
+        // Ensure some labels are evicted
+        for ( int i = 0; i < 101; i++ )
+        {
+            Labels.of( new String[] { String.valueOf( i ) } );
+        }
+
+        Labels oneMore = Labels.of( new String[] { "X", "Y", "Z" } );
+        Labels yetOneMore = Labels.of( new String[] { "X", "Y", "Z" } );
+
+        assertEquals( oneMore, yetOneMore );
+
+        assertTrue( oneMore == yetOneMore );
+    }
+
+    @Test
     void testCompareTo()
     {
         //Equal
-        Ensemble anotherInstance = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "D" } );
+        Ensemble anotherInstance =
+                Ensemble.of( new double[] { 1, 2, 3, 4 }, Labels.of( new String[] { "A", "B", "C", "D" } ) );
         assertEquals( 0, this.testInstance.compareTo( anotherInstance ) );
 
 
@@ -170,7 +270,8 @@ final class EnsembleTest
         assertTrue( this.testInstance.compareTo( noLabels ) > 0 );
 
         // Differences on labels
-        Ensemble oneMoreInstance = Ensemble.of( new double[] { 1, 2, 3, 4 }, new String[] { "A", "B", "C", "E" } );
+        Ensemble oneMoreInstance = Ensemble.of( new double[] { 1, 2, 3, 4 },
+                                                Labels.of( new String[] { "A", "B", "C", "E" } ) );
 
         assertTrue( this.testInstance.compareTo( oneMoreInstance ) < 0 );
 
@@ -200,7 +301,7 @@ final class EnsembleTest
     {
         IllegalArgumentException expected =
                 assertThrows( IllegalArgumentException.class,
-                              () -> Ensemble.of( new double[] { 1 }, new String[] { "A", "B" } ) );
+                              () -> Ensemble.of( new double[] { 1 }, Labels.of( new String[] { "A", "B" } ) ) );
 
         assertEquals( "Expected the same number of members (1) as labels (2).", expected.getMessage() );
 

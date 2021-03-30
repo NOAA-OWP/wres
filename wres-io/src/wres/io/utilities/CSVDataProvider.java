@@ -618,6 +618,36 @@ class CSVDataProvider implements DataProvider
 
         return result;
     }
+    
+    @Override
+    public String[] getStringArray( String columnName )
+    {
+        if (this.isClosed())
+        {
+            throw new IllegalStateException( "The data set is inaccessible." );
+        }
+
+        Object array = this.getObject(columnName);
+
+        if (array == null)
+        {
+            return null;
+        }
+
+        String arrayRepresentation = (String)array;
+
+        // Remove all '(', ')', '{', '}', '[', and ']' characters
+        arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
+
+        if (arrayRepresentation.isEmpty())
+        {
+            return new String[0];
+        }
+
+        String[] values = arrayRepresentation.split( "," );
+
+        return values;
+    }    
 
     @Override
     public BigDecimal getBigDecimal( String columnName )

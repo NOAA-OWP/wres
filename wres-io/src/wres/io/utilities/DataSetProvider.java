@@ -649,6 +649,31 @@ public class DataSetProvider implements DataProvider
                                       "' in the column '" + columnName +
                                       "' cannot be casted as a integer array." );
     }
+    
+    @Override
+    public String[] getStringArray( String columnName )
+    {
+        if (this.isClosed())
+        {
+            throw new IllegalStateException( "The data set is inaccessible." );
+        }
+
+        Object array = this.getObject(columnName);
+
+        if (array == null)
+        {
+            return null;
+        }
+        else if (array instanceof String[])
+        {
+            return (String[]) array;
+        }
+
+        throw new ClassCastException( "The type '" +
+                                      array.getClass().toString() +
+                                      "' in the column '" + columnName +
+                                      "' cannot be casted as a String array." );
+    }  
 
     @Override
     public BigDecimal getBigDecimal( String columnName )

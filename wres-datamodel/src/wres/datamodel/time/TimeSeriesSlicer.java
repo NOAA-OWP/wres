@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -21,6 +20,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
@@ -484,15 +484,19 @@ public final class TimeSeriesSlicer
 
             traceCount = next.getValue().size();
 
-            double[] members = next.getValue().getMembers();
-            Optional<String[]> nextLabels = next.getValue().getLabels();
+            double[] members = next.getValue()
+                                   .getMembers();
+            Labels nextLabels = next.getValue()
+                                    .getLabels();
+
+            String[] labels = nextLabels.getLabels();
 
             for ( int i = 0; i < traceCount; i++ )
             {
                 Object label = i;
-                if ( nextLabels.isPresent() )
+                if ( nextLabels.hasLabels() )
                 {
-                    label = nextLabels.get()[i];
+                    label = labels[i];
                 }
 
                 SortedSet<Event<Double>> nextTime = membersByTime.get( label );
@@ -640,6 +644,41 @@ public final class TimeSeriesSlicer
             if ( Objects.nonNull( transformed ) )
             {
                 builder.addEvent( Event.of( event.getTime(), transformed ) );
+            }
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Transforms a time-series from one type to another, conditionally upon the valid time of each event as well as 
+     * the event value.
+     * 
+     * @param <S> the existing type of time-series value
+     * @param <T> the required type of time-series value
+     * @param timeSeries the time-series
+     * @param mapper the event mapper
+     * @return a filtered view of the input series
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <S, T> TimeSeries<T> transformByEvent( TimeSeries<S> timeSeries, Function<Event<S>, Event<T>> mapper )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        Objects.requireNonNull( mapper );
+
+        TimeSeriesBuilder<T> builder = new TimeSeriesBuilder<>();
+
+        builder.setMetadata( timeSeries.getMetadata() );
+
+        for ( Event<S> event : timeSeries.getEvents() )
+        {
+            Event<T> transformed = mapper.apply( event );
+
+            if ( Objects.nonNull( transformed ) )
+            {
+                builder.addEvent( transformed );
             }
         }
 
@@ -1013,17 +1052,26 @@ public final class TimeSeriesSlicer
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
         builder.setMetadata( metadata );
 
-        String[] labs = null;
+        Labels labs = null;
 
         if ( !labels.isEmpty() )
         {
-            labs = labels.toArray( new String[labels.size()] );
+            String[] stringLabels = labels.toArray( new String[labels.size()] );
+            labs = Labels.of( stringLabels );
+        }
+        else
+        {
+            labs = Labels.of();
         }
 
         for ( Map.Entry<Instant, List<Double>> next : ensembles.entrySet() )
         {
             Instant time = next.getKey();
-            Ensemble value = Ensemble.of( next.getValue().stream().mapToDouble( Double::valueOf ).toArray(), labs );
+            double[] doubles = next.getValue()
+                                   .stream()
+                                   .mapToDouble( Double::valueOf )
+                                   .toArray();
+            Ensemble value = Ensemble.of( doubles, labs );
             builder.addEvent( Event.of( time, value ) );
         }
 

@@ -41,6 +41,7 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
 import wres.datamodel.time.Event;
@@ -65,9 +66,11 @@ import wres.system.SystemSettings;
 public class EnsembleForecastRetrieverTest
 {
     private static final String T2023_04_01T00_00_00Z = "2023-04-01T00:00:00Z";
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private Features featuresCache;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -118,7 +121,7 @@ public class EnsembleForecastRetrieverTest
     private static final String NO_IDENTIFIER_ERROR = "Retrieval of ensemble time-series by identifier is not "
                                                       + "currently possible because there is no identifier for "
                                                       + "ensemble time-series in the WRES database.";
-    
+
     @BeforeClass
     public static void oneTimeSetup()
     {
@@ -129,7 +132,7 @@ public class EnsembleForecastRetrieverTest
     @Before
     public void setup() throws SQLException, LiquibaseException
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( "EnsembleForecastRetrieverTest" );
@@ -193,18 +196,21 @@ public class EnsembleForecastRetrieverTest
                                        FEATURE,
                                        this.unitMapper.getDesiredMeasurementUnitName() );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+
+        Labels expectedLabels = Labels.of( "123", "456", "567" );
+
         TimeSeries<Ensemble> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                            Ensemble.of( 30.0, 100.0, 65.0 ) ) )
+                                            Ensemble.of( new double[] { 30.0, 100.0, 65.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( 37.0, 107.0, 72.0 ) ) )
+                                            Ensemble.of( new double[] { 37.0, 107.0, 72.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
-                                            Ensemble.of( 44.0, 114.0, 79.0 ) ) )
+                                            Ensemble.of( new double[] { 44.0, 114.0, 79.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
-                                            Ensemble.of( 51.0, 121.0, 86.0 ) ) )
+                                            Ensemble.of( new double[] { 51.0, 121.0, 86.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
-                                            Ensemble.of( 58.0, 128.0, 93.0 ) ) )
+                                            Ensemble.of( new double[] { 58.0, 128.0, 93.0 }, expectedLabels ) ) )
                        .build();
 
         // Actual series equals expected series
@@ -247,18 +253,21 @@ public class EnsembleForecastRetrieverTest
                                        FEATURE,
                                        this.unitMapper.getDesiredMeasurementUnitName() );
         TimeSeriesBuilder<Ensemble> builder = new TimeSeriesBuilder<>();
+
+        Labels expectedLabels = Labels.of( "567" );
+
         TimeSeries<Ensemble> expectedSeries =
                 builder.setMetadata( expectedMetadata )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                            Ensemble.of( 65.0 ) ) )
+                                            Ensemble.of( new double[] { 65.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( 72.0 ) ) )
+                                            Ensemble.of( new double[] { 72.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
-                                            Ensemble.of( 79.0 ) ) )
+                                            Ensemble.of( new double[] { 79.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
-                                            Ensemble.of( 86.0 ) ) )
+                                            Ensemble.of( new double[] { 86.0 }, expectedLabels ) ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
-                                            Ensemble.of( 93.0 ) ) )
+                                            Ensemble.of( new double[] { 93.0 }, expectedLabels ) ) )
                        .build();
 
         // Actual series equals expected series
@@ -302,13 +311,13 @@ public class EnsembleForecastRetrieverTest
 
         assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
     }
-    
+
     @Test
     public void testGetByIdentifierStreamThrowsExpectedException()
     {
         // Build the retriever
         Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setDatabase( this.wresDatabase)
+                new EnsembleForecastRetriever.Builder().setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeature( FEATURE )
@@ -321,7 +330,7 @@ public class EnsembleForecastRetrieverTest
 
         assertEquals( NO_IDENTIFIER_ERROR, expected.getMessage() );
     }
-    
+
     @After
     public void tearDown() throws SQLException
     {
