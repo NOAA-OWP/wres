@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.DoubleUnaryOperator;
@@ -13,6 +12,7 @@ import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.scale.TimeScaleOuter.TimeScaleFunction;
@@ -88,9 +88,9 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
             int memberCount = this.getMemberCountAndValidateConstant( events );
 
-            Optional<String[]> labels = events.last()
-                                              .getValue()
-                                              .getLabels();
+            Labels labels = events.last()
+                                  .getValue()
+                                  .getLabels();
 
             double[] upscaled = new double[memberCount];
 
@@ -105,12 +105,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
                 upscaled[i] = nextUpscaled;
             }
 
-            if ( labels.isPresent() )
-            {
-                return Ensemble.of( upscaled, labels.get() );
-            }
-
-            return Ensemble.of( upscaled );
+            return Ensemble.of( upscaled, labels );
         };
     }
 

@@ -1078,6 +1078,7 @@ public class Database {
      * aid in remote debugging.
      * Moved from {@link wres.io.Operations} 2021-03-15, see history there.
      * @param arguments The arguments used to run the WRES
+     * @param projectName the project name
      * @param start The instant at which the WRES began execution
      * @param end The instant at which the WRES finished execution (excluding this)
      * @param failed Whether or not the execution failed

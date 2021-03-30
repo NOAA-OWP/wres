@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.sampledata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.PoolOfPairs;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -116,10 +116,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     private final UnaryOperator<L> leftTransformer;
 
     /**
-     * A transformer that applies value constraints to right-ish values.
+     * A transformer of right-ish values that can take into account the event as a whole.
      */
 
-    private final UnaryOperator<R> rightTransformer;
+    private final UnaryOperator<Event<R>> rightTransformer;
 
     /**
      * A mapper to map between left-ish climate values and double values. TODO: propagate left-ish data for 
@@ -217,7 +217,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
          * A transformer that applies value constraints to right-ish values.
          */
 
-        private UnaryOperator<R> rightTransformer;
+        private UnaryOperator<Event<R>> rightTransformer;
 
         /**
          * A mapper to map between left-ish climate values and double values. TODO: make the climatology generic, 
@@ -349,10 +349,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         }
 
         /**
-         * @param rightTransformer the right transformer
+         * @param rightTransformer the right transformer, which may consider the encapsulating event
          * @return the builder
          */
-        Builder<L, R> setRightTransformer( UnaryOperator<R> rightTransformer )
+        Builder<L, R> setRightTransformer( UnaryOperator<Event<R>> rightTransformer )
         {
             this.rightTransformer = rightTransformer;
 
@@ -706,7 +706,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
      * @return the transformer for right values
      */
 
-    private UnaryOperator<R> getRightTransformer()
+    private UnaryOperator<Event<R>> getRightTransformer()
     {
         return this.rightTransformer;
     }
