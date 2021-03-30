@@ -270,6 +270,7 @@ then
 	echo "cat summary.txt" 2>&1 | /usr/bin/tee --append $LOGFILE
 	cat summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 #	cat redmineFile.txt 2>&1 | /usr/bin/tee --append $LOGFILE
+	ls -l $WRES_DIRJ/install_scripts/redmineTemplateFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
 	if [ -f $WRES_DIRJ/install_scripts/redmineTemplateFile.xml ]
 	then
 		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
