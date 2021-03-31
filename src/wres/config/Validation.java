@@ -54,6 +54,7 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.generated.RemoveMemberByValidYear;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
@@ -76,6 +77,10 @@ import wres.system.SystemSettings;
 
 public class Validation
 {
+
+    private static final String NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC = "not appear to be valid. Please use numeric ";
+
+    private static final String THE_MONTH_AND_DAY_COMBINATION_DOES = " The month {} and day {} combination does ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Validation.class );
 
@@ -1652,8 +1657,8 @@ public class Validation
             catch ( DateTimeException dte )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The month {} and day {} combination does "
-                             + "not appear to be valid. Please use numeric "
+                             + THE_MONTH_AND_DAY_COMBINATION_DOES
+                             + NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC
                              + "month and numeric day, such as 4 for April "
                              + "and 20 for 20th.",
                              projectConfigPlus.getOrigin(),
@@ -1672,8 +1677,8 @@ public class Validation
             catch ( DateTimeException dte )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The month {} and day {} combination does "
-                             + "not appear to be valid. Please use numeric "
+                             + THE_MONTH_AND_DAY_COMBINATION_DOES
+                             + NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC
                              + "month and numeric day, such as 8 for August"
                              + " and 30 for 30th.",
                              projectConfigPlus.getOrigin(),
@@ -2298,9 +2303,35 @@ public class Validation
         {
             for ( DataSourceConfig.Source s : dataSourceConfig.getSource() )
             {
-                dataSourcesValid = Validation.isSourceValid( projectConfigPlus,
-                                                             dataSourceConfig,
-                                                             s );
+                dataSourcesValid = dataSourcesValid && Validation.isSourceValid( projectConfigPlus,
+                                                                                 dataSourceConfig,
+                                                                                 s );
+            }
+        }
+
+        // Check for a valid monthday when omiting an ensemble member by valid year
+        if ( Objects.nonNull( dataSourceConfig.getRemoveMemberByValidYear() ) )
+        {
+            RemoveMemberByValidYear remove = dataSourceConfig.getRemoveMemberByValidYear();
+
+            try
+            {
+                MonthDay.of( remove.getEarliestMonth(),
+                             remove.getEarliestDay() );
+            }
+            catch ( DateTimeException dte )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + THE_MONTH_AND_DAY_COMBINATION_DOES
+                             + NOT_APPEAR_TO_BE_VALID_PLEASE_USE_NUMERIC
+                             + "month and numeric day, such as 4 for April "
+                             + "and 20 for 20th.",
+                             projectConfigPlus.getOrigin(),
+                             remove.sourceLocation().getLineNumber(),
+                             remove.sourceLocation().getColumnNumber(),
+                             remove.getEarliestMonth(),
+                             remove.getEarliestDay() );
+                dataSourcesValid = false;
             }
         }
 
