@@ -55,7 +55,7 @@ public class WebSourceTest
     @Before
     public void setup()
     {
-        MockitoAnnotations.initMocks( this );
+        MockitoAnnotations.openMocks( this );
         Mockito.when( mockSystemSettings.getMaximumWebClientThreads() )
                .thenReturn( 1 );
         this.fakeProjectConfig = new ProjectConfig( null, null, null, null, null, null );
@@ -80,6 +80,7 @@ public class WebSourceTest
                                                               null,
                                                               null,
                                                               List.of( urlParameterOne, urlParameterTwo ),
+                                                              null,
                                                               null,
                                                               null );
         DataSource dataSource = DataSource.of( source,
@@ -134,6 +135,7 @@ public class WebSourceTest
                                                               null,
                                                               List.of( urlParameterOne, urlParameterTwo ),
                                                               null,
+                                                              null,
                                                               null );
         DataSource dataSource = DataSource.of( source,
                                                sourceConfig,
@@ -185,6 +187,7 @@ public class WebSourceTest
                                                               null,
                                                               null,
                                                               List.of( urlParameterOne, urlParameterTwo ),
+                                                              null,
                                                               null,
                                                               null );
         DataSource dataSource = DataSource.of( source,

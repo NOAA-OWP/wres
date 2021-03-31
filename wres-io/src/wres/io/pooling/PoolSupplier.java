@@ -199,6 +199,12 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     private final UnaryOperator<Event<R>> rightTransformer;
 
     /**
+     * A function that transforms baseline-ish data and may consider the encapsulating event.
+     */
+
+    private final UnaryOperator<Event<R>> baselineTransformer;
+
+    /**
      * An offset to apply to the valid times of the left data.
      */
 
@@ -306,6 +312,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
         List<TimeSeries<Pair<L, R>>> mainPairs = this.createPairs( leftData,
                                                                    rightData,
+                                                                   this.getRightTransformer(),
                                                                    desiredTimeScaleToUse,
                                                                    pairedFrequency,
                                                                    false );
@@ -330,6 +337,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
 
             List<TimeSeries<Pair<L, R>>> basePairs = this.createPairs( leftData,
                                                                        baselineData,
+                                                                       this.getBaselineTransformer(),
                                                                        desiredTimeScaleToUse,
                                                                        pairedFrequency,
                                                                        true );
@@ -472,6 +480,12 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
          */
 
         private UnaryOperator<Event<R>> rightTransformer;
+
+        /**
+         * A function that transforms baseline-ish data and may consider the encapsulating event.
+         */
+
+        private UnaryOperator<Event<R>> baselineTransformer;
 
         /**
          * The frequency at which pairs should be produced.
@@ -654,6 +668,17 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         }
 
         /**
+         * @param baselineTransformer the transformer for baseline-style data
+         * @return the builder
+         */
+        PoolOfPairsSupplierBuilder<L, R> setBaselineTransformer( UnaryOperator<Event<R>> baselineTransformer )
+        {
+            this.baselineTransformer = baselineTransformer;
+
+            return this;
+        }
+
+        /**
          * @param frequency the frequency at which pairs should be produced.
          * @return the builder
          */
@@ -680,7 +705,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      * Creates a paired dataset from the input, rescaling the left/right data as needed.
      * 
      * @param left the left data
-     * @param right the right data
+     * @param rightOrBaseline the right or baseline data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @param isBaseline is true if the pool is a baseline pool (helps with logging)
@@ -691,24 +716,26 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
      */
 
     private List<TimeSeries<Pair<L, R>>> createPairs( List<TimeSeries<L>> left,
-                                                      List<TimeSeries<R>> right,
+                                                      List<TimeSeries<R>> rightOrBaseline,
+                                                      UnaryOperator<Event<R>> rightOrBaselineTransformer,
                                                       TimeScaleOuter desiredTimeScale,
                                                       Duration frequency,
                                                       boolean isBaseline )
     {
         Objects.requireNonNull( left );
 
-        Objects.requireNonNull( right );
+        Objects.requireNonNull( rightOrBaseline );
 
         List<TimeSeries<Pair<L, R>>> returnMe = new ArrayList<>();
 
         // Iterate through each combination of left/right series 
         for ( TimeSeries<L> nextLeft : left )
         {
-            for ( TimeSeries<R> nextRight : right )
+            for ( TimeSeries<R> nextRight : rightOrBaseline )
             {
                 TimeSeries<Pair<L, R>> pairs = this.createSeriesPairs( nextLeft,
                                                                        nextRight,
+                                                                       rightOrBaselineTransformer,
                                                                        desiredTimeScale,
                                                                        frequency );
 
@@ -743,7 +770,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                           clarify,
                           metaToReport,
                           left.size(),
-                          right.size(),
+                          rightOrBaseline.size(),
                           returnMe.size() );
         }
 
@@ -751,31 +778,33 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
     }
 
     /**
-     * Returns a time-series of pairs from a left and right series, rescaling as needed.
+     * Returns a time-series of pairs from a left and right or baseline series, rescaling as needed.
      * 
      * @param left the left time-series
-     * @param right the right time-series
+     * @param rightOrBaseline the right or baseline time-series
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @return a paired time-series
      */
 
     private TimeSeries<Pair<L, R>> createSeriesPairs( TimeSeries<L> left,
-                                                      TimeSeries<R> right,
+                                                      TimeSeries<R> rightOrBaseline,
+                                                      UnaryOperator<Event<R>> rightOrBaselineTransformer,
                                                       TimeScaleOuter desiredTimeScale,
                                                       Duration frequency )
     {
         Objects.requireNonNull( left );
 
-        Objects.requireNonNull( right );
+        Objects.requireNonNull( rightOrBaseline );
 
         // Snip the left data to the right with a buffer on the lower bound, if required
         Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
 
-        TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, right, period, Duration.ZERO );
-        TimeSeries<R> scaledRight = right;
+        TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, rightOrBaseline, period, Duration.ZERO );
+        TimeSeries<R> scaledRight = rightOrBaseline;
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
-        boolean upscaleRight = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( right.getTimeScale() );
+        boolean upscaleRight = Objects.nonNull( desiredTimeScale )
+                               && !desiredTimeScale.equals( rightOrBaseline.getTimeScale() );
 
         // Upscale left?
         if ( upscaleLeft )
@@ -789,7 +818,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             }
 
             // Acquire the times from the right series at which left upscaled values should end
-            SortedSet<Instant> endsAt = this.getEventValidTimes( right );
+            SortedSet<Instant> endsAt = this.getEventValidTimes( rightOrBaseline );
 
             RescaledTimeSeriesPlusValidation<L> upscaledLeft = this.getLeftUpscaler()
                                                                    .upscale( left,
@@ -818,8 +847,8 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             if ( LOGGER.isTraceEnabled() )
             {
                 LOGGER.trace( "Upscaling right time-series {} from {} to {}.",
-                              right.hashCode(),
-                              right.getTimeScale(),
+                              rightOrBaseline.hashCode(),
+                              rightOrBaseline.getTimeScale(),
                               desiredTimeScale );
             }
 
@@ -827,7 +856,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             SortedSet<Instant> endsAt = this.getEventValidTimes( scaledLeft );
 
             RescaledTimeSeriesPlusValidation<R> upscaledRight = this.getRightUpscaler()
-                                                                    .upscale( right,
+                                                                    .upscale( rightOrBaseline,
                                                                               desiredTimeScale,
                                                                               endsAt );
 
@@ -837,19 +866,19 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
             {
                 LOGGER.trace( "Finished upscaling right time-series {} from {} to {}, which produced a "
                               + "new time-series, {}.",
-                              right.hashCode(),
-                              right.getTimeScale(),
+                              rightOrBaseline.hashCode(),
+                              rightOrBaseline.getTimeScale(),
                               desiredTimeScale,
                               scaledRight.hashCode() );
             }
 
             // Log any warnings
-            PoolSupplier.logScaleValidationWarnings( right, upscaledRight.getValidationEvents() );
+            PoolSupplier.logScaleValidationWarnings( rightOrBaseline, upscaledRight.getValidationEvents() );
         }
 
         // Transform the rescaled values, if required
         TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.leftTransformer );
-        TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, this.rightTransformer );
+        TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, rightOrBaselineTransformer );
 
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
@@ -1154,6 +1183,24 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
                                                     + "." );
 
         return this.rightUpscaler;
+    }
+
+    /**
+     * @return the transformer for right-ish data
+     */
+
+    private UnaryOperator<Event<R>> getRightTransformer()
+    {
+        return this.rightTransformer;
+    }
+
+    /**
+     * @return the transformer for baseline-ish data
+     */
+
+    private UnaryOperator<Event<R>> getBaselineTransformer()
+    {
+        return this.baselineTransformer;
     }
 
     /**
@@ -1671,6 +1718,7 @@ public class PoolSupplier<L, R> implements Supplier<PoolOfPairs<L, R>>
         this.inputs = builder.inputs;
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;
+        this.baselineTransformer = builder.baselineTransformer;
         this.frequency = builder.frequency;
         this.crossPairer = builder.crossPairer;
 

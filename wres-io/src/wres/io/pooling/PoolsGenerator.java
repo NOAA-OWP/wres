@@ -122,6 +122,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     private final UnaryOperator<Event<R>> rightTransformer;
 
     /**
+     * A transformer of baseline-ish values that can take into account the event as a whole.
+     */
+
+    private final UnaryOperator<Event<R>> baselineTransformer;
+
+    /**
      * A mapper to map between left-ish climate values and double values. TODO: propagate left-ish data for 
      * climatology, rather than transforming it upfront. 
      */
@@ -214,10 +220,16 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         private UnaryOperator<L> leftTransformer;
 
         /**
-         * A transformer that applies value constraints to right-ish values.
+         * A transformer for right-ish values that can take into account the encapsulating event.
          */
 
         private UnaryOperator<Event<R>> rightTransformer;
+
+        /**
+         * A transformer for baseline-ish values that can take into account the encapsulating event.
+         */
+
+        private UnaryOperator<Event<R>> baselineTransformer;
 
         /**
          * A mapper to map between left-ish climate values and double values. TODO: make the climatology generic, 
@@ -360,6 +372,17 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         }
 
         /**
+         * @param baselineTransformer the baseline transformer, which may consider the encapsulating event
+         * @return the builder
+         */
+        Builder<L, R> setBaselineTransformer( UnaryOperator<Event<R>> baselineTransformer )
+        {
+            this.baselineTransformer = baselineTransformer;
+
+            return this;
+        }
+
+        /**
          * @param climateMapper the climateMapper to set
          * @return the builder
          */
@@ -415,6 +438,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
         this.climateAdmissibleValue = builder.climateAdmissibleValue;
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;
+        this.baselineTransformer = builder.baselineTransformer;
         this.climateMapper = builder.climateMapper;
         this.crossPairer = builder.crossPairer;
 
@@ -471,7 +495,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
                .setCrossPairer( this.getCrossPairer() )
                .setInputsDeclaration( inputsConfig )
                .setLeftTransformer( this.getLeftTransformer() )
-               .setRightTransformer( this.getRightTransformer() );
+               .setRightTransformer( this.getRightTransformer() )
+               .setBaselineTransformer( this.getBaselineTransformer() );
 
         // Obtain and set the desired time scale. 
         TimeScaleOuter desiredTimeScale = this.setAndGetDesiredTimeScale( pairConfig, builder );
@@ -709,6 +734,17 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<PoolOfPairs<
     private UnaryOperator<Event<R>> getRightTransformer()
     {
         return this.rightTransformer;
+    }
+
+    /**
+     * Returns the transformer for baseline values, if any.
+     * 
+     * @return the transformer for baseline values
+     */
+
+    private UnaryOperator<Event<R>> getBaselineTransformer()
+    {
+        return this.baselineTransformer;
     }
 
     /**

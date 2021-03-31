@@ -143,7 +143,7 @@ public class WrdsNwmReaderTest
     @Before
     public void init()
     {
-        MockitoAnnotations.initMocks( this);
+        MockitoAnnotations.openMocks( this);
         this.systemSettings = SystemSettings.withDefaults();
     }
 
@@ -172,6 +172,7 @@ public class WrdsNwmReaderTest
         DataSourceConfig config = new DataSourceConfig( DatasourceType.ANALYSES,
                                                         sourceList,
                                                         configVariable,
+                                                        null,
                                                         null,
                                                         null,
                                                         null,
@@ -349,6 +350,7 @@ public class WrdsNwmReaderTest
         DataSourceConfig config = new DataSourceConfig( DatasourceType.ANALYSES,
                                                         sourceList,
                                                         configVariable,
+                                                        null,
                                                         null,
                                                         null,
                                                         null,
