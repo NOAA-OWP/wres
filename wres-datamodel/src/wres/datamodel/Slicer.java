@@ -304,8 +304,7 @@ public final class Slicer
             return returnMe;
         };
     }
-    
-    
+
 
     /**
      * Returns the left side of the input as a primitive array of doubles.
@@ -417,6 +416,61 @@ public final class Slicer
         Objects.requireNonNull( predicate, NULL_INPUT_EXCEPTION );
 
         return outputs.stream().filter( predicate ).collect( Collectors.toUnmodifiableList() );
+    }
+
+    /**
+     * Removes the ensemble members that match the input labels.
+     * 
+     * @param ensemble the ensemble to modify
+     * @param labels the labels to remove
+     * @return the modified ensemble
+     * @throws IllegalArgumentException if the ensemble does not contain any labels
+     * @throws NullPointerException if either input is null
+     */
+
+    public static Ensemble filter( Ensemble ensemble, String... labels )
+    {
+        Objects.requireNonNull( ensemble );
+        Objects.requireNonNull( labels );
+
+        if ( !ensemble.getLabels().hasLabels() )
+        {
+            throw new IllegalArgumentException( "Cannot filter ensemble " + ensemble
+                                                + " to remove labels because the "
+                                                + "ensemble is not labelled." );
+        }
+
+        // No-op
+        if ( labels.length == 0 )
+        {
+            return ensemble;
+        }
+
+        List<Double> newMembers = new ArrayList<>();
+        List<String> newLabels = new ArrayList<>();
+
+        double[] oldMembers = ensemble.getMembers();
+        String[] oldLabels = ensemble.getLabels().getLabels();
+        List<String> filterLabels = Arrays.asList( labels );
+
+        // Iterate and filter the members and corresponding labels
+        for ( int i = 0; i < oldMembers.length; i++ )
+        {
+            if ( !filterLabels.contains( oldLabels[i] ) )
+            {
+                newMembers.add( oldMembers[i] );
+                newLabels.add( oldLabels[i] );
+            }
+        }
+
+        // Unbox
+        double[] filteredMemberArray = newMembers.stream()
+                                                 .mapToDouble( Double::doubleValue )
+                                                 .toArray();
+
+        String[] filteredLabelArray = newLabels.toArray( new String[newLabels.size()] );
+
+        return Ensemble.of( filteredMemberArray, Labels.of( filteredLabelArray ) );
     }
 
     /**

@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBasic;
 import wres.datamodel.sampledata.SampleMetadata;
@@ -772,6 +773,43 @@ public final class SlicerTest
                                                             unorderedStatistics.get( 0 ) );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testFilterEnsemble()
+    {
+        double[] members = new double[] { 1, 2, 3, 4, 5 };
+        Labels labels = Labels.of( "6", "7", "8", "9", "10" );
+        Ensemble toFilter = Ensemble.of( members, labels );
+
+        Ensemble actual = Slicer.filter( toFilter, "6", "7", "9", "10" );
+        Ensemble expected = Ensemble.of( new double[] { 3 }, Labels.of( "8" ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testFilterEnsembleThrowsIllegalArgumentExceptionWhenLabelsAreMissing()
+    {
+        assertThrows( IllegalArgumentException.class,
+                      () -> Slicer.filter( Ensemble.of( 1.0 ),
+                                           "aLabel" ) );
+    }
+    
+    @Test
+    public void testFilterThrowsNullPointerExceptionWhenEnsembleIsNull()
+    {
+        assertThrows( NullPointerException.class,
+                      () -> Slicer.filter( null,
+                                           "aLabel" ) );
+    }
+    
+    @Test
+    public void testFilterThrowsNullPointerExceptionWhenLabelsIsNull()
+    {
+        assertThrows( NullPointerException.class,
+                      () -> Slicer.filter( Ensemble.of( 1.0 ),
+                                           (String[]) null ) );
     }
 
     @Test
