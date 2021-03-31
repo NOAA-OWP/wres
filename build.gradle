@@ -52,7 +52,7 @@ plugins
     id 'com.github.ksoichiro.console.reporter' version '0.6.2'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '6.1.1'
+    id 'org.owasp.dependencycheck' version '6.1.5'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "4.1.1"
@@ -204,7 +204,7 @@ project(':wres-util')
 
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
 
-        compile 'com.google.guava:guava:30.1-jre'
+        compile 'com.google.guava:guava:30.1.1-jre'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         compile('edu.ucar:cdm-core:5.4.1')
@@ -241,11 +241,11 @@ project(':wres-system')
         compile project(':wres-util')
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
 
-        compile 'com.google.guava:guava:30.1-jre'
+        compile 'com.google.guava:guava:30.1.1-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.19'
-        compile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.1'
+        compile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.2'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.0.0'
@@ -258,7 +258,7 @@ project(':wres-system')
         compile 'org.slf4j:jul-to-slf4j:2.0.0-alpha1'
 
         //JB @ 02/16/17
-        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.1-jre'
+        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.1.1-jre'
 
         testCompile 'junit:junit:4.13.2'
 
@@ -283,7 +283,7 @@ project(':wres-datamodel')
 
         implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation 'com.github.ben-manes.caffeine:caffeine:3.0.0'
+        implementation 'com.github.ben-manes.caffeine:caffeine:3.0.1'
 
         // The following four provide units of measure. If used in public
         // method signatures, they will be upgraded to api (not implementation).
@@ -361,7 +361,7 @@ project(':wres-io')
         compile 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        compile 'org.jetbrains.kotlin:kotlin-stdlib:1.4.31'
+        compile 'org.jetbrains.kotlin:kotlin-stdlib:1.4.32'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtime 'org.slf4j:jul-to-slf4j:2.0.0-alpha1'
@@ -370,9 +370,9 @@ project(':wres-io')
         runtime 'org.slf4j:jcl-over-slf4j:2.0.0-alpha1'
 
         //JB @ 02/16/17
-        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.1-jre'
+        testCompile group: 'com.google.guava', name: 'guava-testlib', version: '30.1.1-jre'
 
-        testCompile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.1'
+        testCompile group: 'org.liquibase', name: 'liquibase-core', version: '4.3.2'
 
         // Mocking help
         testCompile 'org.mockito:mockito-core:3.8.0'
@@ -472,7 +472,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.15.5'
+            artifact = 'com.google.protobuf:protoc:3.15.6'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -571,7 +571,7 @@ project(':wres-statistics')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.google.protobuf:protobuf-java:3.15.5'
+        compile 'com.google.protobuf:protobuf-java:3.15.6'
         compile project(':wres-config')
 
         // JMS API ( QPID client implements 1.1, but 1.1 is not available on maven )
@@ -640,7 +640,7 @@ project(':wres-vis')
 
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
         compile group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.0.0'
-        compile 'com.google.guava:guava:30.1-jre'
+        compile 'com.google.guava:guava:30.1.1-jre'
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha5'
 
@@ -714,7 +714,7 @@ project(':wres-config')
         runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.8'
 
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
-        testImplementation 'com.github.imrafaelmerino:json-values:9.0.1'
+        testImplementation 'com.github.imrafaelmerino:json-values:9.0.2'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
@@ -836,7 +836,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.15.5'
+            artifact = 'com.google.protobuf:protoc:3.15.6'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -873,7 +873,7 @@ project(':wres-messages')
     dependencies
     {
         compile 'org.slf4j:slf4j-api:2.0.0-alpha1'
-        compile 'com.google.protobuf:protobuf-java:3.15.5'
+        compile 'com.google.protobuf:protobuf-java:3.15.6'
 
         testCompile 'junit:junit:4.13.2'
     }
@@ -962,29 +962,29 @@ project(':wres-tasker')
         compile 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.0'
 
         // Server library to run a web server:
-        compile 'org.eclipse.jetty:jetty-server:11.0.1'
+        compile 'org.eclipse.jetty:jetty-server:11.0.2'
 
         // Support HTTP/2
-        compile 'org.eclipse.jetty.http2:http2-server:11.0.1'
+        compile 'org.eclipse.jetty.http2:http2-server:11.0.2'
 
         // Support ALPN
-        compile 'org.eclipse.jetty:jetty-alpn-java-server:11.0.1'
+        compile 'org.eclipse.jetty:jetty-alpn-java-server:11.0.2'
 
         // Servlet container library to run a web application with:
-        compile 'org.eclipse.jetty:jetty-webapp:11.0.1'
+        compile 'org.eclipse.jetty:jetty-webapp:11.0.2'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
         compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.0.1'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        compile 'com.github.ben-manes.caffeine:caffeine:3.0.0'
+        compile 'com.github.ben-manes.caffeine:caffeine:3.0.1'
 
         // To accurately detect mime types of files.
-        compile 'org.apache.tika:tika-core:1.25'
+        compile 'org.apache.tika:tika-core:1.26'
 
         // To persist job metadata while keeping it relatively fast
-        compile 'org.redisson:redisson:3.15.1'
+        compile 'org.redisson:redisson:3.15.3'
 
         // For ToStringBuilder
         compile 'org.apache.commons:commons-lang3:3.12.0'
@@ -1356,13 +1356,13 @@ dependencies
 
     compile 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     compile 'javax.annotation:javax.annotation-api:1.3.2'
-    compile 'org.eclipse.jetty:jetty-server:9.4.38.v20210224'
-    compile 'org.eclipse.jetty:jetty-webapp:9.4.38.v20210224'
+    compile 'org.eclipse.jetty:jetty-server:9.4.39.v20210325'
+    compile 'org.eclipse.jetty:jetty-webapp:9.4.39.v20210325'
     compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.33'
     // Update the jetty-continuation that above jersey dep depends on
-    compile 'org.eclipse.jetty:jetty-continuation:9.4.38.v20210224'
+    compile 'org.eclipse.jetty:jetty-continuation:9.4.39.v20210325'
 
-    compile 'com.github.ben-manes.caffeine:caffeine:3.0.0'
+    compile 'com.github.ben-manes.caffeine:caffeine:3.0.1'
 
     runtime 'org.glassfish.jersey.core:jersey-server:2.33'
     runtime 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.33'
