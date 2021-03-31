@@ -396,9 +396,21 @@
             </xs:element>
             <xs:element name="existingTimeScale" type="timeScale" minOccurs="0" maxOccurs="1"/>
             <xs:element name="urlParameter" type="urlParameterType" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="removeMemberByValidYear" type="removeMemberByValidYear" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="featureDimension" type="featureDimension" />
+    </xs:complexType>
+
+    <xs:complexType name ="removeMemberByValidYear">
+           <xs:annotation>
+                <xs:documentation>If present, remove the ensemble member whose
+                    label matches the valid year of the event for a year that 
+                    begins on the prescribed monthday. When the monthday is 
+                    undefined, it defaults to 1 January.</xs:documentation>
+               </xs:annotation>
+        <xs:attribute name="earliestDay" type="xs:short" default = "1" />
+        <xs:attribute name="earliestMonth" type="xs:short" default = "1" />
     </xs:complexType>
 
     <xs:simpleType name="thresholdFormat">

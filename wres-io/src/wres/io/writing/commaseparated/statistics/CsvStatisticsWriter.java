@@ -324,7 +324,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         }
 
         // Merge in geometry description
-        StringJoiner geometryDescription = this.getGeometryDescription( pool.getGeometryTuplesList() );
+        List<GeometryTuple> geometries = pool.getGeometryTuplesList();
+        StringJoiner geometryDescription = this.getGeometryDescription( geometries );
         joiner = joiner.merge( geometryDescription );
 
         // Merge in time window description

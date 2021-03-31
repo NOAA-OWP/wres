@@ -3366,6 +3366,7 @@ public class WRDSSourceTest
                                                         null,
                                                         null,
                                                         null,
+                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -3502,6 +3503,7 @@ public class WRDSSourceTest
                                                         null,
                                                         null,
                                                         null,
+                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -3628,6 +3630,7 @@ public class WRDSSourceTest
                                                         null,
                                                         null,
                                                         null,
+                                                        null,
                                                         null );
 
         ProjectConfig.Inputs inputs = new ProjectConfig.Inputs( null,
@@ -3737,6 +3740,7 @@ public class WRDSSourceTest
         DataSourceConfig config = new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                         sourceList,
                                                         configVariable,
+                                                        null,
                                                         null,
                                                         null,
                                                         null,
