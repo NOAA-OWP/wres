@@ -24,7 +24,7 @@ RUN apk add tar && \
 
 #############
 # Final image
-FROM openjdk:11-jre-slim
+FROM openjdk:11.0.10-jre-slim
 
 # Set env vars expected by qpid
 ENV QPID_HOME=/usr/local
