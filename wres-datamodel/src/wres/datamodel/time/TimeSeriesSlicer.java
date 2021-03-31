@@ -2,6 +2,9 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +54,12 @@ public final class TimeSeriesSlicer
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesSlicer.class );
+
+    /**
+     * 1 January
+     */
+
+    private static final MonthDay FIRST_JANUARY = MonthDay.of( 1, 1 );
 
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
@@ -730,6 +739,47 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
+    }
+
+    /**
+     * Removes an ensemble member whose label correspond to the year in which the event is valid for a year that 
+     * begins on the prescribed monthday. For example, if the valid datetime of the event is 1984-10-02T00:00:00Z and 
+     * the start of the year is 1 October, then the ensemble member with label "1985" will be removed because the year 
+     * "1985" begins at 1984-10-01T00:00:00Z.
+     * 
+     * @param event the event
+     * @param startOfYear the start monthday of the year
+     * @return the filtered event
+     * @throws NullPointerException if any input is null
+     */
+
+    public static Event<Ensemble> filter( Event<Ensemble> event, MonthDay startOfYear )
+    {
+        Objects.requireNonNull( event );
+        Objects.requireNonNull( startOfYear );
+
+        Instant validTime = event.getTime();
+        ZonedDateTime zoned = validTime.atZone( ZoneId.of( "Z" ) );
+
+        int validYear = zoned.getYear();
+
+        // Add a year if the valid monthday is after the prescribed monthday
+        MonthDay validMonthDay = MonthDay.of( zoned.getMonthValue(), zoned.getDayOfMonth() );
+
+        // Non-calendar year, then year starts on-or-after
+        if ( !startOfYear.equals( FIRST_JANUARY )
+             && ( validMonthDay.equals( startOfYear ) || validMonthDay.isAfter( startOfYear ) ) )
+        {
+            validYear += 1;
+        }
+
+        String labelToEliminate = Integer.toString( validYear );
+
+        // Modify the input ensemble
+        Ensemble toModify = event.getValue();
+        Ensemble modified = Slicer.filter( toModify, labelToEliminate );
+
+        return Event.of( validTime, modified );
     }
 
     /**

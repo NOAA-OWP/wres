@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -759,7 +760,7 @@ public final class TimeSeriesSlicerTest
         TimeSeries<Double> expected = new TimeSeriesBuilder<Double>().addEvent( Event.of( T1985_01_01T02_00_00Z, 2.0 ) )
                                                                      .setMetadata( firstMetadata )
                                                                      .build();
-        
+
         assertEquals( expected, actual );
     }
 
@@ -954,6 +955,51 @@ public final class TimeSeriesSlicerTest
                                                .build();
 
         assertEquals( List.of( expectedOne, expectedTwo ), actual );
+    }
+
+    @Test
+    public void testFilterEnsembleForYearThatBeginsOnFirstOctober()
+    {
+        Instant validTime = Instant.parse( "1984-10-02T00:00:00Z" );
+        Ensemble ensemble = Ensemble.of( new double[] { 1, 2, 3 }, Labels.of( "1984", "1985", "1986" ) );
+        Event<Ensemble> toFilter = Event.of( validTime, ensemble );
+
+        // New year starts on 1 October
+        MonthDay startOfYear = MonthDay.of( 10, 1 );
+
+        Event<Ensemble> actual = TimeSeriesSlicer.filter( toFilter, startOfYear );
+
+        Ensemble expectedEnsemble = Ensemble.of( new double[] { 1, 3 }, Labels.of( "1984", "1986" ) );
+        Event<Ensemble> expected = Event.of( validTime, expectedEnsemble );
+
+        assertEquals( expected, actual );
+
+        // Test for event before 1 October
+        Instant validTimeTwo = Instant.parse( "1984-09-30T23:59:59Z" );
+        Event<Ensemble> toFilterTwo = Event.of( validTimeTwo, ensemble );
+        Event<Ensemble> actualTwo = TimeSeriesSlicer.filter( toFilterTwo, startOfYear );
+
+        Ensemble expectedEnsembleTwo = Ensemble.of( new double[] { 2, 3 }, Labels.of( "1985", "1986" ) );
+        Event<Ensemble> expectedTwo = Event.of( validTimeTwo, expectedEnsembleTwo );
+
+        assertEquals( expectedTwo, actualTwo );
+    }
+
+    @Test
+    public void testFilterEnsembleForYearThatBeginsOnFirstJanuary()
+    {
+        Instant validTime = Instant.parse( "1984-01-01T00:00:00Z" );
+        Ensemble ensemble = Ensemble.of( new double[] { 1, 2, 3 }, Labels.of( "1984", "1985", "1986" ) );
+        Event<Ensemble> toFilter = Event.of( validTime, ensemble );
+        // New year starts on 1 January
+        MonthDay startOfYear = MonthDay.of( 1, 1 );
+
+        Event<Ensemble> actual = TimeSeriesSlicer.filter( toFilter, startOfYear );
+
+        Ensemble expectedEnsemble = Ensemble.of( new double[] { 2, 3 }, Labels.of( "1985", "1986" ) );
+        Event<Ensemble> expected = Event.of( validTime, expectedEnsemble );
+
+        assertEquals( expected, actual );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
