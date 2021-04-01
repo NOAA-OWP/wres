@@ -77,6 +77,7 @@ services:
             broker:
                 condition: service_healthy
             eventsbroker:
+                condition: service_started
         volumes:
          # For input and output data:
          - /mnt/wres_share:/mnt/wres_share
