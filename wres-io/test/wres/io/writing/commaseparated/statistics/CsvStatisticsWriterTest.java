@@ -60,7 +60,7 @@ class CsvStatisticsWriterTest
     void testWriteDoubleScores() throws IOException
     {
         // Get some raw scores and an imaginary evaluation
-        Statistics statistics = this.getDoubleScoreStatistics();
+        Statistics statistics = this.getDoubleScoreStatistics( false );
         Evaluation evaluation = this.getEvaluation();
 
         // Create a path on an in-memory file system
@@ -110,6 +110,61 @@ class CsvStatisticsWriterTest
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }
     }
+    
+    @Test
+    void testWriteDoubleScoresForSeparateBaseline() throws IOException
+    {
+        // Get some raw scores and an imaginary evaluation
+        Statistics statistics = this.getDoubleScoreStatistics( true );
+        Evaluation evaluation = this.getEvaluation();
+
+        // Create a path on an in-memory file system
+        String fileName = "evaluation.csv";
+
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( "test", fileName );
+            Path csvPath = Files.createFile( pathToStore );
+
+            // Create the writer and write
+            try ( CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation,
+                                                                       csvPath,
+                                                                       false ) )
+            {
+                writer.apply( statistics );
+            }
+
+            // Assert content
+            List<String> actual = Files.readAllLines( pathToStore );
+
+            assertEquals( 4, actual.size() );
+
+            assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
+
+            String lineOneExpected = "QINE,SQIN,,1,BASELINE,DRRC2,,,,DRRC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
+                                     + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
+                                     + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,PT0S,UNKNOWN,,-Infinity,,,,,"
+                                     + "LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,0.0,Infinity,0.0,1,1.0";
+
+            assertEquals( lineOneExpected, actual.get( 1 ) );
+
+            String lineTwoExpected = "QINE,SQIN,,1,BASELINE,DRRC2,,,,DRRC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
+                                     + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
+                                     + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,PT0S,UNKNOWN,,-Infinity,,,,,"
+                                     + "LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,-Infinity,Infinity,0.0,2,2.0";
+
+            assertEquals( lineTwoExpected, actual.get( 2 ) );
+
+            String lineThreeExpected = "QINE,SQIN,,1,BASELINE,DRRC2,,,,DRRC2,,,,,,,,-1000000000-01-01T00:00:00Z,"
+                                       + "+1000000000-12-31T23:59:59.999999999Z,-1000000000-01-01T00:00:00Z,"
+                                       + "+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,PT0S,UNKNOWN,,-Infinity,,,,,"
+                                       + "LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,0.0,Infinity,0.0,3,3.0";
+
+            assertEquals( lineThreeExpected, actual.get( 3 ) );
+        }
+    }    
 
     @Test
     void testWriteDurationScores() throws IOException
@@ -345,10 +400,11 @@ class CsvStatisticsWriterTest
     }
 
     /**
+     * @param isBaselinePool is true for a baseline pool, false for a regular pool
      * @return statistics that include double scores.
      */
 
-    private Statistics getDoubleScoreStatistics()
+    private Statistics getDoubleScoreStatistics( boolean isBaselinePool )
     {
         // Get some raw scores
         List<DoubleScoreStatisticOuter> scores = WriterTestHelper.getScoreStatisticsForOnePool();
@@ -357,12 +413,22 @@ class CsvStatisticsWriterTest
                           .getMetadata()
                           .getPool();
 
-        return Statistics.newBuilder()
+        Statistics.Builder builder = Statistics.newBuilder()
                          .addAllScores( scores.stream()
                                               .map( DoubleScoreStatisticOuter::getData )
-                                              .collect( Collectors.toList() ) )
-                         .setPool( pool )
-                         .build();
+                                              .collect( Collectors.toList() ) );
+        
+        if( isBaselinePool )
+        {
+            builder.setBaselinePool( pool.toBuilder()
+                                         .setIsBaselinePool( true ) );
+        }
+        else
+        {
+            builder.setPool( pool );
+        }
+        
+        return builder.build();
     }
 
     /**
