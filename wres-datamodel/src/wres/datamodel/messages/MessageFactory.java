@@ -848,7 +848,6 @@ public class MessageFactory
             return null;
         }
 
-
         // Set the pool information
         if ( metadata.getPool().getIsBaselinePool() )
         {
@@ -858,7 +857,7 @@ public class MessageFactory
         {
             statistics.setPool( metadata.getPool() );
         }
-
+        
         return statistics.build();
     }
 
@@ -934,6 +933,7 @@ public class MessageFactory
      *
      * @param metadata the metadata
      * @return the pool boundaries
+     * @throws IllegalArgumentException if the pool does not contain precisely one geometry
      */
 
     private static PoolBoundaries getPoolBoundaries( SampleMetadata metadata )
@@ -943,6 +943,13 @@ public class MessageFactory
         wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
+        if( metadata.getPool().getGeometryTuplesCount() != 1 )
+        {
+            throw new IllegalArgumentException( "Expected one geometry tuple per pool but discovered "
+                    + metadata.getPool().getGeometryTuplesCount()
+                    + ", which is not supported." );
+        }
+        
         GeometryTuple geometryTuple = metadata.getPool()
                                               .getGeometryTuples( 0 );
 

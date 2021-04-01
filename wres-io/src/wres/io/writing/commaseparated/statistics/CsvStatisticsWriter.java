@@ -212,7 +212,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                           Path path,
                                           boolean gzip,
                                           ChronoUnit durationUnits,
-                                          Function<Double,String> decimalFormatter )
+                                          Function<Double, String> decimalFormatter )
     {
         return new CsvStatisticsWriter( evaluation, path, gzip, durationUnits, decimalFormatter );
     }
@@ -230,7 +230,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         Objects.requireNonNull( statistics );
 
         LOGGER.debug( "Writer {} received a packet of statistics, which will be written to {}.", this, this.getPath() );
-        
+
         // Lock here so that all statistics for one pool appear in the same place within the file. The pool numbering 
         // depends on this. If moving down the call chain to an individual write, then pool numbers would need to 
         // appear in the statistics themselves.
@@ -591,8 +591,20 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         Objects.requireNonNull( statistics );
 
+        if ( !statistics.hasPool() && !statistics.hasBaselinePool() )
+        {
+            throw new IllegalArgumentException( "Cannot write statistics to CSV without a pool definition." );
+        }
+
         // Get the evaluation and pool information
-        StringJoiner poolDescription = this.getPoolDescription( statistics.getPool() );
+        Pool pool = statistics.getPool();
+
+        if ( !statistics.hasPool() )
+        {
+            pool = statistics.getBaselinePool();
+        }
+
+        StringJoiner poolDescription = this.getPoolDescription( pool );
 
         // Merge the evaluation and pool descriptions into an empty joiner
         StringJoiner merge = new StringJoiner( CsvStatisticsWriter.DELIMITER );
@@ -1324,7 +1336,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                  Path path,
                                  boolean gzip,
                                  ChronoUnit durationUnits,
-                                 Function<Double,String> decimalFormatter )
+                                 Function<Double, String> decimalFormatter )
     {
         LOGGER.debug( "Creating a CSV format writer, which will write statistics to {}.", path );
 
