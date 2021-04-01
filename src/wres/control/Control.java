@@ -325,15 +325,15 @@ public class Control implements Function<String[], ExecutionResult>,
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             lockManager.unlockShared( DatabaseLockManager.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
-        catch ( WresProcessingException | IOException | SQLException internalException )
-        {
-            String message = "Could not complete project execution";
-            throw new InternalWresException( message, internalException );
-        }
         catch ( ProjectConfigException userException )
         {
             String message = "Please correct the project configuration.";
             throw new UserInputException( message, userException );
+        }
+        catch ( RuntimeException | IOException | SQLException internalException )
+        {
+            String message = "Could not complete project execution";
+            throw new InternalWresException( message, internalException );
         }
         // Shutdown
         finally
