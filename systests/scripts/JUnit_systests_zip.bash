@@ -275,9 +275,12 @@ then
 	then
 		cp -v $WRES_DIRJ/install_scripts/redmineTemplateFile.xml redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
 		sed -i s/"TheSubjectLine"/"$MAIL_SUBJECT"/g redmineTempFile.xml
-		SUMMARY=`cat summary.txt`
-		echo "SUMMARY = $SUMMARY" 2>&1 | /usr/bin/tee --append $LOGFILE
-		sed -i s/"TheSummaryTextFile"/"$SUMMARY"/g redmineTempFile.xml  2>&1 | /usr/bin/tee --append $LOGFILE
+#		SUMMARY=`cat summary.txt`
+#		echo "SUMMARY = $SUMMARY" 2>&1 | /usr/bin/tee --append $LOGFILE
+#		sed -i s/"TheSummaryTextFile"/"$SUMMARY"/g redmineTempFile.xml  2>&1 | /usr/bin/tee --append $LOGFILE
+		cat summary.txt >> redmineTempFile.xml
+		echo "</notes>" >> redmineTempFile.xml
+		echo "</issue>" >> redmineTempFile.xml
 		cat redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
 		/usr/bin/curl -x '' -H 'X-Redmine***REMOVED***: ***REMOVED***' https://***REMOVED***/redmine/issues/89538.xml -X PUT -H 'Content-Type: text/xml' -T redmineTempFile.xml 
 		rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
