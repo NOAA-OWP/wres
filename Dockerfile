@@ -19,7 +19,8 @@ RUN dnf install -y \
     iptables-libs-1.8.4-15.el8_3.3 \
     kexec-tools-2.0.20-34.el8_3.1 \
     libcurl-minimal-7.61.1-14.el8_3.1 \
-    openssl-libs-1.1.1g-12.el8_3 \
+    openssl-1.1.1g-15.el8_3 \
+    openssl-libs-1.1.1g-15.el8_3 \
     systemd-239-41.el8_3.1 \
     systemd-libs-239-41.el8_3.1 \
     systemd-pam-239-41.el8_3.1 \
