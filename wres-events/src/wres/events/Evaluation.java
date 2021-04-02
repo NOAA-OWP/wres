@@ -36,6 +36,7 @@ import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.BrokerConnectionFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -617,24 +618,26 @@ public class Evaluation implements Closeable
         LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
 
         // Create a string representation of the exception stack
-        StringWriter sw = new StringWriter();
-
-        sw.append( EVALUATION_STRING + this.getEvaluationId() + " failed." );
-
-        if ( Objects.nonNull( exception ) )
+        try ( StringWriter sw = new StringWriter() )
         {
-            sw.append( " The following exception was encountered: " );
-            PrintWriter pw = new PrintWriter( sw );
-            exception.printStackTrace( pw );
+
+            sw.append( EVALUATION_STRING + this.getEvaluationId() + " failed." );
+
+            if ( Objects.nonNull( exception ) )
+            {
+                sw.append( " The following exception was encountered: " );
+                PrintWriter pw = new PrintWriter( sw );
+                exception.printStackTrace( pw );
+            }
+
+            // Create an event to report on it
+            EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
+                                                               .setEventType( StatusMessageType.ERROR )
+                                                               .setEventMessage( sw.toString() )
+                                                               .build();
+
+            this.errorsOnCompletion.add( event );
         }
-
-        // Create an event to report on it
-        EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
-                                                           .setEventType( StatusMessageType.ERROR )
-                                                           .setEventMessage( sw.toString() )
-                                                           .build();
-
-        this.errorsOnCompletion.add( event );
 
         // Set a non-normal exit code
         this.exitCode.set( 1 );
@@ -1371,7 +1374,8 @@ public class Evaluation implements Closeable
         }
 
         // Get the formats that are required
-        Set<Format> formatsRequired = this.getFormatsAwaited( this.evaluationDescription.getOutputs() );
+        Outputs outputs = this.evaluationDescription.getOutputs();
+        Set<Format> formatsRequired = MessageUtilities.getDeclaredFormats( outputs );
 
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
         Objects.requireNonNull( this.evaluationDescription,
@@ -1464,46 +1468,6 @@ public class Evaluation implements Closeable
         LOGGER.info( "Finished creating evaluation {}, which negotiated these subscribers by output format type: {}.",
                      this.evaluationId,
                      this.statusTracker.getNegotiatedSubscribers() );
-    }
-
-    /**
-     * Compares the formats requested for an evaluation with the formats delivered by existing subscribers. Returns the
-     * set of formats that are still awaiting subscribers.
-     * 
-     * @param outputs the outputs requested for the evaluation, including the formats required
-     * @return the formats to be delivered by negotiation
-     */
-
-    private Set<Format> getFormatsAwaited( Outputs outputs )
-    {
-        Set<Format> returnMe = new HashSet<>();
-
-        if ( outputs.hasCsv() )
-        {
-            returnMe.add( Format.CSV );
-        }
-
-        if ( outputs.hasPng() )
-        {
-            returnMe.add( Format.PNG );
-        }
-
-        if ( outputs.hasSvg() )
-        {
-            returnMe.add( Format.SVG );
-        }
-
-        if ( outputs.hasNetcdf() )
-        {
-            returnMe.add( Format.NETCDF );
-        }
-
-        if ( outputs.hasProtobuf() )
-        {
-            returnMe.add( Format.PROTOBUF );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
     }
 
     /**

@@ -1,12 +1,13 @@
 package wres.statistics;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
-
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.MetricName;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -17,18 +18,18 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * @author james.brown@hydrosolved.com
  */
 
-public class StatisticsTest
+class StatisticsTest
 {
 
     @Test
-    public void testThatAStatisticCanBeCreated()
+    void testThatAStatisticCanBeCreated()
     {
         DoubleScoreStatistic aScore =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BRIER_SCORE ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                          .setName( ComponentName.SHARPNESS ) )
+                                                                                                                       .setName( ComponentName.SHARPNESS ) )
                                                                                  .setValue( 1.0 ) )
                                     .build();
 

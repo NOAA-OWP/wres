@@ -68,6 +68,8 @@ public class MessagePublisher implements Closeable
         NETCDF,
 
         CSV,
+        
+        CSV2,
 
         PAIRS;
 
@@ -86,20 +88,8 @@ public class MessagePublisher implements Closeable
                     return "ConsumerID";
                 case EVALUATION_JOB_ID:
                     return "EvaluationJobID";
-                case PNG:
-                    return "PNG";
-                case SVG:
-                    return "SVG";
-                case PROTOBUF:
-                    return "PROTOBUF";
-                case NETCDF:
-                    return "NETCDF";
-                case CSV:
-                    return "CSV";
-                case PAIRS:
-                    return "PAIRS";
                 default:
-                    throw new IllegalStateException( "Implement the string identifier for " + this );
+                    return super.toString();
             }
         }
     }
