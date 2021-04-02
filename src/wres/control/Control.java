@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -358,7 +359,6 @@ public class Control implements Function<String[], ExecutionResult>,
      * Kill off the executors passed in even if there are remaining tasks.
      *
      * @param executor the executor to shutdown
-     * @throws InternalWresException When shutdown does not happen within PT5S.
      */
     private static void shutDownGracefully(final ExecutorService executor)
     {
@@ -371,8 +371,13 @@ public class Control implements Function<String[], ExecutionResult>,
 
             if ( !died )
             {
-                throw new InternalWresException( "Failed to shut down "
-                                                 + executor );
+                List<Runnable> tasks = executor.shutdownNow();
+
+                if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
+                {
+                    LOGGER.info( "Abandoned {} tasks from {}",
+                                 tasks.size(), executor );
+                }
             }
         }
         catch ( InterruptedException ie )
