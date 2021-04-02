@@ -580,7 +580,10 @@ project(':wres-statistics')
 
         runtime 'ch.qos.logback:logback-classic:1.3.0-alpha5'
 
-        testCompile 'junit:junit:4.13.2'
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
+
         testCompile project( ':wres-eventsbroker' )
     }
 }

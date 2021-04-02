@@ -675,41 +675,7 @@ public class MessageFactory
 
     public static Set<Format> getDeclaredFormats( Outputs outputs )
     {
-        Objects.requireNonNull( outputs );
-
-        Set<Format> formats = new HashSet<>();
-
-        if ( outputs.hasPng() )
-        {
-            formats.add( Format.PNG );
-        }
-
-        if ( outputs.hasSvg() )
-        {
-            formats.add( Format.SVG );
-        }
-
-        if ( outputs.hasCsv() )
-        {
-            formats.add( Format.CSV );
-        }
-
-        if ( outputs.hasCsv2() )
-        {
-            formats.add( Format.CSV2 );
-        }
-
-        if ( outputs.hasNetcdf() )
-        {
-            formats.add( Format.NETCDF );
-        }
-
-        if ( outputs.hasProtobuf() )
-        {
-            formats.add( Format.PROTOBUF );
-        }
-
-        return Collections.unmodifiableSet( formats );
+        return wres.statistics.MessageUtilities.getDeclaredFormats( outputs );
     }
 
     /**

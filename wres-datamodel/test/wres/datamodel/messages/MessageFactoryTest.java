@@ -534,7 +534,7 @@ public class MessageFactoryTest
         assertEquals( Format.CSV, MessageFactory.parse( DestinationType.NUMERIC ) );
         assertEquals( Format.CSV, MessageFactory.parse( DestinationType.CSV ) );
     }
-
+    
     /**
      * Returns a {@link List} containing several {@link DoubleScoreStatisticOuter} for one pool.
      * 
