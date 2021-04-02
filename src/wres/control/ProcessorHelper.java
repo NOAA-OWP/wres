@@ -115,11 +115,6 @@ class ProcessorHelper
         wres.statistics.generated.Evaluation evaluationDescription =
                 ProcessorHelper.getEvaluationDescription( projectConfigPlus );
 
-        // Create some shared writers
-        SharedWriters sharedWriters =
-                ProcessorHelper.getSharedWriters( projectConfig,
-                                                  outputDirectory );
-
         // Create netCDF writers
         List<NetcdfOutputWriter> netcdfWriters =
                 ProcessorHelper.getNetcdfWriters( projectConfig,
@@ -140,35 +135,40 @@ class ProcessorHelper
 
         LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
 
-        // Create a subscriber for the format writers that are within-process
         String consumerId = Evaluation.getUniqueId();
-        ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
-                                                                         new HashSet<>( internalFormats ),
-                                                                         netcdfWriters,
-                                                                         projectConfig );
+        
+        // Moving this into the try-with-resources would require a different approach than notifying the evaluation to 
+        // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
+        Evaluation evaluation = null;
 
-        EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
-                                                                          executors.getProductExecutor(),
-                                                                          connections );
-
-        // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format writing
-        // work from each other. This is expected insofar as all subscribers are par. However, core clients currently 
-        // run in short-running processes, we want to estimate resources for core clients effectively, and some format
-        // writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place all format writers in
-        // long running processes instead. See #88262 and #88267.
-        SubscriberApprover subscriberApprover = new SubscriberApprover.Builder().addApprovedSubscriber( internalFormats,
-                                                                                                        consumerId )
-                                                                                .build();
-
-        // Open an evaluation, to be closed on completion or stopped on exception
-        Evaluation evaluation = Evaluation.of( evaluationDescription,
-                                               connections,
-                                               ProcessorHelper.CLIENT_ID,
-                                               evaluationId,
-                                               subscriberApprover );
-
-        try
+        try ( SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( projectConfig,
+                                                                              outputDirectory );
+              // Create a subscriber for the format writers that are within-process
+              ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
+                                                                               new HashSet<>( internalFormats ),
+                                                                               netcdfWriters,
+                                                                               projectConfig );
+              EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
+                                                                                executors.getProductExecutor(),
+                                                                                connections ); )
         {
+            // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format writing
+            // work from each other. This is expected insofar as all subscribers are par. However, core clients currently 
+            // run in short-running processes, we want to estimate resources for core clients effectively, and some format
+            // writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place all format writers in
+            // long running processes instead. See #88262 and #88267.
+            SubscriberApprover subscriberApprover =
+                    new SubscriberApprover.Builder().addApprovedSubscriber( internalFormats,
+                                                                            consumerId )
+                                                    .build();
+
+            // Open an evaluation, to be closed on completion or stopped on exception
+            evaluation = Evaluation.of( evaluationDescription,
+                                        connections,
+                                        ProcessorHelper.CLIENT_ID,
+                                        evaluationId,
+                                        subscriberApprover );
+
             Set<Path> pathsWritten = ProcessorHelper.processProjectConfig( evaluation,
                                                                            systemSettings,
                                                                            databaseServices,
@@ -182,8 +182,8 @@ class ProcessorHelper
             // Wait for the evaluation to conclude
             evaluation.await();
 
-            // Since the consumer resources are created here, they should be destroyed here. An attempt should be made 
-            // to close them before the finally block because some of these writers may employ a delayed write, which 
+            // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to 
+            // close the netcdf writers before the finally block because these writers employ a delayed write, which 
             // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
             // context see #81790-21 and the detailed description in Evaluation.await(), which clarifies that awaiting 
             // for an evaluation to complete does not mean that all consumers have finished their work, only that they 
@@ -193,16 +193,9 @@ class ProcessorHelper
             // Evaluation instance (which adopts the limited contract described here). An external subscriber within 
             // this jvm/process has the same contract as an external subscriber running in another process/jvm. It 
             // should only report completion when consumption is "done done".
-            sharedWriters.close();
-
-            if ( !netcdfWriters.isEmpty() )
+            for ( NetcdfOutputWriter writer : netcdfWriters )
             {
-                LOGGER.debug( "Finishing up writing netCDF data..." );
-
-                for ( NetcdfOutputWriter writer : netcdfWriters )
-                {
-                    writer.close();
-                }
+                writer.close();
             }
 
             return Collections.unmodifiableSet( returnMe );
@@ -223,8 +216,10 @@ class ProcessorHelper
             // Stop forcibly
             LOGGER.debug( "Forcibly stopping evaluation {} upon encountering an internal error.", evaluationId );
 
-            evaluation.stop( internalError );
-            evaluationId = evaluation.getEvaluationId();
+            if ( Objects.nonNull( evaluation ) )
+            {
+                evaluation.stop( internalError );
+            }
 
             // Decorate and rethrow
             throw new WresProcessingException( "Encountered an error while processing evaluation '"
@@ -237,33 +232,14 @@ class ProcessorHelper
             // Close the evaluation always (even if stopped on exception)
             try
             {
-                evaluation.close();
+                if ( Objects.nonNull( evaluation ) )
+                {
+                    evaluation.close();
+                }
             }
             catch ( IOException e )
             {
                 String message = "Failed to close evaluation " + evaluationId + ".";
-                LOGGER.warn( message, e );
-            }
-
-            // Close the pairs writers if they weren't closed already
-            try
-            {
-                sharedWriters.close();
-            }
-            catch ( IOException e )
-            {
-                String message = "Failed to close the pair writers.";
-                LOGGER.warn( message, e );
-            }
-
-            // Close the format writers
-            try
-            {
-                consumerFactory.close();
-            }
-            catch ( IOException e )
-            {
-                String message = "Failed to close the format writers.";
                 LOGGER.warn( message, e );
             }
 
@@ -280,19 +256,11 @@ class ProcessorHelper
                 }
             }
 
-            // Close the formats subscriber
-            try
-            {
-                formatsSubscriber.close();
-            }
-            catch ( IOException e )
-            {
-                String message = "Failed to close formats subscriber " + formatsSubscriber.getClientId() + ".";
-                LOGGER.warn( message, e );
-            }
-
             // Add the paths written by external subscribers
-            returnMe.addAll( evaluation.getPathsWrittenBySubscribers() );
+            if ( Objects.nonNull( evaluation ) )
+            {
+                returnMe.addAll( evaluation.getPathsWrittenBySubscribers() );
+            }
 
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
@@ -1029,7 +997,7 @@ class ProcessorHelper
 
         return pathString;
     }
-    
+
     private ProcessorHelper()
     {
         // Helper class with static methods therefore no construction allowed.
