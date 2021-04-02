@@ -586,6 +586,11 @@ project(':wres-statistics')
 
         testCompile project( ':wres-eventsbroker' )
     }
+
+    // Facilitate unit tests with JUnit
+    test {
+        useJUnitPlatform()
+    }
 }
 
 // Return /etc/system-release file as a string if readable, else empty string.
