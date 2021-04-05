@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric;
 
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -85,6 +86,12 @@ public final class MetricFactory
      */
 
     private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
+
+    /**
+     * Test seed system property name.
+     */
+
+    private static final String TEST_SEED_PROPERTY = "wres.systemTestSeed";
 
     /**
      * <p>Returns an instance of a {@link MetricProcessor} for processing single-valued pairs. Optionally, retain 
@@ -1046,6 +1053,7 @@ public final class MetricFactory
     {
         if ( MetricConstants.RANK_HISTOGRAM.equals( metric ) )
         {
+            Random random = MetricFactory.getRandomNumberGenerator();
             return RankHistogram.of();
         }
         else
@@ -1066,12 +1074,15 @@ public final class MetricFactory
     public static Metric<PoolOfPairs<Double, Double>, DurationDiagramStatisticOuter>
             ofSingleValuedTimeSeries( MetricConstants metric )
     {
+        // Use a random number generator with a fixed seed if required
+        Random random = MetricFactory.getRandomNumberGenerator();
+
         switch ( metric )
         {
             case TIME_TO_PEAK_ERROR:
-                return TimeToPeakError.of();
+                return TimeToPeakError.of( random );
             case TIME_TO_PEAK_RELATIVE_ERROR:
-                return TimeToPeakRelativeError.of();
+                return TimeToPeakRelativeError.of( random );
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -1124,6 +1135,23 @@ public final class MetricFactory
                        || metric == MetricConstants.ROOT_MEAN_SQUARE_ERROR;
 
         return singleValued || metric.isInGroup( SampleDataGroup.DICHOTOMOUS );
+    }
+
+    /**
+     * @return a pseudo-random number generator that respects any {@link #TEST_SEED_PROPERTY}.
+     */
+
+    private static Random getRandomNumberGenerator()
+    {
+        // Use a fixed seed if required
+        String seed = System.getProperty( MetricFactory.TEST_SEED_PROPERTY );
+        if ( Objects.nonNull( seed ) )
+        {
+            long longSeed = Long.valueOf( seed );
+            return new Random( longSeed );
+        }
+
+        return new Random();
     }
 
     /**
